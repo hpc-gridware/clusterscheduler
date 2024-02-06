@@ -34,16 +34,14 @@
 #include "cull/cull.h"
 #include "gdi/sge_gdi_ctx.h"
 
-bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+bool rqs_show(lList **answer_list, const char *name);
 
-bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *rqsref_list,
-                            lList **rqs_list);
+bool rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list);
 
-bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **rqs_list);
-bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
-bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
-bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
-bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename, const char *name);
+bool rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list);
+bool rqs_add(lList **answer_list, const char *name);
+bool rqs_modify(lList **answer_list, const char *name);
+bool rqs_add_from_file(lList **answer_list, const char *filename);
+bool rqs_modify_from_file(lList **answer_list, const char *filename, const char *name);
 
-bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **answer_list,
-                                        u_long32 gdi_command);
+bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_command);

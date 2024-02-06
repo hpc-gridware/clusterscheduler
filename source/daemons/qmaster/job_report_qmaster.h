@@ -35,5 +35,5 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void
-process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *hep, char *rhost, char *commproc,
+process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
                    sge_pack_buffer *pb, monitoring_t *monitor);

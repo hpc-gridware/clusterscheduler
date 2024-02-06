@@ -75,7 +75,7 @@ usage(const char *argv0)
 }
 
 static int 
-init_framework(sge_gdi_ctx_class_t *ctx)
+init_framework()
 {
    int ret = EXIT_FAILURE;
 
@@ -387,11 +387,10 @@ main(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "spooledit");
 
-   if (sge_setup2(&ctx, SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
+   if (sge_setup2(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }
@@ -402,7 +401,7 @@ main(int argc, char *argv[])
          usage(argv[0]);
          ret = EXIT_FAILURE;
       } else {
-         ret = init_framework(ctx);
+         ret = init_framework();
 
          if (ret == EXIT_SUCCESS) {
             if (strcmp(argv[1], "list") == 0) {

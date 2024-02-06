@@ -37,7 +37,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
 
@@ -51,19 +51,18 @@ extern char **environ;
 int main(int argc, char **argv)
 {
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qconf");
 
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QCONF);
    
-   if (sge_gdi2_setup(&ctx, QCONF, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QCONF, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
 
-   if (sge_parse_qconf(ctx, ++argv)) {
+   if (sge_parse_qconf(++argv)) {
       sge_exit(1);
    } else {
       sge_exit(0);

@@ -50,6 +50,8 @@
 
 #include "comm/commlib.h"
 
+#include "gdi/sge_gdi_ctx.h"
+
 #include "mir/sge_mirror.h"
 
 #include "spool/sge_spooling.h"
@@ -57,6 +59,7 @@
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
+#include "sge.h"
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
@@ -87,7 +90,7 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    DRETURN(conf);
 }
 
-static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList *anAnswer)
+static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswer)
 {
    lListElem *local = nullptr;
    lListElem *global = nullptr;
@@ -145,7 +148,7 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
  *           a function sge_mirror_is_subscribed function to check if we have
  *           to unspool a certain list or not.
  */
-static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
+static bool read_spooled_data()
 {  
    lList *answer_list = nullptr;
    const lListElem *context;
@@ -157,7 +160,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
    context = spool_get_default_context();
 
    /* cluster configuration */
-   sge_read_configuration(ctx, context, answer_list);
+   sge_read_configuration(context, answer_list);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Config_List\n", lGetNumberOfElem(*cluster_configuration)));
 
@@ -608,7 +611,6 @@ int main(int argc, char *argv[])
    lListElem *spooling_context;
    time_t next_prof_output = 0;
    lList *answer_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
@@ -619,7 +621,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   if (sge_gdi2_setup(&ctx, QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (sge_gdi2_setup(QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }
@@ -630,7 +632,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_SCHEDD, &answer_list, nullptr)) {
+   if (false == sge_gdi2_evc_setup(&evc, EV_ID_SCHEDD, &answer_list, nullptr)) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }
@@ -653,7 +655,7 @@ int main(int argc, char *argv[])
    answer_list_output(&answer_list);
    
    /* read spooled data from disk */
-   read_spooled_data(ctx);
+   read_spooled_data();
    
    /* initialize mirroring */
    sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, nullptr, nullptr, nullptr, nullptr, nullptr);

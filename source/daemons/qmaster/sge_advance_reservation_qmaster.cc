@@ -106,7 +106,7 @@ static bool
 ar_reserve_queues(lList **alpp, lListElem *ar);
 
 static u_long32
-sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
+sge_get_ar_id(monitoring_t *monitor);
 
 static u_long32
 guess_highest_ar_id(void);
@@ -115,7 +115,7 @@ static void
 sge_ar_send_mail(lListElem *ar, int type);
 
 void
-ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t *monitor) {
+ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
    lListElem *ar, *next_ar;
    u_long32 now = sge_get_gmt();
 
@@ -152,7 +152,7 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
 
          sge_ar_state_set_running(ar);
 
-         sge_ar_remove_all_jobs(ctx, ar_id, 1, monitor);
+         sge_ar_remove_all_jobs(ar_id, 1, monitor);
 
          ar_do_reservation(ar, false);
 
@@ -217,7 +217,7 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
 *  NOTES
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
-int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
@@ -239,7 +239,7 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, lListElem 
    if (add) {
       /* get new ar ids until we find one that is not yet used */
       do {
-         ar_id = sge_get_ar_id(ctx, monitor);
+         ar_id = sge_get_ar_id(monitor);
       } while (ar_list_locate(master_ar_list, ar_id));
       lSetUlong(new_ar, AR_id, ar_id);
       /*
@@ -347,7 +347,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 
 *******************************************************************************/
-int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
@@ -404,8 +404,7 @@ int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t
 *     MT-NOTE: ar_success() is not MT safe 
 *******************************************************************************/
 int
-ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-           monitoring_t *monitor) {
+ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
    u_long32 timestamp = 0;
@@ -482,7 +481,7 @@ ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_objec
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
 int
-ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
+ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
        const char *rhost, monitoring_t *monitor) {
    const char *id_str = nullptr;
    const lList *user_list = nullptr;
@@ -625,8 +624,8 @@ ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all jobs refering to the AR */
-      if (sge_ar_remove_all_jobs(ctx, ar_id, lGetUlong(ep, ID_force), monitor)) {
-         /* either all jobs were successfully removed or we had no jobs */
+      if (sge_ar_remove_all_jobs(ar_id, lGetUlong(ep, ID_force), monitor)) {
+         /* either all jobs were successfull removed or we had no jobs */
 
          /* unblock reserved queues */
          ar_do_reservation(ar, false);
@@ -636,7 +635,7 @@ ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_
                                         now);
          reporting_create_ar_acct_records(nullptr, ar, now);
 
-         gdil_del_all_orphaned(ctx, lGetList(ar, AR_granted_slots), alpp);
+         gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp);
 
          lRemoveElem(*master_ar_list, &ar);
 
@@ -644,14 +643,14 @@ ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_
                  ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-         sge_event_spool(ctx, alpp, 0, sgeE_AR_DEL,
+         sge_event_spool(alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true);
       } else {
          INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU,
                  ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-         sge_event_spool(ctx, alpp, 0, sgeE_AR_MOD,
+         sge_event_spool(alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                          ar, nullptr, nullptr, true, true);
       }
@@ -717,7 +716,7 @@ ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_
 *     MT-NOTE: sge_get_ar_id() is MT safe 
 *******************************************************************************/
 static u_long32
-sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
+sge_get_ar_id(monitoring_t *monitor) {
    u_long32 ar_id;
    bool is_store_ar = false;
 
@@ -739,7 +738,7 @@ sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
                     &ar_id_control.ar_id_mutex);
 
    if (is_store_ar) {
-      sge_store_ar_id(ctx, nullptr, monitor);
+      sge_store_ar_id(nullptr, monitor);
    }
 
    DRETURN(ar_id);
@@ -767,7 +766,7 @@ sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
 *     MT-NOTE: sge_store_ar_id() is not MT safe 
 *******************************************************************************/
 void
-sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 ar_id = 0;
    bool changed = false;
 
@@ -915,7 +914,7 @@ guess_highest_ar_id(void) {
 *     MT-NOTE: sge_ar_event_handler() is MT safe 
 *******************************************************************************/
 void
-sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *ar;
    u_long32 ar_id = te_get_first_numeric_key(anEvent);
    u_long32 state = te_get_second_numeric_key(anEvent);
@@ -949,7 +948,7 @@ sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t 
       sge_ar_state_set_exited(ar);
 
       /* remove all jobs running in this AR */
-      sge_ar_remove_all_jobs(ctx, ar_id, 1, monitor);
+      sge_ar_remove_all_jobs(ar_id, 1, monitor);
 
       /* unblock reserved queues */
       ar_do_reservation(ar, false);
@@ -962,12 +961,12 @@ sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t 
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all orphaned queue intances, which are empty. */
-      gdil_del_all_orphaned(ctx, lGetList(ar, AR_granted_slots), nullptr);
+      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr);
 
       /* remove the AR itself */
       DPRINTF(("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer)));
       lRemoveElem(master_ar_list, &ar);
-      sge_event_spool(ctx, nullptr, 0, sgeE_AR_DEL,
+      sge_event_spool(nullptr, 0, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                       nullptr, nullptr, nullptr, true, true);
 
@@ -1790,7 +1789,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
 *     MT-NOTE: sge_ar_remove_all_jobs() is not MT safe 
 *******************************************************************************/
 bool
-sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, monitoring_t *monitor) {
+sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
    lListElem *nextjep, *jep;
    lListElem *tmp_task;
    bool ret = true;
@@ -1831,11 +1830,11 @@ sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, mon
                }
 
                if (forced) {
-                  sge_commit_job(ctx, jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
+                  sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
                } else {
                   if (!ISSET(lGetUlong(tmp_task, JAT_state), JDELETED)) {
-                     job_mark_job_as_deleted(ctx, jep, tmp_task);
+                     job_mark_job_as_deleted(jep, tmp_task);
                   }
                   ret = false;
                }
@@ -1844,7 +1843,7 @@ sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, mon
                DPRINTF(("removing unenrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number));
                tmp_task = job_get_ja_task_template_pending(jep, task_number);
 
-               sge_commit_job(ctx, jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
+               sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                               COMMIT_NO_SPOOLING | COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN,
                               monitor);
             }

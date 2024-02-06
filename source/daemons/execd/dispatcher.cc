@@ -65,7 +65,7 @@
 #define SGE_EXECD_ALIVE_CHECK_DELAY 30
 #define DELAYED_FINISHED_JOB_REPORTING_INTERVAL 600
 
-int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
+int sge_execd_process_messages()
 {
    monitoring_t monitor;
    bool terminate = false;
@@ -116,30 +116,30 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
          switch (msg.tag) {
             case TAG_JOB_EXECUTION:
                if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
-                  do_job_exec(ctx, &msg, &apb);
+                  do_job_exec(&msg, &apb);
                   is_apb_used = true;
                   atag = msg.tag;
                }
                break;
             case TAG_SLAVE_ALLOW:
-               do_job_slave(ctx, &msg);
+               do_job_slave(&msg);
                break;
             case TAG_CHANGE_TICKET:
-               do_ticket(ctx, &msg);
+               do_ticket(&msg);
                break;
             case TAG_ACK_REQUEST:
-               do_ack(ctx, &msg);
+               do_ack(&msg);
                break;
             case TAG_SIGQUEUE:
             case TAG_SIGJOB:
                if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
-                  do_signal_queue(ctx, &msg, &apb);
+                  do_signal_queue(&msg, &apb);
                   is_apb_used = true;
                   atag = TAG_ACK_REQUEST;
                }
                break;
             case TAG_KILL_EXECD:
-               do_kill_execd(ctx, &msg);
+               do_kill_execd(&msg);
 #if defined(SOLARIS)
                if (sge_smf_used() == 1) {
 		  /* We must stop, we don't care about current or next planned service state */
@@ -148,7 +148,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
 #endif   
                break;
             case TAG_GET_NEW_CONF:
-               do_get_new_conf(ctx, &msg);
+               do_get_new_conf(&msg);
                 /* calculate alive check interval based on load report time POS 2/2 
                  * If modified, please also change POS 1/2
                  */
@@ -227,7 +227,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
                last_qmaster_file_read = now;
 
                /* Try to re-register at qmaster */
-               if (sge_execd_register_at_qmaster(ctx, true) == 0) {
+               if (sge_execd_register_at_qmaster(true) == 0) {
                   do_reconnect = false;    /* we are reconnected */
                   last_heard = sge_get_gmt();
                   sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, true);
@@ -323,7 +323,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
 
       /* do cyclic stuff */
       if (!terminate) {
-         int to_do_return_value = do_ck_to_do(ctx, do_reconnect);
+         int to_do_return_value = do_ck_to_do(do_reconnect);
          if (to_do_return_value == 1) {
             terminate = true;
             ret = 0;

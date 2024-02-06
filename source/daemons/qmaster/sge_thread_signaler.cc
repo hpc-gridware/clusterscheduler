@@ -57,7 +57,7 @@
 #endif
 
 void
-sge_signaler_initialize(sge_gdi_ctx_class_t *ctx) {
+sge_signaler_initialize() {
    cl_thread_settings_t *dummy_thread_p = nullptr;
    dstring thread_name = DSTRING_INIT;
 
@@ -134,14 +134,13 @@ sge_signaler_main(void *arg) {
    int sig_num;
    time_t next_prof_output = 0;
    monitoring_t monitor;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER(TOP_LAYER);
 
    cl_thread_func_startup(thread_config);
 
    sge_monitor_init(&monitor, thread_config->thread_name, NONE_EXT, ST_WARNING, ST_ERROR);
-   sge_qmaster_thread_init(&ctx, QMASTER, SIGNALER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, SIGNALER_THREAD, true);
 
    sigemptyset(&sig_set);
    sigaddset(&sig_set, SIGINT);

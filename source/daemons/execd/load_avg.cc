@@ -87,13 +87,13 @@
 static void 
 get_reserved_usage(const char*qualified_hostname, lList **job_usage_list);
 static int 
-execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send);
 static int 
-execd_add_conf_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send);
 static int 
-execd_add_license_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send);
 static int 
-execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send);
 static int 
 sge_get_loadavg(const char *qualified_hostname, lList **lpp);
 
@@ -194,7 +194,7 @@ void execd_trash_load_report(void) {
 }
 
 static int 
-execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
+execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
    const char* qualified_hostname = bootstrap_get_qualified_hostname();
    const char* binary_path = bootstrap_get_binary_path();
@@ -290,7 +290,7 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
 
 
 static int 
-execd_add_conf_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
+execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
    const char* qualified_hostname = bootstrap_get_qualified_hostname();
 
@@ -319,7 +319,7 @@ execd_add_conf_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
 }
 
 static int 
-execd_add_license_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
+execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
@@ -357,7 +357,7 @@ execd_add_license_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 
 }
 
 static int 
-execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
+execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
    bool do_send = false;
    bool only_flush = false;

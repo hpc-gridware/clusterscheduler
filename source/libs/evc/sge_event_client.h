@@ -34,7 +34,7 @@
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_event.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi.h"
 
 /* 
  * The local event client has direct access to the event master. Every
@@ -63,7 +63,6 @@ struct sge_evc_class_str {
 
    local_t ec_local; 
 
-   sge_gdi_ctx_class_t* (*get_gdi_ctx)(sge_evc_class_t *thiz);
    bool (*ec_register)(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList **alpp, monitoring_t *monitor);
    bool (*ec_deregister)(sge_evc_class_t *thiz);
    bool (*ec_commit)(sge_evc_class_t *thiz, lList **alpp);
@@ -123,12 +122,10 @@ struct sge_evc_class_str {
 };
 
 sge_evc_class_t *
-sge_evc_class_create(sge_gdi_ctx_class_t *sge_gdi_ctx, ev_registration_id reg_id,
-                     lList **alpp, const char *name);
+sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name);
 
 void 
 sge_evc_class_destroy(sge_evc_class_t **pst);
 
 bool 
-sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, sge_gdi_ctx_class_t *sge_gdi_ctx,
-                   ev_registration_id reg_id, lList **alpp, const char * name);
+sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name);

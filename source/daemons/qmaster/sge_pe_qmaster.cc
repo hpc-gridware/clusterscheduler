@@ -64,7 +64,7 @@ static char object_name[] = "parallel environment";
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe);
 
 int
-pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
        monitoring_t *monitor) {
    int ret;
@@ -213,7 +213,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
 }
 
 int
-pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object) {
+pe_spool(lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
@@ -235,7 +235,7 @@ pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *o
    DRETURN(dbret ? 0 : 1);
 }
 
-int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int pe_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;
 
@@ -253,7 +253,7 @@ int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
 }
 
 int
-sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;
@@ -307,7 +307,7 @@ sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, 
    }
 
    /* remove host file */
-   if (!sge_event_spool(ctx, alpp, 0, sgeE_PE_DEL,
+   if (!sge_event_spool(alpp, 0, sgeE_PE_DEL,
                         0, 0, pe, nullptr, nullptr, nullptr, nullptr, nullptr, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, pe));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);

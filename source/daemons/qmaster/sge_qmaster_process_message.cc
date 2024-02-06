@@ -69,19 +69,19 @@
 #include "msg_common.h"
 
 static void
-do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor);
+do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
-do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor);
+do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
-do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *, monitoring_t *monitor);
+do_report_request(struct_msg_t *, monitoring_t *monitor);
 
 static void
-do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor);
+do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
-sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag, u_long32 ack_ulong,
+sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag, u_long32 ack_ulong,
               u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor);
 
 /*
@@ -115,7 +115,7 @@ sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, 
 *
 *******************************************************************************/
 void
-sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
+sge_qmaster_process_message(monitoring_t *monitor) {
    int res;
    struct_msg_t msg;
 
@@ -147,19 +147,19 @@ sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
       switch (msg.tag) {
          case TAG_GDI_REQUEST:
             MONITOR_INC_GDI(monitor);
-            do_gdi_packet(ctx, nullptr, &msg, monitor);
+            do_gdi_packet(nullptr, &msg, monitor);
             break;
          case TAG_ACK_REQUEST:
             MONITOR_INC_ACK(monitor);
-            do_c_ack(ctx, &msg, monitor);
+            do_c_ack(&msg, monitor);
             break;
          case TAG_EVENT_CLIENT_EXIT:
             MONITOR_INC_ECE(monitor);
-            do_event_client_exit(ctx, &msg, monitor);
+            do_event_client_exit(&msg, monitor);
             break;
          case TAG_REPORT_REQUEST:
             MONITOR_INC_REP(monitor);
-            do_report_request(ctx, &msg, monitor);
+            do_report_request(&msg, monitor);
             break;
          default:
             DPRINTF(("***** UNKNOWN TAG TYPE %d\n", msg.tag));
@@ -171,7 +171,7 @@ sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
 } /* sge_qmaster_process_message */
 
 static void
-do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
+do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
    sge_gdi_packet_class_t *packet = nullptr;
    bool local_ret;
@@ -252,7 +252,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
 *
 *******************************************************************************/
 static void
-do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
+do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = bootstrap_get_component_name();
@@ -321,7 +321,7 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
 *
 *******************************************************************************/
 static void
-do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
+do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 client_id = 0;
 
    DENTER(TOP_LAYER);
@@ -368,7 +368,7 @@ do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
  TAG we sent to the counterpart.
  ****************************************************/
 static void
-do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
+do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = bootstrap_get_component_name();
@@ -403,7 +403,7 @@ do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
                DRETURN_VOID;
             }
             /* an execd sends a job specific acknowledge ack_ulong == jobid of received job */
-            sge_c_job_ack(ctx, aMsg->snd_host, aMsg->snd_name, ack_tag, ack_ulong, ack_ulong2, lGetString(ack, ACK_str),
+            sge_c_job_ack(aMsg->snd_host, aMsg->snd_name, ack_tag, ack_ulong, ack_ulong2, lGetString(ack, ACK_str),
                           monitor);
             break;
 
@@ -428,7 +428,7 @@ do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
 
 /***************************************************************/
 static void
-sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag,
+sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
               u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    lList *answer_list = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();

@@ -527,7 +527,7 @@ const struct test_name2number_map {
 };
 #define FIRST_NON_AUTOMATED_TEST ST_INPUT_BECOMES_OUTPUT
 
-static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_args);
+static int test(int *argc, char **argv[], int parse_args);
 static int submit_and_wait(int n);
 static int submit_sleeper(int n);
 static int submit_input_mirror(int n, const char *mirror_job, 
@@ -638,7 +638,6 @@ int main(int argc, char *argv[])
    int failed = 0;
    int i; 
    char diag[DRMAA_ERROR_STRING_BUFFER];
-   sge_gdi_ctx_class_t *ctx = nullptr;
    lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qsub");
@@ -668,7 +667,7 @@ int main(int argc, char *argv[])
    ** since drmaa doesn't give an explicit handle to the context and sge_gdi 
    ** is used below, we provide our own context here
    */
-   int gdi_errno = sge_gdi2_setup(&ctx, JAPI, MAIN_THREAD, &alp);
+   int gdi_errno = sge_gdi2_setup(JAPI, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       DPRINTF(("gdi_errno = %d", gdi_errno));
       answer_list_output(&alp);
@@ -708,7 +707,7 @@ int main(int argc, char *argv[])
                      DRMAA_CONTROL_HOLD, DRMAA_CONTROL_RELEASE, DRMAA_CONTROL_TERMINATE, -1 };
                for (i=0; ctrl_ops[i] != -1; i++) {
                   ctrl_op = ctrl_ops[i]; 
-                  if (test(ctx, &argc, &argv, 0)!=0) {
+                  if (test(&argc, &argv, 0)!=0) {
                      printf("test \"%s\" with \"%s\" failed\n", 
                            test_map[i].test_name, drmaa_ctrl2str(ctrl_ops[i]));
                      failed = 1;
@@ -721,7 +720,7 @@ int main(int argc, char *argv[])
             }
 
             default:
-               if (test(ctx, &argc, &argv, 0)!=0) {
+               if (test(&argc, &argv, 0)!=0) {
                   printf("test #%d failed\n", i);
                   failed = 1;
                   break;
@@ -735,7 +734,7 @@ int main(int argc, char *argv[])
          }
       } else {
          printf("starting test \"%s\"\n", test_map[i].test_name);
-         if (test(ctx, &argc, &argv, 1)!=0) {
+         if (test(&argc, &argv, 1)!=0) {
             printf("test \"%s\" failed\n", test_map[i].test_name);
             failed = 1;
             break;
@@ -746,14 +745,13 @@ int main(int argc, char *argv[])
    } 
    drmaa_exit(nullptr, 0);
    sge_gdi2_shutdown();
-   sge_gdi_ctx_class_destroy(&ctx);
 
    sge_prof_cleanup();
    return failed;
 }
 
 
-static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_args)
+static int test(int *argc, char **argv[], int parse_args)
 {
    bool bBulkJob = false;
    int  i;
@@ -2901,7 +2899,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3383,7 +3381,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3488,7 +3486,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3609,7 +3607,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3714,7 +3712,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             {
                lCondition *where = lWhere ("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);

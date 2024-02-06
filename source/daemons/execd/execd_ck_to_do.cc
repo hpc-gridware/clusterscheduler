@@ -84,8 +84,8 @@ sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task);
 static bool
 sge_kill_petasks(const lListElem *job, const lListElem *ja_task);
 
-static int sge_start_jobs(sge_gdi_ctx_class_t *ctx);
-static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *petep);
+static int sge_start_jobs();
+static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep);
 
 #ifdef COMPILE_DC
 static void force_job_rlimit(const char* qualified_hostname);
@@ -347,7 +347,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
 #define SIGNAL_RESEND_INTERVAL 1
 #define OLD_JOB_INTERVAL 60
 
-int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
+int do_ck_to_do(bool is_qmaster_down) {
    u_long32 now;
    u_long32 pdc_interval = U_LONG32_MAX;
    static u_long next_pdc = 0;
@@ -377,7 +377,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
        * a job start if we reset jobs_to_start after sge_start_jobs()
        */
       jobs_to_start = 0;
-      sge_start_jobs(ctx);
+      sge_start_jobs();
    }
 
 #ifdef COMPILE_DC
@@ -487,7 +487,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
 
    if (next_old_job <= now) {
       next_old_job = now + OLD_JOB_INTERVAL;
-      clean_up_old_jobs(ctx, 0);
+      clean_up_old_jobs(0);
    }
 
    /* check for end of simulated jobs */
@@ -548,7 +548,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
          update_job_usage(qualified_hostname);
 
          /* send all reports */
-         if (sge_send_all_reports(ctx, now, 0, execd_report_sources) == 1) {
+         if (sge_send_all_reports(now, 0, execd_report_sources) == 1) {
             return_value = 2;
          }
       }
@@ -638,7 +638,7 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
 
 
 /*****************************************************************************/
-static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
+static int sge_start_jobs()
 {
    lListElem *jep, *jatep, *petep;
    int state_changed;
@@ -653,11 +653,11 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
 
    for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
       for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-         state_changed = exec_job_or_task(ctx, jep, jatep, nullptr);
+         state_changed = exec_job_or_task(jep, jatep, nullptr);
 
          /* visit all tasks */
          for_each_rw(petep, lGetList(jatep, JAT_task_list)) {
-            state_changed |= exec_job_or_task(ctx, jep, jatep, petep);
+            state_changed |= exec_job_or_task(jep, jatep, petep);
          }
 
          /* now save this job so we are up to date on restart */
@@ -675,7 +675,7 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
 }
 
 
-static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *petep)
+static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 {
    char err_str[256];
    int pid;
@@ -764,7 +764,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
       pid = -1; 
       strcpy(err_str, "FAILURE_BEFORE_EXEC");
    } else {
-      pid = sge_exec_job(ctx, jep, jatep, petep, err_str, 256);
+      pid = sge_exec_job(jep, jatep, petep, err_str, 256);
    }   
 
    if (pid < 0) {

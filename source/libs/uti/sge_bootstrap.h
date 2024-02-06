@@ -288,6 +288,9 @@ bootstrap_set_unqualified_hostname(const char *unqualified_hostname);
 sge_exit_func_t
 bootstrap_get_exit_func();
 
+char *
+bootstrap_get_log_buffer();
+
 void
 bootstrap_set_exit_func(sge_exit_func_t exit_func);
 

@@ -79,7 +79,7 @@ typedef struct {
    const char* host;
 } qquota_filter_t;
 
-static bool get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList **userset_l, lList **hgroup_l, lList **exechost_l, lList *hostref_list, lList **alpp);
+static bool get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l, lList **hgroup_l, lList **exechost_l, lList *hostref_list, lList **alpp);
 
 static char *qquota_get_next_filter(stringT filter, const char *cp);
 static bool qquota_print_out_rule(lListElem *rule, dstring rule_name, const char *limit_name,
@@ -119,7 +119,7 @@ static bool qquota_print_out_filter(lListElem *filter, const char *name, const c
 *     MT-NOTE: qquota_output() is MT safe 
 *
 *******************************************************************************/
-bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_match_list, lList *user_list,
+bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_list,
                  lList *pe_list, lList *project_list, lList *cqueue_list, lList **alpp,
                  report_handler_t* report_handler) 
 {
@@ -149,7 +149,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
    /* If no user is requested on command line we set the current user as default */
    qquota_filter.user = bootstrap_get_username();
 
-   ret = get_all_lists(ctx, &rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
+   ret = get_all_lists(&rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 
    if (ret == true) {
       const lListElem *rqs = nullptr;
@@ -365,7 +365,7 @@ qquota_output_error:
 *     get_all_lists() -- get all lists from qmaster
 *
 *  SYNOPSIS
-*     static bool get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList 
+*     static bool get_all_lists(lList **rqs_l, lList
 *     **centry_l, lList **userset_l, lList **hgroup_l, lList **exechost_l, 
 *     lList *hostref_l, lList **alpp) 
 *
@@ -393,7 +393,7 @@ qquota_output_error:
 *
 *******************************************************************************/
 static bool
-get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList **userset_l,
+get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
               lList **hgroup_l, lList **exechost_l, lList *hostref_l, lList **alpp)
 {
    const lListElem *ep = nullptr;
@@ -409,8 +409,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** resource quota sets
    */
    what = lWhat("%T(ALL)", RQS_Type);
-   rqs_id = sge_gdi2_multi(ctx,
-                          alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET, 
+   rqs_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -422,8 +421,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** complexes
    */
    what = lWhat("%T(ALL)", CE_Type);
-   ce_id = sge_gdi2_multi(ctx,
-                          alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
+   ce_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -434,8 +432,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** usersets 
    */
    what = lWhat("%T(ALL)", US_Type);
-   userset_id = sge_gdi2_multi(ctx,
-                          alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET, 
+   userset_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -446,8 +443,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** host groups 
    */
    what = lWhat("%T(ALL)", HGRP_Type);
-   hgroup_id = sge_gdi2_multi(ctx,
-                          alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET, 
+   hgroup_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
    /*
@@ -473,9 +469,9 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
       where = nw;
 
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
-   eh_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
+   eh_id = sge_gdi2_multi(alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
                           nullptr, where, what, &state, true);
-   sge_gdi2_wait(ctx, alpp, &mal, &state);
+   sge_gdi2_wait(alpp, &mal, &state);
    lFreeWhat(&what);
    lFreeWhere(&where);
 

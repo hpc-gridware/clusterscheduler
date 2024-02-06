@@ -499,14 +499,14 @@ sge_gdi_packet_create_base(lList **answer_list)
 *     gdi/request_internal/sge_gdi_packet_initialize_auth_info()
 ******************************************************************************/
 sge_gdi_packet_class_t *
-sge_gdi_packet_create(sge_gdi_ctx_class_t * ctx, lList **answer_list)
+sge_gdi_packet_create(lList **answer_list)
 {
    sge_gdi_packet_class_t *ret = nullptr;
 
    DENTER(TOP_LAYER);
    ret = sge_gdi_packet_create_base(answer_list);
    if (ret != nullptr) {
-      sge_gdi_packet_initialize_auth_info(ctx, ret);
+      sge_gdi_packet_initialize_auth_info(ret);
    }
    DRETURN(ret);
 }

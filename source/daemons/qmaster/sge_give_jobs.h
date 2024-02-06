@@ -58,19 +58,17 @@ typedef enum {
    COMMIT_ST_USER_RESCHEDULED = 9    /* job get rescheduled due to exit 99 or qmod -rj executed by job user */
 } sge_commit_mode_t;
 
-int sge_give_job(sge_gdi_ctx_class_t *ctx,
-                 lListElem *jep, lListElem *jatep, const lListElem *master_qep,
+int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
                  const lListElem *pep, lListElem *hep, monitoring_t *monitor);
 
-void sge_commit_job(sge_gdi_ctx_class_t *ctx,
-                    lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
+void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                     int commit_flags, monitoring_t *monitor);
 
-bool gdil_del_all_orphaned(sge_gdi_ctx_class_t *ctx, const lList *gdil_list, lList **alpp);
+bool gdil_del_all_orphaned(const lList *gdil_list, lList **alpp);
 
-void sge_zombie_job_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+void sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
-void sge_job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+void sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 void trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 tid, int delta);
 

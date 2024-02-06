@@ -62,8 +62,7 @@ extern lUlong sge_execd_report_seqno;
 
 
 /*-------------------------------------------------------------------------*/
-int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
-                         report_source *report_sources)
+int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
 {
    int ret = 0;
    unsigned long connect_time = 0;
@@ -90,7 +89,7 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
          for (i = 0; report_sources[i].type; i++) {
             if (!which || which == report_sources[i].type) {
                DPRINTF(("%s\n", report_types[report_sources[i].type - 1]));
-               report_sources[i].func(ctx, report_list, now, &(report_sources[i].next_send));
+               report_sources[i].func(report_list, now, &(report_sources[i].next_send));
             }
          }
 

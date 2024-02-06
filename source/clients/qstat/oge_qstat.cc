@@ -78,10 +78,10 @@
 #define FORMAT_I_2 "%I %I "
 #define FORMAT_I_1 "%I "
 
-static lList *sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_env,  
+static lList *sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
                               char **hostname, lList **ppljid, u_long32 *isXML);
-static int qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid, u_long32 isXML, qstat_env_t *qstat_env);
-static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_env_t *qstat_env);
+static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env);
+static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env);
 
 typedef struct qstat_stdout_ctx_str qstat_stdout_ctx_t;
 
@@ -199,7 +199,6 @@ char **argv
    const char *cell_root = nullptr;
    qstat_env_t qstat_env;
    u_long32 isXML = 0;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    bool more = true;
 
    DENTER_MAIN(TOP_LAYER, "qstat");
@@ -218,7 +217,7 @@ char **argv
    sge_setup_sig_handlers(QSTAT);
    log_state_set_log_gui(true);
 
-   if (sge_gdi2_setup(&ctx, QSTAT, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -226,7 +225,6 @@ char **argv
    username = bootstrap_get_username();
    cell_root = bootstrap_get_cell_root();
    lInit(nmv);      
-   qstat_env.ctx = ctx;
 
    if (!strcmp(sge_basename(*argv++, '/'), "qselect")) {
       qstat_env.qselect_mode = 1;
@@ -317,7 +315,7 @@ char **argv
       sge_exit(1);
    }
 
-   alp = sge_parse_qstat(ctx, &pcmdline, &qstat_env, &hostname,   
+   alp = sge_parse_qstat(&pcmdline, &qstat_env, &hostname,
                          &jid_list, &isXML);
 
    if (alp) {
@@ -341,10 +339,10 @@ char **argv
 
       if (lGetNumberOfElem(jid_list) > 0) {
          /* RH TODO: implement the qstat_show_job_info with and handler */
-         ret = qstat_show_job(ctx, jid_list, isXML, &qstat_env);
+         ret = qstat_show_job(jid_list, isXML, &qstat_env);
       } else {
          /* RH TODO: implement the qstat_show_job_info with and handler */
-         ret = qstat_show_job_info(ctx, isXML, &qstat_env);
+         ret = qstat_show_job_info(isXML, &qstat_env);
       }
       qstat_env_destroy(&qstat_env);
       sge_exit(ret);
@@ -428,7 +426,7 @@ char **argv
  **** queue/res/user-arguments into the lists.
  ****/
 static lList *
-sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_env,
+sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
                 char **hostname, lList **ppljid, u_long32 *isXML)
 {
    stringT str;
@@ -1867,7 +1865,7 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 ** returns 0 on success, non-zero on failure
 */
 static int 
-qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
+qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    const lListElem *j_elem = 0;
    lList* jlp = nullptr;
    lList* ilp = nullptr;
@@ -1884,7 +1882,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi2(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = sge_gdi2(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
 
    if (!isXML){
@@ -1949,7 +1947,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
             JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
             JB_ja_structure, JB_type, JB_binding); 
    /* get job list */
-   alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
 
@@ -2085,7 +2083,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    DRETURN(0);
 }
 
-static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_env_t *qstat_env)
+static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
 {
    lList *ilp = nullptr;
    lList *mlp = nullptr;
@@ -2108,7 +2106,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi2(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = sge_gdi2(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
       xml_qstat_show_job_info(&ilp, &alp, qstat_env);

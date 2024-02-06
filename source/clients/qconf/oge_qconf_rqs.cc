@@ -49,10 +49,8 @@
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
 
-static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx,
-                                  lList **rqs_list, lList **answer_list,
-                                  bool ignore_unchanged_message);
-
+static bool
+rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message);
 
 /****** resource_quota_qconf/rqs_show() *********************************
 *  NAME
@@ -77,7 +75,8 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx,
 *     MT-NOTE: rqs_show() is MT safe 
 *
 *******************************************************************************/
-bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
+bool
+rqs_show(lList **answer_list, const char *name)
 {
    lList *rqs_list = nullptr;
    bool ret = false;
@@ -88,10 +87,10 @@ bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
       lList *rqsref_list = nullptr;
 
       lString2List(name, &rqsref_list, RQS_Type, RQS_name, ", ");
-      ret = rqs_get_via_gdi(ctx, answer_list, rqsref_list, &rqs_list);
+      ret = rqs_get_via_gdi(answer_list, rqsref_list, &rqs_list);
       lFreeList(&rqsref_list);
    } else {
-      ret = rqs_get_all_via_gdi(ctx, answer_list, &rqs_list);
+      ret = rqs_get_all_via_gdi(answer_list, &rqs_list);
    }
 
    if (ret && lGetNumberOfElem(rqs_list)) {
@@ -137,8 +136,8 @@ bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 *     MT-NOTE: rqs_get_via_gdi() is MT safe 
 *
 *******************************************************************************/
-bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *rqsref_list,
-                            lList **rqs_list)
+bool
+rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
 {
    bool ret = false;
 
@@ -159,7 +158,7 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
             where = lOrWhere(where, add_where);
          }
       }
-      *answer_list = sge_gdi2(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, where, what);
+      *answer_list = sge_gdi2(SGE_RQS_LIST, SGE_GDI_GET, rqs_list, where, what);
       if (!answer_list_has_error(answer_list)) {
          ret = true;
       }
@@ -193,14 +192,15 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
 *     MT-NOTE: rqs_get_all_via_gdi() is MT safe 
 *
 *******************************************************************************/
-bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **rqs_list)
+bool
+rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
 {
    bool ret = false;
    lEnumeration *what = lWhat("%T(ALL)", RQS_Type);
 
    DENTER(TOP_LAYER);
 
-   *answer_list = sge_gdi2(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
+   *answer_list = sge_gdi2(SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
    if (!answer_list_has_error(answer_list)) {
       ret = true;
    }
@@ -233,7 +233,8 @@ bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **
 *     MT-NOTE: rqs_add() is MT safe 
 *
 *******************************************************************************/
-bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
+bool
+rqs_add(lList **answer_list, const char *name)
 {
    bool ret = false;
 
@@ -247,10 +248,10 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
          rqs = rqs_set_defaults(rqs);
       }
 
-      ret = rqs_provide_modify_context(ctx, &rqs_list, answer_list, true);
+      ret = rqs_provide_modify_context(&rqs_list, answer_list, true);
 
       if (ret) {
-         ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list, SGE_GDI_ADD | SGE_GDI_SET_ALL);
+         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, SGE_GDI_ADD | SGE_GDI_SET_ALL);
       }
 
       lFreeList(&rqs_list);
@@ -282,8 +283,8 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 *     MT-NOTE: rqs_modify() is MT safe 
 *
 *******************************************************************************/
-bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
-{
+bool
+rqs_modify(lList **answer_list, const char *name) {
    bool ret = false;
    lList *rqs_list = nullptr;
    u_long32 gdi_command = 0;
@@ -296,19 +297,18 @@ bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
       gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
 
       lString2List(name, &rqsref_list, RQS_Type, RQS_name, ", ");
-      ret = rqs_get_via_gdi(ctx, answer_list, rqsref_list, &rqs_list);
+      ret = rqs_get_via_gdi(answer_list, rqsref_list, &rqs_list);
       lFreeList(&rqsref_list);
    } else {
       gdi_command = SGE_GDI_REPLACE;
-      ret = rqs_get_all_via_gdi(ctx, answer_list, &rqs_list);
+      ret = rqs_get_all_via_gdi(answer_list, &rqs_list);
    }
 
    if (ret) {
-      ret = rqs_provide_modify_context(ctx, &rqs_list, answer_list, false);
+      ret = rqs_provide_modify_context(&rqs_list, answer_list, false);
    }
    if (ret) {
-      ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list,
-                                       gdi_command);
+      ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, gdi_command);
    }
 
    lFreeList(&rqs_list);
@@ -339,8 +339,8 @@ bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 *     MT-NOTE: rqs_add_from_file() is MT safe 
 *
 *******************************************************************************/
-bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename)
-{
+bool
+rqs_add_from_file(lList **answer_list, const char *filename) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -348,12 +348,9 @@ bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char
       lList *rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
-      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
-                                          nullptr, true, &qconf_rqs_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filename);
       if (!answer_list_has_error(answer_list)) {
-         ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list, 
-                                       SGE_GDI_ADD | SGE_GDI_SET_ALL); 
+         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, SGE_GDI_ADD | SGE_GDI_SET_ALL);
       }
 
       lFreeList(&rqs_list);
@@ -386,8 +383,8 @@ bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char
 *     MT-NOTE: rqs_provide_modify_context() is MT safe 
 *
 *******************************************************************************/
-static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_list, lList **answer_list,
-                                           bool ignore_unchanged_message)
+static bool
+rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message)
 {
    bool ret = false;
    int status = 0;
@@ -407,9 +404,7 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
       *rqs_list = lCreateList("", RQS_Type);
    }
 
-   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields,
-                                        &qconf_rqs_sfi, SP_DEST_TMP,
-                                        SP_FORM_ASCII, filename, false);
+   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
 
    if (answer_list_has_error(answer_list)) {
       if (filename != nullptr) {
@@ -482,8 +477,8 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
 *     MT-NOTE: rqs_add_del_mod_via_gdi() is MT safe 
 *
 *******************************************************************************/
-bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **answer_list,
-                                        u_long32 gdi_command) 
+bool
+rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_command)
 {
    bool ret = false;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -499,7 +494,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
          ret = rqs_list_verify_attributes(rqs_list, answer_list, false, master_centry_list);
       }
       if (ret) {
-         lList *my_answer_list = sge_gdi2(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
+         lList *my_answer_list = sge_gdi2(SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
          if (my_answer_list != nullptr) {
             answer_list_append_list(answer_list, &my_answer_list);
          }
@@ -532,7 +527,8 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
 *     MT-NOTE: rqs_modify_from_file() is MT safe 
 *
 *******************************************************************************/
-bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename, const char* name) 
+bool
+rqs_modify_from_file(lList **answer_list, const char *filename, const char* name)
 {
    bool ret = false;
    u_long32 gdi_command = 0;
@@ -574,8 +570,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
          }
 
          if (rqs_list != nullptr) {
-            ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list,
-                                           gdi_command); 
+            ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, gdi_command);
          }
       }
       lFreeList(&rqs_list);

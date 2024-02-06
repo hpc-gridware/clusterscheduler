@@ -224,7 +224,7 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
  *     MT-NOTE: sge_qwaittid() is not MT safe
  *
  */
-int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int options)
+int sge_qwaittid(sge_tid_t tid, int *status, int options)
 {
    lListElem *rt = nullptr;
    int ret, rcv_opt = 0;

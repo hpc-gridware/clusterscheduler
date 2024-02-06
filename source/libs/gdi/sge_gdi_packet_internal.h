@@ -46,17 +46,13 @@ bool
 sge_gdi_packet_is_handled(sge_gdi_packet_class_t *packet);
 
 bool
-sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                sge_gdi_packet_class_t *packet);
+sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *packet);
 
 bool
-sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                sge_gdi_packet_class_t *packet);
+sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet);
 
 bool 
-sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                        sge_gdi_packet_class_t **packet_handle, lList **malpp);
+sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_class_t **packet_handle, lList **malpp);
 
 bool 
-sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                        sge_gdi_packet_class_t **packet_handle, lList **malpp);
+sge_gdi_packet_wait_for_result_internal(lList **answer_list, sge_gdi_packet_class_t **packet_handle, lList **malpp);

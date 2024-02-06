@@ -37,10 +37,10 @@
 #include "gdi/sge_gdi_packet.h"
 
 void
-sge_worker_initialize(sge_gdi_ctx_class_t *ctx);
+sge_worker_initialize();
 
 void
-sge_worker_terminate(sge_gdi_ctx_class_t *ctx);
+sge_worker_terminate();
 
 void *
 sge_worker_main(void *arg);

@@ -30,11 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cstring>
+#include <cstdio>
+#include <cerrno>
 #include <fcntl.h>
-#include <string.h>
-#include <stdio.h>
 #include <pthread.h>
-#include <errno.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
@@ -42,10 +42,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_mtutil.h"
-
-#include "gdi/sge_gdi_ctx.h"
 #include "uti/sge_string.h"
-
 #include "uti/msg_utilib.h"
 
 #include "sge.h"
@@ -59,134 +56,10 @@ typedef struct {
    int gui_log;
 } log_state_t;
 
-typedef struct {
-   char log_buffer[4 * MAX_STRING_SIZE]; /* a.k.a. SGE_EVENT */
-} log_buffer_t;
-
-typedef struct {
-   sge_gdi_ctx_class_t *context;
-} log_context_t;
-
-
 static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1, 1};
 
-static pthread_once_t log_buffer_once = PTHREAD_ONCE_INIT;
-static pthread_key_t log_buffer_key;
-
-static pthread_once_t log_context_once = PTHREAD_ONCE_INIT;
-static pthread_key_t log_context_key;
-
-static void log_buffer_once_init(void);
-
-static void log_context_once_init(void);
-
-static void log_buffer_destroy(void *theState);
-
-static log_buffer_t *log_buffer_getspecific(void);
-
-static void log_context_destroy(void *theState);
-
-static log_context_t *log_context_getspecific(void);
-
-static sge_gdi_ctx_class_t *log_state_get_log_context(void);
-
-
-static void sge_do_log(u_long32 prog_number,
-                       const char *progname,
-                       const char *unqualified_hostname,
-                       int aLevel,
-                       const char *aMessage);
-
-static sge_gdi_ctx_class_t *log_get_log_context(void);
-
-static void log_set_log_context(sge_gdi_ctx_class_t *theCtx);
-
-/****** uti/log/log_get_log_buffer() ******************************************
-*  NAME
-*     log_get_log_buffer() -- Return a buffer that can be used to build logging 
-*                                   strings
-*
-*  SYNOPSIS
-*     char *log_get_log_buffer(void) 
-*
-*  FUNCTION
-*     Return a buffer that can be used to build logging strings
-*
-*  RESULT
-*     char * 
-*
-******************************************************************************/
-char *log_get_log_buffer(void) {
-   log_buffer_t *buf = nullptr;
-   char *log_buffer = nullptr;
-
-   buf = log_buffer_getspecific();
-
-   if (buf != nullptr) {
-      log_buffer = buf->log_buffer;
-   }
-
-   return log_buffer;
-}
-
-/****** uti/log/log_get_log_context() ******************************************
-*  NAME
-*     log_get_log_context() -- Return a context for the specific thread 
-*
-*  SYNOPSIS
-*     sge_gdi_ctx_class_t* log_get_log_context(void) 
-*
-*  FUNCTION
-*     Return a context for the specific thread
-*
-*  RESULT
-*     sge_gdi_ctx_class_t* 
-*
-******************************************************************************/
-static sge_gdi_ctx_class_t *log_get_log_context(void) {
-   log_context_t *log_ctx = nullptr;
-   sge_gdi_ctx_class_t *context = nullptr;
-
-   log_ctx = log_context_getspecific();
-
-   if (log_ctx != nullptr) {
-      context = log_ctx->context;
-   }
-
-   return context;
-}
-
-/****** uti/log/log_set_log_context() ******************************************
-*  NAME
-*     log_set_log_context() -- set a context for the specific thread 
-*
-*  SYNOPSIS
-*     void log_set_log_context(void *newctx) 
-*
-*  FUNCTION
-*     Return a context for the specific thread
-*
-*  INPUTS
-*     void newctx - the new ctx
-*
-*  RESULT
-*
-*  NOTES
-*     MT-NOTE: log_state_set_log_file() is not MT safe.
-*     MT-NOTE:
-*     MT-NOTE: It is safe, however, to call this function from within multiple
-*     MT-NOTE: threads as long as no other thread calls log_state_set_log_file() 
-*
-******************************************************************************/
-static void log_set_log_context(sge_gdi_ctx_class_t *newctx) {
-   log_context_t *log_ctx = nullptr;
-
-   log_ctx = log_context_getspecific();
-
-   if (log_ctx != nullptr) {
-      log_ctx->context = newctx;
-   }
-}
+static void
+sge_do_log(u_long32 prog_number, const char *prog_name, const char *unqualified_hostname, int level, const char *msg);
 
 /****** uti/log/log_state_get_log_level() ******************************************
 *  NAME
@@ -202,15 +75,10 @@ static void log_set_log_context(sge_gdi_ctx_class_t *newctx) {
 *     u_long32
 *
 ******************************************************************************/
-u_long32 log_state_get_log_level(void) {
-   u_long32 level = 0;
-
-   sge_mutex_lock("Log_State_Lock", "log_state_get_log_level", __LINE__, &Log_State.mutex);
-
-   level = Log_State.log_level;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_get_log_level", __LINE__, &Log_State.mutex);
-
+u_long32 log_state_get_log_level() {
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
+   u_long32 level = Log_State.log_level;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    return level;
 }
 
@@ -242,15 +110,10 @@ u_long32 log_state_get_log_level(void) {
 *     BUGBUG-AD: synchronization.
 *
 *******************************************************************************/
-const char *log_state_get_log_file(void) {
-   char *file = nullptr;
-
-   sge_mutex_lock("Log_State_Lock", "log_state_get_log_file", __LINE__, &Log_State.mutex);
-
-   file = Log_State.log_file;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_get_log_file", __LINE__, &Log_State.mutex);
-
+const char *log_state_get_log_file() {
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
+   char *file = Log_State.log_file;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    return file;
 }
 
@@ -272,15 +135,10 @@ const char *log_state_get_log_file(void) {
 *  SEE ALSO
 *     uti/log/log_state_set_log_verbose()
 ******************************************************************************/
-int log_state_get_log_verbose(void) {
-   int verbose = 0;
-
-   sge_mutex_lock("Log_State_Lock", "log_state_get_log_verbose", __LINE__, &Log_State.mutex);
-
-   verbose = Log_State.verbose;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_get_log_verbose", __LINE__, &Log_State.mutex);
-
+int log_state_get_log_verbose() {
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
+   int verbose = Log_State.verbose;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    return verbose;
 }
 
@@ -301,15 +159,10 @@ int log_state_get_log_verbose(void) {
 *  SEE ALSO
 *     uti/log/log_state_set_log_gui()
 ******************************************************************************/
-int log_state_get_log_gui(void) {
-   int gui_log = 0;
-
-   sge_mutex_lock("Log_State_Lock", "log_state_get_log_gui", __LINE__, &Log_State.mutex);
-
-   gui_log = Log_State.gui_log;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_get_log_gui", __LINE__, &Log_State.mutex);
-
+int log_state_get_log_gui() {
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
+   int gui_log = Log_State.gui_log;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    return gui_log;
 }
 
@@ -330,24 +183,15 @@ int log_state_get_log_gui(void) {
 *     uti/log/log_state_get_log_level() 
 ******************************************************************************/
 void log_state_set_log_level(u_long32 theLevel) {
-
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_level", __LINE__, &Log_State.mutex);
-
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_level = theLevel;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_level", __LINE__, &Log_State.mutex);
-
-   return;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
 void log_state_set_log_file(char *theFile) {
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_file", __LINE__, &Log_State.mutex);
-
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_file = theFile;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_file", __LINE__, &Log_State.mutex);
-
-   return;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
 /****** uti/log/log_state_set_log_verbose() *****************************************
@@ -367,13 +211,9 @@ void log_state_set_log_file(char *theFile) {
 *     uti/log/log_state_get_log_verbose() 
 ******************************************************************************/
 void log_state_set_log_verbose(int i) {
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_verbose", __LINE__, &Log_State.mutex);
-
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.verbose = i;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_verbose", __LINE__, &Log_State.mutex);
-
-   return;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
 /****** uti/log/log_state_set_log_gui() ********************************************
@@ -392,13 +232,9 @@ void log_state_set_log_verbose(int i) {
 ******************************************************************************/
 void log_state_set_log_gui(int i) {
 
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_gui", __LINE__, &Log_State.mutex);
-
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.gui_log = i;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_gui", __LINE__, &Log_State.mutex);
-
-   return;
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
 /****** uti/log/log_state_set_log_as_admin_user() *****************************
@@ -422,34 +258,10 @@ void log_state_set_log_gui(int i) {
 *     uti/uidgid/sge_switch2start_user
 ******************************************************************************/
 void log_state_set_log_as_admin_user(int i) {
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_as_admin_user", __LINE__, &Log_State.mutex);
-
+   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_as_admin_user = i;
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_as_admin_user", __LINE__, &Log_State.mutex);
+   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
-
-
-static sge_gdi_ctx_class_t *log_state_get_log_context(void) {
-   sge_gdi_ctx_class_t *log_context = nullptr;
-
-/*    sge_mutex_lock("Log_State_Lock", "log_state_get_log_context", __LINE__, &Log_State.mutex); */
-
-   log_context = log_get_log_context();
-
-/*    sge_mutex_unlock("Log_State_Lock", "log_state_get_log_context", __LINE__, &Log_State.mutex); */
-
-   return log_context;
-}
-
-void log_state_set_log_context(void *theCtx) {
-   sge_mutex_lock("Log_State_Lock", "log_state_set_log_context", __LINE__, &Log_State.mutex);
-
-   log_set_log_context((sge_gdi_ctx_class_t *) theCtx);
-
-   sge_mutex_unlock("Log_State_Lock", "log_state_set_log_context", __LINE__, &Log_State.mutex);
-}
-
 
 /****** uti/log/sge_log() *****************************************************
 *  NAME
@@ -489,95 +301,77 @@ void log_state_set_log_context(void *theCtx) {
 *     MT-NOTE: sge_log() can be used if DENTER_MAIN() is called only by one 
 *     MT-NOTE: thread
 ******************************************************************************/
-int sge_log(u_long32 log_level, const char *mesg, const char *file__, const char *func__, int line__) {
-   char buf[128 * 4];
-   int levelchar;
-   char levelstring[32 * 4];
-
-   sge_gdi_ctx_class_t *ctx = nullptr;
-   /* TODO: this must be kept for qmaster and should be done in a different
-            way (qmaster context) !!! */
-   u_long32 me = 0;
-   const char *threadname = nullptr;
-   const char *unqualified_hostname = nullptr;
-   int is_daemonized = 0;
-
+void
+sge_log(u_long32 log_level, const char *msg, const char *file, const char *func, int line) {
    DENTER_(BASIS_LAYER);
-
-   ctx = log_state_get_log_context();
-
-   if (ctx != nullptr) {
-      me = bootstrap_get_component_id();
-      threadname = bootstrap_get_thread_name();
-      unqualified_hostname = bootstrap_get_unqualified_hostname();
-      is_daemonized = bootstrap_is_daemonized();
-   } else {
-      DPRINTF(("sge_log: ctx is nullptr\n"));
-   }
+   u_long32 me = bootstrap_get_component_id();
+   const char *thread_name = bootstrap_get_thread_name();
+   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+   bool is_daemonized = bootstrap_is_daemonized();
+   char buf[128 * 4];
+   int level_char;
+   char level_string[32 * 4];
 
    /* Make sure to have at least a one byte logging string */
-   if (!mesg || mesg[0] == '\0') {
-      sprintf(buf, MSG_LOG_CALLEDLOGGINGSTRING_S,
-              mesg ? MSG_LOG_ZEROLENGTH : MSG_POINTER_NULL);
-      mesg = buf;
+   if (!msg || msg[0] == '\0') {
+      sprintf(buf, MSG_LOG_CALLEDLOGGINGSTRING_S, msg ? MSG_LOG_ZEROLENGTH : MSG_POINTER_NULL);
+      msg = buf;
    }
 
-   DPRINTF(("%s %d %s\n", file__, line__, mesg));
+   DPRINTF(("%s %d %s\n", file, line, msg));
 
    /* quick exit if nothing to log */
    if (log_level > MAX(log_state_get_log_level(), LOG_WARNING)) {
-      DRETURN_(0);
+      return;
    }
 
    if (!log_state_get_log_gui()) {
-      DRETURN_(0);
+      return;
    }
 
    switch (log_level) {
       case LOG_PROF:
-         strcpy(levelstring, MSG_LOG_PROFILING);
-         levelchar = 'P';
+         strcpy(level_string, MSG_LOG_PROFILING);
+         level_char = 'P';
          break;
       case LOG_CRIT:
-         strcpy(levelstring, MSG_LOG_CRITICALERROR);
-         levelchar = 'C';
+         strcpy(level_string, MSG_LOG_CRITICALERROR);
+         level_char = 'C';
          break;
       case LOG_ERR:
-         strcpy(levelstring, MSG_LOG_ERROR);
-         levelchar = 'E';
+         strcpy(level_string, MSG_LOG_ERROR);
+         level_char = 'E';
          break;
       case LOG_WARNING:
-         strcpy(levelstring, "");
-         levelchar = 'W';
+         strcpy(level_string, "");
+         level_char = 'W';
          break;
       case LOG_NOTICE:
-         strcpy(levelstring, "");
-         levelchar = 'N';
+         strcpy(level_string, "");
+         level_char = 'N';
          break;
       case LOG_INFO:
-         strcpy(levelstring, "");
-         levelchar = 'I';
+         strcpy(level_string, "");
+         level_char = 'I';
          break;
       case LOG_DEBUG:
-         strcpy(levelstring, "");
-         levelchar = 'D';
+         strcpy(level_string, "");
+         level_char = 'D';
          break;
       default:
-         strcpy(levelstring, "");
-         levelchar = 'L';
+         strcpy(level_string, "");
+         level_char = 'L';
          break;
    }
 
    /* avoid double output in debug mode */
-   if (!is_daemonized && !rmon_condition(TOP_LAYER, INFOPRINT) &&
-       (log_state_get_log_verbose() || log_level <= LOG_WARNING)) {
-      fprintf(stderr, "%s%s\n", levelstring, mesg);
+   if (!is_daemonized &&
+       !rmon_condition(TOP_LAYER, INFOPRINT) && (log_state_get_log_verbose() || log_level <= LOG_WARNING)) {
+      fprintf(stderr, "%s%s\n", level_string, msg);
    }
 
-   sge_do_log(me, threadname, unqualified_hostname, levelchar, mesg);
-
-   DRETURN_(0);
-} /* sge_log() */
+   sge_do_log(me, thread_name, unqualified_hostname, level_char, msg);
+}
 
 /****** uti/sge_log/sge_do_log() ***********************************************
 *  NAME
@@ -600,225 +394,26 @@ int sge_log(u_long32 log_level, const char *mesg, const char *file__, const char
 *     MT-NOTE: sge_do_log() is MT safe.
 *
 *******************************************************************************/
-static void sge_do_log(u_long32 me, const char *progname, const char *unqualified_hostname,
-                       int aLevel, const char *aMessage) {
-   int fd;
-
-   if (me == QMASTER || me == EXECD || me == SCHEDD || me == SHADOWD) {
-      if ((fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666)) >= 0) {
+static void
+sge_do_log(u_long32 prog_number, const char *prog_name, const char *unqualified_hostname, int level, const char *msg) {
+   if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {
+      int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
+      if (fd  >= 0) {
          char msg2log[4 * MAX_STRING_SIZE];
-         dstring msg;
-         int len;
+         dstring msg_string;
 
-         sge_dstring_init(&msg, msg2log, sizeof(msg2log));
+         sge_dstring_init(&msg_string, msg2log, sizeof(msg2log));
+         append_time((time_t) sge_get_gmt(), &msg_string, false);
+         sge_dstring_sprintf_append(&msg_string, "|%6.6s|%s|%c|%s\n", prog_name, unqualified_hostname, level, msg);
 
-         append_time((time_t) sge_get_gmt(), &msg, false);
-
-         sge_dstring_sprintf_append(&msg, "|%6.6s|%s|%c|%s\n",
-                                    progname,
-                                    unqualified_hostname,
-                                    aLevel,
-                                    aMessage);
-
-         len = strlen(msg2log);
+         ssize_t len = strlen(msg2log);
          if (write(fd, msg2log, len) != len) {
             /* we are in error logging here - the only chance to log this problem
              * might be to write it to stderr
              */
-            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg));
+            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_string));
          }
          close(fd);
       }
    }
-
-   return;
-} /* sge_do_log() */
-
-/****** uti/log/log_buffer_once_init() ********************************************
-*  NAME
-*     log_buffer_once_init() -- One-time logging initialization.
-*
-*  SYNOPSIS
-*     static log_buffer_once_init(void) 
-*
-*  FUNCTION
-*     Create access key for thread local storage. Register cleanup function.
-*     This function must be called exactly once.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: log_buffer_once_init() is MT safe. 
-*
-*******************************************************************************/
-static void log_buffer_once_init(void) {
-   pthread_key_create(&log_buffer_key, &log_buffer_destroy);
-} /* log_once_init */
-
-/****** uti/log/log_buffer_destroy() ****************************************
-*  NAME
-*     log_buffer_destroy() -- Free thread local storage
-*
-*  SYNOPSIS
-*     static void log_buffer_destroy(void* theState) 
-*
-*  FUNCTION
-*     Free thread local storage.
-*
-*  INPUTS
-*     void* theState - Pointer to memroy which should be freed.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: log_buffer_destroy() is MT safe.
-*
-*******************************************************************************/
-static void log_buffer_destroy(void *theBuffer) {
-   sge_free(&theBuffer);
 }
-
-/****** uti/log/log_buffer_getspecific() ****************************************
-*  NAME
-*     log_buffer_getspecific() -- Get thread local log state
-*
-*  SYNOPSIS
-*     static log_buffer_t* log_buffer_getspecific() 
-*
-*  FUNCTION
-*     Return thread local log state.
-*
-*     If a given thread does call this function for the first time, no thread
-*     local log state is available for this particular thread. In this case the
-*     thread local log state is allocated and set.
-*
-*  RESULT
-*     static log_buffer_t* - Pointer to thread local log state.
-*
-*  NOTES
-*     MT-NOTE: log_buffer_getspecific() is MT safe 
-*
-*******************************************************************************/
-static log_buffer_t *log_buffer_getspecific(void) {
-   log_buffer_t *buf = nullptr;
-   int res = -1;
-
-   pthread_once(&log_buffer_once, log_buffer_once_init);
-
-   if ((buf = (log_buffer_t *)pthread_getspecific(log_buffer_key)) != nullptr) {
-      return buf;
-   }
-
-   buf = (log_buffer_t *) sge_malloc(sizeof(log_buffer_t));
-   memset((void *) (buf), 0, sizeof(log_buffer_t));
-
-   res = pthread_setspecific(log_buffer_key, (const void *) buf);
-
-   if (0 != res) {
-      fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "log_buffer_getspecific", strerror(res));
-      abort();
-   }
-
-   return buf;
-} /* log_buffer_getspecific() */
-
-
-/****** uti/log/log_context_once_init() ********************************************
-*  NAME
-*     log_context_once_init() -- One-time logging initialization.
-*
-*  SYNOPSIS
-*     static log_context_once_init(void) 
-*
-*  FUNCTION
-*     Create access key for thread local storage. Register cleanup function.
-*     This function must be called exactly once.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: log_context_once_init() is MT safe. 
-*
-*******************************************************************************/
-static void log_context_once_init(void) {
-   pthread_key_create(&log_context_key, &log_context_destroy);
-} /* log_once_init */
-
-/****** uti/log/log_context_destroy() ****************************************
-*  NAME
-*     log_context_destroy() -- Free thread local storage
-*
-*  SYNOPSIS
-*     static void log_context_destroy(void* theState) 
-*
-*  FUNCTION
-*     Free thread local storage.
-*
-*  INPUTS
-*     void* theState - Pointer to memroy which should be freed.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: log_context_destroy() is MT safe.
-*
-*******************************************************************************/
-static void log_context_destroy(void *theContext) {
-   sge_free(&theContext);
-}
-
-/****** uti/log/log_context_getspecific() ****************************************
-*  NAME
-*     log_context_getspecific() -- Get thread local log context
-*
-*  SYNOPSIS
-*     static log_context_t* log_context_getspecific() 
-*
-*  FUNCTION
-*     Return thread local log context.
-*
-*     If a given thread does call this function for the first time, no thread
-*     local log state is available for this particular thread. In this case the
-*     thread local log state is allocated and set.
-*
-*  RESULT
-*     static log_context_t* - Pointer to thread local log context.
-*
-*  NOTES
-*     MT-NOTE: log_context_getspecific() is MT safe 
-*
-*******************************************************************************/
-static log_context_t *log_context_getspecific(void) {
-   log_context_t *myctx = nullptr;
-   int res = -1;
-
-   pthread_once(&log_context_once, log_context_once_init);
-
-   if ((myctx = (log_context_t *)pthread_getspecific(log_context_key)) != nullptr) {
-      return myctx;
-   }
-
-   myctx = (log_context_t *) sge_malloc(sizeof(log_context_t));
-   if (myctx != nullptr) {
-      myctx->context = nullptr;
-   }
-   res = pthread_setspecific(log_context_key, (const void *) myctx);
-
-   if (0 != res) {
-      fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "log_context_getspecific", strerror(res));
-      abort();
-   }
-
-   return myctx;
-} /* log_context_getspecific() */
-

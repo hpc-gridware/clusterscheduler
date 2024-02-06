@@ -34,13 +34,13 @@
 #include "gdi/sge_gdi_ctx.h"
 
 int
-sge_add_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_add_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
-sge_mod_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
-sge_del_sharetree(sge_gdi_ctx_class_t *ctx, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_del_sharetree(lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
 update_sharetree(lList *dst, const lList *src);

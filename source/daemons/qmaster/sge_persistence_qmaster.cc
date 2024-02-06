@@ -51,7 +51,7 @@
 static unsigned long spooling_wait_time = 0;
 
 bool
-sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
+sge_initialize_persistence(lList **answer_list) {
    bool ret = true;
 
    lListElem *spooling_context;
@@ -138,7 +138,7 @@ sge_shutdown_persistence(lList **answer_list) {
 }
 
 void
-spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    time_t next_trigger = 0;
    time_t now;
    lList *answer_list = nullptr;
@@ -214,7 +214,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 *     
 *******************************************************************************/
 bool
-sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestamp, ev_event event, u_long32 intkey1,
+sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long32 intkey1,
                 u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
    bool ret = true;

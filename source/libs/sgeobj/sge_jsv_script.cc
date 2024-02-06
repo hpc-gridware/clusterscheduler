@@ -69,8 +69,7 @@
  */
 #define JSV_CMD_TIMEOUT (10) 
 
-typedef bool (*jsv_command_f)(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list, 
-                              dstring *c, dstring *s, dstring *a);
+typedef bool (*jsv_command_f)(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a);
 
 typedef struct jsv_command_t_ jsv_command_t;
 
@@ -149,8 +148,7 @@ jsv_split_token(dstring *input, dstring *token, dstring *args)
 }
 
 static bool
-jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                         dstring *c, dstring *s, dstring *a)
+jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    bool ret = true;
    const char *param = sge_dstring_get_string(s);
@@ -1192,8 +1190,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 }
 
 static bool
-jsv_handle_send_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                        dstring *c, dstring *s, dstring *a)
+jsv_handle_send_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    bool ret = true;
    const char *subcommand = sge_dstring_get_string(s);
@@ -1216,8 +1213,7 @@ jsv_handle_send_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer
 }
 
 static bool
-jsv_handle_result_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                          dstring *c, dstring *s, dstring *a)
+jsv_handle_result_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    bool ret = true;
    dstring m = DSTRING_INIT;
@@ -1282,8 +1278,7 @@ jsv_handle_result_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answ
 }
 
 static bool
-jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                           dstring *c, dstring *s, dstring *a)
+jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    const char *prefix = "PARAM";
    dstring buffer = DSTRING_INIT;
@@ -2342,8 +2337,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 }
 
 static bool
-jsv_handle_log_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                       dstring *c, dstring *s, dstring *a)
+jsv_handle_log_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    bool ret = true;
    const char *command = sge_dstring_get_string(s);
@@ -2372,8 +2366,7 @@ jsv_handle_log_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_
 }
 
 static bool
-jsv_handle_env_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list,
-                       dstring *c, dstring *s, dstring *a)
+jsv_handle_env_command(lListElem *jsv, lList **answer_list, dstring *c, dstring *s, dstring *a)
 {
    bool ret = true;
    dstring variable = DSTRING_INIT;
@@ -2504,7 +2497,7 @@ jsv_handle_env_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_
 *     MT-NOTE: jsv_do_communication() is MT safe 
 *******************************************************************************/
 bool 
-jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list)
+jsv_do_communication(lListElem *jsv, lList **answer_list)
 {
    bool ret = true;
    char input[10000];
@@ -2614,8 +2607,7 @@ jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_li
                   while(commands[++i].command != nullptr) {
                      if (strcmp(c, commands[i].command) == 0) {
                         handled = true;
-                        ret &= commands[i].func(ctx, jsv, answer_list, 
-                                                &command, &sub_command, &args);
+                        ret &= commands[i].func(jsv, answer_list, &command, &sub_command, &args);
 
                         if (ret == false || 
                             lGetBool(jsv, JSV_restart) == true || 
@@ -2784,7 +2776,7 @@ jsv_cull_attr2switch_name(int cull_attr, lListElem *job)
 }
 
 bool
-jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListElem *job) 
+jsv_is_modify_rejected(lList **answer_list, lListElem *job)
 {
    bool ret = false;
 

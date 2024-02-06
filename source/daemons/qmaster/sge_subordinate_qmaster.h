@@ -35,14 +35,10 @@
 #include "gdi/sge_gdi_ctx.h"
 
 bool
-cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
-                                  const lList *this_list, bool suspend,
-                                  const lList *gdil, monitoring_t *monitor);
+cqueue_list_x_on_subordinate_gdil(const lList *this_list, bool suspend, const lList *gdil, monitoring_t *monitor);
 
 bool
-cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx, 
-                                lList *this_list, lList **answer_list,
-                                bool suspend, const lList *resolved_so_list,
+cqueue_list_x_on_subordinate_so(lList *this_list, lList **answer_list, bool suspend, const lList *resolved_so_list,
                                 monitoring_t *monitor);
 
 void
@@ -51,19 +47,15 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem,
                                       lList **resolved_so_list, const lList *master_cqueue_list);
 
 bool
-qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list);
+qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list);
 
 bool
-do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *queue_instance,
-      bool suspend, bool check_subtree_only, monitoring_t *monitor);
+do_slotwise_x_on_subordinate_check(lListElem *queue_instance, bool suspend, bool check_subtree_only, monitoring_t *monitor);
 
 void
-unsuspend_all_tasks_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx,
-      lListElem *qinstance, monitoring_t *monitor);
+unsuspend_all_tasks_in_slotwise_sub_tree( lListElem *qinstance, monitoring_t *monitor);
 
 bool
-check_new_slotwise_subordinate_tree(lListElem *qinstance,
-      lList *new_so_list, lList **answer_list);
+check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lList **answer_list);
 
-bool do_slotwise_subordinate_lists_differ(const lList *old_so_list,
-      const lList *new_so_list);
+bool do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_so_list);

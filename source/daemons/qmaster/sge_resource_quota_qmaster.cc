@@ -120,7 +120,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *     MT-NOTE: rqs_mod() is MT safe 
 *******************************************************************************/
 int
-rqs_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
    bool rules_changed = false;
@@ -221,7 +221,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     MT-NOTE: rqs_spool() is MT safe 
 *******************************************************************************/
 int
-rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
+rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
@@ -276,8 +276,7 @@ rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *o
 *     MT-NOTE: rqs() is MT safe 
 *******************************************************************************/
 int
-rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-            monitoring_t *monitor) {
+rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
 
    DENTER(TOP_LAYER);
@@ -321,7 +320,7 @@ rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_obje
 *     MT-NOTE: rqs_del() is MT safe 
 *******************************************************************************/
 int
-rqs_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
    int pos;
    lListElem *found;
@@ -360,8 +359,7 @@ rqs_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **rqs_list,
 
    rqs_update_categories(nullptr, found);
 
-   sge_event_spool(ctx,
-                   alpp, 0, sgeE_RQS_DEL,
+   sge_event_spool(alpp, 0, sgeE_RQS_DEL,
                    0, 0, rqs_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true);
 

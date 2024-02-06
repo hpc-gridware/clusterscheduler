@@ -40,20 +40,14 @@
 #include "comm/commlib.h"
 
 #include "gdi/sge_gdi_packet_type.h"
-#include "gdi/sge_gdi_ctx_type.h"
 
 #include "sge.h"
 
 int 
-sge_gdi2_setup(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, lList **alpp);
+sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp);
 
 int 
-sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
-           lList **alpp, bool is_qmaster_intern_client);
-
-void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst);
-
-void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx);
+sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client);
 
 bool sge_daemonize_prepare();
 bool sge_daemonize_finalize();
@@ -67,4 +61,4 @@ int sge_gdi_ctx_class_prepare_enroll();
 
 int sge_gdi_ctx_class_connect();
 
-lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag);
+lList* sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag);

@@ -46,6 +46,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
+#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
 
 volatile int should_stop = 0;

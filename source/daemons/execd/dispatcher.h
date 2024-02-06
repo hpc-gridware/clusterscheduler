@@ -35,4 +35,4 @@
 
 #define EXECD_MAX_RECONNECT_TIMEOUT 30
 
-int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx);
+int sge_execd_process_messages();

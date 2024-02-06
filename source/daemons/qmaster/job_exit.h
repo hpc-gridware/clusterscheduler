@@ -35,4 +35,4 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void
-sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
+sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor);

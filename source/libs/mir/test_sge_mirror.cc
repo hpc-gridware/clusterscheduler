@@ -44,6 +44,8 @@
 
 #include "mir/sge_mirror.h"
 
+#include "gdi/sge_gdi_ctx.h"
+
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 
@@ -81,7 +83,6 @@ int main(int argc, char *argv[])
 {
    int cl_err = 0;
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
@@ -89,13 +90,13 @@ int main(int argc, char *argv[])
    sge_setup_sig_handlers(QEVENT);
 
    /* setup event client */
-   cl_err = sge_gdi2_setup(&ctx, QEVENT, MAIN_THREAD, &alp);
+   cl_err = sge_gdi2_setup(QEVENT, MAIN_THREAD, &alp);
    if (cl_err != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
 
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, nullptr)) {
+   if (false == sge_gdi2_evc_setup(&evc, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
       sge_exit(1);
    }

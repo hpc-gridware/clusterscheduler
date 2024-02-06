@@ -260,8 +260,7 @@ static int addgrpid_already_in_use(long add_grp_id)
         err_str set to error string
         err_length size of err_str
  ************************************************************************/
-int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
-                 lListElem *petep, char *err_str, int err_length)
+int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length)
 {
    int i;
    char ps_name[128];

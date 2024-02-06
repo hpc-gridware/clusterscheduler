@@ -48,7 +48,7 @@ bool
 jsv_send_command(lListElem *jsv, lList **answer_list, const char *message);
 
 bool
-jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job, 
+jsv_do_verify(const char *context, lListElem **job,
               lList **answer_list, bool hold_global_lock);
 
 bool

@@ -33,37 +33,35 @@
 #include "gdi/sge_gdi_ctx.h"
 
 lListElem *
-cqueue_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *cqueue);
+cqueue_get_via_gdi(lList **answer_list, const char *cqueue);
 
 
 bool
-cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx,
-                              lList **answer_list, 
+cqueue_hgroup_get_all_via_gdi(lList **answer_list,
                               lList **hgrp_list, lList **cq_list);
 
 bool 
-cqueue_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
-                           lListElem *this_elem, lList **answer_list,
+cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
                            u_long32 gdi_command);
 
 
 bool
-cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pattern);
+cqueue_show(lList **answer_list, const lList *qref_pattern);
 
 bool 
-cqueue_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+cqueue_add(lList **answer_list, const char *name);
 
 bool 
-cqueue_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+cqueue_modify(lList **answer_list, const char *name);
 
 bool 
-cqueue_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+cqueue_delete(lList **answer_list, const char *name);
 
 bool 
-cqueue_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
+cqueue_add_from_file(lList **answer_list, const char *filename);
 
 bool 
-cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
+cqueue_modify_from_file(lList **answer_list, const char *filename);
 
 bool
-cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list);
+cqueue_list_sick(lList **answer_list);

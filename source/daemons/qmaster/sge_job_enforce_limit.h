@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 void
-sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor);
+sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor);
 
 void
 sge_add_check_limit_trigger(void);

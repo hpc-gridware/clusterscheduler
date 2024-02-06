@@ -54,7 +54,6 @@ extern char **environ;
 int main(int argc, char **argv) {
    lList *pcmdline = nullptr;
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    lList *ar_lp = nullptr;
 
    lListElem *ar = nullptr;
@@ -66,7 +65,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(&ctx, QRSUB, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QRSUB, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -118,7 +117,7 @@ int main(int argc, char **argv) {
    */
    ar = lCreateElem(AR_Type);
 
-   if (!sge_parse_qrsub(ctx, pcmdline, &alp, &ar)) {
+   if (!sge_parse_qrsub(pcmdline, &alp, &ar)) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       goto error_exit;
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
    ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
-   alp = sge_gdi2(ctx, SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
+   alp = sge_gdi2(SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
    lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {

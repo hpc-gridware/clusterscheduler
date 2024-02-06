@@ -36,40 +36,40 @@
 #include "gdi/sge_gdi_ctx.h"
 
 bool
-cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list);
 
 bool
-cqueue_handle_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_handle_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list);
 
 void
-cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue);
+cqueue_commit(lListElem *cqueue);
 
 void
 cqueue_rollback(lListElem *cqueue);
 
 int
-cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+cqueue_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor);
 
 int
-cqueue_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+cqueue_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-cqueue_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *this_elem, gdi_object_t *object);
+cqueue_spool(lList **alpp, lListElem *this_elem, gdi_object_t *object);
 
 int
-cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
+cqueue_del(lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
 
 bool
-cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list, const char *ehname);
+cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname);
 
 bool
-cqueue_list_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lList *this_list, lList **answer_list, const char *cqname,
+cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname,
                              const char *ehname);
 
 void

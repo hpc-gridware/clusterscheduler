@@ -74,12 +74,10 @@
 
 extern volatile int jobs_to_start;
 
-static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jatep,
-                      int slave);
-static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commproc,
-                       char *host, u_short id, sge_pack_buffer *apb);
+static int handle_job(lListElem *jelem, lListElem *jatep, int slave);
+static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb);
 
-int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *apb)
+int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
    int ret = 1;
    u_long32 feature_set;
@@ -132,7 +130,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
          DPRINTF(("new job %ld.%ld\n", 
             (long) lGetUlong(job, JB_job_number),
             (long) lGetUlong(ja_task, JAT_task_number)));
-         ret = handle_job(ctx, job, ja_task, 0);
+         ret = handle_job(job, ja_task, 0);
          if (ret != 0) {
             lFreeElem(&job);
          }
@@ -158,7 +156,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
             (long) lGetUlong(petrep, PETR_jobid), 
             (long) lGetUlong(petrep, PETR_jataskid)));
 
-      ret = handle_task(ctx, petrep, aMsg->snd_name, aMsg->snd_host, aMsg->snd_id, apb);
+      ret = handle_task(petrep, aMsg->snd_name, aMsg->snd_host, aMsg->snd_id, apb);
 
       lFreeElem(&petrep);
    }
@@ -170,7 +168,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
    DRETURN(0);
 }
 
-int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
+int do_job_slave(struct_msg_t *aMsg)
 {
    int ret = 1;
    lListElem *jelem, *ja_task;
@@ -202,7 +200,7 @@ int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    for_each_rw(ja_task, lGetList(jelem, JB_ja_tasks)) {
       DPRINTF(("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number),
          (long) lGetUlong(ja_task, JAT_task_number)));
-      ret = handle_job(ctx, jelem, ja_task, 1);
+      ret = handle_job(jelem, ja_task, 1);
    }
 
    if (ret)  {
@@ -212,9 +210,7 @@ int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    DRETURN(0);
 }
 
-static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jatep,
-                      int slave)
-{
+static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    lListElem *jep; 
    dstring err_str = DSTRING_INIT;
    u_long32 jobid, jataskid;
@@ -594,8 +590,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 }
 
 
-static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commproc,
-                       char *host, u_short id, sge_pack_buffer *apb)
+static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb)
 {
    u_long32 jobid, jataskid;
    lListElem *jep   = nullptr;

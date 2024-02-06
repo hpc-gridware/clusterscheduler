@@ -61,7 +61,6 @@ extern char **environ;
 int main(int argc, char **argv) {
    lList *pcmdline = nullptr, *id_list = nullptr;
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qrdel");
 
@@ -70,7 +69,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(&ctx, QRDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QRDEL, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -102,7 +101,7 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   alp = sge_gdi2(ctx, SGE_AR_LIST, SGE_GDI_DEL, &id_list, nullptr, nullptr);
+   alp = sge_gdi2(SGE_AR_LIST, SGE_GDI_DEL, &id_list, nullptr, nullptr);
    lFreeList(&id_list);
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);

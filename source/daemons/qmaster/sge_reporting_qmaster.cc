@@ -246,7 +246,7 @@ reporting_initialize(lList **answer_list) {
 *     qmaster/reporting/reporting_initialize()
 *******************************************************************************/
 bool
-reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool) {
+reporting_shutdown(lList **answer_list, bool do_spool) {
    bool ret = true;
    lList *alp = nullptr;
    rep_buf_t *buf;
@@ -298,7 +298,7 @@ reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool)
 *     Timeeventmanager/te_add()
 *******************************************************************************/
 void
-reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 flush_interval = 0;
    lList *answer_list = nullptr;
    const char *reporting_file = bootstrap_get_reporting_file();
@@ -553,7 +553,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
  * reporting_create_acct_record is called and we needn't search it from ja_task
  */
 bool
-reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *job_report, lListElem *job,
+reporting_create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                              lListElem *ja_task, bool intermediate) {
    bool ret = true;
    char category_buffer[MAX_STRING_SIZE];

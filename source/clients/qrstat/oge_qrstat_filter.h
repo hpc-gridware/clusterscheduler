@@ -37,8 +37,6 @@
 typedef struct qrstat_env_str qrstat_env_t;
 
 struct qrstat_env_str {
-   sge_gdi_ctx_class_t *ctx;
-
    /* input parameters */
    lList* user_list;  /* -u user_list */
    lList* ar_id_list; /* -ar ar_id */
@@ -75,6 +73,3 @@ qrstat_filter_add_u_where(qrstat_env_t *qrstat_env);
 
 void
 qrstat_filter_add_ar_where(qrstat_env_t *qrstat_env);
-
-void
-qrstat_filter_set_ctx(qrstat_env_t *qrstat_env, sge_gdi_ctx_class_t *ctx);

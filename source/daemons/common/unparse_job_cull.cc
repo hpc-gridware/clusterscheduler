@@ -68,7 +68,7 @@ static int sge_unparse_pe(lListElem *job, lList **pcmdline, lList **alpp);
 static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, lList **alpp);
 static int sge_unparse_string_option(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp);
 
-lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lListElem *job, int flags)
+lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 {
    const char *cp;
    u_long32 ul;

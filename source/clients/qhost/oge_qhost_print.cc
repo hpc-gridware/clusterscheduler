@@ -90,13 +90,13 @@
 static int sge_print_queues(lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl, 
                             lList *pel, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp);
 static int sge_print_resources(lList *ehl, lList *cl, lList *resl, lListElem *host, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp);
-static int sge_print_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *centry_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show);
+static int sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show);
 
 static int reformatDoubleValue(char *result, const char *format, const char *oldmem);
-static bool get_all_lists(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList *hl, lList *ul, u_long32 show);
+static bool get_all_lists(lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList *hl, lList *ul, u_long32 show);
 static void free_all_lists(lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel);
 
-int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList *resource_match_list, 
+int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
               lList *resource_list, u_long32 show, lList **alpp, qhost_report_handler_t* report_handler) {
 
    lList *cl = nullptr;
@@ -115,16 +115,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
    
    DENTER(TOP_LAYER);
    
-   have_lists = get_all_lists(ctx,
-                             alpp,
-                             &ql, 
-                             &jl, 
-                             &cl, 
-                             &ehl, 
-                             &pel, 
-                             host_list, 
-                             user_list,
-                             show);
+   have_lists = get_all_lists(alpp, &ql, &jl, &cl, &ehl, &pel, host_list, user_list, show);
    if (have_lists == false) {
       free_all_lists(&ql, &jl, &cl, &ehl, &pel);
       DRETURN(QHOST_ERROR);
@@ -265,7 +256,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
             break;
          }
       }
-      sge_print_host(ctx, ep, cl, report_handler, alpp, show);
+      sge_print_host(ep, cl, report_handler, alpp, show);
       sge_print_resources(ehl, cl, resource_list, ep, show, report_handler, alpp);
       ret = sge_print_queues(ql, ep, jl, nullptr, ehl, cl, pel, show, report_handler, alpp);
       if (ret != QHOST_SUCCESS) {
@@ -290,8 +281,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
 
 /*-------------------------------------------------------------------------*/
 static int 
-sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list, 
-   qhost_report_handler_t *report_handler, lList **alpp, u_long32 show) 
+sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show)
 {
    lListElem *lep;
    char *s, host_print[CL_MAXHOSTLEN+1] = "";
@@ -861,18 +851,9 @@ static int reformatDoubleValue(char *result, const char *format, const char *old
  **** The lists are stored in the .._l pointerpointer-parameters.
  **** WARNING: Lists previously stored in this pointers are not destroyed!!
  ****/
-static bool get_all_lists(
-sge_gdi_ctx_class_t *ctx,
-lList **answer_list,
-lList **queue_l,
-lList **job_l,
-lList **centry_l,
-lList **exechost_l,
-lList **pe_l,
-lList *hostref_list,
-lList *user_list,
-u_long32 show
-) {
+static bool
+get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centry_l, lList **exechost_l,
+              lList **pe_l, lList *hostref_list, lList *user_list, u_long32 show) {
    lCondition *where= nullptr, *nw = nullptr, *jw = nullptr, *gc_where;
    lEnumeration *q_all = nullptr, *j_all = nullptr, *ce_all = nullptr,
                 *eh_all = nullptr, *pe_all = nullptr, *gc_what;
@@ -912,8 +893,7 @@ u_long32 show
       where = nw;
    eh_all = lWhat("%T(ALL)", EH_Type);
    
-   eh_id = sge_gdi2_multi(ctx,
-                          answer_list, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET, 
+   eh_id = sge_gdi2_multi(answer_list, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
                           nullptr, where, eh_all, &state, true);
    lFreeWhat(&eh_all);
    lFreeWhere(&where);
@@ -925,8 +905,7 @@ u_long32 show
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
       q_all = lWhat("%T(ALL)", QU_Type);
       
-      q_id = sge_gdi2_multi(ctx,
-                            answer_list, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET, 
+      q_id = sge_gdi2_multi(answer_list, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET,
                             nullptr, nullptr, q_all, &state, true);
       lFreeWhat(&q_all);
 
@@ -995,8 +974,7 @@ u_long32 show
 /* printf("======================================\n"); */
 /* lWriteWhereTo(jw, stdout); */
 
-      j_id = sge_gdi2_multi(ctx,
-                         answer_list, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET, 
+      j_id = sge_gdi2_multi(answer_list, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET,
                          nullptr, jw, j_all, &state, true);
       lFreeWhat(&j_all);
       lFreeWhere(&jw);
@@ -1010,8 +988,7 @@ u_long32 show
    ** complexes
    */
    ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = sge_gdi2_multi(ctx,
-                          answer_list, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
+   ce_id = sge_gdi2_multi(answer_list, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
                           nullptr, nullptr, ce_all, &state, true);
    lFreeWhat(&ce_all);
 
@@ -1024,8 +1001,7 @@ u_long32 show
    */
    pe_all = lWhat("%T(ALL)", PE_Type);
    
-   pe_id = sge_gdi2_multi(ctx,
-                          answer_list, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET, 
+   pe_id = sge_gdi2_multi(answer_list, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET,
                           nullptr, nullptr, pe_all, &state, true);
    lFreeWhat(&pe_all);
 
@@ -1039,10 +1015,9 @@ u_long32 show
    gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
    gc_what = lWhat("%T(ALL)", CONF_Type);
    
-   gc_id = sge_gdi2_multi(ctx,
-                          answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
+   gc_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
                           nullptr, gc_where, gc_what, &state, true);
-   sge_gdi2_wait(ctx, answer_list, &mal, &state);
+   sge_gdi2_wait(answer_list, &mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 
@@ -1055,8 +1030,7 @@ u_long32 show
    ** handle results
    */
    /* --- exec host */
-   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_EH_LIST, eh_id, 
-                                 mal, exechost_l);
+   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_EH_LIST, eh_id, mal, exechost_l);
    if (answer_list_has_error(answer_list)) {
       lFreeList(&mal);
       DRETURN(false);
@@ -1064,8 +1038,7 @@ u_long32 show
 
    /* --- queue */
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CQ_LIST, q_id, 
-                                    mal, queue_l);
+      sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CQ_LIST, q_id, mal, queue_l);
       if (answer_list_has_error(answer_list)) {
          lFreeList(&mal);
          DRETURN(false);
@@ -1075,8 +1048,7 @@ u_long32 show
    /* --- job */
    if (job_l && (show & QHOST_DISPLAY_JOBS)) {
       lListElem *ep = nullptr;
-      sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_JB_LIST, j_id,
-                                    mal, job_l);
+      sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_JB_LIST, j_id, mal, job_l);
       if (answer_list_has_error(answer_list)) {
          lFreeList(&mal);
          DRETURN(false);
@@ -1093,24 +1065,21 @@ u_long32 show
    }
 
    /* --- complex attribute */
-   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CE_LIST, ce_id,
-                                 mal, centry_l);
+   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CE_LIST, ce_id, mal, centry_l);
    if (answer_list_has_error(answer_list)) {
       lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- pe */
-   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_PE_LIST, pe_id,
-                                 mal, pe_l);
+   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_PE_LIST, pe_id, mal, pe_l);
    if (answer_list_has_error(answer_list)) {
       lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- apply global configuration for sge_hostcmp() scheme */
-   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CONF_LIST, gc_id,
-                          mal, &conf_l);
+   sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CONF_LIST, gc_id, mal, &conf_l);
    if (answer_list_has_error(answer_list)) {
       lFreeList(&mal);
       DRETURN(false);

@@ -54,6 +54,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/qm_name.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/msg_gdilib.h"
 
@@ -185,7 +186,6 @@ main(int argc, char **argv) {
 #endif
 
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "sge_shadowd");
 
@@ -222,7 +222,7 @@ main(int argc, char **argv) {
 
    log_state_set_log_file(TMP_ERR_FILE_SHADOWD);
 
-   if (sge_setup2(&ctx, SHADOWD, MAIN_THREAD, &alp, false) != AE_OK) {
+   if (sge_setup2(SHADOWD, MAIN_THREAD, &alp, false) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -431,7 +431,7 @@ main(int argc, char **argv) {
       }
    }
 
-   sge_shutdown((void **) &ctx, 0);
+   sge_shutdown(0);
 
    DRETURN(EXIT_SUCCESS);
 }

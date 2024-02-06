@@ -43,7 +43,7 @@ void
 sge_timer_register_event_handler(void);
 
 void
-sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
+sge_timer_initialize(monitoring_t *monitor);
 
 void
 sge_timer_terminate(void);

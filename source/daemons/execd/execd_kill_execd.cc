@@ -49,7 +49,7 @@
 
 extern int shut_me_down;
 
-int do_kill_execd(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
+int do_kill_execd(struct_msg_t *aMsg)
 {
    const lListElem *jep;
    lListElem *jatep;

@@ -44,8 +44,6 @@
 void
 qrstat_filter_init(qrstat_env_t *qrstat_env)
 {
-   qrstat_env->ctx = nullptr;
-
    qrstat_env->user_list = nullptr;
    qrstat_env->ar_id_list = nullptr;
    qrstat_env->is_explain = false;
@@ -210,9 +208,3 @@ qrstat_filter_add_ar_where(qrstat_env_t *qrstat_env)
    }
    DRETURN_VOID;
 }
-
-void
-qrstat_filter_set_ctx(qrstat_env_t *qrstat_env, sge_gdi_ctx_class_t *ctx) {
-   qrstat_env->ctx = ctx;
-}
-

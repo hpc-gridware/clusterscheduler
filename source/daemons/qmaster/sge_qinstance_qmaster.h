@@ -36,16 +36,15 @@
 #include "gdi/sge_gdi_ctx.h"
 
 bool
-qinstance_change_state_on_command(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list,
+qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                                   u_long32 transition, bool force_transition, const char *user, const char *host,
                                   bool is_operator, bool is_owner, monitoring_t *monitor);
 
 bool
-qinstance_change_state_on_calendar(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, const lListElem *calendar,
-                                   monitoring_t *monitor);
+qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor);
 
 bool
-qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list, const lListElem *cqueue,
+qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lListElem *cqueue,
                            int attribute_name, int cqueue_attibute_name, int sub_host_name, int sub_value_name,
                            int subsub_key, const char **matching_host_or_group, const char **matching_group,
                            bool *is_ambiguous, bool *has_changed_conf_attr, bool *has_changed_state_attr,
@@ -53,7 +52,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
                            const lList *master_hgroup_list, lList *master_cqueue_list);
 
 bool
-qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx, const char *cal_name, u_long32 cal_order,
+qinstance_change_state_on_calendar_all(const char *cal_name, u_long32 cal_order,
                                        const lList *state_change_list, monitoring_t *monitor);
 
 bool
@@ -87,5 +86,4 @@ bool
 sge_qmaster_qinstance_set_initial_state(lListElem *this_elem);
 
 bool
-qinstance_reinit_consumable_actual_list(lListElem *this_elem,
-                                        lList **answer_list);
+qinstance_reinit_consumable_actual_list(lListElem *this_elem, lList **answer_list);

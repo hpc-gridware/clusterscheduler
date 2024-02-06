@@ -181,7 +181,7 @@ void sge_timer_start_periodic_tasks(void) {
 }
 
 void
-sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
+sge_timer_initialize(monitoring_t *monitor) {
    cl_thread_settings_t *dummy_thread_p = nullptr;
    lList *answer_list = nullptr;
    dstring thread_name = DSTRING_INIT;
@@ -192,10 +192,10 @@ sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
    DPRINTF(("timed event module has been initialized\n"));
    heartbeat_initialize();
    DPRINTF(("heartbeat module initialized\n"));
-   ar_initialize_timer(ctx, &answer_list, monitor);
+   ar_initialize_timer(&answer_list, monitor);
    answer_list_output(&answer_list);
    DPRINTF(("ar and corresponding timers are initialized\n"));
-   calendar_initalize_timer(ctx, monitor);
+   calendar_initalize_timer(monitor);
    DPRINTF(("queue states and corresponding timers are initialized due to calendar settings\n"));
    host_initalitze_timer();
    DPRINTF(("reschedule unknown timer have been initialized\n"));
@@ -291,7 +291,6 @@ void *
 sge_timer_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
@@ -305,7 +304,7 @@ sge_timer_main(void *arg) {
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, TET_EXT, TET_WARNING, TET_ERROR);
-   sge_qmaster_thread_init(&ctx, QMASTER, TIMER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, TIMER_THREAD, true);
 
    /* register at profiling module */
    set_thread_name(pthread_self(), "TEvent Thread");
@@ -359,7 +358,7 @@ sge_timer_main(void *arg) {
 
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-      te_scan_table_and_deliver(ctx, te, p_monitor);
+      te_scan_table_and_deliver(te, p_monitor);
       te_free_event(&te);
 
       sge_monitor_output(p_monitor);

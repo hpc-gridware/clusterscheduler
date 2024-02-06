@@ -1259,8 +1259,7 @@ void tgtcclr(lListElem *jep, const char *rhost)
 *     gdi/request_internal/sge_gdi_packet_parse_auth_info()
 *******************************************************************************/
 bool
-sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
-                                    sge_gdi_packet_class_t *packet_handle)
+sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle)
 {
    bool ret = true;
    uid_t uid;
@@ -1673,7 +1672,7 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
 }
 
 /* MT-NOTE: sge_security_ck_to_do() is MT safe (assumptions) */
-void sge_security_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
+void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);  
 #ifdef KERBEROS

@@ -87,7 +87,7 @@ master_scheduler_class_t Master_Scheduler = {
 
 
 static void
-schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx) {
+schedd_set_serf_log_file() {
    const char *cell_root = bootstrap_get_cell_root();
 
    DENTER(TOP_LAYER);
@@ -241,7 +241,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void
-sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
+sge_scheduler_initialize(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    /* initialize debugging instrumentation */
@@ -376,11 +376,6 @@ sge_scheduler_cleanup_thread(void *ctx_ref) {
        * now a new scheduler can start
        */
       Master_Scheduler.is_running = false;
-
-      /*
-      ** free the ctx too
-      */
-      sge_gdi_ctx_class_destroy((sge_gdi_ctx_class_t **) ctx_ref);
    }
 
    sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -418,7 +413,7 @@ sge_scheduler_cleanup_thread(void *ctx_ref) {
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void
-sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
+sge_scheduler_terminate(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -496,7 +491,6 @@ void *
 sge_scheduler_main(void *arg) {
    time_t next_prof_output = 0;
    monitoring_t monitor;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;
    lList *alp = nullptr;
    sge_where_what_t where_what;
@@ -518,7 +512,7 @@ sge_scheduler_main(void *arg) {
 
       /* initialize monitoring */
       sge_monitor_init(&monitor, thread_config->thread_name, SCH_EXT, SCT_WARNING, SCT_ERROR);
-      sge_qmaster_thread_init(&ctx, SCHEDD, SCHEDD_THREAD, true);
+      sge_qmaster_thread_init(SCHEDD, SCHEDD_THREAD, true);
 
       /* register at profiling module */
       set_thread_name(pthread_self(), "Scheduler Thread");
@@ -526,7 +520,7 @@ sge_scheduler_main(void *arg) {
       DPRINTF((SFN" started\n", thread_config->thread_name));
 
       /* initialize schedd_runnlog logging */
-      schedd_set_schedd_log_file(ctx);
+      schedd_set_schedd_log_file();
    }
 
    /* set profiling parameters */
@@ -543,13 +537,13 @@ sge_scheduler_main(void *arg) {
 
    /* set-up needed for 'schedule' file */
    serf_init(schedd_serf_record_func, schedd_serf_newline);
-   schedd_set_serf_log_file(ctx);
+   schedd_set_serf_log_file();
 
    /*
     * prepare event client/mirror mechanism
     */
    if (local_ret) {
-      local_ret = sge_gdi2_evc_setup(&evc, ctx, EV_ID_SCHEDD, &alp, "scheduler");
+      local_ret = sge_gdi2_evc_setup(&evc, EV_ID_SCHEDD, &alp, "scheduler");
       DPRINTF(("prepared event client/mirror mechanism\n"));
    }
 
@@ -894,7 +888,7 @@ sge_scheduler_main(void *arg) {
             }
 
             /* block till master handled all GDI orders */
-            sge_schedd_block_until_orders_processed(evc->get_gdi_ctx(evc), nullptr);
+            sge_schedd_block_until_orders_processed(nullptr);
             schedd_order_destroy();
 
             /*
@@ -934,7 +928,7 @@ sge_scheduler_main(void *arg) {
           * sge_scheduler_cleanup_thread() is the last function which should
           * be called so it is pushed first
           */
-         pthread_cleanup_push(sge_scheduler_cleanup_thread, (void *) &ctx);
+         pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
             pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_monitor,
                                  (void *) &monitor);
                pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_event_client,

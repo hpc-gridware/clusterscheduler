@@ -119,7 +119,7 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
 static int read_dusage(lListElem *jr, const char *jobdir, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, int failed);
 static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id);
 
-static void examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
+static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
 
 #if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 static void update_used_cores(const char* path_to_config, lListElem** jr);
@@ -845,7 +845,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 }
 
 /* ------------------------- */
-void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lListElem *jr)
+void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lListElem *jr)
 {
    char *exec_file, *script_file, *tmpdir, *job_owner, *qname; 
    dstring jobdir = DSTRING_INIT;
@@ -898,7 +898,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
      
       /* use mail list of job instead of tasks one */
       if (jr && lGetUlong(jr, JR_state) != JSLAVE) {
-         reaper_sendmail(ctx, jep, jr); 
+         reaper_sendmail(jep, jr);
       }
 
 
@@ -1212,7 +1212,7 @@ void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname)
  If startup is true this is the first call of the execd. We produce more
  output for the administrator the first time.
  ************************************************************************/
-int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
+int clean_up_old_jobs(int startup)
 {
    SGE_STRUCT_DIRENT *dent = nullptr;
    DIR *cwd = nullptr;
@@ -1330,11 +1330,11 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
       }
       if (lGetUlong(jatep, JAT_status) != JSLAVE) {
          sprintf(dir, "%s/%s", ACTIVE_DIR, jobdir);
-         examine_job_task_from_file(ctx, startup, dir, jep, jatep, nullptr, pids, npids);
+         examine_job_task_from_file(startup, dir, jep, jatep, nullptr, pids, npids);
       }
       for_each_rw (petep, lGetList(jatep, JAT_task_list)) {
          sprintf(dir, "%s/%s/%s", ACTIVE_DIR, jobdir, lGetString(petep, PET_id));
-         examine_job_task_from_file(ctx, startup, dir, jep, jatep, petep, pids, npids);
+         examine_job_task_from_file(startup, dir, jep, jatep, petep, pids, npids);
       }
    }    /* while (dent=SGE_READDIR(cwd)) */
 
@@ -1344,7 +1344,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
 }
 
 static void 
-examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lListElem *jep,
+examine_job_task_from_file(int startup, char *dir, lListElem *jep,
                            lListElem *jatep, lListElem *petep, pid_t *pids, 
                            int npids) 
 {
@@ -1851,11 +1851,8 @@ u_long32 *valuep
 
 
 /* send mail to users if requested */
-void reaper_sendmail(
-sge_gdi_ctx_class_t *ctx,
-lListElem *jep,
-lListElem *jr 
-) {
+void
+reaper_sendmail(lListElem *jep, lListElem *jr) {
    const lList *mail_users; 
    u_long32 mail_options; 
    char sge_mail_subj[1024];

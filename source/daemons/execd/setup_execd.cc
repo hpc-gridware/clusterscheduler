@@ -65,7 +65,7 @@ extern lList *jr_list;
 static char execd_messages_file[SGE_PATH_MAX];
 
 /*-------------------------------------------------------------------*/
-void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name)
+void sge_setup_sge_execd(const char* tmp_err_file_name)
 {
    char err_str[MAX_STRING_SIZE];
    int allowed_get_conf_errors     = 5;
@@ -92,7 +92,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
       sge_exit(1);
    }
 
-   while (gdi2_wait_for_conf(ctx, &Execd_Config_List)) {
+   while (gdi2_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT));
          /* TODO: remove */

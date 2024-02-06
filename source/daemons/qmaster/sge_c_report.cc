@@ -57,7 +57,7 @@
 #include "reschedule.h"
 
 static int
-update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic);
+update_license_data(lListElem *hep, lList *lp_lic);
 
 
 /****** sge_c_report() *******************************************************
@@ -83,7 +83,7 @@ update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic);
 *
 ******************************************************************************/
 void
-sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
+sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = nullptr;
    u_long32 rep_type;
    lListElem *report;
@@ -174,7 +174,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
    /* RU: */
    /* tag all reschedule_unknown list entries we hope to 
       hear about in that job report */
-   update_reschedule_unknown_list(ctx, hep);
+   update_reschedule_unknown_list(hep);
 
    /*
    ** process the reports one after the other
@@ -190,13 +190,13 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
             MONITOR_ELOAD(monitor);
             /* Now handle execds load reports */
             if (lGetUlong(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
-               host_notify_about_full_load_report(ctx, hep);
+               host_notify_about_full_load_report(hep);
             } else {
                if (!is_pb_used) {
                   is_pb_used = true;
                   init_packbuffer(&pb, 1024, 0);
                }
-               sge_update_load_values(ctx, rhost, lGetListRW(report, REP_list));
+               sge_update_load_values(rhost, lGetListRW(report, REP_list));
 
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
@@ -219,7 +219,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
                                  lSetHost(clp, LR_host, sim_host);
                               }
                            }
-                           sge_update_load_values(ctx, sim_host, lGetListRW(report, REP_list));
+                           sge_update_load_values(sim_host, lGetListRW(report, REP_list));
                         }
                      }
                   }
@@ -241,7 +241,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
             ** save number of processors
             */
             MONITOR_EPROC(monitor);
-            ret = update_license_data(ctx, hep, lGetListRW(report, REP_list));
+            ret = update_license_data(hep, lGetListRW(report, REP_list));
             if (ret) {
                ERROR((SGE_EVENT, MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret));
             }
@@ -253,7 +253,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
                is_pb_used = true;
                init_packbuffer(&pb, 1024, 0);
             }
-            process_job_report(ctx, report, hep, rhost, commproc, &pb, monitor);
+            process_job_report(report, hep, rhost, commproc, &pb, monitor);
             break;
 
          default:
@@ -263,7 +263,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 
    /* RU: */
    /* delete reschedule unknown list entries we heard about */
-   delete_from_reschedule_unknown_list(ctx, hep);
+   delete_from_reschedule_unknown_list(hep);
 
    if (is_pb_used) {
       if (pb_filled(&pb)) {
@@ -277,7 +277,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
    }
 
    if (send_tag_new_conf == true) {
-      if (host_notify_about_new_conf(ctx, hep) != 0) {
+      if (host_notify_about_new_conf(hep) != 0) {
          ERROR((SGE_EVENT, MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, rhost));
       }
    }
@@ -303,7 +303,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 **   spools if it has changed
 */
 static int
-update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic) {
+update_license_data(lListElem *hep, lList *lp_lic) {
    u_long32 processors;
 
    DENTER(TOP_LAYER);
@@ -334,9 +334,7 @@ update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic) {
 
       DPRINTF(("%s has " sge_u32 " processors\n",
               lGetHost(hep, EH_name), processors));
-      sge_event_spool(ctx,
-                      &answer_list, 0, sgeE_EXECHOST_MOD,
-                      0, 0, lGetHost(hep, EH_name), nullptr, nullptr,
+      sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name), nullptr, nullptr,
                       hep, nullptr, nullptr, true, true);
       answer_list_output(&answer_list);
    }

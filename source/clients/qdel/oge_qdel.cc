@@ -74,13 +74,12 @@ int main(int argc, char **argv) {
    unsigned long status = 0;
    bool have_master_privileges;
    cl_com_handle_t* handle = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qdel");
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(&ctx, QDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QDEL, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -134,7 +133,7 @@ int main(int argc, char **argv) {
    /* Has the user the permission to use the the '-f' (forced) flag */
    have_master_privileges = false;
    if (force == 1) {
-      have_master_privileges = sge_gdi2_check_permission(ctx, &alp, MANAGER_CHECK);
+      have_master_privileges = sge_gdi2_check_permission(&alp, MANAGER_CHECK);
       lFreeList(&alp);
    }
    /* delete the job */
@@ -207,7 +206,7 @@ int main(int argc, char **argv) {
                   }   
                }
             }
-            alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, nullptr, nullptr);
+            alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, nullptr, nullptr);
 
             for_each_ep(aep, alp) {
                status = lGetUlong(aep, AN_status);

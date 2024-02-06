@@ -37,11 +37,10 @@
 #include "sge_qmaster_timed_event.h"
 
 int
-sge_follow_order(sge_gdi_ctx_class_t *ctx, lListElem *order, char *ruser, char *rhost, lList **topp,
-                 monitoring_t *monitor);
+sge_follow_order(lListElem *order, char *ruser, char *rhost, lList **topp, monitoring_t *monitor);
 
 int
-distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, monitoring_t *monitor);
+distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor);
 
 void
 sge_set_next_spooling_time(void);

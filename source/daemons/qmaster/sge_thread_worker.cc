@@ -75,7 +75,7 @@ sge_worker_cleanup_monitor(monitoring_t *monitor) {
 }
 
 void
-sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
+sge_worker_initialize() {
    const u_long32 max_initial_worker_threads = bootstrap_get_worker_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
    u_long32 i;
@@ -108,7 +108,7 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
 }
 
 void
-sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
+sge_worker_terminate() {
    bool do_final_spooling;
 
    DENTER(TOP_LAYER);
@@ -152,7 +152,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
    /* shutdown and remove JSV instances */
    jsv_list_remove_all();
 
-   reporting_shutdown(ctx, nullptr, do_final_spooling);
+   reporting_shutdown(nullptr, do_final_spooling);
    DPRINTF(("accounting and reporting module has been shutdown\n"));
 
    /*
@@ -164,11 +164,11 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
     * changed in the second instance of the master
     */
    if (do_final_spooling == true) {
-      sge_store_job_number(ctx, nullptr, nullptr);
-      sge_store_ar_id(ctx, nullptr, nullptr);
+      sge_store_job_number(nullptr, nullptr);
+      sge_store_ar_id(nullptr, nullptr);
       DPRINTF(("job/ar counter were made persistant\n"));
-      sge_job_spool(ctx);     /* store qmaster jobs to database */
-      sge_userprj_spool(ctx); /* spool the latest usage */
+      sge_job_spool();     /* store qmaster jobs to database */
+      sge_userprj_spool(); /* spool the latest usage */
       DPRINTF(("final job and user/project spooling has been triggered\n"));
    }
 
@@ -182,7 +182,6 @@ void *
 sge_worker_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    time_t next_prof_output = 0;
@@ -192,7 +191,7 @@ sge_worker_main(void *arg) {
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
-   sge_qmaster_thread_init(&ctx, QMASTER, WORKER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);
 
    /* register at profiling module */
    set_thread_name(pthread_self(), "Worker Thread");
@@ -265,13 +264,13 @@ sge_worker_main(void *arg) {
              */
             task = packet->first_task;
             while (task != nullptr) {
-               sge_c_gdi(ctx, packet, task, &(task->answer_list), p_monitor);
+               sge_c_gdi(packet, task, &(task->answer_list), p_monitor);
 
                task = task->next;
             }
          } else {
             task = packet->first_task;
-            sge_c_report(ctx, packet->host, packet->commproc, packet->commproc_id,
+            sge_c_report(packet->host, packet->commproc, packet->commproc_id,
                          task->data_list, p_monitor);
          }
 

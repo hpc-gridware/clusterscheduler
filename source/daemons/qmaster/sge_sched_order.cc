@@ -67,8 +67,7 @@ schedd_order_destroy(void) {
 
 
 bool
-sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_list, lList **answer_list,
-                       const char *name) {
+sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list, const char *name) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -84,7 +83,7 @@ sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_
          lAddList(Master_Request_Queue.order_list, order_list);
       }
 
-      ret = sge_schedd_add_gdi_order_request(ctx, orders, answer_list, &Master_Request_Queue.order_list);
+      ret = sge_schedd_add_gdi_order_request(orders, answer_list, &Master_Request_Queue.order_list);
    }
    lFreeList(order_list);
 
@@ -92,7 +91,7 @@ sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_
 }
 
 bool
-sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **answer_list, lList **order_list) {
+sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
    bool ret = true;
    state_gdi_multi *state = nullptr;
 
@@ -108,7 +107,7 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
       /*
        * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
        */
-      order_id = sge_gdi2_multi(ctx, answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
+      order_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
                                 order_list, nullptr, nullptr, state, false);
 
       if (order_id != -1) {
@@ -128,8 +127,7 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
 }
 
 bool
-sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
-                                        lList **answer_list) {
+sge_schedd_block_until_orders_processed(lList **answer_list) {
    bool ret = true;
    sge_sl_elem_t *next_elem = nullptr;
    sge_sl_elem_t *current_elem = nullptr;
@@ -155,7 +153,7 @@ sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
        * wait for answer. this call might block if the request
        * has not been handled by any worker until now
        */
-      sge_gdi2_wait(ctx, answer_list, &multi_answer_list, current_state);
+      sge_gdi2_wait(answer_list, &multi_answer_list, current_state);
 
       /*
        * now we have an answer. is it positive? 

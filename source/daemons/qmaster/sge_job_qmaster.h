@@ -48,20 +48,20 @@
 #include "sge_qmaster_timed_event.h"
 
 int
-sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                 uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                 monitoring_t *monitor);
 
 int
-sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                  uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                  monitoring_t *monitor);
 
 int
-sge_gdi_mod_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, char *ruser, char *rhost, int sub_command);
+sge_gdi_mod_job(lListElem *jep, lList **alpp, char *ruser, char *rhost, int sub_command);
 
 int
-sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, char *ruser, char *rhost, int sub_command,
+sge_gdi_del_job(lListElem *jep, lList **alpp, char *ruser, char *rhost, int sub_command,
                 monitoring_t *monitor);
 
 void
@@ -77,7 +77,7 @@ void
 tag_all_host_gdil(lListElem *jatep);
 
 void
-ack_all_slaves(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task, u_long32 type);
+ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task, u_long32 type);
 
 void
 sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask);
@@ -92,21 +92,21 @@ void
 sge_init_job_number(void);
 
 void
-sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+sge_store_job_number(te_event_t anEvent, monitoring_t *monitor);
 
 void
 job_ja_task_send_abort_mail(const lListElem *job, const lListElem *ja_task, const char *ruser, const char *rhost,
                             const char *err_str);
 
 void
-get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx, lListElem *j, lListElem *t, lList **answer_list, const char *ruser,
+get_rid_of_job_due_to_qdel(lListElem *j, lListElem *t, lList **answer_list, const char *ruser,
                            int force, monitoring_t *monitor);
 
 void
-job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx, lListElem *j, lListElem *t);
+job_mark_job_as_deleted(lListElem *j, lListElem *t);
 
 void
-sge_job_spool(sge_gdi_ctx_class_t *);
+sge_job_spool();
 
 bool
 spool_write_script(lList **answer_list, u_long32 jobid, const lListElem *jep);
@@ -118,7 +118,7 @@ bool
 spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep);
 
 u_long32
-sge_get_job_number(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
+sge_get_job_number(monitoring_t *monitor);
 
 int
 deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_centry_list);

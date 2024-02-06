@@ -85,7 +85,7 @@ static bool
 check_binding_param_consistency(const lListElem *binding_elem);
 
 int
-sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                       uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
@@ -289,7 +289,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
       u_long32 jid;
 
       do {
-         jid = sge_get_job_number(ctx, monitor);
+         jid = sge_get_job_number(monitor);
       } while (lGetElemUlong(master_job_list, JB_job_number, jid));
       lSetUlong(jep, JB_job_number, jid);
       lSetUlong(jep, JB_submission_time, sge_get_gmt());
@@ -515,7 +515,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
       char *enforce_user = mconf_get_enforce_user();
 
       if (enforce_user && !strcasecmp(enforce_user, "auto")) {
-         int status = sge_add_auto_user(ctx, ruser, alpp, monitor);
+         int status = sge_add_auto_user(ruser, alpp, monitor);
 
          if (status != STATUS_OK) {
             sge_free(&enforce_user);

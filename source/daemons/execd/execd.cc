@@ -163,7 +163,6 @@ int main(int argc, char **argv)
    time_t next_prof_output = 0;
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "execd");
@@ -202,7 +201,7 @@ int main(int argc, char **argv)
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(EXECD);
 
-   if (sge_setup2(&ctx, EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
+   if (sge_setup2(EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -290,7 +289,7 @@ int main(int argc, char **argv)
    }
 
    /* daemonizes if qmaster is unreachable */   
-   sge_setup_sge_execd(ctx, tmp_err_file_name);
+   sge_setup_sge_execd(tmp_err_file_name);
 
    /* are we using qidle or not */
    sge_ls_qidle(mconf_get_use_qidle());
@@ -305,7 +304,7 @@ int main(int argc, char **argv)
    }
    
    /* here we have to wait for qmaster registration */
-   while (sge_execd_register_at_qmaster(ctx, false) != 0) {
+   while (sge_execd_register_at_qmaster(false) != 0) {
       if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true)) {
          /* This is no error */
          DPRINTF(("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n"));
@@ -324,7 +323,7 @@ int main(int argc, char **argv)
     * Terminate on SIGTERM or hard communication error
     */
    if (execd_exit_state != 0 || shut_me_down != 0) {
-      sge_shutdown((void**)&ctx, execd_exit_state);
+      sge_shutdown(execd_exit_state);
       DRETURN(execd_exit_state);
    }
 
@@ -361,7 +360,7 @@ int main(int argc, char **argv)
    job_list_read_from_disk(master_job_list, "Master_Job_List", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
-   clean_up_old_jobs(ctx, 1);
+   clean_up_old_jobs(1);
    execd_trash_load_report();
    sge_set_flush_lr_flag(true);
 
@@ -380,7 +379,7 @@ int main(int argc, char **argv)
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
    /* Start dispatching */
-   execd_exit_state = sge_execd_process_messages(ctx);
+   execd_exit_state = sge_execd_process_messages();
 
 
    /*
@@ -410,7 +409,7 @@ int main(int argc, char **argv)
    }
    sge_prof_cleanup();
 
-   sge_shutdown((void**)&ctx, execd_exit_state);
+   sge_shutdown(execd_exit_state);
    DRETURN(execd_exit_state);
 }
 
@@ -465,7 +464,7 @@ static void execd_exit_func(int i)
 *     MT-NOTE: sge_execd_register_at_qmaster() is not MT safe 
 *
 *******************************************************************************/
-int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
+int sge_execd_register_at_qmaster(bool is_restart) {
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
    lList *alp = nullptr;
@@ -494,13 +493,13 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = sge_gdi2(ctx, SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
+         alp = sge_gdi2(SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = sge_gdi2(ctx, SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
+         alp = sge_gdi2(SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
                         &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);

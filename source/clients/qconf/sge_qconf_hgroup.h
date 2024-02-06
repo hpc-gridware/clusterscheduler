@@ -32,22 +32,20 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *group);
+lListElem *hgroup_get_via_gdi(lList **answer_list, const char *group);
 
-bool hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list,
-                                   u_long32 gdi_command);
+bool hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 gdi_command);
 
-bool hgroup_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+bool hgroup_show(lList **answer_list, const char *name);
 
-bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name,
-                           bool show_tree);
+bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree);
 
-bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name, bool is_name_validate);
+bool hgroup_add(lList **answer_list, const char *name, bool is_name_validate);
 
-bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+bool hgroup_modify(lList **answer_list, const char *name);
 
-bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name);
+bool hgroup_delete(lList **answer_list, const char *name);
 
-bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
+bool hgroup_add_from_file(lList **answer_list, const char *filename);
 
-bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
+bool hgroup_modify_from_file(lList **answer_list, const char *filename);

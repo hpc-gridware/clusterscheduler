@@ -46,7 +46,7 @@
 
 
 static int
-host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int tag, int progname_id);
+host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id);
 
 /****** qmaster/host/host_notify_about_X() *************************************
 *  NAME
@@ -90,7 +90,7 @@ host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int t
 *     qmaster/host/host_notify_about_featureset()
 *******************************************************************************/
 static int
-host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int tag, int progname_id) {
+host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
    const char *hostname = nullptr;
    sge_pack_buffer pb;
    int ret = -1;
@@ -145,8 +145,8 @@ host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int t
 *  SEE ALSO
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
-int host_notify_about_new_conf(sge_gdi_ctx_class_t *ctx, lListElem *host) {
-   return host_notify_about_X(ctx, host, 0, TAG_GET_NEW_CONF, EXECD);
+int host_notify_about_new_conf(lListElem *host) {
+   return host_notify_about_X(host, 0, TAG_GET_NEW_CONF, EXECD);
 }
 
 /****** qmaster/host/host_notify_about_kill() *********************************
@@ -169,11 +169,11 @@ int host_notify_about_new_conf(sge_gdi_ctx_class_t *ctx, lListElem *host) {
 *  SEE ALSO
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
-int host_notify_about_kill(sge_gdi_ctx_class_t *ctx, lListElem *host, int kill_command) {
-   return host_notify_about_X(ctx, host, kill_command, TAG_KILL_EXECD, EXECD);
+int host_notify_about_kill(lListElem *host, int kill_command) {
+   return host_notify_about_X(host, kill_command, TAG_KILL_EXECD, EXECD);
 }
 
-int host_notify_about_full_load_report(sge_gdi_ctx_class_t *ctx, lListElem *host) {
-   return host_notify_about_X(ctx, host, 0, TAG_FULL_LOAD_REPORT, EXECD);
+int host_notify_about_full_load_report(lListElem *host) {
+   return host_notify_about_X(host, 0, TAG_FULL_LOAD_REPORT, EXECD);
 }
 

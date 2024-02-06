@@ -48,6 +48,6 @@ struct report_handler_str {
    int (*destroy)(report_handler_t** handler, lList **alpp);
 };
 
-bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_match_list, lList *user_list,
+bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_list,
                 lList *pe_list, lList *project_list, lList *cqueue_list, lList **alpp,
                 report_handler_t* report_handler);

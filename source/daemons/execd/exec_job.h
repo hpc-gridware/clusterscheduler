@@ -33,5 +33,5 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
+int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
 lListElem* responsible_queue(lListElem *jep, lListElem *, lListElem *petep);

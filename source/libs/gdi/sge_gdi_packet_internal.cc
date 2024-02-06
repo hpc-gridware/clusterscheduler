@@ -67,8 +67,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *
 *  SYNOPSIS
 *     static bool 
-*     sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, 
-*                                        lList **answer_list, 
+*     sge_gdi_packet_create_multi_answer(lList **answer_list,
 *                                        sge_gdi_packet_class_t **packet, 
 *                                        lList **malpp) 
 *
@@ -85,8 +84,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     after return.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx        - context (not used) 
-*     lList **answer_list             - answer_list (not used) 
+*     lList **answer_list             - answer_list (not used)
 *     sge_gdi_packet_class_t **packet - packet 
 *     lList **malpp                   - multi answer
 *
@@ -383,8 +381,7 @@ static bool get_cl_ping_value(void) {
 *
 *  SYNOPSIS
 *     bool 
-*     sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, 
-*                                     lList **answer_list, 
+*     sge_gdi_packet_execute_external(lList **answer_list,
 *                                     sge_gdi_packet_class_t *packet) 
 *
 *  FUNCTION
@@ -405,8 +402,7 @@ static bool get_cl_ping_value(void) {
 *     in the packet after this function has been called.
 *     
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx       - context handle 
-*     lList **answer_list            - answer list 
+*     lList **answer_list            - answer list
 *     sge_gdi_packet_class_t *packet - packet 
 *
 *  RESULT
@@ -424,8 +420,7 @@ static bool get_cl_ping_value(void) {
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 bool 
-sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list, 
-                                sge_gdi_packet_class_t *packet) 
+sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *packet)
 {
    bool ret = true;
    sge_pack_buffer pb;
@@ -468,7 +463,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
              next_job = lNextRW(job);
 
              lDechainElem(task->data_list, job);
-             ret &= jsv_do_verify(ctx, JSV_CONTEXT_CLIENT, &job, answer_list, false);
+             ret &= jsv_do_verify(JSV_CONTEXT_CLIENT, &job, answer_list, false);
              lInsertElem(task->data_list, nullptr, job);
           }
        }
@@ -711,8 +706,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *
 *  SYNOPSIS
 *     bool 
-*     sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, 
-*                                     lList **answer_list, 
+*     sge_gdi_packet_execute_internal(lList **answer_list,
 *                                     sge_gdi_packet_class_t *packet) 
 *
 *  FUNCTION
@@ -735,8 +729,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *
 *     
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx       - context handle 
-*     lList **answer_list            - answer list 
+*     lList **answer_list            - answer list
 *     sge_gdi_packet_class_t *packet - packet 
 *
 *  RESULT
@@ -754,8 +747,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 bool 
-sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list, 
-                                sge_gdi_packet_class_t *packet) 
+sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet)
 {
    bool ret = true;
 
@@ -788,8 +780,7 @@ sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *
 *  SYNOPSIS
 *     bool 
-*     sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, 
-*                                             lList **answer_list, 
+*     sge_gdi_packet_wait_for_result_external(lList **answer_list,
 *                                             sge_gdi_packet_class_t *packet, 
 *                                             lList **malpp) 
 *
@@ -800,8 +791,7 @@ sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *     answer list.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx        - context handle 
-*     lList **answer_list             - answer list 
+*     lList **answer_list             - answer list
 *     sge_gdi_packet_class_t **packet - GDI packet 
 *     lList **malpp                   - multi answer list 
 *
@@ -820,8 +810,7 @@ sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 bool 
-sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                        sge_gdi_packet_class_t **packet, lList **malpp)
+sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
 {
    bool ret = true;
 
@@ -842,8 +831,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 *
 *  SYNOPSIS
 *     bool 
-*     sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, 
-*                                             lList **answer_list, 
+*     sge_gdi_packet_wait_for_result_internal(lList **answer_list,
 *                                             sge_gdi_packet_class_t *packet, 
 *                                             lList **malpp) 
 *
@@ -856,8 +844,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 *     After that it creates a multi answer list.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx        - context handle 
-*     lList **answer_list             - answer list 
+*     lList **answer_list             - answer list
 *     sge_gdi_packet_class_t **packet - GDI packet 
 *     lList **malpp                   - multi answer list 
 *
@@ -876,8 +863,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 bool 
-sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
-                                        sge_gdi_packet_class_t **packet, lList **malpp)
+sge_gdi_packet_wait_for_result_internal(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
 {
    bool ret = true;
 

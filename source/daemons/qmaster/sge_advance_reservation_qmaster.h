@@ -42,23 +42,22 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object);
+ar_spool(lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
            monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **ar_list, const char *ruser, const char *rhost,
-       monitoring_t *monitor);
+ar_del(lListElem *ep, lList **alpp, lList **ar_list, const char *ruser, const char *rhost, monitoring_t *monitor);
 
 void
-sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);
 
 void
 sge_init_ar_id(void);
@@ -70,7 +69,7 @@ void
 ar_initialize_reserved_queue_list(lListElem *ar);
 
 void
-sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
 ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list, const char *qinstance_name,
@@ -85,7 +84,7 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
                                           u_long32 new_slots);
 
 bool
-sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, monitoring_t *monitor);
+sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor);
 
 bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, const lListElem *cal_ep,
@@ -115,4 +114,4 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                                                  const lList *ce_master_list);
 
 void
-ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t *monitor);
+ar_initialize_timer(lList **answer_list, monitoring_t *monitor);

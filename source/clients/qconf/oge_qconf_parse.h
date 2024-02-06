@@ -45,4 +45,4 @@ typedef struct object_info_entry {
    bool (*pre_gdi_function)(lList *list, lList **answer_list);
 } object_info_entry;
 
-int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char **argv);
+int sge_parse_qconf(char **argv);

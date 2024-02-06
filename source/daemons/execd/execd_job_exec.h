@@ -33,8 +33,8 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *apb);
+int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb);
 
-int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg);
+int do_job_slave(struct_msg_t *aMsg);
 
 bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname);

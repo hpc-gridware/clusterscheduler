@@ -48,7 +48,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cull_xml.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
 
@@ -373,7 +373,6 @@ int main(int argc, char **argv)
    qhost_report_handler_t *report_handler = nullptr;
    int is_ok = 0;
    int qhost_result = 0;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qhost");
 
@@ -381,7 +380,7 @@ int main(int argc, char **argv)
    log_state_set_log_gui(true);
    sge_setup_sig_handlers(QHOST);
 
-   if (sge_gdi2_setup(&ctx, QHOST, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QHOST, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);
@@ -426,7 +425,7 @@ int main(int argc, char **argv)
       sge_exit(0);
    }
 
-   qhost_result = do_qhost(ctx, host_list, ul, resource_match_list, resource_list, 
+   qhost_result = do_qhost(host_list, ul, resource_match_list, resource_list,
                            show, &alp, report_handler);
 
    if (report_handler != nullptr) {

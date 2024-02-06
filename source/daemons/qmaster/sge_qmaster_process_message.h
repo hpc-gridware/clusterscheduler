@@ -37,4 +37,4 @@
 #include "gdi/sge_gdi_packet.h"
 
 void 
-sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
+sge_qmaster_process_message(monitoring_t *monitor);

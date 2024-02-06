@@ -60,7 +60,7 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
 }
 
 void
-sge_listener_initialize(sge_gdi_ctx_class_t *ctx) {
+sge_listener_initialize() {
    const u_long32 max_initial_listener_threads = bootstrap_get_listener_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
    u_long32 i;
@@ -129,7 +129,6 @@ sge_listener_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER);
@@ -137,7 +136,7 @@ sge_listener_main(void *arg) {
    DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(&monitor, thread_config->thread_name, LIS_EXT, MT_WARNING, MT_ERROR);
-   sge_qmaster_thread_init(&ctx, QMASTER, LISTENER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, LISTENER_THREAD, true);
 
    /* register at profiling module */
    set_thread_name(pthread_self(), "Listener Thread");
@@ -150,7 +149,7 @@ sge_listener_main(void *arg) {
       if (sge_thread_has_shutdown_started() == false) {
          thread_start_stop_profiling();
 
-         sge_qmaster_process_message(ctx, &monitor);
+         sge_qmaster_process_message(&monitor);
 
          thread_output_profiling("listener thread profiling summary:\n",
                                  &next_prof_output);

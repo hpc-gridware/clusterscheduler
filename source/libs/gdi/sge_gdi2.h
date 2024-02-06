@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull_list.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi.h"
 #include "sgeobj/sge_conf.h"
 
 enum {
@@ -72,20 +72,18 @@ typedef struct {
 } struct_msg_t;
 
 lList
-*sge_gdi2(sge_gdi_ctx_class_t *ctx, u_long32 target, u_long32 cmd, 
-          lList **lpp, lCondition *cp, lEnumeration *enp);
+*sge_gdi2(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp);
 
 int
-sge_gdi2_multi(sge_gdi_ctx_class_t *ctx, lList **alpp, int mode, 
+sge_gdi2_multi(lList **alpp, int mode,
                u_long32 target, u_long32 cmd, lList **lp, 
                lCondition *cp, lEnumeration *enp, state_gdi_multi *state, bool do_copy);
 
 bool
-sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state);
+sge_gdi2_is_done(lList **alpp, state_gdi_multi *state);
 
 bool 
-sge_gdi2_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp, 
-              state_gdi_multi *state);
+sge_gdi2_wait(lList **alpp, lList **malpp, state_gdi_multi *state);
 
 int sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
                     int *tag, int synchron, u_long32 for_request_mid, u_long32* mid);
@@ -95,10 +93,10 @@ int sge_gdi2_send_any_request(int synchron, u_long32 *mid,
                               sge_pack_buffer *pb, 
                               int tag, u_long32  response_id, lList **alpp);
 
-lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag);
-lList *gdi2_tsm( sge_gdi_ctx_class_t *thiz);
+lList *gdi2_kill(lList *id_list, u_long32 action_flag);
+lList *gdi2_tsm();
 
-bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int option);
+bool sge_gdi2_check_permission(lList **alpp, int option);
 
 int gdi2_send_message_pb(int synchron, const char *tocomproc, int toid,
                          const char *tohost, int tag, sge_pack_buffer *pb, 
@@ -107,13 +105,12 @@ int gdi2_send_message_pb(int synchron, const char *tocomproc, int toid,
 int gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                          int *tag, char **buffer, u_long32 *buflen, int synchron);
 
-int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name, 
+int gdi2_get_configuration(const char *config_name,
                            lListElem **gepp, lListElem **lepp );
 
-int gdi2_get_merged_configuration(sge_gdi_ctx_class_t *ctx, 
-                                  lList **conf_list);
+int gdi2_get_merged_configuration(lList **conf_list);
 
-int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list);
+int gdi2_wait_for_conf(lList **conf_list);
                                 
 int report_list_send(const lList *rlp, const char *rhost,
                      const char *commproc, int id,
@@ -146,12 +143,10 @@ void gdi_rmon_print_callback_function(const char *progname,
                                       unsigned long thread_id);
 #endif
 
-bool gdi2_send_multi_sync(sge_gdi_ctx_class_t* ctx, lList **alpp,
-                                 state_gdi_multi *state);
+bool gdi2_send_multi_sync(lList **alpp, state_gdi_multi *state);
 
 bool
-sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
-                       lList *mal, lList **olpp);
+sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 
 
 void gdi2_default_exit_func(int i);

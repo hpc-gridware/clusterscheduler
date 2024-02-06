@@ -902,7 +902,7 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 *     MT-NOTE: Otherwise a deadlock may occur due to recursive mutex locking.
 *
 *******************************************************************************/
-void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    int i = 0;
    te_handler_t handler = nullptr;
 
@@ -924,7 +924,7 @@ void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mon
    sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
    if (handler != nullptr) {
-      handler(ctx, anEvent, monitor);
+      handler(anEvent, monitor);
    } else {
       WARNING((SGE_EVENT, MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I, anEvent->type));
    }

@@ -36,7 +36,7 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void
-sge_event_master_initialize(sge_gdi_ctx_class_t *ctx);
+sge_event_master_initialize();
 
 void
 sge_event_master_terminate(void);

@@ -44,44 +44,43 @@
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_host(sge_gdi_ctx_class_t *context, lListElem *, lList **, char *, char *, u_long32,
+sge_del_host(lListElem *, lList **, char *, char *, u_long32,
              const lList *master_hGroup_List);
 
 int
-host_spool(sge_gdi_ctx_class_t *context, lList **alpp, lListElem *ep, gdi_object_t *object);
+host_spool(lList **alpp, lListElem *ep, gdi_object_t *object);
 
 int
-host_mod(sge_gdi_ctx_class_t *context, lList **alpp, lListElem *new_host, lListElem *ep, int add, const char *ruser,
+host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add, const char *ruser,
          const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-host_success(sge_gdi_ctx_class_t *context, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-             monitoring_t *monitor);
+host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 void
 sge_mark_unheard(lListElem *hep);
 
 int
-sge_add_host_of_type(sge_gdi_ctx_class_t *context, const char *hostname, u_long32 target, monitoring_t *monitor);
+sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monitor);
 
 void
-sge_gdi_kill_exechost(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
+sge_gdi_kill_exechost(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
 
 void
-sge_update_load_values(sge_gdi_ctx_class_t *context, const char *rhost, lList *lp);
+sge_update_load_values(const char *rhost, lList *lp);
 
 void
-sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *context, te_event_t anEvent, monitoring_t *monitor);
+sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_execd_startedup(sge_gdi_ctx_class_t *context, lListElem *hep, lList **alpp, char *ruser, char *rhost,
+sge_execd_startedup(lListElem *hep, lList **alpp, char *ruser, char *rhost,
                     u_long32 target, monitoring_t *monitor, bool is_restart);
 
 u_long32
 load_report_interval(lListElem *hep);
 
 bool
-host_list_add_missing_href(sge_gdi_ctx_class_t *context, const lList *this_list, lList **answer_list,
+host_list_add_missing_href(const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor);
 
 void

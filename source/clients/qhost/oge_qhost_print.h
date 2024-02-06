@@ -70,5 +70,5 @@ struct qhost_report_handler_str {
    int (*destroy)(qhost_report_handler_t** handler, lList **alpp);
 };
 
-int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList *resource_match_list, 
+int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
               lList *resource_list, u_long32 show, lList **alp, qhost_report_handler_t* report_handler);

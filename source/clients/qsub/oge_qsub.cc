@@ -62,8 +62,6 @@
 #include "msg_qsub.h"
 #include "msg_qmaster.h"
 
-extern sge_gdi_ctx_class_t *ctx;
-
 extern char **environ;
 static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t exit_cv = PTHREAD_COND_INITIALIZER;

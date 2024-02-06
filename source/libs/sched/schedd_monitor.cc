@@ -46,7 +46,7 @@
 
 static char schedd_log_file[SGE_PATH_MAX + 1] = "";
 
-void schedd_set_schedd_log_file(sge_gdi_ctx_class_t *ctx)
+void schedd_set_schedd_log_file()
 {
    const char *cell_root = bootstrap_get_cell_root();
    

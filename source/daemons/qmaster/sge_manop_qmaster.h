@@ -35,7 +35,7 @@
 #include "gdi/sge_gdi_ctx.h"
 
 int
-sge_add_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
+sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
 
 int
-sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
+sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);

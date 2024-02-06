@@ -36,10 +36,10 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_hostname.h"
 
 #include "qmaster_heartbeat.h"
 #include "sge_qmaster_heartbeat.h"
-#include "sge_qmaster_threads.h"
 #include "sge_thread_main.h"
 #include "shutdown.h"
 
@@ -113,7 +113,7 @@ heartbeat_initialize(void)
 *
 *******************************************************************************/
 void 
-increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
+increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 {
    int retval = 0;
    int heartbeat = 0;
@@ -158,7 +158,7 @@ increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *
                /* TODO: here the ctx reference is not transported back
                **       event_handler functions should use &ctx instead
                */
-               sge_shutdown((void**)&ctx, 1);
+               sge_shutdown(1);
             }
          } else {
             DPRINTF(("(heartbeat) - act_qmaster file contains hostname "SFQ"\n", act_qmaster_name));

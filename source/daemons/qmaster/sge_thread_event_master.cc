@@ -69,7 +69,7 @@ sge_event_master_cleanup_report_list(lList **list)
 }
 
 void 
-sge_event_master_initialize(sge_gdi_ctx_class_t *ctx)
+sge_event_master_initialize()
 {
    cl_thread_settings_t* dummy_thread_p = nullptr;
    dstring thread_name = DSTRING_INIT;
@@ -110,7 +110,6 @@ sge_event_master_main(void *arg)
 {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
@@ -123,7 +122,7 @@ sge_event_master_main(void *arg)
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, EDT_EXT, EMT_WARNING, EMT_ERROR);
-   sge_qmaster_thread_init(&ctx, QMASTER, DELIVERER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, DELIVERER_THREAD, true);
 
    /* register at profiling module */
    set_thread_name(pthread_self(), "Deliver Thread");
@@ -150,7 +149,7 @@ sge_event_master_main(void *arg)
       MONITOR_CLIENT_COUNT(p_monitor, lGetNumberOfElem(Event_Master_Control.clients));
 
       sge_event_master_process_requests(p_monitor);
-      sge_event_master_send_events(ctx, report, report_list, p_monitor);
+      sge_event_master_send_events(report, report_list, p_monitor);
       sge_monitor_output(p_monitor);
 
       thread_output_profiling("event master thread profiling summary:\n",

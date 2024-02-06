@@ -339,7 +339,7 @@ sge_add_check_limit_trigger(void) {
 *     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() 
 *******************************************************************************/
 void
-sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor) {
+sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    if (is_module_enabled()) {
@@ -429,7 +429,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                            lListElem *dummy_jr = lCreateElem(JR_Type);
 
                            job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
-                           reporting_create_acct_record(ctx, nullptr, dummy_jr, job, ja_task, false);
+                           reporting_create_acct_record(nullptr, dummy_jr, job, ja_task, false);
                            lFreeElem(&dummy_jr);
                         }
                      }
@@ -440,7 +440,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                    */
                   dummy_jr = lCreateElem(JR_Type);
                   job_report_init_from_job_with_usage(dummy_jr, job, ja_task, nullptr, now);
-                  reporting_create_acct_record(ctx, nullptr, dummy_jr, job, ja_task, false);
+                  reporting_create_acct_record(nullptr, dummy_jr, job, ja_task, false);
                   lFreeElem(&dummy_jr);
                   reporting_create_job_log(nullptr, now, JL_DELETED, MSG_SCHEDD,
                                            lGetHost(gdil_ep, JG_qhostname),
@@ -449,7 +449,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                   /*
                    * Assassinate the job (qdel -f)
                    */
-                  sge_commit_job(ctx, job, ja_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
+                  sge_commit_job(job, ja_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
                   job = nullptr;
                   ja_task = nullptr;

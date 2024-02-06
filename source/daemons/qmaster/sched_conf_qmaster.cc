@@ -48,11 +48,11 @@
 #include "msg_common.h"
 
 static void
-check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser, char *rhost);
+check_reprioritize_interval(lList **alpp, char *ruser, char *rhost);
 
 
 int
-sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **anAnswer) {
+sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
    lList *sched_conf = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -76,7 +76,7 @@ sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolCo
       DRETURN(-1);
    }
 
-   check_reprioritize_interval(ctx, anAnswer, "local", "local");
+   check_reprioritize_interval(anAnswer, "local", "local");
 
    DRETURN(0);
 }
@@ -89,7 +89,7 @@ sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolCo
   Master_Sched_Config_List. So we replace it with the new one.
  ************************************************************/
 int
-sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *rhost) {
    lList *temp_conf_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -113,15 +113,14 @@ sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (!sge_event_spool(ctx,
-                        alpp, 0, sgeE_SCHED_CONF,
+   if (!sge_event_spool(alpp, 0, sgeE_SCHED_CONF,
                         0, 0, "schedd_conf", nullptr, nullptr,
                         confp, nullptr, nullptr, true, true)) {
       answer_list_add(alpp, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
 
-   check_reprioritize_interval(ctx, alpp, ruser, rhost);
+   check_reprioritize_interval(alpp, ruser, rhost);
 
    INFO((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration"));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -131,7 +130,7 @@ sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **
 
 
 static void
-check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser, char *rhost) {
+check_reprioritize_interval(lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (((sconf_get_reprioritize_interval() == 0) && (mconf_get_reprioritize())) ||
@@ -141,7 +140,7 @@ check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser,
 
       sge_set_conf_reprioritize(conf, flag);
 
-      sge_mod_configuration(ctx, conf, alpp, ruser, rhost);
+      sge_mod_configuration(conf, alpp, ruser, rhost);
 
       lFreeElem(&conf);
    }

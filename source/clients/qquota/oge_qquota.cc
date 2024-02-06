@@ -53,7 +53,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_cull_xml.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
 
@@ -202,13 +202,12 @@ int main(int argc, char **argv)
    lList *alp = nullptr;
    report_handler_t *report_handler = nullptr;
    bool qquota_result = true;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qquota");
 
    log_state_set_log_gui(true);
 
-   if (sge_gdi2_setup(&ctx, QQUOTA, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QQUOTA, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);
@@ -269,7 +268,7 @@ int main(int argc, char **argv)
       sge_exit(1);
    }
 
-   qquota_result = qquota_output(ctx, host_list, resource_match_list, user_list, pe_list, project_list, cqueue_list, &alp, report_handler);
+   qquota_result = qquota_output(host_list, resource_match_list, user_list, pe_list, project_list, cqueue_list, &alp, report_handler);
 
    if (report_handler != nullptr ) {
       report_handler->destroy(&report_handler, &alp);

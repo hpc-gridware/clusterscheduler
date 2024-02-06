@@ -40,8 +40,6 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_qinstance_state.h"
 
-#include "gdi/sge_gdi_ctx_type.h"
-
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
@@ -277,14 +275,14 @@ static time_frame_entry_t time_frame_tests[] = {
 
 
 /* test functions */
-static int test(sge_gdi_ctx_class_t *context, date_entry_t *test, cal_entry_t *calendar, int test_nr); 
+static int test(date_entry_t *test, cal_entry_t *calendar, int test_nr);
 static int test_state_change_list(date_entry_t *test, lList *state_changes);
 static int test_state_change(lListElem *stateObject, u_long32 state, struct tm *time, int elemNr);
 
-static int test_time_frame(sge_gdi_ctx_class_t *context, time_frame_entry_t *test, cal_entry_t *calendar, int test_nr); 
+static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int test_nr);
 
 /* setup functions */
-static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *calendar);
+static lListElem *createCalObject(cal_entry_t *calendar);
 
 /* output functions */
 static void printDateError(time_t *when, struct tm *time);
@@ -463,7 +461,7 @@ static void printDateError(time_t *when, struct tm *time)
 *     MT-NOTE: createCalObject() is MT safe 
 *
 *******************************************************************************/
-static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *calendar) 
+static lListElem *createCalObject(cal_entry_t *calendar)
 {
    monitoring_t monitor;
    lListElem *sourceCal = nullptr;
@@ -480,7 +478,7 @@ static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *cal
 
    destCal = lCreateElem(CAL_Type);
    
-   if (0 != calendar_mod(context, &answerList, destCal, sourceCal, 1, "", "", nullptr, 0, &monitor)) {
+   if (0 != calendar_mod(&answerList, destCal, sourceCal, 1, "", "", nullptr, 0, &monitor)) {
       lWriteListTo(answerList, stdout);
       lFreeElem(&destCal);
       lFreeList(&answerList);
@@ -516,7 +514,7 @@ static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *cal
 *     MT-NOTE: test() is MT safe 
 *
 *******************************************************************************/
-static int test(sge_gdi_ctx_class_t *context, date_entry_t *test, cal_entry_t *calendar, int test_nr) 
+static int test(date_entry_t *test, cal_entry_t *calendar, int test_nr)
 {
    lListElem *destCal = nullptr;
    int ret = 1;
@@ -539,7 +537,7 @@ static int test(sge_gdi_ctx_class_t *context, date_entry_t *test, cal_entry_t *c
    printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);  
 
    /* start test */
-   if ((destCal = createCalObject(context, calendar)) != nullptr) {
+   if ((destCal = createCalObject(calendar)) != nullptr) {
       u_long32 current_state;
       time_t when = 0;
       time_t now  = mktime(&test->now);
@@ -589,7 +587,6 @@ int main(int argc, char* argv[])
    int test_counter = 0;
    int i = 0;
    int failed = 0;
-   sge_gdi_ctx_class_t *context = nullptr;
    int cal_index = 0;
 
    lInit(nmv);
@@ -599,9 +596,7 @@ int main(int argc, char* argv[])
    printf("---------------------\n");
 
    while ((cal_index = tests[i].cal_nr) != -1) {
-      if (test(context, &(tests[i]), 
-               &(calendars[cal_index]), 
-               i) != 0) {
+      if (test(&(tests[i]), &(calendars[cal_index]), i) != 0) {
          failed++; 
       }   
       i++;
@@ -610,9 +605,7 @@ int main(int argc, char* argv[])
 
    i=0;
    while ((cal_index = time_frame_tests[i].cal_nr) != -1) {
-      if (test_time_frame(context, &(time_frame_tests[i]),
-                          &(calendars[cal_index]),
-                          i) != 0) {
+      if (test_time_frame(&(time_frame_tests[i]), &(calendars[cal_index]), i) != 0) {
          failed++;
       }
       i++;
@@ -629,7 +622,7 @@ int main(int argc, char* argv[])
    return failed;
 }
 
-static int test_time_frame(sge_gdi_ctx_class_t *context, time_frame_entry_t *test, cal_entry_t *calendar, int test_nr)
+static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int test_nr)
 {
    int ret = 0;
    lListElem *destCal = nullptr;
@@ -669,7 +662,7 @@ static int test_time_frame(sge_gdi_ctx_class_t *context, time_frame_entry_t *tes
       (end_tm->tm_isdst?"true":"false"));
    printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);  
 
-   if ((destCal = createCalObject(context, calendar)) != nullptr) {
+   if ((destCal = createCalObject(calendar)) != nullptr) {
       bool result = calendar_open_in_time_frame(destCal, start_time, test->duration);
       if (test->open != result) {
          printf("wrong state for time frame: expected %d, got %d\n", test->open, result);

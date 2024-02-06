@@ -93,7 +93,7 @@ static void usage(const char *argv0)
    fprintf(stderr, "%s\n", MSG_SPOOLDEFAULTS_USERSETS);
 }
 
-static int init_framework(sge_gdi_ctx_class_t *ctx)
+static int init_framework()
 {
    int ret = EXIT_FAILURE;
 
@@ -374,14 +374,13 @@ int main(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
 
    log_state_set_log_gui(0);
    prof_mt_init();
 
-   if (sge_setup2(&ctx, SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
+   if (sge_setup2(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       show_answer(answer_list);
       lFreeList(&answer_list);
       sge_exit(EXIT_FAILURE);
@@ -392,7 +391,7 @@ int main(int argc, char *argv[])
       usage(argv[0]);
       ret = EXIT_FAILURE;
    } else {
-      ret = init_framework(ctx);
+      ret = init_framework();
 
       if (ret == EXIT_SUCCESS) {
          if (strcmp(argv[1], "test") == 0) {

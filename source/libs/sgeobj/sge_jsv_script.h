@@ -34,7 +34,7 @@
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 
 bool
-jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_list);
+jsv_do_communication(lListElem *jsv, lList **answer_list);
 
 bool
-jsv_is_modify_rejected(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *job);
+jsv_is_modify_rejected(lList **answer_list, lListElem *job);

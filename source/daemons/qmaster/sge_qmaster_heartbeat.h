@@ -41,4 +41,4 @@ void
 heartbeat_initialize(void);
 
 void       
-increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+increment_heartbeat(te_event_t anEvent, monitoring_t *monitor);

@@ -52,6 +52,8 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 
+#include "sge.h"
+
 /* includes for old job spooling */
 #include "spool/sge_dirent.h"
 #include "spool/msg_spoollib.h"

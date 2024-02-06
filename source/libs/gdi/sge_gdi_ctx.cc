@@ -99,50 +99,6 @@ void sc_mt_init(void);
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi_packet_internal.h"
 
-typedef struct {
-   sge_gdi_ctx_class_t* ctx;
-} sge_gdi_ctx_thread_local_t;
-
-static pthread_once_t sge_gdi_ctx_once = PTHREAD_ONCE_INIT;
-static pthread_key_t  sge_gdi_ctx_key;
-static void sge_gdi_thread_local_ctx_once_init(void);
-static void sge_gdi_thread_local_ctx_destroy(void* theState);
-static void sge_gdi_thread_local_ctx_init(sge_gdi_ctx_thread_local_t* theState);
-
-static void sge_gdi_thread_local_ctx_once_init(void)
-{
-   pthread_key_create(&sge_gdi_ctx_key, sge_gdi_thread_local_ctx_destroy);
-}
-
-static void sge_gdi_thread_local_ctx_destroy(void* theState) {
-   sge_gdi_ctx_thread_local_t *tl = (sge_gdi_ctx_thread_local_t*)theState;
-   tl->ctx = nullptr;
-   sge_free(&theState);
-}
-
-static void sge_gdi_thread_local_ctx_init(sge_gdi_ctx_thread_local_t* theState)
-{
-   memset(theState, 0, sizeof(sge_gdi_ctx_thread_local_t));
-}
-
-void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
-
-   DENTER(TOP_LAYER);
-
-   pthread_once(&sge_gdi_ctx_once, sge_gdi_thread_local_ctx_once_init);
-   {
-      GET_SPECIFIC(sge_gdi_ctx_thread_local_t, tl, sge_gdi_thread_local_ctx_init, sge_gdi_ctx_key);
-      tl->ctx = ctx;
-
-      if (ctx != nullptr) {
-         log_state_set_log_context(ctx);
-      } else {
-         log_state_set_log_context(nullptr);
-      }
-   }
-   DRETURN_VOID;
-}
-
 static bool
 sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client);
 
@@ -151,50 +107,20 @@ static int ctx_get_last_commlib_error();
 static void ctx_set_last_commlib_error(int cl_error);
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p);
 
-static sge_gdi_ctx_class_t *
+void
 sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmaster_internal_client, lList **alpp)
 {
-   sge_gdi_ctx_class_t *ret = (sge_gdi_ctx_class_t *)sge_malloc(sizeof(sge_gdi_ctx_class_t));
-
    DENTER(TOP_LAYER);
-
-   if (!ret) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(nullptr);
-   }
-
-   if (is_qmaster_internal_client) {
-      ret->sge_gdi_packet_execute = sge_gdi_packet_execute_internal;
-      ret->sge_gdi_packet_wait_for_result = sge_gdi_packet_wait_for_result_internal;
-   } else {
-      ret->sge_gdi_packet_execute = sge_gdi_packet_execute_external;
-      ret->sge_gdi_packet_wait_for_result = sge_gdi_packet_wait_for_result_external;
-   }
 
    if (!sge_gdi_ctx_setup(prog_number, thread_name, is_qmaster_internal_client)) {
       answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
-      sge_gdi_ctx_class_destroy(&ret);
-      DRETURN(nullptr);
+      DRETURN_VOID;
    }
 
    /*
    ** set default exit func, maybe overwritten
    */
    bootstrap_set_exit_func(gdi2_default_exit_func);
-
-   DRETURN(ret);
-}
-
-void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst)
-{
-   DENTER(TOP_LAYER);
-
-   if (!pst || !*pst) {
-      DRETURN_VOID;
-   }
-
-   /* free internal context structure */
-   sge_free(pst);
 
    DRETURN_VOID;
 }
@@ -627,13 +553,13 @@ int sge_gdi_ctx_class_prepare_enroll() {
    DRETURN(cl_ret);
 }
 
-lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag)
+lList* sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag)
 {
    lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
-   alp = gdi2_kill(thiz, id_list, action_flag);
+   alp = gdi2_kill(id_list, action_flag);
 
    DRETURN(alp);
 
@@ -722,7 +648,7 @@ static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
 ** only helper function to do the setup for clients similar to sge_setup()
 */
 int
-sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client)
+sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client)
 {
    char  user[128] = "";
    char  group[128] = "";
@@ -730,13 +656,9 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, l
 
    DENTER(TOP_LAYER);
 
-   if (context == nullptr) {
-      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_GDI_CONTEXT_NULL);
-      DRETURN(AE_ERROR);
-   }
-
    bootstrap_mt_init();
    bootstrap_set_component_id(progid);
+   bootstrap_set_qmaster_internal(is_qmaster_intern_client);
    gdi3_mt_init();
 
    /*
@@ -760,24 +682,7 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, l
    }
 
    /* a dynamic eh handler is created */
-   *context = sge_gdi_ctx_class_create(progid, threadnames[thread_id], is_qmaster_intern_client, alpp);
-
-   if (*context == nullptr) {
-      DRETURN(AE_ERROR);
-   }
-
-   /* 
-   ** TODO: we set the log state context here 
-   **       this should be done more explicitily !!!
-   */
-   log_state_set_log_context(*context);
-
-   /* 
-   ** TODO: bootstrap info is used in cull functions sge_hostcpy
-   **       ignore_fqdn, domain_name
-   **       Therefore we have to set it into the thread ctx
-   */
-   sge_gdi_set_thread_local_ctx(*context);
+   sge_gdi_ctx_class_create(progid, threadnames[thread_id], is_qmaster_intern_client, alpp);
 
    DRETURN(AE_OK);
 }
@@ -786,7 +691,7 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, l
 ** TODO: 
 ** only helper function to do the setup for clients similar to sge_gdi_setup()
 */
-int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 thread_id, lList **alpp)
+int sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp)
 {
    int ret = AE_OK;
    bool alpp_was_null = true;
@@ -796,7 +701,7 @@ int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 
    bootstrap_mt_init();
    gdi3_mt_init();
 
-   if (context_ref && gdi3_is_setup()) {
+   if (gdi3_is_setup()) {
       if (alpp_was_null) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_GDI_ALREADY_SETUP));
       } else {
@@ -805,7 +710,7 @@ int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 
       }
       DRETURN(AE_ALREADY_SETUP);
    }
-   ret = sge_setup2(context_ref, progid, thread_id, alpp, false);
+   ret = sge_setup2(progid, thread_id, alpp, false);
    if (ret != AE_OK) {
       DRETURN(ret);
    }

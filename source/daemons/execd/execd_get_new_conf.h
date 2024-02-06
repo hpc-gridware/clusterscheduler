@@ -34,4 +34,4 @@
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
 
-int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg);
+int do_get_new_conf(struct_msg_t *aMsg);

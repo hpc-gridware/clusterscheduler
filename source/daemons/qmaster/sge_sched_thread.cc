@@ -250,10 +250,9 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
                          *(splitted_job_lists[SPLIT_RUNNING]), &orders);
 
    if (sge_thread_has_shutdown_started() == false) {
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.configOrderList), nullptr, "C: config orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.jobStartOrderList), nullptr, "C: job start orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), nullptr,
-                             "C: pending ticket orders");
+      sge_schedd_send_orders(&orders, &(orders.configOrderList), nullptr, "C: config orders");
+      sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), nullptr, "C: job start orders");
+      sge_schedd_send_orders(&orders, &(orders.pendingOrderList), nullptr, "C: pending ticket orders");
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -296,14 +295,14 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
               prof_get_measurement_utime(SGE_PROF_SCHEDLIB4, false, nullptr)));
    }
 
-   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.configOrderList), answer_list, "D: config orders");
-   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.jobStartOrderList), answer_list,
+   sge_schedd_send_orders(&orders, &(orders.configOrderList), answer_list, "D: config orders");
+   sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), answer_list,
                           "D: job start orders");
-   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), answer_list,
+   sge_schedd_send_orders(&orders, &(orders.pendingOrderList), answer_list,
                           "D: pending ticket orders");
 
    if (Master_Request_Queue.order_list != nullptr) {
-      sge_schedd_add_gdi_order_request(evc->get_gdi_ctx(evc), &orders, answer_list, &Master_Request_Queue.order_list);
+      sge_schedd_add_gdi_order_request(&orders, answer_list, &Master_Request_Queue.order_list);
    }
 
    if (prof_is_active(SGE_PROF_CUSTOM0)) {
@@ -585,9 +584,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                             *(splitted_job_lists[SPLIT_PENDING]),
                             orders);
 
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->configOrderList), nullptr, "A: config orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->jobStartOrderList), nullptr, "A: job start orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), nullptr,
+      sge_schedd_send_orders(orders, &(orders->configOrderList), nullptr, "A: config orders");
+      sge_schedd_send_orders(orders, &(orders->jobStartOrderList), nullptr, "A: job start orders");
+      sge_schedd_send_orders(orders, &(orders->pendingOrderList), nullptr,
                              "A: pending ticket orders");
 
       if (prof_is_active(SGE_PROF_CUSTOM1)) {
@@ -848,11 +847,11 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
                   if (time > 0.5) {
                      lList *answer_list = nullptr;
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->configOrderList), &answer_list,
+                     sge_schedd_send_orders(orders, &(orders->configOrderList), &answer_list,
                                             "B: config orders");
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->jobStartOrderList), &answer_list,
+                     sge_schedd_send_orders(orders, &(orders->jobStartOrderList), &answer_list,
                                             "B: job start orders");
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), &answer_list,
+                     sge_schedd_send_orders(orders, &(orders->pendingOrderList), &answer_list,
                                             "B: pending ticket orders");
                      answer_list_output(&answer_list);
                      gettimeofday(&tnow, nullptr);

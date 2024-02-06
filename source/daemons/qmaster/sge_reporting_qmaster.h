@@ -68,10 +68,10 @@ bool
 reporting_initialize(lList **answer_list);
 
 bool
-reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool);
+reporting_shutdown(lList **answer_list, bool do_spool);
 
 void
-reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
 reporting_create_new_job_record(lList **answer_list, const lListElem *job);
@@ -82,7 +82,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
                          const lListElem *pe_task, const char *message);
 
 bool
-reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *job_report, lListElem *job,
+reporting_create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                              lListElem *ja_task, bool intermediate);
 
 bool

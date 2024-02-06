@@ -265,7 +265,7 @@ RETURN
    Typical dispatcher service function return values
 
    ------------------------------------------------------------ */
-int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
+int do_ack(struct_msg_t *aMsg)
 {
    u_long32 jobid, jataskid;
    lListElem *jr;
@@ -302,7 +302,7 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
                     jobid, jataskid, pe_task_id_str?pe_task_id_str:""));
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
-               remove_acked_job_exit(ctx, jobid, jataskid, pe_task_id_str, jr);
+               remove_acked_job_exit(jobid, jataskid, pe_task_id_str, jr);
             } else {
                DPRINTF(("acknowledged job "sge_u32"."sge_u32" not found\n", jobid, jataskid));
             }
@@ -351,7 +351,7 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
                if (signal_job(jobid, jataskid, signo)) {
                   lListElem *jr;
                   jr = get_job_report(jobid, jataskid, nullptr);
-                  remove_acked_job_exit(ctx, jobid, jataskid, nullptr, jr);
+                  remove_acked_job_exit(jobid, jataskid, nullptr, jr);
                   job_unknown(jobid, jataskid, nullptr);
                }
             }

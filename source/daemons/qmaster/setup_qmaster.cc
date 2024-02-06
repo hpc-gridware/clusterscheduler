@@ -128,10 +128,10 @@ static lList *
 parse_qmaster(lList **, u_long32 *);
 
 static void
-qmaster_init(sge_gdi_ctx_class_t *ctx, char **);
+qmaster_init(char **);
 
 static void
-communication_setup(sge_gdi_ctx_class_t *ctx);
+communication_setup();
 
 static bool
 is_qmaster_already_running(const char *qmaster_spool_dir);
@@ -140,7 +140,7 @@ static void
 qmaster_lock_and_shutdown(int i);
 
 static int
-setup_qmaster(sge_gdi_ctx_class_t *ctx);
+setup_qmaster();
 
 static int
 remove_invalid_job_references(bool job_spooling, int user);
@@ -189,7 +189,7 @@ init_categories(void);
 *
 *******************************************************************************/
 int
-sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
+sge_setup_qmaster(char *anArgv[]) {
    char err_str[1024];
    const char *qualified_hostname = bootstrap_get_qualified_hostname();
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
@@ -209,7 +209,7 @@ sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
       sge_exit(1);
    }
 
-   qmaster_init(ctx, anArgv);
+   qmaster_init(anArgv);
 
    sge_write_pid(QMASTER_PID_FILE);
 
@@ -242,7 +242,7 @@ sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
 *
 *******************************************************************************/
 int
-sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long32 thread_id, bool switch_to_admin_user) {
+sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_admin_user) {
    const char *admin_user = nullptr;
    lList *alp = nullptr;
 
@@ -250,7 +250,7 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long3
 
    lInit(nmv);
 
-   if (sge_setup2(ctx_ref, prog_id, thread_id, &alp, true) != AE_OK) {
+   if (sge_setup2(prog_id, thread_id, &alp, true) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -549,18 +549,18 @@ parse_qmaster(lList **ppcmdline, u_long32 *help) {
 *
 *******************************************************************************/
 static void
-qmaster_init(sge_gdi_ctx_class_t *ctx, char **anArgv) {
+qmaster_init(char **anArgv) {
 
    DENTER(TOP_LAYER);
 
-   if (setup_qmaster(ctx)) {
+   if (setup_qmaster()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_STARTUP_SETUPFAILED));
       sge_exit(1);
    }
 
    bootstrap_set_exit_func(qmaster_lock_and_shutdown);
 
-   communication_setup(ctx);
+   communication_setup();
 
    starting_up(); /* write startup info message to message file */
 
@@ -595,7 +595,7 @@ qmaster_init(sge_gdi_ctx_class_t *ctx, char **anArgv) {
 *
 *******************************************************************************/
 static void
-communication_setup(sge_gdi_ctx_class_t *ctx) {
+communication_setup() {
    cl_com_handle_t *com_handle = nullptr;
    char *qmaster_params = nullptr;
    struct rlimit qmaster_rlimits;
@@ -808,7 +808,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
 
 
 static int
-setup_qmaster(sge_gdi_ctx_class_t *ctx) {
+setup_qmaster() {
    lListElem *jep, *ep, *tmpqep;
    static bool first = true;
    const lListElem *spooling_context = nullptr;
@@ -850,7 +850,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
       *object_type_get_master_list_rw(SGE_TYPE_SUSER) = lCreateList("Master_SUser_List", SU_Type);
    }
 
-   if (!sge_initialize_persistence(ctx, &answer_list)) {
+   if (!sge_initialize_persistence(&answer_list)) {
       answer_list_output(&answer_list);
       DRETURN(-1);
    } else {
@@ -858,7 +858,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
       spooling_context = spool_get_default_context();
    }
 
-   if (sge_read_configuration(ctx, spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), answer_list) !=
+   if (sge_read_configuration(spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), answer_list) !=
        0) {
       DRETURN(-1);
    }
@@ -934,20 +934,20 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
 
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
-      if (sge_add_host_of_type(ctx, SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
+      if (sge_add_host_of_type(SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
          ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST));
    }
 
    /* add host "global" to Master_Exechost_List as an exec host */
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
-      if (sge_add_host_of_type(ctx, SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
+      if (sge_add_host_of_type(SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
          ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST));
    }
 
    /* add qmaster host to Master_Adminhost_List as an administrativ host */
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
-      if (sge_add_host_of_type(ctx, qualified_hostname, SGE_AH_LIST, &monitor)) {
+      if (sge_add_host_of_type(qualified_hostname, SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
    }
@@ -1194,7 +1194,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    for_each_rw(tmpqep, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
-      cqueue_mod_qinstances(ctx, tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
+      cqueue_mod_qinstances(tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
    }
 
    /* rebuild signal resend events */
@@ -1215,7 +1215,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
 
    DPRINTF(("scheduler config -----------------------------------\n"));
 
-   sge_read_sched_configuration(ctx, spooling_context, &answer_list);
+   sge_read_sched_configuration(spooling_context, &answer_list);
    answer_list_output(&answer_list);
 
    DPRINTF(("share tree list-----------------------------------\n"));

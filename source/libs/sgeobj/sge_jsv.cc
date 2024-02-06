@@ -978,7 +978,7 @@ jsv_list_update(const char *name, const char *context,
 *     MT-NOTE: jsv_do_verify() is MT safe 
 *******************************************************************************/
 bool 
-jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job, 
+jsv_do_verify(const char *context, lListElem **job,
               lList **answer_list, bool holding_lock) 
 {
    bool ret = true;
@@ -1079,12 +1079,12 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
                holding_mutex = false;
                SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
                DPRINTF(("Client/master will start communication with JSV\n"));
-               ret &= jsv_do_communication(ctx, jsv, answer_list);
+               ret &= jsv_do_communication(jsv, answer_list);
                DPRINTF(("JSV acquires global lock which was hold before communication with JSV\n"));
                SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE)
             } else {
                DPRINTF(("Client/master will start communication with JSV\n"));
-               ret &= jsv_do_communication(ctx, jsv, answer_list);
+               ret &= jsv_do_communication(jsv, answer_list);
             }
 
             lSetRef(jsv, JSV_old_job, nullptr);

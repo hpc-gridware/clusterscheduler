@@ -37,10 +37,10 @@ void
 sge_process_qmaster_cmdline(char **anArgv);
 
 int
-sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]);
+sge_setup_qmaster(char *anArgv[]);
 
 int
-sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long32 thread_id, bool switch_to_admin_user);
+sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_admin_user);
 
 void
 sge_setup_job_resend(void);

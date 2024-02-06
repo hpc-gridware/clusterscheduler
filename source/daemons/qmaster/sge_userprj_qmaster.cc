@@ -72,11 +72,11 @@
 
 
 static int
-do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *, lList **, monitoring_t *monitor);
+do_add_auto_user(lListElem *, lList **, monitoring_t *monitor);
 
 
 int
-userprj_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
    int pos;
@@ -230,8 +230,7 @@ userprj_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *
 }
 
 int
-userprj_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-                monitoring_t *monitor) {
+userprj_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
    const lListElem *rqs;
    int obj_key, obj_filter, obj_consider;
@@ -267,7 +266,7 @@ userprj_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_
 }
 
 int
-userprj_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object_t *object) {
+userprj_spool(lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
    int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
@@ -297,7 +296,7 @@ userprj_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object
    master code: delete a user or project
  ***********************************************************************/
 int
-sge_del_userprj(sge_gdi_ctx_class_t *ctx, lListElem *up_ep, lList **alpp, lList **upl,
+sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
                 const char *ruser, const char *rhost, int user /* =1 user, =0 project */ ) {
    const char *name;
    lListElem *ep;
@@ -404,7 +403,7 @@ sge_del_userprj(sge_gdi_ctx_class_t *ctx, lListElem *up_ep, lList **alpp, lList 
    }
 
    /* delete user or project file */
-   if (!sge_event_spool(ctx, alpp, 0, user ? sgeE_USER_DEL : sgeE_PROJECT_DEL, 0, 0, name, nullptr, nullptr, nullptr, nullptr, nullptr,
+   if (!sge_event_spool(alpp, 0, user ? sgeE_USER_DEL : sgeE_PROJECT_DEL, 0, 0, name, nullptr, nullptr, nullptr, nullptr, nullptr,
                         true, true)) {
 
       DRETURN(STATUS_EDISK);
@@ -441,7 +440,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /* automatic user objects which have expired.                         */
 /*-------------------------------------------------------------------------*/
 void
-sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
    const char *admin = bootstrap_get_admin_user();
    const char *qmaster_host = bootstrap_get_qualified_hostname();
@@ -479,7 +478,7 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
                   lList *answer_list = nullptr;
-                  if (sge_del_userprj(ctx, user, &answer_list, master_user_list, admin, (char *) qmaster_host, 1) !=
+                  if (sge_del_userprj(user, &answer_list, master_user_list, admin, (char *) qmaster_host, 1) !=
                       STATUS_OK) {
                      /* 
                       * if deleting the user failes (due to user being referenced
@@ -504,7 +503,7 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
 /*    called in sge_gdi_add_job                                            */
 /*-------------------------------------------------------------------------*/
 int
-sge_add_auto_user(sge_gdi_ctx_class_t *ctx, const char *user, lList **alpp, monitoring_t *monitor) {
+sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
    int status = STATUS_OK;
    u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
@@ -553,7 +552,7 @@ sge_add_auto_user(sge_gdi_ctx_class_t *ctx, const char *user, lList **alpp, moni
       }
 
       /* add the auto user via GDI request */
-      status = do_add_auto_user(ctx, uep, alpp, monitor);
+      status = do_add_auto_user(uep, alpp, monitor);
       lFreeElem(&uep);
       sge_free(&auto_user_default_project);
    }
@@ -572,7 +571,7 @@ sge_add_auto_user(sge_gdi_ctx_class_t *ctx, const char *user, lList **alpp, moni
 *     MT-NOTE: do_add_auto_user() is not MT safe 
 *
 *******************************************************************************/
-static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
+static int do_add_auto_user(lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
    lList *tmpAnswer = nullptr;
@@ -588,7 +587,7 @@ static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *anUser, lList *
     * Add anUser to the user list.
     * Owner of the operation is the admin user on the qmaster host.
     */
-   res = sge_gdi_add_mod_generic(ctx, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, 0, &ppList,
+   res = sge_gdi_add_mod_generic(&tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, 0, &ppList,
                                  monitor);
 
    lFreeList(&ppList);
@@ -625,7 +624,7 @@ static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *anUser, lList *
 *              master lists (only reading)
 *
 *******************************************************************************/
-void sge_userprj_spool(sge_gdi_ctx_class_t *ctx) {
+void sge_userprj_spool() {
    lListElem *elem = nullptr;
    lList *answer_list = nullptr;
    const char *name = nullptr;
@@ -638,12 +637,12 @@ void sge_userprj_spool(sge_gdi_ctx_class_t *ctx) {
 
    for_each_rw(elem, *object_type_get_master_list(SGE_TYPE_USER)) {
       name = lGetString(elem, UU_name);
-      sge_event_spool(ctx, &answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
+      sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
    }
 
    for_each_rw(elem, *object_type_get_master_list(SGE_TYPE_PROJECT)) {
       name = lGetString(elem, PR_name);
-      sge_event_spool(ctx, &answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
+      sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);

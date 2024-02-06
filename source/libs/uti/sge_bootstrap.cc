@@ -98,6 +98,14 @@ const char *threadnames[] = {
         "tester"         /* 8 */
 };
 
+// thread local storage (level 0)
+typedef struct {
+   char log_buffer[4 * MAX_STRING_SIZE];
+} sge_bootstrap_tl0_t;
+
+// thread local storage (level 1)
+// initialization requires on data of level 0 (e.g. logging is used that requires a log-buffer)
+// TODO: data can partially be shared between threads. cleanup required.
 typedef struct {
    // bootstrap file
    char *admin_user;
@@ -146,67 +154,74 @@ typedef struct {
    char *local_conf_dir;
    char *shadow_masters_file;
    char *alias_file;
-} sge_bootstrap_tl_t;
+} sge_bootstrap_tl1_t;
 
 static pthread_once_t bootstrap_once = PTHREAD_ONCE_INIT;
-static pthread_key_t sge_bootstrap_tl_key;
+static pthread_key_t sge_bootstrap_tl0_key;
+static pthread_key_t sge_bootstrap_tl1_key;
 
 static void
 bootstrap_thread_local_once_init();
 
 static void
-bootstrap_tl_init(sge_bootstrap_tl_t *tl);
+bootstrap_tl0_init(sge_bootstrap_tl0_t *tl);
 
 static void
-bootstrap_thread_local_destroy(void *tl);
+bootstrap_tl0_destroy(void *tl);
 
 static void
-set_admin_user(sge_bootstrap_tl_t *tl, const char *admin_user) {
+bootstrap_tl1_init(sge_bootstrap_tl1_t *tl);
+
+static void
+bootstrap_tl1_destroy(void *tl);
+
+static void
+set_admin_user(sge_bootstrap_tl1_t *tl, const char *admin_user) {
    tl->admin_user = sge_strdup(tl->admin_user, admin_user);
 }
 
 static void
-set_default_domain(sge_bootstrap_tl_t *tl, const char *default_domain) {
+set_default_domain(sge_bootstrap_tl1_t *tl, const char *default_domain) {
    tl->default_domain = sge_strdup(tl->default_domain, default_domain);
 }
 
 static void
-set_ignore_fqdn(sge_bootstrap_tl_t *tl, bool ignore_fqdn) {
+set_ignore_fqdn(sge_bootstrap_tl1_t *tl, bool ignore_fqdn) {
    tl->ignore_fqdn = ignore_fqdn;
 }
 
 static void
-set_spooling_method(sge_bootstrap_tl_t *tl, const char *spooling_method) {
+set_spooling_method(sge_bootstrap_tl1_t *tl, const char *spooling_method) {
    tl->spooling_method = sge_strdup(tl->spooling_method, spooling_method);
 }
 
 static void
-set_spooling_params(sge_bootstrap_tl_t *tl, const char *spooling_params) {
+set_spooling_params(sge_bootstrap_tl1_t *tl, const char *spooling_params) {
    tl->spooling_params = sge_strdup(tl->spooling_params, spooling_params);
 }
 
 static void
-set_spooling_lib(sge_bootstrap_tl_t *tl, const char *spooling_lib) {
+set_spooling_lib(sge_bootstrap_tl1_t *tl, const char *spooling_lib) {
    tl->spooling_lib = sge_strdup(tl->spooling_lib, spooling_lib);
 }
 
 static void
-set_binary_path(sge_bootstrap_tl_t *tl, const char *binary_path) {
+set_binary_path(sge_bootstrap_tl1_t *tl, const char *binary_path) {
    tl->binary_path = sge_strdup(tl->binary_path, binary_path);
 }
 
 static void
-set_qmaster_spool_dir(sge_bootstrap_tl_t *tl, const char *qmaster_spool_dir) {
+set_qmaster_spool_dir(sge_bootstrap_tl1_t *tl, const char *qmaster_spool_dir) {
    tl->qmaster_spool_dir = sge_strdup(tl->qmaster_spool_dir, qmaster_spool_dir);
 }
 
 static void
-set_security_mode(sge_bootstrap_tl_t *tl, const char *security_mode) {
+set_security_mode(sge_bootstrap_tl1_t *tl, const char *security_mode) {
    tl->security_mode = sge_strdup(tl->security_mode, security_mode);
 }
 
 static void
-set_listener_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
+set_listener_thread_count(sge_bootstrap_tl1_t *tl, int thread_count) {
    if (thread_count <= 0) {
       thread_count = 2;
    } else if (thread_count > 16) {
@@ -216,7 +231,7 @@ set_listener_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
 }
 
 static void
-set_worker_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
+set_worker_thread_count(sge_bootstrap_tl1_t *tl, int thread_count) {
    if (thread_count <= 0) {
       thread_count = 2;
    } else if (thread_count > 16) {
@@ -226,7 +241,7 @@ set_worker_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
 }
 
 static void
-set_scheduler_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
+set_scheduler_thread_count(sge_bootstrap_tl1_t *tl, int thread_count) {
    if (thread_count <= 0) {
       thread_count = 0;
    } else if (thread_count > 1) {
@@ -236,147 +251,147 @@ set_scheduler_thread_count(sge_bootstrap_tl_t *tl, int thread_count) {
 }
 
 static void
-set_job_spooling(sge_bootstrap_tl_t *tl, bool job_spooling) {
+set_job_spooling(sge_bootstrap_tl1_t *tl, bool job_spooling) {
    tl->job_spooling = job_spooling;
 }
 
 static void
-set_sge_root(sge_bootstrap_tl_t *tl, const char *sge_root) {
+set_sge_root(sge_bootstrap_tl1_t *tl, const char *sge_root) {
    tl->sge_root = sge_strdup(tl->sge_root, sge_root);
 }
 
 static void
-set_sge_cell(sge_bootstrap_tl_t *tl, const char *sge_cell) {
+set_sge_cell(sge_bootstrap_tl1_t *tl, const char *sge_cell) {
    tl->sge_cell = sge_strdup(tl->sge_cell, sge_cell);
 }
 
 static void
-set_sge_qmaster_port(sge_bootstrap_tl_t *tl, u_long32 sge_qmaster_port) {
+set_sge_qmaster_port(sge_bootstrap_tl1_t *tl, u_long32 sge_qmaster_port) {
    tl->sge_qmaster_port = sge_qmaster_port;
 }
 
 static void
-set_sge_execd_port(sge_bootstrap_tl_t *tl, u_long32 sge_execd_port) {
+set_sge_execd_port(sge_bootstrap_tl1_t *tl, u_long32 sge_execd_port) {
    tl->sge_execd_port = sge_execd_port;
 }
 
 static void
-set_from_services(sge_bootstrap_tl_t *tl, bool from_services) {
+set_from_services(sge_bootstrap_tl1_t *tl, bool from_services) {
    tl->from_services = from_services;
 }
 
 static void
-set_qmaster_internal(sge_bootstrap_tl_t *tl, bool qmaster_internal) {
+set_qmaster_internal(sge_bootstrap_tl1_t *tl, bool qmaster_internal) {
    tl->qmaster_internal = qmaster_internal;
 }
 
 static void
-set_daemonized(sge_bootstrap_tl_t *tl, bool daemonized) {
+set_daemonized(sge_bootstrap_tl1_t *tl, bool daemonized) {
    tl->daemonized = daemonized;
 }
 
 static void
-set_component_id(sge_bootstrap_tl_t *tl, u_long32 component_id) {
+set_component_id(sge_bootstrap_tl1_t *tl, u_long32 component_id) {
    tl->component_id = component_id;
 }
 
 static void
-set_uid(sge_bootstrap_tl_t *tl, uid_t uid) {
+set_uid(sge_bootstrap_tl1_t *tl, uid_t uid) {
    tl->uid = uid;
 }
 
 static void
-set_gid(sge_bootstrap_tl_t *tl, gid_t gid) {
+set_gid(sge_bootstrap_tl1_t *tl, gid_t gid) {
    tl->gid = gid;
 }
 
 static void
-set_component_name(sge_bootstrap_tl_t *tl, const char *component_name) {
+set_component_name(sge_bootstrap_tl1_t *tl, const char *component_name) {
    tl->component_name = sge_strdup(tl->component_name, component_name);
 }
 
 static void
-set_thread_name(sge_bootstrap_tl_t *tl, const char *thread_name) {
+set_thread_name(sge_bootstrap_tl1_t *tl, const char *thread_name) {
    tl->thread_name = sge_strdup(tl->thread_name, thread_name);
 }
 
 static void
-set_username(sge_bootstrap_tl_t *tl, const char *username) {
+set_username(sge_bootstrap_tl1_t *tl, const char *username) {
    tl->username = sge_strdup(tl->username, username);
 }
 
 static void
-set_qualified_hostname(sge_bootstrap_tl_t *tl, const char *qualified_hostname) {
+set_qualified_hostname(sge_bootstrap_tl1_t *tl, const char *qualified_hostname) {
    tl->qualified_hostname = sge_strdup(tl->qualified_hostname, qualified_hostname);
 }
 
 static void
-set_unqualified_hostname(sge_bootstrap_tl_t *tl, const char *unqualified_hostname) {
+set_unqualified_hostname(sge_bootstrap_tl1_t *tl, const char *unqualified_hostname) {
    tl->unqualified_hostname = sge_strdup(tl->unqualified_hostname, unqualified_hostname);
 }
 
 static void
-set_exit_func(sge_bootstrap_tl_t *tl, sge_exit_func_t exit_func) {
+set_exit_func(sge_bootstrap_tl1_t *tl, sge_exit_func_t exit_func) {
    tl->exit_func = exit_func;
 }
 
 static void
-set_groupname(sge_bootstrap_tl_t *tl, const char *groupname) {
+set_groupname(sge_bootstrap_tl1_t *tl, const char *groupname) {
    tl->groupname = sge_strdup(tl->groupname, groupname);
 }
 
 static void
-set_cell_root(sge_bootstrap_tl_t *tl, const char *cell_root) {
+set_cell_root(sge_bootstrap_tl1_t *tl, const char *cell_root) {
    tl->cell_root = sge_strdup(tl->cell_root, cell_root);
 }
 
 static void
-set_conf_file(sge_bootstrap_tl_t *tl, const char *conf_file) {
+set_conf_file(sge_bootstrap_tl1_t *tl, const char *conf_file) {
    tl->conf_file = sge_strdup(tl->conf_file, conf_file);
 }
 
 static void
-set_bootstrap_file(sge_bootstrap_tl_t *tl, const char *bootstrap_file) {
+set_bootstrap_file(sge_bootstrap_tl1_t *tl, const char *bootstrap_file) {
    tl->bootstrap_file = sge_strdup(tl->bootstrap_file, bootstrap_file);
 }
 
 static void
-set_act_qmaster_file(sge_bootstrap_tl_t *tl, const char *act_qmaster_file) {
+set_act_qmaster_file(sge_bootstrap_tl1_t *tl, const char *act_qmaster_file) {
    tl->act_qmaster_file = sge_strdup(tl->act_qmaster_file, act_qmaster_file);
 }
 
 static void
-set_acct_file(sge_bootstrap_tl_t *tl, const char *acct_file) {
+set_acct_file(sge_bootstrap_tl1_t *tl, const char *acct_file) {
    tl->acct_file = sge_strdup(tl->acct_file, acct_file);
 }
 
 static void
-set_reporting_file(sge_bootstrap_tl_t *tl, const char *reporting_file) {
+set_reporting_file(sge_bootstrap_tl1_t *tl, const char *reporting_file) {
    tl->reporting_file = sge_strdup(tl->reporting_file, reporting_file);
 }
 
 static void
-set_local_conf_dir(sge_bootstrap_tl_t *tl, const char *local_conf_dir) {
+set_local_conf_dir(sge_bootstrap_tl1_t *tl, const char *local_conf_dir) {
    tl->local_conf_dir = sge_strdup(tl->local_conf_dir, local_conf_dir);
 }
 
 static void
-set_shadow_masters_file(sge_bootstrap_tl_t *tl, const char *shadow_masters_file) {
+set_shadow_masters_file(sge_bootstrap_tl1_t *tl, const char *shadow_masters_file) {
    tl->shadow_masters_file = sge_strdup(tl->shadow_masters_file, shadow_masters_file);
 }
 
 static void
-set_sched_conf_file(sge_bootstrap_tl_t *tl, const char *sched_conf_file) {
+set_sched_conf_file(sge_bootstrap_tl1_t *tl, const char *sched_conf_file) {
    tl->sched_conf_file = sge_strdup(tl->sched_conf_file, sched_conf_file);
 }
 
 static void
-set_alias_file(sge_bootstrap_tl_t *tl, const char *alias_file) {
+set_alias_file(sge_bootstrap_tl1_t *tl, const char *alias_file) {
    tl->alias_file = sge_strdup(tl->alias_file, alias_file);
 }
 
 static void
-log_parameter(sge_bootstrap_tl_t *tl) {
+log_parameter(sge_bootstrap_tl1_t *tl) {
    DENTER(TOP_LAYER);
 
    DPRINTF(("ENVIRONMENT ===\n"));
@@ -434,14 +449,14 @@ bootstrap_mt_init() {
    pthread_once(&bootstrap_once, bootstrap_thread_local_once_init);
 }
 
-
 static void
 bootstrap_thread_local_once_init() {
-   pthread_key_create(&sge_bootstrap_tl_key, bootstrap_thread_local_destroy);
+   pthread_key_create(&sge_bootstrap_tl0_key, bootstrap_tl0_destroy);
+   pthread_key_create(&sge_bootstrap_tl1_key, bootstrap_tl1_destroy);
 }
 
 static void
-bootstrap_init_from_environment(sge_bootstrap_tl_t *tl) {
+bootstrap_init_from_environment(sge_bootstrap_tl1_t *tl) {
    DENTER(TOP_LAYER);
 
    set_sge_root(tl, getenv("SGE_ROOT"));
@@ -460,9 +475,8 @@ bootstrap_init_from_environment(sge_bootstrap_tl_t *tl) {
    DRETURN_VOID;
 }
 
-
 static void
-bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
+bootstrap_init_from_file(sge_bootstrap_tl1_t *tl) {
 #define NUM_BOOTSTRAP 14
 #define NUM_REQ_BOOTSTRAP 9
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
@@ -529,7 +543,7 @@ bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
 }
 
 static void
-bootstrap_init_from_component(sge_bootstrap_tl_t *tl) {
+bootstrap_init_from_component(sge_bootstrap_tl1_t *tl) {
    // setup uid/gid and corresponding names
    char user[256];
    char group[256];
@@ -570,7 +584,7 @@ bootstrap_init_from_component(sge_bootstrap_tl_t *tl) {
 }
 
 static void
-bootstrap_init_paths(sge_bootstrap_tl_t *tl) {
+bootstrap_init_paths(sge_bootstrap_tl1_t *tl) {
    DENTER(TOP_LAYER);
    const char *sge_root = tl->sge_root;
    const char *sge_cell = tl->sge_cell;
@@ -639,11 +653,26 @@ bootstrap_init_paths(sge_bootstrap_tl_t *tl) {
 }
 
 static void
-bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
+bootstrap_tl0_init(sge_bootstrap_tl0_t *tl) {
+   DENTER(TOP_LAYER);
+   memset(tl, 0, sizeof(sge_bootstrap_tl0_t));
+   DRETURN_VOID;
+}
+
+static void
+bootstrap_tl0_destroy(void *tl) {
+   auto _tl = (sge_bootstrap_tl0_t *) tl;
+
+   // wrapping structure
+   sge_free(&_tl);
+}
+
+static void
+bootstrap_tl1_init(sge_bootstrap_tl1_t *tl) {
    static bool already_shown = false;
 
    DENTER(TOP_LAYER);
-   memset(tl, 0, sizeof(sge_bootstrap_tl_t));
+   memset(tl, 0, sizeof(sge_bootstrap_tl1_t));
 
    // 1) do environment setup first because file based init depends on that
    bootstrap_init_from_environment(tl);
@@ -665,8 +694,8 @@ bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
 }
 
 static void
-bootstrap_thread_local_destroy(void *tl) {
-   auto _tl = (sge_bootstrap_tl_t *) tl;
+bootstrap_tl1_destroy(void *tl) {
+   auto _tl = (sge_bootstrap_tl1_t *) tl;
 
    // component parameters
    sge_free(&(_tl->component_name));
@@ -709,478 +738,484 @@ bootstrap_thread_local_destroy(void *tl) {
 
 void
 bootstrap_log_parameter() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    log_parameter(tl);
 }
 
 const char *
 bootstrap_get_admin_user() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->admin_user;
 }
 
 void
 bootstrap_set_admin_user(const char *admin_user) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_admin_user(tl, admin_user);
 }
 
 const char *
 bootstrap_get_default_domain() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->default_domain;
 }
 
 
 void
 bootstrap_set_default_domain(const char *default_domain) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_default_domain(tl, default_domain);
 }
 
 bool
 bootstrap_get_ignore_fqdn() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->ignore_fqdn;
 }
 
 void
 bootstrap_set_ignore_fqdn(bool ignore_fqdn) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_ignore_fqdn(tl, ignore_fqdn);
 }
 
 const char *
 bootstrap_get_spooling_method() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->spooling_method;
 }
 
 void
 bootstrap_set_spooling_method(const char *spooling_method) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_spooling_method(tl, spooling_method);
 }
 
 const char *
 bootstrap_get_spooling_lib() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->spooling_lib;
 }
 
 void
 bootstrap_set_spooling_lib(const char *spooling_lib) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_spooling_lib(tl, spooling_lib);
 }
 
 const char *
 bootstrap_get_spooling_params() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->spooling_params;
 }
 
 void
 bootstrap_set_spooling_params(const char *spooling_params) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_spooling_params(tl, spooling_params);
 }
 
 const char *
 bootstrap_get_binary_path() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->binary_path;
 }
 
 void
 bootstrap_set_binary_path(const char *binary_path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_binary_path(tl, binary_path);
 }
 
 const char *
 bootstrap_get_qmaster_spool_dir() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->qmaster_spool_dir;
 }
 
 void
 bootstrap_set_qmaster_spool_dir(const char *qmaster_spool_dir) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_qmaster_spool_dir(tl, qmaster_spool_dir);
 }
 
 const char *
 bootstrap_get_security_mode() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->security_mode;
 }
 
 void
 bootstrap_set_security_mode(const char *security_mode) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_security_mode(tl, security_mode);
 }
 
 int
 bootstrap_get_listener_thread_count() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->listener_thread_count;
 }
 
 void
 bootstrap_set_listener_thread_count(int thread_count) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_listener_thread_count(tl, thread_count);
 }
 
 int
 bootstrap_get_worker_thread_count() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->worker_thread_count;
 }
 
 void bootstrap_set_worker_thread_count(int thread_count) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_worker_thread_count(tl, thread_count);
 }
 
 int bootstrap_get_scheduler_thread_count() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
 
    return tl->scheduler_thread_count;
 }
 
 void bootstrap_set_scheduler_thread_count(int thread_count) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_scheduler_thread_count(tl, thread_count);
 }
 
 bool bootstrap_get_job_spooling() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->job_spooling;
 }
 
 void bootstrap_set_job_spooling(bool job_spooling) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_job_spooling(tl, job_spooling);
 }
 
 const char *
 bootstrap_get_sge_root() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->sge_root;
 }
 
 void
 bootstrap_set_sge_root(const char *sge_root) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_sge_root(tl, sge_root);
 }
 
 
 const char *
 bootstrap_get_sge_cell() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->sge_cell;
 }
 
 void
 bootstrap_set_sge_cell(const char *sge_cell) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_sge_cell(tl, sge_cell);
 }
 
 u_long32
 bootstrap_get_sge_qmaster_port() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->sge_qmaster_port;
 }
 
 void bootstrap_set_sge_qmaster_port(u_long32 sge_qmaster_port) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_sge_qmaster_port(tl, sge_qmaster_port);
 }
 
 u_long32
 bootstrap_get_sge_execd_port() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->sge_execd_port;
 }
 
 void
 bootstrap_set_sge_execd_port(u_long32 sge_execd_port) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_sge_execd_port(tl, sge_execd_port);
 }
 
 bool
 bootstrap_is_from_services() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->from_services;
 }
 
 void
 bootstrap_set_from_services(bool from_services) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_from_services(tl, from_services);
 }
 
 bool
 bootstrap_is_qmaster_internal() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->qmaster_internal;
 }
 
 void
 bootstrap_set_qmaster_internal(bool qmaster_internal) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_qmaster_internal(tl, qmaster_internal);
 }
 
 bool
 bootstrap_is_daemonized() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->daemonized;
 }
 
 void
 bootstrap_set_daemonized(bool daemonized) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_daemonized(tl, daemonized);
 }
 
 u_long32
 bootstrap_get_component_id() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->component_id;
 }
 
 void
 bootstrap_set_component_id(u_long32 component_id) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_component_id(tl, component_id);
    set_component_name(tl, prognames[component_id]);
 }
 
 const char *
 bootstrap_get_component_name() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->component_name;
 }
 
 const char *
 bootstrap_get_thread_name() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->thread_name;
 }
 
 void
 bootstrap_set_thread_name(const char *thread_name) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_thread_name(tl, thread_name);
 }
 
 uid_t
 bootstrap_get_uid() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->uid;
 }
 
 void
 bootstrap_set_uid(uid_t uid) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_uid(tl, uid);
 }
 
 gid_t
 bootstrap_get_gid() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->gid;
 }
 
 void
 bootstrap_set_gid(gid_t gid) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_gid(tl, gid);
 }
 
 const char *
 bootstrap_get_username() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->username;
 }
 
 void
 bootstrap_set_username(const char *username) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_username(tl, username);
 }
 
 const char *
 bootstrap_get_qualified_hostname() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->qualified_hostname;
 }
 
 void
 bootstrap_set_qualified_hostname(const char *qualified_hostname) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_qualified_hostname(tl, qualified_hostname);
 }
 
 const char *
 bootstrap_get_unqualified_hostname() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->unqualified_hostname;
 }
 
 void
 bootstrap_set_unqualified_hostname(const char *unqualified_hostname) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_unqualified_hostname(tl, unqualified_hostname);
 }
 
 sge_exit_func_t
 bootstrap_get_exit_func() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->exit_func;
+}
+
+char *
+bootstrap_get_log_buffer() {
+   GET_SPECIFIC(sge_bootstrap_tl0_t, tl, bootstrap_tl0_init, sge_bootstrap_tl0_key);
+   return tl->log_buffer;
 }
 
 void
 bootstrap_set_exit_func(sge_exit_func_t exit_func) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_exit_func(tl, exit_func);
 }
 
 const char *
 bootstrap_get_groupname() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->groupname;
 }
 
 void
 bootstrap_set_groupname(const char *groupname) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_groupname(tl, groupname);
 }
 
 const char *
 bootstrap_get_cell_root() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->cell_root;
 }
 
 void
 bootstrap_set_cell_root(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_cell_root(tl, path);
 }
 
 const char *
 bootstrap_get_bootstrap_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->bootstrap_file;
 }
 
 void
 bootstrap_set_bootstrap_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_bootstrap_file(tl, path);
 }
 
 const char *
 bootstrap_get_conf_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->conf_file;
 }
 
 void
 bootstrap_set_conf_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_conf_file(tl, path);
 }
 
 const char *
 bootstrap_get_sched_conf_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->sched_conf_file;
 }
 
 void
 bootstrap_set_sched_conf_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_sched_conf_file(tl, path);
 }
 
 const char *
 bootstrap_get_act_qmaster_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->act_qmaster_file;
 }
 
 void
 bootstrap_set_act_qmaster_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_act_qmaster_file(tl, path);
 }
 
 const char *
 bootstrap_get_acct_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->acct_file;
 }
 
 void
 bootstrap_set_acct_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_acct_file(tl, path);
 }
 
 const char *
 bootstrap_get_reporting_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->reporting_file;
 }
 
 void
 bootstrap_set_reporting_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_reporting_file(tl, path);
 }
 
 const char *
 bootstrap_get_local_conf_dir() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->local_conf_dir;
 }
 
 void
 bootstrap_set_local_conf_dir(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_local_conf_dir(tl, path);
 }
 
 const char *
 bootstrap_get_shadow_masters_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->shadow_masters_file;
 }
 
 void
 bootstrap_set_shadow_masters_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_shadow_masters_file(tl, path);
 }
 
 const char *
 bootstrap_get_alias_file() {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    return tl->alias_file;
 }
 
 void
 bootstrap_set_alias_file(const char *path) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   GET_SPECIFIC(sge_bootstrap_tl1_t, tl, bootstrap_tl1_init, sge_bootstrap_tl1_key);
    set_alias_file(tl, path);
 }

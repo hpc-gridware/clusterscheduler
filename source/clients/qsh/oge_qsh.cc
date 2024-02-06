@@ -107,9 +107,6 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_jsv.h"
 
-/* global variables */
-sge_gdi_ctx_class_t *ctx = nullptr;
-
 /* module variables */
 static bool g_new_interactive_job_support = false;
 
@@ -131,11 +128,11 @@ static int start_client_program(const char *client_name,
                                 int noshell,
                                 int sock);
 static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host);
-static const char *get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit_job);
+static const char *get_client_name(int is_rsh, int is_rlogin, int inherit_job);
 static void set_job_info(lListElem *job, const char *name, int is_qlogin, int is_rsh, int is_rlogin);
 static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrated, bool error,
                                 int is_qlogin, int is_rsh, int is_qsh); 
-static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *lp);
+static void delete_job(u_long32 job_id, lList *lp);
 static void set_builtin_ijs_signals_and_handlers(void);
 
 #define VERBOSE_LOG(x) if (log_state_get_log_verbose()) { fprintf x; fflush(stderr); }
@@ -929,7 +926,7 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
 *
 */
 static const char *
-get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit_job)
+get_client_name(int is_rsh, int is_rlogin, int inherit_job)
 {
    /* this is what we return */
    const char *client_name  = nullptr;
@@ -983,7 +980,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
    }
   
    /* get configuration from qmaster */
-   if (gdi2_get_configuration(ctx, qualified_hostname, &global, &local) ||
+   if (gdi2_get_configuration(qualified_hostname, &global, &local) ||
       merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER));
       lFreeList(&conf_list);
@@ -1384,7 +1381,6 @@ int main(int argc, char **argv)
    const char* username = nullptr;
    const char* mastername = nullptr;
    COMM_HANDLE *comm_handle = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qsh");
 
@@ -1406,7 +1402,7 @@ int main(int argc, char **argv)
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(my_who);
 
-   if (sge_gdi2_setup(&ctx, my_who, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(my_who, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -1675,7 +1671,7 @@ int main(int argc, char **argv)
 
    if (is_qlogin) {
       /* get configuration from qmaster */
-      if ((client_name = get_client_name(ctx, is_rsh, is_rlogin, inherit_job)) == nullptr) {
+      if ((client_name = get_client_name(is_rsh, is_rlogin, inherit_job)) == nullptr) {
          sge_prof_cleanup();
          sge_exit(1);
       } 
@@ -1916,7 +1912,7 @@ int main(int argc, char **argv)
       DPRINTF(("=====================================================\n"));
 
       /* submit the job to the QMaster */
-      alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
+      alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
                      &lp_jobs, nullptr, nullptr);
 
       /* reinitialize 'job' with pointer to new version from qmaster */
@@ -2008,7 +2004,7 @@ int main(int argc, char **argv)
                                         (char*)mastername,
                                         (char*)prognames[QMASTER],
                                         1);
-                     delete_job(ctx, job_id, lp_jobs);
+                     delete_job(job_id, lp_jobs);
                      do_exit = 1;
                      exit_status = 1;
                      break;
@@ -2039,7 +2035,7 @@ int main(int argc, char **argv)
                      cl_commlib_open_connection(cl_com_get_handle(progname,0),
                         (char*)mastername, (char*)prognames[QMASTER], 1);
                      DPRINTF(("deleting job\n"));
-                     delete_job(ctx, job_id, lp_jobs);
+                     delete_job(job_id, lp_jobs);
                      exit_status = EXIT_FAILURE;
                   }
 
@@ -2085,7 +2081,7 @@ int main(int argc, char **argv)
                                         (char*)mastername,
                                         (char*)prognames[QMASTER],
                                         1);
-                     delete_job(ctx, job_id, lp_jobs);
+                     delete_job(job_id, lp_jobs);
 
                      do_exit = 1;
                      exit_status = 1;
@@ -2142,7 +2138,7 @@ int main(int argc, char **argv)
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          what = lWhat("%T(%I)", JB_Type, JB_ja_tasks); 
          where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id); 
-         alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
+         alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
 
          do_exit = parse_result_list(alp, &alp_error);
    
@@ -2153,7 +2149,7 @@ int main(int argc, char **argv)
          do_shut = shut_me_down;
          if (do_shut || do_exit) {
             WARNING((SGE_EVENT, SFNMAX, MSG_QSH_REQUESTFORINTERACTIVEJOBHASBEENCANCELED));
-            delete_job(ctx, job_id, lp_jobs);
+            delete_job(job_id, lp_jobs);
             lFreeList(&lp_poll);
             do_exit = 1;
             exit_status = 1;
@@ -2264,7 +2260,7 @@ int main(int argc, char **argv)
    DRETURN(exit_status);
 }
 
-static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *jlp) 
+static void delete_job(u_long32 job_id, lList *jlp)
 {
    const lListElem *jep;
    lList *idlp = nullptr;
@@ -2282,7 +2278,7 @@ static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *jlp)
    sprintf(job_str, sge_u32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
-   alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
+   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
 
    /* no error handling here, we try to delete the job if we can */
    lFreeList(&idlp);

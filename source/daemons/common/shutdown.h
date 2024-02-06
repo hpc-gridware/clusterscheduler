@@ -32,4 +32,4 @@
 /*___INFO__MARK_END__*/
 
 void starting_up(void);
-void sge_shutdown(void **context, int i);
+void sge_shutdown(int i);

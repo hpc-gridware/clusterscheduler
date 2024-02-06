@@ -60,7 +60,7 @@
 **   executed on startup. This function is triggered by the execd
 **   dispatcher table when the tag TAG_GET_NEW_CONF is received.
 */
-int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
+int do_get_new_conf(struct_msg_t *aMsg)
 {
    int ret;
    bool use_qidle = mconf_get_use_qidle();
@@ -75,7 +75,7 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
    old_spool = mconf_get_execd_spool_dir();  
 
-   ret = gdi2_get_merged_configuration(ctx, &Execd_Config_List);
+   ret = gdi2_get_merged_configuration(&Execd_Config_List);
   
    spool_dir = mconf_get_execd_spool_dir(); 
    if (strcmp(old_spool, spool_dir)) {

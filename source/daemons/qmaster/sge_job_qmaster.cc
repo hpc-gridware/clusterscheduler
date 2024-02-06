@@ -189,7 +189,7 @@ static void
 job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter);
 
 static int
-sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, const char *ruser, const char *rhost,
+sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                             lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                             const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long32 start_time,
                             monitoring_t *monitor, int forced, bool *deletion_time_reached);
@@ -211,7 +211,7 @@ static const char JOB_NAME_DEL = ':';
 /*          none safe functions                                            */
 /*-------------------------------------------------------------------------*/
 int
-sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                 uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                 monitoring_t *monitor) {
    int ret;
@@ -233,7 +233,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
       /*
        * first verify before JSV is executed
        */
-      ret = sge_job_verify_adjust(ctx, *jep, alpp, lpp, ruser, rhost, uid, gid, group,
+      ret = sge_job_verify_adjust(*jep, alpp, lpp, ruser, rhost, uid, gid, group,
                                   packet, task, monitor);
       if (ret != STATUS_OK) {
          DRETURN(ret);
@@ -243,7 +243,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
        * JSV verification
        */
       gettimeofday(&start_time, nullptr);
-      lret = jsv_do_verify(ctx, tc->thread_name, jep, alpp, true);
+      lret = jsv_do_verify(tc->thread_name, jep, alpp, true);
       gettimeofday(&end_time, nullptr);
       if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000)
           > jsv_threshold || jsv_threshold == 0) {
@@ -259,7 +259,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
    /*
     * second try to find something strange
     */
-   ret = sge_job_verify_adjust(ctx, *jep, alpp, lpp, ruser, rhost, uid, gid, group,
+   ret = sge_job_verify_adjust(*jep, alpp, lpp, ruser, rhost, uid, gid, group,
                                packet, task, monitor);
    if (ret != STATUS_OK) {
       DRETURN(ret);
@@ -284,7 +284,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
       lSetUlong(*jep, JB_script_size, 0);
    }
 
-   if (!sge_event_spool(ctx, alpp, 0, sgeE_JOB_ADD,
+   if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
                         *jep, nullptr, nullptr, true, true)) {
       spool_transaction(alpp, spool_get_default_context(), STC_rollback);
@@ -365,8 +365,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
 /*    called in sge_c_gdi_del                                              */
 /*-------------------------------------------------------------------------*/
 int
-sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub_command,
-                monitoring_t *monitor) {
+sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
    int all_users_flag;
    int jid_flag;
@@ -496,7 +495,7 @@ sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, char *r
          continue;
       }
 
-      njobs += sge_delete_all_tasks_of_job(ctx, alpp, ruser, rhost, job, &r_start, &r_end, &step,
+      njobs += sge_delete_all_tasks_of_job(alpp, ruser, rhost, job, &r_start, &r_end, &step,
                                            lGetList(idep, ID_ja_structure),
                                            &alltasks, &deleted_tasks, start_time, monitor, forced,
                                            &deletion_time_reached);
@@ -520,7 +519,7 @@ sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, char *r
 
    if (forced) {
       /* remove all orphaned queue intances, which are empty. */
-      cqueue_list_del_all_orphaned(ctx, master_cqueue_list, alpp, nullptr, nullptr);
+      cqueue_list_del_all_orphaned(master_cqueue_list, alpp, nullptr, nullptr);
    }
 
    DRETURN(STATUS_OK);
@@ -673,7 +672,7 @@ tag_all_host_gdil(lListElem *jatep) {
 *     MT-NOTE: ack_all_slaves() is MT safe 
 *******************************************************************************/
 void
-ack_all_slaves(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
+ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
                u_long32 type) {
    const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
    const lListElem *gdil_ep;
@@ -991,8 +990,7 @@ void job_ja_task_send_abort_mail(const lListElem *job,
    sge_dstring_free(&body);
 }
 
-void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
-                                lListElem *j,
+void get_rid_of_job_due_to_qdel(lListElem *j,
                                 lListElem *t,
                                 lList **answer_list,
                                 const char *ruser,
@@ -1011,10 +1009,10 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
       ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDQOFJOB_S, lGetString(t, JAT_master_queue)));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    }
-   if (sge_signal_queue(ctx, SGE_SIGKILL, qep, j, t, monitor)) {
+   if (sge_signal_queue(SGE_SIGKILL, qep, j, t, monitor)) {
       if (force) {
          /* 3: JOB_FINISH reports aborted */
-         sge_commit_job(ctx, j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
          j = nullptr;
 
@@ -1041,10 +1039,10 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
-         reporting_create_acct_record(ctx, nullptr, dummy_jr, j, t, false);
+         reporting_create_acct_record(nullptr, dummy_jr, j, t, false);
          reporting_create_job_log(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
-         sge_commit_job(ctx, j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
          lFreeElem(&dummy_jr);
          j = nullptr;
@@ -1069,12 +1067,11 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
-   job_mark_job_as_deleted(ctx, j, t);
+   job_mark_job_as_deleted(j, t);
    DRETURN_VOID;
 }
 
-void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx,
-                             lListElem *j,
+void job_mark_job_as_deleted(lListElem *j,
                              lListElem *t) {
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -1129,7 +1126,6 @@ enum {
 };
 
 int sge_gdi_mod_job(
-        sge_gdi_ctx_class_t *ctx,
         lListElem *jep, /* reduced JB_Type */
         lList **alpp,
         char *ruser,
@@ -1195,7 +1191,7 @@ int sge_gdi_mod_job(
       DRETURN(ret);
    }
 
-   if (jsv_is_modify_rejected(ctx, alpp, jep)) {
+   if (jsv_is_modify_rejected(alpp, jep)) {
       DRETURN(ret);
    }
 
@@ -3074,7 +3070,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
 }
 
 u_long32
-sge_get_job_number(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
+sge_get_job_number(monitoring_t *monitor) {
    u_long32 job_nr;
    bool is_store_job = false;
 
@@ -3103,7 +3099,7 @@ sge_get_job_number(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
                     &job_number_control.job_number_mutex);
 
    if (is_store_job) {
-      sge_store_job_number(ctx, nullptr, monitor);
+      sge_store_job_number(nullptr, monitor);
    }
 
    DRETURN(job_nr);
@@ -3140,7 +3136,7 @@ void sge_init_job_number(void) {
    DRETURN_VOID;
 }
 
-void sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+void sge_store_job_number(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 job_nr = 0;
    bool changed = false;
 
@@ -3446,8 +3442,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
    DRETURN(0);
 }
 
-int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
-                     lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                      uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                      monitoring_t *monitor) {
    u_long32 seek_jid;
@@ -3507,7 +3502,7 @@ int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
    lSetUlong(new_jep, JB_job_number, 0);
 
    /* call add() method */
-   ret = sge_gdi_add_job(ctx, &new_jep, alpp, lpp, ruser, rhost, uid, gid, group, packet, task, monitor);
+   ret = sge_gdi_add_job(&new_jep, alpp, lpp, ruser, rhost, uid, gid, group, packet, task, monitor);
 
    lFreeElem(&new_jep);
 
@@ -3530,7 +3525,7 @@ int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
 *     MT-NOTE: sge_job_spool() is MT safe, it uses the global lock (read)
 *
 *******************************************************************************/
-void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
+void sge_job_spool() {
    lListElem *jep = nullptr;
    lList *answer_list = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();
@@ -3594,7 +3589,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
                   for_each_rw(pe_task, lGetList(ja_task, JAT_task_list)) {
                      const char *pe_task_id_str = lGetString(pe_task, PET_id);
 
-                     if (!sge_event_spool(ctx, &answer_list, 0, sgeE_PETASK_ADD,
+                     if (!sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                           job_number, jataskid, pe_task_id_str, nullptr,
                                           nullptr, jep, ja_task, pe_task, false, true)) {
                         is_success = false;
@@ -3606,7 +3601,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
                   }
                }
 
-               if (is_success && !sge_event_spool(ctx, &answer_list, 0, sgeE_JOB_ADD,
+               if (is_success && !sge_event_spool(&answer_list, 0, sgeE_JOB_ADD,
                                                   job_number, 0, nullptr, nullptr, nullptr,
                                                   jep, nullptr, nullptr, false, true)) {
                   is_success = false;
@@ -3765,7 +3760,7 @@ bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
    DRETURN(ret);
 }
 
-static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, const char *ruser, const char *rhost,
+static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                                        lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                                        const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks,
                                        u_long32 start_time, monitoring_t *monitor, int forced,
@@ -3893,7 +3888,7 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
           */
          lListElem *tmp_task = job_get_ja_task_template_pending(job, task_number);
 
-         sge_commit_job(ctx, job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
+         sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                         COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor);
 
          INFO((SGE_EVENT, MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
@@ -3917,7 +3912,7 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
             reporting_create_job_log(nullptr, sge_get_gmt(), JL_DELETED,
                                      ruser, rhost, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
-            sge_commit_job(ctx, job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
+            sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                            COMMIT_NO_SPOOLING | COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor);
             deleted_unenrolled_tasks = 1;
             showmessage = 1;
@@ -4050,9 +4045,9 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, ruser, rhost, nullptr);
-                  get_rid_of_job_due_to_qdel(ctx, job, tmp_task, alpp, ruser, forced, monitor);
+                  get_rid_of_job_due_to_qdel(job, tmp_task, alpp, ruser, forced, monitor);
                } else {
-                  sge_commit_job(ctx, job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
+                  sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
                                  monitor);
                   showmessage = 1;
                   if (!*alltasks && showmessage) {

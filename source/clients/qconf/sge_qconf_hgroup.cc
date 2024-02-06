@@ -53,8 +53,7 @@
 static void 
 hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent);
 static bool
-hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, lList **answer_list,
-                                   bool ignore_unchanged_message);
+hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message);
 
 
 static void 
@@ -86,9 +85,7 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
 }
 
 bool 
-hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
-                           lListElem *this_elem, lList **answer_list,
-                           u_long32 gdi_command)
+hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 gdi_command)
 {
    bool ret = true;
 
@@ -101,16 +98,15 @@ hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
       element = lCopyElem(this_elem);
       hgroup_list = lCreateList("", HGRP_Type);
       lAppendElem(hgroup_list, element);
-      gdi_answer_list = sge_gdi2(ctx, SGE_HGRP_LIST, gdi_command,
-                                &hgroup_list, nullptr, nullptr);
+      gdi_answer_list = sge_gdi2(SGE_HGRP_LIST, gdi_command, &hgroup_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
       lFreeList(&hgroup_list);
    }
    DRETURN(ret);
 }
 
-lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
-                              lList **answer_list, const char *name) 
+lListElem *
+hgroup_get_via_gdi(lList **answer_list, const char *name)
 {
    lListElem *ret = nullptr;
 
@@ -124,8 +120,7 @@ lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
       what = lWhat("%T(ALL)", HGRP_Type);
       where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, 
                      name);
-      gdi_answer_list = sge_gdi2(ctx, SGE_HGRP_LIST, SGE_GDI_GET,
-                                &hostgroup_list, where, what);
+      gdi_answer_list = sge_gdi2(SGE_HGRP_LIST, SGE_GDI_GET, &hostgroup_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -140,8 +135,8 @@ lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
    DRETURN(ret);
 }
 
-static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, lList **answer_list,
-                                   bool ignore_unchanged_message)
+static bool
+hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message)
 {
    bool ret = false;
    int status = 0;
@@ -153,11 +148,7 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
    DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
-      filename = spool_flatfile_write_object(answer_list, *this_elem,
-                                                     false, HGRP_fields,
-                                                     &qconf_sfi,
-                                                     SP_DEST_TMP, SP_FORM_ASCII,
-                                                     filename, false);
+      filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
       if (answer_list_has_error(answer_list)) {
          if (filename != nullptr) {
             unlink(filename);
@@ -172,9 +163,7 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
          lListElem *hgroup = nullptr;
 
          fields_out[0] = NoName;
-         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
-                                         HGRP_fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, nullptr, filename);
+         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr, HGRP_fields, fields_out, true, &qconf_sfi, SP_FORM_ASCII, nullptr, filename);
             
          if (answer_list_output (answer_list)) {
             lFreeElem(&hgroup);
@@ -239,8 +228,8 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
 *     MT-NOTE: hgroup_add() is MT safe 
 *
 *******************************************************************************/
-bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name, bool is_name_validate ) 
-{
+bool
+hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -251,10 +240,10 @@ bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name,
          ret = false;
       }
       if (ret) {
-         ret = hgroup_provide_modify_context(ctx, &hgroup, answer_list, true);
+         ret = hgroup_provide_modify_context(&hgroup, answer_list, true);
       }
       if (ret) {
-         ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_ADD);
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_ADD);
       }
 
       lFreeElem(&hgroup);
@@ -263,8 +252,8 @@ bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name,
    DRETURN(ret); 
 }
 
-bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename) 
-{
+bool
+hgroup_add_from_file(lList **answer_list, const char *filename) {
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -296,7 +285,7 @@ bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
          ret = false;
       }
       if (ret) {
-         ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_ADD); 
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_ADD);
       }
       lFreeElem(&hgroup);
    }
@@ -304,13 +293,12 @@ bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
    DRETURN(ret);
 }
 
-bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
-{
+bool hgroup_modify(lList **answer_list, const char *name) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
    if (name != nullptr) {
-      lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name);
+      lListElem *hgroup = hgroup_get_via_gdi(answer_list, name);
 
       if (hgroup == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1,
@@ -318,10 +306,10 @@ bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
          ret = false;
       }
       if (ret == true) {
-         ret = hgroup_provide_modify_context(ctx, &hgroup, answer_list, false);
+         ret = hgroup_provide_modify_context(&hgroup, answer_list, false);
       }
       if (ret == true) {
-         ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_MOD);
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_MOD);
       }
       lFreeElem(&hgroup);
    }
@@ -329,7 +317,8 @@ bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
    DRETURN(ret);
 }
 
-bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename)
+bool
+hgroup_modify_from_file(lList **answer_list, const char *filename)
 {
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
@@ -363,7 +352,7 @@ bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
          ret = false;
       }
       if (ret) {
-         ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_MOD);
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_MOD);
       }
       if (hgroup) {
          lFreeElem(&hgroup);
@@ -373,7 +362,8 @@ bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
    DRETURN(ret);
 }
 
-bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
+bool
+hgroup_delete(lList **answer_list, const char *name)
 {
    bool ret = true;
 
@@ -382,26 +372,25 @@ bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
       lListElem *hgroup = hgroup_create(answer_list, name, nullptr, true);
    
       if (hgroup != nullptr) {
-         ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_DEL); 
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_DEL);
       }
       lFreeElem(&hgroup);
    }
    DRETURN(ret);
 }
 
-bool hgroup_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
+bool
+hgroup_show(lList **answer_list, const char *name)
 {
    bool ret = true;
 
    DENTER(TOP_LAYER);
    if (name != nullptr) {
-      lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name); 
+      lListElem *hgroup = hgroup_get_via_gdi(answer_list, name);
    
       if (hgroup != nullptr) {
          const char *filename;
-         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields,
-                                     &qconf_sfi, SP_DEST_STDOUT,
-                                     SP_FORM_ASCII, nullptr, false);
+         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
       
          sge_free(&filename);
          lFreeElem(&hgroup);
@@ -410,16 +399,14 @@ bool hgroup_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name
             DRETURN(false);
          }
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_ERROR1,
-                                 ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name); 
+         answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name);
          ret = false;
       }
    }
    DRETURN(ret);
 }
 
-bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name, 
-                           bool show_tree)
+bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree)
 {
    bool ret = true;
 
@@ -432,7 +419,7 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
       const lListElem *alep = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
-      alp = sge_gdi2(ctx, SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, nullptr, what);
+      alp = sge_gdi2(SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, nullptr, what);
       lFreeWhat(&what);
 
       alep = lFirst(alp);
@@ -452,8 +439,7 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
             lList *sub_host_list = nullptr;
             lList *sub_hgroup_list = nullptr;
 
-            hgroup_find_all_references(hgroup, answer_list, hgroup_list, 
-                                       &sub_host_list, &sub_hgroup_list);
+            hgroup_find_all_references(hgroup, answer_list, hgroup_list, &sub_host_list, &sub_hgroup_list);
             href_list_make_uniq(sub_host_list, answer_list);
             href_list_append_to_dstring(sub_host_list, &string);
             if (sge_dstring_get_string(&string)) {
@@ -464,8 +450,7 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
             lFreeList(&sub_hgroup_list);
          }
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_ERROR1,
-                                 ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name); 
+         answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name);
          ret = false;
       }
 

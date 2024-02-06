@@ -55,7 +55,7 @@ static bool sge_parse_showq_tacc(lList **alpp, lList ** ppcmdline,
                                  lList ** user_list, const char *username,
                                  int *full, bool *binding, lList **, lList **);
 
-static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * jid, int full, 
+static int showq_show_job_tacc(lList * jid, int full,
                                  const bool binding, lList *, lList *);
 
 /*-------------------------------------------------------------------------*/
@@ -69,7 +69,6 @@ int main(int argc, char **argv)
    lList          *sfa_list = nullptr;
    lList          *sfw_list = nullptr;
    lList          *ref_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    int             full = 0;
    bool            binding = false;
    int             ret = 0;
@@ -81,7 +80,7 @@ int main(int argc, char **argv)
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(&ctx, QSTAT, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -101,7 +100,7 @@ int main(int argc, char **argv)
       lFreeList(&user_list);
       sge_exit(1);
    }
-   ret = showq_show_job_tacc(ctx, user_list, full, binding, sfa_list, sfw_list);
+   ret = showq_show_job_tacc(user_list, full, binding, sfa_list, sfw_list);
 
    sge_exit(ret);
    DRETURN(ret);
@@ -188,7 +187,7 @@ static bool sge_parse_showq_tacc(lList **alpp, lList **ppcmdline, lList **user_l
  * 
  * returns 0 on success, non-zero on failure
  */
-static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int full, const bool binding,
+static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
                                lList * sfa_list, lList * sfw_list)
 {
    const lListElem      *j_elem = 0;
@@ -227,7 +226,7 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
 
    /* get job data */
    what = lWhat("%T(ALL)", JB_Type);
-   alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
    if (alp != nullptr) {
       answer_list_output(&alp);
    }

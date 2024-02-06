@@ -74,7 +74,7 @@ void starting_up(void)
 }
 
 /******************************************************************************/
-void sge_shutdown(void **context, int i)
+void sge_shutdown(int i)
 {
    u_long32 old_ll = log_state_get_log_level();
    dstring ds;

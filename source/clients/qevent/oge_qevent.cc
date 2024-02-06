@@ -448,7 +448,6 @@ int main(int argc, char *argv[])
    dstring errors = DSTRING_INIT;
    int i, gdi_setup;
    lList *alp = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qevent");
@@ -485,14 +484,14 @@ int main(int argc, char *argv[])
    sge_setup_sig_handlers(QEVENT);
 
    /* setup event client */
-   gdi_setup = sge_gdi2_setup(&ctx, QEVENT, MAIN_THREAD, &alp);
+   gdi_setup = sge_gdi2_setup(QEVENT, MAIN_THREAD, &alp);
    if (gdi_setup != AE_OK) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);
       sge_exit(1);
    }
    /* TODO: how is the memory we allocate here released ???, SGE_EXIT doesn't */
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, nullptr)) {
+   if (false == sge_gdi2_evc_setup(&evc, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);
       sge_exit(1);

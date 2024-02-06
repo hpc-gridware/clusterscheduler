@@ -72,7 +72,6 @@ char **argv
    lList *ref_list = nullptr;
    lList *alp = nullptr, *pcmdline = nullptr;
    const lListElem *aep;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    bool answ_list_has_err = false;
 
    DENTER_MAIN(TOP_LAYER, "qmod");
@@ -82,7 +81,7 @@ char **argv
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QMOD);
 
-   if (sge_gdi2_setup(&ctx, QMOD, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(QMOD, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -127,7 +126,7 @@ char **argv
    }
 
    if (ref_list) {
-      alp = sge_gdi2(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
+      alp = sge_gdi2(SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 

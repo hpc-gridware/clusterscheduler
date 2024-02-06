@@ -35,4 +35,4 @@
 
 #define FLG_FULL_CMDLINE 1
 
-lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lListElem *job, int flags);
+lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags);

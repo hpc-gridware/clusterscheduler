@@ -176,7 +176,6 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 int
 sge_before_dispatch(sge_evc_class_t *evc)
 {     
-   sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = bootstrap_get_component_id();
    
@@ -187,7 +186,7 @@ sge_before_dispatch(sge_evc_class_t *evc)
    if (st_get_flag_new_global_conf()) {
       lListElem *global = nullptr, *local = nullptr;
    
-      if (gdi2_get_configuration(ctx, SGE_GLOBAL_NAME, &global, &local) == 0) {
+      if (gdi2_get_configuration(SGE_GLOBAL_NAME, &global, &local) == 0) {
          merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
       }  
       lFreeElem(&global);

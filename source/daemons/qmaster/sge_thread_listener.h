@@ -36,7 +36,7 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void
-sge_listener_initialize(sge_gdi_ctx_class_t *ctx);
+sge_listener_initialize();
 
 void
 sge_listener_terminate(void);

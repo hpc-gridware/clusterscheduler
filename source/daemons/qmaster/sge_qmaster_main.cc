@@ -150,7 +150,6 @@ int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
    bool has_daemonized = false;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    u_long32 start_time = sge_get_gmt();
    monitoring_t monitor;
 
@@ -174,7 +173,7 @@ int main(int argc, char *argv[]) {
       sigset_t sig_set;
       sigfillset(&sig_set);
       pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
-      sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, true);
+      sge_qmaster_thread_init(QMASTER, MAIN_THREAD, true);
       sge_process_qmaster_cmdline(argv);
       sge_exit(1);
    }
@@ -190,7 +189,7 @@ int main(int argc, char *argv[]) {
    init_sig_action_and_mask();
 
    /* init qmaster threads without becomming admin user */
-   sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, false);
+   sge_qmaster_thread_init(QMASTER, MAIN_THREAD, false);
 
    bootstrap_set_daemonized(has_daemonized);
 
@@ -256,18 +255,18 @@ int main(int argc, char *argv[]) {
     */
    sge_event_master_init();
 
-   sge_setup_qmaster(ctx, argv);
+   sge_setup_qmaster(argv);
 
    /*
     * Setup all threads and initialize corresponding modules. 
     * Order is important!
     */
-   sge_signaler_initialize(ctx);
-   sge_event_master_initialize(ctx);
-   sge_timer_initialize(ctx, &monitor);
-   sge_worker_initialize(ctx);
-   sge_listener_initialize(ctx);
-   sge_scheduler_initialize(ctx, nullptr);
+   sge_signaler_initialize();
+   sge_event_master_initialize();
+   sge_timer_initialize(&monitor);
+   sge_worker_initialize();
+   sge_listener_initialize();
+   sge_scheduler_initialize(nullptr);
 
    INFO((SGE_EVENT, "qmaster startup took "sge_u32" seconds", sge_get_gmt() - start_time));
 
@@ -280,12 +279,12 @@ int main(int argc, char *argv[]) {
     * Shutdown all threads and shutdown corresponding modules.
     * Order is important!
     */
-   sge_scheduler_terminate(ctx, nullptr);
+   sge_scheduler_terminate(nullptr);
    sge_listener_terminate();
 #if 0
    sge_test_terminate(ctx);
 #endif
-   sge_worker_terminate(ctx);
+   sge_worker_terminate();
    sge_timer_terminate();
    sge_event_master_terminate();
    sge_signaler_terminate();
@@ -296,7 +295,7 @@ int main(int argc, char *argv[]) {
    sge_clean_lists();
    sge_monitor_free(&monitor);
 
-   sge_shutdown((void **) &ctx, sge_qmaster_get_exit_state());
+   sge_shutdown(sge_qmaster_get_exit_state());
    sge_prof_cleanup();
 
    DRETURN(0);

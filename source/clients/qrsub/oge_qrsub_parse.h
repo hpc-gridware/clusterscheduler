@@ -34,4 +34,4 @@
 #include "cull/cull.h"
 #include "gdi/sge_gdi_ctx.h"
 
-bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lListElem **ar);
+bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar);

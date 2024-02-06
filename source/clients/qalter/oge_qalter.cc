@@ -90,7 +90,6 @@ int main(int argc, char **argv) {
    u_long32 gdi_cmd = SGE_GDI_MOD; 
    int tmp_ret;
    int me_who;
-   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qalter");
 
@@ -116,7 +115,7 @@ int main(int argc, char **argv) {
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(me_who);
 
-   if (sge_gdi2_setup(&ctx, me_who, MAIN_THREAD, &alp) != AE_OK) {
+   if (sge_gdi2_setup(me_who, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -192,7 +191,7 @@ int main(int argc, char **argv) {
    if (all_users)
       gdi_cmd |= SGE_GDI_ALL_USERS;
 
-   alp = sge_gdi2(ctx, SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
+   alp = sge_gdi2(SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {

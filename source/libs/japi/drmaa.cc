@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <cctype>
 #include <errno.h>
 #include <pthread.h>
 
@@ -83,9 +84,6 @@
 /* GDI */
 #include "gdi/sge_qtcsh.h"
 #include "gdi/sge_gdi_ctx.h"
-
-extern sge_gdi_ctx_class_t *ctx;
-
 
 /****** DRMAA/--DRMAA_Job_API ********************************************************
 *  NAME

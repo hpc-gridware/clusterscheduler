@@ -80,7 +80,7 @@ extern volatile int shut_me_down;
 
  counterpart in qmaster: c_qmod.c
  **************************************************************************/
-int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *apb)
+int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
    lListElem *jep;
    int found = 0;
@@ -181,7 +181,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    if (!found && aMsg->tag == TAG_SIGJOB) {
       lListElem *jr;
       jr = get_job_report(jobid, jataskid, nullptr);
-      remove_acked_job_exit(ctx, jobid, jataskid, nullptr, jr);
+      remove_acked_job_exit(jobid, jataskid, nullptr, jr);
       job_unknown(jobid, jataskid, qname);
    }
 

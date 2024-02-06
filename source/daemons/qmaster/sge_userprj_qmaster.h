@@ -37,21 +37,21 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void
-sge_userprj_spool(sge_gdi_ctx_class_t *ctx);
+sge_userprj_spool();
 
 int
-userprj_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+userprj_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                 monitoring_t *monitor);
 
 int
-userprj_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-userprj_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object_t *object);
+userprj_spool(lList **alpp, lListElem *upe, gdi_object_t *object);
 
 int
-sge_del_userprj(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **upl, const char *ruser,
+sge_del_userprj(lListElem *ep, lList **alpp, lList **upl, const char *ruser,
                 const char *rhost, int user);
 
 int
@@ -59,10 +59,10 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *userprj_l
                     const char *obj_descr, const char *obj_name);
 
 void
-sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_add_auto_user(sge_gdi_ctx_class_t *ctx, const char *user, lList **alpp, monitoring_t *monitor);
+sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor);
 
 void
 project_update_categories(const lList *added, const lList *removed);

@@ -88,7 +88,7 @@ typedef struct {
 extern event_master_control_t Event_Master_Control;
 
 void sge_event_master_process_requests(monitoring_t *monitor);
-void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, lList *report_list, monitoring_t *monitor);
+void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
 void sge_event_master_wait_next(void);
 
 int sge_add_event_client(lListElem *ev,

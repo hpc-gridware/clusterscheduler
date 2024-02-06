@@ -42,28 +42,28 @@
 #define RESCHEDULE_HANDLE_JR_WAIT      0x00000008
 
 void
-reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor);
 
 u_long32
 skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, u_long32 task_number);
 
 int
-reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
+reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
                 bool is_manual);
 
 int
-reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force,
+reschedule_job(lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force,
                lList **answer, monitoring_t *monitor, bool is_manual);
 
 lListElem *
-add_to_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *hostr, u_long32 job_number, u_long32 task_number,
+add_to_reschedule_unknown_list(lListElem *hostr, u_long32 job_number, u_long32 task_number,
                                u_long32 state);
 
 void
-delete_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
+delete_from_reschedule_unknown_list(lListElem *host);
 
 void
-update_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
+update_reschedule_unknown_list(lListElem *host);
 
 void
 update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_long32 task_number);
@@ -78,8 +78,7 @@ void
 reschedule_add_additional_time(u_long32 time);
 
 void
-remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 job_number,
-                                    u_long32 task_number);
+remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number);
 
 void
-remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx, u_long32 job_number, u_long32 task_number);
+remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number);

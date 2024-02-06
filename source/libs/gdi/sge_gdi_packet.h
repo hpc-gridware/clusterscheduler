@@ -36,7 +36,6 @@
 #include "cull/cull.h"
 
 #include "gdi/sge_gdi_packet_type.h"
-#include "gdi/sge_gdi_ctx_type.h"
 
 #define GDI_PACKET_MUTEX "gdi_pack_mutex"
 
@@ -44,7 +43,7 @@ sge_gdi_packet_class_t *
 sge_gdi_packet_create_base(lList **answer_list);
 
 sge_gdi_packet_class_t *
-sge_gdi_packet_create(sge_gdi_ctx_class_t *ctx, lList **answer_list);
+sge_gdi_packet_create(lList **answer_list);
 
 bool
 sge_gdi_packet_free(sge_gdi_packet_class_t **packet_handle);

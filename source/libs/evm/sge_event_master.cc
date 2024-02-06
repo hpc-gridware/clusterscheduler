@@ -2062,8 +2062,7 @@ static void remove_event_client(lListElem **client, int event_client_id, bool lo
 *     MT-NOTE: will wait on the condition variable 'Event_Master_Control.cond_var'
 *
 *******************************************************************************/
-void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, lList *report_list,
-                                  monitoring_t *monitor)
+void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor)
 {
    u_long32 timeout;
    u_long32 busy_handling;

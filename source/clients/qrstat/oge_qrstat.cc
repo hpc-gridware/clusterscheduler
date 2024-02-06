@@ -60,8 +60,7 @@ static bool
 sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp);
 
 static bool 
-sge_parse_qrstat(sge_gdi_ctx_class_t *ctx, lList **answer_list,
-                 qrstat_env_t *qrstat_env, lList **cmdline)
+sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
 {
    bool ret = true;
    
@@ -137,7 +136,6 @@ int main(int argc, char **argv) {
    int ret = 0;
    lList *pcmdline = nullptr;
    lList *answer_list = nullptr;
-   sge_gdi_ctx_class_t *ctx = nullptr;
    qrstat_env_t qrstat_env;
 
    DENTER_MAIN(TOP_LAYER, "qrsub");
@@ -147,13 +145,12 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(&ctx, QRSTAT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (sge_gdi2_setup(QRSTAT, MAIN_THREAD, &answer_list) != AE_OK) {
       answer_list_output(&answer_list);
       goto error_exit;
    }
 
    qrstat_filter_init(&qrstat_env);
-   qrstat_filter_set_ctx(&qrstat_env, ctx);
 
    /*
     * stage 1: commandline parsing
@@ -191,7 +188,7 @@ int main(int argc, char **argv) {
    /* 
     * stage 2: evalutate switches and modify qrstat_env
     */
-   if (!sge_parse_qrstat(ctx, &answer_list, &qrstat_env, &pcmdline)) {
+   if (!sge_parse_qrstat(&answer_list, &qrstat_env, &pcmdline)) {
       answer_list_output(&answer_list);
       lFreeList(&pcmdline);
       goto error_exit;
@@ -201,7 +198,7 @@ int main(int argc, char **argv) {
     * stage 3: fetch data from master 
     */
    {
-      answer_list = sge_gdi2(ctx, SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
+      answer_list = sge_gdi2(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
                      qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
       if (answer_list_has_error(&answer_list)) {

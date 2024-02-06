@@ -36,18 +36,17 @@
 #include "gdi/sge_gdi_ctx.h"
 
 int
-ckpt_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
+ckpt_mod(lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
          const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object);
+ckpt_spool(lList **alpp, lListElem *ep, gdi_object_t *object);
 
 int
-ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-             monitoring_t *monitor);
+ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 int
-sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *, lList **, char *, char *);
+sge_del_ckpt(lListElem *, lList **, char *, char *);
 
 const char *
 get_checkpoint_when(int bitmask);

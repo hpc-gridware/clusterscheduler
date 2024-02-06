@@ -48,7 +48,7 @@ int add_usage(lListElem *jr, const char *name, const char *uval_as_str, double v
 
 #include "dispatcher.h"
 
-int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg);
+int do_ack(struct_msg_t *aMsg);
 
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase);
 bool check_for_queue_limits(void);

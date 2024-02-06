@@ -82,11 +82,10 @@ bool sge_security_verify_unique_identifier(bool check_admin_user,
                                            const char* commproc, 
                                            unsigned long commid);
 
-void sge_security_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
+void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
-sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
-                                    sge_gdi_packet_class_t *packet_handle);
+sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle);
 
 bool  
 sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_list,
