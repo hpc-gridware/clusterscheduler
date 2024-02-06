@@ -234,7 +234,7 @@ main(int argc, char **argv) {
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
    if (sge_smf_used() == 1 && sge_smf_init_libs() != 0) {
-       sge_exit((void**)&ctx, 1);
+       sge_exit(1);
    }
 #endif
 

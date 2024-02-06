@@ -1802,7 +1802,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
        i = sge_smf_contract_fork(err_str, err_length);
        if (i == -4) {
            /* Could not load libcontract or libscf */
-           sge_exit((void**)&ctx, 1);
+           sge_exit(1);
        } else if (i < -1) {
            i = -2; /* Disable queue */
        }
