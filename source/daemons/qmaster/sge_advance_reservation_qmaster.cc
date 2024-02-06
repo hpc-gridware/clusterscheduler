@@ -626,7 +626,7 @@ ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_
 
       /* remove all jobs refering to the AR */
       if (sge_ar_remove_all_jobs(ctx, ar_id, lGetUlong(ep, ID_force), monitor)) {
-         /* either all jobs were successfull removed or we had no jobs */
+         /* either all jobs were successfully removed or we had no jobs */
 
          /* unblock reserved queues */
          ar_do_reservation(ar, false);

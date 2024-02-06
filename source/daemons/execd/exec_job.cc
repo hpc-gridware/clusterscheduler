@@ -216,7 +216,7 @@ static long get_next_addgrpid(lList *rlp, long last_addgrpid)
          take_next = 1;
    }
    
-   /* not successfull until now => take first number */
+   /* not successful until now => take first number */
    rep = lFirst(rlp);
    if (rep)
       return (lGetUlong(rep, RN_min));

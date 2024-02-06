@@ -212,7 +212,7 @@ int sge_parse_checkpoint_attr(const char *attr_str)
 *
 *  FUNCTION
 *     This function will test all ckpt interface parameters.
-*     If all are valid then it will return successfull.
+*     If all are valid then it will return success.
 *
 *  INPUTS
 *     ep     - element which sould be verified.

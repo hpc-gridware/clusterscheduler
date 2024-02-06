@@ -80,7 +80,7 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
        *       have been written to the buffer if it where large enough.
        *       We have to create a buffer of this size.
        *    3) If the return value is >0 and <BUFSIZ than vsprintf
-       *       was successfull. We do not need a dyn_buffer.
+       *       was successful. We do not need a dyn_buffer.
        */
       if (vsnprintf_ret == -1) {
          size_t dyn_size = 2 * BUFSIZ;

@@ -106,7 +106,7 @@ FCLOSE_ERROR:
  * Descr:  increment number found in qmaster heartbeat file
  *         wrap at 99999
  *         if file doesn't exist create it
- * Return: 0 if operation was successfull 
+ * Return: 0 if operation was successful
  *           (if beat_value != nullptr it will contain
  *            the written heartbeat value)
  *

@@ -516,7 +516,7 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
 *               answer_list_has_error(&answer_job) || answer_list_has_error(&local_answer_list)) {
 *              ERROR((SGE_EVENT, "GDI multi request failed"));
 *           } else {
-*              INFO((SGE_EVENT, "GDI multi request was successfull"));
+*              INFO((SGE_EVENT, "GDI multi request was successful"));
 *              INFO((SGE_EVENT, "got cqueue list with "sge_U32CFormat" and cqueue answer "
 *                    "list with "sge_U32CFormat" elements.", sge_u32c(lGetNumberOfElem(list_cqueue)),
 *                    sge_u32c(lGetNumberOfElem(answer_cqueue))));

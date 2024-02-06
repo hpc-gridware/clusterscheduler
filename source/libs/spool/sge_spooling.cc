@@ -1187,7 +1187,7 @@ spool_read_keys(lList **answer_list, const lListElem *context,
 *     bool  do_job_spooling - flag whether job_spooling shall be done
 *
 *  RESULT
-*     bool - true, if writing was successfull, else false
+*     bool - true, if writing was successful, else false
 *
 *  SEE ALSO
 *     spool/--Spooling

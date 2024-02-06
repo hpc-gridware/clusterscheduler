@@ -39,7 +39,7 @@
 
 /*-------------------------------------------------------------
  * Name:   qmaster_lock
- * Return: 0 if creation of file was successfull
+ * Return: 0 if creation of file was successful
  *         -1 if file couldn't be created
  *-------------------------------------------------------------*/
 int qmaster_lock(

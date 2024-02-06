@@ -101,7 +101,7 @@ int test_params() {
    sge_prof_cleanup();
 
    if (ret == EXIT_SUCCESS) {
-      printf("test_params successfull\n\n");
+      printf("test_params successful\n\n");
    }
 
    return ret;

@@ -718,7 +718,7 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
 *     which will be defined during job submittion or redefined via
 *     qalter and qmon.
 *
-*     This function will return successfull when:
+*     This function will return success when:
 *        - queues are requestable and
 *        - if the contained queue-pattern matches at least one 
 *          queue instance

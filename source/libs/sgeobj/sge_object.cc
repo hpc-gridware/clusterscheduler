@@ -2970,7 +2970,7 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
 *
 *  FUNCTION
 *     Unpacks the given packbuffer.
-*     If unpacking was successfull, verifies the object
+*     If unpacking was successful, verifies the object
 *     against the given descriptor.
 *
 *  INPUTS

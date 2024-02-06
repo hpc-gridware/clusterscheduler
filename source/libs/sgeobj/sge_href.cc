@@ -60,7 +60,7 @@
 *
 *  FUNCTION
 *     Add a host or hostgroup given by 'host_or_group' into the list 
-*     'this_list'. If the function is successfull then the function
+*     'this_list'. If the function is successful then the function
 *     returns 'true' otherwise it will add an entry into 'answer_list'
 *     and return with 'false'. If 'this_list' does not exist than it
 *     will be created.

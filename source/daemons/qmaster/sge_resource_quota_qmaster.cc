@@ -245,7 +245,7 @@ rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *o
 
 /****** sge_resource_quota_qmaster/rqs_success() **********************************
 *  NAME
-*     rqs_success() -- does something after an successfull modify
+*     rqs_success() -- does something after a successful modify
 *
 *  SYNOPSIS
 *     int rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, 

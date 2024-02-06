@@ -180,7 +180,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 *
 *  FUNCTION
 *     Spools (writes or deletes) an object.
-*     If spooling was successfull, send the given event.
+*     If spooling was successful, send the given event.
 *     Finally, the changed bits (information, which fields of the object
 *     and it's subobjects were changed) is cleared.
 *

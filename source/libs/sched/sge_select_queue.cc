@@ -3547,7 +3547,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 *     lList *pe_range              - pe range, must not be nullptr
 *
 *  RESULT
-*     static bool - true, if successfull
+*     static bool - true, if successful
 *
 *  NOTES
 *     MT-NOTE: add_pe_slots_to_category() is MT safe

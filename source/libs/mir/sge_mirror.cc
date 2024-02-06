@@ -1794,7 +1794,7 @@ static sge_callback_result
 *     void *clientdata                - client data
 *
 *  RESULT
-*     static sge_callback_result - true, if update is successfull
+*     static sge_callback_result - true, if update is successful
 *                                  false if an error occured
 *
 *  NOTES

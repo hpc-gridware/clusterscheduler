@@ -398,7 +398,7 @@ static bool get_cl_ping_value(void) {
 *
 *     Please note that in contrast to sge_gdi_packet_execute_internal()
 *     this function assures that the GDI request contained in the
-*     "packet" is completely executed (either successfull or with errors)
+*     "packet" is completely executed (either successful or with errors)
 *     after this function returns.
 *
 *     a GDI multi answer lists structure from the information contained
@@ -851,7 +851,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 *     This function can only be called in a qmaster thread. Then
 *     this function blocks until the GDI packet, which has to be
 *     given to qmaster via sge_gdi_packet_execute_internal(), is
-*     executed completely (either successfull or with errors). 
+*     executed completely (either successful or with errors). 
 *
 *     After that it creates a multi answer list.
 *

@@ -948,7 +948,7 @@ jsv_list_update(const char *name, const char *context,
 *     lock will be aquired again.
 *
 *     This function will return 'true' if the verification process
-*     was successfull. In that case 'job' contains the job specification
+*     was successful. In that case 'job' contains the job specification
 *     of the verified job with all adjustments which might have been 
 *     requested during the verification process of all JSV's.
 *

@@ -95,7 +95,7 @@ int shepherd_sys_str2signal(char *override_signal)
 *
 *  RESULT
 *     int - error state
-*        0 - successfull
+*        0 - successful
 *       -1 - buffer is full 
 *******************************************************************************/
 int add_signal(int signal)

@@ -62,7 +62,7 @@
 *     void *clientdata        - client data
 *
 *  RESULT
-*     bool - true, if update is successfull, else false
+*     bool - true, if update is successful, else false
 *
 *  NOTES
 *     The function should only be called from the event mirror interface.

@@ -160,7 +160,7 @@
 
 #define MSG_CULL_PACK_WRONG_VERSION_XX    _MESSAGE(41152, _("wrong cull version, read 0x%08x, but expected actual version 0x%08x"))
 
-#define MSG_CULL_PACK_SUCCESS             _MESSAGE(41153, _("packing successfull"))
+#define MSG_CULL_PACK_SUCCESS             _MESSAGE(41153, _("packing successful"))
 #define MSG_CULL_PACK_ENOMEM              _MESSAGE(41154, _("can't allocate memory"))
 #define MSG_CULL_PACK_FORMAT              _MESSAGE(41155, _("invalid input parameter"))
 #define MSG_CULL_PACK_BADARG              _MESSAGE(41156, _("bad argument"))

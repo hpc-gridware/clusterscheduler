@@ -237,7 +237,7 @@ int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
 /****** qmaster/ckpt/ckpt_success() *******************************************
 *
 *  NAME
-*     ckpt_success -- does something after an successfull modify
+*     ckpt_success -- does something after a successful modify
 *
 *  SYNOPSIS
 *     int ckpt_success(lListElem *ep; lListElem *old_ep; gdi_object_t *object);

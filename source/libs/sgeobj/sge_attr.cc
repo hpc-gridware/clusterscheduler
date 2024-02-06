@@ -859,7 +859,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
             }
 
             /*
-             * Parsing the token was successfull. We can create a new 
+             * Parsing the token was successful. We can create a new 
              * element.
              */
             if (ret) {

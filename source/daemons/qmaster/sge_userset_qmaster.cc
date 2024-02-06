@@ -854,7 +854,7 @@ int userset_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *userset, gd
 
 /****** sge_userset_qmaster/userset_success() **********************************
 *  NAME
-*     userset_success() -- do something after a successfull add/mod
+*     userset_success() -- do something after a successful add/mod
 *
 *  SYNOPSIS
 *     int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem 

@@ -352,7 +352,7 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
 *     hostgroup 'this_elem'. The name of these hostgroups will be
 *     returned in the hreference list 'occupants_groups'.
 *     'answer_list' will contain error messages if the function is
-*     not successfull
+*     not successful
 *      
 *
 *  INPUTS
@@ -407,7 +407,7 @@ hgroup_find_all_referencees(const lListElem *this_elem,
 *     hostgroup 'this_elem'. The name of these hostgroups will be
 *     returned in the hreference list 'occupants_groups'.
 *     'answer_list' will contain error messages if the function is
-*     not successfull 
+*     not successful
 *
 *  INPUTS
 *     const lListElem *this_elem        - HGRP_Type 
