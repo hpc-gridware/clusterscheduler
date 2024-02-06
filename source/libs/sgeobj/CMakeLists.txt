@@ -68,6 +68,10 @@ add_executable(test_eval_expression test_eval_expression.cc)
 target_include_directories(test_eval_expression PRIVATE "./")
 target_link_libraries(test_eval_expression PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
 
+add_executable(test_obj_performance test_obj_performance.cc)
+target_include_directories(test_obj_performance PRIVATE "./")
+target_link_libraries(test_obj_performance PRIVATE sgeobj gdi cull uti commlists ${SGE_LIBS})
+
 #add_executable(test_sge_attr test_sge_attr.cc)
 #target_include_directories(test_sge_attr PRIVATE "./")
 #target_link_libraries(test_sge_attr PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
@@ -98,6 +102,7 @@ target_link_libraries(test_sge_utility PRIVATE sgeobj cull comm uti commlists ${
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_eval_expression DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_obj_performance DESTINATION testbin/${SGE_ARCH})
    #    install(TARGETS test_sge_attr DESTINATION testbin/${SGE_ARCH})
    #    install(TARGETS test_sge_fgl DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sge_object DESTINATION testbin/${SGE_ARCH})
@@ -106,3 +111,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sge_schedd_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sge_utility DESTINATION testbin/${SGE_ARCH})
 endif ()
+
+#add_subdirectory(cpp)
