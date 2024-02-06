@@ -133,6 +133,7 @@ function(architecture_specific_settings)
       add_compile_options(-Wno-literal-suffix -Wno-write-strings)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
+      set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
