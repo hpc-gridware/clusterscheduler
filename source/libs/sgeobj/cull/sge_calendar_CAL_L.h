@@ -1,5 +1,4 @@
-#ifndef SGE_CAL_L_H
-#define SGE_CAL_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -84,4 +83,3 @@ NAMEEND
 #define CAL_SIZE sizeof(CALN)/sizeof(char *)
 
 
-#endif

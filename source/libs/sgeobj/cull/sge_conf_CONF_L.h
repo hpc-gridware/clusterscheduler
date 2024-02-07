@@ -1,5 +1,4 @@
-#ifndef SGE_CONF_L_H
-#define SGE_CONF_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -74,4 +73,3 @@ NAMEEND
 #define CONF_SIZE sizeof(CONFN)/sizeof(char *)
 
 
-#endif

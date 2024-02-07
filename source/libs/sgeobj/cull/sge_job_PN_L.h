@@ -1,5 +1,4 @@
-#ifndef SGE_PN_L_H
-#define SGE_PN_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -82,4 +81,3 @@ NAMEEND
 #define PN_SIZE sizeof(PNN)/sizeof(char *)
 
 
-#endif

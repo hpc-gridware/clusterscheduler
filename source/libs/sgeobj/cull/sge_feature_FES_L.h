@@ -1,5 +1,4 @@
-#ifndef SGE_FES_L_H
-#define SGE_FES_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define FES_SIZE sizeof(FESN)/sizeof(char *)
 
 
-#endif

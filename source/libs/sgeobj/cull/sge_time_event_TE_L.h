@@ -1,5 +1,4 @@
-#ifndef SGE_TE_L_H
-#define SGE_TE_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,4 +101,3 @@ NAMEEND
 #define TE_SIZE sizeof(TEN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_EVR_L_H
-#define SGE_EVR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -96,4 +95,3 @@ NAMEEND
 #define EVR_SIZE sizeof(EVRN)/sizeof(char *)
 
 
-#endif

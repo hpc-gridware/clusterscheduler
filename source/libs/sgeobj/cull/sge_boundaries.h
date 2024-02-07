@@ -1,5 +1,4 @@
-#ifndef __SGE_BOUNDARIES_H
-#define __SGE_BOUNDARIES_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -443,4 +442,3 @@ enum NameSpaceBoundaries {
 
 };
 
-#endif /* __SGE_BOUNDARIES_H */

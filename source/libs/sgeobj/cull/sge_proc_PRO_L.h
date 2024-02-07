@@ -1,5 +1,4 @@
-#ifndef SGE_PRO_L_H
-#define SGE_PRO_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,4 +101,3 @@ NAMEEND
 #define PRO_SIZE sizeof(PRON)/sizeof(char *)
 
 
-#endif

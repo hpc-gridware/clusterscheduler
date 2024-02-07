@@ -1,5 +1,4 @@
-#ifndef SGE_NSV_L_H
-#define SGE_NSV_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define NSV_SIZE sizeof(NSVN)/sizeof(char *)
 
 
-#endif

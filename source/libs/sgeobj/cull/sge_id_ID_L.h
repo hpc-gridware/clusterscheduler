@@ -1,5 +1,4 @@
-#ifndef SGE_ID_L_H
-#define SGE_ID_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -84,4 +83,3 @@ NAMEEND
 #define ID_SIZE sizeof(IDN)/sizeof(char *)
 
 
-#endif

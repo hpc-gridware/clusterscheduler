@@ -1,5 +1,4 @@
-#ifndef SGE_TMR_L_H
-#define SGE_TMR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define TMR_SIZE sizeof(TMRN)/sizeof(char *)
 
 
-#endif

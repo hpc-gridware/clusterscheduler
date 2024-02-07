@@ -1,5 +1,4 @@
-#ifndef SGE_JJAT_L_H
-#define SGE_JJAT_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,4 +77,3 @@ NAMEEND
 #define JJAT_SIZE sizeof(JJATN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_JC_L_H
-#define SGE_JC_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -68,4 +67,3 @@ NAMEEND
 #define JC_SIZE sizeof(JCN)/sizeof(char *)
 
 
-#endif

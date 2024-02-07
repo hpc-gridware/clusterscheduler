@@ -1,5 +1,4 @@
-#ifndef SGE_FPET_L_H
-#define SGE_FPET_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define FPET_SIZE sizeof(FPETN)/sizeof(char *)
 
 
-#endif

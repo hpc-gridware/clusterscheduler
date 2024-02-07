@@ -1,5 +1,4 @@
-#ifndef SGE_RQL_L_H
-#define SGE_RQL_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -90,4 +89,3 @@ NAMEEND
 #define RQL_SIZE sizeof(RQLN)/sizeof(char *)
 
 
-#endif

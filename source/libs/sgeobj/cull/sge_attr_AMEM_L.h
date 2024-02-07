@@ -1,5 +1,4 @@
-#ifndef SGE_AMEM_L_H
-#define SGE_AMEM_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define AMEM_SIZE sizeof(AMEMN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_STU_L_H
-#define SGE_STU_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define STU_SIZE sizeof(STUN)/sizeof(char *)
 
 
-#endif

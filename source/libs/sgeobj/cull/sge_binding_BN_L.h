@@ -1,5 +1,4 @@
-#ifndef SGE_BN_L_H
-#define SGE_BN_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -96,4 +95,3 @@ NAMEEND
 #define BN_SIZE sizeof(BNN)/sizeof(char *)
 
 
-#endif

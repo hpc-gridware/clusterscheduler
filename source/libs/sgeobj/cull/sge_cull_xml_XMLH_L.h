@@ -1,5 +1,4 @@
-#ifndef SGE_XMLH_L_H
-#define SGE_XMLH_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -84,4 +83,3 @@ NAMEEND
 #define XMLH_SIZE sizeof(XMLHN)/sizeof(char *)
 
 
-#endif

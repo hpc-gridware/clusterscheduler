@@ -1,5 +1,4 @@
-#ifndef SGE_ACK_L_H
-#define SGE_ACK_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,4 +77,3 @@ NAMEEND
 #define ACK_SIZE sizeof(ACKN)/sizeof(char *)
 
 
-#endif

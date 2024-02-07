@@ -1,5 +1,4 @@
-#ifndef SGE_ASTR_L_H
-#define SGE_ASTR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ASTR_SIZE sizeof(ASTRN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_LR_L_H
-#define SGE_LR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -92,4 +91,3 @@ NAMEEND
 #define LR_SIZE sizeof(LRN)/sizeof(char *)
 
 
-#endif

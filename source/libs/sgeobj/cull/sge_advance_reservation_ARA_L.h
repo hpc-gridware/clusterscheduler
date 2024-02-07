@@ -1,5 +1,4 @@
-#ifndef SGE_ARA_L_H
-#define SGE_ARA_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ARA_SIZE sizeof(ARAN)/sizeof(char *)
 
 
-#endif

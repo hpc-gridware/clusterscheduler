@@ -1,5 +1,4 @@
-#ifndef SGE_CE_L_H
-#define SGE_CE_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -167,4 +166,3 @@ NAMEEND
 #define CE_SIZE sizeof(CEN)/sizeof(char *)
 
 
-#endif

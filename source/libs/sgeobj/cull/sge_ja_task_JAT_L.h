@@ -1,5 +1,4 @@
-#ifndef SGE_JAT_L_H
-#define SGE_JAT_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -264,4 +263,3 @@ NAMEEND
 #define JAT_SIZE sizeof(JATN)/sizeof(char *)
 
 
-#endif

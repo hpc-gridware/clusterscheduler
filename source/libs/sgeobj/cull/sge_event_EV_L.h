@@ -1,5 +1,4 @@
-#ifndef SGE_EV_L_H
-#define SGE_EV_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -184,4 +183,3 @@ NAMEEND
 #define EV_SIZE sizeof(EVN)/sizeof(char *)
 
 
-#endif

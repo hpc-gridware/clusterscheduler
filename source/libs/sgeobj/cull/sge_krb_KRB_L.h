@@ -1,5 +1,4 @@
-#ifndef SGE_KRB_L_H
-#define SGE_KRB_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -90,4 +89,3 @@ NAMEEND
 #define KRB_SIZE sizeof(KRBN)/sizeof(char *)
 
 
-#endif

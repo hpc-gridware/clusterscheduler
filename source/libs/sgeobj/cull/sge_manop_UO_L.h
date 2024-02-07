@@ -1,5 +1,4 @@
-#ifndef SGE_UO_L_H
-#define SGE_UO_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -62,4 +61,3 @@ NAMEEND
 #define UO_SIZE sizeof(UON)/sizeof(char *)
 
 
-#endif

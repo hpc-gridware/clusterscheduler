@@ -1,5 +1,4 @@
-#ifndef SGE_AULNG_L_H
-#define SGE_AULNG_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define AULNG_SIZE sizeof(AULNGN)/sizeof(char *)
 
 
-#endif

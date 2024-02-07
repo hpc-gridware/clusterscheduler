@@ -1,5 +1,4 @@
-#ifndef SGE_CK_L_H
-#define SGE_CK_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -114,4 +113,3 @@ NAMEEND
 #define CK_SIZE sizeof(CKN)/sizeof(char *)
 
 
-#endif

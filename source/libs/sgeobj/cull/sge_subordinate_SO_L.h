@@ -1,5 +1,4 @@
-#ifndef SGE_SO_L_H
-#define SGE_SO_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -94,4 +93,3 @@ NAMEEND
 #define SO_SIZE sizeof(SON)/sizeof(char *)
 
 
-#endif

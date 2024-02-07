@@ -1,5 +1,4 @@
-#ifndef SGE_UA_L_H
-#define SGE_UA_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define UA_SIZE sizeof(UAN)/sizeof(char *)
 
 
-#endif

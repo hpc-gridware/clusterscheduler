@@ -1,5 +1,4 @@
-#ifndef SGE_TM_L_H
-#define SGE_TM_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -108,4 +107,3 @@ NAMEEND
 #define TM_SIZE sizeof(TMN)/sizeof(char *)
 
 
-#endif

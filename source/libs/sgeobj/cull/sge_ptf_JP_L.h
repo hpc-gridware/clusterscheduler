@@ -1,5 +1,4 @@
-#ifndef SGE_JP_L_H
-#define SGE_JP_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define JP_SIZE sizeof(JPN)/sizeof(char *)
 
 
-#endif

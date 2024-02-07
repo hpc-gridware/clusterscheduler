@@ -1,5 +1,4 @@
-#ifndef SGE_PE_L_H
-#define SGE_PE_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -148,4 +147,3 @@ NAMEEND
 #define PE_SIZE sizeof(PEN)/sizeof(char *)
 
 
-#endif

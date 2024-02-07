@@ -1,5 +1,4 @@
-#ifndef SGE_QR_L_H
-#define SGE_QR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define QR_SIZE sizeof(QRN)/sizeof(char *)
 
 
-#endif

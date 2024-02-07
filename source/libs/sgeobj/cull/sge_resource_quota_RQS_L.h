@@ -1,5 +1,4 @@
-#ifndef SGE_RQS_L_H
-#define SGE_RQS_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,4 +77,3 @@ NAMEEND
 #define RQS_SIZE sizeof(RQSN)/sizeof(char *)
 
 
-#endif

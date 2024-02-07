@@ -1,5 +1,4 @@
-#ifndef SGE_CF_L_H
-#define SGE_CF_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -83,4 +82,3 @@ NAMEEND
 #define CF_SIZE sizeof(CFN)/sizeof(char *)
 
 
-#endif

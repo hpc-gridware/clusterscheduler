@@ -1,5 +1,4 @@
-#ifndef SGE_AUSRLIST_L_H
-#define SGE_AUSRLIST_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define AUSRLIST_SIZE sizeof(AUSRLISTN)/sizeof(char *)
 
 
-#endif

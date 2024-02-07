@@ -1,5 +1,4 @@
-#ifndef SGE_KTGT_L_H
-#define SGE_KTGT_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define KTGT_SIZE sizeof(KTGTN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_SPTR_L_H
-#define SGE_SPTR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define SPTR_SIZE sizeof(SPTRN)/sizeof(char *)
 
 
-#endif

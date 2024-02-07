@@ -1,5 +1,4 @@
-#ifndef SGE_LDR_L_H
-#define SGE_LDR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -84,4 +83,3 @@ NAMEEND
 #define LDR_SIZE sizeof(LDRN)/sizeof(char *)
 
 
-#endif
