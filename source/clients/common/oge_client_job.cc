@@ -611,14 +611,14 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       const lListElem *jatep = nullptr;
 
       for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
-         lListElem *resu = nullptr;
+         const lListElem *resu = nullptr;
          bool first_task = true;
          bool is_first_remap = true;
          dstring task_resources = DSTRING_INIT;
          const char* resource_ids = nullptr;
 
          /* go through all RSMAP resources for the particular task and create a string */
-         for_each (resu, lGetList(jatep, JAT_granted_resources_list)) {
+         for_each_ep (resu, lGetList(jatep, JAT_granted_resources_list)) {
             if (lGetUlong(resu, GRU_type) == GRU_RESOURCE_MAP_TYPE) {
                const char* name  = lGetString(resu, GRU_name);
                const char* value = lGetString(resu, GRU_value);
