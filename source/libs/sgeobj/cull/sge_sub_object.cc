@@ -236,8 +236,14 @@ object_get_subtype(int nm)
       case EV_events:
          ret = ET_Type;
          break;
+      case CE_resource_map_list:
+         ret = RESL_Type;
+         break;
       case OR_queuelist:
          ret = OQ_Type;
+         break;
+      case OR_granted_resources_list:
+         ret = GRU_Type;
          break;
       case US_entries:
          ret = UE_Type;
@@ -391,6 +397,9 @@ object_get_subtype(int nm)
          break;
       case JAT_granted_destin_identifier_list:
          ret = JG_Type;
+         break;
+      case JAT_granted_resources_list:
+         ret = GRU_Type;
          break;
       case JAT_usage_list:
          ret = UA_Type;

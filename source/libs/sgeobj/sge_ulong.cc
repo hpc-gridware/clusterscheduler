@@ -480,10 +480,13 @@ ulong_parse_centry_type_from_string(u_long32 *this_ulong,
 
    *this_ulong = 0;
    for (i = TYPE_FIRST; i <= TYPE_CE_LAST; i++) {
-      if (!strcasecmp(string, map_type2str(i))) {
+      if (strcasecmp(string, map_type2str(i)) == 0) {
          *this_ulong = i;
          break;
       }
+   }
+   if (strcasecmp(string, map_type2str(TYPE_RSMAP)) == 0) {
+      *this_ulong = i;
    }
    if (*this_ulong == 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

@@ -108,6 +108,9 @@
 *    SGE_STRING(CE_urgency_weight) - Urgency Weighting Factor
 *    Static Urgency Weighting Factor.
 *
+*    SGE_LIST(CE_resource_map_list) - Resource Map List
+*    on host level only: RSMAP id list
+*
 */
 
 enum {
@@ -125,7 +128,8 @@ enum {
    CE_pj_dominant,
    CE_requestable,
    CE_tagged,
-   CE_urgency_weight
+   CE_urgency_weight,
+   CE_resource_map_list
 };
 
 LISTDEF(CE_Type)
@@ -144,6 +148,7 @@ LISTDEF(CE_Type)
    SGE_ULONG(CE_requestable, CULL_SPOOL)
    SGE_ULONG(CE_tagged, CULL_DEFAULT)
    SGE_STRING(CE_urgency_weight, CULL_SPOOL)
+   SGE_LIST(CE_resource_map_list, RESL_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(CEN)
@@ -162,6 +167,7 @@ NAMEDEF(CEN)
    NAME("CE_requestable")
    NAME("CE_tagged")
    NAME("CE_urgency_weight")
+   NAME("CE_resource_map_list")
 NAMEEND
 
 #define CE_SIZE sizeof(CEN)/sizeof(char *)

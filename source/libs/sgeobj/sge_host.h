@@ -39,6 +39,7 @@
 #include "sgeobj/cull/sge_host_SH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
 #include "sgeobj/cull/sge_host_HS_L.h"
+#include "sgeobj/cull/sge_host_RESL_L.h"
 
 /* 
  * sge standard load value names

@@ -64,6 +64,8 @@
 #include "basis_types.h"
 #include "msg_common.h"
 
+#include "sge_centry_rsmap.h"
+
 #define CENTRY_LAYER BASIS_LAYER
 
 /* EB: ADOC: add commets */
@@ -215,6 +217,7 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
    }
 
    switch ( type = lGetUlong(this_elem, CE_valtype) ) {
+      case TYPE_RSMAP:
       case TYPE_INT:
       case TYPE_TIM:
       case TYPE_MEM:
@@ -371,6 +374,7 @@ map_type2str(u_long32 type)
 
       "TYPE_ACC",/* TYPE_ACC */
       "TYPE_LOG",/* TYPE_LOG */
+      "RSMAP"    /* TYPE_RSMAP */
    };
 
    if (type < TYPE_FIRST || type > TYPE_LAST) {
@@ -940,7 +944,7 @@ centry_list_remove_duplicates(lList *this_list)
 *         Short cu  : has to be unique
 *         Type	     : every type from the list (string, host, cstring, int, 
 *                                               double, boolean, memory, time)
-*         Consumable : can only be defined for: int, double, memory, time
+*         Consumable : can only be defined for: int, double, memory, time, RSMAP
 *
 *         Relational operator:
 *         - for consumables:              only <=
@@ -951,6 +955,8 @@ centry_list_remove_duplicates(lList *this_list)
 *
 *         Requestable	   : for all attribute
 *         default value 	: only for consumables
+*
+*     A RSMAP must be a consumable.
 *
 *     The type for build in attributes is not allowed to be changed!
 *
@@ -980,10 +986,11 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    DENTER(TOP_LAYER);
 
    switch(type){
-      case TYPE_INT :
-      case TYPE_MEM :
+      case TYPE_RSMAP:
+      case TYPE_INT:
+      case TYPE_MEM:
       case TYPE_DOUBLE:
-      case TYPE_TIM :
+      case TYPE_TIM:
          if (relop == CMPLXEXCL_OP) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR,
                                     MSG_MUST_BOOL_TO_BE_EXCL_S, attrname);  
@@ -991,13 +998,13 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
          }
          break;
       
-      case TYPE_STR :
-      case TYPE_CSTR :
+      case TYPE_STR:
+      case TYPE_CSTR:
       case TYPE_RESTR:
-      case TYPE_HOST : if ( !(relop == CMPLXEQ_OP || relop == CMPLXNE_OP) ) {
-                           answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR,
-                                                   MSG_INVALID_CENTRY_TYPE_RELOP_S, attrname);  
-                           ret = false;
+      case TYPE_HOST: if ( !(relop == CMPLXEQ_OP || relop == CMPLXNE_OP) ) {
+                          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR,
+                                                  MSG_INVALID_CENTRY_TYPE_RELOP_S, attrname);
+                          ret = false;
                        }
                        if (lGetUlong(centry, CE_consumable)) {
                            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
@@ -1007,7 +1014,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                        }
          break;
 
-      case TYPE_BOO : if (relop != CMPLXEQ_OP && relop != CMPLXEXCL_OP){
+      case TYPE_BOO: if (relop != CMPLXEQ_OP && relop != CMPLXEXCL_OP){
                            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR,
                                                    MSG_INVALID_CENTRY_TYPE_RELOP_S, attrname); 
                            ret = false;
@@ -1027,7 +1034,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 
          break;
 
-      default : /* error unknown type */
+      default: /* error unknown type */
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
                                     MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
                   ret = false;
@@ -1081,6 +1088,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       } else if ( (temp = lGetString(centry, CE_defaultval)) ) {
       
          switch(type){
+            case TYPE_RSMAP:
             case TYPE_INT:
             case TYPE_TIM:
             case TYPE_MEM:
@@ -1121,6 +1129,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       /* verify urgency always */
       if ((temp = lGetString(centry, CE_urgency_weight)) ) {
          switch(type){
+            case TYPE_RSMAP:
             case TYPE_INT:
             case TYPE_TIM:
             case TYPE_MEM:
@@ -1145,8 +1154,12 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       }
    }
 
+   if (type == TYPE_RSMAP) {
+      ret = centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname);
+   }
 
-   /* check if its a build in value and if the type is correct */
+
+   /* check if it's a built-in value and if the type is correct */
    {
       int i; 
       int type = lGetUlong(centry, CE_valtype);
@@ -1249,28 +1262,29 @@ centry_urgency_contribution(int slots, const char *name, double value,
       DRETURN(0);
    }
 
-   switch ((complex_type=lGetUlong(centry, CE_valtype))) {
-   case TYPE_INT:
-   case TYPE_TIM:
-   case TYPE_MEM:
-   case TYPE_BOO:
-   case TYPE_DOUBLE:
-      contribution = value * weight * slots;
-      DPRINTF(("   %s: %7f * %7f * %d    ---> %7f\n", name, value, weight, slots, contribution));
-      break;
+   switch ((complex_type = lGetUlong(centry, CE_valtype))) {
+      case TYPE_RSMAP:
+      case TYPE_INT:
+      case TYPE_TIM:
+      case TYPE_MEM:
+      case TYPE_BOO:
+      case TYPE_DOUBLE:
+         contribution = value * weight * slots;
+         DPRINTF(("   %s: %7f * %7f * %d    ---> %7f\n", name, value, weight, slots, contribution));
+         break;
 
-   case TYPE_STR:
-   case TYPE_CSTR:
-   case TYPE_HOST:
-   case TYPE_RESTR:
-      contribution = weight;
-      DPRINTF(("   %s: using weight as contrib ---> %7f\n", name, weight));
-      break;
+      case TYPE_STR:
+      case TYPE_CSTR:
+      case TYPE_HOST:
+      case TYPE_RESTR:
+         contribution = weight;
+         DPRINTF(("   %s: using weight as contrib ---> %7f\n", name, weight));
+         break;
 
-   default:
-      ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(complex_type)));
-      contribution = 0;
-      break;
+      default:
+         ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(complex_type)));
+         contribution = 0;
+         break;
    }
 
    DRETURN(contribution);

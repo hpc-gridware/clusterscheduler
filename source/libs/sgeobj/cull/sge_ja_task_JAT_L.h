@@ -64,6 +64,9 @@
 *    SGE_LIST(JAT_granted_destin_identifier_list) - @todo add summary
 *    @todo add description
 *
+*    SGE_LIST(JAT_granted_resources_list) - Granted Resources
+*    List of granted resources, currently these are granted RSMAPs only.
+*
 *    SGE_STRING(JAT_master_queue) - @todo add summary
 *    @todo add description
 *
@@ -156,6 +159,7 @@ enum {
    JAT_granted_pe,
    JAT_job_restarted,
    JAT_granted_destin_identifier_list,
+   JAT_granted_resources_list,
    JAT_master_queue,
    JAT_state,
    JAT_pvm_ckpt_pid,
@@ -194,6 +198,7 @@ LISTDEF(JAT_Type)
    SGE_STRING(JAT_granted_pe, CULL_SUBLIST)
    SGE_ULONG(JAT_job_restarted, CULL_SUBLIST)
    SGE_LIST(JAT_granted_destin_identifier_list, JG_Type, CULL_SUBLIST)
+   SGE_LIST(JAT_granted_resources_list, GRU_Type, CULL_SPOOL)
    SGE_STRING(JAT_master_queue, CULL_SUBLIST)
    SGE_ULONG(JAT_state, CULL_SUBLIST)
    SGE_ULONG(JAT_pvm_ckpt_pid, CULL_SUBLIST)
@@ -232,6 +237,7 @@ NAMEDEF(JATN)
    NAME("JAT_granted_pe")
    NAME("JAT_job_restarted")
    NAME("JAT_granted_destin_identifier_list")
+   NAME("JAT_granted_resources_list")
    NAME("JAT_master_queue")
    NAME("JAT_state")
    NAME("JAT_pvm_ckpt_pid")

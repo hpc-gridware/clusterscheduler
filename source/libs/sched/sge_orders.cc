@@ -29,7 +29,7 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <cstdio>
+#include <stdio.h>
 
 #include "uti/sge_rmon.h"
 
@@ -49,12 +49,12 @@
 
 /****** sge_orders/sge_add_schedd_info() ***************************************
 *  NAME
-*     sge_add_schedd_info() -- retrieves the messages and generates an order out 
+*     sge_add_schedd_info() -- retrieves the messages and generates an order out
 *                              of it.
 *
 *  SYNOPSIS
-*     lList* sge_add_schedd_info(lList *or_list, int *global_mes_count, int 
-*     *job_mes_count) 
+*     lList* sge_add_schedd_info(lList *or_list, int *global_mes_count, int
+*     *job_mes_count)
 *
 *  FUNCTION
 *     retrieves all messages, puts them into an order package, and frees the
@@ -69,10 +69,10 @@
 *     lList* - the order list
 *
 *  NOTES
-*     MT-NOTE: sge_add_schedd_info() is not MT safe 
+*     MT-NOTE: sge_add_schedd_info() is not MT safe
 *
 *******************************************************************************/
-lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count) 
+lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count)
 {
    lList *jlist;
    lListElem *sme, *ep;
@@ -81,23 +81,23 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 
    sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
-   if (!sme || (lGetNumberOfElem(lGetList(sme, SME_message_list)) < 1 
+   if (!sme || (lGetNumberOfElem(lGetList(sme, SME_message_list)) < 1
          && lGetNumberOfElem(lGetList(sme, SME_global_message_list)) < 1)) {
       DRETURN(or_list);
    }
-   
+
    /* create orders list if not existent */
    if (!or_list) {
       or_list = lCreateList("orderlist", OR_Type);
-   }   
+   }
 
    /* build order */
-   ep=lCreateElem(OR_Type);   
-   
+   ep=lCreateElem(OR_Type);
+
    jlist = lCreateList("", SME_Type);
    lAppendElem(jlist, sme);
    lSetList(ep, OR_joker, jlist);
-   
+
    lSetUlong(ep, OR_type, ORT_job_schedd_info);
    lAppendElem(or_list, ep);
 
@@ -123,8 +123,8 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 *     sge_create_orders() -- Create a new order-list or add orders to an existing one
 *
 *  SYNOPSIS
-*     lList* sge_create_orders(lList *or_list, u_long32 type, lListElem *job, 
-*     lListElem *ja_task, lList *granted, bool update_execd) 
+*     lList* sge_create_orders(lList *or_list, u_long32 type, lListElem *job,
+*     lListElem *ja_task, lList *granted, bool update_execd)
 *
 *  FUNCTION
 *     - If the or_list is nullptr, a new one will be generated
@@ -145,22 +145,22 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 *     lList* - returns the orderlist
 *
 *  NOTES
-*     MT-NOTE: sge_create_orders() is MT safe 
+*     MT-NOTE: sge_create_orders() is MT safe
 *
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-lList 
+lList
 *sge_create_orders(lList *or_list, u_long32 type, const lListElem *job, const lListElem *ja_task,
-                   const lList *granted , bool update_execd) 
+                   const lList *granted , bool update_execd)
 {
    lList *ql = nullptr;
    const lListElem *gel;
    lListElem *ep, *ep2;
    u_long32 qslots;
-  
+
    DENTER(TOP_LAYER);
-   
+
    if (!job) {
       lFreeList(&or_list);
       DRETURN(or_list);
@@ -169,7 +169,7 @@ lList
    /* create orders list if not existent */
    if (!or_list) {
       or_list = lCreateList("orderlist", OR_Type);
-   }   
+   }
 
    /* build sublist of granted */
    if (update_execd) {
@@ -200,11 +200,11 @@ lList
       lSetDouble(ep, OR_ntix,      lGetDouble(ja_task, JAT_ntix));
       lSetDouble(ep, OR_prio,      lGetDouble(ja_task, JAT_prio));
    }
-   
+
    if (type == ORT_tickets || type == ORT_ptickets) {
-      
+
       static order_pos_t *order_pos = nullptr;
-      
+
       const lDescr tixDesc[] = {
                             {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
                             {JAT_tix, lDoubleT | CULL_IS_REDUCED, nullptr},
@@ -239,17 +239,17 @@ lList
                                  {NoName, lEndT | CULL_IS_REDUCED, nullptr}
                                };
       ja_task_pos_t *ja_pos;
-      ja_task_pos_t *order_ja_pos;   
+      ja_task_pos_t *order_ja_pos;
       job_pos_t   *job_pos;
       job_pos_t   *order_job_pos;
       lListElem *jep = lCreateElem(jobDesc);
       lList *jlist = lCreateList("", jobDesc);
-     
+
       if (order_pos == nullptr) {
          lListElem *tempElem = lCreateElem(tix2Desc);
 
-         sge_create_cull_order_pos(&order_pos, job, ja_task, jep, tempElem);    
-         
+         sge_create_cull_order_pos(&order_pos, job, ja_task, jep, tempElem);
+
          lFreeElem(&tempElem);
       }
 
@@ -257,17 +257,17 @@ lList
       order_ja_pos = &(order_pos->order_ja_task);
       job_pos = &(order_pos->job);
       order_job_pos = &(order_pos->order_job);
-     
+
 
       /* Create a reduced task list with only the required fields */
-      {           
+      {
          lList *tlist = nullptr;
          lListElem *tempElem = nullptr;
 
          if (update_execd){
             tlist = lCreateList("", tixDesc);
-            tempElem = lCreateElem(tixDesc); 
-            lSetList(tempElem, JAT_granted_destin_identifier_list, 
+            tempElem = lCreateElem(tixDesc);
+            lSetList(tempElem, JAT_granted_destin_identifier_list,
                      lCopyList("", lGetList(ja_task, JAT_granted_destin_identifier_list)));
          }
          else {
@@ -276,21 +276,21 @@ lList
          }
 
          lAppendElem(tlist, tempElem);
-         
+
          lSetPosDouble(tempElem, order_ja_pos->JAT_tix_pos,     lGetPosDouble(ja_task,ja_pos->JAT_tix_pos));
          lSetPosDouble(tempElem, order_ja_pos->JAT_oticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_oticket_pos));
          lSetPosDouble(tempElem, order_ja_pos->JAT_fticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_fticket_pos));
          lSetPosDouble(tempElem, order_ja_pos->JAT_sticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_sticket_pos));
          lSetPosDouble(tempElem, order_ja_pos->JAT_share_pos,   lGetPosDouble(ja_task,ja_pos->JAT_share_pos));
          lSetPosDouble(tempElem, order_ja_pos->JAT_prio_pos,    lGetPosDouble(ja_task,ja_pos->JAT_prio_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_ntix_pos,    lGetPosDouble(ja_task,ja_pos->JAT_ntix_pos));            
-      
+         lSetPosDouble(tempElem, order_ja_pos->JAT_ntix_pos,    lGetPosDouble(ja_task,ja_pos->JAT_ntix_pos));
+
          lSetList(jep, JB_ja_tasks, tlist);
       }
 
       /* Create a reduced job list with only the required fields */
       lAppendElem(jlist, jep);
-      
+
       lSetPosDouble(jep, order_job_pos->JB_nppri_pos,   lGetPosDouble(job, job_pos->JB_nppri_pos));
       lSetPosDouble(jep, order_job_pos->JB_nurg_pos,    lGetPosDouble(job, job_pos->JB_nurg_pos));
       lSetPosDouble(jep, order_job_pos->JB_urg_pos,     lGetPosDouble(job, job_pos->JB_urg_pos));
@@ -313,20 +313,23 @@ lList
       s = lGetString(ja_task, JAT_granted_pe);
       if (s != nullptr) {
          lSetString(ep, OR_pe, s);
-      }   
+      }
+
+      /* RSMAP: copy from JAT_granted_resources_list */
+      lSwapList(ep, OR_granted_resources_list, (lListElem *)ja_task, JAT_granted_resources_list);
    }
 
    lAppendElem(or_list, ep);
 
-   DRETURN(or_list); 
+   DRETURN(or_list);
 }
 
 
 /*************************************************************
-  
+
  *************************************************************/
-int 
-sge_send_orders2master(sge_evc_class_t *evc, lList **orders) 
+int
+sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 {
    int ret = STATUS_OK;
    lList *alp = nullptr;

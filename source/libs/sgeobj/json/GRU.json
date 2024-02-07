@@ -1,0 +1,55 @@
+{
+	"className":	"GrantedResource",
+	"summary":	"Granted Resource",
+	"description":	[{
+			"line":	"An object of this type represents a granted resource."
+			}, { "line":	"A granted resource defines the amount of a resource which was requested by and granted to a job."
+			}, { "line":	"Currently only used for RSMAPs."
+			}, { "line":	"@todo Use it for all granted resources (e.g. prerequisit for soft consumables)"
+			}, { "line":	"@todo Don't we have to store it per petask?"
+		}],
+	"cullPrefix":	"GRU",
+	"attributes":	[{
+			"name":	"type",
+			"summary":	"Type",
+			"description":	[{
+					"line":	"Type of the resource."
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"name",
+			"summary":	"Name",
+			"description":	[{
+					"line":	"Name of the resource (complex variable name)."
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"value",
+			"summary":	"Value",
+			"description":	[{
+					"line":	"Value of the resource (how many/much has been granted)"
+					}, { "line":	"@todo also which ones in case of RSMAPs?"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"host",
+			"summary":	"Host",
+			"description":	[{
+					"line":	"Host on which the resource has been granted (required in case of parallel jobs)."
+					}, { "line":	"@todo shouldn't it be of type lHostT?"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}]
+}

@@ -221,6 +221,7 @@ static const int jat_nm[] = {
         JAT_prio,
         JAT_ntix,
         JAT_wallclock_limit,
+        JAT_granted_resources_list,
         NoName
 };
 

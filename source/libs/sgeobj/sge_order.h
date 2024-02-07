@@ -67,7 +67,8 @@ typedef struct {
    int JAT_sticket_pos;
    int JAT_share_pos;
    int JAT_prio_pos;
-   int JAT_ntix_pos;   
+   int JAT_ntix_pos;
+   //int JAT_granted_resources_list_pos;
 } ja_task_pos_t;
 
 

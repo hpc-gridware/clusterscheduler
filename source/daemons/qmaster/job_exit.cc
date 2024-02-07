@@ -43,8 +43,10 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
 
 #include "sge_pe_qmaster.h"
+#include "sge_event_master.h"
 #include "sge_give_jobs.h"
 #include "execution_states.h"
 #include "symbols.h"
@@ -53,9 +55,9 @@
 #include "sge_qinstance_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_job_enforce_limit.h"
+#include "job_exit_rsmap.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-
 
 /************************************************************************
  Master routine for job exit
@@ -125,6 +127,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    }
 
    sge_job_remove_enforce_limit_trigger(jobid, jataskid);
+
+   /* here freeing of RSMAP resources is done */
+   sge_rsmap_free_ids(jobid, jataskid, jatep);
 
    /* retrieve hostname for later use */
    if (queueep != nullptr) {

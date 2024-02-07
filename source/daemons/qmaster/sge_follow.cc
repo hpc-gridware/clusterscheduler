@@ -38,6 +38,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_mtutil.h"
@@ -59,6 +60,8 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/sge_centry.h"
 
 #include "sched/sgeee.h"
 #include "sched/sge_support.h"
@@ -78,6 +81,7 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_follow.h"
+#include "sge_follow_rsmap.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
@@ -290,6 +294,44 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          lSetDouble(jatp, JAT_ntix, lGetDouble(ep, OR_ntix));
          lSetDouble(jatp, JAT_prio, lGetDouble(ep, OR_prio));
 
+         /**
+          * Convert the order granted resource list into a JAT granted
+          * resource list, which is sent to the execution daemon. This is
+          * done for the RSMAP complex type and hard and soft requests
+          * which are passed to the execution daemon.
+          **/
+         if (lGetList(ep, OR_granted_resources_list)) {
+            lList* tmp = nullptr;
+            lList* granted_resources_list = lCreateList(nullptr,  GRU_Type); // @todo generate with lGetElemStr()/lAddElemStr()?
+
+            /* get the granted resource list out of the order */
+            const lList* newGRL = lGetList(ep, OR_granted_resources_list);
+            const lListElem* newGRLE;
+
+            /* copy all elements of the order into the JAT */
+            for_each_ep (newGRLE, newGRL) {
+               lListElem* granted_resource   = lCreateElem(GRU_Type);
+
+               lSetUlong(granted_resource, GRU_type, lGetUlong(newGRLE, GRU_type));
+               lSetString(granted_resource, GRU_name, lGetString(newGRLE, GRU_name));
+               lSetString(granted_resource, GRU_value, lGetString(newGRLE, GRU_value));
+
+               /* host could be unset */
+               if (lGetString(newGRLE, GRU_host)) {
+                  lSetString(granted_resource, GRU_host, lGetString(newGRLE, GRU_host));
+               }
+               lAppendElem(granted_resources_list, granted_resource);
+            }
+
+            /* add the complete list */
+            lSetList(jatp, JAT_granted_resources_list, granted_resources_list);
+
+            /* free the list in the order */
+            // @todo can't we simply take the list from the order and put it into the jatp?
+            lXchgList(ep, OR_granted_resources_list, &tmp);
+            lFreeList(&tmp);
+         }
+
          if ((oep = lFirst(lGetList(ep, OR_queuelist)))) {
             lSetDouble(jatp, JAT_oticket, lGetDouble(oep, OQ_oticket));
             lSetDouble(jatp, JAT_fticket, lGetDouble(oep, OQ_fticket));
@@ -493,6 +535,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   if (!consumables_ok) {
                      break;
                   }
+
+                  /* debit IDs for the rsmap feature */
+                  debit_rsmap_consumable(jep, hep, master_centry_list, &consumables_ok);
+                  if (!consumables_ok) {
+                     break;
+                  }
+
                   /* if there is a next host, it is a slave host */
                   is_master = false;
 
@@ -508,6 +557,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             if (consumables_ok) {
                lListElem *global_hep = host_list_locate(exec_host_list, SGE_GLOBAL_NAME);
                debit_host_consumable(jep, global_hep, master_centry_list, total_slots, true, &consumables_ok);
+               debit_rsmap_consumable(jep, global_hep, master_centry_list, &consumables_ok);
             }
 
             /* Consumable check failed - we cannot start this job! */

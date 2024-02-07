@@ -156,7 +156,8 @@ typedef char stringT[MAX_STRING_SIZE];
 /* used in config */
 #define TYPE_ACC          10 
 #define TYPE_LOG          11
-#define TYPE_LAST         TYPE_LOG
+#define TYPE_RSMAP        12
+#define TYPE_LAST         TYPE_RSMAP
 
 /* save string format quoted */
 #define SFQ  "\"%-.100s\""
@@ -199,3 +200,8 @@ typedef enum {
    YES   = 1,
    UNSET = 2
 } ternary_t;
+
+/* For the resource map consumables */
+#define GRU_HARD_REQUEST_TYPE  0
+#define GRU_SOFT_REQUEST_TYPE  1
+#define GRU_RESOURCE_MAP_TYPE  2

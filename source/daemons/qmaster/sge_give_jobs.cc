@@ -46,6 +46,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_dstring.h"
 
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -64,6 +65,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_grantedres.h"
 
 #include "sched/sge_select_queue.h"
 #include "sched/sge_resource_quota_schedd.h"
@@ -522,6 +524,12 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
          lFreeElem(&tmpjep);
          DRETURN(-1);
       }
+   }
+
+   /* if a granted resource list is defined int must be passed through, too */
+   if (lGetList(jatep, JAT_granted_resources_list)) {
+      const lList *grl = lGetList(jatep, JAT_granted_resources_list);
+      lSetList(tmpjatep, JAT_granted_resources_list, lCopyList(nullptr, grl));
    }
 
    /* insert ckpt object if required **now**. it is only

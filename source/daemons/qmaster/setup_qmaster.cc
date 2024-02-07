@@ -49,6 +49,7 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_string.h"
 #include "uti/config_file.h"
 #include "uti/sge_time.h"
 
@@ -102,6 +103,7 @@
 #include "sge_resource_quota_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_qinstance_qmaster.h"
+#include "setup_qmaster_rsmap.h"
 
 #include "msg_daemons_common.h"
 #include "msg_qmaster.h"
@@ -1185,6 +1187,9 @@ setup_qmaster() {
    */
    debit_all_jobs_from_qs();
    debit_all_jobs_from_pes(*object_type_get_master_list_rw(SGE_TYPE_PE));
+
+   /* initialize RSMAP usage for all jobs */
+   initialize_rsmap_usage_by_jobs();
 
    /*
     * Initialize cached values for each qinstance:

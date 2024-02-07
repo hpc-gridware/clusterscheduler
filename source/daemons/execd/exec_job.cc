@@ -77,6 +77,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_binding.h"
+#include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_path_alias.h"
 
@@ -662,6 +663,42 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&sge_binding_environment);
       }   
 
+      /* new RSMAP resource map consumable feature */
+      if (lGetList(jatep, JAT_granted_resources_list)) {
+         const lListElem *gr = nullptr;
+         dstring hard_resource_requests = DSTRING_INIT;
+
+         /* now setting the granted resources list */
+         for_each_ep(gr, lGetList(jatep, JAT_granted_resources_list)) {
+
+            if ((lGetUlong(gr, GRU_type) == GRU_HARD_REQUEST_TYPE)
+                  || (lGetUlong(gr, GRU_type) == GRU_RESOURCE_MAP_TYPE)) {
+
+               if (lGetString(gr, GRU_name) == nullptr
+                     || lGetString(gr, GRU_value) == nullptr) {
+                  continue;
+               }
+
+               /* if the type is a hard resource request add it to the string */
+               sge_dstring_append(&hard_resource_requests, "SGE_HGR_");
+               sge_dstring_append(&hard_resource_requests, lGetString(gr, GRU_name));
+
+               var_list_set_string(&environmentList,
+                                   sge_dstring_get_string(&hard_resource_requests),
+                                   lGetString(gr, GRU_value));
+            }
+            sge_dstring_free(&hard_resource_requests);
+         }
+
+         // set the environment variable for the hard resource requests
+         // @todo the following code was commented out. Rename to SGE_HGR_...?
+#if 0
+         var_list_set_string(&environmentList, "SGE_HARD_RESOURCE_REQUESTS",
+                             sge_dstring_get_string(&hard_resource_requests));
+         sge_dstring_free(&hard_resource_requests);
+#endif
+      }
+
       /*
        * Handling of script_file and JOB_NAME:
        * script_file: For batch jobs, it is the path to the spooled 
@@ -674,7 +711,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       {
          u_long32 jb_now;
          const char *job_name;
-         
+
          if(petep != nullptr) {
             jb_now = JOB_TYPE_QRSH;
             job_name = lGetString(petep, PET_name);
@@ -1927,22 +1964,21 @@ FCLOSE_ERROR:
 /*****************************************************
  check whether a shell should be called as login shell
  *****************************************************/
-static int ck_login_sh(
-char *shell 
-) {
+static int ck_login_sh(char *shell)
+{
    char* cp;
    char* login_shells;
-   int ret; 
+   int ret;
 
    DENTER(TOP_LAYER);
 
    login_shells = mconf_get_login_shells();
-  
+
    if (login_shells == nullptr) {
       DRETURN(0);
    }
 
-   cp = login_shells; 
+   cp = login_shells;
 
    while (*cp) {
 
@@ -1950,10 +1986,10 @@ char *shell
       while (*cp && ( *cp == ',' || *cp == ' ' || *cp == '\t')) {
          cp++;
       }
-   
+
       ret = strncmp(cp, shell, strlen(shell));
       DPRINTF(("strncmp(\"%s\", \"%s\", %d) = %d\n",
-              cp, shell, strlen(shell), ret));
+               cp, shell, strlen(shell), ret));
       if (!ret) {
          sge_free(&login_shells);
          DRETURN(1);
@@ -1961,10 +1997,12 @@ char *shell
 
       /* skip name of shell, proceed until next delimiter */
       while (*cp && *cp != ',' && *cp != ' ' && *cp != '\t') {
-          cp++;
+         cp++;
       }
    }
+
   sge_free(&login_shells);
+
   DRETURN(0);
 }
 

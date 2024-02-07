@@ -112,7 +112,7 @@
 #define MSG_EVENT_ADDQINSTANCE_USS                 _MESSAGE(64107, _(sge_U32CFormat". EVENT ADD QUEUE INSTANCE "SFN"@"SFN))
 #define MSG_EVENT_MODQINSTANCE_USS                 _MESSAGE(64108, _(sge_U32CFormat". EVENT MOD QUEUE INSTANCE "SFN"@"SFN))
 #define MSG_EVENT_SHARETREEXNODESYLEAFS_UII        _MESSAGE(64109, _(sge_U32CFormat". EVENT SHARETREE %d nodes %d leafs"))
-
+#define MSG_INVALID_CENTRY_RSMAP_NOT_CONSUMABLE_S  _MESSAGE(64166, _("RSMAP complex " SFQ " needs to be a consumable"))
 #define MSG_OBJECT_INVALID_OBJECT_TYPE_SI          _MESSAGE(64167, _(SFN": invalid object type %d"))
 #define MSG_HGRP_UNKNOWNHOST                       _MESSAGE(64168, _("unable to resolve host "SFQ))
 #define MSG_SGETEXT_NO_INTERFACE_S                 _MESSAGE(64174, _("no valid checkpoint interface "SFN))

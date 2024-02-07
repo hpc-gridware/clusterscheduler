@@ -125,6 +125,7 @@ DPRINTF(("job prio pos: %d %d %d %d %d %d %d\n", job_pos->JB_version_pos, job_po
       ja_pos->JAT_share_pos = lGetPosViaElem(jatp,JAT_share, SGE_NO_ABORT);
       ja_pos->JAT_prio_pos = lGetPosViaElem(jatp,JAT_prio, SGE_NO_ABORT);
       ja_pos->JAT_ntix_pos = lGetPosViaElem(jatp,JAT_ntix, SGE_NO_ABORT);
+      //order_ja_pos->JAT_granted_resources_list_pos = lGetPosViaElem(jatp,JAT_granted_resources_list, SGE_NO_ABORT);
 /*
 DPRINTF(("ja task prio pos: %d %d %d %d %d %d %d %d\n", ja_pos->JAT_status_pos, ja_pos->JAT_tix_pos, ja_pos->JAT_oticket_pos,
                                         ja_pos->JAT_fticket_pos, ja_pos->JAT_sticket_pos, 
