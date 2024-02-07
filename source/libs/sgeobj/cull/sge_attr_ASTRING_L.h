@@ -1,5 +1,4 @@
-#ifndef SGE_ASTRING_L_H
-#define SGE_ASTRING_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ASTRING_SIZE sizeof(ASTRINGN)/sizeof(char *)
 
 
-#endif

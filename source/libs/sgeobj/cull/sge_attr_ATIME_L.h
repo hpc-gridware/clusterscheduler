@@ -1,5 +1,4 @@
-#ifndef SGE_ATIME_L_H
-#define SGE_ATIME_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ATIME_SIZE sizeof(ATIMEN)/sizeof(char *)
 
 
-#endif

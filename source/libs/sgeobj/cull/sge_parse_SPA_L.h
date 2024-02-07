@@ -1,5 +1,4 @@
-#ifndef SGE_SPA_L_H
-#define SGE_SPA_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -141,4 +140,3 @@ NAMEEND
 #define SPA_SIZE sizeof(SPAN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_SPR_L_H
-#define SGE_SPR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -152,4 +151,3 @@ NAMEEND
 #define SPR_SIZE sizeof(SPRN)/sizeof(char *)
 
 
-#endif

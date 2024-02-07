@@ -1,5 +1,4 @@
-#ifndef SGE_RT_L_H
-#define SGE_RT_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,4 +77,3 @@ NAMEEND
 #define RT_SIZE sizeof(RTN)/sizeof(char *)
 
 
-#endif

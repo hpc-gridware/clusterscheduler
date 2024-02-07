@@ -1,5 +1,4 @@
-#ifndef SGE_ACELIST_L_H
-#define SGE_ACELIST_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ACELIST_SIZE sizeof(ACELISTN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_STN_L_H
-#define SGE_STN_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -234,4 +233,3 @@ NAMEEND
 #define STN_SIZE sizeof(STNN)/sizeof(char *)
 
 
-#endif

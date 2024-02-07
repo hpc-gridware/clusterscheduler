@@ -1,5 +1,4 @@
-#ifndef SGE_XMLS_L_H
-#define SGE_XMLS_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define XMLS_SIZE sizeof(XMLSN)/sizeof(char *)
 
 
-#endif

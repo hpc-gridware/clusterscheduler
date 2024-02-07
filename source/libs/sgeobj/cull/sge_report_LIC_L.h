@@ -1,5 +1,4 @@
-#ifndef SGE_LIC_L_H
-#define SGE_LIC_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define LIC_SIZE sizeof(LICN)/sizeof(char *)
 
 
-#endif

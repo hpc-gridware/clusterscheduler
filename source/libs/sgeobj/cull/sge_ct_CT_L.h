@@ -1,5 +1,4 @@
-#ifndef SGE_CT_L_H
-#define SGE_CT_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -108,4 +107,3 @@ NAMEEND
 #define CT_SIZE sizeof(CTN)/sizeof(char *)
 
 
-#endif

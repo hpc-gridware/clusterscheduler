@@ -1,5 +1,4 @@
-#ifndef SGE_LS_L_H
-#define SGE_LS_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -120,4 +119,3 @@ NAMEEND
 #define LS_SIZE sizeof(LSN)/sizeof(char *)
 
 
-#endif

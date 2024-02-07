@@ -1,5 +1,4 @@
-#ifndef SGE_QAJ_L_H
-#define SGE_QAJ_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -170,4 +169,3 @@ NAMEEND
 #define QAJ_SIZE sizeof(QAJN)/sizeof(char *)
 
 
-#endif

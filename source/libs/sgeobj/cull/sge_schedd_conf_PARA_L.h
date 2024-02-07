@@ -1,5 +1,4 @@
-#ifndef SGE_PARA_L_H
-#define SGE_PARA_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define PARA_SIZE sizeof(PARAN)/sizeof(char *)
 
 
-#endif

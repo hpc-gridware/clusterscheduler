@@ -1,5 +1,4 @@
-#ifndef SGE_UE_L_H
-#define SGE_UE_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define UE_SIZE sizeof(UEN)/sizeof(char *)
 
 
-#endif

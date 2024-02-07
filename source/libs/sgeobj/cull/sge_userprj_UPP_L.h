@@ -1,5 +1,4 @@
-#ifndef SGE_UPP_L_H
-#define SGE_UPP_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define UPP_SIZE sizeof(UPPN)/sizeof(char *)
 
 
-#endif

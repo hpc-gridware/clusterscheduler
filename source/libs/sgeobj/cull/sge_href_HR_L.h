@@ -1,5 +1,4 @@
-#ifndef SGE_HR_L_H
-#define SGE_HR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define HR_SIZE sizeof(HRN)/sizeof(char *)
 
 
-#endif

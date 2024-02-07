@@ -1,5 +1,4 @@
-#ifndef SGE_QETI_L_H
-#define SGE_QETI_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define QETI_SIZE sizeof(QETIN)/sizeof(char *)
 
 
-#endif

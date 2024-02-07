@@ -1,5 +1,4 @@
-#ifndef SGE_AINTER_L_H
-#define SGE_AINTER_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define AINTER_SIZE sizeof(AINTERN)/sizeof(char *)
 
 
-#endif

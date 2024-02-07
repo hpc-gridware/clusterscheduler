@@ -1,5 +1,4 @@
-#ifndef SGE_RTIC_L_H
-#define SGE_RTIC_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define RTIC_SIZE sizeof(RTICN)/sizeof(char *)
 
 
-#endif

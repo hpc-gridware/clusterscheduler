@@ -1,5 +1,4 @@
-#ifndef SGE_ASOLIST_L_H
-#define SGE_ASOLIST_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define ASOLIST_SIZE sizeof(ASOLISTN)/sizeof(char *)
 
 
-#endif

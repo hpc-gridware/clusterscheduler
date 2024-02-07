@@ -1,5 +1,4 @@
-#ifndef SGE_HGRP_L_H
-#define SGE_HGRP_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define HGRP_SIZE sizeof(HGRPN)/sizeof(char *)
 
 
-#endif

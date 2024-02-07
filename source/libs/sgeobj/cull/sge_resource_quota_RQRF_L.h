@@ -1,5 +1,4 @@
-#ifndef SGE_RQRF_L_H
-#define SGE_RQRF_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define RQRF_SIZE sizeof(RQRFN)/sizeof(char *)
 
 
-#endif

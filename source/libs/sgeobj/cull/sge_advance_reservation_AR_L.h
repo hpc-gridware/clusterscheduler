@@ -1,5 +1,4 @@
-#ifndef SGE_AR_L_H
-#define SGE_AR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -222,4 +221,3 @@ NAMEEND
 #define AR_SIZE sizeof(ARN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_ET_L_H
-#define SGE_ET_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -119,4 +118,3 @@ NAMEEND
 #define ET_SIZE sizeof(ETN)/sizeof(char *)
 
 
-#endif

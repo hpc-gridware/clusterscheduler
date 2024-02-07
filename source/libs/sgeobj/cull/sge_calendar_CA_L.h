@@ -1,5 +1,4 @@
-#ifndef SGE_CA_L_H
-#define SGE_CA_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,4 +77,3 @@ NAMEEND
 #define CA_SIZE sizeof(CAN)/sizeof(char *)
 
 
-#endif

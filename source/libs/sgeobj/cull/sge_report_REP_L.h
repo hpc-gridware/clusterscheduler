@@ -1,5 +1,4 @@
-#ifndef SGE_REP_L_H
-#define SGE_REP_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -90,4 +89,3 @@ NAMEEND
 #define REP_SIZE sizeof(REPN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_US_L_H
-#define SGE_US_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,4 +101,3 @@ NAMEEND
 #define US_SIZE sizeof(USN)/sizeof(char *)
 
 
-#endif

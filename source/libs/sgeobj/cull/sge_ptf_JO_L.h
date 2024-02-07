@@ -1,5 +1,4 @@
-#ifndef SGE_JO_L_H
-#define SGE_JO_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -96,4 +95,3 @@ NAMEEND
 #define JO_SIZE sizeof(JON)/sizeof(char *)
 
 
-#endif

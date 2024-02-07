@@ -1,5 +1,4 @@
-#ifndef SGE_GR_L_H
-#define SGE_GR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define GR_SIZE sizeof(GRN)/sizeof(char *)
 
 
-#endif

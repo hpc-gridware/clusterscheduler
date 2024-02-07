@@ -1,5 +1,4 @@
-#ifndef SGE_PET_L_H
-#define SGE_PET_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -156,4 +155,3 @@ NAMEEND
 #define PET_SIZE sizeof(PETN)/sizeof(char *)
 
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef SGE_PETR_L_H
-#define SGE_PETR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,4 +101,3 @@ NAMEEND
 #define PETR_SIZE sizeof(PETRN)/sizeof(char *)
 
 
-#endif

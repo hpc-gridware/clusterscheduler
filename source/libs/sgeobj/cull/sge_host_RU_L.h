@@ -1,5 +1,4 @@
-#ifndef SGE_RU_L_H
-#define SGE_RU_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define RU_SIZE sizeof(RUN)/sizeof(char *)
 
 
-#endif

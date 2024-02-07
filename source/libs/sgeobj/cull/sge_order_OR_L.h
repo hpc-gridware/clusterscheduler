@@ -1,5 +1,4 @@
-#ifndef SGE_OR_L_H
-#define SGE_OR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -135,4 +134,3 @@ NAMEEND
 #define OR_SIZE sizeof(ORN)/sizeof(char *)
 
 
-#endif

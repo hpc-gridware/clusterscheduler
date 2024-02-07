@@ -1,5 +1,4 @@
-#ifndef SGE_RUE_L_H
-#define SGE_RUE_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -84,4 +83,3 @@ NAMEEND
 #define RUE_SIZE sizeof(RUEN)/sizeof(char *)
 
 
-#endif

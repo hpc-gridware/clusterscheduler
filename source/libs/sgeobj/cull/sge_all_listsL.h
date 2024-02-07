@@ -1,5 +1,4 @@
-#ifndef __SGE_ALL_LISTSL_H
-#define __SGE_ALL_LISTSL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -319,4 +318,3 @@ extern lNameSpace nmv[];
 
 #endif /* __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ */
 
-#endif /* __SGE_ALL_LISTSL_H */

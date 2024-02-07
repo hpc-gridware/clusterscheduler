@@ -1,5 +1,4 @@
-#ifndef SGE_SH_L_H
-#define SGE_SH_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ NAMEEND
 #define SH_SIZE sizeof(SHN)/sizeof(char *)
 
 
-#endif

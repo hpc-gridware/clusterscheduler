@@ -1,5 +1,4 @@
-#ifndef SGE_PR_L_H
-#define SGE_PR_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -144,4 +143,3 @@ NAMEEND
 #define PR_SIZE sizeof(PRN)/sizeof(char *)
 
 
-#endif

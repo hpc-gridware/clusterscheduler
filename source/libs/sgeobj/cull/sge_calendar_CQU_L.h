@@ -1,5 +1,4 @@
-#ifndef SGE_CQU_L_H
-#define SGE_CQU_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,4 +65,3 @@ NAMEEND
 #define CQU_SIZE sizeof(CQUN)/sizeof(char *)
 
 
-#endif

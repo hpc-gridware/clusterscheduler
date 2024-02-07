@@ -1,5 +1,4 @@
-#ifndef SGE_SPC_L_H
-#define SGE_SPC_L_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,4 +71,3 @@ NAMEEND
 #define SPC_SIZE sizeof(SPCN)/sizeof(char *)
 
 
-#endif
