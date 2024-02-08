@@ -50,11 +50,6 @@
 #include "shepherd_binding.h"
 #include "err_trace.h"
 
-#if defined(BINDING_SOLARIS)
-#  include "sge_uidgid.h"
-#  include <sys/pset.h>
-#endif
-
 namespace oge {
 #if defined(OGE_HWLOC)
 
@@ -72,11 +67,7 @@ namespace oge {
    static bool create_binding_env_linux(hwloc_const_bitmap_t cpuset);
 #endif
 
-#if defined(BINDING_SOLARIS)
-   static bool bind_shepherd_to_pset(int pset_id);
-#endif
-
-#if defined(OGE_HWLOC) && !defined(SOLARIS)
+#if defined(OGE_HWLOC)
 
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME
@@ -282,137 +273,6 @@ namespace oge {
    }
 
 #endif
-
-#if defined(BINDING_SOLARIS)
-   /****** shepherd_binding/do_core_binding() ******************
-   *******************
-   *  NAME
-   *     do_core_binding() -- Performs the core binding task for the Solaris OS.
-   *
-   *  SYNOPSIS
-   *     int do_core_binding(void)
-   *
-   *  FUNCTION
-   *     Performs core binding on shepherd side. All information required for
-   *     the binding is communicated from execd to shepherd in the config
-   *     file value "binding". If there is "nullptr" no core binding is done.
-   *
-   *     This function is Solaris specific.
-   *
-   *     DG TODO change return value to bool
-   *
-   *  RESULT
-   *     int - Returns 0 in case of success and a negative value in case of problems.
-   *
-   *  NOTES
-   *     MT-NOTE: do_core_binding() is not MT safe
-   *
-   *******************************************************************************/
-   int do_core_binding(void)
-   {
-      int retval = 0;
-
-      /* just read out what is in "config" file and attach to the given psrset if
-         it is specified */
-      char *binding = get_conf_val("binding");
-
-      if (binding == nullptr) {
-         shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
-         retval = -1;
-      } else if (strcasecmp("no_job_binding", binding) == 0 || strcasecmp("nullptr", binding) == 0) {
-         shepherd_trace("do_core_binding: skip binding - no core binding configured");
-         retval = -1;
-      }
-
-      if (retval == 0 && strstr(binding, "psrset:") != nullptr) {
-         int processor_set_id = 0;
-         shepherd_trace("do_core_binding: psrset found - attaching to it!");
-
-         /* parse the psrset number right after "psrset:" */
-         if (sge_strtok(binding, ":") != nullptr) {
-            /* parse the rest of the line */
-            char* pset_id;
-            if ((pset_id = sge_strtok(nullptr, ":")) != nullptr) {
-               /* finally get the processor set id */
-               processor_set_id = atoi(pset_id);
-            } else {
-               shepherd_trace("do_core_binding: couldn't find the psrset id after \"psrset:\" in config file (binding)");
-               retval = -1;
-            }
-         } else {
-            shepherd_trace("do_core_binding: found string \"psrset:\" but no \":\" - almost impossible");
-            retval = -1;
-         }
-
-         if (retval == 0) {
-            if (processor_set_id == -1) {
-               /* prcoessor_set_id == -1: Check here for a special processor_set_id (negative; 0)
-                  which does show that no binding is needed since this processor set
-                  would require (exactly) all of the remaining cores. Creating
-                  such a processor set is not possible because one processor must
-                  left for the OS. But the job is implicitly bound to the processors
-                  since it can not use any onther processor from the other processor
-                  sets. */
-               shepherd_trace("do_core_binding: psrset not created since all remaining processors would be used");
-               shepherd_trace("do_core_binding: binding is done implicitly");
-            } else {
-               /* start user rights (root) are required for creating processor sets */
-               sge_switch2start_user();
-
-               if (bind_shepherd_to_pset(processor_set_id) == false) {
-                  shepherd_trace("do_core_binding: couldn't bind to existing processor set!");
-               } else {
-                  shepherd_trace("do_core_binding: successfully bound to existing processor set!");
-               }
-
-               /* switch back to admin user */
-               sge_switch2admin_user();
-            }
-         }
-
-      } else {  /* "psrset" is not in config file defined */
-         shepherd_trace("do_core_binding: no processor set found in config file! do nothing");
-         retval = -1;
-      }
-
-      shepherd_trace("do_core_binding: finishing");
-
-      return retval;
-   }
-
-   /****** shepherd_binding/bind_shepherd_to_pset() *******************************
-   *  NAME
-   *     bind_shepherd_to_pset() -- Binds the current process to a processor set.
-   *
-   *  SYNOPSIS
-   *     static bool bind_shepherd_to_pset(int pset_id)
-   *
-   *  FUNCTION
-   *     Binds the current shepherd process to an existing processor set.
-   *
-   *  INPUTS
-   *     int pset_id - Existing processor set id.
-   *
-   *  RESULT
-   *     static bool - true in case the process was bound false otherwise
-   *
-   *  NOTES
-   *     MT-NOTE: bind_shepherd_to_pset() is MT safe
-   *
-   *******************************************************************************/
-   static bool bind_shepherd_to_pset(int pset_id)
-   {
-      /* try to bind current process to processor set */
-      if (pset_bind((psetid_t)pset_id, P_PID, P_MYID, nullptr) != 0) {
-         /* binding was not successful */
-         return false;
-      }
-
-      /* successfully bound current process to processor set */
-      return true;
-   }
-#endif
-
 
 /* helper for core_binding */
 

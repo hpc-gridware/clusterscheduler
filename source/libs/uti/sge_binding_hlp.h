@@ -33,11 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-// @todo can we replace this by hwloc?
-#if defined(SOLARIS86) || defined(SOLARISAMD64) || defined(SOLARIS64)
-#   define BINDING_SOLARIS
-#endif
-
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 

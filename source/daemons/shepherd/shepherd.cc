@@ -866,10 +866,7 @@ int main(int argc, char **argv)
     */ 
 #if defined(OGE_HWLOC)
    oge::do_core_binding();
-#elif defined(BINDING_SOLARIS)
-   /*switch later to startuser */
-   oge::do_core_binding();
-#endif    
+#endif
 
    /*
     * this blocks sge_shepherd until the first time the token is

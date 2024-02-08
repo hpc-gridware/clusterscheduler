@@ -42,12 +42,6 @@
 #include "uti/sge_binding_hlp.h"
 #include "uti/msg_utilib.h"
 
-#if defined(BINDING_SOLARIS)
-#  include <sys/processor.h>
-#  include <sys/types.h>
-#  include <sys/pset.h>
-#endif
-
 static bool is_digit(const char *position, const char stopchar);
 
 /****** sge_binding_hlp/parse_binding_parameter_string() ***********************
