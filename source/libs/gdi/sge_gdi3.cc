@@ -134,10 +134,21 @@ gdi3_once_init() {
    gdi3_ts_init();
 }
 
-void
+static void
 gdi3_mt_init() {
    pthread_once(&gdi3_once, gdi3_once_init);
 }
+
+class GdiThreadInit {
+public:
+   GdiThreadInit() {
+      gdi3_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static GdiThreadInit gdi_obj{};
+
 
 void
 gdi3_mt_done() {

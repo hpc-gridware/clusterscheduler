@@ -147,7 +147,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
    DENTER(TOP_LAYER);
 
    /* If no user is requested on command line we set the current user as default */
-   qquota_filter.user = bootstrap_get_username();
+   qquota_filter.user = component_get_username();
 
    ret = get_all_lists(&rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 

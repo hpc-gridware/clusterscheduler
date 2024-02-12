@@ -93,8 +93,6 @@ int main(int argc, char **argv) {
 
    DENTER_MAIN(TOP_LAYER, "qalter");
 
-   prof_mt_init();
-
    /*
    ** get command name: qalter or qresub
    */

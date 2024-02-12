@@ -486,7 +486,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    lListElem *gdil_ep;
    unsigned long last_heard_from;
    const char *sge_root = bootstrap_get_sge_root();
-   const char *myprogname = bootstrap_get_component_name();
+   const char *myprogname = component_get_component_name();
    bool job_spooling = bootstrap_get_job_spooling();
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = nullptr;
@@ -913,7 +913,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *sge_root = bootstrap_get_sge_root();
    bool job_spooling = bootstrap_get_job_spooling();
    u_long32 task_wallclock = U_LONG32_MAX;

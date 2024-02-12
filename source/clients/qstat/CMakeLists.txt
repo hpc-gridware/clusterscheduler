@@ -9,7 +9,6 @@ add_executable(
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      ../../common/sge_mt_init.cc
       ../../common/usage.cc)
 
 target_include_directories(qstat PRIVATE ${SGE_INCLUDES} "../../libs/uti"

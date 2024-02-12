@@ -76,8 +76,6 @@ char **argv
 
    DENTER_MAIN(TOP_LAYER, "qmod");
 
-   prof_mt_init();
-
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QMOD);
 

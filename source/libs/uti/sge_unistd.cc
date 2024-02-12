@@ -286,7 +286,7 @@ int sge_chdir(const char *dir) {
 *     uti/unistd/sge_install_exit_func()
 ******************************************************************************/
 void sge_exit(int i) {
-   sge_exit_func_t exit_func = bootstrap_get_exit_func();
+   sge_exit_func_t exit_func = component_get_exit_func();
    if (exit_func) {
       exit_func(i);
    }

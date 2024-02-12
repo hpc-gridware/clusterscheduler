@@ -50,7 +50,6 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "sgeobj/sge_cqueue.h"
-#include "sge_mt_init.h"
 
 /* 
  * RD 05/10/2006
@@ -75,8 +74,6 @@ int main(int argc, char *argv[])
    int i;
    int width;
    char format[100];
-
-   sge_mt_init();
 
    lInit(nmv);
 

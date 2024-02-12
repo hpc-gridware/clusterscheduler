@@ -106,8 +106,6 @@ extern int main(int argc, char **argv) {
    server_port = atoi(argv[2]);
    server_host = argv[1];
 
-   prof_mt_init();
-
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */

@@ -89,8 +89,6 @@ typedef struct {
    int dependent;
 } policy_hierarchy_t;
 
-void sc_mt_init(void);
-
 void sconf_ph_fill_array(policy_hierarchy_t array[]);
 
 void sconf_ph_print_array(policy_hierarchy_t array[]);

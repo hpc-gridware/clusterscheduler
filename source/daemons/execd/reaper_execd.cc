@@ -1003,7 +1003,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
          }
       } else {
          /* check if job has queue limits and decrease global flag if necessary */
-         modify_queue_limits_flag_for_job(bootstrap_get_qualified_hostname(), jep, false);
+         modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jep, false);
 
          if (used_slots == 0 || mconf_get_simulate_jobs()) {
             /* remove the jep element only if all slave tasks are gone, we need to job object to remove the tmpdir */
@@ -1438,7 +1438,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    }
    if (startup) {
       INFO((SGE_EVENT, SFNMAX, err_str));
-      modify_queue_limits_flag_for_job(bootstrap_get_qualified_hostname(), jep, true);
+      modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jep, true);
    } else {
       DPRINTF((err_str));
    }
@@ -1870,7 +1870,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    char buffer[128];
    dstring cpu_string = DSTRING_INIT;
    dstring maxvmem_string = DSTRING_INIT;
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

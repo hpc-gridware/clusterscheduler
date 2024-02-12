@@ -235,14 +235,8 @@ test_mt_consumer_producer(void) {
 }
 
 int main(int argc, char *argv[]) {
-   bool ret = true;
-
    DENTER_MAIN(TOP_LAYER, "test_sl");
-
-   sge_err_init();
-
-   ret &= test_mt_consumer_producer();
-
+   bool ret = test_mt_consumer_producer();
    DRETURN(ret == true ? 0 : 1);
 }
 

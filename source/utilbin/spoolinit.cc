@@ -48,9 +48,7 @@
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
 
-#include "sge_mt_init.h"
 #include "msg_utilbin.h"
-
 
 static void usage(const char *argv0)
 {
@@ -109,7 +107,6 @@ int main(int argc, char *argv[])
 
    log_state_set_log_gui(1);
    log_state_set_log_level(LOG_WARNING);
-   sge_mt_init();
    lInit(nmv);
 
    if (argc < 2) {

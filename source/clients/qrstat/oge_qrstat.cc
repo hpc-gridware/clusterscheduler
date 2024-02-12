@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
     */
    {
       dstring file = DSTRING_INIT;
-      const char *user = bootstrap_get_username();
+      const char *user = component_get_username();
       const char *cell_root = bootstrap_get_cell_root();
 
       /* arguments from SGE_ROOT/common/sge_qrstat file */

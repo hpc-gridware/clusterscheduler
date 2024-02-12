@@ -96,8 +96,8 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
    lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
-   u_long32 progid = bootstrap_get_component_id();
+   const char *qualified_hostname = component_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);

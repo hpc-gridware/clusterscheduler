@@ -6,7 +6,6 @@ add_executable(
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
-      ../../common/sge_mt_init.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)
 target_include_directories(qquota PRIVATE ${SGE_INCLUDES})

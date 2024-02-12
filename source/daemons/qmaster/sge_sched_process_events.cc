@@ -177,7 +177,7 @@ int
 sge_before_dispatch(sge_evc_class_t *evc)
 {     
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    
    DENTER(TOP_LAYER);
 

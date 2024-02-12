@@ -119,6 +119,17 @@ void fgl_mt_init(void) {
 #endif
 }
 
+class FeatureThreadInit {
+public:
+   FeatureThreadInit() {
+      fgl_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static FeatureThreadInit feature_obj{};
+
+
 int fgl_rsv_compare(const void *a, const void *b) {
    fgl_t *x = (fgl_t *) a;
    fgl_t *y = (fgl_t *) b;

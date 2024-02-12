@@ -6,7 +6,6 @@ set(LIBRARY_SOURCES
       parse_qsub.cc
       sge_ijs_comm.cc
       sge_ijs_threads.cc
-      sge_mt_init.cc
       sge_options.cc
       sig_handlers.cc
       usage.cc)

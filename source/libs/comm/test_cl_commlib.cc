@@ -201,8 +201,6 @@ extern int main(int argc, char **argv) {
       exit(1);
    }
 
-   prof_mt_init();
-
    if (argv[2]) {
       framework = CL_CT_UNDEFINED;
       if (strcmp(argv[2], "TCP") == 0) {

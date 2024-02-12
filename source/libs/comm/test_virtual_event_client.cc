@@ -89,8 +89,6 @@ extern int main(int argc, char **argv) {
    int no_output = 0;
    cl_byte_t *reference = nullptr;
 
-   prof_mt_init();
-
    if (argc < 4) {
       printf("syntax: debug_level vmaster_port vmaster_host [no_output]\n");
       exit(1);

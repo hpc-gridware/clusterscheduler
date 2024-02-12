@@ -116,8 +116,6 @@ extern int main(int argc, char **argv) {
       com_host = argv[5];
    }
 
-   prof_mt_init();
-
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_issue_tests;  /* one handler for all signals */

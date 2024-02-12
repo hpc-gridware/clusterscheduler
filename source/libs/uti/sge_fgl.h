@@ -1,8 +1,6 @@
 #pragma once
 // Copyright Ernst Bablick
 
-void fgl_mt_init(void);
-
 void fgl_rsv_sort(void);
 
 void fgl_add_r(u_long32 root, bool rw);

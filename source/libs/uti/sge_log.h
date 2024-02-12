@@ -38,6 +38,7 @@
 #include "msg_utilib.h"
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_component.h"
 
 #define LOG_PROF       0      /* no action, but it has to be printed allways */
 
@@ -63,7 +64,7 @@ void
 sge_log(u_long32 log_level, const char *msg, const char *file, const char *func, int line);
 
 /* extern stringTlong SGE_EVENT; */
-#define SGE_EVENT bootstrap_get_log_buffer()
+#define SGE_EVENT component_get_log_buffer()
 
 #if defined(__INSURE__)
 #   define PROFILING(x)     (sprintf x,sge_log(LOG_PROF,   SGE_EVENT,__FILE__,__func__,__LINE__)) ? 1 : 0

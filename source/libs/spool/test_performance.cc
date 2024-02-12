@@ -259,10 +259,6 @@ int main(int argc, char *argv[])
 #define NM2  "%I%I"
 #define NM1  "%I"
 
-   prof_mt_init();
-   obj_mt_init();
-   bootstrap_mt_init();
-
    prof_start(SGE_PROF_CUSTOM1, nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM1, "performance", nullptr);
 

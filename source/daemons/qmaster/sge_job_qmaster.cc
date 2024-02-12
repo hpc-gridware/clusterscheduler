@@ -1029,7 +1029,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    } else {
       if (force) {
          u_long32 now = sge_get_gmt();
-         const char *qualified_hostname = bootstrap_get_qualified_hostname();
+         const char *qualified_hostname = component_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
          if (job_is_array(j)) {

@@ -111,8 +111,6 @@ main(int argc, char **argv)
 
    DENTER_MAIN(TOP_LAYER, "qsub");
 
-   prof_mt_init();
-
    /* Set up the program information name */
    sge_setup_sig_handlers(QSUB);
 
@@ -127,13 +125,13 @@ main(int argc, char **argv)
       sge_exit(1);
    }
 
-   prog_number = bootstrap_get_component_id();
-   myuid = bootstrap_get_uid();
+   prog_number = component_get_component_id();
+   myuid = component_get_uid();
    sge_root = bootstrap_get_sge_root();
    cell_root = bootstrap_get_cell_root();
-   username = bootstrap_get_username();
-   qualified_hostname = bootstrap_get_qualified_hostname();
-   unqualified_hostname = bootstrap_get_unqualified_hostname();
+   username = component_get_username();
+   qualified_hostname = component_get_qualified_hostname();
+   unqualified_hostname = component_get_unqualified_hostname();
    mastername = gdi3_get_act_master_host(false);
 
    /*

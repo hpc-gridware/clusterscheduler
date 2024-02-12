@@ -105,8 +105,6 @@ typedef struct {
 
 void sge_prof_set_enabled(bool enabled);
 
-void prof_mt_init(void);
-
 void sge_prof_cleanup(void);
 
 bool thread_prof_active_by_id(pthread_t thread_id);

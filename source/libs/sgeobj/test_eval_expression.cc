@@ -68,8 +68,6 @@ int main(int argc, char *argv[]) {
    int ret;
    
    DENTER_MAIN(TOP_LAYER, "test_evel_expression");
-   bootstrap_mt_init();
-   feature_mt_init();
 
    ret = 0;
    if(argc!=3){

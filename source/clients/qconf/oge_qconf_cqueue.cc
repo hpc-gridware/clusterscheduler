@@ -309,8 +309,8 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
    int status = 0;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
    
    DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem) {

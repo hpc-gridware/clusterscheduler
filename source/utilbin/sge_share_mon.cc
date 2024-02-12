@@ -264,10 +264,6 @@ main(int argc, char **argv)
    
    DENTER_MAIN(TOP_LAYER, "share_mon");
 
-   prof_mt_init();
-   obj_mt_init();
-   sc_mt_init();
-   
    format.name_format  = false;
    format.delim        = "\t";
    format.line_delim   = "\n";

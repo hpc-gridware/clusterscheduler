@@ -80,7 +80,6 @@
 #include "sge.h"
 #include "sig_handlers.h"
 #include "oge_client_print.h"
-#include "sge_mt_init.h"
 #include "oge_qhost_print.h"
 
 #include "msg_common.h"
@@ -864,7 +863,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
 
    DENTER(TOP_LAYER);
    

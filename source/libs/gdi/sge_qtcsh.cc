@@ -68,7 +68,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    struct passwd pw_struct;
    char *pw_buffer;
    size_t pw_buffer_size;
-   const char* user_name = bootstrap_get_username();
+   const char* user_name = component_get_username();
    const char* cell_root = bootstrap_get_cell_root();
 
    /* cell global settings */

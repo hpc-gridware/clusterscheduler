@@ -164,8 +164,6 @@ int main(int argc, char *argv[])
 
    DENTER_MAIN(TOP_LAYER, "test_sge_resouce_quota");
 
-   bootstrap_mt_init();
-
    lInit(nmv);
 
    hgroup_list = lCreateList("" , HGRP_Type);

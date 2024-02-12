@@ -255,9 +255,20 @@ static void prof_thread_local_once_init(void) {
    init_array(pthread_self());
 }
 
-void prof_mt_init(void) {
+static void
+prof_mt_init(void) {
    pthread_once(&prof_once, prof_thread_local_once_init);
 }
+
+class ProfThreadInit {
+public:
+   ProfThreadInit() {
+      prof_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static ProfThreadInit prof_obj{};
 
 
 /****** uti/profiling/prof_set_level_name() ************************************

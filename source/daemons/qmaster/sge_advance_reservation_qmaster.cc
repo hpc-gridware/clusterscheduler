@@ -247,7 +247,7 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
       ** attr_mod_str(alpp, ar, new_ar, AR_owner, object->object_name);
       */
       lSetString(new_ar, AR_owner, ruser);
-      lSetString(new_ar, AR_group, bootstrap_get_groupname());
+      lSetString(new_ar, AR_group, component_get_groupname());
    } else {
       ERROR((SGE_EVENT, MSG_NOTYETIMPLEMENTED_S, "advance reservation modification"));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);

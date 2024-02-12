@@ -56,7 +56,6 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-#include "sge_mt_init.h"
 #include "msg_common.h"
 #include "msg_utilbin.h"
 

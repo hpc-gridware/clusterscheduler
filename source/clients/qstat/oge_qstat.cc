@@ -222,7 +222,7 @@ char **argv
       sge_exit(1);
    }
 
-   username = bootstrap_get_username();
+   username = component_get_username();
    cell_root = bootstrap_get_cell_root();
    lInit(nmv);      
 

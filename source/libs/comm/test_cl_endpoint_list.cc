@@ -67,8 +67,6 @@ main(int argc, char **argv) {
       exit(1);
    }
 
-   prof_mt_init();
-
    printf("\nfirst testing only endpoint list functionality ...\n");
    printf("================================================================\n");
 

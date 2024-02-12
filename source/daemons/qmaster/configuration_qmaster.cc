@@ -121,8 +121,8 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
-   u_long32 progid = bootstrap_get_component_id();
+   const char *qualified_hostname = component_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
 
    DENTER(TOP_LAYER);
 
@@ -318,8 +318,8 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
-   u_long32 progid = bootstrap_get_component_id();
+   const char *qualified_hostname = component_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
 
    DENTER(TOP_LAYER);
 

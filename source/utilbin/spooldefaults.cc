@@ -378,7 +378,6 @@ int main(int argc, char *argv[])
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
 
    log_state_set_log_gui(0);
-   prof_mt_init();
 
    if (sge_setup2(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       show_answer(answer_list);

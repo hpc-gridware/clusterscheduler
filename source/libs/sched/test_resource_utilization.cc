@@ -38,7 +38,6 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "sge_resource_utilization.h"
-#include "sge_mt_init.h"
 
 #include "sge_qeti.h"
 
@@ -59,8 +58,6 @@ int main(int argc, char *argv[])
    int ret = 0;
 
    DENTER_MAIN(TOP_LAYER, "test_resource_utilization");
-
-   sge_mt_init();
 
    lInit(nmv);
 

@@ -318,7 +318,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *default_cell = bootstrap_get_sge_cell();
    const char *binary_path = bootstrap_get_binary_path();
    const char *admin_user = bootstrap_get_admin_user();

@@ -304,10 +304,10 @@ void log_state_set_log_as_admin_user(int i) {
 void
 sge_log(u_long32 log_level, const char *msg, const char *file, const char *func, int line) {
    DENTER_(BASIS_LAYER);
-   u_long32 me = bootstrap_get_component_id();
-   const char *thread_name = bootstrap_get_thread_name();
-   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
-   bool is_daemonized = bootstrap_is_daemonized();
+   u_long32 me = component_get_component_id();
+   const char *thread_name = component_get_thread_name();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
+   bool is_daemonized = component_is_daemonized();
    char buf[128 * 4];
    int level_char;
    char level_string[32 * 4];

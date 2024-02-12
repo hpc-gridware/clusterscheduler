@@ -389,8 +389,8 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
    bool ret = false;
    int status = 0;
    const char *filename = nullptr;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
    
    DENTER(TOP_LAYER);
 

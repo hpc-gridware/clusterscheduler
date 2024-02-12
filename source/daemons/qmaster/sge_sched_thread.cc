@@ -86,7 +86,6 @@
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_job_category.h"
 #include "basis_types.h"
-#include "sge_mt_init.h"
 #include "sge.h"
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"

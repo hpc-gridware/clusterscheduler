@@ -122,9 +122,6 @@ void *thread1(void *data) {
    //sge_dstring_free(&thread_name);
 
    lInit(nmv); 
-   bootstrap_mt_init();
-   obj_mt_init();
-   fgl_mt_init();
 
    while (true) {
       pthread_mutex_lock(&request_mtx);
@@ -234,9 +231,6 @@ int main(int argc, char *argv[]) {
  
    // init required modules 
    lInit(nmv); 
-   bootstrap_mt_init();
-   obj_mt_init();
-   fgl_mt_init();
 
    // create some pseudo requests
    srand(time(nullptr));

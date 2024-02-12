@@ -108,12 +108,23 @@ sge_err_vset(sge_err_t id, const char *format, va_list args) {
 }
 
 /* initialization function that has to be called before threads are spawned */
-void
+static void
 sge_err_init(void) {
    DENTER(ERR_LAYER);
    pthread_once(&sge_err_once, sge_err_once_init);
    DRETURN_VOID;
 }
+
+class ErrorThreadInit {
+public:
+   ErrorThreadInit() {
+      sge_err_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static ErrorThreadInit error_obj{};
+
 
 void
 sge_err_set(sge_err_t id, const char *format, ...) {

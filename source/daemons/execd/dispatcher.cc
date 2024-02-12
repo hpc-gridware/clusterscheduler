@@ -190,7 +190,7 @@ int sge_execd_process_messages()
                do_reconnect = true;
                break;
          }  
-         cl_commlib_trigger(cl_com_get_handle(bootstrap_get_component_name(), 0), 1);
+         cl_commlib_trigger(cl_com_get_handle(component_get_component_name(), 0), 1);
       }
 
       if (sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {

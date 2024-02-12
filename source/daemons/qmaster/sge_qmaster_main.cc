@@ -156,7 +156,6 @@ int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qmaster");
 
    sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR);
-   prof_mt_init();
 
    sge_get_root_dir(true, nullptr, 0, true);
 
@@ -191,7 +190,7 @@ int main(int argc, char *argv[]) {
    /* init qmaster threads without becomming admin user */
    sge_qmaster_thread_init(QMASTER, MAIN_THREAD, false);
 
-   bootstrap_set_daemonized(has_daemonized);
+   component_set_daemonized(has_daemonized);
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
@@ -226,7 +225,7 @@ int main(int argc, char *argv[]) {
    sge_become_admin_user(bootstrap_get_admin_user());
    sge_chdir_exit(bootstrap_get_qmaster_spool_dir(), 1);
    log_state_set_log_file(ERR_FILE);
-   bootstrap_set_exit_func(sge_exit_func);
+   component_set_exit_func(sge_exit_func);
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */

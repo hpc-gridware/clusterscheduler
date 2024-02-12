@@ -111,8 +111,6 @@ extern int main(int argc, char **argv) {
    int i;
    int time_interval = 0;
 
-   prof_mt_init();
-
    if (argc != 4) {
 
       printf("syntax: test_virtual_qmaster DEBUG_LEVEL PORT INTERVAL\n");

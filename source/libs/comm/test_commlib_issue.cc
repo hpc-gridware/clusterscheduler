@@ -154,7 +154,6 @@ extern int main(int argc, char **argv) {
          exit(1);
       }
    }
-   prof_mt_init();
 
    /* setup signalhandling */
 

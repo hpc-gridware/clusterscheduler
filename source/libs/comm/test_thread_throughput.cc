@@ -111,8 +111,6 @@ extern int main(int argc, char **argv) {
    cl_thread_mode_t tmode = CL_NO_THREAD;
    int arg_found = 0;
 
-   prof_mt_init();
-
    printf("This module test does not work!\n");
    exit(1);
    if (argc != 2) {

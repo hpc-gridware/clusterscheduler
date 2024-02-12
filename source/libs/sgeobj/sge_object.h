@@ -178,7 +178,6 @@ typedef struct {
 } object_description;
 
 
-void obj_mt_init(void);
 void obj_init(bool is_global);
 
 lList **object_type_get_master_list_rw(const sge_object_type type);

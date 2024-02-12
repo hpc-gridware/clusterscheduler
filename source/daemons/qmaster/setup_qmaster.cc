@@ -191,7 +191,7 @@ init_categories(void);
 int
 sge_setup_qmaster(char *anArgv[]) {
    char err_str[1024];
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
 
    DENTER(TOP_LAYER);
@@ -255,7 +255,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
       sge_exit(1);
    }
    reresolve_qualified_hostname();
-   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, bootstrap_get_qualified_hostname()));
+   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname()));
    admin_user = bootstrap_get_admin_user();
 
    if (switch_to_admin_user == true) {
@@ -558,7 +558,7 @@ qmaster_init(char **anArgv) {
       sge_exit(1);
    }
 
-   bootstrap_set_exit_func(qmaster_lock_and_shutdown);
+   component_set_exit_func(qmaster_lock_and_shutdown);
 
    communication_setup();
 
@@ -600,7 +600,7 @@ communication_setup() {
    char *qmaster_params = nullptr;
    struct rlimit qmaster_rlimits;
 
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 qmaster_port = bootstrap_get_sge_qmaster_port();
    const char *qmaster_spool_dir = bootstrap_get_qmaster_spool_dir();
 
@@ -867,8 +867,8 @@ setup_qmaster() {
 
    /* get aliased hostname from commd */
    reresolve_qualified_hostname();
-   qualified_hostname = bootstrap_get_qualified_hostname();
-   DEBUG((SGE_EVENT, "bootstrap_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
+   qualified_hostname = component_get_qualified_hostname();
+   DEBUG((SGE_EVENT, "component_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
 
    /*
    ** read in all objects and check for correctness

@@ -59,8 +59,6 @@ typedef struct {
    char *name;
 } featureset_names_t;            
 
-void feature_mt_init(void);
-
 void    feature_set_already_read_from_file(int i);
 int     feature_get_already_read_from_file(void);
 lList** feature_get_master_featureset_list(void);

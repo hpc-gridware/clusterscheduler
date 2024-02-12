@@ -95,8 +95,6 @@ extern int main(int argc, char **argv) {
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
    bool synchron = false;
 
-   prof_mt_init();
-
    if (argc < 5) {
       printf("syntax: debug_level vmaster_port vmaster_host reconnect [no_output]\n");
       exit(1);

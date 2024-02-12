@@ -173,8 +173,6 @@ int main(int argc, char **argv)
    gen_procList ();
 #endif
 
-   prof_mt_init();
-
    set_thread_name(pthread_self(),"Execd Thread");
 
    prof_set_level_name(SGE_PROF_CUSTOM1, "Execd Thread", nullptr);
@@ -205,7 +203,7 @@ int main(int argc, char **argv)
       answer_list_output(&alp);
       sge_exit(1);
    }
-   bootstrap_set_exit_func(execd_exit_func);
+   component_set_exit_func(execd_exit_func);
    
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
@@ -273,7 +271,7 @@ int main(int argc, char **argv)
    /* test connection */
    {
       cl_com_SIRM_t* status = nullptr;
-      ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(bootstrap_get_component_name(), 0),
+      ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(component_get_component_name(), 0),
                                                (char *)gdi3_get_act_master_host(true),
                                                (char*)prognames[QMASTER], 1, &status);
       if (ret_val != CL_RETVAL_OK) {
@@ -299,7 +297,7 @@ int main(int argc, char **argv)
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(bootstrap_get_qualified_hostname(), bootstrap_get_binary_path());
+      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), bootstrap_get_binary_path());
       lFreeList(&report_list);
    }
    

@@ -678,7 +678,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    /*
    ** get type of connection internal/external
    */
-   is_qmaster_internal = bootstrap_is_qmaster_internal();
+   is_qmaster_internal = component_is_qmaster_internal();
    
    DPRINTF(("creating %s event client context\n", is_qmaster_internal ? "internal" : "external"));
 
@@ -848,7 +848,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    if (ec_name != nullptr) {
       name = ec_name;
    } else {
-      name = bootstrap_get_component_name();
+      name = component_get_component_name();
    }
 
    if (id >= EV_ID_FIRST_DYNAMIC || name == nullptr || *name == 0) {
@@ -871,7 +871,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          /*
          ** for internal clients we reuse the data of the gdi context
          */
-         lSetString(sge_evc->ec, EV_commproc, bootstrap_get_component_name());
+         lSetString(sge_evc->ec, EV_commproc, component_get_component_name());
          lSetUlong(sge_evc->ec, EV_commid, 0);
          lSetUlong(sge_evc->ec, EV_d_time, DEFAULT_EVENT_DELIVERY_INTERVAL);
 
@@ -975,7 +975,7 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
 
    DENTER(EVC_LAYER);
 
-   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle != nullptr) {
       cl_commlib_close_connection(handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
       DPRINTF(("closed old connection to qmaster\n"));
@@ -1556,7 +1556,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
                 * in an endless while loop.
                 */
                cl_com_handle_t* com_handle = nullptr;
-               com_handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+               com_handle = cl_com_get_handle(component_get_component_name(), 0);
                if (com_handle != nullptr) {
                   cl_commlib_trigger(com_handle, 1);
                } else {
@@ -3145,7 +3145,7 @@ static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
 
    DENTER(EVC_LAYER);
    if (thiz && thiz->ec_is_initialized(thiz)) {
-      if (bootstrap_is_qmaster_internal()) {
+      if (component_is_qmaster_internal()) {
          sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
          event_control = &(sge_evc->event_control);
       }

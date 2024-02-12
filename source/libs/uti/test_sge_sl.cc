@@ -769,9 +769,6 @@ int main(int argc, char *argv[]) {
    bool ret = true;
 
    DENTER_MAIN(TOP_LAYER, "test_sl");
-
-   sge_err_init();
-
    ret &= test_create_insert_destroy();
    ret &= test_create_append();
    ret &= test_create_insort();
@@ -782,7 +779,6 @@ int main(int argc, char *argv[]) {
    ret &= test_dechain_before_after();
    ret &= test_for_each_ep();
    ret &= test_mt_support();
-
    DRETURN(ret == true ? 0 : 1);
 }
 

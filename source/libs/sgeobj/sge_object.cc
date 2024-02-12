@@ -299,10 +299,20 @@ static void obj_state_destroy(void* st)
 *     sge_object/obj_state_init
 *     sge_object/obj_state_destroy
 *******************************************************************************/
-void obj_mt_init(void) 
+static void obj_mt_init(void)
 {
    pthread_once(&obj_once, obj_thread_local_once_init);
 }
+
+class ObjectThreadInit {
+public:
+   ObjectThreadInit() {
+      obj_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static ObjectThreadInit object_obj{};
 
 void obj_init(bool is_global) 
 {

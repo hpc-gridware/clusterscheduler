@@ -196,8 +196,6 @@ int main(int argc, char **argv)
 
    DENTER_MAIN(TOP_LAYER, "qacct");
 
-   prof_mt_init();
-
    log_state_set_log_gui(1);
 
    if (sge_gdi2_setup(QACCT, MAIN_THREAD, &alp) != AE_OK) {

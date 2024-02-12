@@ -102,8 +102,6 @@ extern int main(int argc, char **argv) {
       exit(1);
    }
 
-   prof_mt_init();
-
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */

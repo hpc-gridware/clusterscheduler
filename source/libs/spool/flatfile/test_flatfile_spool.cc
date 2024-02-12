@@ -53,8 +53,6 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 
-#include "sge_mt_init.h"
-
 #define allow_delete_time_modification
 
 static int diff(const char *file1, const char *file2);
@@ -114,7 +112,6 @@ int main(int argc, char** argv)
    }
    else {
       int i = 0;
-      sge_mt_init();
       lInit(nmv);
 
       while (test_array[i] != nullptr) {

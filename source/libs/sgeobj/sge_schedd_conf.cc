@@ -198,10 +198,20 @@ sc_thread_local_once_init(void)
 }
 
 
-void sc_mt_init(void) 
+static void sc_mt_init(void)
 {
    pthread_once(&sc_once, sc_thread_local_once_init);
-} 
+}
+
+class ScThreadInit {
+public:
+   ScThreadInit() {
+      sc_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static ScThreadInit sc_obj{};
 
 /*-----*/
 /* end */

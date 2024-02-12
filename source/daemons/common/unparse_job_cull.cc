@@ -77,8 +77,8 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    const lList *lp;
    int ret;
    lListElem *ep_opt;
-   const char *username = bootstrap_get_username();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *username = component_get_username();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
