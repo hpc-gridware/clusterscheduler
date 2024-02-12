@@ -105,6 +105,11 @@ function(architecture_specific_settings)
          # but patchelf is not available on CentOS 7 x86
          message(STATUS "Building without Berkeley DB on lx-x86")
          set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+         # we need to use a self-compiled gcc/g++/libstdc++ on this platform
+         # as the OS packages (CentOS-7) are too old
+         # link statically to make sure that the correct libstdc++ is used
+         add_compile_options(-static-libstdc++ -static-libgcc)
+         add_link_options(-static-libstdc++ -static-libgcc)
       endif ()
 
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
