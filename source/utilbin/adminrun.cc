@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstdio>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 #include <cstdlib>
 #include <sys/types.h>

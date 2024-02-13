@@ -34,14 +34,14 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"

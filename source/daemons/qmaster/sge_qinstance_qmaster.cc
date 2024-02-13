@@ -36,11 +36,11 @@
 #include <cctype>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
-#include "uti/sge_signal.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_signal.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"

@@ -34,9 +34,9 @@
 #include <cstring>
 #include <sys/time.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
 
 #include "qmaster_heartbeat.h"
 #include "msg_daemons_common.h"

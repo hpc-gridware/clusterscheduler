@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #ifndef va_copy
 #define va_copy(dst, src) memcpy(&dst, &src, sizeof(va_list))

@@ -106,8 +106,6 @@ typedef enum {
    SCT_WARNING = 20
 } thread_warning_t;
 
-/* EB: TODO: ST: ??? */
-
 /**
  * qping thread error times in seconds
  **/

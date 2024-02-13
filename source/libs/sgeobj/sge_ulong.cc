@@ -31,17 +31,17 @@
 /*___INFO__MARK_END__*/
 
 #include <math.h>
-#include <float.h>
-#include <time.h>
+#include <cfloat>
+#include <ctime>
 #include <cstring>
 #include <limits.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
-#include "uti/sge_string.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ulong.h"

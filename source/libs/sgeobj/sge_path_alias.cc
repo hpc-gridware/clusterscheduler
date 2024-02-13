@@ -34,13 +34,13 @@
 #include <pwd.h>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_hostname.h"
 
 #include "comm/lists/cl_errors.h"
 

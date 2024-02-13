@@ -131,23 +131,18 @@ typedef int (*sge_sl_compare_f)(const void *data1, const void *data2);
 
 typedef bool (*sge_sl_destroy_f)(void **data);
 
-typedef struct _sge_sl_elem_t sge_sl_elem_t;
-typedef struct _sge_sl_list_t sge_sl_list_t;
-
-enum _sge_sl_direction_t {
+enum sge_sl_direction_t {
    SGE_SL_FORWARD,
    SGE_SL_BACKWARD
 };
 
-typedef enum _sge_sl_direction_t sge_sl_direction_t;
-
-struct _sge_sl_elem_t {
+struct sge_sl_elem_t {
    sge_sl_elem_t *prev;
    sge_sl_elem_t *next;
    void *data;
 };
 
-struct _sge_sl_list_t {
+struct sge_sl_list_t {
    /* mutex to secure other elements in the struct */
    pthread_mutex_t mutex;
 
@@ -193,7 +188,7 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
 bool
 sge_sl_lock(sge_sl_list_t *list);
 
-bool
+void
 sge_sl_unlock(sge_sl_list_t *list);
 
 bool
@@ -202,7 +197,7 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction);
 bool
 sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare);
 
-bool
+void
 sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction);
 
 bool

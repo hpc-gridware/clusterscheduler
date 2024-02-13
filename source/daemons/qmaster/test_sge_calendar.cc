@@ -32,7 +32,7 @@
 
 #include <cstdio>
 #include <cctype>
-#include <time.h>
+#include <ctime>
 
 #include "uti/sge_time.h"
 

@@ -33,24 +33,24 @@
 #include <cstring>
 #include <sys/types.h>
 #include <grp.h>
-#include <time.h>
+#include <ctime>
 #include <fnmatch.h>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_spool.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_log.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_time.h"
-#include "uti/sge_parse_num_par.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -859,7 +859,7 @@ int main(int argc, char **argv)
    /*
    ** exit routine attempts to close file if not nullptr
    */
-   FCLOSE(fp)
+   FCLOSE(fp);
    fp = nullptr;
 
    if (shut_me_down) {

@@ -34,23 +34,22 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
-#include <time.h>
+#include <ctime>
 
 #include <sys/resource.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_os.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_spool.h"
 #include "uti/config_file.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_os.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
 #include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "evm/sge_event_master.h"
 

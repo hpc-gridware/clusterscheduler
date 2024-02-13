@@ -31,10 +31,10 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
-#include "uti/sge_string.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_error_class.h"
 #include "uti/sge_csp_path.h"
+#include "uti/sge_error_class.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sge_gdi3.h"
 

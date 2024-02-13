@@ -67,7 +67,7 @@
 #include "uti/sge_profiling.h"
 
 /* RMON */
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 /* SGEOBJ */
 #include "sgeobj/sge_path_alias.h"

@@ -32,13 +32,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"

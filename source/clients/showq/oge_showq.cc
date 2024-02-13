@@ -32,8 +32,8 @@
 #include <cstdio>
 #include <math.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"

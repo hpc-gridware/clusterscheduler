@@ -36,22 +36,22 @@
 #include <cstring>
 #include <unistd.h>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <pwd.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_signal.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_signal.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
+#include "uti/sge.h"
 
 #include "japi/drmaa.h"
 #include "japi/japi.h"
@@ -89,7 +89,6 @@
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi2.h"
 
-#include "sge.h"
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
 
@@ -329,7 +328,7 @@ static void japi_use_library_signals(void)
 static void japi_once_init(void)
 {
    /* enable rmon monitoring */
-   rmon_mopen(0, nullptr, "japilib");
+   rmon_mopen();
 }
 
 

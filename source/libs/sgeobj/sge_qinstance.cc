@@ -34,9 +34,9 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull_list.h"
 
@@ -62,8 +62,8 @@
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 #define QINSTANCE_LAYER BASIS_LAYER
 

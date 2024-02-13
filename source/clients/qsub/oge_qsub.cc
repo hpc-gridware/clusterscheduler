@@ -33,11 +33,11 @@
 #include <sys/stat.h>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"

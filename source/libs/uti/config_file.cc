@@ -33,11 +33,11 @@
 #include <cstring>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/config_file.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
 
 #include "basis_types.h"
 

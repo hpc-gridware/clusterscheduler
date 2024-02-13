@@ -33,7 +33,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <cerrno>
 #include <pthread.h>
 
@@ -375,7 +375,7 @@ void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
 *     MT-NOTE: sge_unblock_all_signals() is MT safe
 *
 *******************************************************************************/
-void sge_unblock_all_signals(void) {
+void sge_unblock_all_signals() {
    sigset_t sigmask;
    /* unblock all signals */
    /* without this we depend on shell to unblock the signals */

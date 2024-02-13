@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstdlib>
 #include <cstring>
 #include <fnmatch.h>
@@ -42,9 +42,9 @@
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_listP.h"

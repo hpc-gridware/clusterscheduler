@@ -52,21 +52,20 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
+#include "uti/msg_utilib.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_csp_path.h"
 #include "uti/sge_fgl.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_os.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_profiling.h"
-#include "uti/msg_utilib.h"
 #include "uti/sge_time.h"
-#include "uti/sge_csp_path.h"
-#include "uti/sge_os.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -79,7 +78,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 #include "msg_common.h"
 
@@ -281,17 +280,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
       DRETURN(cl_ret);
    }
 
-#ifdef DEBUG_CLIENT_SUPPORT
-   /* set debug client callback function to rmon's debug client callback */
-   cl_ret = cl_com_set_application_debug_client_callback_func(rmon_debug_client_callback);
-   if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) {
-      sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
-                         "cl_com_set_application_debug_client_callback_func failed: %s", cl_get_error_text(cl_ret));
-      DRETURN(cl_ret);
-   }
-#endif
-
-   handle = cl_com_get_handle(component_get_component_name(), 0);
+   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
    if (handle == nullptr) {
       /* handle does not exist, create one */
 
@@ -491,12 +480,16 @@ int sge_gdi_ctx_class_prepare_enroll() {
       ctx_set_last_commlib_error(cl_ret);
    }
 
+<<<<<<< HEAD
 #ifdef DEBUG_CLIENT_SUPPORT
    /* set rmon callback for message printing (after handle creation) */
    rmon_set_print_callback(gdi_rmon_print_callback_function);
 #endif
 
    if ((component_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
+=======
+   if ((bootstrap_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
+>>>>>>> 71fe5d636 (TA: OGE-141 handle critical compiler warnings)
       /* this is for testsuite socket bind test (issue 1096 ) */
       struct timeval now;
       gettimeofday(&now, nullptr);

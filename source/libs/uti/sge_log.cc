@@ -36,14 +36,14 @@
 #include <fcntl.h>
 #include <pthread.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_mtutil.h"
-#include "uti/sge_string.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
 
 #include "sge.h"
 
@@ -263,46 +263,8 @@ void log_state_set_log_as_admin_user(int i) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-/****** uti/log/sge_log() *****************************************************
-*  NAME
-*     sge_log() -- Low level logging function 
-*
-*  SYNOPSIS
-*     int sge_log(int log_level, char *mesg, char *file__, 
-*                 char *func__, int line__) 
-*
-*  FUNCTION
-*     Low level logging function. Used by various macros.
-*     Do not use this function directly. 
-*
-*  INPUTS
-*     int log_level - Logging Level
-*     char *mesg    - Message
-*     char *file__  - Filename
-*     char *func__  - Function Name
-*     int line__    - Line within 'file__'
-*
-*  RESULT
-*     int - 0
-*
-*  SEE ALSO
-*     uti/log/CRITICAL
-*     uti/log/ERROR
-*     uti/log/WARNING
-*     uti/log/NOTICE
-*     uti/log/INFO
-*     uti/log/DEBUG
-*
-*  NOTES
-*     MT-NOTE: sge_log() is not MT safe due to sge_switch2admin_user()
-*     MT-NOTE: sge_log() can be used in clients where no admin user switching 
-*     MT-NOTE: takes place
-*     MT-NOTE: sge_log() is not MT safe due rmon_condition()
-*     MT-NOTE: sge_log() can be used if DENTER_MAIN() is called only by one 
-*     MT-NOTE: thread
-******************************************************************************/
 void
-sge_log(u_long32 log_level, const char *msg, const char *file, const char *func, int line) {
+sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
    DENTER_(BASIS_LAYER);
    u_long32 me = component_get_component_id();
    const char *thread_name = component_get_thread_name();
@@ -373,27 +335,6 @@ sge_log(u_long32 log_level, const char *msg, const char *file, const char *func,
    sge_do_log(me, thread_name, unqualified_hostname, level_char, msg);
 }
 
-/****** uti/sge_log/sge_do_log() ***********************************************
-*  NAME
-*     sge_do_log() -- Write message to log file 
-*
-*  SYNOPSIS
-*     static void sge_do_log(int aLevel, const char *aMessage, const char 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     int aLevel           - log level
-*     const char *aMessage - log message
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_do_log() is MT safe.
-*
-*******************************************************************************/
 static void
 sge_do_log(u_long32 prog_number, const char *prog_name, const char *unqualified_hostname, int level, const char *msg) {
    if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {

@@ -36,9 +36,9 @@
 
 #include <cstring>
 
-#include "sge.h"
+#include "uti/sge.h"
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 

@@ -33,11 +33,11 @@
 #include <cstdlib>
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_err.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_sl.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_sl.h"
+#include "uti/sge_stdlib.h"
 
 #include "msg_common.h"
 
@@ -754,15 +754,13 @@ sge_sl_lock(sge_sl_list_t *list) {
 *  SEE ALSO
 *     uti/sl/sge_sl_lock() 
 *******************************************************************************/
-bool
+void
 sge_sl_unlock(sge_sl_list_t *list) {
-   bool ret = true;
-
    DENTER(SL_LAYER);
    if (list != nullptr) {
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** uti/sl/sge_sl_insert() *************************************************
@@ -947,10 +945,8 @@ sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare) 
 *  NOTES
 *     MT-NOTE: sge_sl_data() is MT safe 
 *******************************************************************************/
-bool
+void
 sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
-   bool ret = true;
-
    DENTER(SL_LAYER);
    if (list != nullptr && data != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
@@ -963,7 +959,6 @@ sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
       }
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
-   DRETURN(ret);
 }
 
 /****** uti/sl/sge_sl_data_search() ***********************************************

@@ -40,10 +40,10 @@
 #  include <sys/pset.h>
 #  include <kstat.h>
 #  include <sys/statfs.h>
-#endif 
+#endif
 
-#include "uti/sge_rmon.h"
 #include "uti/oge_topology.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_binding.h" 
 #include "sgeobj/sge_answer.h"

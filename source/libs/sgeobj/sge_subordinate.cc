@@ -32,8 +32,8 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull_list.h"
 
@@ -43,7 +43,7 @@
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 /* -----------------------------------------------
 

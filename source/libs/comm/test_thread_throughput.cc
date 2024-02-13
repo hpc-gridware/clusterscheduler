@@ -35,7 +35,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 #include "comm/lists/cl_lists.h"

@@ -33,7 +33,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 
 #include "uti/sge_profiling.h"

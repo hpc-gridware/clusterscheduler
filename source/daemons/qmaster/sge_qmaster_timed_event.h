@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <time.h>
+#include <ctime>
 #include <sys/types.h>
 
 #include "basis_types.h"

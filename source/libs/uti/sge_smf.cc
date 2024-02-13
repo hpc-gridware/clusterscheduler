@@ -41,7 +41,7 @@
 #include <dlfcn.h>
 #include <pthread.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_smf.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
@@ -1062,7 +1062,7 @@ char *sge_smf_get_instance_next_state()
 
 void dummy(void) {
    /* Just a dummy function */
-   return;
+   void();
 }
 
 #endif

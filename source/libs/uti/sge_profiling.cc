@@ -37,13 +37,13 @@
 
 #include "basis_types.h"
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
-#include "uti/sge_string.h"
-#include "uti/msg_utilib.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 /****** uti/profiling/--Profiling ****************************************
 *  NAME
@@ -177,9 +177,9 @@ static void prof_reset_thread(int thread_num, prof_level level);
 
 static void init_array(pthread_t num);
 
-static void init_array_first(void);
+static void init_array_first();
 
-static void init_thread_info(void);
+static void init_thread_info();
 
 static int get_prof_info_thread_id(pthread_t thread_num);
 
@@ -245,7 +245,7 @@ void sge_prof_set_enabled(bool enabled) {
 *
 *  SEE ALSO
 *******************************************************************************/
-static void prof_thread_local_once_init(void) {
+static void prof_thread_local_once_init() {
    if (!profiling_enabled) {
       return;
    }
@@ -407,7 +407,7 @@ bool prof_start(prof_level level, dstring *error) {
          sge_dstring_sprintf_append(error, MSG_PROF_ALREADYACTIVE_S, "prof_start");
          ret = false;
       } else {
-         struct tms tms_buffer;
+         struct tms tms_buffer{};
          int i;
          clock_t start_time = times(&tms_buffer);
 
@@ -752,7 +752,7 @@ bool prof_reset(prof_level level, dstring *error) {
 *     MT-NOTE: prof_reset() is MT safe
 *******************************************************************************/
 static void prof_reset_thread(int thread_num, prof_level level) {
-   struct tms tms_buffer;
+   struct tms tms_buffer{};
 
    theInfo[thread_num][level].start = 0;
    theInfo[thread_num][level].end = 0;
@@ -981,7 +981,7 @@ double prof_get_total_wallclock(prof_level level, dstring *error) {
       } else if (!theInfo[thread_num][level].prof_is_started) {
          sge_dstring_sprintf_append(error, MSG_PROF_NOTACTIVE_S, "prof_get_total_wallclock");
       } else {
-         struct tms tms_buffer;
+         struct tms tms_buffer{};
          clock_t now;
 
          now = times(&tms_buffer);
@@ -1242,7 +1242,6 @@ _prof_get_info_string(prof_level level, dstring *info_string, bool with_sub, dst
    pthread_t thread_id = pthread_self();
    int thread_num;
    dstring level_string = DSTRING_INIT;
-   const char *ret = nullptr;
    double busy, utime, stime, utilization;
 
    thread_num = get_prof_info_thread_id(thread_id);
@@ -1255,7 +1254,7 @@ _prof_get_info_string(prof_level level, dstring *info_string, bool with_sub, dst
    sge_dstring_sprintf(&level_string, PROF_GET_INFO_FORMAT,
                        theInfo[thread_num][level].name, busy, utime, stime, utilization);
 
-   ret = sge_dstring_append_dstring(info_string, &level_string);
+   const char *ret = sge_dstring_append_dstring(info_string, &level_string);
    sge_dstring_free(&level_string);
 
    return ret;
@@ -1340,13 +1339,11 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info) {
       thread_num = get_prof_info_thread_id(thread_id);
 
       if ((thread_num >= 0) && (thread_num < MAX_THREAD_NUM) && prof_is_active(level)) {
-         const char *info_message = nullptr;
-         const char *message = nullptr;
          struct saved_vars_s *context = nullptr;
 
-         info_message = prof_get_info_string(level, with_sub, nullptr);
+         const char *info_message = prof_get_info_string(level, with_sub, nullptr);
          PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int) thread_num, info, ""));
-         for (message = sge_strtok_r(info_message, "\n", &context); message != nullptr;
+         for (const char *message = sge_strtok_r(info_message, "\n", &context); message != nullptr;
               message = sge_strtok_r(nullptr, "\n", &context)) {
             PROFILING((SGE_EVENT, "PROF(%d): %s", (int) thread_num, message));
          }
@@ -1399,8 +1396,6 @@ static void prof_info_init(prof_level level, pthread_t thread_id) {
 
       theInfo[thread_num][SGE_PROF_ALL].akt_level = SGE_PROF_NONE;
    }
-
-   return;
 }
 
 /****** uti/profiling/prof_info_level_init() ******************************
@@ -1544,7 +1539,6 @@ static void init_array(pthread_t num) {
       if (theInfo[i] != nullptr && theInfo[i][SGE_PROF_ALL].thread_id == num) {
          break;
       } else if (theInfo[i] == nullptr) {
-         long storage = 0;
 
          theInfo[i] = (sge_prof_info_t *) sge_malloc((SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
          memset(theInfo[i], 0, (SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
@@ -1557,7 +1551,7 @@ static void init_array(pthread_t num) {
           * later, we just store the int directly in the thread local storage.
           * In order to keep Linux from complaining, the value we store must be
           * the same size as a void pointer, i.e. a long. */
-         storage = i;
+         long storage = i;
          pthread_setspecific(thread_id_key, (void *) storage);
 
          prof_info_init(SGE_PROF_ALL, num);
@@ -1573,7 +1567,7 @@ static void init_array(pthread_t num) {
 }
 
 /* per process initialization */
-static void init_array_first(void) {
+static void init_array_first() {
 
    if (sge_prof_array_initialized == 0) {
       pthread_mutex_lock(&thrdInfo_mutex);
@@ -1610,7 +1604,7 @@ static void init_array_first(void) {
 *  NOTES
 *     MT-NOTE: init_thread_info() is MT safe
 *******************************************************************************/
-static void init_thread_info(void) {
+static void init_thread_info() {
 
    if (!profiling_enabled) {
       return;
@@ -1626,40 +1620,6 @@ static void init_thread_info(void) {
    pthread_mutex_unlock(&thrdInfo_mutex);
 
 }
-
-
-/****** uti/profiling/get_thread_info() ******************************
-*  NAME
-*     get_thread_info() -- get the thread name/id mapping array 
-*
-*  SYNOPSIS
-*     thread_info_t* get_thread_info(void) 
-*
-*  FUNCTION
-*     if the thread name/id mapping array is not initialized
-*     it will be done
-*
-*  INPUTS
-*
-*  RESULT
-*     returns a pointer to the thread name/id mapping array
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: get_thread_info() is MT safe
-*******************************************************************************/
-sge_thread_info_t *get_thread_info(void) {
-
-   if (!profiling_enabled) {
-      return nullptr;
-   }
-
-   init_thread_info();
-   return thrdInfo;
-
-}
-
 
 /****** uti/profiling/set_thread_name() ******************************
 *  NAME
@@ -1827,7 +1787,7 @@ int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
 *     MT-NOTE: sge_prof_cleanup() is MT safe
 *******************************************************************************/
 
-void sge_prof_cleanup(void) {
+void sge_prof_cleanup() {
 
    if (!profiling_enabled) {
       return;
@@ -1973,7 +1933,7 @@ static int get_prof_info_thread_id(pthread_t thread_num) {
 *     MT-NOTE: thread_start_stop_profiling() is MT safe 
 *******************************************************************************/
 void
-thread_start_stop_profiling(void) {
+thread_start_stop_profiling() {
    if (!profiling_enabled) {
       return;
    }

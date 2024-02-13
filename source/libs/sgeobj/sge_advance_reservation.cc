@@ -32,9 +32,9 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
@@ -49,8 +49,8 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_qmaster.h"
+#include "uti/sge.h"
 
 /****** sge_advance_reservation/ar_list_locate() *******************************
 *  NAME

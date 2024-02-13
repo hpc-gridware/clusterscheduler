@@ -33,10 +33,10 @@
 #include <cstring>
 #include <limits.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_str.h"

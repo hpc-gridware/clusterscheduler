@@ -32,7 +32,7 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <signal.h>
+#include <csignal>
 #include <cstring>
 #include <cctype>
 

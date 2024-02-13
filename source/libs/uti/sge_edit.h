@@ -31,4 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/sge_uidgid.h"
+
 int sge_edit(const char *fname, uid_t uid, gid_t gid);

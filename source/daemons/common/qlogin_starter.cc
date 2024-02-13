@@ -38,12 +38,12 @@
 #include <fcntl.h>
 #include <netinet/tcp.h>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
-#include <time.h>
+#include <ctime>
 #include <cstdlib>
 #include <cstring>
 #include <netdb.h>

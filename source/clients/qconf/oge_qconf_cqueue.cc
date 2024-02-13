@@ -31,11 +31,11 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_edit.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_edit.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "msg_common.h"
 #include "msg_clients_common.h"

@@ -6,7 +6,7 @@
 
 #include "uti/sge_lock.h"
 
-typedef struct sge_fifo_elem_t__ {
+struct sge_fifo_elem_t {
    /*
     * is the waiting thread a reader or writer
     */
@@ -21,9 +21,9 @@ typedef struct sge_fifo_elem_t__ {
     * condition to wakeup a waiting thread
     */
    pthread_cond_t cond;
-} sge_fifo_elem_t;
+};
 
-typedef struct sge_fifo_rw_lock_t__ {
+struct sge_fifo_rw_lock_t {
    /* 
     * mutex to guard this structure
     */
@@ -84,7 +84,7 @@ typedef struct sge_fifo_rw_lock_t__ {
     * number of waiting threads which have been signaled so that they wake up (maximum is 1)
     */
    int signaled;
-} sge_fifo_rw_lock_t;
+};
 
 bool
 sge_fifo_lock_init(sge_fifo_rw_lock_t *lock);

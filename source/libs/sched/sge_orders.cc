@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"

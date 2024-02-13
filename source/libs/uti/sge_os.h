@@ -65,7 +65,7 @@ int sge_checkprog(pid_t, const char *, const char *);
 
 void sge_close_all_fds(int *keep_open, unsigned long nr_of_fds);
 
-int sge_get_max_fd(void);
+int sge_get_max_fd();
 
 int sge_dup_fd_above_stderr(int *fd);
 

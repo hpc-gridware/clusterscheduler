@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <cerrno>
 #include <unistd.h>
 

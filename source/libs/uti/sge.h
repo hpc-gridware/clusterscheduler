@@ -38,25 +38,16 @@
 /* template/global/default/queue names */
 #define SGE_TEMPLATE_NAME        "template"
 #define SGE_UNKNOWN_NAME         "unknown"
-#define SGE_DEFAULT_NAME         "default"
 #define SGE_GLOBAL_NAME          "global"
-#define SGE_QUEUE_NAME           "queue"
-#define SGE_HOST_NAME            "host"
 #define SGE_RQS_NAME             "resource_quota"
 
 /* sge object names */
-#define SGE_OBJ_QUEUE                  "queue"
 #define SGE_OBJ_CQUEUE                 "queue"
 #define SGE_OBJ_HGROUP                 "hostgroup"
 #define SGE_OBJ_EXECHOST               "exechost"
 #define SGE_OBJ_PE                     "pe"
 #define SGE_OBJ_CKPT                   "ckpt"
-#define SGE_OBJ_CALENDAR               "calendar"
 #define SGE_OBJ_RQS                    "resource_quota"
-#define SGE_OBJ_PROJECT                "project"
-#define SGE_OBJ_USER                   "user"
-#define SGE_OBJ_USERSET                "userset"
-#define SGE_OBJ_COMPLEXATTR            "complex_attribute"
 #define SGE_OBJ_JOB                    "job"
 #define SGE_OBJ_AR                     "advance_reservation"
 
@@ -100,8 +91,6 @@
 #define SGE_ATTR_OWNER_LIST            "owner_list"
 #define SGE_ATTR_CALENDAR              "calendar"
 #define SGE_ATTR_INITIAL_STATE         "initial_state"
-#define SGE_ATTR_FSHARE                "fshare"
-#define SGE_ATTR_OTICKET               "oticket"
 #define SGE_ATTR_QNAME                 "qname"
 #define SGE_ATTR_QTYPE                 "qtype"
 #define SGE_ATTR_SUBORDINATE_LIST      "subordinate_list"
@@ -113,9 +102,6 @@
 #define SGE_ATTR_CKPT_NAME             "ckpt_name"
 #define SGE_ATTR_HGRP_NAME             "group_name"
 #define SGE_ATTR_RQS_NAME              "name"
-#define SGE_ATTR_CALENDAR_NAME         "calendar_name"
-#define SGE_ATTR_YEAR                  "year"
-#define SGE_ATTR_WEEK                  "week"
 #define SGE_ATTR_CKPT_NAME             "ckpt_name"
 #define SGE_ATTR_INTERFACE             "interface"
 #define SGE_ATTR_CKPT_COMMAND          "ckpt_command"
@@ -124,7 +110,6 @@
 #define SGE_ATTR_CLEAN_COMMAND         "clean_command"
 #define SGE_ATTR_CKPT_DIR              "ckpt_dir"
 #define SGE_ATTR_SIGNAL                "signal"
-#define SGE_ATTR_WHEN                  "when"
 #define SGE_ATTR_H_FSIZE               "h_fsize"
 #define SGE_ATTR_S_FSIZE               "s_fsize"
 #define SGE_ATTR_H_RT                  "h_rt"
@@ -143,7 +128,6 @@
 #define SGE_ATTR_S_VMEM                "s_vmem"
 
 /* attribute values for certain object attributes */
-#define SGE_ATTRVAL_ALL                "all"
 #define SGE_ATTRVAL_MIN                "min"
 #define SGE_ATTRVAL_MAX                "max"
 #define SGE_ATTRVAL_AVG                "avg"
@@ -151,19 +135,13 @@
 /* tmp filenames */
 #define TMP_ERR_FILE_SNBU         "/tmp/sge_messages"
 #define TMP_ERR_FILE_EXECD        "/tmp/execd_messages"
-#define TMP_ERR_FILE_QMASTER      "/tmp/qmaster_messages"
-#define TMP_ERR_FILE_SCHEDD       "/tmp/schedd_messages"
 #define TMP_ERR_FILE_SHADOWD      "/tmp/shadowd_messages"
-#define TMP_ERR_FILE_QIDLD        "/tmp/qidl_messages"
 
 #define COMMON_DIR               "common"
 #define SPOOL_DIR                "spool"
-#define QMASTER_DIR              "qmaster"
-#define QSI_DIR                  "qsi"
 
 #define QMASTER_PID_FILE          "qmaster.pid"
 #define EXECD_PID_FILE            "execd.pid"
-#define SCHEDD_PID_FILE           "schedd.pid"
 #define SHADOWD_PID_FILE          "shadowd_%s.pid"
 
 #define DEFAULT_ACCOUNT           "sge"
@@ -180,7 +158,6 @@
 #define EXECHOST_DIR              "exec_hosts"  
 #define ADMINHOST_DIR             "admin_hosts" 
 #define SUBMITHOST_DIR            "submit_hosts"
-#define ACCESS_DIR                "access_lists"
 #define CQUEUE_DIR                "cqueues"
 #define QINSTANCES_DIR            "qinstances"
 #define PE_DIR                    "pe"
@@ -203,8 +180,6 @@
 #define EXEC_DIR                  "job_scripts"
 #define JOB_DIR                   "jobs"
 #define ERR_FILE                  "messages"
-#define LIC_INFO_FILE             "lic_information"
 #define USER_DIR                  "users"
 #define USERSET_DIR               "usersets"
 #define PROJECT_DIR               "projects"
-#define AFS                       FALSE

@@ -40,10 +40,10 @@
 #include <cstring>
 #include <unistd.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_attr.h"

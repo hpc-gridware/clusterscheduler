@@ -39,11 +39,11 @@
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
-#include <time.h>
+#include <ctime>
 #include <setjmp.h>
 #include <cstdlib>
 

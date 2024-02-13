@@ -34,18 +34,17 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"

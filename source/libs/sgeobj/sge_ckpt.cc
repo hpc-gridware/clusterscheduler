@@ -33,9 +33,9 @@
 #include <strings.h>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/config_file.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
 
 #include "cull/cull_list.h"

@@ -29,21 +29,21 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <float.h>
+#include <cfloat>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -784,8 +784,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       }
       DRETURN(0);
    }
-   DTIMEPRINTF(("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n",
-                sge_get_gmt()-now));
+   DPRINTF(("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n", sge_get_gmt()-now));
    
    if (petep != nullptr) {
       lSetUlong(petep, PET_pid, pid);

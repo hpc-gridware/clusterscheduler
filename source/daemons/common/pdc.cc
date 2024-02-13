@@ -64,7 +64,7 @@ int main(int argc,char *argv[])
 #include <unistd.h>
 #include <cstdlib>
 #include <fcntl.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/time.h>
 
@@ -109,7 +109,7 @@ int getpagesize(void);
 #include <cerrno>
 
 #include "uti/sge_language.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_uidgid.h"
 
 #include "cull/cull.h"

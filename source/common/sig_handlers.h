@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
+#include <csignal>
 
 void sge_setup_sig_handlers(int me_who);
 void sge_reap(int dummy);

@@ -38,11 +38,11 @@
 #include <cstring>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
-#include "uti/msg_utilib.h"
 
 #include "basis_types.h"
 
@@ -143,7 +143,6 @@ static int elect_path(dstring *aBuffer) {
 
 static int spawn_file(dstring *aBuffer, dstring *error_message) {
    int my_errno;
-   char *mktemp_return = nullptr;
    char tmp_file_string[256];
    char tmp_string[SGE_PATH_MAX];
 
@@ -171,7 +170,7 @@ static int spawn_file(dstring *aBuffer, dstring *error_message) {
     * generate temp file by call to mktemp()
     */
    errno = 0;
-   mktemp_return = mktemp(tmp_string);
+   char *mktemp_return = mktemp(tmp_string);
    my_errno = errno;
    if (mktemp_return[0] == '\0') {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_SYSTEM_ERROR_SS,

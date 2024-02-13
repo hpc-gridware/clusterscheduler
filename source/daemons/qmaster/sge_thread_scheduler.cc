@@ -37,14 +37,14 @@
 
 #include "comm/cl_commlib.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
+#include "uti/sge_mtutil.h"
 #include "uti/sge_os.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_time.h"
 
 #include "evm/sge_event_master.h"
 
@@ -670,7 +670,7 @@ sge_scheduler_main(void *arg) {
             PROF_START_MEASUREMENT(SGE_PROF_CUSTOM6);
             PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
-            if (__CONDITION(INFOPRINT)) {
+            if (rmon_condition(TOP_LAYER, INFOPRINT)) {
                dstring ds;
                char buffer[128];
 

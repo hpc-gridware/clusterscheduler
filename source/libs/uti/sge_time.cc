@@ -32,7 +32,7 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <time.h>
+#include <ctime>
 #include <sys/times.h>
 
 #include <sys/time.h>
@@ -106,13 +106,13 @@ static void sge_stopwatch_stop(int i) {
 *  RESULT
 *     u_long32 - 32 bit time value
 ******************************************************************************/
-u_long32 sge_get_gmt(void) {
-   struct timeval now;
+u_long32 sge_get_gmt() {
+   struct timeval now{};
 
 #ifdef SOLARIS
    gettimeofday(&now, nullptr);
 #else
-   struct timezone tzp;
+   struct timezone tzp{};
    gettimeofday(&now, &tzp);
 #endif
 
@@ -148,7 +148,7 @@ void append_time(time_t i, dstring *buffer, bool is_xml) {
    struct tm *tm;
 
 #ifdef HAS_LOCALTIME_R
-   struct tm tm_buffer;
+   struct tm tm_buffer{};
 
    tm = (struct tm *) localtime_r(&i, &tm_buffer);
 #else
@@ -191,7 +191,7 @@ void append_time(time_t i, dstring *buffer, bool is_xml) {
 ******************************************************************************/
 const char *sge_ctime(time_t i, dstring *buffer) {
 #ifdef HAS_LOCALTIME_R
-   struct tm tm_buffer;
+   struct tm tm_buffer {};
 #endif
    struct tm *tm;
 
@@ -304,7 +304,7 @@ const char *sge_ctime32(u_long32 *i, dstring *buffer) {
 ******************************************************************************/
 const char *sge_at_time(time_t i, dstring *buffer) {
 #ifdef HAS_LOCALTIME_R
-   struct tm tm_buffer;
+   struct tm tm_buffer{};
 #endif
    struct tm *tm;
 
@@ -468,7 +468,7 @@ u_long32 duration_add_offset(u_long32 duration, u_long32 offset) {
 *     None.
 *******************************************************************************/
 void sge_usleep(int sleep_time) {
-   struct timeval wake_tv, sleep_tv, snooze_tv;
+   struct timeval wake_tv{}, sleep_tv{}, snooze_tv{};
    int time_to_sleep = sleep_time;
 
    do {

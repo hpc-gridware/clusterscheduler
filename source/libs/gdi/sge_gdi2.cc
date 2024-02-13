@@ -41,13 +41,13 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_hostname.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_feature.h"
@@ -70,8 +70,8 @@
 #include "gdi/msg_gdilib.h"
 
 #include "basis_types.h"
-#include "sge.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 #ifdef KERBEROS
 #  include "krb_lib.h"
@@ -1767,17 +1767,6 @@ const char* sge_dump_message_tag(unsigned long tag) {
    }
    return "TAG_NOT_DEFINED";
 }
-
-#ifdef DEBUG_CLIENT_SUPPORT
-void gdi_rmon_print_callback_function(const char *progname, const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id) {
-   cl_com_handle_t* handle = nullptr;
-
-   handle = cl_com_get_handle(progname ,0);
-   if (handle != nullptr) {
-      cl_com_application_debug(handle, message);
-   }
-}
-#endif
 
 /****** sge_any_request/general_communication_error() **************************
 *  NAME

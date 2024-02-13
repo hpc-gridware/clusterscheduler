@@ -37,12 +37,12 @@
 #include <cerrno>
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_os.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_loadmem.h"
 #include "uti/sge_log.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_os.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
 
 #if !defined(LINUX) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
 
@@ -284,7 +284,6 @@ int sge_loadmem(sge_mem_info_t *mem_info) {
 #include <mach/mach_host.h>
 #include <mach/host_info.h>
 #include <sys/sysctl.h>
-#include <sys/stat.h>
 
 int sge_loadmem(sge_mem_info_t *mem_info)
 {

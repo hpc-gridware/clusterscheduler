@@ -37,11 +37,11 @@
 #include <fnmatch.h>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_log.h"
-#include "uti/msg_utilib.h"
 
 #define IS_DELIMITOR(c, delimitor) \
    (delimitor?(strchr(delimitor, c)?1:0):isspace(c))

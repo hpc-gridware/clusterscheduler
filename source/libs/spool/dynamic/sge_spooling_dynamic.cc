@@ -45,7 +45,7 @@
 #include <link.h>
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_answer.h"

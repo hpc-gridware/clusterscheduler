@@ -44,16 +44,16 @@
 #include <pthread.h>
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_string.h"
-#include "uti/sge_uidgid.h"
-#include "uti/msg_utilib.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #define SGE_MAXNISRETRY 5
 
@@ -203,7 +203,7 @@ int sge_get_qmaster_port(bool *from_services) {
    DRETURN(int_port);
 }
 
-int sge_get_execd_port(void) {
+int sge_get_execd_port() {
    char *port = nullptr;
    int int_port = -1;
 
@@ -847,8 +847,6 @@ void sge_hostcpy(char *dst, const char *raw) {
 
       sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
    }
-
-   return;
 }
 
 /****** uti/hostname/sge_hostcmp() ********************************************
@@ -968,7 +966,7 @@ is_hgroup_name(const char *name) {
    bool ret = false;
 
    if (name != nullptr) {
-      ret = (name[0] == HOSTGROUP_INITIAL_CHAR) ? true : false;
+      ret = (name[0] == HOSTGROUP_INITIAL_CHAR);
    }
    return ret;
 }

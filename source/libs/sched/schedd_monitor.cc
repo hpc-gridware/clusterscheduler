@@ -31,10 +31,10 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
 

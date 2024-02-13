@@ -36,12 +36,12 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_language.h"
+#include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_htable.h"
-#include "uti/sge_arch.h"
+#include "uti/sge_language.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "basis_types.h"
 

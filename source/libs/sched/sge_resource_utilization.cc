@@ -32,8 +32,8 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -52,12 +52,12 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 
-#include "sge.h"
-#include "sge_select_queue.h"
-#include "sge_resource_utilization.h"
-#include "sge_serf.h"
 #include "debit.h"
 #include "sge_job_schedd.h"
+#include "sge_resource_utilization.h"
+#include "sge_select_queue.h"
+#include "sge_serf.h"
+#include "uti/sge.h"
 
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"

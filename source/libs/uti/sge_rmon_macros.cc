@@ -30,30 +30,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cerrno>
 #include <cstdio>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstring>
 #include <pthread.h>
-#include <cerrno>
+#include <sstream>
+#include <thread>
+#include <unistd.h>
 
-#include "uti/rmon.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_rmon_monitoring_level.h"
 
 #define DEBUG RMON_LOCAL
 
-#if 0
-/*
- * It increases scheduler dispatch time by 60-70%.
- * Must be wrong.
- */
-define RMON_USE_CTX
-#endif
-
 enum {
-   RMON_NONE = 0,   /* monitoring off */
-   RMON_LOCAL = 1,   /* monitoring on */
-   RMON_BUF_SIZE = 5120  /* size of buffer used for monitoring messages */
+    RMON_NONE = 0,       /* monitoring off */
+    RMON_LOCAL = 1,      /* monitoring on */
+    RMON_BUF_SIZE = 5120 /* size of buffer used for monitoring messages */
 };
 
 monitoring_level RMON_DEBUG_ON = {{0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
@@ -62,86 +57,41 @@ monitoring_level RMON_DEBUG_ON_STORAGE = {{0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
 static const char *empty = "    ";
 
 static u_long mtype = RMON_NONE;
-#ifdef DEBUG_CLIENT_SUPPORT
-static u_long mtype_storage = RMON_NONE;
-#endif
 static FILE *rmon_fp;
 
-static void mwrite(char *message, const char *thread_name);
+static void mwrite(char *message, const char *thread_name, int thread_id);
 
-static int set_debug_level_from_env(void);
+static int set_debug_level_from_env();
 
-static int set_debug_target_from_env(void);
+static int set_debug_target_from_env();
 
-static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args);
-
-#ifdef DEBUG_CLIENT_SUPPORT
-static pthread_mutex_t rmon_print_callback_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t rmon_condition_mutex = PTHREAD_MUTEX_INITIALIZER;
-static rmon_print_callback_func_t rmon_print_callback = nullptr;
-#define RMON_CALLBACK_FUNC_LOCK()      pthread_mutex_lock(&rmon_print_callback_mutex)
-#define RMON_CALLBACK_FUNC_UNLOCK()    pthread_mutex_unlock(&rmon_print_callback_mutex)
-#define RMON_CONDITION_LOCK()          pthread_mutex_lock(&rmon_condition_mutex)
-#define RMON_CONDITION_UNLOCK()        pthread_mutex_unlock(&rmon_condition_mutex)
-#endif
-
-
-static pthread_key_t rmon_ctx_key;
-static pthread_once_t rmon_ctx_key_once = PTHREAD_ONCE_INIT;
-
-static void rmon_ctx_key_init(void);
-
-static void rmon_ctx_key_destroy(void *ctx);
+static void rmon_mprintf_va(const char *fmt, va_list args);
 
 static pthread_key_t rmon_helper_key;
 static pthread_once_t rmon_helper_key_once = PTHREAD_ONCE_INIT;
 
-static void rmon_helper_key_init(void);
+static void rmon_helper_key_init();
 
 static void rmon_helper_key_destroy(void *ctx);
 
+rmon_helper_t *rmon_get_helper() {
+    pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
+    auto *helper = (rmon_helper_t *) pthread_getspecific(rmon_helper_key);
+    if (helper == nullptr) {
+        helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
 
-rmon_ctx_t *rmon_get_thread_ctx(void) {
-   pthread_once(&rmon_ctx_key_once, rmon_ctx_key_init);
-   return (rmon_ctx_t *) pthread_getspecific(rmon_ctx_key);
+        memset(helper, 0, sizeof(rmon_helper_t));
+        pthread_setspecific(rmon_helper_key, helper);
+    }
+    return helper;
 }
 
-void rmon_set_thread_ctx(rmon_ctx_t *ctx) {
-   pthread_once(&rmon_ctx_key_once, rmon_ctx_key_init);
-   pthread_setspecific(rmon_ctx_key, ctx);
-}
-
-/* Allocate the key */
-static void rmon_ctx_key_init(void) {
-   pthread_key_create(&rmon_ctx_key, rmon_ctx_key_destroy);
-}
-
-/* Free the thread-specific buffer */
-static void rmon_ctx_key_destroy(void *ctx) {
-   /* Nothing to destroy */
-}
-
-rmon_helper_t *rmon_get_helper(void) {
-   rmon_helper_t *helper = nullptr;
-
-   pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
-
-   helper = (rmon_helper_t *)pthread_getspecific(rmon_helper_key);
-   if (helper == nullptr) {
-      helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
-
-      memset(helper, 0, sizeof(rmon_helper_t));
-      pthread_setspecific(rmon_helper_key, helper);
-   }
-   return helper;
-}
-
-static void rmon_helper_key_init(void) {
-   pthread_key_create(&rmon_helper_key, rmon_helper_key_destroy);
+static void rmon_helper_key_init() {
+    pthread_key_create(&rmon_helper_key, rmon_helper_key_destroy);
 }
 
 static void rmon_helper_key_destroy(void *ctx) {
-   free(ctx);
+    free(ctx);
 }
 
 /****** rmon/Introduction ******************************************************
@@ -200,92 +150,12 @@ static void rmon_helper_key_destroy(void *ctx) {
 *
 *******************************************************************************/
 int rmon_condition(int layer, int rmon_class) {
-   int ret_val;
+    int ret_val;
 #define MLGETL(s, i) ((s)->ml[i]) /* for the sake of speed */
-   /*
-    * NOTE:
-    * 
-    * This is only a static u_long value used as flag for switching
-    * debug printing on/off. Therefore we don't need a mutex lock
-    * at this point.
-    */
-#ifdef DEBUG_CLIENT_SUPPORT
-   if ( mtype == RMON_NONE ) {
-      return 0;
-   }
-   
-   /* if debug printing is on we use a lock for further layer checking */
-   RMON_CONDITION_LOCK();
-#endif
-   ret_val = ((mtype != RMON_NONE) && (rmon_class & MLGETL(&RMON_DEBUG_ON, layer))) ? 1 : 0;
-#ifdef DEBUG_CLIENT_SUPPORT
-   RMON_CONDITION_UNLOCK();
-#endif
-   return ret_val;
+    ret_val = ((mtype != RMON_NONE) && (rmon_class & MLGETL(&RMON_DEBUG_ON, layer))) ? 1 : 0;
+    return ret_val;
 #undef MLGETL
 } /* rmon_condition() */
-
-
-/****** rmon_macros/rmon_debug_client_callback() ****************************
-*  NAME
-*     rmon_debug_client_callback() -- callback for debug clients
-*
-*  SYNOPSIS
-*     static void rmon_debug_client_callback(int dc_connected, int debug_level) 
-*
-*  FUNCTION
-*     Is called when a debug client is connected/disconnected or on
-*     debug level changes. Use cl_com_application_debug() to send debug
-*     messages to the connected qping -dump client.
-*
-*  INPUTS
-*     int dc_connected - 1 debug client is connected
-*                        0 no debug client is connected
-*     int debug_level  - debug level from 0 (off) to 5(DPRINTF)
-*  NOTES
-*     MT-NOTE: rmon_debug_client_callback() is MT safe 
-*              (but is called from commlib thread, which means that no
-*               qmaster thread specifc setup is done), just use global
-*               thread locking methods which are initalized when called, or
-*               initalized at compile time)
-*
-*******************************************************************************/
-void rmon_debug_client_callback(int dc_connected, int debug_level) {
-#ifdef DEBUG_CLIENT_SUPPORT
-   RMON_CONDITION_LOCK();
-
-   /* we are saving the old value of the RMON_DEBUG_ON structure into RMON_DEBUG_ON_STORAGE */
-   if (dc_connected) {
-      /* TODO: support rmon debug levels with $SGE_DEBUG_LEVEL string ? 
-       *       if so, the debug_level parameter should be a string value
-       */
-      (&RMON_DEBUG_ON)->ml[TOP_LAYER]   = 2; 
-      if (debug_level > 1) {
-         (&RMON_DEBUG_ON)->ml[TOP_LAYER]   = 3; 
-      }
-      mtype = RMON_LOCAL;
-   } else {
-      (&RMON_DEBUG_ON)->ml[TOP_LAYER]   = (&RMON_DEBUG_ON_STORAGE)->ml[TOP_LAYER]; 
-      mtype = mtype_storage;
-   }
-   RMON_CONDITION_UNLOCK();
-#else
-   return;
-#endif
-}
-
-void rmon_set_print_callback(rmon_print_callback_func_t function_p) {
-#ifdef DEBUG_CLIENT_SUPPORT
-   if (function_p != nullptr) {
-      RMON_CALLBACK_FUNC_LOCK();
-      rmon_print_callback = *function_p;
-      RMON_CALLBACK_FUNC_UNLOCK();
-   }
-#else
-   return;
-#endif
-}
-
 
 /****** rmon_macros/rmon_is_enabled() ******************************************
 *  NAME
@@ -310,9 +180,9 @@ void rmon_set_print_callback(rmon_print_callback_func_t function_p) {
 *     MT-NOTE: 'rmon_is_enabled()' is MT safe with exceptions. See introduction! 
 *
 *******************************************************************************/
-int rmon_is_enabled(void) {
-   return ((mtype == RMON_LOCAL) ? 1 : 0);
-} /* rmon_is_enabled() */
+int rmon_is_enabled() {
+    return ((mtype == RMON_LOCAL) ? 1 : 0);
+}
 
 /****** rmon_macros/rmon_mopen() ***********************************************
 *  NAME
@@ -342,26 +212,18 @@ int rmon_is_enabled(void) {
 *     MT-NOTE: 'rmon_mopen()' is NOT MT safe. See introduction! 
 *
 *******************************************************************************/
-void rmon_mopen(int *argc, char *argv[], char *programname) {
-   int ret = -1;
+void rmon_mopen() {
+    rmon_mlclr(&RMON_DEBUG_ON);
+    rmon_fp = stderr;
 
-   rmon_mlclr(&RMON_DEBUG_ON);
-   rmon_fp = stderr;
+    (void) set_debug_level_from_env();
+    int ret = set_debug_target_from_env();
 
-   ret = set_debug_level_from_env();
-   ret = set_debug_target_from_env();
-
-   if (ret != 0) {
-      exit(-1);
-   }
-
-   mtype = RMON_LOCAL;
-#ifdef DEBUG_CLIENT_SUPPORT
-   mtype_storage = mtype;
-#endif
-
-   return;
-} /* rmon_mopen */
+    if (ret != 0) {
+        exit(-1);
+    }
+    mtype = RMON_LOCAL;
+}
 
 /****** rmon_macros/rmon_menter() **********************************************
 *  NAME
@@ -384,20 +246,11 @@ void rmon_mopen(int *argc, char *argv[], char *programname) {
 *
 *******************************************************************************/
 
-void rmon_menter(const char *func, const char *thread_name) {
-   char msgbuf[RMON_BUF_SIZE];
-#ifdef RMON_USE_CTX
-   rmon_ctx_t *ctx = rmon_get_thread_ctx();
-   if (ctx) {
-      ctx->menter(ctx, func);
-      return;
-   }
-#endif
-   sprintf(msgbuf, "--> %s() {\n", func);
-   mwrite(msgbuf, thread_name ? thread_name : "NA");
-} /* rmon_enter() */
-
-
+void rmon_menter(const char *func, const char *thread_name, int thread_id) {
+    char msgbuf[RMON_BUF_SIZE];
+    sprintf(msgbuf, "--> %s() {\n", func);
+    mwrite(msgbuf, thread_name ? thread_name : "NA", thread_id);
+}
 
 /****** rmon_macros/rmon_mexit() ***********************************************
 *  NAME
@@ -421,19 +274,11 @@ void rmon_menter(const char *func, const char *thread_name) {
 *     MT-NOTE: 'rmon_mexit()' is MT safe with exceptions. See introduction! 
 *
 *******************************************************************************/
-void rmon_mexit(const char *func, const char *file, int line, const char *thread_name) {
-   char msgbuf[RMON_BUF_SIZE];
-#ifdef RMON_USE_CTX
-   rmon_ctx_t *ctx = rmon_get_thread_ctx();
-   if (ctx) {
-      ctx->mexit(ctx, func, file, line);
-      return;
-   }
-#endif
-   sprintf(msgbuf, "<-- %s() %s %d }\n", func, file, line);
-   mwrite(msgbuf, thread_name);
-
-} /* rmon_mexit() */
+void rmon_mexit(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
+    char msgbuf[RMON_BUF_SIZE];
+    sprintf(msgbuf, "<-- %s() %s %d }\n", func, file, line);
+    mwrite(msgbuf, thread_name, thread_id);
+}
 
 /****** rmon_macros/rmon_mtrace() **********************************************
 *  NAME
@@ -457,19 +302,12 @@ void rmon_mexit(const char *func, const char *file, int line, const char *thread
 *     MT-NOTE: 'rmon_mtrace()' is MT safe with exceptions. See introduction! 
 *
 *******************************************************************************/
-void rmon_mtrace(const char *func, const char *file, int line, const char *thread_name) {
-   char msgbuf[RMON_BUF_SIZE];
-#ifdef RMON_USE_CTX
-   rmon_ctx_t *ctx = rmon_get_thread_ctx();
-   if (ctx) {
-      ctx->mtrace(ctx, func, file, line);
-      return;
-   }
-#endif
-   strcpy(msgbuf, empty);
-   sprintf(&msgbuf[4], "%s:%s:%d\n", func, file, line);
-   mwrite(msgbuf, thread_name);
-} /* rmon_mtrace() */
+void rmon_mtrace(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
+    char msgbuf[RMON_BUF_SIZE];
+    strcpy(msgbuf, empty);
+    sprintf(&msgbuf[4], "%s:%s:%d\n", func, file, line);
+    mwrite(msgbuf, thread_name, thread_id);
+}
 
 /****** rmon_macros/rmon_mprintf() *********************************************
 *  NAME
@@ -492,63 +330,23 @@ void rmon_mtrace(const char *func, const char *file, int line, const char *threa
 *     MT-NOTE: 'rmon_mprintf()' is MT safe with exceptions. See introduction! 
 *
 *******************************************************************************/
-void rmon_mprintf(int debug_class, const char *fmt, ...) {
-   va_list args;
-
-   va_start(args, fmt);
-   rmon_mprintf_va(debug_class, fmt, args);
-   va_end(args);
-
-   return;
-} /* rmon_mprintf() */
-
-
-void rmon_mprintf_lock(const char *fmt, ...) {
-   va_list args;
-   va_start(args, fmt);
-   rmon_mprintf_va(LOCK, fmt, args);
-   va_end(args);
+void rmon_mprintf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    rmon_mprintf_va(fmt, args);
+    va_end(args);
 }
 
-void rmon_mprintf_info(const char *fmt, ...) {
-   va_list args;
-   va_start(args, fmt);
-   rmon_mprintf_va(INFOPRINT, fmt, args);
-   va_end(args);
-}
-
-void rmon_mprintf_timing(const char *fmt, ...) {
-   va_list args;
-   va_start(args, fmt);
-   rmon_mprintf_va(TIMING, fmt, args);
-   va_end(args);
-}
-
-void rmon_mprintf_special(const char *fmt, ...) {
-   va_list args;
-   va_start(args, fmt);
-   rmon_mprintf_va(SPECIAL, fmt, args);
-   va_end(args);
-}
-
-static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args) {
-   char msgbuf[RMON_BUF_SIZE];
-   rmon_helper_t *helper = nullptr;
-#ifdef RMON_USE_CTX
-   rmon_ctx_t *ctx = rmon_get_thread_ctx();
-   if (ctx) {
-      ctx->mprintf(ctx, debug_class, fmt, args);
-      return;
-   }
-#endif
-   helper = rmon_get_helper();
-   strcpy(msgbuf, empty);
-   vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) - 10, fmt, args);
-   if ((helper != nullptr) && (strlen(helper->thread_name) > 0)) {
-      mwrite(msgbuf, helper->thread_name);
-   } else {
-      mwrite(msgbuf, nullptr);
-   }
+static void rmon_mprintf_va(const char *fmt, va_list args) {
+    char msgbuf[RMON_BUF_SIZE];
+    rmon_helper_t *helper = rmon_get_helper();
+    strcpy(msgbuf, empty);
+    vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) -10, fmt, args);
+    if ((helper != nullptr) && (strlen(helper->thread_name) > 0)) {
+        mwrite(msgbuf, helper->thread_name, helper->thread_id);
+    } else {
+        mwrite(msgbuf, nullptr, -1);
+    }
 }
 
 /****** rmon_macros/mwrite() ***************************************************
@@ -578,35 +376,24 @@ static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args) {
 *     MT-NOTE: mingled.
 *
 *******************************************************************************/
-static void mwrite(char *message, const char *thread_name) {
-   static u_long traceid = 0;
-   unsigned long tmp_pid = (unsigned long) getpid();
-   unsigned long tmp_thread = (unsigned long) pthread_self();
+static void mwrite(char *message, const char *thread_name, int thread_id) {
+    static u_long traceid = 0;
+    auto tmp_pid = getpid();
 
-   flockfile(rmon_fp);
+    flockfile(rmon_fp);
+    if (thread_name != nullptr) {
+        fprintf(rmon_fp, "%6ld %6ld %12.12s %02d", traceid, (long) tmp_pid, thread_name, thread_id);
+    } else {
+        std::ostringstream oss_thread_id;
+        oss_thread_id << std::this_thread::get_id();
+        fprintf(rmon_fp, "%6ld %6ld %s %02d", traceid, (long) tmp_pid, oss_thread_id.str().c_str(), thread_id);
+    }
+    fprintf(rmon_fp, "%s", message);
+    fflush(rmon_fp);
 
-#ifdef DEBUG_CLIENT_SUPPORT
-   /* if there is a callback function, don't call standard function */
-   RMON_CALLBACK_FUNC_LOCK();
-   if (rmon_print_callback != nullptr) {
-      rmon_print_callback(message, traceid, tmp_pid, tmp_thread);
-   }
-   RMON_CALLBACK_FUNC_UNLOCK();
-#endif
-
-   if (thread_name != nullptr) {
-      fprintf(rmon_fp, "%6ld %6d %12.12s ", traceid, (int) tmp_pid, thread_name);
-   } else {
-      fprintf(rmon_fp, "%6ld %6d %ld ", traceid, (int) tmp_pid, (long int) tmp_thread);
-   }
-   fprintf(rmon_fp, "%s", message);
-   fflush(rmon_fp);
-
-   traceid++;
-   funlockfile(rmon_fp);
-
-   return;
-} /* mwrite() */
+    traceid++;
+    funlockfile(rmon_fp);
+}
 
 /****** rmon_macros/set_debug_level_from_env() *********************************
 *  NAME
@@ -632,29 +419,29 @@ static void mwrite(char *message, const char *thread_name) {
 *     MT-NOTE:  See introduction!
 *
 *******************************************************************************/
-static int set_debug_level_from_env(void) {
-   const char *env, *s = nullptr;
-   int i, l[N_LAYER];
+static int set_debug_level_from_env() {
+    const char *env = getenv("SGE_DEBUG_LEVEL");
+    if (env == nullptr) {
+        return ENOENT;
+    }
 
-   if ((env = getenv("SGE_DEBUG_LEVEL")) == nullptr) {
-      return ENOENT;
-   }
+    int l[N_LAYER];
+    const char *s = strdup(env);
+    int i = sscanf(s, "%d%d%d%d%d%d%d%d", l, l + 1, l + 2, l + 3, l + 4, l + 5, l + 6, l + 7);
+    if (i != N_LAYER) {
+        printf("%s\n", MSG_RMON_ILLEGALDBUGLEVELFORMAT);
+        free((char *) s);
+        return EINVAL;
+    }
 
-   s = strdup(env);
-   if ((i = sscanf(s, "%d%d%d%d%d%d%d%d", l, l + 1, l + 2, l + 3, l + 4, l + 5, l + 6, l + 7)) != N_LAYER) {
-      printf("%s\n", MSG_RMON_ILLEGALDBUGLEVELFORMAT);
-      free((char *) s);
-      return EINVAL;
-   }
+    for (i = 0; i < N_LAYER; i++) {
+        rmon_mlputl(&RMON_DEBUG_ON, i, l[i]);
+        rmon_mlputl(&RMON_DEBUG_ON_STORAGE, i, l[i]);
+    }
 
-   for (i = 0; i < N_LAYER; i++) {
-      rmon_mlputl(&RMON_DEBUG_ON, i, l[i]);
-      rmon_mlputl(&RMON_DEBUG_ON_STORAGE, i, l[i]);
-   }
-
-   free((char *) s);
-   return 0;
-} /* set_debug_level_from_env() */
+    free((char *) s);
+    return 0;
+}
 
 /****** rmon_macros/set_debug_target_from_env() *********************************
 *  NAME
@@ -683,27 +470,25 @@ static int set_debug_level_from_env(void) {
 *     MT-NOTE: See introduction!
 *
 *******************************************************************************/
-static int set_debug_target_from_env(void) {
-   const char *env, *s = nullptr;
+static int set_debug_target_from_env() {
+    const char *env = getenv("SGE_DEBUG_TARGET");
+    if (env == nullptr) {
+        return 0;
+    }
 
-   if ((env = getenv("SGE_DEBUG_TARGET")) == nullptr) {
-      return 0;
-   }
+    const char *s = strdup(env);
+    if (strcmp(s, "stdout") == 0) {
+        rmon_fp = stdout;
+    } else if (strcmp(s, "stderr") == 0) {
+        rmon_fp = stderr;
+    } else if ((rmon_fp = fopen(s, "w")) == nullptr) {
+        rmon_fp = stderr;
+        fprintf(rmon_fp, MSG_RMON_UNABLETOOPENXFORWRITING_S, s);
+        fprintf(rmon_fp, MSG_RMON_ERRNOXY_DS, errno, strerror(errno));
+        free((char *) s);
+        return EINVAL;
+    }
 
-   s = strdup(env);
-   if (strcmp(s, "stdout") == 0) {
-      rmon_fp = stdout;
-   } else if (strcmp(s, "stderr") == 0) {
-      rmon_fp = stderr;
-   } else if ((rmon_fp = fopen(s, "w")) == nullptr) {
-      rmon_fp = stderr;
-      fprintf(rmon_fp, MSG_RMON_UNABLETOOPENXFORWRITING_S, s);
-      fprintf(rmon_fp, MSG_RMON_ERRNOXY_DS, errno, strerror(errno));
-      free((char *) s);
-      return EINVAL;
-   }
-
-   free((char *) s);
-   return 0;
-} /* set_debug_target_from_env() */
-
+    free((char *) s);
+    return 0;
+}

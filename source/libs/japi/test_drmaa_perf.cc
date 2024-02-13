@@ -36,7 +36,7 @@
 #include <cerrno>
 #include <pthread.h>
 
-#include <time.h>
+#include <ctime>
 #include <sys/types.h>
 #include <sys/time.h>
 

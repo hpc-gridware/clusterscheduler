@@ -44,7 +44,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <cerrno>
 #include <sys/types.h>
 #include <unistd.h>
@@ -68,12 +68,12 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_stdio.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_language.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_conf.h"

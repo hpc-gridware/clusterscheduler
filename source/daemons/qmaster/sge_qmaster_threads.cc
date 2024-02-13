@@ -30,18 +30,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
+#include <csignal>
 #include <cstring>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h" /* remove once 'sge_daemonize_qmaster' did become 'sge_daemonize' */
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
-#include "uti/msg_utilib.h"  /* remove once 'sge_daemonize_qmaster' did become 'sge_daemonize' */
 #include "uti/sge_os.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"

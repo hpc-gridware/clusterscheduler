@@ -34,11 +34,11 @@
 #include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
+#include <csignal>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <sys/resource.h>
 

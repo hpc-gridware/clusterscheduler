@@ -33,14 +33,14 @@
 #include <cstdio>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_error_class.h"
+#include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 
 #include "comm/commlib.h"
 

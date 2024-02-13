@@ -31,9 +31,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "basis_types.h"
 #include "sge_sl.h"
 
-struct _sge_tq_queue_t {
+struct sge_tq_queue_t {
    /*
     * List that stores tasks.
     * Mutex of the list will be used to secure also this structure
@@ -47,9 +48,7 @@ struct _sge_tq_queue_t {
    u_long32 waiting;
 };
 
-typedef struct _sge_tq_queue_t sge_tq_queue_t;
-
-enum _sge_tq_type_t {
+enum sge_tq_type_t {
    SGE_TQ_UNKNOWN = 0,
 
    SGE_TQ_GDI_PACKET,    /* GDI packets */
@@ -58,19 +57,15 @@ enum _sge_tq_type_t {
    SGE_TQ_TYPE2   /* used for module tests */
 };
 
-typedef enum _sge_tq_type_t sge_tq_type_t;
-
-struct _sge_tq_task_t {
+struct sge_tq_task_t {
    sge_tq_type_t type;
    void *data;
 };
 
-typedef struct _sge_tq_task_t sge_tq_task_t;
-
 bool
 sge_tq_create(sge_tq_queue_t **queue);
 
-bool
+void
 sge_tq_destroy(sge_tq_queue_t **queue);
 
 u_long32
@@ -82,7 +77,7 @@ sge_tq_get_waiting_count(sge_tq_queue_t *queue);
 bool
 sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data);
 
-bool
+void
 sge_tq_wakeup_waiting(sge_tq_queue_t *queue);
 
 bool

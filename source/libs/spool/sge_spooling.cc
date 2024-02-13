@@ -28,10 +28,10 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/                                   
+/*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
 

@@ -36,12 +36,12 @@
 #include <fcntl.h>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
 
 #include "uti/msg_utilib.h"
 
@@ -186,7 +186,7 @@ int sge_writenbytes(int sfd, const char *ptr,
 *     MT-NOTE: sge_filecmp() is MT safe
 ******************************************************************************/
 int sge_filecmp(const char *name0, const char *name1) {
-   SGE_STRUCT_STAT buf0, buf1;
+   SGE_STRUCT_STAT buf0{}, buf1{};
 
    DENTER(TOP_LAYER);
 

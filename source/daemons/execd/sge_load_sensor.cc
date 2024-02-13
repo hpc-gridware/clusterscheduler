@@ -34,13 +34,13 @@
 #include <cerrno>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/cull/sge_loadsensor_LS_L.h"
 #include "sgeobj/sge_conf.h"

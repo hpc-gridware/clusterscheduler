@@ -33,7 +33,7 @@
 #include <pthread.h>
 
 #include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
 
 #define THREAD_CONTROL_MUTEX "thread_control_mutex"
@@ -69,12 +69,10 @@ thread_control_t Thread_Control = {
 *     MT-NOTE: sge_thread_has_shutdown_started() is MT safe 
 *******************************************************************************/
 bool
-sge_thread_has_shutdown_started(void) {
-   bool res = false;
-
+sge_thread_has_shutdown_started() {
    DENTER(THREAD_LAYER);
    sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
-   res = Thread_Control.shutdown_started;
+   bool res = Thread_Control.shutdown_started;
    sge_mutex_unlock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
    DRETURN(res);
 }
@@ -106,7 +104,7 @@ sge_thread_has_shutdown_started(void) {
 *     uti/thread_ctrl/sge_thread_wait_for_signal()
 *******************************************************************************/
 void
-sge_thread_notify_all_waiting(void) {
+sge_thread_notify_all_waiting() {
    DENTER(THREAD_LAYER);
 
    sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
@@ -143,17 +141,13 @@ sge_thread_notify_all_waiting(void) {
 *     uti/thread_ctrl/sge_thread_notify_all_waiting()
 *******************************************************************************/
 void
-sge_thread_wait_for_signal(void) {
+sge_thread_wait_for_signal() {
    DENTER(THREAD_LAYER);
-
    sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
-
-   while (Thread_Control.shutdown_started == false) {
+   while (!Thread_Control.shutdown_started) {
       pthread_cond_wait(&Thread_Control.cond_var, &Thread_Control.mutex);
    }
-
    sge_mutex_unlock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
-
    DRETURN_VOID;
 }
 

@@ -35,9 +35,9 @@
 
 #include "comm/commd.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
 
 #include "gdi/qm_name.h"
 

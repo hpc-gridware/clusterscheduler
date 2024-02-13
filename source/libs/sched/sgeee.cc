@@ -35,19 +35,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <unistd.h>
-#include <float.h>
+#include <cfloat>
 #include <math.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_language.h"
+#include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "comm/commlib.h"
 
@@ -66,14 +66,14 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_pe_task.h"
 
-#include "sgeobj/cull/sge_eejob_FCAT_L.h"
-#include "sge.h"
+#include "msg_schedd.h"
 #include "sge_job_schedd.h"
+#include "sge_support.h"
 #include "sge_urgency.h"
 #include "sgeee.h"
-#include "sge_support.h"
+#include "sgeobj/cull/sge_eejob_FCAT_L.h"
 #include "sort_hosts.h"
-#include "msg_schedd.h"
+#include "uti/sge.h"
 
 /* 
  * Following fields are necessary for tasks which are not

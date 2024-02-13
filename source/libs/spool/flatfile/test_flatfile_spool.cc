@@ -36,7 +36,7 @@
 
 #include <sys/wait.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
 #include "cull/cull_multitype.h"

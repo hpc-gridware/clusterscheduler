@@ -36,18 +36,17 @@
 #include <sys/stat.h>
 #include <limits.h>
 #include <math.h>
-#include <float.h>
+#include <cfloat>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "comm/commlib.h"
 

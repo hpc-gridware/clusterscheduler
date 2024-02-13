@@ -38,16 +38,16 @@
 #include <cstring>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_spool.h"
-#include "uti/sge_thread_ctrl.h"
-#include "uti/sge_log.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
+#include "uti/sge_thread_ctrl.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -85,7 +85,7 @@
 
 #include "configuration_qmaster.h"   /* TODO: bad dependency!! */
 #include "evm/sge_event_master.h"
-#include "sge.h"
+#include "uti/sge.h"
 
 #include "msg_common.h"
 #include "msg_evmlib.h"

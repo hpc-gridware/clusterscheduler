@@ -33,9 +33,10 @@
 /* this code is used by shepherd */
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_binding_parse.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_string.h"
 
 binding_type_t binding_type_to_enum(const char *parameter) {
    binding_type_t type = BINDING_TYPE_NONE;

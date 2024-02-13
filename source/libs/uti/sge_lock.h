@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #if 0
 #define SGE_DEBUG_LOCK_TIME 
@@ -73,7 +73,7 @@ void
 sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
 
 sge_locker_t
-sge_locker_id(void);
+sge_locker_id();
 
 #if defined(SGE_LOCK)
 #error "SGE_LOCK already defined!"

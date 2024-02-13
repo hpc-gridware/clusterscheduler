@@ -34,13 +34,13 @@
 #include <cerrno>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_io.h"
-#include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
@@ -52,7 +52,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 /* includes for old job spooling */
 #include "spool/sge_dirent.h"

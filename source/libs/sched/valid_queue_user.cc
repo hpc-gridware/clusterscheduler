@@ -31,8 +31,8 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 

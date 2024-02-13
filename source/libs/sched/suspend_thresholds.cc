@@ -30,11 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstring>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 

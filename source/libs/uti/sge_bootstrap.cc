@@ -36,15 +36,14 @@
 
 #include "basis_types.h"
 
-#include "rmon.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_parse_num_par.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
+#include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 
 #include "uti/msg_utilib.h"
@@ -457,6 +456,50 @@ bootstrap_init_from_file(sge_bootstrap_tl1_t *tl) {
 }
 
 static void
+<<<<<<< HEAD
+=======
+bootstrap_init_from_component(sge_bootstrap_tl1_t *tl) {
+   // setup uid/gid and corresponding names
+   char user[256];
+   char group[256];
+   uid_t uid = geteuid();
+   gid_t gid = getegid();
+   set_uid(tl, uid);
+   set_gid(tl, gid);
+   SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0);
+   SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0);
+   set_username(tl, user);
+   set_groupname(tl, group);
+
+   // setup short and long hostnames
+   char *s = nullptr;
+   stringT tmp_str;
+   struct hostent *hent = nullptr;
+   /* Fetch hostnames */
+   SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
+   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
+   set_qualified_hostname(tl, hent->h_name);
+   s = sge_dirname(hent->h_name, '.');
+   set_unqualified_hostname(tl, s);
+   sge_free(&s);
+   /* Bad resolving in some networks leads to short qualified host names */
+   if (!strcmp(tl->qualified_hostname, tl->unqualified_hostname)) {
+      char tmp_addr[8];
+      struct hostent *hent2 = nullptr;
+      memcpy(tmp_addr, hent->h_addr, hent->h_length);
+      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
+
+      set_qualified_hostname(tl, hent2->h_name);
+      s = sge_dirname(hent2->h_name, '.');
+      set_unqualified_hostname(tl, s);
+      sge_free(&s);
+      sge_free_hostent(&hent2);
+   }
+   sge_free_hostent(&hent);
+}
+
+static void
+>>>>>>> 71fe5d636 (TA: OGE-141 handle critical compiler warnings)
 bootstrap_init_paths(sge_bootstrap_tl1_t *tl) {
    DENTER(TOP_LAYER);
    const char *sge_root = tl->sge_root;

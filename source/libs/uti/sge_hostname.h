@@ -92,4 +92,4 @@ struct hostent *sge_copy_hostent(struct hostent *orig);
 
 int sge_get_qmaster_port(bool *from_services);
 
-int sge_get_execd_port(void);
+int sge_get_execd_port();

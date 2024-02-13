@@ -32,7 +32,7 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 
 #include "gdi/sge_gdi2.h"

@@ -31,11 +31,11 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_language.h"
-#include "uti/sge_dstring.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_str.h"
@@ -49,12 +49,12 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qref.h"
 
-#include "parse_qsub.h"
-#include "unparse_job_cull.h"
-#include "sge.h"
-#include "symbols.h"
-#include "sge_options.h"
 #include "msg_daemons_common.h"
+#include "parse_qsub.h"
+#include "sge_options.h"
+#include "symbols.h"
+#include "unparse_job_cull.h"
+#include "uti/sge.h"
 
 
 static char *sge_unparse_checkpoint_attr(int opr, char *string);

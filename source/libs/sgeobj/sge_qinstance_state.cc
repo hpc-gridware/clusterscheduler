@@ -32,9 +32,9 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "cull/cull_list.h"
 
@@ -44,7 +44,7 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 /****** sgeobj/qinstance_state/--State_Chart() ********************************
 *

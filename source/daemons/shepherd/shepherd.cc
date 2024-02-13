@@ -36,7 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <pwd.h>
 #include <limits.h>

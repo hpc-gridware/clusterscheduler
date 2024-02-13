@@ -38,9 +38,9 @@
 
 #include <cerrno>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"

@@ -38,7 +38,7 @@ int verydummyprocfs;
 
 #include <cstdio>
 #include <fcntl.h>
-#include <time.h>
+#include <ctime>
 #include <cerrno>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -56,7 +56,7 @@ int verydummyprocfs;
 #include <dirent.h>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 
 #if defined(SOLARIS)
 #  include <sys/procfs.h>   
@@ -67,10 +67,10 @@ int verydummyprocfs;
 #include "sgeobj/sge_proc.h"
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull.h"
 

@@ -35,7 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -43,12 +43,12 @@
 #include <sys/ioctl.h>  /* 44BSD requires this too */
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_arch.h"
 #include "uti/config_file.h"
-#include "uti/sge_string.h"
+#include "uti/sge_arch.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"

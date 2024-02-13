@@ -30,10 +30,10 @@
  ************************************************************************/
 
 #include <cstring>
- 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
+
 #include "uti/sge_edit.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"

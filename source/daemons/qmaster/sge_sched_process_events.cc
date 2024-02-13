@@ -40,8 +40,8 @@
 #include "basis_types.h" 
 #include "sge.h"
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"

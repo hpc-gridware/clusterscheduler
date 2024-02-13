@@ -50,7 +50,7 @@
 ******************************************************************************/
 
 #include <sys/types.h>
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "basis_types.h"
 

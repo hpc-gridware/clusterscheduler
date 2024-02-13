@@ -37,7 +37,7 @@
 #   define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_schedd_conf.h"

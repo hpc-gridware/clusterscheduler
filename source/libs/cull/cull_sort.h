@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "cull/cull_list.h"
 

@@ -41,16 +41,15 @@
 #include <sys/socket.h>
 
 #include "sge.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_log.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_csp_path.h"
-#include "uti/sge_bootstrap.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 

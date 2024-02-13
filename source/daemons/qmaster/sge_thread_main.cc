@@ -32,7 +32,7 @@
 
 #include <fcntl.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "comm/cl_commlib.h"
 

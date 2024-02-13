@@ -31,9 +31,9 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "comm/commlib.h"
 
@@ -49,8 +49,8 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) 

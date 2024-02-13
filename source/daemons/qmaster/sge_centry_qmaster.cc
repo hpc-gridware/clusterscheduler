@@ -33,9 +33,9 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 

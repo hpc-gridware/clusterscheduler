@@ -6,13 +6,13 @@
 #include <cctype>
 
 #include "basis_types.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_fgl.h"
 #include "uti/sge_htable.h"
 #include "uti/sge_lock_fifo.h"
 #include "uti/sge_log.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 
 #define COLLECT_STATS 1
 #define USE_FIFO_LOCK 0 // mem eater if enabled and slow (one queue and conditions for sync)

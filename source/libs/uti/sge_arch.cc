@@ -34,14 +34,13 @@
 #include <cstdlib>
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
-#include "uti/rmon.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_log.h"
 #include "uti/msg_utilib.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "sge.h"
 
@@ -65,7 +64,7 @@
 *  RESULT
 *     const char* - architecture string
 ******************************************************************************/
-const char *sge_get_arch(void) {
+const char *sge_get_arch() {
 #ifndef SGE_ARCH_STRING
 #   pragma "Define an architecture for SGE"
 #endif
@@ -174,10 +173,6 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
 *      -3 - given buffer is to small
 ******************************************************************************/
 int sge_get_lib_dir(char *buffer, size_t size) {
-
-   const char *sge_root = nullptr;
-   const char *sge_arch = nullptr;
-
    if (buffer == nullptr) {
       return -1;
    }
@@ -187,13 +182,13 @@ int sge_get_lib_dir(char *buffer, size_t size) {
    /* obtain SGE_ROOT
     * error-logging ist done by sge_get_root_dir()
     */
-   sge_root = sge_get_root_dir(0, nullptr, 0, 1);
+   const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    if (sge_root == nullptr) {
       return -2;
    }
 
    /* obtain SGE_ARCH */
-   sge_arch = sge_get_arch();
+   const char *sge_arch = sge_get_arch();
 
    /* check if given lib_dir-buffer is big enough
     * sge_root + sge_arch + /lib/ + \0
@@ -230,7 +225,7 @@ int sge_get_lib_dir(char *buffer, size_t size) {
 *  NOTES
 *     MT-NOTE: sge_get_default_cell() is MT safe
 ******************************************************************************/
-const char *sge_get_default_cell(void) {
+const char *sge_get_default_cell() {
    char *sge_cell;
    char *s;
 
@@ -279,7 +274,7 @@ const char *sge_get_default_cell(void) {
 *     MT-NOTE: sge_get_alias_path() is MT safe
 *
 ******************************************************************************/
-const char *sge_get_alias_path(void) {
+const char *sge_get_alias_path() {
    const char *sge_root, *sge_cell;
    char *cp;
    int len;

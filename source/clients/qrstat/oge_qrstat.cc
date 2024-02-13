@@ -30,11 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_io.h"
-#include "uti/sge_string.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"

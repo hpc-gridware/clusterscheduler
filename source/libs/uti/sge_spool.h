@@ -205,9 +205,9 @@ typedef struct {
    bool is_required;
 } bootstrap_entry_t;
 
-u_long32 sge_get_ja_tasks_per_directory(void);
+u_long32 sge_get_ja_tasks_per_directory();
 
-u_long32 sge_get_ja_tasks_per_file(void);
+u_long32 sge_get_ja_tasks_per_file();
 
 char *sge_get_file_path(char *buffer, sge_file_path_id_t,
                         sge_file_path_format_t format_flags,
@@ -219,10 +219,10 @@ int sge_is_valid_filename2(const char *fname);
 
 int sge_is_valid_filename(const char *fname);
 
-int sge_spoolmsg_write(FILE *file, const char comment_char,
+int sge_spoolmsg_write(FILE *file, char comment_char,
                        const char *version);
 
-void sge_spoolmsg_append(dstring *ds, const char comment_char, const char *version);
+void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version);
 
 char *sge_get_confval(const char *conf_val, const char *file);
 
@@ -240,13 +240,13 @@ void sge_write_pid(const char *pid_log_file);
 
 void sge_status_set_type(washing_machine_t type);
 
-void sge_status_next_turn(void);
+void sge_status_next_turn();
 
-void sge_status_end_turn(void);
+void sge_status_end_turn();
 
 void sge_silent_set(int i);
 
-int sge_silent_get(void);
+int sge_silent_get();
 
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                              char value[][SGE_PATH_MAX], dstring *error_dstring);
