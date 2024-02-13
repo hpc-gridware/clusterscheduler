@@ -187,10 +187,10 @@ Linux)
                unsupported="UNSUPPORTED-"
             else
                libc_version=`echo $libc_string | tr ' ,' '\n' | grep "2\." | head -1 | cut -f 2 -d "." | cut -f 1 -d "-"`
-               if [ $libc_version -lt 2 ]; then
+               if [ $libc_version -lt 17 ]; then
                   unsupported="UNSUPPORTED-GLIBC-2.${libc_version}"
                else
-                  if [ $libc_version -eq 2 ]; then
+                  if [ $libc_version -eq 17 ]; then
                      unsupported="u"
                   fi
                fi

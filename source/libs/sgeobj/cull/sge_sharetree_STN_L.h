@@ -35,99 +35,113 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Share Tree Node
 *
-* @todo add description
+* Represents one node of the share tree.
 *
-*    SGE_STRING(STN_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(STN_name) - Node Name
+*    Node name (symbolic name or user or project name in the leafs)
 *
-*    SGE_ULONG(STN_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_type) - Node Type
+*    Kind of tree: STT_USER or STT_PROJECT.
+*    All nodes in a tree have the same type.
 *
-*    SGE_ULONG(STN_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_id) - Node Id
+*    Only for editing and save/restore. May be different each time.
 *
-*    SGE_ULONG(STN_shares) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_shares) - Shares
+*    Configured shares for the node or subtree under a leaf node.
 *
-*    SGE_LIST(STN_children) - @todo add summary
-*    @todo add description
+*    SGE_LIST(STN_children) - Children
+*    Configured childrens of this node. Same type, it is a recursive tree structure.
 *
-*    SGE_ULONG(STN_job_ref_count) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_job_ref_count) - Job Reference Count
+*    Number of running and pending jobs referencing this node (only used in scheduler thread).
 *
-*    SGE_ULONG(STN_active_job_ref_count) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_active_job_ref_count) - Active Job Reference Count
+*    Number of running jobs referencing this node (only used in scheduler thread).
 *
-*    SGE_ULONG(STN_project) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_project) - Is Project
+*    Set to 1 if this node is a project (only used in scheduler thread).
 *
-*    SGE_DOUBLE(STN_proportion) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_proportion) - Proportion
+*    Share proportion (only used in scheduler thread).
 *
-*    SGE_DOUBLE(STN_adjusted_proportion) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_adjusted_proportion) - Adjusted Proportion
+*    Share adjusted proportion (only used in scheduler thread).
 *
-*    SGE_DOUBLE(STN_combined_usage) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_combined_usage) - Combined Usage
+*    Combined usage (only used in scheduler thread).
 *
-*    SGE_ULONG(STN_pass2_seqno) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_pass2_seqno) - Pass Two Sequence Number
+*    Sequence number for pass 2 of share calculation (only used in scheduler thread).
 *
-*    SGE_ULONG(STN_sum_priority) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_sum_priority) - Sum of Priorities
+*    Sum of job priorities (only used in scheduler thread).
 *
-*    SGE_DOUBLE(STN_actual_proportion) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_actual_proportion) - Actual Proportion
+*    Long term actual proportion.
 *
-*    SGE_DOUBLE(STN_m_share) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_m_share) - M Share
+*    Dynamic long term targetted proportion.
 *
-*    SGE_DOUBLE(STN_last_actual_proportion) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_last_actual_proportion) - Last Actual Proportion
+*    Short term actual proportion.
 *
-*    SGE_DOUBLE(STN_adjusted_current_proportion) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_adjusted_current_proportion) - Adjusted Current Proportion
+*    Short term targetted proportion.
 *
-*    SGE_ULONG(STN_temp) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_temp) - Temporary Node
+*    Temporary Node used in scheduler only.
 *
-*    SGE_DOUBLE(STN_stt) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_stt) - Short Term Targeted Proportion
+*    Short term targeted proportion of node as compared to sibling nodes.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_ostt) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_ostt) - Overall Short Term Targeted Proportion
+*    Overall short term targeted proportion of node as compared to all nodes.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_ltt) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_ltt) - Long Term Targeted Proportion
+*    Long term targeted proportion of node as compared to all nodes.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_oltt) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_oltt) - Overall Long Term Targeted Proportion
+*    Overall long term targeted proportion of node as compared to all nodes.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_shr) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_shr) - Share
+*    Hierarchical calculated share node.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_sort) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_sort) - Sort Value
+*    Value for sorting jobs attached to a node.
+*    Calculated during scheduling of pending of pending jobs.
 *
-*    SGE_ULONG(STN_ref) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_ref) - Reference
+*    Temporary index reference back into the array of pending jobs.
+*    Used during scheduling of pending of pending jobs.
 *
-*    SGE_DOUBLE(STN_tickets) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(STN_tickets) - Tickets
+*    Temporary storage of pending tickets from higher level policies.
+*    Used during scheduling of pending of pending jobs.
 *
-*    SGE_ULONG(STN_jobid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_jobid) - Job Id
+*    Job number of a temporary job node.
+*    Used during scheduling of pending of pending jobs.
 *
-*    SGE_ULONG(STN_taskid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(STN_taskid) - Task Id
+*    Array task number of a temporary job node.
+*    Used during scheduling of pending of pending jobs.
 *
-*    SGE_LIST(STN_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(STN_usage_list) - Usage List
+*    Node usage list.
+*    Used during scheduling of pending of pending jobs.
 *
 *    SGE_ULONG(STN_version) - @todo add summary
-*    @todo add description
+*    Version of share tree.
+*    Set/increased in qmaster when sharetree changes.
+*    Skip scheduling decisions based on an older version of the sharetree.
 *
 */
 

@@ -1,15 +1,15 @@
 {
 	"className":	"ShareTreeNode",
-	"summary":	"@todo add summary",
+	"summary":	"Share Tree Node",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Represents one node of the share tree."
 		}],
 	"cullPrefix":	"STN",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Node Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Node name (symbolic name or user or project name in the leafs)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,9 +25,10 @@
 				}]
 		}, {
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Node Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Kind of tree: STT_USER or STT_PROJECT."
+					}, { "line":	"All nodes in a tree have the same type."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -37,9 +38,9 @@
 				}]
 		}, {
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Node Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Only for editing and save/restore. May be different each time."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -47,9 +48,9 @@
 				}]
 		}, {
 			"name":	"shares",
-			"summary":	"@todo add summary",
+			"summary":	"Shares",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Configured shares for the node or subtree under a leaf node."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -59,9 +60,9 @@
 				}]
 		}, {
 			"name":	"children",
-			"summary":	"@todo add summary",
+			"summary":	"Children",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Configured childrens of this node. Same type, it is a recursive tree structure."
 				}],
 			"type":	"lListT",
 			"subClassName":	"STN",
@@ -73,9 +74,9 @@
 				}]
 		}, {
 			"name":	"job_ref_count",
-			"summary":	"@todo add summary",
+			"summary":	"Job Reference Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of running and pending jobs referencing this node (only used in scheduler thread)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -83,9 +84,9 @@
 				}]
 		}, {
 			"name":	"active_job_ref_count",
-			"summary":	"@todo add summary",
+			"summary":	"Active Job Reference Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of running jobs referencing this node (only used in scheduler thread)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -93,9 +94,9 @@
 				}]
 		}, {
 			"name":	"project",
-			"summary":	"@todo add summary",
+			"summary":	"Is Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Set to 1 if this node is a project (only used in scheduler thread)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -103,9 +104,9 @@
 				}]
 		}, {
 			"name":	"proportion",
-			"summary":	"@todo add summary",
+			"summary":	"Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Share proportion (only used in scheduler thread)."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -113,9 +114,9 @@
 				}]
 		}, {
 			"name":	"adjusted_proportion",
-			"summary":	"@todo add summary",
+			"summary":	"Adjusted Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Share adjusted proportion (only used in scheduler thread)."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -123,9 +124,9 @@
 				}]
 		}, {
 			"name":	"combined_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Combined Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Combined usage (only used in scheduler thread)."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -133,9 +134,9 @@
 				}]
 		}, {
 			"name":	"pass2_seqno",
-			"summary":	"@todo add summary",
+			"summary":	"Pass Two Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sequence number for pass 2 of share calculation (only used in scheduler thread)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -143,9 +144,9 @@
 				}]
 		}, {
 			"name":	"sum_priority",
-			"summary":	"@todo add summary",
+			"summary":	"Sum of Priorities",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sum of job priorities (only used in scheduler thread)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -153,9 +154,9 @@
 				}]
 		}, {
 			"name":	"actual_proportion",
-			"summary":	"@todo add summary",
+			"summary":	"Actual Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Long term actual proportion."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -163,9 +164,9 @@
 				}]
 		}, {
 			"name":	"m_share",
-			"summary":	"@todo add summary",
+			"summary":	"M Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Dynamic long term targetted proportion."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -173,9 +174,9 @@
 				}]
 		}, {
 			"name":	"last_actual_proportion",
-			"summary":	"@todo add summary",
+			"summary":	"Last Actual Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Short term actual proportion."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -183,9 +184,9 @@
 				}]
 		}, {
 			"name":	"adjusted_current_proportion",
-			"summary":	"@todo add summary",
+			"summary":	"Adjusted Current Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Short term targetted proportion."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -193,9 +194,9 @@
 				}]
 		}, {
 			"name":	"temp",
-			"summary":	"@todo add summary",
+			"summary":	"Temporary Node",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Temporary Node used in scheduler only."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -203,9 +204,10 @@
 				}]
 		}, {
 			"name":	"stt",
-			"summary":	"@todo add summary",
+			"summary":	"Short Term Targeted Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Short term targeted proportion of node as compared to sibling nodes."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -213,9 +215,10 @@
 				}]
 		}, {
 			"name":	"ostt",
-			"summary":	"@todo add summary",
+			"summary":	"Overall Short Term Targeted Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Overall short term targeted proportion of node as compared to all nodes."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -223,9 +226,10 @@
 				}]
 		}, {
 			"name":	"ltt",
-			"summary":	"@todo add summary",
+			"summary":	"Long Term Targeted Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Long term targeted proportion of node as compared to all nodes."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -233,9 +237,10 @@
 				}]
 		}, {
 			"name":	"oltt",
-			"summary":	"@todo add summary",
+			"summary":	"Overall Long Term Targeted Proportion",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Overall long term targeted proportion of node as compared to all nodes."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -243,9 +248,10 @@
 				}]
 		}, {
 			"name":	"shr",
-			"summary":	"@todo add summary",
+			"summary":	"Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hierarchical calculated share node."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -253,9 +259,10 @@
 				}]
 		}, {
 			"name":	"sort",
-			"summary":	"@todo add summary",
+			"summary":	"Sort Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Value for sorting jobs attached to a node."
+					}, { "line":	"Calculated during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -263,9 +270,10 @@
 				}]
 		}, {
 			"name":	"ref",
-			"summary":	"@todo add summary",
+			"summary":	"Reference",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Temporary index reference back into the array of pending jobs."
+					}, { "line":	"Used during scheduling of pending of pending jobs."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -273,9 +281,10 @@
 				}]
 		}, {
 			"name":	"tickets",
-			"summary":	"@todo add summary",
+			"summary":	"Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Temporary storage of pending tickets from higher level policies."
+					}, { "line":	"Used during scheduling of pending of pending jobs."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -283,9 +292,10 @@
 				}]
 		}, {
 			"name":	"jobid",
-			"summary":	"@todo add summary",
+			"summary":	"Job Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job number of a temporary job node."
+					}, { "line":	"Used during scheduling of pending of pending jobs."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -293,9 +303,10 @@
 				}]
 		}, {
 			"name":	"taskid",
-			"summary":	"@todo add summary",
+			"summary":	"Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Array task number of a temporary job node."
+					}, { "line":	"Used during scheduling of pending of pending jobs."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -303,9 +314,10 @@
 				}]
 		}, {
 			"name":	"usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Node usage list."
+					}, { "line":	"Used during scheduling of pending of pending jobs."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -317,7 +329,9 @@
 			"name":	"version",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Version of share tree."
+					}, { "line":	"Set/increased in qmaster when sharetree changes."
+					}, { "line":	"Skip scheduling decisions based on an older version of the sharetree."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
