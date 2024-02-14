@@ -3,9 +3,9 @@
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sge_component.h"
 
@@ -131,8 +131,8 @@ component_tl0_init(sge_component_tl0_t *tl) {
    gid_t gid = getegid();
    set_uid(tl, uid);
    set_gid(tl, gid);
-   SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0)
-   SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0)
+   SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0);
+   SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0);
    set_username(tl, user);
    set_group_name(tl, group);
 

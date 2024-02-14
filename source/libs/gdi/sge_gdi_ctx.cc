@@ -280,7 +280,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
       DRETURN(cl_ret);
    }
 
-   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle == nullptr) {
       /* handle does not exist, create one */
 
@@ -480,16 +480,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
       ctx_set_last_commlib_error(cl_ret);
    }
 
-<<<<<<< HEAD
-#ifdef DEBUG_CLIENT_SUPPORT
-   /* set rmon callback for message printing (after handle creation) */
-   rmon_set_print_callback(gdi_rmon_print_callback_function);
-#endif
-
    if ((component_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
-=======
-   if ((bootstrap_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
->>>>>>> 71fe5d636 (TA: OGE-141 handle critical compiler warnings)
       /* this is for testsuite socket bind test (issue 1096 ) */
       struct timeval now;
       gettimeofday(&now, nullptr);

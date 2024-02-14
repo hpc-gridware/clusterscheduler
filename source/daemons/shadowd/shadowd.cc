@@ -242,7 +242,7 @@ main(int argc, char **argv) {
       char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), bootstrap_get_unqualified_hostname());
+      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
@@ -256,7 +256,7 @@ main(int argc, char **argv) {
       sge_gdi_ctx_class_prepare_enroll();
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), bootstrap_get_qualified_hostname());
+      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: "sge_U32CFormat"\n", sge_u32c(shadowd_pid)));
