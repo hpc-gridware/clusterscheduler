@@ -92,11 +92,12 @@ const char *prognames[] = {
 const char *threadnames[] = {
         "main",          /* 1 */
         "listener",      /* 2 */
-        "evm",           /* 3 */
+        "event_master",  /* 3 */
         "timer",         /* 4 */
         "worker",        /* 5 */
         "signal",        /* 6 */
         "scheduler",     /* 7 */
+        "event_mirror"   /* 8 */
 };
 
 

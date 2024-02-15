@@ -125,6 +125,9 @@ bool prof_start(prof_level level, dstring *error);
 
 bool prof_stop(prof_level level, dstring *error);
 
+void
+prof_start_stop(prof_level level, dstring *error, bool do_start);
+
 bool prof_start_measurement(prof_level level, dstring *error);
 
 bool prof_stop_measurement(prof_level level, dstring *error);

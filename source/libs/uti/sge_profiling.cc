@@ -515,6 +515,15 @@ bool prof_stop(prof_level level, dstring *error) {
    return ret;
 }
 
+void
+prof_start_stop(prof_level level, dstring *error, bool do_start) {
+   if (do_start) {
+      prof_start(level, error);
+   } else {
+      prof_stop(level, error);
+   }
+}
+
 /****** uti/profiling/prof_start_measurement() ****************************
 *  NAME
 *     prof_start_measurement() -- start measurement

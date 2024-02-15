@@ -52,7 +52,7 @@ typedef struct {
    /* Timed event thread */
    cl_raw_list_t *timer_thread_pool;
 
-   /* Event event master thread */
+   /* Event master thread */
    cl_raw_list_t *event_master_thread_pool;
 
    /* Scheduler thread */
@@ -63,6 +63,9 @@ typedef struct {
 
    /* intern GDI test thread */
    cl_raw_list_t *test_thread_pool;
+
+   /* Event mirror thread */
+   cl_raw_list_t *event_mirror_thread_pool;
 } main_control_t;
 
 extern main_control_t Main_Control;

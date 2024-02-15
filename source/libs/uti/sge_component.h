@@ -1,5 +1,7 @@
 #pragma once
 
+#include "uti/sge_uidgid.h"
+
 // TODO: move the defines to a different location where other program names are defines
 #define SGE_PREFIX      "sge_"
 #define SGE_SHEPHERD    "sge_shepherd"
@@ -47,13 +49,14 @@ enum {
 };
 
 enum {
-   MAIN_THREAD,      // 1
-   LISTENER_THREAD,  // 2
-   DELIVERER_THREAD, // 3
-   TIMER_THREAD,     // 4
-   WORKER_THREAD,    // 5
-   SIGNALER_THREAD,  // 6
-   SCHEDD_THREAD,    // 7
+   MAIN_THREAD, // 1
+   LISTENER_THREAD, // 2
+   EVENT_MASTER_THREAD, // 3
+   TIMER_THREAD, // 4
+   WORKER_THREAD, // 5
+   SIGNAL_THREAD, // 6
+   SCHEDD_THREAD, // 7
+   EVENT_MIRROR_THREAD, // 8
 };
 
 extern const char *prognames[];

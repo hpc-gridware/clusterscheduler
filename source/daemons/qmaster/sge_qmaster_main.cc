@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <csignal>
-#include <fcntl.h>
 
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
@@ -49,9 +48,11 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-#include "sge_thread_main.h"
+#include "evm/sge_event_master.h"
 
 #include "basis_types.h"
+#include "oge_thread_event_mirror.h"
+#include "sge_thread_main.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
 #include "sge_thread_signaler.h"
@@ -60,11 +61,9 @@
 #include "sge_thread_worker.h"
 #include "sge_thread_event_master.h"
 #include "setup_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "sge_host_qmaster.h"
 #include "qmaster_heartbeat.h"
 #include "shutdown.h"
-#include "sge.h"
 #include "sge_qmaster_threads.h"
 #include "msg_qmaster.h"
 
@@ -72,7 +71,7 @@
 #   include "sge_smf.h"
 #endif
 
-static void init_sig_action_and_mask(void);
+static void init_sig_action_and_mask();
 
 /****** qmaster/sge_qmaster_main/sge_qmaster_application_status() ************
 *  NAME
@@ -149,7 +148,6 @@ sge_qmaster_application_status(char **info_message) {
 int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
-   bool has_daemonized = false;
    u_long32 start_time = sge_get_gmt();
    monitoring_t monitor;
 
@@ -184,7 +182,7 @@ int main(int argc, char *argv[]) {
     * also take care that finished child processed of this process become
     * zombie jobs
     */
-   has_daemonized = sge_daemonize_qmaster();
+   bool has_daemonized = sge_daemonize_qmaster();
    init_sig_action_and_mask();
 
    /* init qmaster threads without becomming admin user */
@@ -262,6 +260,9 @@ int main(int argc, char *argv[]) {
     */
    sge_signaler_initialize();
    sge_event_master_initialize();
+#if ENABLE_MIRROR_THREADS
+   oge_event_mirror_initialize();
+#endif
    sge_timer_initialize(&monitor);
    sge_worker_initialize();
    sge_listener_initialize();
@@ -280,11 +281,11 @@ int main(int argc, char *argv[]) {
     */
    sge_scheduler_terminate(nullptr);
    sge_listener_terminate();
-#if 0
-   sge_test_terminate(ctx);
-#endif
    sge_worker_terminate();
    sge_timer_terminate();
+#if ENABLE_MIRROR_THREADS
+   oge_event_mirror_terminate();
+#endif
    sge_event_master_terminate();
    sge_signaler_terminate();
 
@@ -321,8 +322,8 @@ int main(int argc, char *argv[]) {
 *     none
 *
 *******************************************************************************/
-static void init_sig_action_and_mask(void) {
-   struct sigaction sa;
+static void init_sig_action_and_mask() {
+   struct sigaction sa{};
    sigset_t sig_set;
 
    sa.sa_handler = SIG_IGN;
@@ -332,6 +333,4 @@ static void init_sig_action_and_mask(void) {
 
    sigfillset(&sig_set);
    pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
-
-   return;
 }

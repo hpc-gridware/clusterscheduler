@@ -63,7 +63,7 @@ sge_signaler_initialize() {
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SIGNALER_THREAD], 0);
+   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SIGNAL_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
                                 cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0,
@@ -140,7 +140,7 @@ sge_signaler_main(void *arg) {
    cl_thread_func_startup(thread_config);
 
    sge_monitor_init(&monitor, thread_config->thread_name, NONE_EXT, ST_WARNING, ST_ERROR);
-   sge_qmaster_thread_init(QMASTER, SIGNALER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, SIGNAL_THREAD, true);
 
    sigemptyset(&sig_set);
    sigaddset(&sig_set, SIGINT);

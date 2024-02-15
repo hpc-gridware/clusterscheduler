@@ -284,10 +284,10 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          }
          break;
 
-      case EDT_EXT :
+      case EMAT_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_edt_t));
          if (monitor->ext_data != nullptr) {
-            monitor->ext_type = EDT_EXT;
+            monitor->ext_type = EMAT_EXT;
             monitor->ext_data_size = sizeof(m_edt_t);
             monitor->ext_output = &ext_edt_output;
          } else {

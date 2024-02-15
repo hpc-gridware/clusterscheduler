@@ -175,7 +175,7 @@ void serf_new_interval(u_long32 time)
    DPRINTF(("================[SCHEDULING-EPOCH]==================\n"));
 
    if (current_serf.new_schedule && serf_get_active()) {
-      (current_serf.new_schedule)(time);
+      (current_serf.new_schedule)();
    }
 
    DRETURN_VOID;

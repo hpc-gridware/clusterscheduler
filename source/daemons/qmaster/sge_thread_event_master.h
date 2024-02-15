@@ -31,15 +31,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <pthread.h>
-
-#include "gdi/sge_gdi_ctx.h"
-
 void
 sge_event_master_initialize();
 
 void
-sge_event_master_terminate(void);
+sge_event_master_terminate();
 
 void *
 sge_event_master_main(void *arg);

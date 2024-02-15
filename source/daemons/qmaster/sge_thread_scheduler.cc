@@ -64,8 +64,6 @@
 #include "sge_thread_main.h"
 #include "sge_thread_scheduler.h"
 #include "setup_qmaster.h"
-#include "sge_qmaster_timed_event.h"
-#include "sge_advance_reservation_qmaster.h"
 #include "sge_sched_process_events.h"
 
 #include "msg_common.h"
@@ -126,7 +124,7 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
 
 /* MT-NOTE: schedd_serf_newline() is not MT safe */
 static void
-schedd_serf_newline(u_long32 time) {
+schedd_serf_newline() {
    FILE *fp;
 
    DENTER(TOP_LAYER);
@@ -167,7 +165,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (!Scheduler_Control.triggered) {
-      struct timespec ts;
+      struct timespec ts{};
       u_long32 current_time = sge_get_gmt();
       ts.tv_sec = (long) current_time + SCHEDULER_TIMEOUT_S;
       ts.tv_nsec = SCHEDULER_TIMEOUT_N;
@@ -344,15 +342,13 @@ sge_scheduler_initialize(lList **answer_list) {
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void
-sge_scheduler_cleanup_thread(void *ctx_ref) {
+sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
-      cl_thread_settings_t *thread = nullptr;
-
-      /* 
+      /*
        * The scheduler thread itself executes this function (sge_scheduler_cleanup_thread())
        * at the cancelation point as part of the cleanup. 
        * Therefore it has to unset the thread config before the
@@ -364,7 +360,7 @@ sge_scheduler_cleanup_thread(void *ctx_ref) {
       /*
        * Delete the scheduler thread but don't wait for termination
        */
-      thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
+      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
       cl_thread_list_delete_thread_without_join(Main_Control.scheduler_thread_pool, thread);
 
       /* 
@@ -419,28 +415,15 @@ sge_scheduler_terminate(lList **answer_list) {
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
-      pthread_t thread_id;
-      cl_thread_settings_t *thread = nullptr;
+      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
+      pthread_t thread_id = *(thread->thread_pointer);
 
-      /* 
-       * store thread id to use it later on 
-       */
-      thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
-      thread_id = *(thread->thread_pointer);
-
-      /* 
-       * send cancel signal 
-       */
       pthread_cancel(thread_id);
-
-      /*
-       * wakeup scheduler thread which might be blocked by wait for events
-       */
       pthread_cond_signal(&Scheduler_Control.cond_var);
 
       /*
        * cl_thread deletion and cl_thread_pool deletion will be done at 
-       * schedulers cancelation point in sge_scheduler_cleanup_thread() ...
+       * schedulers cancellation point in sge_scheduler_cleanup_thread() ...
        * ... therefore we have nothing more to do.
        */
       ;
@@ -489,15 +472,12 @@ sge_scheduler_terminate(lList **answer_list) {
 *******************************************************************************/
 void *
 sge_scheduler_main(void *arg) {
+   auto *thread_config = (cl_thread_settings_t *) arg;
    time_t next_prof_output = 0;
    monitoring_t monitor;
    sge_evc_class_t *evc = nullptr;
    lList *alp = nullptr;
    sge_where_what_t where_what;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   bool do_shutdown = false;
-   bool do_endlessly = true;
-   bool local_ret = true;
 
    DENTER(TOP_LAYER);
 
@@ -506,22 +486,20 @@ sge_scheduler_main(void *arg) {
    /*
     * startup
     */
-   if (local_ret) {
-      /* initialize commlib thread */
-      cl_thread_func_startup(thread_config);
+   /* initialize commlib thread */
+   cl_thread_func_startup(thread_config);
 
-      /* initialize monitoring */
-      sge_monitor_init(&monitor, thread_config->thread_name, SCH_EXT, SCT_WARNING, SCT_ERROR);
-      sge_qmaster_thread_init(SCHEDD, SCHEDD_THREAD, true);
+   /* initialize monitoring */
+   sge_monitor_init(&monitor, thread_config->thread_name, SCH_EXT, SCT_WARNING, SCT_ERROR);
+   sge_qmaster_thread_init(SCHEDD, SCHEDD_THREAD, true);
 
-      /* register at profiling module */
-      set_thread_name(pthread_self(), "Scheduler Thread");
-      conf_update_thread_profiling("Scheduler Thread");
-      DPRINTF((SFN" started\n", thread_config->thread_name));
+   /* register at profiling module */
+   set_thread_name(pthread_self(), "Scheduler Thread");
+   conf_update_thread_profiling("Scheduler Thread");
+   DPRINTF((SFN" started\n", thread_config->thread_name));
 
-      /* initialize schedd_runnlog logging */
-      schedd_set_schedd_log_file();
-   }
+   /* initialize schedd_runnlog logging */
+   schedd_set_schedd_log_file();
 
    /* set profiling parameters */
    prof_set_level_name(SGE_PROF_EVENTMASTER, nullptr, nullptr);
@@ -542,10 +520,8 @@ sge_scheduler_main(void *arg) {
    /*
     * prepare event client/mirror mechanism
     */
-   if (local_ret) {
-      local_ret = sge_gdi2_evc_setup(&evc, EV_ID_SCHEDD, &alp, "scheduler");
-      DPRINTF(("prepared event client/mirror mechanism\n"));
-   }
+   bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_SCHEDD, &alp, "scheduler");
+   DPRINTF(("prepared event client/mirror mechanism\n"));
 
    /*
     * register as event mirror
@@ -573,48 +549,27 @@ sge_scheduler_main(void *arg) {
     * schedulers main loop
     */
    if (local_ret) {
-      while (do_endlessly) {
+      while (true) {
          bool handled_events = false;
          lList *event_list = nullptr;
          int execute = 0;
-         double prof_copy = 0.0;
-         double prof_total = 0.0;
-         double prof_init = 0.0;
-         double prof_free = 0.0;
-         double prof_run = 0.0;
          lList *orders = nullptr;
 
-         if (sconf_get_profiling()) {
-            prof_start(SGE_PROF_OTHER, nullptr);
-            prof_start(SGE_PROF_PACKING, nullptr);
-            prof_start(SGE_PROF_EVENTCLIENT, nullptr);
-            prof_start(SGE_PROF_MIRROR, nullptr);
-            prof_start(SGE_PROF_GDI, nullptr);
-            prof_start(SGE_PROF_HT_RESIZE, nullptr);
-            prof_start(SGE_PROF_CUSTOM0, nullptr);
-            prof_start(SGE_PROF_CUSTOM1, nullptr);
-            prof_start(SGE_PROF_CUSTOM3, nullptr);
-            prof_start(SGE_PROF_CUSTOM4, nullptr);
-            prof_start(SGE_PROF_CUSTOM5, nullptr);
-            prof_start(SGE_PROF_CUSTOM6, nullptr);
-            prof_start(SGE_PROF_CUSTOM7, nullptr);
-            prof_start(SGE_PROF_SCHEDLIB4, nullptr);
-         } else {
-            prof_stop(SGE_PROF_OTHER, nullptr);
-            prof_stop(SGE_PROF_PACKING, nullptr);
-            prof_stop(SGE_PROF_EVENTCLIENT, nullptr);
-            prof_stop(SGE_PROF_MIRROR, nullptr);
-            prof_stop(SGE_PROF_GDI, nullptr);
-            prof_stop(SGE_PROF_HT_RESIZE, nullptr);
-            prof_stop(SGE_PROF_CUSTOM0, nullptr);
-            prof_stop(SGE_PROF_CUSTOM1, nullptr);
-            prof_stop(SGE_PROF_CUSTOM3, nullptr);
-            prof_stop(SGE_PROF_CUSTOM4, nullptr);
-            prof_stop(SGE_PROF_CUSTOM5, nullptr);
-            prof_stop(SGE_PROF_CUSTOM6, nullptr);
-            prof_stop(SGE_PROF_CUSTOM7, nullptr);
-            prof_stop(SGE_PROF_SCHEDLIB4, nullptr);
-         }
+         bool do_start = sconf_get_profiling();
+         prof_start_stop(SGE_PROF_OTHER, nullptr, do_start);
+         prof_start_stop(SGE_PROF_PACKING, nullptr, do_start);
+         prof_start_stop(SGE_PROF_EVENTCLIENT, nullptr, do_start);
+         prof_start_stop(SGE_PROF_MIRROR, nullptr, do_start);
+         prof_start_stop(SGE_PROF_GDI, nullptr, do_start);
+         prof_start_stop(SGE_PROF_HT_RESIZE, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM0, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM1, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM3, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM4, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM5, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM6, nullptr, do_start);
+         prof_start_stop(SGE_PROF_CUSTOM7, nullptr, do_start);
+         prof_start_stop(SGE_PROF_SCHEDLIB4, nullptr, do_start);
 
          /*
           * Wait for new events
@@ -632,7 +587,7 @@ sge_scheduler_main(void *arg) {
 
          if (event_list != nullptr) {
             /* check for shutdown */
-            do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr) ? true : false;
+            bool do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
 
             /* update mirror and free data */
             if (do_shutdown == false && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
@@ -712,7 +667,7 @@ sge_scheduler_main(void *arg) {
                                      master_project_list, master_rqs_list);
 
             PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
-            prof_init = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
+            double prof_init = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
             PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
             sge_before_dispatch(evc);
@@ -724,7 +679,7 @@ sge_scheduler_main(void *arg) {
              * Within the scheduler we do only need QIs
              */
             {
-               const lListElem *cqueue = nullptr;
+               const lListElem *cqueue;
                lEnumeration *what_queue3 = nullptr;
 
                for_each_ep(cqueue, master_cqueue_list) {
@@ -791,9 +746,9 @@ sge_scheduler_main(void *arg) {
             copy.ar_list = lCopyList("", master_ar_list);
 
             /* report number of reduced and raw (in brackets) lists */
-            DPRINTF(("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32", A:"sge_uu32", "
-                                                                                                                               "D:"sge_uu32", P:"sge_uu32", CKPT:"sge_uu32","
-                                                                                                                                                                          " US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
+            DPRINTF(("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32
+                     ", A:"sge_uu32", D:"sge_uu32", P:"sge_uu32", CKPT:"sge_uu32", US:"sge_uu32", PR:"sge_uu32
+                     ", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
                     lGetNumberOfElem(copy.queue_list),
                     lGetNumberOfElem(copy.all_queue_list),
                     lGetNumberOfElem(copy.job_list),
@@ -814,8 +769,9 @@ sge_scheduler_main(void *arg) {
                     ));
 
             if (getenv("SGE_ND")) {
-               printf("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32", A:"sge_uu32", D:"sge_uu32", "
-                                                                                                                                              "P:"sge_uu32", CKPT:"sge_uu32", US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
+               printf("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32
+                      ", A:"sge_uu32", D:"sge_uu32", P:"sge_uu32", CKPT:"sge_uu32", US:"sge_uu32", PR:"sge_uu32
+                      ", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
                       lGetNumberOfElem(copy.queue_list),
                       lGetNumberOfElem(copy.all_queue_list),
                       lGetNumberOfElem(copy.job_list),
@@ -839,14 +795,14 @@ sge_scheduler_main(void *arg) {
             }
 
             PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
-            prof_copy = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
+            double prof_copy = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
             PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
             scheduler_method(evc, &answer_list, &copy, &orders);
             answer_list_output(&answer_list);
 
             PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
-            prof_run = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
+            double prof_run = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
             PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
             /* .. which gets deleted after using */
@@ -865,7 +821,7 @@ sge_scheduler_main(void *arg) {
             lFreeList(&(copy.ar_list));
 
             PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
-            prof_free = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
+            double prof_free = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
 
             /* 
              * need to sync with event master thread
@@ -895,7 +851,7 @@ sge_scheduler_main(void *arg) {
              * Stop profiling for "schedd run total" and the subcategories
              */
             PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM6);
-            prof_total = prof_get_measurement_wallclock(SGE_PROF_CUSTOM6, true, nullptr);
+            double prof_total = prof_get_measurement_wallclock(SGE_PROF_CUSTOM6, true, nullptr);
 
             if (prof_is_active(SGE_PROF_CUSTOM6)) {
                PROFILING((SGE_EVENT, "PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
@@ -923,28 +879,24 @@ sge_scheduler_main(void *arg) {
          evc->monitor_next_run = false;
 
          /*
-          * pthread cancelation point
+          * pthread cancellation point
           *
-          * sge_scheduler_cleanup_thread() is the last function which should
-          * be called so it is pushed first
+          * sge_scheduler_cleanup_thread() is the last function which should be called so it is pushed first
           */
          pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
-            pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_monitor,
-                                 (void *) &monitor);
-               pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_event_client,
-                                    (void *) evc);
-                  cl_thread_func_testcancel(thread_config);
-               pthread_cleanup_pop(execute);
-            pthread_cleanup_pop(execute);
+         pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_monitor, (void *) &monitor);
+         pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_event_client, (void *) evc);
+         cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
-         DPRINTF(("passed cancelation point\n"));
+         pthread_cleanup_pop(execute);
+         pthread_cleanup_pop(execute);
+         DPRINTF(("passed cancellation point\n"));
       }
    }
 
    /*
-    * Don't add cleanup code here. It will never be executed. Instead register
-    * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before
-    * the call of cl_thread_func_testcancel()
+    * Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
+    * pthread_cleanup_push()/pthread_cleanup_pop() before the call of cl_thread_func_testcancel()
     */
 
    DRETURN(nullptr);

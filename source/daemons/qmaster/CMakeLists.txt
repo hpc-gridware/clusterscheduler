@@ -57,7 +57,9 @@ add_executable(
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc
-      ../../common/execution_states.cc)
+      ../../common/execution_states.cc
+      oge_thread_event_mirror.cc
+      oge_thread_event_mirror.h)
 
 target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
 

@@ -33,29 +33,11 @@
 
 #include <pthread.h>
 
-typedef struct _master_scheduler_class_t master_scheduler_class_t;
-
-struct _master_scheduler_class_t {
-   /* 
-    * mutex to gard all members of this structure 
-    */
-   pthread_mutex_t mutex;
-
-   /*
-    * is running
-    */
-   bool is_running;
-
-   /*
-    * next thread id to be used when scheduler is restarted
-    */
-   int thread_id;
-
-   /*
-    * use bootstrap info to identify if scheduler should be started (true)
-    * or ignore that information (false)
-    */
-   bool use_bootstrap;
+struct master_scheduler_class_t {
+   pthread_mutex_t mutex;  ///< mutex to gard all members of this structure
+   bool is_running;        ///< is the scheduler thread running
+   int thread_id;          ///< next thread id to be used when scheduler is restarted
+   bool use_bootstrap;     ///< use bootstrap info to identify if scheduler should be started (true) or ignore that information (false)
 };
 
 void
