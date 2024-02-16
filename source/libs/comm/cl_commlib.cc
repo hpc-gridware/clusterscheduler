@@ -276,12 +276,6 @@ static int cl_message_list_remove_receive(cl_com_connection_t *c, cl_com_message
    return cl_message_list_remove_message(c->received_message_list, m, l);
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_host_list()"
-
 cl_raw_list_t *cl_com_get_host_list(void) {
    cl_raw_list_t *host_list = nullptr;
    pthread_mutex_lock(&cl_com_host_list_mutex);
@@ -289,11 +283,6 @@ cl_raw_list_t *cl_com_get_host_list(void) {
    pthread_mutex_unlock(&cl_com_host_list_mutex);
    return host_list;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_endpoint_list()"
 
 cl_raw_list_t *cl_com_get_endpoint_list(void) {
    cl_raw_list_t *endpoint_list = nullptr;
@@ -303,12 +292,6 @@ cl_raw_list_t *cl_com_get_endpoint_list(void) {
    return endpoint_list;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_log_list()"
-
 cl_raw_list_t *cl_com_get_log_list(void) {
    cl_raw_list_t *log_list = nullptr;
    pthread_mutex_lock(&cl_com_log_list_mutex);
@@ -317,24 +300,12 @@ cl_raw_list_t *cl_com_get_log_list(void) {
    return log_list;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_status_func()"
-
 int cl_com_set_status_func(cl_app_status_func_t status_func) {
    pthread_mutex_lock(&cl_com_application_mutex);
    cl_com_application_status_func = *status_func;
    pthread_mutex_unlock(&cl_com_application_mutex);
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_parameter_list_value()"
 
 int cl_com_get_parameter_list_value(const char *parameter, char **value) {
    cl_parameter_list_elem_t *elem = nullptr;
@@ -365,11 +336,6 @@ int cl_com_get_parameter_list_value(const char *parameter, char **value) {
    return retval;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_parameter_list_string()"
-
 int cl_com_get_parameter_list_string(char **param_string) {
    int retval = CL_RETVAL_UNKNOWN_PARAMETER;
 
@@ -382,12 +348,6 @@ int cl_com_get_parameter_list_string(char **param_string) {
    pthread_mutex_unlock(&cl_com_parameter_list_mutex);
    return retval;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_parameter_list_value()"
 
 int cl_com_set_parameter_list_value(const char *parameter, char *value) {
    cl_parameter_list_elem_t *elem = nullptr;
@@ -424,12 +384,6 @@ int cl_com_set_parameter_list_value(const char *parameter, char *value) {
    return retval;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_remove_parameter_list_value()"
-
 int cl_com_remove_parameter_list_value(const char *parameter) {
    int retval = CL_RETVAL_OK;
    pthread_mutex_lock(&cl_com_parameter_list_mutex);
@@ -437,11 +391,6 @@ int cl_com_remove_parameter_list_value(const char *parameter) {
    pthread_mutex_unlock(&cl_com_parameter_list_mutex);
    return retval;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_update_parameter_list()"
 
 int cl_com_update_parameter_list(char *parameter) {
    int retval = CL_RETVAL_OK;
@@ -493,11 +442,6 @@ int cl_com_update_parameter_list(char *parameter) {
     CL_RETVAL_UNKNOWN:             when CRM contains unexpected error
     CL_RETVAL_ACCESS_DENIED:       when CRM says that access to service is denied
     CL_CRM_CS_ENDPOINT_NOT_UNIQUE: when CRM says that there is already an endpoint with this id connected */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_error_func()"
-
 int cl_com_set_error_func(cl_error_func_t error_func) {
    pthread_mutex_lock(&cl_com_error_mutex);
    cl_com_error_status_func = *error_func;
@@ -505,24 +449,12 @@ int cl_com_set_error_func(cl_error_func_t error_func) {
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_tag_name_func()"
-
 int cl_com_set_tag_name_func(cl_tag_name_func_t tag_name_func) {
    pthread_mutex_lock(&cl_com_tag_name_mutex);
    cl_com_tag_name_func = *tag_name_func;
    pthread_mutex_unlock(&cl_com_tag_name_mutex);
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_setup_callback_functions()"
 
 int cl_com_setup_callback_functions(cl_com_connection_t *connection) {
    if (connection == nullptr) {
@@ -541,12 +473,6 @@ int cl_com_setup_callback_functions(cl_com_connection_t *connection) {
 
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_push_application_error()"
 
 int cl_commlib_push_application_error(cl_log_t cl_err_type, int cl_error, const char *cl_info_text) {
    const char *cl_info = cl_info_text;
@@ -571,11 +497,6 @@ int cl_commlib_push_application_error(cl_log_t cl_err_type, int cl_error, const 
    pthread_mutex_unlock(&cl_com_error_mutex);
    return retval;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_check_callback_functions()"
 
 static int cl_commlib_check_callback_functions(void) {
    /*
@@ -655,11 +576,6 @@ static int cl_commlib_check_callback_functions(void) {
 *  SEE ALSO
 *     cl_commlib/cl_com_setup_commlib()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_setup_commlib_complete()"
-
 bool cl_com_setup_commlib_complete(void) {
    bool setup_complete = false;
 
@@ -675,28 +591,13 @@ bool cl_com_setup_commlib_complete(void) {
  * because the memory is malloced in cl_com_setup_commlib()
  * and freed in cl_com_cleanup_commlib()
  */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_resolvable_hosts()"
-
 char *cl_com_get_resolvable_hosts(void) {
    return cl_commlib_debug_resolvable_hosts;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_unresolvable_hosts()"
-
 char *cl_com_get_unresolvable_hosts(void) {
    return cl_commlib_debug_unresolvable_hosts;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_is_valid_fd()"
 
 bool cl_com_is_valid_fd(int fd) {
 
@@ -707,11 +608,6 @@ bool cl_com_is_valid_fd(int fd) {
 
    return true;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_setup_commlib()"
 
 int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_func_t flush_func) {
    int ret_val = CL_RETVAL_OK;
@@ -893,12 +789,6 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_cleanup_commlib()"
-
 int cl_com_cleanup_commlib(void) {
    int ret_val = CL_RETVAL_OK;
    cl_thread_settings_t *thread_p = nullptr;
@@ -999,14 +889,7 @@ int cl_com_cleanup_commlib(void) {
    return CL_RETVAL_OK;
 }
 
-
-
 /*TODO check this function , check locking */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_set_connection_param()"
-
 int cl_commlib_set_connection_param(cl_com_handle_t *handle, int parameter, int value) {
    if (handle != nullptr) {
       switch (parameter) {
@@ -1020,12 +903,8 @@ int cl_commlib_set_connection_param(cl_com_handle_t *handle, int parameter, int 
    }
    return CL_RETVAL_OK;
 }
-/*TODO check this function  , check locking*/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_get_connection_param()"
 
+/*TODO check this function  , check locking*/
 int cl_commlib_get_connection_param(cl_com_handle_t *handle, int parameter, int *value) {
    if (handle != nullptr) {
       switch (parameter) {
@@ -1036,11 +915,6 @@ int cl_commlib_get_connection_param(cl_com_handle_t *handle, int parameter, int 
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_set_global_param()"
 
 int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool value) {
    pthread_mutex_lock(&cl_com_global_settings_mutex);
@@ -1054,11 +928,6 @@ int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool valu
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_get_global_param()"
-
 bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
    bool retval = false;
    pthread_mutex_lock(&cl_com_global_settings_mutex);
@@ -1071,12 +940,6 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
    pthread_mutex_unlock(&cl_com_global_settings_mutex);
    return retval;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_specify_ssl_configuration()"
 
 int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
    int ret_val = CL_RETVAL_OK;
@@ -1096,11 +959,6 @@ int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
 
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_create_handle()"
 
 cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       cl_framework_t framework,
@@ -1810,11 +1668,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    return new_handle;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_shutdown_handle()"
-
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
    cl_connection_list_elem_t *elem = nullptr;
    cl_thread_settings_t *thread_settings = nullptr;
@@ -2168,11 +2021,6 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_setup_connection()"
-
 int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **connection) {
    int ret_val = CL_RETVAL_HANDLE_NOT_FOUND;
    if (handle != nullptr) {
@@ -2209,12 +2057,6 @@ int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **conne
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_auto_close_mode()"
-
 int cl_com_set_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autoclose_t mode) {
    if (handle == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2233,11 +2075,6 @@ int cl_com_set_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autocl
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_auto_close_mode()"
-
 int cl_com_get_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autoclose_t *mode) {
    if (handle == nullptr || mode == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2245,12 +2082,6 @@ int cl_com_get_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autocl
    *mode = handle->auto_close_mode;
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_max_connection_close_mode()"
 
 int cl_com_set_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t mode) {
 
@@ -2262,11 +2093,6 @@ int cl_com_set_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_max_connection_close_mode()"
-
 int cl_com_get_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t *mode) {
    if (handle == nullptr || mode == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2274,11 +2100,6 @@ int cl_com_get_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t
    *mode = handle->max_con_close_mode;
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_max_connections()"
 
 int cl_com_set_max_connections(cl_com_handle_t *handle, unsigned long value) {
    if (handle == nullptr || value < 1 || handle->connection_list == nullptr) {
@@ -2295,11 +2116,6 @@ int cl_com_set_max_connections(cl_com_handle_t *handle, unsigned long value) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_max_connections()"
-
 int cl_com_get_max_connections(cl_com_handle_t *handle, unsigned long *value) {
    if (handle == nullptr || value == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2308,12 +2124,6 @@ int cl_com_get_max_connections(cl_com_handle_t *handle, unsigned long *value) {
    *value = handle->max_open_connections;
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_handle()"
 
 cl_com_handle_t *cl_com_get_handle(const char *component_name, unsigned long component_id) {
    cl_handle_list_elem_t *elem = nullptr;
@@ -2369,15 +2179,9 @@ cl_com_handle_t *cl_com_get_handle(const char *component_name, unsigned long com
    return ret_handle;
 }
 
-
 cl_thread_mode_t cl_commlib_get_thread_state(void) {
    return cl_com_create_threads;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_alias_file()"
 
 int cl_com_set_alias_file(const char *alias_file) {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;
@@ -2393,11 +2197,6 @@ int cl_com_set_alias_file(const char *alias_file) {
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_alias_file_dirty()"
-
 int cl_com_set_alias_file_dirty(void) {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;
 
@@ -2408,12 +2207,6 @@ int cl_com_set_alias_file_dirty(void) {
    return ret_val;
 
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_append_host_alias()"
 
 int cl_com_append_host_alias(char *local_resolved_name, char *alias_name) {
    int ret_val = CL_RETVAL_OK;
@@ -2435,11 +2228,6 @@ int cl_com_append_host_alias(char *local_resolved_name, char *alias_name) {
    }
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_remove_host_alias()"
 
 int cl_com_remove_host_alias(char *alias_name) {
    int ret_val = CL_RETVAL_OK;
@@ -2474,11 +2262,6 @@ int cl_com_remove_host_alias(char *alias_name) {
    cl_raw_list_unlock(ldata->host_alias_list);
    return CL_RETVAL_UNKNOWN;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_append_known_endpoint_from_name()"
 
 int
 cl_com_append_known_endpoint_from_name(char *unresolved_comp_host,
@@ -2516,30 +2299,14 @@ cl_com_append_known_endpoint_from_name(char *unresolved_comp_host,
    return retval;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_append_known_endpoint()"
-
 int cl_com_append_known_endpoint(cl_com_endpoint_t *endpoint, int service_port, cl_xml_connection_autoclose_t autoclose,
                                  bool is_static) {
    return cl_endpoint_list_define_endpoint(cl_com_get_endpoint_list(), endpoint, service_port, autoclose, is_static);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_remove_known_endpoint()"
-
 int cl_com_remove_known_endpoint(cl_com_endpoint_t *endpoint) {
    return cl_endpoint_list_undefine_endpoint(cl_com_get_endpoint_list(), endpoint);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_known_endpoint_autoclose_mode()"
 
 int
 cl_com_get_known_endpoint_autoclose_mode(cl_com_endpoint_t *endpoint, cl_xml_connection_autoclose_t *auto_close_mode) {
@@ -2547,20 +2314,9 @@ cl_com_get_known_endpoint_autoclose_mode(cl_com_endpoint_t *endpoint, cl_xml_con
 
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_known_endpoint_port()"
-
 int cl_com_get_known_endpoint_port(cl_com_endpoint_t *endpoint, int *service_port) {
    return cl_endpoint_list_get_service_port(cl_com_get_endpoint_list(), endpoint, service_port);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_remove_known_endpoint_from_name()"
 
 int
 cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const char *comp_name, unsigned long comp_id) {
@@ -2593,12 +2349,6 @@ cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const c
 
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_known_endpoint_autoclose_mode_from_name()"
 
 int
 cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
@@ -2633,12 +2383,6 @@ cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, c
    return retval;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_known_service_port_from_name()"
-
 int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
                                              int *service_port) {
    int retval = CL_RETVAL_OK;
@@ -2670,12 +2414,6 @@ int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, char *c
 
    return retval;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_service_fd()"
 
 int cl_com_set_handle_fds(cl_com_handle_t *handle, int **fdArrayBack, unsigned long *fdCountBack) {
    int fd = -1;
@@ -2764,11 +2502,6 @@ int cl_com_set_handle_fds(cl_com_handle_t *handle, int **fdArrayBack, unsigned l
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_service_port()"
-
 int cl_com_get_service_port(cl_com_handle_t *handle, int *port) {
    if (handle == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2788,11 +2521,6 @@ int cl_com_get_service_port(cl_com_handle_t *handle, int *port) {
    return cl_com_connection_get_service_port(handle->service_handler, port);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_synchron_receive_timeout()"
-
 int cl_com_set_synchron_receive_timeout(cl_com_handle_t *handle, int timeout) {
    if (handle == nullptr || timeout <= 0) {
       CL_LOG(CL_LOG_ERROR, "error setting synchron receive timeout");
@@ -2802,12 +2530,6 @@ int cl_com_set_synchron_receive_timeout(cl_com_handle_t *handle, int timeout) {
    handle->synchron_receive_timeout = timeout;
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_connect_port()"
 
 int cl_com_get_connect_port(cl_com_handle_t *handle, int *port) {
    if (handle == nullptr || port == nullptr) {
@@ -2821,12 +2543,6 @@ int cl_com_get_connect_port(cl_com_handle_t *handle, int *port) {
 
    return CL_RETVAL_UNKNOWN;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_add_allowed_host()"
 
 int cl_com_add_allowed_host(cl_com_handle_t *handle, char *hostname) {
    int retval = CL_RETVAL_OK;
@@ -2855,12 +2571,6 @@ int cl_com_add_allowed_host(cl_com_handle_t *handle, char *hostname) {
    return retval;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_remove_allowed_host()"
-
 int cl_com_remove_allowed_host(cl_com_handle_t *handle, char *hostname) {
    if (handle == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no handle specified");
@@ -2872,12 +2582,6 @@ int cl_com_remove_allowed_host(cl_com_handle_t *handle, char *hostname) {
    }
    return cl_string_list_remove_string(handle->allowed_host_list, hostname, 1);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_trigger()"
 
 int cl_commlib_trigger(cl_com_handle_t *handle, int synchron) {
 
@@ -2912,11 +2616,6 @@ int cl_commlib_trigger(cl_com_handle_t *handle, int synchron) {
 
 /* this function looks for read/write/read_write ready external file descriptors
    and calls their callback funcitons */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_trigger_external_fds()"
-
 static bool cl_com_trigger_external_fds(cl_com_handle_t *handle, cl_select_method_t mode) {
    bool retval = false;
 
@@ -2976,11 +2675,6 @@ static bool cl_com_trigger_external_fds(cl_com_handle_t *handle, cl_select_metho
 
 /* this function is used for no thread implementation and must be called
    permanent to get data into the data structures and lists */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_trigger()"
-
 static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
    cl_connection_list_elem_t *elem = nullptr;
 
@@ -3276,12 +2970,6 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
 
    return retval;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_handle_connection_read()"
 
 /* WARNING: connection_list must be locked by caller */
 static int cl_commlib_handle_connection_read(cl_com_connection_t *connection) {
@@ -4015,12 +3703,6 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t *connection) {
    return return_value;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_handle_connection_ack_timeouts()"
-
 /* This function removes all messages in sent_message_list in protocol state where
    the ack timeout is reached (e.g. ACK messages and SIM messages)*/
 static int cl_commlib_handle_connection_ack_timeouts(cl_com_connection_t *connection) {
@@ -4128,12 +3810,6 @@ static int cl_commlib_handle_connection_ack_timeouts(cl_com_connection_t *connec
    }
    return return_value;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_check_connection_count()"
 
 static int cl_commlib_check_connection_count(cl_com_handle_t *handle) {
    cl_connection_list_elem_t *elem = nullptr;
@@ -4243,11 +3919,6 @@ static int cl_commlib_check_connection_count(cl_com_handle_t *handle) {
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_handle_debug_clients()"
 
 static int cl_commlib_handle_debug_clients(cl_com_handle_t *handle, bool lock_list) {
 
@@ -4367,11 +4038,6 @@ static int cl_commlib_handle_debug_clients(cl_com_handle_t *handle, bool lock_li
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_actual_statistic_data()"
-
 int cl_com_get_actual_statistic_data(cl_com_handle_t *handle, cl_com_handle_statistic_t **statistics) {
    int ret_val = CL_RETVAL_OK;
    if (handle == nullptr || statistics == nullptr || *statistics != nullptr) {
@@ -4403,11 +4069,6 @@ int cl_com_get_actual_statistic_data(cl_com_handle_t *handle, cl_com_handle_stat
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_external_fd_unregister()"
-
 static int cl_commlib_external_fd_unregister(cl_com_handle_t *handle, int fd, int lock) {
    int ret_val = CL_RETVAL_PARAMS;
    cl_fd_list_elem_t *elem = nullptr;
@@ -4436,11 +4097,6 @@ static int cl_commlib_external_fd_unregister(cl_com_handle_t *handle, int fd, in
 
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_external_fd_register()"
 
 int cl_com_external_fd_register(cl_com_handle_t *handle,
                                 int fd,
@@ -4511,19 +4167,9 @@ int cl_com_external_fd_register(cl_com_handle_t *handle,
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_external_fd_unregister()"
-
 int cl_com_external_fd_unregister(cl_com_handle_t *handle, int fd) {
    return cl_commlib_external_fd_unregister(handle, fd, 1);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_external_fd_set_write_ready()"
 
 int cl_com_external_fd_set_write_ready(cl_com_handle_t *handle, int fd) {
    int ret_val = CL_RETVAL_PARAMS;
@@ -4551,23 +4197,12 @@ int cl_com_external_fd_set_write_ready(cl_com_handle_t *handle, int fd) {
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_set_application_debug_client_callback_func()"
-
 int cl_com_set_application_debug_client_callback_func(cl_app_debug_client_func_t debug_client_callback_func) {
    pthread_mutex_lock(&cl_com_debug_client_callback_func_mutex);
    cl_com_debug_client_callback_func = *debug_client_callback_func;
    pthread_mutex_unlock(&cl_com_debug_client_callback_func_mutex);
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_default_application_debug_client_callback()"
 
 static void cl_com_default_application_debug_client_callback(int dc_connected, int debug_level) {
    if (dc_connected == 1) {
@@ -4578,11 +4213,6 @@ static void cl_com_default_application_debug_client_callback(int dc_connected, i
 
    CL_LOG_INT(CL_LOG_INFO, "debug level is:", debug_level);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_application_debug()"
 
 int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 #define CL_DEBUG_DMT_APP_MESSAGE_FORMAT_STRING "%lu\t%.6f\t%s\n"
@@ -4645,12 +4275,6 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_calculate_statistic()"
 
 static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, int lock_list) {
    cl_connection_list_elem_t *elem = nullptr;
@@ -4817,12 +4441,6 @@ static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_up
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_finish_request_completeness()"
-
 static int cl_commlib_finish_request_completeness(cl_com_connection_t *connection) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -4857,12 +4475,6 @@ static int cl_commlib_finish_request_completeness(cl_com_connection_t *connectio
 
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_handle_connection_write()"
 
 static int cl_commlib_handle_connection_write(cl_com_connection_t *connection) {
    cl_com_message_t *message = nullptr;
@@ -5261,11 +4873,6 @@ static int cl_commlib_handle_connection_write(cl_com_connection_t *connection) {
 
 
 /* receive message from host, component, component id from handle */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_receive_message()"
-
 int cl_commlib_receive_message(cl_com_handle_t *handle,
                                char *un_resolved_hostname,
                                char *component_name,
@@ -5386,8 +4993,6 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
 
 
 #ifndef CL_DO_SEND_ACK_AT_COMMLIB_LAYER
-                                                                                                                                             /* send a message acknowledge when application gets the message */
-
                      /* send acknowledge for CL_MIH_MAT_ACK type (application removed message from buffer) */
                      if ( (*message)->message_mat == CL_MIH_MAT_ACK) {
                         cl_commlib_send_ack_message(connection, *message );
@@ -5514,12 +5119,6 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
  *   o caller must free returned endpoint list with cl_endpoint_list_cleanup()
  *
  */
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_search_endpoint()"
-
 int cl_commlib_search_endpoint(cl_com_handle_t *handle,
                                char *un_resolved_hostname, char *component_name, unsigned long component_id,
                                bool only_connected,
@@ -5637,11 +5236,6 @@ int cl_commlib_search_endpoint(cl_com_handle_t *handle,
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_send_ack_message()"
-
 /* connection_list is locked inside of this call */
 static int cl_commlib_send_ack_message(cl_com_connection_t *connection, cl_com_message_t *message) {
    cl_byte_t *ack_message_data = nullptr;
@@ -5680,11 +5274,6 @@ static int cl_commlib_send_ack_message(cl_com_connection_t *connection, cl_com_m
 }
 
 /* connection_list is locked inside of this call */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_send_ccm_message()"
-
 static int cl_commlib_send_ccm_message(cl_com_connection_t *connection) {
    cl_byte_t *ccm_message_data = nullptr;
    unsigned long ccm_message_size = 0;
@@ -5715,11 +5304,6 @@ static int cl_commlib_send_ccm_message(cl_com_connection_t *connection) {
 }
 
 /* connection_list is locked inside of this call */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_send_sim_message()"
-
 static int cl_commlib_send_sim_message(cl_com_connection_t *connection, unsigned long *mid) {
    cl_byte_t *sim_message_data = nullptr;
    unsigned long sim_message_size = 0;
@@ -5826,11 +5410,6 @@ static int cl_commlib_send_sirm_message(cl_com_connection_t *connection,
 
 
 /* connection_list is locked inside of this call */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_send_ccrm_message()"
-
 static int cl_commlib_send_ccrm_message(cl_com_connection_t *connection) {
    cl_byte_t *ccrm_message_data = nullptr;
    unsigned long ccrm_message_size = 0;
@@ -5870,12 +5449,6 @@ static int cl_commlib_send_ccrm_message(cl_com_connection_t *connection) {
    CL_MIH_MAT_ACK  = send message and block till communication partner application has read the message
    CL_MIH_MAT_SYNC = send message and block till communication partner application has processed all message actions (TODO)
 */
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_check_for_ack()"
-
 int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
                              unsigned long component_id, unsigned long mid, bool do_block) {
    int found_message = 0;
@@ -6010,12 +5583,6 @@ int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname
    } /* while (1) */
    return CL_RETVAL_UNKNOWN;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_open_connection()"
 
 int cl_commlib_open_connection(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
                                unsigned long component_id) {
@@ -6287,12 +5854,6 @@ int cl_commlib_open_connection(cl_com_handle_t *handle, char *un_resolved_hostna
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_close_connection()"
-
 int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
                                 unsigned long component_id, bool return_for_messages) {
    int closed = 0;
@@ -6488,11 +6049,6 @@ int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostn
    return CL_RETVAL_CONNECTION_NOT_FOUND;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_get_endpoint_status()"
-
 int cl_commlib_get_endpoint_status(cl_com_handle_t *handle, char *un_resolved_hostname,
                                    char *component_name, unsigned long component_id,
                                    cl_com_SIRM_t **status) {
@@ -6678,11 +6234,6 @@ int cl_commlib_get_endpoint_status(cl_com_handle_t *handle, char *un_resolved_ho
    } /* while(1) */
    return CL_RETVAL_UNKNOWN;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_append_message_to_connection()"
 
 static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
                                                    cl_com_endpoint_t *endpoint,
@@ -6950,12 +6501,6 @@ static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
    return return_value;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_send_message()"
-
 int cl_commlib_send_message(cl_com_handle_t *handle,
                             char *un_resolved_hostname, char *component_name, unsigned long component_id,
                             cl_xml_ack_type_t ack_type,
@@ -7114,12 +6659,6 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
    return return_value;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_get_last_message_time()"
-
 int cl_commlib_get_last_message_time(cl_com_handle_t *handle,
                                      const char *un_resolved_hostname, const char *component_name,
                                      unsigned long component_id,
@@ -7174,11 +6713,6 @@ int cl_commlib_get_last_message_time(cl_com_handle_t *handle,
 
    return return_value;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_get_connect_time()"
 
 int cl_commlib_get_connect_time(cl_com_handle_t *handle,
                                 const char *un_resolved_hostname, const char *component_name,
@@ -7242,12 +6776,6 @@ int cl_commlib_get_connect_time(cl_com_handle_t *handle,
    return return_value;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_trigger_thread()"
-
 /* This thread is used for commlib specific calls (e.g. hostlist refresh) */
 static void *cl_com_trigger_thread(void *t_conf) {
    int ret_val = CL_RETVAL_OK;
@@ -7299,12 +6827,6 @@ static void *cl_com_trigger_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_handle_service_thread()"
 
 static void *cl_com_handle_service_thread(void *t_conf) {
    int ret_val = CL_RETVAL_OK;
@@ -7386,11 +6908,6 @@ static void *cl_com_handle_service_thread(void *t_conf) {
    return (nullptr);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_read_write_thread_cleanup_function()"
-
 static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *thread_config) {
    if (thread_config != nullptr) {
       /*
@@ -7411,12 +6928,6 @@ static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *t
       CL_LOG(CL_LOG_INFO, "thread user data cleanup done");
    }
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_handle_read_thread()"
 
 static void *cl_com_handle_read_thread(void *t_conf) {
    int ret_val = CL_RETVAL_OK;
@@ -7778,11 +7289,6 @@ static void *cl_com_handle_read_thread(void *t_conf) {
    return (nullptr);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_handle_ccm_process()"
-
 static int cl_com_handle_ccm_process(cl_com_connection_t *connection) {
    /*
     * ATTENTION:
@@ -7807,12 +7313,6 @@ static int cl_com_handle_ccm_process(cl_com_connection_t *connection) {
    }
    return CL_RETVAL_UNKNOWN;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_handle_write_thread()"
 
 static void *cl_com_handle_write_thread(void *t_conf) {
    int return_value = CL_RETVAL_OK;
@@ -8124,12 +7624,6 @@ static void *cl_com_handle_write_thread(void *t_conf) {
    return (nullptr);
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "getuniquehostname()"
-
 /* MT-NOTE: getuniquehostname() is MT safe */
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
    char *resolved_host = nullptr;
@@ -8154,12 +7648,6 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
    }
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_commlib_app_message_queue_cleanup()"
 
 static void cl_commlib_app_message_queue_cleanup(cl_com_handle_t *handle) {
    struct timeval now;

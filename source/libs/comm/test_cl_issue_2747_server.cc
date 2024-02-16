@@ -50,12 +50,6 @@ static int pipe_signal = 0;
 static int hup_signal = 0;
 static int do_shutdown = 0;
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "sighandler_server()"
-
 void sighandler_server(int sig) {
    if (sig == SIGPIPE) {
       pipe_signal = 1;
@@ -67,12 +61,6 @@ void sighandler_server(int sig) {
    }
    do_shutdown = 1;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;

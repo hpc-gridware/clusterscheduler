@@ -30,10 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cerrno>
-#include <cstdlib>
-
 #include "comm/cl_handle_list.h"
 
 #include "uti/sge_stdlib.h"

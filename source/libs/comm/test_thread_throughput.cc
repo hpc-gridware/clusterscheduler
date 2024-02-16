@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -86,11 +85,6 @@ void my_cleanup_func(cl_thread_settings_t *thread_config) {
       cl_commlib_shutdown_handle(handle, false);
    }
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
@@ -289,12 +283,6 @@ extern int main(int argc, char **argv) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_receive_thread"
-
 void *my_receive_thread(void *t_conf) {
    int do_exit = 0;
    char *message = "announce";
@@ -386,11 +374,6 @@ void *my_receive_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_sender_thread()"
 
 void *my_sender_thread(void *t_conf) {
    int do_exit = 0;

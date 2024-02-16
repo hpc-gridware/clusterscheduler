@@ -30,17 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
 #include <cstring>
-#include <cstdlib>
 
 #include "comm/cl_host_alias_list.h"
 #include "comm/cl_commlib.h"
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_setup()"
 
 int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
@@ -50,12 +43,6 @@ int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name) {
    }
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_cleanup()"
 
 int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
    cl_host_alias_list_elem_t *elem = nullptr;
@@ -82,12 +69,6 @@ int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
    CL_LOG(CL_LOG_INFO, "host alias cleanup done");
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_append_host()"
 
 int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_name, char *alias_name, int lock_list) {
 
@@ -177,12 +158,6 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_remove_host()"
-
 int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_elem_t *element, int lock_list) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
@@ -223,11 +198,6 @@ int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_ele
    return function_return;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_local_resolved_name()"
-
 int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alias_name, char **local_resolved_name) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
@@ -266,11 +236,6 @@ int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alia
    return CL_RETVAL_UNKNOWN;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_alias_name()"
-
 int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolved_name, char **alias_name) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
@@ -308,12 +273,6 @@ int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolve
    return CL_RETVAL_UNKNOWN;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_first_elem()"
-
 cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -322,11 +281,6 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_least_elem()"
-
 cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -334,11 +288,6 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_next_elem()"
 
 cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -353,12 +302,6 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_e
    return nullptr;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_alias_list_get_last_elem()"
-
 cl_host_alias_list_elem_t *cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
@@ -371,5 +314,3 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_last_elem(cl_host_alias_list_e
    }
    return nullptr;
 }
-
-

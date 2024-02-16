@@ -74,12 +74,6 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    struct timeval now;

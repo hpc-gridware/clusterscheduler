@@ -58,12 +58,6 @@ static cl_log_list_elem_t* cl_log_list_get_next_elem(cl_raw_list_t* list_p, cl_l
 static cl_log_list_elem_t* cl_log_list_get_last_elem(cl_raw_list_t* list_p, cl_log_list_elem_t* elem);
 #endif
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_add_log()"
-
 static int cl_log_list_add_log(cl_raw_list_t *list_p, const char *thread_name, int line, const char *function_name,
                                const char *module_name, int thread_id, int thread_state, cl_log_t log_type,
                                const char *message, const char *parameter) { /* CR check */
@@ -155,12 +149,6 @@ static int cl_log_list_add_log(cl_raw_list_t *list_p, const char *thread_name, i
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_convert_type_id()"
-
 const char *cl_log_list_convert_type_id(cl_log_t id) {  /* CR check */
 
    switch (id) {
@@ -178,11 +166,6 @@ const char *cl_log_list_convert_type_id(cl_log_t id) {  /* CR check */
          return "?";
    }
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_set_log_level()"
 
 int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t new_log_level) {  /* CR check */
    cl_log_list_data_t *ldata = nullptr;
@@ -214,11 +197,6 @@ int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t new_log_level) {  
    return CL_RETVAL_LIST_DATA_IS_NULL;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_del_log()"
-
 int cl_log_list_del_log(cl_raw_list_t *list_p) {  /* CR check */
    cl_log_list_elem_t *elem = nullptr;
 
@@ -238,12 +216,6 @@ int cl_log_list_del_log(cl_raw_list_t *list_p) {  /* CR check */
    return CL_RETVAL_THREAD_NOT_FOUND;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_get_first_elem()"
-
 cl_log_list_elem_t *cl_log_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -253,10 +225,6 @@ cl_log_list_elem_t *cl_log_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR 
 }
 
 #if 0
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_get_next_elem()"
 static cl_log_list_elem_t* cl_log_list_get_next_elem(cl_raw_list_t* list_p, cl_log_list_elem_t* elem) {
    cl_raw_list_elem_t* next_raw_elem = nullptr;
  
@@ -270,10 +238,6 @@ static cl_log_list_elem_t* cl_log_list_get_next_elem(cl_raw_list_t* list_p, cl_l
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_get_last_elem()"
 static cl_log_list_elem_t* cl_log_list_get_last_elem(cl_raw_list_t* list_p, cl_log_list_elem_t* elem) {
    cl_raw_list_elem_t* last_raw_elem = nullptr;
    
@@ -306,11 +270,6 @@ static cl_log_list_elem_t* cl_log_list_get_last_elem(cl_raw_list_t* list_p, cl_l
 
    CL_RETVAL_XXX integer
 */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_setup()"
-
 int cl_log_list_setup(cl_raw_list_t **list_p, const char *creator_name, int creator_id,
                       cl_log_list_flush_method_t flush_type, cl_log_func_t flush_func) {
    int ret_val;
@@ -403,12 +362,6 @@ int cl_log_list_setup(cl_raw_list_t **list_p, const char *creator_name, int crea
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_cleanup()"
-
 int cl_log_list_cleanup(cl_raw_list_t **list_p) {          /* CR check */
    int ret_val;
    int ret_val2;
@@ -455,10 +408,6 @@ int cl_log_list_cleanup(cl_raw_list_t **list_p) {          /* CR check */
 
 #if 0
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_get_creator_thread()"
 cl_thread_settings_t* cl_log_list_get_creator_thread(cl_thread_settings_t* thread_config) {  /* CR check */
    cl_raw_list_t*         log_list = nullptr;
    cl_thread_settings_t*  creator_thread = nullptr;
@@ -478,11 +427,6 @@ cl_thread_settings_t* cl_log_list_get_creator_thread(cl_thread_settings_t* threa
    return creator_thread;
 }
 #endif
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_log()"
 
 int
 cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const char *module_name, const char *log_text,
@@ -606,11 +550,6 @@ cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const ch
    }
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_log_ssi()"
-
 int cl_log_list_log_ssi(cl_log_t log_type, int line, const char *function_name, const char *module_name,
                         const char *log_text,
                         const char *log_1, const char *log_2, int log_3) {
@@ -665,12 +604,6 @@ int cl_log_list_log_ssi(cl_log_t log_type, int line, const char *function_name, 
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_log_int()"
-
 int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, const char *module_name,
                         const char *log_text, int param) {
    int ret_val;
@@ -711,12 +644,6 @@ int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, 
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_flush()"
-
 int cl_log_list_flush(void) {        /* CR check */
    cl_raw_list_t *list_p = nullptr;
    cl_thread_settings_t *thread_config = nullptr;
@@ -748,12 +675,6 @@ int cl_log_list_flush(void) {        /* CR check */
    }
    return cl_log_list_flush_list(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_log_list_flush_list()"
 
 int cl_log_list_flush_list(cl_raw_list_t *list_p) {        /* CR check */
    int ret_val;

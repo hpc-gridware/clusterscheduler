@@ -33,21 +33,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <sys/time.h>
 #include <pthread.h>
 
 #include "comm/lists/cl_lists.h"
 
 void *timeout_thread_main(void *t_conf);  /* thread_func for timeout thread implementation */
 
-
 #define THREAD_COUNT 10
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(void) {
    int i;
@@ -114,12 +106,6 @@ extern int main(void) {
 /* WARNING: a thread can be canceled per default in the cl_thread_wait_for_event()
    call. The programmer has to ensure, that all the tread don't leave any
    things on the stack. Use pthread_cleanup_push() and pthread_cleanup_pop() */
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "timeout_thread_main()"
-
 void *timeout_thread_main(void *t_conf) {
    /* get pointer to cl_thread_settings_t struct */
    int ret_val;

@@ -40,11 +40,6 @@
 
 #include "comm/lists/cl_util.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 int main(void) {
    unsigned long i = 0;
    int back = 0;

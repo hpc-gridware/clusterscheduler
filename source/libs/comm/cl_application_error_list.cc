@@ -37,11 +37,6 @@
 #include "comm/cl_application_error_list.h"
 #include "comm/cl_commlib.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_setup()"
-
 int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
    int ret_val2 = CL_RETVAL_OK;
@@ -67,12 +62,6 @@ int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
    }
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_cleanup()"
 
 int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
    cl_application_error_list_elem_t *elem = nullptr;
@@ -108,12 +97,6 @@ int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
    CL_LOG(CL_LOG_INFO, "application error list cleanup done");
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_push_error()"
 
 int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_type, int cl_error, const char *cl_info,
                                          int lock_list) {
@@ -239,12 +222,6 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_get_first_elem()"
-
 cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -253,11 +230,6 @@ cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_ra
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_get_least_elem()"
-
 cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -265,11 +237,6 @@ cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_ra
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_get_next_elem()"
 
 cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_application_error_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -283,12 +250,6 @@ cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_app
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_application_error_list_get_last_elem()"
 
 cl_application_error_list_elem_t *cl_application_error_list_get_last_elem(cl_application_error_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;

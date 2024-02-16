@@ -54,11 +54,6 @@
 
    - On CL_RETVAL_OK the list must be freed by calling the function cl_raw_list_cleanup()
 */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_setup()"
-
 int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_locking) {  /* CR check */
 
    if (list_p == nullptr || list_name == nullptr) {
@@ -120,11 +115,6 @@ int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_l
 
    
 */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_cleanup()"
-
 int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    int ret_val;
 
@@ -208,11 +198,6 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    pointer to a new list element (cl_raw_list_elem_t*) or nullptr
 
 */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_append_elem()"
-
 cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data) {
 
    cl_raw_list_elem_t *new_elem = nullptr;
@@ -268,12 +253,6 @@ int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t 
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_dechain_elem()"
-
 int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem) {
 
    if (dechain_elem == nullptr || list_p == nullptr) {
@@ -316,11 +295,6 @@ int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_
   return values:
 
   pointer to void: data element (caller must free the memory for the data */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_remove_elem()"
-
 void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_elem) {       /* CR check */
    void *old_data = nullptr;
 
@@ -346,22 +320,12 @@ void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_
    return old_data;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_get_elem_count()"
-
 unsigned long cl_raw_list_get_elem_count(cl_raw_list_t *list_p) {   /* CR check */
    if (list_p) {
       return list_p->elem_count;
    }
    return 0;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_lock()"
 
 int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
    if (list_p == nullptr) {
@@ -411,11 +375,6 @@ int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_unlock()"
-
 int cl_raw_list_unlock(cl_raw_list_t *list_p) {
    if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -443,11 +402,6 @@ int cl_raw_list_unlock(cl_raw_list_t *list_p) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_get_first_elem()"
-
 cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
 
@@ -457,11 +411,6 @@ cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR 
    return elem;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_get_least_elem()"
-
 cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
    if (list_p != nullptr) {
@@ -469,12 +418,6 @@ cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR 
    }
    return elem;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_search_elem()"
 
 cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data) {  /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
@@ -493,22 +436,12 @@ cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data) {
    return elem;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_get_next_elem()"
-
 cl_raw_list_elem_t *cl_raw_list_get_next_elem(cl_raw_list_elem_t *elem) {       /* CR check */
    if (elem) {
       return elem->next;
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_raw_list_get_last_elem()"
 
 cl_raw_list_elem_t *cl_raw_list_get_last_elem(cl_raw_list_elem_t *elem) {       /* CR check */
    if (elem) {

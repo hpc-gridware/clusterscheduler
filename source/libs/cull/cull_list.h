@@ -57,7 +57,7 @@ typedef u_long32 lUlong;
 typedef u_long64 lUlong64;
 typedef long lLong;
 typedef char lChar;
-typedef char lBool;
+typedef bool lBool;
 typedef int lInt;
 typedef char *lString;
 typedef char *lHost;
@@ -101,7 +101,7 @@ enum _enum_lMultiType {
 #define CULL_IS_REDUCED    0x00200000
 
 #define BASIC_UNIT 50         /* Don't touch */
-#define MAX_DESCR_SIZE  4*BASIC_UNIT
+#define MAX_DESCR_SIZE  (4*BASIC_UNIT)
 
 #ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 

@@ -46,11 +46,6 @@ static struct in_addr *cl_com_copy_in_addr(struct in_addr *in_addr);
 
 static cl_com_hostent_t *cl_com_copy_hostent(cl_com_hostent_t *hostent);
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_setup()"
-
 int cl_host_list_setup(cl_raw_list_t **list_p,
                        char *list_name,
                        cl_host_resolve_method_t method,
@@ -252,11 +247,6 @@ int cl_host_list_setup(cl_raw_list_t **list_p,
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_copy()"
-
 int cl_host_list_copy(cl_raw_list_t **destination, cl_raw_list_t *source, bool create_hash) {
    int ret_val = CL_RETVAL_OK;
    cl_host_list_data_t *ldata_source = nullptr;
@@ -393,11 +383,6 @@ int cl_host_list_copy(cl_raw_list_t **destination, cl_raw_list_t *source, bool c
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_data()"
-
 cl_host_list_data_t *cl_host_list_get_data(cl_raw_list_t *list_p) {
 
    cl_host_list_data_t *ldata = nullptr;
@@ -416,12 +401,6 @@ cl_host_list_data_t *cl_host_list_get_data(cl_raw_list_t *list_p) {
    ldata = (cl_host_list_data_t *) hostlist->list_data;
    return ldata;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_set_alias_file_dirty()"
 
 int cl_host_list_set_alias_file_dirty(cl_raw_list_t *list_p) {
    int ret_val;
@@ -453,12 +432,6 @@ int cl_host_list_set_alias_file_dirty(cl_raw_list_t *list_p) {
    }
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_set_alias_file()"
 
 int cl_host_list_set_alias_file(cl_raw_list_t *list_p, const char *host_alias_file) {
    int ret_val;
@@ -501,11 +474,6 @@ int cl_host_list_set_alias_file(cl_raw_list_t *list_p, const char *host_alias_fi
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_cleanup()"
-
 int cl_host_list_cleanup(cl_raw_list_t **list_p) {
    cl_host_list_data_t *ldata = nullptr;
    cl_host_list_elem_t *elem = nullptr;
@@ -547,12 +515,6 @@ int cl_host_list_cleanup(cl_raw_list_t **list_p) {
 
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_append_host()"
 
 int cl_host_list_append_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, int lock_list) {
 
@@ -606,12 +568,6 @@ int cl_host_list_append_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, in
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_remove_host()"
-
 int cl_host_list_remove_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKOWN_HOST_ERROR;
@@ -654,11 +610,6 @@ int cl_host_list_remove_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, in
    return function_return;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_elem_host()"
-
 cl_host_list_elem_t *cl_host_list_get_elem_host(cl_raw_list_t *list_p, const char *unresolved_hostname) {
    cl_host_list_elem_t *elem = nullptr;
 
@@ -686,11 +637,6 @@ cl_host_list_elem_t *cl_host_list_get_elem_host(cl_raw_list_t *list_p, const cha
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_first_elem()"
-
 cl_host_list_elem_t *cl_host_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -699,11 +645,6 @@ cl_host_list_elem_t *cl_host_list_get_first_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_least_elem()"
-
 cl_host_list_elem_t *cl_host_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -711,11 +652,6 @@ cl_host_list_elem_t *cl_host_list_get_least_elem(cl_raw_list_t *list_p) {
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_next_elem()"
 
 cl_host_list_elem_t *cl_host_list_get_next_elem(cl_host_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -729,12 +665,6 @@ cl_host_list_elem_t *cl_host_list_get_next_elem(cl_host_list_elem_t *elem) {
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_host_list_get_last_elem()"
 
 cl_host_list_elem_t *cl_host_list_get_last_elem(cl_host_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
@@ -750,11 +680,6 @@ cl_host_list_elem_t *cl_host_list_get_last_elem(cl_host_list_elem_t *elem) {
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_copy_in_addr()"
-
 static struct in_addr *cl_com_copy_in_addr(struct in_addr *addr) {
    struct in_addr *copy = nullptr;
 
@@ -768,11 +693,6 @@ static struct in_addr *cl_com_copy_in_addr(struct in_addr *addr) {
    }
    return copy;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_copy_hostent()"
 
 static cl_com_hostent_t *cl_com_copy_hostent(cl_com_hostent_t *hostent) {
    cl_com_hostent_t *copy = nullptr;

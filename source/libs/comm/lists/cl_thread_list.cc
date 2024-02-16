@@ -48,11 +48,6 @@ static cl_thread_list_elem_t* cl_thread_list_get_last_elem(cl_raw_list_t* list_p
 #endif
 
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_add_thread()"
-
 static int cl_thread_list_add_thread(cl_raw_list_t *list_p, cl_thread_settings_t *thread_config) { /* CR check */
    cl_thread_list_elem_t *new_elem = nullptr;
 
@@ -79,12 +74,6 @@ static int cl_thread_list_add_thread(cl_raw_list_t *list_p, cl_thread_settings_t
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_del_thread()"
-
 static int cl_thread_list_del_thread(cl_raw_list_t *list_p, cl_thread_settings_t *thread_config) {
    cl_thread_list_elem_t *elem = nullptr;
 
@@ -103,29 +92,13 @@ static int cl_thread_list_del_thread(cl_raw_list_t *list_p, cl_thread_settings_t
    return CL_RETVAL_THREAD_NOT_FOUND;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_setup()"
-
 int cl_thread_list_setup(cl_raw_list_t **list_p, char *list_name) {        /* CR check */
    return cl_raw_list_setup(list_p, list_name, 1); /* enable list locking */
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_cleanup()"
-
 int cl_thread_list_cleanup(cl_raw_list_t **list_p) {    /* CR check */
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_create_thread()"
 
 int cl_thread_list_create_thread(cl_raw_list_t *list_p,
                                  cl_thread_settings_t **new_thread_p,
@@ -189,12 +162,6 @@ int cl_thread_list_create_thread(cl_raw_list_t *list_p,
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_delete_thread_by_id()"
-
 int cl_thread_list_delete_thread_by_id(cl_raw_list_t *list_p, int id) {   /* CR check */
    cl_thread_settings_t *thread = nullptr;
    int ret_val = CL_RETVAL_OK;
@@ -248,12 +215,6 @@ int cl_thread_list_delete_thread_by_id(cl_raw_list_t *list_p, int id) {   /* CR 
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_delete_thread()"
-
 int cl_thread_list_delete_thread(cl_raw_list_t *list_p, cl_thread_settings_t *thread) {
    int ret_val = CL_RETVAL_OK;
 
@@ -304,11 +265,6 @@ int cl_thread_list_delete_thread(cl_raw_list_t *list_p, cl_thread_settings_t *th
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_delete_thread_without_join()"
-
 int cl_thread_list_delete_thread_without_join(cl_raw_list_t *list_p, cl_thread_settings_t *thread) {
    int ret_val = CL_RETVAL_OK;
 
@@ -343,11 +299,6 @@ int cl_thread_list_delete_thread_without_join(cl_raw_list_t *list_p, cl_thread_s
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_delete_thread_from_list()"
-
 int cl_thread_list_delete_thread_from_list(cl_raw_list_t *list_p, cl_thread_settings_t *thread) {
    /*
     * TODO: Cleanup this function, provide a framework for shutting down threads in a 2 step 
@@ -366,12 +317,6 @@ int cl_thread_list_delete_thread_from_list(cl_raw_list_t *list_p, cl_thread_sett
    return cl_thread_list_del_thread(list_p, thread);
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_thread_by_id()"
-
 cl_thread_settings_t *cl_thread_list_get_thread_by_id(cl_raw_list_t *list_p, int thread_id) {  /* CR check */
    cl_thread_list_elem_t *elem = nullptr;
    cl_thread_settings_t *thread_config = nullptr;
@@ -385,11 +330,6 @@ cl_thread_settings_t *cl_thread_list_get_thread_by_id(cl_raw_list_t *list_p, int
    return thread_config;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_thread_by_self()"
-
 cl_thread_settings_t *cl_thread_list_get_thread_by_self(cl_raw_list_t *list_p, pthread_t *thread) {  /* CR check */
    cl_thread_list_elem_t *elem = nullptr;
    cl_thread_settings_t *thread_config = nullptr;
@@ -402,11 +342,6 @@ cl_thread_settings_t *cl_thread_list_get_thread_by_self(cl_raw_list_t *list_p, p
    }
    return thread_config;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_thread_by_name()"
 
 cl_thread_settings_t *cl_thread_list_get_thread_by_name(cl_raw_list_t *list_p, char *thread_name) {  /* CR check */
    cl_thread_list_elem_t *elem = nullptr;
@@ -425,12 +360,6 @@ cl_thread_settings_t *cl_thread_list_get_thread_by_name(cl_raw_list_t *list_p, c
    return thread_config;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_first_thread()"
-
 cl_thread_settings_t *cl_thread_list_get_first_thread(cl_raw_list_t *list_p) {  /* CR check */
 
    cl_thread_settings_t *thread_config = nullptr;
@@ -443,12 +372,6 @@ cl_thread_settings_t *cl_thread_list_get_first_thread(cl_raw_list_t *list_p) {  
    return thread_config;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_first_elem()"
-
 cl_thread_list_elem_t *cl_thread_list_get_first_elem(cl_raw_list_t *list_p) {  /* CR check */
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -456,11 +379,6 @@ cl_thread_list_elem_t *cl_thread_list_get_first_elem(cl_raw_list_t *list_p) {  /
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_next_elem()"
 
 cl_thread_list_elem_t *cl_thread_list_get_next_elem(cl_thread_list_elem_t *elem) {  /* CR check */
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -476,12 +394,7 @@ cl_thread_list_elem_t *cl_thread_list_get_next_elem(cl_thread_list_elem_t *elem)
    return nullptr;
 }
 
-
 #if 0
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_list_get_last_elem()"
 static cl_thread_list_elem_t* cl_thread_list_get_last_elem(cl_raw_list_t* list_p, cl_thread_list_elem_t* elem) {
    cl_raw_list_elem_t* last_raw_elem = nullptr;
  

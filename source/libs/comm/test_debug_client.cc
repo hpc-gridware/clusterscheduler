@@ -205,12 +205,6 @@ void print_line(char *buffer) {
 
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    int port;

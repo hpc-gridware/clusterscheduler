@@ -62,7 +62,6 @@ void sighandler_issue_tests(int sig) {
    do_shutdown = 1;
 }
 
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 

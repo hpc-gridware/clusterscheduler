@@ -44,12 +44,6 @@ void *my_thread(void *t_conf);
 
 void *my_thread_test(void *t_conf);
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(void) {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -106,12 +100,6 @@ extern int main(void) {
    printf("main done\n");
    return 0;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_thread()"
 
 void *my_thread(void *t_conf) {
    cl_thread_settings_t *thread_p = nullptr;

@@ -39,21 +39,11 @@
 
 #include "comm/lists/cl_string_list.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_string_list_setup()"
-
 int cl_string_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_string_list_cleanup()"
 
 int cl_string_list_cleanup(cl_raw_list_t **list_p) {
    cl_string_list_elem_t *elem = nullptr;
@@ -76,12 +66,6 @@ int cl_string_list_cleanup(cl_raw_list_t **list_p) {
    cl_raw_list_unlock(*list_p);
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_string_list_append_string()"
 
 int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_list) {
 
@@ -135,7 +119,6 @@ int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_l
    return CL_RETVAL_OK;
 }
 
-
 int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKOWN_HOST_ERROR;
@@ -174,7 +157,6 @@ int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_l
    }
    return function_return;
 }
-
 
 cl_string_list_elem_t *cl_string_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);

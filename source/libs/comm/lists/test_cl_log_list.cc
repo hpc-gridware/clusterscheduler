@@ -47,11 +47,6 @@ void *my_test_thread(void *t_conf);
 
 void *my_log_thread(void *t_conf);
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_log_flush_list()"
-
 int my_log_flush_list(cl_raw_list_t *list_p) {
    int ret_val;
    cl_log_list_elem_t *elem = nullptr;
@@ -82,11 +77,6 @@ int my_log_flush_list(cl_raw_list_t *list_p) {
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    cl_raw_list_t *log_list = nullptr;
@@ -188,12 +178,6 @@ extern int main(int argc, char **argv) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_log_thread()"
-
 void *my_log_thread(void *t_conf) {
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -247,11 +231,6 @@ void *my_log_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_test_thread()"
 
 void *my_test_thread(void *t_conf) {
    cl_thread_settings_t *thread_p = nullptr;

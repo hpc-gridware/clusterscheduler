@@ -52,12 +52,6 @@ static int global_thread_config_key_done = 0;
 
 static int cl_thread_set_default_cancel_method(void);
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_create_thread_condition()"
-
 int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
    cl_thread_condition_t *new_condition = nullptr;
    int ret_val;
@@ -138,11 +132,6 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_delete_thread_condition()"
-
 int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
    int ret_val;
    if (condition == nullptr) {
@@ -189,11 +178,6 @@ int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
    *condition = nullptr;
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_wait_for_thread_condition()"
 
 int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long sec, long micro_sec) {
    int ret_val = CL_RETVAL_OK;
@@ -304,12 +288,6 @@ int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long s
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_clear_triggered_conditions()"
-
 int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
    if (condition == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -330,11 +308,6 @@ int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_trigger_thread_condition()"
 
 int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_broadcast) {
    int ret_val = CL_RETVAL_OK;
@@ -379,12 +352,6 @@ int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_cleanup_global_thread_config_key()"
-
 void cl_thread_cleanup_global_thread_config_key(void) {
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done == 1) {
@@ -397,11 +364,6 @@ void cl_thread_cleanup_global_thread_config_key(void) {
 
 /* if no start_routine is given (=nullptr) the cl_thread_settings_t struct is
    filled, but no thread is started */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_setup()"
-
 int cl_thread_setup(cl_thread_settings_t *thread_config,
                     cl_raw_list_t *log_list,
                     const char *name,
@@ -491,11 +453,6 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_join()"
-
 int cl_thread_join(cl_thread_settings_t *thread_config) {
 
    if (thread_config == nullptr) {
@@ -514,11 +471,6 @@ int cl_thread_join(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_get_thread_config()"
-
 cl_thread_settings_t *cl_thread_get_thread_config(void) {
    /* cl_thread_setup  will set the thread specific data */
    cl_thread_settings_t *settings = nullptr;
@@ -529,11 +481,6 @@ cl_thread_settings_t *cl_thread_get_thread_config(void) {
    pthread_mutex_unlock(&global_thread_config_key_mutex);
    return settings;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_cleanup()"
 
 int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    /* free all malloc()'ed pointers in cl_thread_settings_t structure */
@@ -580,11 +527,6 @@ int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_shutdown()"
-
 int cl_thread_shutdown(cl_thread_settings_t *thread_config) {
    int ret_val;
 
@@ -603,11 +545,6 @@ int cl_thread_shutdown(cl_thread_settings_t *thread_config) {
          return CL_RETVAL_UNKNOWN;
    }
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_wait_for_event()"
 
 int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long micro_sec) {
 
@@ -635,12 +572,6 @@ int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long
    return ret;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_get_state()"
-
 const char *cl_thread_get_state(cl_thread_settings_t *thread_config) {
 
    if (thread_config == nullptr) {
@@ -649,11 +580,6 @@ const char *cl_thread_get_state(cl_thread_settings_t *thread_config) {
 
    return cl_thread_convert_state_id(thread_config->thread_state);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_convert_state_id()"
 
 const char *cl_thread_convert_state_id(int thread_state) {
 
@@ -676,24 +602,12 @@ const char *cl_thread_convert_state_id(int thread_state) {
    }
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_clear_events()"
-
 int cl_thread_clear_events(cl_thread_settings_t *thread_config) {
    if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    return cl_thread_clear_triggered_conditions(thread_config->thread_event_condition);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_trigger_event()"
 
 int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
    int ret_val;
@@ -707,11 +621,6 @@ int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
 #endif
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_func_testcancel()"
 
 int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    int ret_val = 0;
@@ -766,11 +675,6 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_set_default_cancel_method()"
-
 static int cl_thread_set_default_cancel_method(void) {
    /*
     * Setting thread cancel state and type to default values.
@@ -781,11 +685,6 @@ static int cl_thread_set_default_cancel_method(void) {
    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, nullptr);
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_func_startup()"
 
 int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    int ret_val = CL_RETVAL_OK;
@@ -810,11 +709,6 @@ int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_set_thread_config()"
-
 int cl_thread_set_thread_config(cl_thread_settings_t *thread_config) {
 
    cl_thread_set_default_cancel_method();
@@ -832,11 +726,6 @@ int cl_thread_set_thread_config(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_NOT_THREAD_SPECIFIC_INIT;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_unset_thread_config()"
-
 int cl_thread_unset_thread_config(void) {
 
    pthread_mutex_lock(&global_thread_config_key_mutex);
@@ -852,12 +741,6 @@ int cl_thread_unset_thread_config(void) {
    return CL_RETVAL_NOT_THREAD_SPECIFIC_INIT;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_func_cleanup()"
-
 int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
    if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -867,11 +750,6 @@ int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
    cl_thread_unset_thread_config();
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_thread_default_cleanup_function()"
 
 void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config) {
    if (thread_config != nullptr) {

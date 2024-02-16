@@ -64,12 +64,6 @@ void sighandler_client(
    cl_com_ignore_timeouts(true);
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    static int runs = 100;

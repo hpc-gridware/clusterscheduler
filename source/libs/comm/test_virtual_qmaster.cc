@@ -36,12 +36,9 @@
 #include <sys/time.h>
 #include <cstdlib>
 #include <csignal>
-#include <unistd.h>
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
-
-#include "uti/sge_profiling.h"
 
 #define DATA_SIZE 5000
 
@@ -94,12 +91,6 @@ void sighandler_client(
    /* shutdown all sockets */
    do_shutdown = 1;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
@@ -230,12 +221,6 @@ extern int main(int argc, char **argv) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_message_thread"
-
 void *my_message_thread(void *t_conf) {
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -311,12 +296,6 @@ void *my_message_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_event_thread()"
 
 void *my_event_thread(void *t_conf) {
    int do_exit = 0;

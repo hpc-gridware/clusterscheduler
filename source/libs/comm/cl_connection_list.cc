@@ -43,12 +43,6 @@
 #include "comm/cl_communication.h"
 #include "comm/lists/cl_util.h"
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_setup()"
-
 int cl_connection_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking, bool create_hash) {
    cl_connection_list_data_t *ldata = nullptr;
    int ret_val;
@@ -84,11 +78,6 @@ int cl_connection_list_setup(cl_raw_list_t **list_p, char *list_name, int enable
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_cleanup()"
-
 int cl_connection_list_cleanup(cl_raw_list_t **list_p) {
    cl_connection_list_data_t *ldata = nullptr;
 
@@ -110,12 +99,6 @@ int cl_connection_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_create_endpoint_string()"
-
 char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint) {
    char help[2048]; /* max length of endpoint name is 256 */
    if (endpoint == nullptr) {
@@ -124,11 +107,6 @@ char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint) {
    snprintf(help, 2048, "%lu%s%lu", (unsigned long) endpoint->addr.s_addr, endpoint->comp_name, endpoint->comp_id);
    return strdup(help);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_append_connection()"
 
 int cl_connection_list_append_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock) {
    int ret_val;
@@ -189,12 +167,6 @@ int cl_connection_list_append_connection(cl_raw_list_t *list_p, cl_com_connectio
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_remove_connection()"
-
 int cl_connection_list_remove_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock) {
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
    int ret_val = CL_RETVAL_OK;
@@ -253,12 +225,6 @@ int cl_connection_list_remove_connection(cl_raw_list_t *list_p, cl_com_connectio
 
    return function_return;
 }
-
-/* this functions will free all connections, marked to close */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_destroy_connections_to_close()"
 
 int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
    int ret_val = CL_RETVAL_OK;
@@ -509,12 +475,6 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
    return ret_val;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_get_first_elem()"
-
 cl_connection_list_elem_t *cl_connection_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -523,11 +483,6 @@ cl_connection_list_elem_t *cl_connection_list_get_first_elem(cl_raw_list_t *list
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_get_least_elem()"
-
 cl_connection_list_elem_t *cl_connection_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -535,12 +490,6 @@ cl_connection_list_elem_t *cl_connection_list_get_least_elem(cl_raw_list_t *list
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_get_next_elem()"
 
 cl_connection_list_elem_t *cl_connection_list_get_next_elem(cl_connection_list_elem_t *elem) {  /* CR check */
 
@@ -556,12 +505,6 @@ cl_connection_list_elem_t *cl_connection_list_get_next_elem(cl_connection_list_e
    return nullptr;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_get_last_elem()"
-
 cl_connection_list_elem_t *cl_connection_list_get_last_elem(cl_connection_list_elem_t *elem) {  /* CR check */
 
    cl_raw_list_elem_t *last_raw_elem = nullptr;
@@ -575,11 +518,6 @@ cl_connection_list_elem_t *cl_connection_list_get_last_elem(cl_connection_list_e
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_connection_list_get_elem_endpoint()"
 
 cl_connection_list_elem_t *cl_connection_list_get_elem_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    cl_connection_list_elem_t *elem = nullptr;

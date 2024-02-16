@@ -32,16 +32,9 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
-#include <cstring>
-#include <sys/time.h>
 #include <cstdlib>
 
 #include "comm/lists/cl_parameter_list.h"
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(void) {
    int ret;

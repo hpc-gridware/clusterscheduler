@@ -93,11 +93,6 @@ unsigned long my_application_status(char **info_message) {
    return (unsigned long) 1;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_ssl_verify_func()"
-
 static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
    char *user_name = nullptr;
    struct passwd *paswd = nullptr;
@@ -159,12 +154,6 @@ static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, con
    }
    return true;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;
