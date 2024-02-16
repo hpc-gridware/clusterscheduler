@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
     */
    sge_signaler_initialize();
    sge_event_master_initialize();
-#if ENABLE_MIRROR_THREADS
+#if OGE_ENABLE_MIRROR_THREADS
    oge_event_mirror_initialize();
 #endif
    sge_timer_initialize(&monitor);
@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
    sge_listener_terminate();
    sge_worker_terminate();
    sge_timer_terminate();
-#if ENABLE_MIRROR_THREADS
+#if OGE_ENABLE_MIRROR_THREADS
    oge_event_mirror_terminate();
 #endif
    sge_event_master_terminate();

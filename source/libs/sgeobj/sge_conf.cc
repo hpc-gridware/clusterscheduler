@@ -1243,7 +1243,7 @@ void conf_update_thread_profiling(const char *thread_name)
       set_thread_prof_status_by_name("Scheduler Thread", prof_scheduler_thrd);
       set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
       set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
-      set_thread_prof_status_by_name("Deliver Thread", prof_deliver_thrd);
+      set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
       set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
    } else {
       if (strcmp(thread_name, "Signal Thread") == 0) {
@@ -1254,8 +1254,8 @@ void conf_update_thread_profiling(const char *thread_name)
          set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
       } else if (strcmp(thread_name, "Worker Thread") == 0) {
          set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
-      } else if (strcmp(thread_name, "Deliver Thread") == 0) {
-         set_thread_prof_status_by_name("Deliver Thread", prof_deliver_thrd);
+      } else if (strcmp(thread_name, "Event Master Thread") == 0) {
+         set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
       } else if (strcmp(thread_name, "TEvent Thread") == 0) {
          set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
       }

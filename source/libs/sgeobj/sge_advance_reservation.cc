@@ -165,7 +165,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    if (in_master) {
       /*    AR_name, SGE_STRING */
       NULL_OUT_NONE(ar, AR_name);
-      if (object_verify_name(ar, alpp, AR_name, SGE_OBJ_AR)) {
+      if (object_verify_name(ar, alpp, AR_name)) {
          goto ERROR;
       }
       /*   AR_account, SGE_STRING */

@@ -53,6 +53,7 @@ typedef enum {
    EV_ID_INVALID = -1,
    EV_ID_ANY = 0,            /* qmaster will give the ev a unique id */
    EV_ID_SCHEDD = 1,         /* schedd registers at qmaster */
+   EV_ID_EVENT_MIRROR = 2,   // event mirror thread registers as event client
    EV_ID_FIRST_DYNAMIC = 11  /* first id given by qmaster for EV_ID_ANY registration */
 }ev_registration_id;
 

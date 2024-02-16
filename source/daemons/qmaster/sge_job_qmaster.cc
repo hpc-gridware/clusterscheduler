@@ -2292,7 +2292,7 @@ static int mod_job_attributes(
          sprintf(job_descr, "job "sge_u32, jobid);
          job_name = lGetString(new_job, JB_job_name);
          lSetString(new_job, JB_job_name, new_name);
-         if (object_verify_name(new_job, alpp, JB_job_name, job_descr)) {
+         if (object_verify_name(new_job, alpp, JB_job_name)) {
             lSetString(new_job, JB_job_name, job_name);
             DRETURN(STATUS_EUNKNOWN);
          }
