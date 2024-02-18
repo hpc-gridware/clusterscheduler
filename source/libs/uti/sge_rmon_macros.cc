@@ -378,15 +378,14 @@ static void rmon_mprintf_va(const char *fmt, va_list args) {
 *******************************************************************************/
 static void mwrite(char *message, const char *thread_name, int thread_id) {
     static u_long traceid = 0;
-    auto tmp_pid = getpid();
 
     flockfile(rmon_fp);
     if (thread_name != nullptr) {
-        fprintf(rmon_fp, "%6ld %6ld %12.12s %02d", traceid, (long) tmp_pid, thread_name, thread_id);
+        fprintf(rmon_fp, "%7ld %16.16s %02d ", traceid, thread_name, thread_id);
     } else {
         std::ostringstream oss_thread_id;
         oss_thread_id << std::this_thread::get_id();
-        fprintf(rmon_fp, "%6ld %6ld %s %02d", traceid, (long) tmp_pid, oss_thread_id.str().c_str(), thread_id);
+        fprintf(rmon_fp, "%7ld %16.16s %02d ", traceid, oss_thread_id.str().c_str(), thread_id);
     }
     fprintf(rmon_fp, "%s", message);
     fflush(rmon_fp);

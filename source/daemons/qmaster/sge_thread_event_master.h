@@ -37,5 +37,5 @@ sge_event_master_initialize();
 void
 sge_event_master_terminate();
 
-void *
+[[noreturn]] void *
 sge_event_master_main(void *arg);

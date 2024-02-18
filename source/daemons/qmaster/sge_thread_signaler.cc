@@ -59,25 +59,21 @@
 void
 sge_signaler_initialize() {
    cl_thread_settings_t *dummy_thread_p = nullptr;
-   dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SIGNAL_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
-                                cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0,
+                                cl_com_get_log_list(), threadnames[SIGNAL_THREAD], 0,
                                 sge_signaler_main, nullptr, nullptr, CL_TT_SIGNALER);
-   sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
 void
-sge_signaler_initiate_termination(void) {
-   cl_thread_settings_t *thread = nullptr;
+sge_signaler_initiate_termination() {
    DENTER(TOP_LAYER);
 
-   thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
    if (thread != nullptr) {
       pthread_kill(*(thread->thread_pointer), SIGINT);
       INFO((SGE_EVENT, "send SIGINT to "SFN"\n", thread->thread_name));
@@ -86,11 +82,10 @@ sge_signaler_initiate_termination(void) {
 }
 
 void
-sge_signaler_terminate(void) {
-   cl_thread_settings_t *thread = nullptr;
+sge_signaler_terminate() {
    DENTER(TOP_LAYER);
 
-   thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
    if (thread != nullptr) {
       DPRINTF(("getting canceled\n"));
       cl_thread_list_delete_thread(Main_Control.signal_thread_pool, thread);
@@ -128,7 +123,7 @@ sge_signaler_terminate(void) {
 *******************************************************************************/
 void *
 sge_signaler_main(void *arg) {
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = (cl_thread_settings_t *) arg;
    bool is_continue = true;
    sigset_t sig_set;
    int sig_num;
@@ -165,8 +160,7 @@ sge_signaler_main(void *arg) {
          case SIGINT:
          case SIGTERM:
             /*
-             * Notify the main thread. It is waiting and will shutdown all other
-             * threads if it gets signalled
+             * Notify the main thread. It is waiting and will shut down all other threads if it gets signalled
              */
             sge_thread_notify_all_waiting();
 

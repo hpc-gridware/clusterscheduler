@@ -74,10 +74,10 @@ int
 sge_qmaster_shutdown_via_signal_thread(int i);
 
 int
-sge_qmaster_get_exit_state(void);
+sge_qmaster_get_exit_state();
 
 void
 sge_qmaster_set_exit_state(int new_state);
 
 bool
-sge_qmaster_do_final_spooling(void);
+sge_qmaster_do_final_spooling();

@@ -644,7 +644,7 @@ int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, 
    return ret_val;
 }
 
-int cl_log_list_flush(void) {        /* CR check */
+int cl_log_list_flush() {        /* CR check */
    cl_raw_list_t *list_p = nullptr;
    cl_thread_settings_t *thread_config = nullptr;
    cl_log_list_data_t *ldata = nullptr;

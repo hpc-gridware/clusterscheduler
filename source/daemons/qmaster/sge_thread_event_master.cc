@@ -70,18 +70,15 @@ sge_event_master_cleanup_report_list(lList **list) {
 void
 sge_event_master_initialize() {
    cl_thread_settings_t *dummy_thread_p = nullptr;
-   dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
    DPRINTF(("event master functionality has been initialized\n"));
 
-   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[EVENT_MASTER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
    cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                sge_dstring_get_string(&thread_name), 0, sge_event_master_main, nullptr, nullptr,
+                                threadnames[EVENT_MASTER_THREAD], 0, sge_event_master_main, nullptr, nullptr,
                                 CL_TT_EVENT_MASTER);
-   sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
@@ -100,7 +97,7 @@ sge_event_master_terminate() {
    DRETURN_VOID;
 }
 
-void *
+[[noreturn]] void *
 sge_event_master_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
@@ -109,7 +106,7 @@ sge_event_master_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started"));
+   DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, EMAT_EXT, EVENT_MASTER_THREAD_WARNING, EVENT_MASTER_THREAD_ERROR);
    sge_qmaster_thread_init(QMASTER, EVENT_MASTER_THREAD, true);
@@ -155,7 +152,5 @@ sge_event_master_main(void *arg) {
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
    // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
-
-   DRETURN(nullptr);
 }
 

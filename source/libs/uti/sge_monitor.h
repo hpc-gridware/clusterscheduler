@@ -219,8 +219,8 @@ void sge_monitor_reset(monitoring_t *monitor);
  * TODO: it should be customized for read/write locks.
  */
 #define MONITOR_WAIT_TIME(execute, monitor)    if (((monitor) != nullptr) && ((monitor)->monitor_time > 0)){ \
-                                    struct timeval before;  \
-                                    struct timeval after; \
+                                    struct timeval before{};  \
+                                    struct timeval after{}; \
                                     double time; \
                                     \
                                     gettimeofday(&before, nullptr); \

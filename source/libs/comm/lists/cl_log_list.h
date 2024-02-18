@@ -60,7 +60,7 @@ int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t log_level); /* CR 
 
 
 /* thread list function that will lock the list */
-int cl_log_list_flush(void);   /* CR check */
+int cl_log_list_flush();   /* CR check */
 int cl_log_list_flush_list(cl_raw_list_t *list_p); /* CR check */
 int
 cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const char *module_name, const char *log_text,

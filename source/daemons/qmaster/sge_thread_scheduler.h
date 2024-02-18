@@ -46,5 +46,5 @@ sge_scheduler_initialize(lList **answer_list);
 void
 sge_scheduler_terminate(lList **answer_list);
 
-void *
+[[noreturn]] void *
 sge_scheduler_main(void *arg);

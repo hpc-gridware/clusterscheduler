@@ -45,88 +45,82 @@
 #  include <note.h>
 #endif
 
-#define DENTER_MAIN(layer, program)                                          \
-   static const char SGE_FUNC[] = program;                                   \
-   static const int xaybzc = layer;                                          \
-                                                                             \
-   rmon_mopen();                                                             \
-   if (rmon_condition(xaybzc, TRACE)) {                                      \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();\
-      int thread_id = -1;                                                    \
-      if (___thread_config != nullptr) {                                     \
-         rmon_menter (SGE_FUNC, ___thread_config->thread_name, thread_id);   \
-      } else {                                                               \
-         rmon_menter (SGE_FUNC, nullptr, -1);                                \
-      }                                                                      \
-   }                                                                         \
+#define DENTER_MAIN(layer, program) \
+   static const char SGE_FUNC[] = program; \
+   static const int xaybzc = layer; \
+   rmon_mopen(); \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
+      if (___thread_config != nullptr) { \
+         rmon_menter (SGE_FUNC, ___thread_config->thread_name, ___thread_config->thread_id); \
+      } else { \
+         rmon_menter (SGE_FUNC, nullptr, -1); \
+      } \
+   } \
    void()
 
-#define DENTER(layer)                                                        \
-   static const int xaybzc = layer;                                          \
-                                                                             \
-   if (rmon_condition(xaybzc, TRACE)) {                                      \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();\
-      int thread_id = -1;                                                    \
-      if (___thread_config != nullptr) {                                     \
-         rmon_menter (__func__, ___thread_config->thread_name, thread_id);   \
-      } else {                                                               \
-         rmon_menter (__func__, nullptr, -1);                                \
-      }                                                                      \
-   }                                                                         \
+#define DENTER(layer) \
+   static const int xaybzc = layer; \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
+      if (___thread_config != nullptr) { \
+         rmon_menter (__func__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      } else { \
+         rmon_menter (__func__, nullptr, -1); \
+      } \
+   } \
    void()
 
-#define DENTER_(layer)                                                       \
-   static const int xaybzc = layer;                                          \
-                                                                             \
-   if (rmon_condition(xaybzc, TRACE)) {                                      \
-      rmon_menter (__func__, nullptr, -1);                                   \
-   }                                                                         \
+#define DENTER_(layer) \
+   static const int xaybzc = layer; \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      rmon_menter (__func__, nullptr, -1); \
+   } \
    void()
 
-#define DRETURN(ret)                                                             \
-   if (rmon_condition(xaybzc, TRACE)) {                                          \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();    \
-      int thread_id = -1;                                                        \
-      if (___thread_config != nullptr) {                                         \
-         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, thread_id);\
-      } else {                                                                   \
-         rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1);                  \
-      }                                                                          \
-   }                                                                             \
+#define DRETURN(ret) \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
+      if (___thread_config != nullptr) { \
+         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      } else { \
+         rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
+      } \
+   } \
    return ret
 
-#define DRETURN_(ret)                                                            \
-   if (rmon_condition(xaybzc, TRACE)) {                                          \
-      rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1);                     \
-   }                                                                             \
+#define DRETURN_(ret) \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
+   } \
    return ret
 
-#define DRETURN_VOID                                                             \
-   if (rmon_condition(xaybzc, TRACE)) {                                          \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();    \
-      if (___thread_config != nullptr) {                                         \
-         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, -1);\
-      } else {                                                                   \
-         rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1);                      \
-      }                                                                          \
-   }                                                                             \
+#define DRETURN_VOID \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
+      if (___thread_config != nullptr) { \
+         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      } else { \
+         rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
+      } \
+   } \
    return
 
-#define DRETURN_VOID_                                                            \
-   if (rmon_condition(xaybzc, TRACE)) {                                          \
-      rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1);   \
-   }                                                                             \
+#define DRETURN_VOID_ \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
+   } \
    return
 
-#define DTRACE                                                                     \
-   if (rmon_condition(xaybzc, TRACE)) {                                            \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();      \
-      if (___thread_config != nullptr) {                                           \
-         rmon_mtrace(__func__, __FILE__, __LINE__, ___thread_config->thread_name, -1); \
-      } else {                                                                     \
-         rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1);                   \
-      }                                                                            \
-   }                                                                               \
+#define DTRACE \
+   if (rmon_condition(xaybzc, TRACE)) { \
+      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
+      if (___thread_config != nullptr) { \
+         rmon_mtrace(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      } else { \
+         rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1); \
+      } \
+   } \
    void()
 
 #define DTRACE_                                                                  \
@@ -134,27 +128,27 @@
       rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1);                    \
    }
 
-#define DPRINTF(msg)                                                             \
-   if (rmon_condition(xaybzc, INFOPRINT)) {                                      \
-      rmon_helper_t *helper = rmon_get_helper();                                 \
-      if (helper != nullptr) {                                                   \
+#define DPRINTF(msg) \
+   if (rmon_condition(xaybzc, INFOPRINT)) { \
+      rmon_helper_t *helper = rmon_get_helper(); \
+      if (helper != nullptr) { \
          cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-         if (___thread_config != nullptr) {                                      \
-            strcpy(helper->thread_name, ___thread_config->thread_name);          \
-            helper->thread_id = -1;                                              \
-         }                                                                       \
-      }                                                                          \
-      rmon_mprintf msg ;                                                         \
-      if (helper != nullptr) {                                                   \
-         helper->thread_name[0] = '\0';                                          \
-         helper->thread_id = -1;                                                 \
-      }                                                                          \
-   }                                                                             \
+         if (___thread_config != nullptr) { \
+            strcpy(helper->thread_name, ___thread_config->thread_name); \
+            helper->thread_id = ___thread_config->thread_id; \
+         } \
+      } \
+      rmon_mprintf msg ; \
+      if (helper != nullptr) { \
+         helper->thread_name[0] = '\0'; \
+         helper->thread_id = -1; \
+      } \
+   } \
    void()
 
-#define DPRINTF_(msg)                                                            \
-   if (rmon_condition(xaybzc, INFOPRINT)) {                                      \
-      rmon_mprintf msg ;                                                         \
+#define DPRINTF_(msg) \
+   if (rmon_condition(xaybzc, INFOPRINT)) { \
+      rmon_mprintf msg ; \
    }
 
 #define ISTRACE (rmon_condition(xaybzc, TRACE))

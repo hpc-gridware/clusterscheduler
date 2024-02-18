@@ -39,7 +39,7 @@ void
 sge_listener_initialize();
 
 void
-sge_listener_terminate(void);
+sge_listener_terminate();
 
-void *
+[[noreturn]] void *
 sge_listener_main(void *arg);

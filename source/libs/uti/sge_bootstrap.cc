@@ -364,7 +364,7 @@ public:
 };
 
 // although not used the constructor call has the side effect to initialize the pthread_key => do not delete
-static BootstrapThreadInit bootstrap_component_obj{};
+static BootstrapThreadInit bootstrap_obj{};
 
 static void
 bootstrap_thread_local_once_init() {
