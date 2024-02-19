@@ -36,6 +36,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/cull_parse_util.h"

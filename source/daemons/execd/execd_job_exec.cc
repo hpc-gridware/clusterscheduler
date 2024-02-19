@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"

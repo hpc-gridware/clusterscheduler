@@ -36,6 +36,7 @@
 #include <pthread.h>
 #include <ctime>
 
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"

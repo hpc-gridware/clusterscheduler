@@ -39,6 +39,7 @@
 #include <cfloat>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"

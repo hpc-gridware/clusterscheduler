@@ -8,6 +8,8 @@ set(LIBRARY_SOURCES
         sge_binding_parse.cc
         sge_bitfield.cc
         sge_bootstrap.cc
+        sge_bootstrap_env.cc
+        sge_bootstrap_files.cc
         sge_component.cc
         sge_csp_path.cc
         sge_dstring.cc

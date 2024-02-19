@@ -41,6 +41,7 @@
 #include <pwd.h>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"

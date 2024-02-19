@@ -38,6 +38,7 @@
 #include "comm/cl_commlib.h"
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_os.h"

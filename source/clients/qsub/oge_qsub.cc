@@ -34,6 +34,8 @@
 #include <cerrno>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"

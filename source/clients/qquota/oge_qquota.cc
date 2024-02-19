@@ -43,6 +43,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/parse.h"

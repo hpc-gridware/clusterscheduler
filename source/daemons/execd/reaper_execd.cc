@@ -48,6 +48,7 @@
 #include "uti/sge_afsutil.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"

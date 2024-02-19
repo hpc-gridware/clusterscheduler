@@ -35,57 +35,17 @@
 #include "sge_dstring.h"
 #include "uti/sge_component.h"
 
-#define PATH_SEPARATOR "/"
-#define COMMON_DIR "common"
-#define BOOTSTRAP_FILE "bootstrap"
-#define CONF_FILE "configuration"
-#define SCHED_CONF_FILE "sched_configuration"
-#define ACCT_FILE "accounting"
-#define REPORTING_FILE "reporting"
-#define LOCAL_CONF_DIR "local_conf"
-#define SHADOW_MASTERS_FILE "shadow_masters"
-
-#define PATH_SEPARATOR "/"
-#define PATH_SEPARATOR_CHAR '/'
+const char *
+bootstrap_get_sge_root();
 
 const char *
-bootstrap_get_admin_user();
+bootstrap_get_sge_cell();
 
-const char *
-bootstrap_get_default_domain();
+u_long32
+bootstrap_get_sge_qmaster_port();
+
+u_long32
+bootstrap_get_sge_execd_port();
 
 bool
-bootstrap_get_ignore_fqdn();
-
-const char *
-bootstrap_get_spooling_method();
-
-const char *
-bootstrap_get_spooling_lib();
-
-const char *
-bootstrap_get_spooling_params();
-
-const char *
-bootstrap_get_binary_path();
-
-const char *
-bootstrap_get_qmaster_spool_dir();
-
-const char *
-bootstrap_get_security_mode();
-
-bool
-bootstrap_get_job_spooling();
-
-void
-bootstrap_set_job_spooling(bool job_spooling);
-
-int
-bootstrap_get_listener_thread_count();
-
-int
-bootstrap_get_worker_thread_count();
-
-int
-bootstrap_get_scheduler_thread_count();
+bootstrap_is_from_services();

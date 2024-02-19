@@ -42,6 +42,7 @@
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"

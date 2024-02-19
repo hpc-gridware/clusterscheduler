@@ -32,6 +32,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"

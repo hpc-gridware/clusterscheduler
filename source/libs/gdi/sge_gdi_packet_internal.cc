@@ -45,6 +45,7 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_tq.h"
+#include "uti/sge_bootstrap_env.h"
 
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi3.h"

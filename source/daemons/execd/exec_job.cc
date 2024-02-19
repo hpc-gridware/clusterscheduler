@@ -44,6 +44,7 @@
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_binding_parse.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"

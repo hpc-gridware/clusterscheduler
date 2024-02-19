@@ -62,6 +62,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_args.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"

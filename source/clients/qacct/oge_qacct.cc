@@ -38,6 +38,7 @@
 #include <cerrno>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"

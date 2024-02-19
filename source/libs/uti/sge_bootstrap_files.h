@@ -49,43 +49,31 @@
 #define PATH_SEPARATOR_CHAR '/'
 
 const char *
-bootstrap_get_admin_user();
+bootstrap_get_cell_root();
 
 const char *
-bootstrap_get_default_domain();
-
-bool
-bootstrap_get_ignore_fqdn();
+bootstrap_get_bootstrap_file();
 
 const char *
-bootstrap_get_spooling_method();
+bootstrap_get_conf_file();
 
 const char *
-bootstrap_get_spooling_lib();
+bootstrap_get_sched_conf_file();
 
 const char *
-bootstrap_get_spooling_params();
+bootstrap_get_act_qmaster_file();
 
 const char *
-bootstrap_get_binary_path();
+bootstrap_get_acct_file();
 
 const char *
-bootstrap_get_qmaster_spool_dir();
+bootstrap_get_reporting_file();
 
 const char *
-bootstrap_get_security_mode();
+bootstrap_get_local_conf_dir();
 
-bool
-bootstrap_get_job_spooling();
+const char *
+bootstrap_get_shadow_masters_file();
 
-void
-bootstrap_set_job_spooling(bool job_spooling);
-
-int
-bootstrap_get_listener_thread_count();
-
-int
-bootstrap_get_worker_thread_count();
-
-int
-bootstrap_get_scheduler_thread_count();
+const char *
+bootstrap_get_alias_file();
