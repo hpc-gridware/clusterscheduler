@@ -141,21 +141,16 @@ DRETURN(STATUS_EUNKNOWN);
 int
 calendar_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                              lGetString(cep, CAL_name), SGE_TYPE_CALENDAR,
-                              job_spooling);
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
+                                   lGetString(cep, CAL_name), SGE_TYPE_CALENDAR, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(cep, CAL_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(cep, CAL_name));
    }
 
    DRETURN(dbret ? 0 : 1);

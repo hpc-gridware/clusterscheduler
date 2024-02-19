@@ -166,9 +166,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
          lRemoveElem(ar_master_list, &ar);
 
          spool_delete_object(answer_list, spool_get_default_context(),
-                             SGE_TYPE_AR,
-                             sge_dstring_get_string(&buffer),
-                             bootstrap_get_job_spooling());
+                             SGE_TYPE_AR, sge_dstring_get_string(&buffer), true);
 
          sge_dstring_free(&buffer);
       }
@@ -349,23 +347,18 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *******************************************************************************/
 int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
    dstring buffer = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              sge_dstring_get_string(&buffer), SGE_TYPE_AR,
-                              job_spooling);
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
+                                   sge_dstring_get_string(&buffer), SGE_TYPE_AR, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              sge_dstring_get_string(&buffer));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, sge_dstring_get_string(&buffer));
    }
    sge_dstring_free(&buffer);
 

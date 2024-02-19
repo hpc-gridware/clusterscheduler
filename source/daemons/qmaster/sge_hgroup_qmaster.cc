@@ -552,7 +552,6 @@ hgroup_spool(lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    const lListElem *cqueue = nullptr;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -577,19 +576,14 @@ hgroup_spool(lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
             u_long32 tag = lGetUlong(qinstance, QU_tag);
 
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
-               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s",
-                                                     cqname,
-                                                     lGetHost(qinstance, QU_qhostname));
+               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname, lGetHost(qinstance, QU_qhostname));
                dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                          qinstance, key, SGE_TYPE_QINSTANCE,
-                                          job_spooling);
+                                          qinstance, key, SGE_TYPE_QINSTANCE, true);
                answer_list_output(&spool_answer_list);
 
                if (!dbret) {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                          ANSWER_QUALITY_ERROR,
-                                          MSG_PERSISTENCE_WRITE_FAILED_S,
-                                          key);
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_PERSISTENCE_WRITE_FAILED_S, key);
                   tmp_ret = false;
                   break;
                }
@@ -602,14 +596,11 @@ hgroup_spool(lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
 
    if (tmp_ret) {
       dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                 this_elem, name, SGE_TYPE_HGROUP,
-                                 job_spooling);
+                                 this_elem, name, SGE_TYPE_HGROUP, true);
       answer_list_output(&spool_answer_list);
       if (!dbret) {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                 ANSWER_QUALITY_ERROR,
-                                 MSG_PERSISTENCE_WRITE_FAILED_S,
-                                 name);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_PERSISTENCE_WRITE_FAILED_S, name);
          tmp_ret = false;
       }
    }
@@ -620,8 +611,7 @@ hgroup_spool(lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    answer_list_output(&spool_answer_list);
    if (!dbret) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_CLOSINGTRANSACTION_FAILED);
+                              ANSWER_QUALITY_ERROR, MSG_PERSISTENCE_CLOSINGTRANSACTION_FAILED);
       tmp_ret = false;
    }
 

@@ -838,11 +838,9 @@ cqueue_spool(lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
    dstring key_dstring = DSTRING_INIT;
    bool dbret;
    lList *spool_answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
-   dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), cqueue, name, SGE_TYPE_CQUEUE,
-                              job_spooling);
+   dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), cqueue, name, SGE_TYPE_CQUEUE, true);
    answer_list_output(&spool_answer_list);
 
    if (!dbret) {
@@ -857,7 +855,7 @@ cqueue_spool(lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
          const char *key =
                  sge_dstring_sprintf(&key_dstring, "%s/%s", name, lGetHost(qinstance, QU_qhostname));
          dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), qinstance,
-                                    key, SGE_TYPE_QINSTANCE, job_spooling);
+                                    key, SGE_TYPE_QINSTANCE, true);
          answer_list_output(&spool_answer_list);
 
          if (!dbret) {

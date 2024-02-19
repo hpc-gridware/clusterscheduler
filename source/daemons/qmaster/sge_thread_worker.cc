@@ -158,7 +158,6 @@ sge_worker_terminate() {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
       DPRINTF(("job/ar counter were made persistent\n"));
-      sge_job_spool();     /* store qmaster jobs to database */
       sge_userprj_spool(); /* spool the latest usage */
       DPRINTF(("final job and user/project spooling has been triggered\n"));
    }

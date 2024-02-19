@@ -580,7 +580,6 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 
    int ret = 0;
    lList *answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -604,7 +603,7 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
          break;
    }
 
-   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, job_spooling)) {
+   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, true)) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
@@ -1097,7 +1096,6 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
    const lList *gdil;
    int mail_options;
    unsigned long last_heard_from;
-   bool job_spooling = bootstrap_get_job_spooling();
    int result;
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
@@ -1175,11 +1173,8 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
                      dstring buffer = DSTRING_INIT;
                      spool_write_object(&answer_list,
                                         spool_get_default_context(), jep,
-                                        job_get_key(lGetUlong(jep, JB_job_number),
-                                                    lGetUlong(jatep, JAT_task_number),
-                                                    nullptr, &buffer),
-                                        SGE_TYPE_JOB,
-                                        job_spooling);
+                                        job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), nullptr, &buffer),
+                                        SGE_TYPE_JOB, true);
                      lListElem_clear_changed_info(jatep);
                      /* JG: TODO: don't we have to send an event? */
                      answer_list_output(&answer_list);

@@ -223,7 +223,6 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
    lListElem *element = nullptr;
    bool do_delete = false;
    dstring buffer = DSTRING_INIT;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -523,7 +522,7 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
          lList *spool_answer_list = nullptr;
          if (do_delete) {
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
-                                      object_type, key, job_spooling);
+                                      object_type, key, true);
          } else {
             lList *tmp_list = nullptr;
             const lListElem *load_value;
@@ -549,7 +548,7 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
             }
 
             ret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                     element, key, object_type, job_spooling);
+                                     element, key, object_type, true);
 
             switch (event) {
                case sgeE_EXECHOST_LIST:

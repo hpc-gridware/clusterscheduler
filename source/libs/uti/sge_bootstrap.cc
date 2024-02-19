@@ -466,22 +466,3 @@ int bootstrap_get_scheduler_thread_count() {
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return scheduler_thread_count;
 }
-
-bool bootstrap_get_job_spooling() {
-   if (!bootstrap_is_initialized()) {
-      bootstrap_ts1_init();
-   }
-   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
-   int job_spooling = sge_bootstrap_tl1.job_spooling;
-   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
-   return job_spooling;
-}
-
-void bootstrap_set_job_spooling(bool job_spooling) {
-   if (!bootstrap_is_initialized()) {
-      bootstrap_ts1_init();
-   }
-   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
-   set_job_spooling(job_spooling);
-   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
-}

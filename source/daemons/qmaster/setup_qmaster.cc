@@ -144,7 +144,7 @@ static int
 setup_qmaster();
 
 static int
-remove_invalid_job_references(bool job_spooling, int user);
+remove_invalid_job_references(int user);
 
 static int
 debit_all_jobs_from_qs(void);
@@ -818,7 +818,6 @@ setup_qmaster() {
    monitoring_t monitor;
    const char *qualified_hostname = nullptr;
 
-   bool job_spooling = bootstrap_get_job_spooling();
    DENTER(TOP_LAYER);
 
    if (first) {
@@ -960,7 +959,7 @@ setup_qmaster() {
    if (!manop_is_manager("root", master_manager_list)) {
       ep = lAddElemStr(object_type_get_master_list_rw(SGE_TYPE_MANAGER), UM_name, "root", UM_Type);
 
-      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_MANAGER, job_spooling)) {
+      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_MANAGER, true)) {
          answer_list_output(&answer_list);
          CRITICAL((SGE_EVENT, SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST));
          DRETURN(-1);
@@ -982,7 +981,7 @@ setup_qmaster() {
    if (!manop_is_operator("root", master_manager_list, master_operator_list)) {
       ep = lAddElemStr(object_type_get_master_list_rw(SGE_TYPE_OPERATOR), UO_name, "root", UO_Type);
 
-      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_OPERATOR, job_spooling)) {
+      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_OPERATOR, true)) {
          answer_list_output(&answer_list);
          CRITICAL((SGE_EVENT, SFNMAX, MSG_CONFIG_CANTWRITEOPERATORLIST));
          DRETURN(-1);
@@ -1147,36 +1146,7 @@ setup_qmaster() {
       sge_dstring_free(&host_domain);
    }
 
-   if (!bootstrap_get_job_spooling()) {
-      lList *answer_list = nullptr;
-      dstring buffer = DSTRING_INIT;
-
-      INFO((SGE_EVENT, "job spooling is disabled - removing spooled jobs"));
-
-      bootstrap_set_job_spooling(true);
-
-      for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
-         u_long32 job_id = lGetUlong(jep, JB_job_number);
-         sge_dstring_clear(&buffer);
-
-         if (lGetString(jep, JB_exec_file) != nullptr) {
-            if (spool_read_script(&answer_list, job_id, jep) == true) {
-               spool_delete_script(&answer_list, job_id, jep);
-            } else {
-               printf("could not read in script file\n");
-            }
-         }
-         spool_delete_object(&answer_list, spool_get_default_context(),
-                             SGE_TYPE_JOB,
-                             job_get_key(job_id, 0, nullptr, &buffer),
-                             job_spooling);
-      }
-      answer_list_output(&answer_list);
-      sge_dstring_free(&buffer);
-      bootstrap_set_job_spooling(true);
-   }
-
-   /* 
+   /*
       if the job is in state running 
       we have to register each slot 
       in a queue, in the resource quota sets
@@ -1206,13 +1176,13 @@ setup_qmaster() {
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_USER), SGE_TYPE_USER);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references(job_spooling, 1);
+   remove_invalid_job_references(1);
 
    DPRINTF(("project list-----------------------------------\n"));
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_PROJECT), SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references(job_spooling, 0);
+   remove_invalid_job_references(0);
 
    DPRINTF(("scheduler config -----------------------------------\n"));
 
@@ -1251,7 +1221,6 @@ setup_qmaster() {
 *   in user or project object if the job is no longer existing
 *
 *  INPUTS
-*     bool job_spooling
 *     int user                        - work on users
 *
 *  RESULT
@@ -1262,7 +1231,7 @@ setup_qmaster() {
 *
 *******************************************************************************/
 static int
-remove_invalid_job_references(bool job_spooling, int user) {
+remove_invalid_job_references(int user) {
    const lListElem *up;
    lListElem *upu, *next;
    u_long32 jobid;
@@ -1305,8 +1274,7 @@ remove_invalid_job_references(bool job_spooling, int user) {
 
       if (spool_me) {
          lList *answer_list = nullptr;
-         spool_write_object(&answer_list, spool_get_default_context(), up,
-                            lGetString(up, object_key), object_type, job_spooling);
+         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type, true);
          answer_list_output(&answer_list);
       }
    }

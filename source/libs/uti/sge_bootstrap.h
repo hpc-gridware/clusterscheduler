@@ -75,12 +75,6 @@ bootstrap_get_qmaster_spool_dir();
 const char *
 bootstrap_get_security_mode();
 
-bool
-bootstrap_get_job_spooling();
-
-void
-bootstrap_set_job_spooling(bool job_spooling);
-
 int
 bootstrap_get_listener_thread_count();
 

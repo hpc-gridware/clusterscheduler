@@ -121,8 +121,7 @@ static int
 send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *pe, lListElem *hep, int master);
 
 static int
-sge_bury_job(bool job_spooling, const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job,
-             int no_events);
+sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events);
 
 static int
 sge_to_zombies(lListElem *jep, lListElem *ja_task);
@@ -487,7 +486,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    unsigned long last_heard_from;
    const char *sge_root = bootstrap_get_sge_root();
    const char *myprogname = component_get_component_name();
-   bool job_spooling = bootstrap_get_job_spooling();
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = nullptr;
    lEnumeration *what;
@@ -517,7 +515,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    /*
    ** if exec_file is not set, then this is an interactive job
    */
-   if (master && job_spooling && lGetString(tmpjep, JB_exec_file) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
+   if (master && lGetString(tmpjep, JB_exec_file) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
       if (spool_read_script(nullptr, lGetUlong(tmpjep, JB_job_number), tmpjep) == false) {
          lFreeElem(&tmpjep);
          DRETURN(-1);
@@ -915,7 +913,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    /* need hostname for job_log */
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *sge_root = bootstrap_get_sge_root();
-   bool job_spooling = bootstrap_get_job_spooling();
    u_long32 task_wallclock = U_LONG32_MAX;
    bool compute_qwallclock = false;
    u_long32 state = 0;
@@ -1058,7 +1055,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             dstring buffer = DSTRING_INIT;
             /* JG: TODO: why don't we generate an event? */
             spool_write_object(&answer_list, spool_get_default_context(), jatep,
-                               job_get_key(jobid, jataskid, nullptr, &buffer), SGE_TYPE_JATASK, job_spooling);
+                               job_get_key(jobid, jataskid, nullptr, &buffer), SGE_TYPE_JATASK, true);
             answer_list_output(&answer_list);
             lListElem_clear_changed_info(jatep);
             sge_dstring_free(&buffer);
@@ -1204,7 +1201,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             sge_clear_granted_resources(jep, jatep, 1, monitor);
          }
          sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr);
-         sge_bury_job(job_spooling, sge_root, jep, jobid, jatep, spool_job, no_events);
+         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events);
          break;
       case COMMIT_ST_FINISHED_FAILED_EE:
          reporting_create_job_log(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
@@ -1255,8 +1252,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          if (!no_unlink) {
             release_successor_jobs(jep);
             release_successor_jobs_ad(jep);
-            if ((lGetString(jep, JB_exec_file) != nullptr) && job_spooling &&
-                !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
+            if ((lGetString(jep, JB_exec_file) != nullptr) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
                spool_delete_script(&answer_list, jobid, jep);
             }
          }
@@ -1272,7 +1268,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          if (mode == COMMIT_ST_NO_RESOURCES) {
             sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr);
          }
-         sge_bury_job(job_spooling, sge_root, jep, jobid, jatep, spool_job, no_events);
+         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events);
          break;
 
       case COMMIT_ST_DELIVERY_FAILED:
@@ -1673,8 +1669,7 @@ reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *j
 /* unlink/rename the job specific files on disk, send event to scheduler   */
 /*-------------------------------------------------------------------------*/
 static int
-sge_bury_job(bool job_spooling, const char *sge_root, lListElem *job, u_long32 job_id, lListElem *ja_task,
-             int spool_job, int no_events) {
+sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *ja_task, int spool_job, int no_events) {
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    int remove_job = (!ja_task || job_get_ja_tasks(job) == 1);
    const lList *master_suser_list = *object_type_get_master_list(SGE_TYPE_SUSER);
@@ -1708,7 +1703,7 @@ sge_bury_job(bool job_spooling, const char *sge_root, lListElem *job, u_long32 j
       /* 
        * do not try to remove script file for interactive jobs 
        */
-      if (job_spooling) {
+      {
          lList *answer_list = nullptr;
          dstring buffer = DSTRING_INIT;
 
@@ -1723,10 +1718,8 @@ sge_bury_job(bool job_spooling, const char *sge_root, lListElem *job, u_long32 j
             PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
          }
 
-         spool_delete_object(&answer_list, spool_get_default_context(),
-                             SGE_TYPE_JOB,
-                             job_get_key(job_id, 0, nullptr, &buffer),
-                             job_spooling);
+         spool_delete_object(&answer_list, spool_get_default_context(), SGE_TYPE_JOB,
+                             job_get_key(job_id, 0, nullptr, &buffer), true);
          answer_list_output(&answer_list);
          sge_dstring_free(&buffer);
 
@@ -1756,9 +1749,7 @@ sge_bury_job(bool job_spooling, const char *sge_root, lListElem *job, u_long32 j
          lList *answer_list = nullptr;
          dstring buffer = DSTRING_INIT;
          spool_delete_object(&answer_list, spool_get_default_context(),
-                             SGE_TYPE_JOB,
-                             job_get_key(job_id, ja_task_id, nullptr, &buffer),
-                             job_spooling);
+                             SGE_TYPE_JOB, job_get_key(job_id, ja_task_id, nullptr, &buffer), true);
          answer_list_output(&answer_list);
          sge_dstring_free(&buffer);
          lRemoveElem(lGetListRW(job, JB_ja_tasks), &ja_task);
@@ -1768,8 +1759,7 @@ sge_bury_job(bool job_spooling, const char *sge_root, lListElem *job, u_long32 j
             lList *answer_list = nullptr;
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), job,
-                               job_get_key(job_id, ja_task_id, nullptr, &buffer),
-                               SGE_TYPE_JOB, job_spooling);
+                               job_get_key(job_id, ja_task_id, nullptr, &buffer), SGE_TYPE_JOB, true);
             answer_list_output(&answer_list);
             sge_dstring_free(&buffer);
          }

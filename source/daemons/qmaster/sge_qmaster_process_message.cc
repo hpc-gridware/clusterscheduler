@@ -431,7 +431,6 @@ static void
 sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
               u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    lList *answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -464,8 +463,8 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          {
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), jep,
-                               job_get_key(lGetUlong(jep, JB_job_number),
-                                           ack_ulong2, nullptr, &buffer), SGE_TYPE_JOB, job_spooling);
+                               job_get_key(lGetUlong(jep, JB_job_number), ack_ulong2, nullptr, &buffer),
+                               SGE_TYPE_JOB, true);
             sge_dstring_free(&buffer);
          }
          answer_list_output(&answer_list);
@@ -503,7 +502,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          lSetUlong(qinstance, QU_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
-                            lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, job_spooling);
+                            lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, true);
          answer_list_output(&answer_list);
          break;
       }
