@@ -39,7 +39,7 @@ function(architecture_specific_settings)
          ${SGE_TARGETBITS}
          COMPILE_DC)
 
-   if (SGE_ARCH MATCHES "lx-.*")
+   if (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
       # Linux
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
@@ -100,10 +100,10 @@ function(architecture_specific_settings)
          set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif ()
 
-      if (SGE_ARCH STREQUAL "lx-x86")
+      if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86")
          # we need patchelf for setting the run path in the db_* tools
          # but patchelf is not available on CentOS 7 x86
-         message(STATUS "Building without Berkeley DB on lx-x86")
+         message(STATUS "Building without Berkeley DB on ${SGE_ARCH}")
          set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
          # we need to use a self-compiled gcc/g++/libstdc++ on this platform
          # as the OS packages (CentOS-7) are too old
