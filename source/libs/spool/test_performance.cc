@@ -64,7 +64,7 @@ static const char *random_string(int length)
    static char buf[1000];
    int i;
 
-   srand(time(0));
+   srand(time(nullptr));
 
    for (i = 0; i < length; i++) {
       buf[i] = rand() % 26 + 64;
@@ -168,7 +168,7 @@ static bool spool_data(void)
    return true;
 }
 #endif
-static bool read_spooled_data(void)
+static bool read_spooled_data()
 {
    lList *answer_list = nullptr;
    const lListElem *context;
@@ -183,7 +183,7 @@ static bool read_spooled_data(void)
    return true;
 }
 
-static bool delete_spooled_data(void)
+static bool delete_spooled_data()
 {
    lList *answer_list = nullptr;
    lListElem *job;
@@ -206,7 +206,7 @@ static bool delete_spooled_data(void)
    return true;
 }
 
-static void write_csv_header(void)
+static void write_csv_header()
 {
    static const char *header = "scenario,wallclock,utime,stime,utilization,jobs_per_second";
    FILE* csv;
@@ -238,7 +238,7 @@ static void write_csv(const char *scenario, prof_level level)
    fclose(csv);
 }
 
-void clear_caches(void)
+void clear_caches()
 {
    printf("\n===> clear the filesystem caches\n");
    printf("on linux as user root: echo 3 >/proc/sys/vm/drop_caches\n");

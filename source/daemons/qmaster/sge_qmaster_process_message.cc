@@ -61,8 +61,6 @@
 
 #include "evm/sge_event_master.h"
 
-#include "sge_c_gdi.h"
-#include "sge_c_report.h"
 #include "sge_qmaster_main.h"
 #include "sge_thread_worker.h"
 #include "msg_qmaster.h"
@@ -256,7 +254,6 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = component_get_component_name();
-   sge_gdi_packet_class_t *packet = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -275,7 +272,7 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
     * create a GDI packet to transport the list to the worker where
     * it will be handled
     */
-   packet = sge_gdi_packet_create_base(nullptr);
+   sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
    packet->host = sge_strdup(nullptr, aMsg->snd_host);
    packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;

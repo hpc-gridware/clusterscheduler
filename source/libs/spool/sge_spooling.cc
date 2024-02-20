@@ -161,8 +161,7 @@ spool_set_option(lList **answer_list, lListElem *context, const char *option)
       lListElem *rule;
 
       for_each_rw(rule, lGetList(context, SPC_rules)) {
-         spooling_option_func func = (spooling_option_func)
-                                       lGetRef(rule, SPR_option_func);
+         auto func = (spooling_option_func) lGetRef(rule, SPR_option_func);
          if (func != nullptr) {
             if (!func(answer_list, rule, option)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -298,8 +297,7 @@ spool_startup_context(lList **answer_list, lListElem *context, bool check)
       }
       
       for_each_ep(rule, lGetList(context, SPC_rules)) {
-         spooling_startup_func func = (spooling_startup_func)
-                                      lGetRef(rule, SPR_startup_func);
+         auto func = (spooling_startup_func)lGetRef(rule, SPR_startup_func);
          if (func != nullptr) {
             if (!func(answer_list, rule, check)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -370,8 +368,7 @@ spool_maintain_context(lList **answer_list, lListElem *context,
       const lListElem *rule;
 
       for_each_ep(rule, lGetList(context, SPC_rules)) {
-         spooling_maintenance_func func = (spooling_maintenance_func)
-                                       lGetRef(rule, SPR_maintenance_func);
+         auto func = (spooling_maintenance_func) lGetRef(rule, SPR_maintenance_func);
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd, args)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -437,8 +434,7 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
       const lListElem *rule;
 
       for_each_ep(rule, lGetList(context, SPC_rules)) {
-         spooling_shutdown_func func = (spooling_shutdown_func)
-                                       lGetRef(rule, SPR_shutdown_func);
+         auto func = (spooling_shutdown_func)lGetRef(rule, SPR_shutdown_func);
          if (func != nullptr) {
             if (!func(answer_list, rule)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -475,8 +471,7 @@ spool_trigger_context(lList **answer_list, const lListElem *context,
       const lListElem *rule;
 
       for_each_ep(rule, lGetList(context, SPC_rules)) {
-         spooling_trigger_func func = (spooling_trigger_func)
-                                       lGetRef(rule, SPR_trigger_func);
+         auto func = (spooling_trigger_func)lGetRef(rule, SPR_trigger_func);
          if (func != nullptr) {
             if (!func(answer_list, rule, trigger, next_trigger)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -512,8 +507,7 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
       const lListElem *rule;
 
       for_each_ep(rule, lGetList(context, SPC_rules)) {
-         spooling_transaction_func func = (spooling_transaction_func)
-                                       lGetRef(rule, SPR_transaction_func);
+         auto func = (spooling_transaction_func)lGetRef(rule, SPR_transaction_func);
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -583,7 +577,7 @@ void spool_set_default_context(lListElem *context)
 *     spool/spool_set_default_context()
 *******************************************************************************/
 lListElem *
-spool_get_default_context(void)
+spool_get_default_context()
 {
    return lFirstRW(Default_Spool_Context_List);
 }
@@ -760,7 +754,7 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
 *******************************************************************************/
 lListElem *
 spool_context_search_type(const lListElem *context, 
-                          const sge_object_type object_type)
+                          sge_object_type object_type)
 {
    lListElem *ep;
 
@@ -806,7 +800,7 @@ spool_context_search_type(const lListElem *context,
 *******************************************************************************/
 lListElem *
 spool_context_create_type(lList **answer_list, lListElem *context, 
-                          const sge_object_type object_type)
+                          sge_object_type object_type)
 {
    lListElem *ep = nullptr;
 
@@ -1433,18 +1427,12 @@ spool_compare_objects(lList **answer_list, const lListElem *context,
                       const sge_object_type object_type, 
                       const lListElem *ep1, const lListElem *ep2)
 {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
-
    if (context == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
-                              __func__);
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S, __func__);
    }
 
-   ret = true;
-
+   bool ret = true;
    DRETURN(ret);
 }
 #pragma GCC diagnostic pop

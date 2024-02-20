@@ -88,7 +88,7 @@ sge_initialize_persistence(lList **answer_list) {
 }
 
 void
-sge_initialize_persistance_timer(void) {
+sge_initialize_persistance_timer() {
    te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
@@ -153,7 +153,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* validate next_trigger. If it is invalid, set it to one minute after now */
-   now = time(0);
+   now = time(nullptr);
    if (next_trigger <= now) {
       next_trigger = now + 60;
    }
@@ -410,11 +410,6 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
          object_type = SGE_TYPE_SCHEDD_CONF;
          break;
       case sgeE_SCHEDDMONITOR:
-         key = strkey;
-         element = object;
-         /* nothing to spool for this event */
-         object_type = SGE_TYPE_ALL;
-         break;
       case sgeE_SHUTDOWN:
          key = strkey;
          element = object;

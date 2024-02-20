@@ -94,7 +94,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge.h"
 #include "sge_task_depend.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
@@ -165,7 +164,7 @@ void
 set_context(lList *jbctx, lListElem *job);
 
 static u_long32
-guess_highest_job_number(void);
+guess_highest_job_number();
 
 static bool
 contains_dependency_cycles(const lListElem *new_job, u_long32 job_number, lList **alpp);
@@ -226,8 +225,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    DENTER(TOP_LAYER);
 
    if (jsv_is_enabled(tc->thread_name)) {
-      struct timeval start_time;
-      struct timeval end_time;
+      struct timeval start_time{};
+      struct timeval end_time{};
       int jsv_threshold = mconf_get_jsv_threshold();
       /*
        * first verify before JSV is executed
@@ -3096,7 +3095,7 @@ sge_get_job_number(monitoring_t *monitor) {
    DRETURN(job_nr);
 }
 
-void sge_init_job_number(void) {
+void sge_init_job_number() {
    FILE *fp = nullptr;
    u_long32 job_nr = 0;
    u_long32 guess_job_nr;

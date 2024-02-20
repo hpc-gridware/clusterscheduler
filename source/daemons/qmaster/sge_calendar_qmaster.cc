@@ -31,8 +31,6 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <cstring>
-#include <cctype>
-#include <ctime>
 #include <sys/time.h>
 
 #include "uti/sge_lock.h"
@@ -52,7 +50,6 @@
 #include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
-#include "sge_qmod_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
@@ -248,7 +245,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   calendar_update_queue_states(cep, 0, nullptr, &ppList, monitor);
+   calendar_update_queue_states(cep, nullptr, nullptr, &ppList, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 

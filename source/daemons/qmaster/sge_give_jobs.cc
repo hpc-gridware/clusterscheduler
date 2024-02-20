@@ -1637,13 +1637,11 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 
 static void
 reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, char *rlimit_name) {
-   const char *s = nullptr;
-   const lListElem *res = nullptr;
-   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-
    DENTER(BASIS_LAYER);
+   const char *s;
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   const lListElem *res = lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, rlimit_name);
 
-   res = lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, rlimit_name);
    if ((res != nullptr) && (s = lGetString(res, CE_stringval))) {
       DPRINTF(("job reduces queue limit: %s = %s (was %s)\n", rlimit_name, s, lGetString(qep, nm)));
       lSetString(qep, nm, s);

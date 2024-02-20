@@ -71,7 +71,6 @@
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"
-#include "sched/schedd_monitor.h"
 #include "sched/sge_job_schedd.h"
 #include "sched/sge_serf.h"
 #include "sched/valid_queue_user.h"
@@ -109,7 +108,7 @@ static u_long32
 sge_get_ar_id(monitoring_t *monitor);
 
 static u_long32
-guess_highest_ar_id(void);
+guess_highest_ar_id();
 
 static void
 sge_ar_send_mail(lListElem *ar, int type);
@@ -398,14 +397,12 @@ int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *******************************************************************************/
 int
 ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
-   u_long32 timestamp = 0;
-
-   DENTER(TOP_LAYER);
+   u_long32 timestamp = sge_get_gmt();
 
    /* with old_ep it is possible to identify if it is an add or modify request */
-   timestamp = sge_get_gmt();
    if (old_ep == nullptr) {
       reporting_create_new_ar_record(nullptr, ep, timestamp);
       reporting_create_ar_attribute_record(nullptr, ep, timestamp);
@@ -476,8 +473,6 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 int
 ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
        const char *rhost, monitoring_t *monitor) {
-   const char *id_str = nullptr;
-   const lList *user_list = nullptr;
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
@@ -504,10 +499,9 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   id_str = lGetString(ep, ID_str);
-
-   if ((user_list = lGetList(ep, ID_user_list)) != nullptr) {
-      lCondition *new_where = nullptr;
+   const char *id_str = lGetString(ep, ID_str);
+   const lList *user_list = lGetList(ep, ID_user_list);
+   if (user_list != nullptr) {
       const lListElem *user;
 
       for_each_ep(user, user_list) {
@@ -519,7 +513,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
             DRETURN(STATUS_EUNKNOWN);
          }
 
-         new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, lGetString(user, ST_name));
+         lCondition *new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, lGetString(user, ST_name));
          if (ar_where == nullptr) {
             ar_where = new_where;
          } else {
@@ -858,7 +852,7 @@ sge_init_ar_id(void) {
 *     MT-NOTE: guess_highest_ar_id() is MT safe 
 *******************************************************************************/
 static u_long32
-guess_highest_ar_id(void) {
+guess_highest_ar_id() {
    const lListElem *ar;
    u_long32 maxid = 0;
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
@@ -1278,7 +1272,6 @@ int
 ar_do_reservation(lListElem *ar, bool incslots) {
    lListElem *dummy_job = lCreateElem(JB_Type);
    const lListElem *qep;
-   lListElem *global_host_ep = nullptr;
    int pe_slots = 0;
    int tmp_slots;
    const char *granted_pe = lGetString(ar, AR_granted_pe);
@@ -1295,7 +1288,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
    lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
    lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
 
-   global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+   lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
    for_each_ep(qep, lGetList(ar, AR_granted_slots)) {
       lListElem *host_ep = nullptr;
@@ -2251,7 +2244,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
 bool
 ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                       lListElem *qinstance, const lList *ce_master_list) {
-   const lListElem *ar = nullptr;
+   const lListElem *ar;
    const lListElem *gs;
 
    DENTER(TOP_LAYER);
@@ -2262,7 +2255,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
       if ((gs = lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
 
          const lListElem *rue = nullptr;
-         lListElem *request = nullptr;
+         lListElem *request;
          const lList *rue_list;
 
          for_each_rw(request, lGetList(ar, AR_resource_list)) {
@@ -2383,8 +2376,8 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
          const char *gh = lGetHost(gs, JG_qhostname);
 
          if (!sge_hostcmp(gh, hostname)) {
-            const lListElem *rue = nullptr;
-            lListElem *request = nullptr;
+            const lListElem *rue;
+            lListElem *request;
             const lList *rue_list = lGetList(host, EH_resource_utilization);
 
             for_each_rw(request, lGetList(ar, AR_resource_list)) {

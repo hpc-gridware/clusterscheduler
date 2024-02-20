@@ -60,13 +60,10 @@
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
-#include "sge.h"
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
-   lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTLEN];
-   int ret = -1;
    const lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -79,14 +76,14 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
     *    if it is not resolveable then
     *       ignore this and use the given hostname
     */
-   ret = sge_resolve_hostname(aName, unique_name, EH_name);
+   int ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
       DPRINTF(("%s: error %s resolving host %s\n", __func__,
               cl_get_error_text(ret), aName));
       strcpy(unique_name, aName);
    }
 
-   conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));
+   lListElem *conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));
 
    DRETURN(conf);
 }
@@ -668,7 +665,7 @@ int main(int argc, char *argv[])
       
       sge_mirror_process_events(evc);
 
-      now = time(0);
+      now = time(nullptr);
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "test_sge_info:\n");
 /*          INFO((SGE_EVENT, "\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr))); */

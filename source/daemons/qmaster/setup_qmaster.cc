@@ -44,12 +44,9 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
-#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
@@ -72,17 +69,12 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_resource_quota.h"
-#include "sgeobj/sge_utility.h"
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
 
 #include "sched/debit.h"
 
-#include "spool/sge_spooling.h"
-
-#include "sge.h"
 #include "sge_resource_quota_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_qinstance_qmaster.h"
@@ -100,9 +92,6 @@
 #include "usage.h"
 #include "shutdown.h"
 #include "sge_give_jobs.h"
-#include "sge_resource_quota_qmaster.h"
-#include "sge_advance_reservation_qmaster.h"
-#include "sge_qinstance_qmaster.h"
 
 #include "msg_daemons_common.h"
 #include "msg_qmaster.h"
@@ -138,7 +127,7 @@ static bool
 is_qmaster_already_running(const char *qmaster_spool_dir);
 
 static void
-qmaster_lock_and_shutdown(int i);
+qmaster_lock_and_shutdown(int anExitValue);
 
 static int
 setup_qmaster();
@@ -298,11 +287,8 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 *******************************************************************************/
 void
 sge_setup_job_resend(void) {
-   const lListElem *job = nullptr;
-
    DENTER(TOP_LAYER);
-
-   job = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
+   const lListElem *job = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
 
    while (nullptr != job) {
       const lListElem *task;
@@ -597,9 +583,8 @@ qmaster_init(char **anArgv) {
 *******************************************************************************/
 static void
 communication_setup() {
-   cl_com_handle_t *com_handle = nullptr;
    char *qmaster_params = nullptr;
-   struct rlimit qmaster_rlimits;
+   struct rlimit qmaster_rlimits{};
 
    const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 qmaster_port = bootstrap_get_sge_qmaster_port();
@@ -609,7 +594,7 @@ communication_setup() {
 
    DEBUG((SGE_EVENT, "my resolved hostname name is: \"%s\"\n", qualified_hostname));
 
-   com_handle = cl_com_get_handle(prognames[QMASTER], 1);
+   cl_com_handle_t *com_handle = cl_com_get_handle(prognames[QMASTER], 1);
 
    if (com_handle == nullptr) {
       ERROR((SGE_EVENT, "port "sge_u32" already bound\n", qmaster_port));
@@ -714,7 +699,6 @@ is_qmaster_already_running(const char *qmaster_spool_dir) {
       NULL_SIGNAL = 0
    };
 
-   bool res = true;
    char pidfile[SGE_PATH_MAX] = {'\0'};
    pid_t pid = 0;
 
@@ -726,7 +710,7 @@ is_qmaster_already_running(const char *qmaster_spool_dir) {
       DRETURN(false);
    }
 
-   res = (kill(pid, NULL_SIGNAL) == 0) ? true : false;
+   bool res = (kill(pid, NULL_SIGNAL) == 0) ? true : false;
 
    DRETURN(res);
 } /* is_qmaster_already_running() */
@@ -893,7 +877,7 @@ setup_qmaster() {
               {"m_socket",         "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",  REQU_YES, "0"},
               {"m_topology",       "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
               {"m_topology_inuse", "utopo",  9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
-              {nullptr, nullptr,                   0, 0,          0,             nullptr, 0,        0}
+              {nullptr,            nullptr,  0, 0,          0,             nullptr, 0,        nullptr}
       };
       int i;
 
@@ -1052,16 +1036,12 @@ setup_qmaster() {
                    * initialize the new fields, remove the old subordinate list
                    * from the cluster queue and add the new one instead.
                    */
-                  lList *new_so_list = nullptr;
-                  lListElem *so = nullptr;
-                  lListElem *new_so = nullptr;
-                  const char *so_list_name = nullptr;
-
-                  so_list_name = lGetListName(so_list);
-                  new_so_list = lCreateList(so_list_name, SO_Type);
+                  const char *so_list_name = lGetListName(so_list);
+                  lList *new_so_list = lCreateList(so_list_name, SO_Type);
+                  lListElem *so;
 
                   for_each_rw (so, so_list) {
-                     new_so = lCreateElem(SO_Type);
+                     lListElem *new_so = lCreateElem(SO_Type);
                      lSetString(new_so, SO_name, lGetString(so, SO_name));
                      lSetUlong(new_so, SO_threshold, lGetUlong(so, SO_threshold));
                      lSetUlong(new_so, SO_slots_sum, 0);
@@ -1286,8 +1266,6 @@ static int debit_all_jobs_from_qs() {
    const lListElem *gdi;
    u_long32 slots;
    const char *queue_name;
-   lListElem *next_jep = nullptr;
-   lListElem *jep = nullptr;
    lListElem *qep = nullptr;
    lListElem *next_jatep = nullptr;
    lListElem *jatep = nullptr;
@@ -1299,7 +1277,8 @@ static int debit_all_jobs_from_qs() {
 
    DENTER(TOP_LAYER);
 
-   next_jep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
+   lListElem *jep;
+   lListElem *next_jep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
    while ((jep = next_jep)) {
 
       /* may be we have to delete this job */

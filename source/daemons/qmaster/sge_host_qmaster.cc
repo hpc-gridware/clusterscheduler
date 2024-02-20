@@ -71,7 +71,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge.h"
 #include "symbols.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -628,9 +627,7 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
          if (global_host) {
             host_list_merge(master_ehost_list);
          } else {
-            const lListElem *global_ep = nullptr;
-
-            global_ep = lGetElemHost(master_ehost_list, EH_name, SGE_GLOBAL_NAME);
+            const lListElem *global_ep = lGetElemHost(master_ehost_list, EH_name, SGE_GLOBAL_NAME);
             host_merge(ep, global_ep);
          }
 
@@ -961,7 +958,7 @@ exec_host_change_queue_version(const char *exechost_name) {
          next_qinstance = lGetElemHostFirstRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
       }
       while ((qinstance = next_qinstance)) {
-         const char *name = nullptr;
+         const char *name;
          lList *answer_list = nullptr;
 
          if (change_all) {
@@ -1268,11 +1265,11 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
 
 static int
 verify_scaling_list(lList **answer_list, lListElem *host) {
+   DENTER(TOP_LAYER);
    bool ret = true;
-   const lListElem *hs_elem = nullptr;
+   const lListElem *hs_elem;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
-   DENTER(TOP_LAYER);
    for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
       const char *name = lGetString(hs_elem, HS_name);
       lListElem *centry = centry_list_locate(master_centry_list, name);
@@ -1346,8 +1343,6 @@ host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1
             lAddElemStr(new_sublist, key_nm, p, dp);
       }
    }
-
-   return;
 }
 
 
@@ -1509,7 +1504,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
       }
       {
          lListElem *jep = nullptr;
-         const lListElem *ar_ep = nullptr;
+         const lListElem *ar_ep;
          const char *host = lGetHost(tmp_elem, EH_name);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 

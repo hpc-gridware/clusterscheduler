@@ -89,7 +89,7 @@ void
 job_suc_pre_ad(lListElem *jep);
 
 void
-sge_init_job_number(void);
+sge_init_job_number();
 
 void
 sge_store_job_number(te_event_t anEvent, monitoring_t *monitor);
