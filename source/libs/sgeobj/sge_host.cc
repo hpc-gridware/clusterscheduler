@@ -31,33 +31,35 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "comm/commlib.h"
+
+#include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_href.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/sge_qinstance.h"
+#include "sgeobj/sge_resource_utilization.h"
+#include "sgeobj/sge_str.h"
+
+#include "uti/sge.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "comm/commlib.h"
-
-#include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_object.h"
-#include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_cqueue.h" 
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_href.h"
-#include "sgeobj/msg_sgeobjlib.h"
-
+#include "msg_sgeobjlib.h"
 #include "msg_common.h"
-#include "uti/sge.h"
+
+#include "sge_host.h"
 
 lListElem *
-host_list_locate(const lList *host_list, const char *hostname) 
-{
+host_list_locate(const lList *host_list, const char *hostname) {
    lListElem *ret = nullptr;
-   
+
    DENTER(TOP_LAYER);
+
    if (host_list != nullptr) {
       if (hostname != nullptr) {
          const lListElem *element = lFirst(host_list);
@@ -85,7 +87,7 @@ host_list_locate(const lList *host_list, const char *hostname)
        */
       ret = nullptr;
    }
-   
+
    DRETURN(ret);
 }
 
@@ -114,11 +116,10 @@ host_list_locate(const lList *host_list, const char *hostname)
 *  RESULT
 *     int - true (1) or false (0) 
 ******************************************************************************/
-bool host_is_referenced(const lListElem *host, 
+bool host_is_referenced(const lListElem *host,
                         lList **answer_list,
                         const lList *queue_list,
-                        const lList *hgrp_list)
-{
+                        const lList *hgrp_list) {
    bool ret = false;
 
    if (host != nullptr) {
@@ -139,7 +140,7 @@ bool host_is_referenced(const lListElem *host,
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
       for_each_ep(cqueue, queue_list) {
-         queue = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances); 
+         queue = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
 
          if (queue != nullptr) {
             const char *queuename = lGetString(cqueue, CQ_name);
@@ -166,7 +167,7 @@ bool host_is_referenced(const lListElem *host,
 
                   sprintf(SGE_EVENT, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                            ANSWER_QUALITY_ERROR);
+                                  ANSWER_QUALITY_ERROR);
 
                   ret = true;
                   break;
@@ -202,23 +203,21 @@ bool host_is_referenced(const lListElem *host,
 *     printf("The load on host myhost is %s\n", value);
 *
 *******************************************************************************/
-const char *host_get_load_value(lListElem *host, const char *name)
-{
+const char *host_get_load_value(lListElem *host, const char *name) {
    lListElem *load;
    const char *value = nullptr;
 
    if (host != nullptr) {
       load = lGetSubStr(host, HL_name, name, EH_load_list);
-      if(load != nullptr) {
+      if (load != nullptr) {
          value = lGetString(load, HL_value);
       }
-   }   
+   }
    return value;
 }
 
 /* MT-NOTE: sge_resolve_host() is MT safe */
-int sge_resolve_host(lListElem *ep, int nm) 
-{
+int sge_resolve_host(lListElem *ep, int nm) {
    int pos;
    int ret = CL_RETVAL_OK;
    int dataType;
@@ -238,23 +237,23 @@ int sge_resolve_host(lListElem *ep, int nm)
       DRETURN(-1);
    }
 
-   dataType = lGetPosType(lGetElemDescr(ep),pos);
+   dataType = lGetPosType(lGetElemDescr(ep), pos);
    switch (dataType) {
-       case lStringT:
-          hostname = lGetPosString(ep, pos);
-          DPRINTF(("!!!!!!! sge_resolve_host: WARNING call with old lStringT data type,\n"));
-          DPRINTF(("!!!!!!! this data type should be replaced with lHostT data type in\n"));
-          DPRINTF(("!!!!!!! the future! Nevertheless, just a warning! Function works fine!\n"));
-          break;
+      case lStringT:
+         hostname = lGetPosString(ep, pos);
+         DPRINTF(("!!!!!!! sge_resolve_host: WARNING call with old lStringT data type,\n"));
+         DPRINTF(("!!!!!!! this data type should be replaced with lHostT data type in\n"));
+         DPRINTF(("!!!!!!! the future! Nevertheless, just a warning! Function works fine!\n"));
+         break;
 
-       case lHostT:
-          hostname = lGetPosHost(ep, pos);
-          break;
+      case lHostT:
+         hostname = lGetPosHost(ep, pos);
+         break;
 
-       default:
-          hostname = nullptr;
-          ret = CL_RETVAL_GETHOSTNAME_ERROR;
-          break;
+      default:
+         hostname = nullptr;
+         ret = CL_RETVAL_GETHOSTNAME_ERROR;
+         break;
    }
    /* Check to find hostname only if it was not contained in expression */
    if (hostname != nullptr && !sge_is_expression(hostname)) {
@@ -262,12 +261,12 @@ int sge_resolve_host(lListElem *ep, int nm)
 
       if (ret == CL_RETVAL_OK) {
          switch (dataType) {
-          case lStringT:
-             lSetPosString(ep, pos, unique);
-             break;
-          case lHostT:
-             lSetPosHost(ep, pos, unique);
-             break;
+            case lStringT:
+               lSetPosString(ep, pos, unique);
+               break;
+            case lHostT:
+               lSetPosHost(ep, pos, unique);
+               break;
          }
       }
    }
@@ -276,8 +275,7 @@ int sge_resolve_host(lListElem *ep, int nm)
 }
 
 /* MT-NOTE: sge_resolve_hostname() is MT safe */
-int sge_resolve_hostname(const char *hostname, char *unique, int nm) 
-{
+int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    int ret = CL_RETVAL_OK;
 
    DENTER(TOP_LAYER);
@@ -291,38 +289,37 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm)
     *    "global", "unknown", "template")
     */
    switch (nm) {
-   case CE_stringval:
-      if (strcmp(hostname, SGE_UNKNOWN_NAME) != 0) {
-         ret = getuniquehostname(hostname, unique, 0);
-      } else {
-         strcpy(unique, hostname);
-      }
+      case CE_stringval:
+         if (strcmp(hostname, SGE_UNKNOWN_NAME) != 0) {
+            ret = getuniquehostname(hostname, unique, 0);
+         } else {
+            strcpy(unique, hostname);
+         }
 
-      break;
-   case EH_name:
-   case CONF_name:
-      if ((strcmp(hostname, SGE_GLOBAL_NAME)!=0) && 
-          (strcmp(hostname, SGE_TEMPLATE_NAME)!=0)) {
+         break;
+      case EH_name:
+      case CONF_name:
+         if ((strcmp(hostname, SGE_GLOBAL_NAME) != 0) &&
+             (strcmp(hostname, SGE_TEMPLATE_NAME) != 0)) {
+            ret = getuniquehostname(hostname, unique, 0);
+         } else {
+            strcpy(unique, hostname);
+         }
+         break;
+      default:
          ret = getuniquehostname(hostname, unique, 0);
-      } else {
-         strcpy(unique, hostname);
-      }
-      break;
-   default:
-      ret = getuniquehostname(hostname, unique, 0);
-      break;
+         break;
    }
 
    if (ret != CL_RETVAL_OK) {
-      strncpy(unique, hostname, CL_MAXHOSTLEN-1);
+      strncpy(unique, hostname, CL_MAXHOSTLEN - 1);
    }
 
    DRETURN(ret);
 }
 
 bool
-host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry)
-{
+host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -350,9 +347,8 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry)
 }
 
 bool
-host_is_centry_a_complex_value(const lListElem *this_elem, 
-                               const lListElem *centry)
-{
+host_is_centry_a_complex_value(const lListElem *this_elem,
+                               const lListElem *centry) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -370,7 +366,7 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
       if (lGetElemStr(ce_values, CE_name, name) != nullptr ||
           lGetElemStr(load_list, HL_name, name) != nullptr) {
          ret = true;
-      }  
+      }
    }
    DRETURN(ret);
 }
@@ -400,12 +396,11 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
 *     sgeobj/host/host_merge()
 *******************************************************************************/
 bool
-host_list_merge(lList *this_list)
-{
+host_list_merge(lList *this_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   
+
    if (this_list != nullptr) {
       lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
 
@@ -427,7 +422,7 @@ host_list_merge(lList *this_list)
          }
       }
    }
-   
+
    DRETURN(ret);
 }
 
@@ -457,9 +452,8 @@ host_list_merge(lList *this_list)
 *  SEE ALSO
 *     sgeobj/host/host_list_merge()
 *******************************************************************************/
-bool 
-host_merge(lListElem *host, const lListElem *global_host)
-{
+bool
+host_merge(lListElem *host, const lListElem *global_host) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -472,7 +466,7 @@ host_merge(lListElem *host, const lListElem *global_host)
          lSetList(host, EH_merged_report_variables, lCopyList("", local_list));
       } else {
          const lList *global_list;
-      
+
          global_list = lGetList(global_host, EH_report_variables);
          /* if we have no local list, but a global one, use this one */
          if (global_list != nullptr && lGetNumberOfElem(global_list) != 0) {
@@ -485,7 +479,58 @@ host_merge(lListElem *host, const lListElem *global_host)
          }
       }
    }
-   
+
    DRETURN(ret);
+}
+
+/**
+ * @brief debit a certain RSMAP id from a host
+ *
+ * @param host          the host to do debiting on
+ * @param ce_name       name of the RSMAP complex variable
+ * @param resl          the resource map object to be debited
+ * @param slots         the number of slots for which we do debiting (can be negativ in undebiting)
+ * @param just_check    when != nullptr we just check if debiting would be successful and return the result here
+ * @return the number of modifications done (0 or 1)
+ */
+int
+host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
+   int mods = 0;
+
+   lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
+   lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
+
+   const char *id = lGetString(resl, RESL_value);
+   u_long32 amount = lGetUlong(resl, RESL_amount);
+
+   lListElem *utilized_id = lGetSubStr(resource, RESL_value, id, RUE_utilized_now_resource_map_list);
+   if (utilized_id == nullptr) {
+      utilized_id = lAddSubStr(resource, RESL_value, id, RUE_utilized_now_resource_map_list, RESL_Type);
+   }
+   if (utilized_id != nullptr) {
+      if (just_check != nullptr) {
+         // only check if there is enough resources free, no booking
+         // only when slots > 0? It is never called with slots < 0 and just_check
+         const lListElem *complex_value = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
+         const lListElem *configured_id = lGetSubStr(complex_value, RESL_value, id, CE_resource_map_list);
+         u_long32 configured_amount = lGetUlong(configured_id, RESL_amount);
+         u_long32 utilized_amount = lGetUlong(utilized_id, RESL_amount);
+         if (configured_amount - utilized_amount - amount < 0) {
+            // not enough available of this id
+            *just_check = false;
+         }
+      } else {
+         if (slots < 0) {
+            // undebit
+            lAddUlong(utilized_id, RESL_amount, -amount);
+         } else {
+            // debit
+            lAddUlong(utilized_id, RESL_amount, amount);
+         }
+      }
+      mods++;
+   }
+
+   return mods;
 }
 

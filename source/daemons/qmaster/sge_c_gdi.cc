@@ -121,7 +121,8 @@ static void
 sge_gdi_shutdown_event_client(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
 
 static void
-sge_gdi_tigger_thread_state_transition(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+sge_gdi_tigger_thread_state_transition(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                                       monitoring_t *monitor);
 
 static int
 get_client_id(lListElem *, int *);
@@ -151,33 +152,33 @@ schedd_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ru
 /* ------------------------------ generic gdi objects --------------------- */
 /* *INDENT-OFF* */
 static gdi_object_t gdi_object[] = {
-        {SGE_CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,   calendar_mod, calendar_spool, calendar_update_queue_states},
-        {SGE_EV_LIST,      0, nullptr,              "event",                   SGE_TYPE_NONE,            nullptr,  nullptr, nullptr},
-        {SGE_AH_LIST,      AH_name,   AH_Type,   "adminhost",               SGE_TYPE_ADMINHOST,  host_mod,     host_spool,     host_success},
-        {SGE_SH_LIST,      SH_name,   SH_Type,   "submithost",              SGE_TYPE_SUBMITHOST, host_mod,     host_spool,     host_success},
-        {SGE_EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,   host_mod,     host_spool,     host_success},
-        {SGE_CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,     cqueue_mod,   cqueue_spool,   cqueue_success},
-        {SGE_JB_LIST,      0, nullptr,              "job",                     SGE_TYPE_JOB,             nullptr,  nullptr, nullptr},
-        {SGE_CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,     centry_mod,   centry_spool,   centry_success},
-        {SGE_ORDER_LIST,   0, nullptr,              "order",                   SGE_TYPE_NONE,            nullptr,  nullptr, nullptr},
-        {SGE_MASTER_EVENT, 0, nullptr,              "master event",            SGE_TYPE_NONE,            nullptr,  nullptr, nullptr},
-        {SGE_UM_LIST,      0, nullptr,              "manager",                 SGE_TYPE_MANAGER,         nullptr,  nullptr, nullptr},
-        {SGE_UO_LIST,      0, nullptr,              "operator",                SGE_TYPE_OPERATOR,        nullptr,  nullptr, nullptr},
-        {SGE_PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,         pe_mod,       pe_spool,       pe_success},
-        {SGE_CONF_LIST,    0, nullptr,              "configuration",           SGE_TYPE_NONE,            nullptr,  nullptr, nullptr},
-        {SGE_SC_LIST,      0, nullptr,              "scheduler configuration", SGE_TYPE_NONE,       schedd_mod, nullptr, nullptr},
-        {SGE_UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER,       userprj_mod,  userprj_spool,  userprj_success},
-        {SGE_US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET,    userset_mod,  userset_spool,  userset_success},
-        {SGE_PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT,    userprj_mod,  userprj_spool,  userprj_success},
-        {SGE_STN_LIST,     0, nullptr,              "sharetree",               SGE_TYPE_SHARETREE,       nullptr,  nullptr, nullptr},
-        {SGE_CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,       ckpt_mod,     ckpt_spool,     ckpt_success},
-        {SGE_SME_LIST,     0, nullptr,              "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO, nullptr,  nullptr, nullptr},
-        {SGE_ZOMBIE_LIST,  0, nullptr,              "job zombie list",         SGE_TYPE_ZOMBIE,          nullptr,  nullptr, nullptr},
-        {SGE_RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,        rqs_mod,      rqs_spool,      rqs_success},
-        {SGE_HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,     hgroup_mod,   hgroup_spool,   hgroup_success},
-        {SGE_AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,         ar_mod,       ar_spool,       ar_success},
-        {SGE_DUMMY_LIST,   0, nullptr,              "general request",         SGE_TYPE_NONE,            nullptr,  nullptr, nullptr},
-        {0,                0, nullptr, nullptr,                                   SGE_TYPE_NONE,            nullptr,  nullptr, nullptr}
+        {SGE_CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,        calendar_mod, calendar_spool, calendar_update_queue_states},
+        {SGE_EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
+        {SGE_AH_LIST,      AH_name,   AH_Type,   "adminhost",               SGE_TYPE_ADMINHOST,       host_mod,     host_spool,     host_success},
+        {SGE_SH_LIST,      SH_name,   SH_Type,   "submithost",              SGE_TYPE_SUBMITHOST,      host_mod,     host_spool,     host_success},
+        {SGE_EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,        host_mod,     host_spool,     host_success},
+        {SGE_CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,          cqueue_mod,   cqueue_spool,   cqueue_success},
+        {SGE_JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB,             nullptr,      nullptr,        nullptr},
+        {SGE_CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,          centry_mod,   centry_spool,   centry_success},
+        {SGE_ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
+        {SGE_MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
+        {SGE_UM_LIST,      0,         nullptr,   "manager",                 SGE_TYPE_MANAGER,         nullptr,      nullptr,        nullptr},
+        {SGE_UO_LIST,      0,         nullptr,   "operator",                SGE_TYPE_OPERATOR,        nullptr,      nullptr,        nullptr},
+        {SGE_PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,              pe_mod,       pe_spool,       pe_success},
+        {SGE_CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
+        {SGE_SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE,            schedd_mod,   nullptr,        nullptr},
+        {SGE_UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER,            userprj_mod,  userprj_spool,  userprj_success},
+        {SGE_US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET,         userset_mod,  userset_spool,  userset_success},
+        {SGE_PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT,         userprj_mod,  userprj_spool,  userprj_success},
+        {SGE_STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE,       nullptr,      nullptr,        nullptr},
+        {SGE_CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,            ckpt_mod,     ckpt_spool,     ckpt_success},
+        {SGE_SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO, nullptr,      nullptr,        nullptr},
+        {SGE_ZOMBIE_LIST,  0,         nullptr,   "job zombie list",         SGE_TYPE_ZOMBIE,          nullptr,      nullptr,        nullptr},
+        {SGE_RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,             rqs_mod,      rqs_spool,      rqs_success},
+        {SGE_HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,          hgroup_mod,   hgroup_spool,   hgroup_success},
+        {SGE_AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success},
+        {SGE_DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
+        {0,                0,         nullptr,   nullptr,                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr}
 };
 
 /* *INDENT-ON* */
@@ -320,7 +321,7 @@ sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **an
          (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid));
    sge_dstring_free(&target_dstr);
 #else
-   INFO((SGE_EVENT, "GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)",
+   DEBUG((SGE_EVENT, "GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)",
            operation_name, target_name, packet->host, packet->commproc,
            (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid));
 #endif
@@ -575,12 +576,12 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                      case -1 :
                      case -3 :
                         /* stop the order processing */
-                        WARNING((SGE_EVENT, "Skipping remaining "sge_uu32" orders", lGetNumberOfRemainingElem(ep)));
+                        WARNING((SGE_EVENT, "Skipping remaining " sge_uu32 " orders", lGetNumberOfRemainingElem(ep)));
                         next = nullptr;
                         break;
 
                      default :
-                        DPRINTF(("--> FAILED: unexpected state from in the order processing <--\n"));
+                     DPRINTF(("--> FAILED: unexpected state from in the order processing <--\n"));
                         break;
                   }
                   break;
@@ -1294,7 +1295,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
    if (lGetNumberOfElem(tmp_list) != 0) {
       switch (task->target) {
          case SGE_CE_LIST:
-            DPRINTF(("rebuilding consumable debitation\n"));
+         DPRINTF(("rebuilding consumable debitation\n"));
             centry_redebit_consumables(tmp_list);
             break;
       }

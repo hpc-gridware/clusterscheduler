@@ -1,54 +1,182 @@
-/*___INFO__MARK_BEGIN_NEW__*/
-/*___INFO__MARK_END_NEW__*/
+/*___INFO__MARK_BEGIN__*/
+/*___INFO__MARK_END__*/
 
 #include "basis_types.h"
 #include "sge.h"
-#include "sge_sched_thread_rsmap.h"
-#include "sge_rmon.h"
-#include "sge_centry.h"
-#include "sge_grantedres.h"
-#include "sge_ja_task.h"
-#include "sge_job.h"
-#include "sge_ulong.h"
-#include "sgeobj/sge_host.h"
+
+#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
-#include "uti/sge_string.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
+#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/sge_host.h"
+#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_resource_utilization.h"
 
 #include "sge_sched_thread_rsmap.h"
 
-/****** sge_sched_thread_remap/add_granted_resource_list() *********************
-*  NAME
-*     get_remap_ids() --  Function of Univa extension RSMAP complex.
-*
-*  SYNOPSIS
-*     void add_granted_resource_list(lListElem *ja_task,
-*                                    lListElem *job,
-*                                    lList *granted,
-*                                    lList *host_list)
-*
-*  FUNCTION
-*     Non-opensource function of Unvia extension RSMAP complex.
-*
-*  INPUTS
-*     lListElem *ja_task - The job array task
-*     lListElem *job     - The job
-*     lList *granted     - The granted destination identifier list
-*     lList *host_list   - The host list
-*
-*  NOTES
-*     MT-NOTE: add_granted_resource_list() is MT safe
-*
-*******************************************************************************/
-void add_granted_resource_list(
-            lListElem *ja_task,
-            lListElem *job,
-            lList *granted,
-            lList *host_list) {
+static bool
+gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, const lList *host_list,
+                       u_long32 amount) {
+   bool ret = true;
 
-   DENTER(TOP_LAYER);
+   const lListElem *host = host_list_locate(host_list, host_name);
+   if (host == nullptr) {
+      ret = false;
+   }
 
-   DRETURN_VOID;
+   if (ret) {
+      const lListElem *resource_definition = lGetSubStr(host, CE_name, name, EH_consumable_config_list);
+      const lListElem *resource_utilization = lGetSubStr(host, RUE_name, name, EH_resource_utilization);
+      if (resource_definition == nullptr || resource_utilization == nullptr) {
+         ret = false;
+      } else {
+         u_long32 defined = lGetDouble(resource_definition, CE_doubleval);
+         u_long32 used = lGetDouble(resource_utilization, RUE_utilized_now);
+         if ((defined - used) < amount) {
+            // not enough available
+            ret = false;
+         } else {
+            const lListElem *defined_ep;
+            for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+               const char *id = lGetString(defined_ep, RESL_value);
+               u_long32 free_amount = lGetUlong(defined_ep, RESL_amount);
+               const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
+                                                     RUE_utilized_now_resource_map_list);
+               if (used_ep != nullptr) {
+                  free_amount -= lGetUlong(used_ep, RESL_amount);
+               }
+               if (free_amount > 0) {
+                  lListElem *resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+                  if (free_amount >= amount) {
+                     lSetUlong(resl, RESL_amount, amount);
+                     amount = 0;
+                     // we are done
+                     break;
+                  } else {
+                     lSetUlong(resl, RESL_amount, free_amount);
+                     amount -= free_amount;
+                  }
+               }
+            }
+            // should never happen, it would mean that RUE_utilized_now is not consistent
+            // with the per id counters
+            if (amount > 0) {
+               ret = false;
+            }
+         }
+      }
+   }
+
+   return ret;
+}
+
+static bool
+gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 type,
+                     const char *host_name, const lList *host_list, double amount, u_long32 slots) {
+   bool ret = true;
+
+   // try to get the resource from the local host, if not available, then from the global host
+   const lListElem *host = host_list_locate(host_list, host_name);
+   if (host == nullptr || lGetSubStr(host, CE_name, name, EH_consumable_config_list) == nullptr) {
+      host_name = SGE_GLOBAL_NAME;
+      host = host_list_locate(host_list, host_name);
+      if (host == nullptr || lGetSubStr(host, CE_name, name, EH_consumable_config_list) == nullptr) {
+         // may never happen, the global host must exist and the resource must be defined somewhere on host level
+         // @todo what about queue resources?
+         return false;
+      }
+   }
+
+   lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
+   if (gru == nullptr) {
+      gru = lAddElemStr(granted_resources_list, GRU_name, name, GRU_Type);
+   }
+   if (gru != nullptr) {
+      lSetHost(gru, GRU_host, host_name);
+      lSetDouble(gru, GRU_amount, amount * slots);
+
+      if (type == TYPE_RSMAP) {
+         lSetUlong(gru, GRU_type, GRU_RESOURCE_MAP_TYPE);
+         ret = gru_add_free_rsmap_ids(gru, name, host_name, host_list, amount * slots);
+      } else {
+         lSetUlong(gru, GRU_type, GRU_HARD_REQUEST_TYPE);
+      }
+   } else {
+      // couldn't malloc gru?
+      ret = false;
+   }
+
+   return ret;
+}
+
+/**
+ * @brief add a granted resource list to a just scheduled ja_task
+ *
+ * The granted resource list is built from the (granted) hard requests of the job
+ * and for RSMAPs by searching free ids in the hosts' complex_values lists.
+ *
+ * @param ja_task
+ * @param job
+ * @param gdil
+ * @param host_list
+ * @return true in case of success, false in case of errors
+ */
+bool add_granted_resource_list(lListElem *ja_task, const lListElem *job,
+                               const lList *gdil, const lList *host_list) {
+   // check input parameters
+   if (ja_task == nullptr || job == nullptr || gdil == nullptr || host_list == nullptr) {
+      return false;
+   }
+
+   bool ret = true;
+   lList *granted_resources_list = nullptr;
+
+   // loop over the hard resource requests
+   const lList *hard_requests = lGetList(job, JB_hard_resource_list);
+   const lListElem *request;
+   for_each_ep(request, hard_requests) {
+      const char *name = lGetString(request, CE_name);
+
+      u_long32 type = lGetUlong(request, CE_valtype);
+      u_long32 consumable = lGetUlong(request, CE_consumable);
+      double amount = lGetDouble(request, CE_doubleval);
+      // we only add consumables to the granted resources list
+      if (consumable == CONSUMABLE_NO) {
+         continue;
+      }
+
+      // loop over the gdil and figure out the hosts
+      // Attention: One host can appear multiple times in gdil (for different queue instances)!
+      const lListElem *gdil_ep;
+      for_each_ep(gdil_ep, gdil) {
+         const char *host_name = lGetHost(gdil_ep, JG_qhostname);
+         u_long32 slots = lGetUlong(gdil_ep, JG_slots);
+         if (consumable == CONSUMABLE_JOB) {
+            // we consume only once for the master task
+            slots = 1;
+         }
+
+         ret = gru_list_add_request(&granted_resources_list, name, type, host_name, host_list, amount, slots);
+         if (!ret) {
+            break;
+         }
+
+         if (consumable == CONSUMABLE_JOB) {
+            // for job consumables only the resources of the master task (first gdil entry) are used
+            break;
+         }
+      }
+   }
+
+   // if we had some consumables, add the list to the ja_task
+   if (ret) {
+      if (granted_resources_list != nullptr) {
+         lSetList(ja_task, JAT_granted_resources_list, granted_resources_list);
+      }
+   } else {
+      lFreeList(&granted_resources_list);
+   }
+
+   return ret;
 }
 

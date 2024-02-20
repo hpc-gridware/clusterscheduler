@@ -57,5 +57,6 @@
 #define MSG_SPOOL_GLOBALCONFIGNOTDELETED     _MESSAGE(62017, _("the global configuration must not be deleted"))
 #define MSG_SPOOL_SCHEDDCONFIGNOTDELETED     _MESSAGE(62018, _("the scheduler configuration must not be deleted"))
 #define MSG_MUST_BE_POSITIVE_VALUE_S         _MESSAGE(62019, _("parameter "SFQ" must be a positive number"))
+#define MSG_RSMAP_INCONSISTENTAMOUNT_SSUU    _MESSAGE(62020, _("RSMAP " SFQ " value " SFQ " has amount " sge_uu32 " but " sge_uu32 " elements "))
 
 // clang-format on

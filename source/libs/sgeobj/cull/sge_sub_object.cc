@@ -293,6 +293,9 @@ object_get_subtype(int nm)
       case UU_debited_job_usage:
          ret = UPU_Type;
          break;
+      case GRU_resource_map_list:
+         ret = RESL_Type;
+         break;
       case STN_children:
          ret = STN_Type;
          break;
@@ -490,6 +493,12 @@ object_get_subtype(int nm)
          break;
       case XMLE_Attribute:
          ret = XMLA_Type;
+         break;
+      case RDE_resource_map_list:
+         ret = RESL_Type;
+         break;
+      case RUE_utilized_now_resource_map_list:
+         ret = RESL_Type;
          break;
       case RUE_utilized:
          ret = RDE_Type;

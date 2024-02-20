@@ -1,25 +1,61 @@
 {
 	"className":	"ResourceDiagramEntry",
-	"summary":	"@todo add summary",
+	"summary":	"Resource Diagram Entry",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A resource diagram lists future resource utilization (it starts at the current time)."
+         }, { "line": "An object of this type is related to the usage of a specific resource,"
+         }, { "line": "whose name is defined in the parent object (RUE_Type)."
+         }, { "line": "The list of resource diaram entries represents a diagram showing"
+         }, { "line": "resource progression over time."
+         }, { "line": ""
+         }, { "line": "E.g. the following resource diagram"
+         }, { "line": "   N ^"
+         }, { "line": "     |             +-------+"
+         }, { "line": "     |   +-----+   |  J3   |"
+         }, { "line": "     |   |     +---+-------+--+"
+         }, { "line": "     |   | J1  |      J2      |"
+         }, { "line": "     +---+-----+--------------+-----> t"
+         }, { "line": "     0   4     10  14      22 25"
+         }, { "line": ""
+         }, { "line": "is respresented by the the following table"
+         }, { "line": "    t | N"
+         }, { "line": "   ---+---"
+         }, { "line": "    0 | 0"
+         }, { "line": "    4 | 3"
+         }, { "line": "   10 | 2"
+         }, { "line": "   14 | 4"
+         }, { "line": "   22 | 2"
+         }, { "line": "   25 | 2"
+         }, { "line": ""
+         }, { "line": ""
+         }, { "line": ""
 		}],
 	"cullPrefix":	"RDE",
 	"attributes":	[{
 			"name":	"time",
-			"summary":	"@todo add summary",
+			"summary":	"Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Time stamp (seconds since epoch)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"amount",
-			"summary":	"@todo add summary",
+			"summary":	"Amount",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Amount of the resource which is used."
 				}],
 			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"resource_map_list",
+			"summary":	"Resource Map List",
+			"description":	[{
+					"line":	"Amount of Resource Maps which are used."
+				}],
+			"type":	"lListT",
+			"subClassName":	"RESL",
+			"subCullPrefix":	"RESL",
 			"flags":	[]
 		}]
 }

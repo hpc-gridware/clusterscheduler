@@ -4,5 +4,7 @@
 
 #include "cull_list.h"
 
-void add_granted_resource_list(lListElem *ja_task, lListElem *job, lList *granted, lList *host_list);
+bool
+add_granted_resource_list(lListElem *ja_task, const lListElem *job, const lList *granted,
+                          const lList *host_list);
 

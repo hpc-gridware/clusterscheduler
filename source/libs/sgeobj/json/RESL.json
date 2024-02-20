@@ -19,22 +19,14 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"jobid",
-			"summary":	"Job Number",
+			"name":	"amount",
+			"summary":	"Resource Amount",
 			"description":	[{
-					"line":	"The job, which currently uses this value (in case of 0 it is unused)."
+					"line":	"The number of resources with this name."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
-		}, {
-			"name":	"taskid",
-			"summary":	"Task Number",
-			"description":	[{
-					"line":	"The array task, which currently uses this value (in case of 0 it is unused)."
-				}],
-			"type":	"lUlongT",
-			"flags":	[]
 		}]
 }

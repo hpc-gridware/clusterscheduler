@@ -93,7 +93,7 @@ bool
 host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry);
 
 bool
-host_is_centry_a_complex_value(const lListElem *this_elem, 
+host_is_centry_a_complex_value(const lListElem *this_elem,
                                const lListElem *centry);
 
 lListElem *
@@ -102,5 +102,8 @@ host_list_locate(const lList *this_list, const char *hostname);
 bool
 host_list_merge(lList *this_list);
 
-bool 
+bool
 host_merge(lListElem *host, const lListElem *global_host);
+
+int
+host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);

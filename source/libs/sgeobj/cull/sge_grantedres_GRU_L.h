@@ -42,18 +42,25 @@
 * Currently only used for RSMAPs.
 * @todo Use it for all granted resources (e.g. prerequisit for soft consumables)
 * @todo Don't we have to store it per petask?
+* @todo we don't have a primary key and cannot search by index. Primary key would be name + host.
 *
 *    SGE_ULONG(GRU_type) - Type
-*    Type of the resource.
+*    Type of the resource:
+*    GRU_HARD_REQUEST_TYPE
+*    GRU_SOFT_REQUEST_TYPE
+*    GRU_RESOURCE_MAP_TYPE
 *
 *    SGE_STRING(GRU_name) - Name
 *    Name of the resource (complex variable name).
 *
-*    SGE_STRING(GRU_value) - Value
-*    Value of the resource (how many/much has been granted)
-*    @todo also which ones in case of RSMAPs?
+*    SGE_DOUBLE(GRU_amount) - Granted Amount
+*    How much of the resource has been granted.
 *
-*    SGE_STRING(GRU_host) - Host
+*    SGE_LIST(GRU_resource_map_list) - Resource Map List
+*    In case of resource maps: Which Ids and how much per Id has been granted
+*    For RSMAPs: Which ids have been granted.
+*
+*    SGE_HOST(GRU_host) - Host
 *    Host on which the resource has been granted (required in case of parallel jobs).
 *    @todo shouldn't it be of type lHostT?
 *
@@ -62,21 +69,24 @@
 enum {
    GRU_type = GRU_LOWERBOUND,
    GRU_name,
-   GRU_value,
+   GRU_amount,
+   GRU_resource_map_list,
    GRU_host
 };
 
 LISTDEF(GRU_Type)
    SGE_ULONG(GRU_type, CULL_SPOOL)
    SGE_STRING(GRU_name, CULL_SPOOL)
-   SGE_STRING(GRU_value, CULL_SPOOL)
-   SGE_STRING(GRU_host, CULL_SPOOL)
+   SGE_DOUBLE(GRU_amount, CULL_SPOOL)
+   SGE_LIST(GRU_resource_map_list, RESL_Type, CULL_SPOOL)
+   SGE_HOST(GRU_host, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(GRUN)
    NAME("GRU_type")
    NAME("GRU_name")
-   NAME("GRU_value")
+   NAME("GRU_amount")
+   NAME("GRU_resource_map_list")
    NAME("GRU_host")
 NAMEEND
 

@@ -21,6 +21,7 @@ set(LIBRARY_SOURCES
       sge_eval_expression.cc
       sge_event.cc
       sge_feature.cc
+      sge_grantedres.cc
       sge_hgroup.cc
       sge_host.cc
       sge_href.cc

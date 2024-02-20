@@ -7,13 +7,17 @@
 			}, { "line":	"Currently only used for RSMAPs."
 			}, { "line":	"@todo Use it for all granted resources (e.g. prerequisit for soft consumables)"
 			}, { "line":	"@todo Don't we have to store it per petask?"
+			}, { "line":	"@todo we don't have a primary key and cannot search by index. Primary key would be name + host."
 		}],
 	"cullPrefix":	"GRU",
 	"attributes":	[{
 			"name":	"type",
 			"summary":	"Type",
 			"description":	[{
-					"line":	"Type of the resource."
+					 "line":	"Type of the resource:"
+				}, { "line":	"GRU_HARD_REQUEST_TYPE"
+				}, { "line":	"GRU_SOFT_REQUEST_TYPE"
+				}, { "line":	"GRU_RESOURCE_MAP_TYPE"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -30,13 +34,25 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"value",
-			"summary":	"Value",
+			"name":	"amount",
+			"summary":	"Granted Amount",
 			"description":	[{
-					"line":	"Value of the resource (how many/much has been granted)"
-					}, { "line":	"@todo also which ones in case of RSMAPs?"
+					"line":	"How much of the resource has been granted."
 				}],
-			"type":	"lStringT",
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"resource_map_list",
+			"summary":	"Resource Map List",
+			"description":	[{
+					"line":	"In case of resource maps: Which Ids and how much per Id has been granted"
+					}, { "line":	"For RSMAPs: Which ids have been granted."
+				}],
+			"type":	"lListT",
+			"subClassName":	"RESL",
+			"subCullPrefix":	"RESL",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
@@ -47,7 +63,7 @@
 					"line":	"Host on which the resource has been granted (required in case of parallel jobs)."
 					}, { "line":	"@todo shouldn't it be of type lHostT?"
 				}],
-			"type":	"lStringT",
+			"type":	"lHostT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]

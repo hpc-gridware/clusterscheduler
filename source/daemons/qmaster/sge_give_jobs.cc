@@ -206,7 +206,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
          sent_slaves = 0;
          break;
       default :
-         DPRINTF(("send_slave_jobs returned an unknown error code\n"));
+      DPRINTF(("send_slave_jobs returned an unknown error code\n"));
          ret = -1;
    }
 
@@ -468,7 +468,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          ret = -1;
          break;
       } else {
-         DPRINTF(("successfully sent slave job "sge_u32" to host \"%s\"\n",
+         DPRINTF(("successfully sent slave job " sge_u32 " to host \"%s\"\n",
                  lGetUlong(jep, JB_job_number), hostname));
       }
       lRemoveElem(gdil, &gdil_ep);
@@ -501,7 +501,8 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
                                        &last_heard_from);
       now = sge_get_gmt();
       if (last_heard_from + mconf_get_max_unheard() <= now) {
-         ERROR((SGE_EVENT, MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost, sge_u32c( lGetUlong(jep, JB_job_number))));
+         ERROR((SGE_EVENT, MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost, sge_u32c(
+                 lGetUlong(jep, JB_job_number))));
          sge_mark_unheard(hep);
          DRETURN(-1);
       }
@@ -642,7 +643,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
       sge_mark_unheard(hep);
       DRETURN(-1);
    } else {
-      DPRINTF(("successfully sent %sjob "sge_u32" to host \"%s\"\n",
+      DPRINTF(("successfully sent %sjob " sge_u32 " to host \"%s\"\n",
               master ? "" : "SLAVE ",
               lGetUlong(jep, JB_job_number),
               rhost));
@@ -990,7 +991,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                }
 
                /* debit consumable resources */
-               if (debit_host_consumable(jep, global_host_ep, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
+               if (debit_host_consumable(jep, jatep, global_host_ep, master_centry_list, tmp_slot, master_task,
+                                         nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 "global", nullptr, nullptr, global_host_ep);
@@ -999,7 +1001,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   lListElem_clear_changed_info(global_host_ep);
                }
                host = host_list_locate(master_exechost_list, queue_hostname);
-               if (debit_host_consumable(jep, host, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
+               if (debit_host_consumable(jep, jatep, host, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 queue_hostname, nullptr, nullptr, host);
@@ -1554,7 +1556,8 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             lListElem *host;
 
             /* undebit consumable resources */
-            if (debit_host_consumable(job, global_host_ep, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
+            if (debit_host_consumable(job, ja_task, global_host_ep, master_centry_list, -tmp_slot, master_task,
+                                      nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              "global", nullptr, nullptr, global_host_ep);
@@ -1563,7 +1566,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                lListElem_clear_changed_info(global_host_ep);
             }
             host = host_list_locate(master_exechost_list, queue_hostname);
-            if (debit_host_consumable(job, host, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
+            if (debit_host_consumable(job, ja_task, host, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              queue_hostname, nullptr, nullptr, host);

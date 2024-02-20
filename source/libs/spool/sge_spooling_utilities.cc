@@ -71,49 +71,49 @@
 #include "msg_common.h"
 
 const spool_instr_t spool_config_subinstr = {
-   CULL_SUBLIST,
-   false,
-   false,
-   nullptr
+        CULL_SUBLIST,
+        false,
+        false,
+        nullptr
 };
 
 const spool_instr_t spool_config_instr = {
-   CULL_SPOOL,
-   true,
-   true,
-   &spool_config_subinstr
+        CULL_SPOOL,
+        true,
+        true,
+        &spool_config_subinstr
 };
 
 const spool_instr_t spool_complex_subinstr = {
-   CULL_SPOOL,
-   false,
-   false,
-   nullptr
+        CULL_SPOOL,
+        false,
+        false,
+        nullptr
 };
 
 const spool_instr_t spool_complex_instr = {
-   CULL_SPOOL,
-   false,
-   false,
-   &spool_complex_subinstr
+        CULL_SPOOL,
+        false,
+        false,
+        &spool_complex_subinstr
 };
 
 const spool_instr_t spool_userprj_subinstr = {
-   CULL_SUBLIST,
-   false,
-   false,
-   &spool_userprj_subinstr
+        CULL_SUBLIST,
+        false,
+        false,
+        &spool_userprj_subinstr
 };
 
 const spool_instr_t spool_user_instr = {
-   CULL_SPOOL | CULL_SPOOL_USER,
-   true,
-   true,
-   &spool_userprj_subinstr
+        CULL_SPOOL | CULL_SPOOL_USER,
+        true,
+        true,
+        &spool_userprj_subinstr
 };
 
 static spooling_field *
-_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
+_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                            const spool_instr_t *instr);
 
 /****** spool/utilities/spool_get_fields_to_spool() *********************
@@ -156,10 +156,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *     gdi/object/object_get_subtype()
 *     spool/utilities/spool_free_spooling_fields()
 *******************************************************************************/
-spooling_field * 
-spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
-                          const spool_instr_t *instr)
-{
+spooling_field *
+spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+                          const spool_instr_t *instr) {
    spooling_field *fields;
 
    DENTER(TOP_LAYER);
@@ -172,9 +171,8 @@ spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 }
 
 static spooling_field *
-_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
-                           const spool_instr_t *instr)
-{
+_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+                           const spool_instr_t *instr) {
    spooling_field *fields;
    int i, j, size;
    size_t strip = 0;
@@ -193,23 +191,23 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    }
 
    /* allocate memory */
-   fields = (spooling_field *)sge_malloc((size + 1) * sizeof(spooling_field));
+   fields = (spooling_field *) sge_malloc((size + 1) * sizeof(spooling_field));
    if (fields == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
-                              MSG_UNABLETOALLOCATEBYTES_DS, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
+                              MSG_UNABLETOALLOCATEBYTES_DS,
                               (size * 1) * sizeof(spooling_field), __func__);
       DRETURN(nullptr);
    }
 
    /* initialize fields */
    for (i = 0; i < size; i++) {
-      fields[i].nm         = NoName;
-      fields[i].width      = 0;
-      fields[i].name       = nullptr;
+      fields[i].nm = NoName;
+      fields[i].width = 0;
+      fields[i].name = nullptr;
       fields[i].sub_fields = nullptr;
       fields[i].clientdata = nullptr;
-      fields[i].read_func  = nullptr;
+      fields[i].read_func = nullptr;
       fields[i].write_func = nullptr;
    }
 
@@ -228,27 +226,27 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 
          DPRINTF(("field "SFQ" will be spooled\n", lNm2Str(descr[i].nm)));
 
-         fields[j].nm         = descr[i].nm;
+         fields[j].nm = descr[i].nm;
 
          if (instr->copy_field_names) {
             const char *name;
             name = lNm2Str(descr[i].nm);
-            if(name == nullptr || strlen(name) <= strip) {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                       ANSWER_QUALITY_ERROR, 
-                                       MSG_NONAMEFORATTRIBUTE_D, 
+            if (name == nullptr || strlen(name) <= strip) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                       ANSWER_QUALITY_ERROR,
+                                       MSG_NONAMEFORATTRIBUTE_D,
                                        descr[i].nm);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
             fields[j].name = strdup(name + strip);
          }
-         
+
          if (mt_get_type(descr[i].mt) == lListT) {
             const lDescr *sub_descr;
 
             if (instr->sub_instr == nullptr) {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
                                        lNm2Str(descr[i].nm), __func__);
@@ -258,7 +256,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 
             sub_descr = object_get_subtype(descr[i].nm);
             if (sub_descr == nullptr) {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS,
                                        lNm2Str(descr[i].nm), __func__);
@@ -270,9 +268,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
             if (instr->sub_instr == instr && descr == sub_descr) {
                sub_fields = fields;
                DPRINTF(("recursive structure detected for field %s\n",
-                        lNm2Str(descr[i].nm)));
+                       lNm2Str(descr[i].nm)));
             } else {
-               sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr, 
+               sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr,
                                                        instr->sub_instr);
             }
          }
@@ -306,12 +304,11 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *  EXAMPLE
 *     fields = spool_free_spooling_fields(fields);
 *******************************************************************************/
-spooling_field * 
-spool_free_spooling_fields(spooling_field *fields)
-{
+spooling_field *
+spool_free_spooling_fields(spooling_field *fields) {
    if (fields != nullptr) {
       int i;
-      for (i = 0; fields[i].nm >=0; i++) {
+      for (i = 0; fields[i].nm >= 0; i++) {
          if (fields[i].sub_fields != nullptr && fields[i].sub_fields != fields) {
             fields[i].sub_fields = spool_free_spooling_fields(fields[i].sub_fields);
          }
@@ -358,12 +355,11 @@ spool_free_spooling_fields(spooling_field *fields)
 *
 *  SEE ALSO
 *******************************************************************************/
-bool spool_default_validate_func(lList **answer_list, 
-                          const lListElem *type, 
-                          const lListElem *rule,
-                          lListElem *object,
-                          const sge_object_type object_type)
-{
+bool spool_default_validate_func(lList **answer_list,
+                                 const lListElem *type,
+                                 const lListElem *rule,
+                                 lListElem *object,
+                                 const sge_object_type object_type) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -377,104 +373,104 @@ bool spool_default_validate_func(lList **answer_list,
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   switch(object_type) {
+   switch (object_type) {
       case SGE_TYPE_ADMINHOST:
       case SGE_TYPE_EXECHOST:
-      case SGE_TYPE_SUBMITHOST:
-         {
-            int cl_ret;
-            int key_nm = object_type_get_key_nm(object_type);
-            char *old_name = strdup(lGetHost(object, key_nm));
+      case SGE_TYPE_SUBMITHOST: {
+         int cl_ret;
+         int key_nm = object_type_get_key_nm(object_type);
+         char *old_name = strdup(lGetHost(object, key_nm));
 
-            /* try hostname resolving */
-            if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
-               cl_ret = sge_resolve_host(object, key_nm);
+         /* try hostname resolving */
+         if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
+            cl_ret = sge_resolve_host(object, key_nm);
 
-               /* if hostname resolving failed: create error */
-               if (cl_ret != CL_RETVAL_OK) {
-                  if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret)); 
-                     ret = false;
-                  } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
-                  }
-               } else {
-                  /* if hostname resolving changed hostname: spool */
-                  const char *new_name;
-                  new_name = lGetHost(object, key_nm);
-                  if (strcmp(old_name, new_name) != 0) {
-                     spooling_write_func write_func = (spooling_write_func)lGetRef(rule, SPR_write_func);
-                     spooling_delete_func delete_func = (spooling_delete_func)lGetRef(rule, SPR_delete_func);
-                     write_func(answer_list, type, rule, object, new_name, object_type);
-                     delete_func(answer_list, type, rule, old_name, object_type);
-                  }
-               }
-            }
-
-            sge_free(&old_name);
-
-            if (object_type == SGE_TYPE_EXECHOST && ret) {
-               lListElem *load_value;
-
-               /* all spooled load values are static, therefore we tag them here */
-               for_each_rw(load_value, lGetList(object, EH_load_list)) {
-                  lSetBool(load_value, HL_is_static, true);
-               }
-
-               /* necessary to init double values of consumable configuration */
-               centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true, false, true);
-               /* necessary to setup actual list of exechost */
-               debit_host_consumable(nullptr, object, master_centry_list, 0, true, nullptr);
-
-               if (ensure_attrib_available(nullptr, object, EH_consumable_config_list, master_centry_list)) {
+            /* if hostname resolving failed: create error */
+            if (cl_ret != CL_RETVAL_OK) {
+               if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
                   ret = false;
+               } else {
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING,
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
+               }
+            } else {
+               /* if hostname resolving changed hostname: spool */
+               const char *new_name;
+               new_name = lGetHost(object, key_nm);
+               if (strcmp(old_name, new_name) != 0) {
+                  spooling_write_func write_func = (spooling_write_func) lGetRef(rule, SPR_write_func);
+                  spooling_delete_func delete_func = (spooling_delete_func) lGetRef(rule, SPR_delete_func);
+                  write_func(answer_list, type, rule, object, new_name, object_type);
+                  delete_func(answer_list, type, rule, old_name, object_type);
                }
             }
          }
+
+         sge_free(&old_name);
+
+         if (object_type == SGE_TYPE_EXECHOST && ret) {
+            lListElem *load_value;
+
+            /* all spooled load values are static, therefore we tag them here */
+            for_each_rw(load_value, lGetList(object, EH_load_list)) {
+               lSetBool(load_value, HL_is_static, true);
+            }
+
+            /* necessary to init double values of consumable configuration */
+            centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true,
+                                     false, true);
+            /* necessary to setup actual list of exechost */
+            debit_host_consumable(nullptr, nullptr, object, master_centry_list, 0, true, nullptr);
+
+            if (ensure_attrib_available(nullptr, object, EH_consumable_config_list, master_centry_list)) {
+               ret = false;
+            }
+         }
+      }
          break;
       case SGE_TYPE_QINSTANCE:
          ret = qinstance_validate(object, answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CQUEUE:
-         ret = qinstance_list_validate(lGetListRW(object, CQ_qinstances), answer_list, master_ehost_list, master_centry_list);
+         ret = qinstance_list_validate(lGetListRW(object, CQ_qinstances), answer_list, master_ehost_list,
+                                       master_centry_list);
          break;
-      case SGE_TYPE_CONFIG:
-         {
-            int cl_ret;
-            char *old_name = strdup(lGetHost(object, CONF_name));
+      case SGE_TYPE_CONFIG: {
+         int cl_ret;
+         char *old_name = strdup(lGetHost(object, CONF_name));
 
-            /* try hostname resolving */
-            if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
-               cl_ret = sge_resolve_host(object, CONF_name);
-               /* if hostname resolving failed: create error */
-               if (cl_ret != CL_RETVAL_OK) {
-                  if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                             ANSWER_QUALITY_ERROR, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, 
-                                             old_name, cl_get_error_text(ret)); 
-                     ret = false;
-                  } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                             ANSWER_QUALITY_WARNING, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, 
-                                             old_name, cl_get_error_text(ret));
-                  }
+         /* try hostname resolving */
+         if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
+            cl_ret = sge_resolve_host(object, CONF_name);
+            /* if hostname resolving failed: create error */
+            if (cl_ret != CL_RETVAL_OK) {
+               if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                          ANSWER_QUALITY_ERROR,
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS,
+                                          old_name, cl_get_error_text(ret));
+                  ret = false;
                } else {
-                  /* if hostname resolving changed hostname: spool */
-                  const char *new_name = lGetHost(object, CONF_name);
-                  if (strcmp(old_name, new_name) != 0) {
-                     spooling_write_func write_func = (spooling_write_func)lGetRef(rule, SPR_write_func);
-                     spooling_delete_func delete_func = (spooling_delete_func)lGetRef(rule, SPR_delete_func);
-                     write_func(answer_list, type, rule, object, new_name, object_type);
-                     delete_func(answer_list, type, rule, old_name, object_type);
-                  }
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                          ANSWER_QUALITY_WARNING,
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS,
+                                          old_name, cl_get_error_text(ret));
+               }
+            } else {
+               /* if hostname resolving changed hostname: spool */
+               const char *new_name = lGetHost(object, CONF_name);
+               if (strcmp(old_name, new_name) != 0) {
+                  spooling_write_func write_func = (spooling_write_func) lGetRef(rule, SPR_write_func);
+                  spooling_delete_func delete_func = (spooling_delete_func) lGetRef(rule, SPR_delete_func);
+                  write_func(answer_list, type, rule, object, new_name, object_type);
+                  delete_func(answer_list, type, rule, old_name, object_type);
                }
             }
-            sge_free(&old_name);
          }
+         sge_free(&old_name);
+      }
          break;
       case SGE_TYPE_USERSET:
          if (userset_validate_entries(object, answer_list, 1) != STATUS_OK) {
@@ -502,7 +498,8 @@ bool spool_default_validate_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_AR:
-         if (!ar_validate(object, answer_list, true, true, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {
+         if (!ar_validate(object, answer_list, true, true, master_cqueue_list, master_hgroup_list, master_centry_list,
+                          master_ckpt_list, master_pe_list, master_userset_list)) {
             ret = false;
          }
          break;
@@ -527,15 +524,14 @@ bool spool_default_validate_func(lList **answer_list,
 
 
 bool
-spool_default_validate_list_func(lList **answer_list, 
-                          const lListElem *type, const lListElem *rule,
-                          const sge_object_type object_type)
-{
+spool_default_validate_list_func(lList **answer_list,
+                                 const lListElem *type, const lListElem *rule,
+                                 const sge_object_type object_type) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
-   switch(object_type) {
+   switch (object_type) {
       case SGE_TYPE_ADMINHOST:
          break;
       case SGE_TYPE_EXECHOST:

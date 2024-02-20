@@ -45,30 +45,24 @@
 *    The ID value of the RSMAP consumable complex.
 *    @todo Is it the primary key? Would it be worth to have an index on it?
 *
-*    SGE_ULONG(RESL_jobid) - Job Number
-*    The job, which currently uses this value (in case of 0 it is unused).
-*
-*    SGE_ULONG(RESL_taskid) - Task Number
-*    The array task, which currently uses this value (in case of 0 it is unused).
+*    SGE_ULONG(RESL_amount) - Resource Amount
+*    The number of resources with this name.
 *
 */
 
 enum {
    RESL_value = RESL_LOWERBOUND,
-   RESL_jobid,
-   RESL_taskid
+   RESL_amount
 };
 
 LISTDEF(RESL_Type)
    SGE_STRING(RESL_value, CULL_SPOOL)
-   SGE_ULONG(RESL_jobid, CULL_SPOOL)
-   SGE_ULONG(RESL_taskid, CULL_DEFAULT)
+   SGE_ULONG(RESL_amount, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(RESLN)
    NAME("RESL_value")
-   NAME("RESL_jobid")
-   NAME("RESL_taskid")
+   NAME("RESL_amount")
 NAMEEND
 
 #define RESL_SIZE sizeof(RESLN)/sizeof(char *)

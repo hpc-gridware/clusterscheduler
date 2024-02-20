@@ -213,8 +213,9 @@
 		}, {
 			"name":	"resource_map_list",
 			"summary":	"Resource Map List",
-			"description":	[{
-					"line":	"on host level only: RSMAP id list"
+			"description":	[
+				{
+					"line": "on host level only: RSMAP id list"
 				}],
 			"type":	"lListT",
 			"subClassName":	"RESL",
