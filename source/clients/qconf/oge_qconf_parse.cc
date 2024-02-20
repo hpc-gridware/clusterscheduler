@@ -41,16 +41,16 @@
 #include <cctype>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_spool.h"
-#include "uti/sge_io.h"
 #include "uti/sge_edit.h"
+#include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_event.h"
@@ -168,11 +168,11 @@ int sge_parse_qconf(char *argv[])
    const char *filename_stdout;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   const char* qualified_hostname = bootstrap_get_qualified_hostname();
-   const char* username = bootstrap_get_username();
-   u_long32 prog_number = bootstrap_get_component_id();
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   const char* qualified_hostname = component_get_qualified_hostname();
+   const char* username = component_get_username();
+   u_long32 prog_number = component_get_component_id();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
    bool has_binding_param = false;
 
    DENTER(TOP_LAYER);
@@ -6208,8 +6208,8 @@ static int edit_usersets(lList *arglp) {
    int cmd;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
 
    DENTER(TOP_LAYER);
 
@@ -6398,8 +6398,8 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
    spooling_field *fields = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
    
    DENTER(TOP_LAYER);
 

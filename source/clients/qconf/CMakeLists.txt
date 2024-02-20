@@ -10,7 +10,6 @@ add_executable(
       oge_qconf_acl.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      ../../common/sge_mt_init.cc
       ../../common/usage.cc)
 target_include_directories(qconf PUBLIC ${SGE_INCLUDES})
 target_link_libraries(

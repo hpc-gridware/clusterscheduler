@@ -33,15 +33,9 @@
 
 #include <cstdio>
 #include <cstring>
-#include <sys/time.h>
 #include <cstdlib>
 
 #include "comm/lists/cl_lists.h"
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 int main(void) {
    int i;

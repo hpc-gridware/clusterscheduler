@@ -32,9 +32,9 @@
 
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
+#include "uti/sge_string.h"
 
 /* This method counts the number of arguments in the string using a quick and
  * dirty algorithm.  The algorithm may incorrectly report the number of arguments
@@ -313,13 +313,11 @@ int parse_quoted_command_line(
 int convert_arg_list_to_vector(
         sge_sl_list_t *sl_args,
         char ***pargs) {
-   int count, i;
    sge_sl_elem_t *pelem;
-
-   count = sge_sl_get_elem_count(sl_args);
+   auto count = sge_sl_get_elem_count(sl_args);
    *pargs = (char **) sge_malloc((count + 1) * sizeof(char *));
 
-   i = 0;
+   int i = 0;
    for_each_sl(pelem, sl_args) {
       (*pargs)[i++] = (char *)pelem->data;
    }

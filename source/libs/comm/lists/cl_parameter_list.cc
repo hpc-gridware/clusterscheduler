@@ -30,29 +30,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include "comm/lists/cl_parameter_list.h"
 
 #include "uti/sge_string.h"
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_setup()"
-
 int cl_parameter_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_cleanup()"
 
 int cl_parameter_list_cleanup(cl_raw_list_t **list_p) {
    cl_parameter_list_elem_t *elem = nullptr;
@@ -77,12 +65,6 @@ int cl_parameter_list_cleanup(cl_raw_list_t **list_p) {
    cl_raw_list_unlock(*list_p);
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_append_parameter()"
 
 int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, char *value, int lock_list) {
 
@@ -151,12 +133,6 @@ int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parame
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_remove_parameter()"
-
 int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parameter, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKNOWN_PARAMETER;
@@ -197,11 +173,6 @@ int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parame
    return function_return;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_get_first_elem()"
-
 cl_parameter_list_elem_t *cl_parameter_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
 
@@ -211,12 +182,6 @@ cl_parameter_list_elem_t *cl_parameter_list_get_first_elem(cl_raw_list_t *list_p
    return nullptr;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_get_least_elem()"
-
 cl_parameter_list_elem_t *cl_parameter_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
 
@@ -225,12 +190,6 @@ cl_parameter_list_elem_t *cl_parameter_list_get_least_elem(cl_raw_list_t *list_p
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_get_next_elem()"
 
 cl_parameter_list_elem_t *cl_parameter_list_get_next_elem(cl_parameter_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -245,12 +204,6 @@ cl_parameter_list_elem_t *cl_parameter_list_get_next_elem(cl_parameter_list_elem
    return nullptr;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_get_last_elem()"
-
 cl_parameter_list_elem_t *cl_parameter_list_get_last_elem(cl_parameter_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
@@ -263,11 +216,6 @@ cl_parameter_list_elem_t *cl_parameter_list_get_last_elem(cl_parameter_list_elem
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_parameter_list_get_param_string()"
 
 int cl_parameter_list_get_param_string(cl_raw_list_t *list_p, char **param_string, int lock_list) {
    cl_parameter_list_elem_t *elem = nullptr;

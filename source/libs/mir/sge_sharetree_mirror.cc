@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"

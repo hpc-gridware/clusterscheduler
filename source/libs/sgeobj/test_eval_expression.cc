@@ -44,8 +44,8 @@
 #include <cstdio>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_feature.h"
@@ -68,8 +68,6 @@ int main(int argc, char *argv[]) {
    int ret;
    
    DENTER_MAIN(TOP_LAYER, "test_evel_expression");
-   bootstrap_mt_init();
-   feature_mt_init();
 
    ret = 0;
    if(argc!=3){

@@ -35,7 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -154,7 +154,6 @@ extern int main(int argc, char **argv) {
          exit(1);
       }
    }
-   prof_mt_init();
 
    /* setup signalhandling */
 

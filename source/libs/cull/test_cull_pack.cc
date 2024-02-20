@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
    u_long32 counted_size;
 
    lInit(nmv);
-   prof_mt_init();
 
    /* create an element */
    ep = lCreateElem(TEST_Type);

@@ -32,9 +32,9 @@
 #include <cstdio>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_answer.h"

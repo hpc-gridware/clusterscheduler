@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstdio>
-#include <stdarg.h>
+#include <cstdarg>
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,7 +39,7 @@
 #include <cstring>
 #include <cctype>
 #include <pwd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/wait.h>
 
 #include "basis_types.h"

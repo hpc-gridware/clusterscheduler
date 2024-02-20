@@ -32,7 +32,7 @@
 
 #include <cstdio>
 #include <cctype>
-#include <time.h>
+#include <ctime>
 
 #include "uti/sge_time.h"
 
@@ -590,8 +590,7 @@ int main(int argc, char* argv[])
    int cal_index = 0;
 
    lInit(nmv);
-   obj_mt_init();
-   
+
    printf("==> Calendar test <==\n");
    printf("---------------------\n");
 

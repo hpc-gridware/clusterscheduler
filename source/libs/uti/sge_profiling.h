@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 #include <sys/times.h>
 
@@ -105,9 +105,7 @@ typedef struct {
 
 void sge_prof_set_enabled(bool enabled);
 
-void prof_mt_init(void);
-
-void sge_prof_cleanup(void);
+void sge_prof_cleanup();
 
 bool thread_prof_active_by_id(pthread_t thread_id);
 
@@ -126,6 +124,9 @@ bool prof_is_active(prof_level level);
 bool prof_start(prof_level level, dstring *error);
 
 bool prof_stop(prof_level level, dstring *error);
+
+void
+prof_start_stop(prof_level level, dstring *error, bool do_start);
 
 bool prof_start_measurement(prof_level level, dstring *error);
 
@@ -213,6 +214,6 @@ const char *prof_get_info_string(prof_level level, bool with_sub, dstring *error
 
 bool prof_output_info(prof_level level, bool with_sub, const char *info);
 
-void thread_start_stop_profiling(void);
+void thread_start_stop_profiling();
 
 void thread_output_profiling(const char *title, time_t *next_prof_output);

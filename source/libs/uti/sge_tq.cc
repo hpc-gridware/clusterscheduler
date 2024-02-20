@@ -30,13 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_tq.h"
 #include "uti/sge_err.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_tq.h"
 #include "uti/sge_thread_ctrl.h"
-#include "uti/sge_mtutil.h"
 
 #include "msg_common.h"
 
@@ -73,7 +73,7 @@
 *******************************************************************************/
 static int
 sge_tq_task_compare_type(const void *data1, const void *data2) {
-   int ret = 0;
+   int ret;
    sge_tq_task_t *task1 = *(sge_tq_task_t **) data1;
    sge_tq_task_t *task2 = *(sge_tq_task_t **) data2;
 
@@ -250,17 +250,15 @@ sge_tq_create(sge_tq_queue_t **queue) {
 *  SEE ALSO
 *     uti/tq/sge_tq_create() 
 *******************************************************************************/
-bool
+void
 sge_tq_destroy(sge_tq_queue_t **queue) {
-   bool ret = true;
-
    DENTER(TQ_LAYER);
    if (queue != nullptr && *queue != nullptr) {
       pthread_cond_destroy(&(*queue)->cond);
       sge_sl_destroy(&(*queue)->list, (sge_sl_destroy_f) sge_tq_task_destroy);
       sge_free(queue);
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** uti/tq/sge_tq_get_task_count() *****************************************
@@ -413,10 +411,8 @@ sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
 *  SEE ALSO
 *     uti/tq/sge_tq_wait_for_task() 
 *******************************************************************************/
-bool
+void
 sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
-   bool ret = true;
-
    DENTER(TQ_LAYER);
    if (queue != nullptr) {
       sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
@@ -426,7 +422,7 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
 
       sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** uti/tq/sge_tq_wait_for_task() ******************************************
@@ -482,7 +478,7 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
    DENTER(TQ_LAYER);
    if (queue != nullptr && data != nullptr) {
       sge_sl_elem_t *elem = nullptr;
-      sge_tq_task_t key;
+      sge_tq_task_t key{};
 
       key.type = type;
       *data = nullptr;
@@ -496,16 +492,16 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
        */
       ret = sge_sl_elem_search(queue->list, &elem, &key,
                                sge_tq_task_compare_type, SGE_SL_FORWARD);
-      if (ret && elem == nullptr && sge_thread_has_shutdown_started() == false) {
+      if (ret && elem == nullptr && !sge_thread_has_shutdown_started()) {
          queue->waiting++;
          do {
-            struct timespec ts;
+            struct timespec ts{};
 
             sge_relative_timespec(seconds, &ts);
             pthread_cond_timedwait(&(queue->cond), sge_sl_get_mutex(queue->list), &ts);
             ret = sge_sl_elem_search(queue->list, &elem, &key,
                                      sge_tq_task_compare_type, SGE_SL_FORWARD);
-         } while (ret && elem == nullptr && sge_thread_has_shutdown_started() == false);
+         } while (ret && elem == nullptr && !sge_thread_has_shutdown_started());
          queue->waiting--;
       }
 
@@ -513,13 +509,9 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
        * If we found a element that matches the key then remove and destroy if and return the data
        */
       if (ret && elem != nullptr) {
+         ret = sge_sl_dechain(queue->list, elem);
          if (ret) {
-            ret = sge_sl_dechain(queue->list, elem);
-         }
-         if (ret) {
-            sge_tq_task_t *task = nullptr;
-
-            task = (sge_tq_task_t *)sge_sl_elem_data(elem);
+            auto *task = (sge_tq_task_t *)sge_sl_elem_data(elem);
             *data = task->data;
             ret = sge_sl_elem_destroy(&elem, (sge_sl_destroy_f) sge_tq_task_destroy);
          }

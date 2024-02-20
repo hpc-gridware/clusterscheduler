@@ -34,7 +34,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <cstring>
 
 #if defined(DARWIN)
@@ -47,9 +47,9 @@
 #  include <termio.h>
 #endif
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_io.h"
 #include "uti/sge_pty.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sge_ijs_comm.h"
 #include "sge_ijs_threads.h"

@@ -33,14 +33,14 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_feature.h"
@@ -71,7 +71,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge.h"
 #include "symbols.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -191,8 +190,8 @@ sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monito
    lListElem *ep;
    gdi_object_t *object;
    lList *ppList = nullptr;
-   const char *username = bootstrap_get_username();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *username = component_get_username();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -260,7 +259,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
    int nm = 0;
    char *name = nullptr;
    int ret;
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
    lList **master_ahost_list = object_type_get_master_list_rw(SGE_TYPE_ADMINHOST);
    lList **master_shost_list = object_type_get_master_list_rw(SGE_TYPE_SUBMITHOST);
@@ -580,7 +579,6 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 
    int ret = 0;
    lList *answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -604,7 +602,7 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
          break;
    }
 
-   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, job_spooling)) {
+   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, true)) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
@@ -629,9 +627,7 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
          if (global_host) {
             host_list_merge(master_ehost_list);
          } else {
-            const lListElem *global_ep = nullptr;
-
-            global_ep = lGetElemHost(master_ehost_list, EH_name, SGE_GLOBAL_NAME);
+            const lListElem *global_ep = lGetElemHost(master_ehost_list, EH_name, SGE_GLOBAL_NAME);
             host_merge(ep, global_ep);
          }
 
@@ -962,7 +958,7 @@ exec_host_change_queue_version(const char *exechost_name) {
          next_qinstance = lGetElemHostFirstRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
       }
       while ((qinstance = next_qinstance)) {
-         const char *name = nullptr;
+         const char *name;
          lList *answer_list = nullptr;
 
          if (change_all) {
@@ -1097,7 +1093,6 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
    const lList *gdil;
    int mail_options;
    unsigned long last_heard_from;
-   bool job_spooling = bootstrap_get_job_spooling();
    int result;
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
@@ -1175,11 +1170,8 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
                      dstring buffer = DSTRING_INIT;
                      spool_write_object(&answer_list,
                                         spool_get_default_context(), jep,
-                                        job_get_key(lGetUlong(jep, JB_job_number),
-                                                    lGetUlong(jatep, JAT_task_number),
-                                                    nullptr, &buffer),
-                                        SGE_TYPE_JOB,
-                                        job_spooling);
+                                        job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), nullptr, &buffer),
+                                        SGE_TYPE_JOB, true);
                      lListElem_clear_changed_info(jatep);
                      /* JG: TODO: don't we have to send an event? */
                      answer_list_output(&answer_list);
@@ -1273,11 +1265,11 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
 
 static int
 verify_scaling_list(lList **answer_list, lListElem *host) {
+   DENTER(TOP_LAYER);
    bool ret = true;
-   const lListElem *hs_elem = nullptr;
+   const lListElem *hs_elem;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
-   DENTER(TOP_LAYER);
    for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
       const char *name = lGetString(hs_elem, HS_name);
       lListElem *centry = centry_list_locate(master_centry_list, name);
@@ -1351,8 +1343,6 @@ host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1
             lAddElemStr(new_sublist, key_nm, p, dp);
       }
    }
-
-   return;
 }
 
 
@@ -1514,7 +1504,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
       }
       {
          lListElem *jep = nullptr;
-         const lListElem *ar_ep = nullptr;
+         const lListElem *ar_ep;
          const char *host = lGetHost(tmp_elem, EH_name);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 

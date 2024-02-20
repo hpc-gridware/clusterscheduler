@@ -35,7 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 
 #include "comm/cl_commlib.h"
@@ -65,12 +65,6 @@ void sighandler_client(
    /* shutdown all sockets */
    do_shutdown = 1;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;

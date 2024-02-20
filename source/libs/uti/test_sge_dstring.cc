@@ -32,7 +32,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 
 #include "uti/sge_dstring.h"

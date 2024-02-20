@@ -36,9 +36,9 @@
 #   include <malloc.h>
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_centry.h"
@@ -47,8 +47,8 @@
 #include "sched/sge_select_queue.h"
 #include "sched/sge_complex_schedd.h"
 
-#include "sge.h"
 #include "sort_hosts.h"
+#include "uti/sge.h"
 
 static const char load_ops[]={
         '+',

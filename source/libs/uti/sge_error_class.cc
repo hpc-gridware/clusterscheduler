@@ -33,8 +33,8 @@
 #include <cstring>
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_error_class.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 typedef struct sge_error_message_str sge_error_message_t;

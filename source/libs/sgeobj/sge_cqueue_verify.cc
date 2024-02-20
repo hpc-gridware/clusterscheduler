@@ -32,10 +32,10 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "cull/cull_list.h"
 
@@ -59,7 +59,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"
-#include "sge.h"
+#include "uti/sge.h"
 
 #define CQUEUE_VERIFY_LAYER TOP_LAYER
 

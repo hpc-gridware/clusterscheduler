@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <time.h>
+#include <ctime>
 
 #include "sgeobj/cull/sge_calendar_CAL_L.h"
 #include "sgeobj/cull/sge_calendar_CA_L.h"

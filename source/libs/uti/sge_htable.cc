@@ -37,9 +37,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_htable.h"
-#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #ifdef SGE_USE_PROFILING
 #include "uti/sge_profiling.h"
@@ -85,11 +84,11 @@
 *  SEE ALSO
 *     cull/htable/--Introduction
 ******************************************************************************/
-typedef struct _Bucket {        /* Stores one entry. */
+struct Bucket {        /* Stores one entry. */
    const void *key;
    const void *data;
-   struct _Bucket *next;
-} Bucket;
+   struct Bucket *next;
+};
 
 typedef struct _htable_rec {
    Bucket **table;           /* Pointer to array of hash entries. */
@@ -225,7 +224,7 @@ htable sge_htable_create(int size,
                          const void *(*dup_func)(const void *),
                          int (*hash_func)(const void *),
                          int (*compare_func)(const void *, const void *)) {
-   htable ht = (htable) sge_malloc(sizeof(htable_rec));
+   auto ht = (htable) sge_malloc(sizeof(htable_rec));
 
    ht->size = size;
    ht->mask = (1 << size) - 1;
@@ -454,13 +453,12 @@ long sge_htable_get_size(htable ht) {
 *     const char* - the string described above
 ******************************************************************************/
 const char *sge_htable_statistics(htable ht, dstring *buffer) {
-   long size = 0;
    long empty = 0;
    long max = 0;
    long i;
 
    /* count empty hash chains and maximum chain length */
-   size = 1 << ht->size;
+   long size = 1 << ht->size;
 
    for (i = 0; i < size; i++) {
       long count = 0;

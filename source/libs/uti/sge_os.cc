@@ -33,7 +33,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <cctype>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -48,14 +48,14 @@
 #   include <sys/termios.h>
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_os.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_os.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "sig_handlers.h"
 
@@ -292,7 +292,7 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
 *
 *******************************************************************************/
 int redirect_to_dev_null(int target, int mode) {
-   SGE_STRUCT_STAT buf;
+   SGE_STRUCT_STAT buf{};
 
    if (SGE_FSTAT(target, &buf)) {
       if ((open("/dev/null", mode, 0)) != target) {
@@ -372,7 +372,7 @@ extern int _insure_is_internal_fd(int);
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-int sge_get_max_fd(void) {
+int sge_get_max_fd() {
    return sysconf(_SC_OPEN_MAX);
 }
 
@@ -492,22 +492,20 @@ static void sge_close_fd(int fd) {
 *******************************************************************************/
 void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
    int maxfd = sge_get_max_fd();
-   int fd = 0;
    if (keep_open == nullptr) {
       /* if we do not have any keep_open we can delete all fds */
-      for (fd = 0; fd < maxfd; fd++) {
+      for (int fd = 0; fd < maxfd; fd++) {
          sge_close_fd(fd);
       }
    } else {
-      int current_fd_keep_open = 0;
-      unsigned long keep_open_array_index = 0;
+      int current_fd_keep_open;
       int current_fd_to_close = 0;
 
       /* First sort the keep open list */
       qsort((void *) keep_open, nr_of_keep_open_entries, sizeof(int), fd_compare);
 
       /* Now go over the int array and do a close loop to the current value */
-      for (keep_open_array_index = 0; keep_open_array_index < nr_of_keep_open_entries; keep_open_array_index++) {
+      for (unsigned long keep_open_array_index = 0; keep_open_array_index < nr_of_keep_open_entries; keep_open_array_index++) {
 
          /* test if keep open fd is a valid fd */
          current_fd_keep_open = keep_open[keep_open_array_index];
@@ -516,7 +514,7 @@ void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
          }
 
          /* we can close all fds up to current_fd_keep_open */
-         for (fd = current_fd_to_close; fd < current_fd_keep_open; fd++) {
+         for (int fd = current_fd_to_close; fd < current_fd_keep_open; fd++) {
             sge_close_fd(fd);
          }
 
@@ -528,7 +526,7 @@ void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
       }
 
       /* Now close up to fd nr (max_fd - 1)  */
-      for (fd = current_fd_to_close; fd < maxfd; fd++) {
+      for (int fd = current_fd_to_close; fd < maxfd; fd++) {
          sge_close_fd(fd);
       }
    }

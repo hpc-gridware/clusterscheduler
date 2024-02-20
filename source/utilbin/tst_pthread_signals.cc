@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <cstdio>
 #include <cstdlib>

@@ -36,22 +36,23 @@
 #include <cstring>
 #include <unistd.h>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <pwd.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_time.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_string.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_mtutil.h"
+#include "uti/sge.h"
 
 #include "japi/drmaa.h"
 #include "japi/japi.h"
@@ -89,7 +90,6 @@
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi2.h"
 
-#include "sge.h"
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
 
@@ -329,8 +329,7 @@ static void japi_use_library_signals(void)
 static void japi_once_init(void)
 {
    /* enable rmon monitoring */
-   rmon_mopen(0, nullptr, "japilib");
-   feature_mt_init();
+   rmon_mopen();
 }
 
 
@@ -525,10 +524,10 @@ int japi_init(const char *contact, const char *session_key_in,
     * japi_init(), and only one thread may be in japi_init() at a time. */
    if (!virgin_session) {
       int commlib_error = CL_RETVAL_OK;
-      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+      handle = cl_com_get_handle(component_get_component_name(), 0);
       if (handle == nullptr) {
          commlib_error = sge_gdi_ctx_class_connect();
-         handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+         handle = cl_com_get_handle(component_get_component_name(), 0);
       }
       if (handle == nullptr) {
          sge_dstring_sprintf (diag, MSG_JAPI_NO_HANDLE_S,
@@ -541,8 +540,8 @@ int japi_init(const char *contact, const char *session_key_in,
    }
    
    if (enable_wait) {
-      const char *username = bootstrap_get_username();
-      const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+      const char *username = component_get_username();
+      const char *unqualified_hostname = component_get_unqualified_hostname();
 
       /* spawn implementation thread japi_implementation_thread() */
       ret = japi_enable_job_wait(username, unqualified_hostname, session_key_in, session_key_out, handler,
@@ -983,7 +982,7 @@ int japi_exit(int flag, dstring *diag)
     * disconnect from commd
     */
    DPRINTF (("Before commlib shutdown\n"));
-   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   handle = cl_com_get_handle(component_get_component_name(), 0);
    cl_errno = cl_commlib_shutdown_handle(handle, false);
    DPRINTF (("After commlib shutdown\n"));
    
@@ -1248,8 +1247,8 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
     * Set owner and group so that information will be available in
     * client JSV scripts
     */
-   job_set_owner_and_group(job, bootstrap_get_uid(), bootstrap_get_gid(),
-                           bootstrap_get_username(), bootstrap_get_groupname());
+   job_set_owner_and_group(job, component_get_uid(), component_get_gid(),
+                           component_get_username(), component_get_groupname());
 
    /* use GDI to submit job for this session */
    alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
@@ -4130,7 +4129,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    japi_ec_id = evc->ec_get_id(evc);
    JAPI_UNLOCK_EC_STATE();
 
-   cl_com_set_synchron_receive_timeout(cl_com_get_handle(bootstrap_get_component_name(), 0),ed_time*2);
+   cl_com_set_synchron_receive_timeout(cl_com_get_handle(component_get_component_name(), 0),ed_time*2);
 
    while (!stop_ec) {
       int ec_get_ret = 0;

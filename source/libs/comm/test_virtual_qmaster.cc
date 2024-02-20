@@ -35,13 +35,10 @@
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
-#include <unistd.h>
+#include <csignal>
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
-
-#include "uti/sge_profiling.h"
 
 #define DATA_SIZE 5000
 
@@ -95,12 +92,6 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -110,8 +101,6 @@ extern int main(int argc, char **argv) {
    double usec_last = 0.0;
    int i;
    int time_interval = 0;
-
-   prof_mt_init();
 
    if (argc != 4) {
 
@@ -232,12 +221,6 @@ extern int main(int argc, char **argv) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_message_thread"
-
 void *my_message_thread(void *t_conf) {
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -313,12 +296,6 @@ void *my_message_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_event_thread()"
 
 void *my_event_thread(void *t_conf) {
    int do_exit = 0;

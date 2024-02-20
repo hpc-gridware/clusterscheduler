@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstdio>
-#include <time.h>
+#include <ctime>
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/time.h>

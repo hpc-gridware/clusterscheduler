@@ -33,9 +33,9 @@
 #include <cstring>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_answer.h"
@@ -214,21 +214,16 @@ DRETURN(STATUS_EUNKNOWN);
 ******************************************************************************/
 int ckpt_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              lGetString(ep, CK_name), SGE_TYPE_CKPT,
-                              job_spooling);
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
+                                   lGetString(ep, CK_name), SGE_TYPE_CKPT, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(ep, CK_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(ep, CK_name));
    }
 
    DRETURN(dbret ? 0 : 1);

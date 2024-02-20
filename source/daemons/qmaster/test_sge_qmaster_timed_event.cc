@@ -35,9 +35,9 @@
 
 #include "sge_qmaster_timed_event.h"
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_feature.h"
 
@@ -62,8 +62,6 @@ int main(int argc, char* argv[])
 {
    DENTER_MAIN(TOP_LAYER, "test_sge_qmaster_timed_event");
 
-   bootstrap_mt_init();
-   feature_mt_init();
    sge_prof_set_enabled(false);
 
    printf("%s: delete_nonexistent_event ----------------------------------\n", __func__);

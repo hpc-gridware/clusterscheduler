@@ -32,9 +32,9 @@
 
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_err.h"
+#include "uti/sge_rmon_macros.h"
 
 #define ERR_LAYER TOP_LAYER
 
@@ -96,14 +96,8 @@ test_err_has_which_error(void) {
 
 int
 main(int argc, char **argv) {
-   bool ret = true;
-
    DENTER_MAIN(TOP_LAYER, "test_err");
-
-   sge_err_init();
-
-   ret = test_err_has_which_error();
-
+   bool ret = test_err_has_which_error();
    DRETURN(ret == true ? 0 : 1);
 }
 

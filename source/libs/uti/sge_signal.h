@@ -37,7 +37,7 @@
 
 #endif
 
-#include <signal.h>
+#include <csignal>
 
 #define SGE_SIGHUP                         901
 #define SGE_SIGINT                         902
@@ -74,11 +74,11 @@
 /* Not all systems have all signals. Fill this in if not known. */
 #define SIGUNKNOWN                         0
 
-typedef struct sig_mapT {
+struct sig_mapT {
    u_long32 sge_sig;
    int sig;
    char *signame;
-} sig_mapT;
+};
 
 int sge_unmap_signal(u_long32 sge_sig);
 
@@ -96,6 +96,6 @@ typedef void (*err_func_t)(char *s);
 
 void sge_set_def_sig_mask(sigset_t *, err_func_t);
 
-void sge_unblock_all_signals(void);
+void sge_unblock_all_signals();
 
 int sge_thread_block_all_signals(sigset_t *oldsigmask);

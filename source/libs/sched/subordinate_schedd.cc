@@ -32,7 +32,7 @@
 
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 

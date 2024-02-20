@@ -34,7 +34,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
-#include <float.h>
+#include <cfloat>
 
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"

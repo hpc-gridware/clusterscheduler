@@ -98,7 +98,7 @@
  */
 typedef enum {
    NO_WARNING = 0,
-   EMT_WARNING = 10,
+   EVENT_MASTER_THREAD_WARNING = 10,
    TET_WARNING = 30,
    MT_WARNING = 10,
    ST_WARNING = 0,  /* no timeout for this thread */
@@ -106,14 +106,12 @@ typedef enum {
    SCT_WARNING = 20
 } thread_warning_t;
 
-/* EB: TODO: ST: ??? */
-
 /**
  * qping thread error times in seconds
  **/
 typedef enum {
    NO_ERROR = 0,
-   EMT_ERROR = 600,
+   EVENT_MASTER_THREAD_ERROR = 600,
    TET_ERROR = 600,
    MT_ERROR = 600,
    ST_ERROR = 0,   /* no timeout for this thread */
@@ -137,7 +135,7 @@ typedef void (*extension_output)(
 typedef enum {
    NONE_EXT = -1,
    GDI_EXT = 0,         /* GDI = request processing thread */
-   EDT_EXT = 1,         /* EDT = event delivery thread */
+   EMAT_EXT = 1,        /* EMA = event master thread */
    TET_EXT = 2,         /* TET = timed event thread */
    LIS_EXT = 3,         /* LIS = listener thread */
    SCH_EXT = 4          /* SCH = scheduler thread */
@@ -189,25 +187,25 @@ void sge_monitor_reset(monitoring_t *monitor);
  ****************/
 
 #define MONITOR_IDLE_TIME(execute, monitor, output_time, is_log)    { \
-                                 struct timeval before;  \
+                                 struct timeval before{};  \
                                  gettimeofday(&before, nullptr); \
                                  sge_set_last_wait_time((monitor), before); \
                                  if (output_time > 0) { \
-                                    struct timeval before;  \
-                                    struct timeval after; \
+                                    struct timeval before1{};  \
+                                    struct timeval after1{}; \
                                     double time; \
                                     \
                                     (monitor)->monitor_time = output_time; \
                                     (monitor)->log_monitor_mes = is_log; \
-                                    gettimeofday(&before, nullptr); \
+                                    gettimeofday(&before1, nullptr); \
                                     if ((monitor)->now.tv_sec == 0) { \
-                                       (monitor)->now = before; \
+                                       (monitor)->now = before1; \
                                     } \
                                     execute; \
-                                    gettimeofday(&after, nullptr);  \
-                                    (monitor)->output = ((after.tv_sec-(monitor)->now.tv_sec) >= (monitor)->monitor_time)?true:false; \
-                                    time = after.tv_usec - before.tv_usec; \
-                                    time = after.tv_sec - before.tv_sec + (time/1000000); \
+                                    gettimeofday(&after1, nullptr);  \
+                                    (monitor)->output = ((after1.tv_sec-(monitor)->now.tv_sec) >= (monitor)->monitor_time)?true:false; \
+                                    time = after1.tv_usec - before1.tv_usec; \
+                                    time = after1.tv_sec - before1.tv_sec + (time/1000000); \
                                     (monitor)->idle += time; \
                                  } \
                                  else { \
@@ -221,8 +219,8 @@ void sge_monitor_reset(monitoring_t *monitor);
  * TODO: it should be customized for read/write locks.
  */
 #define MONITOR_WAIT_TIME(execute, monitor)    if (((monitor) != nullptr) && ((monitor)->monitor_time > 0)){ \
-                                    struct timeval before;  \
-                                    struct timeval after; \
+                                    struct timeval before{};  \
+                                    struct timeval after{}; \
                                     double time; \
                                     \
                                     gettimeofday(&before, nullptr); \
@@ -337,31 +335,31 @@ typedef struct {
    u_long32 busy_client_count;    /* nr of event clients busy during send */
 } m_edt_t;
 
-#define MONITOR_CLIENT_COUNT(monitor, inc)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_CLIENT_COUNT(monitor, inc)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                                ((m_edt_t*) (monitor->ext_data))->client_count += inc
 
-#define MONITOR_EDT_COUNT(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_COUNT(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*) (monitor->ext_data))->count++
 
-#define MONITOR_EDT_MOD(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_MOD(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*) (monitor->ext_data))->mod_client_count++
 
-#define MONITOR_EDT_ACK(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_ACK(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->ack_count++
 
-#define MONITOR_EDT_NEW(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_NEW(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->new_event_count++
 
-#define MONITOR_EDT_ADDED(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_ADDED(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->added_event_count++
 
-#define MONITOR_EDT_SKIP(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_SKIP(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->skip_event_count++
 
-#define MONITOR_EDT_BLOCKED(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_BLOCKED(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->blocked_client_count++
 
-#define MONITOR_EDT_BUSY(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EDT_EXT)) \
+#define MONITOR_EDT_BUSY(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->busy_client_count++
 
 /* timed event thread extension */

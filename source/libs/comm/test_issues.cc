@@ -34,7 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -61,7 +61,6 @@ void sighandler_issue_tests(int sig) {
 
    do_shutdown = 1;
 }
-
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;
@@ -115,8 +114,6 @@ extern int main(int argc, char **argv) {
    if (argv[5]) {
       com_host = argv[5];
    }
-
-   prof_mt_init();
 
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));

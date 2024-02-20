@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 #include <cstdlib>
 #include <sys/time.h>
 
@@ -54,11 +54,6 @@ void *client_thread(void *t_conf);
 static int pipe_signal = 0;
 static int do_shutdown = 0;
 char data[] = "> * * * Welcome to the tcp framework module! * * * <";
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    char help[255];
@@ -181,11 +176,6 @@ extern int main(int argc, char **argv) {
 
 
 /*---------------------------------------------------------------*/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "sighandler()"
-
 void sighandler(
         int sig
 ) {
@@ -201,11 +191,6 @@ void sighandler(
    /* shutdown all sockets */
    do_shutdown = 1;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "server_cleanup_conlist()"
 
 void server_cleanup_conlist(cl_raw_list_t **connection_list) {
    cl_com_handle_t handle;
@@ -228,11 +213,6 @@ void server_cleanup_conlist(cl_raw_list_t **connection_list) {
    }
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "server_cleanup()"
-
 void server_cleanup(cl_com_connection_t **con) {
    CL_LOG(CL_LOG_INFO, "start");
 
@@ -243,12 +223,6 @@ void server_cleanup(cl_com_connection_t **con) {
       CL_LOG_STR(CL_LOG_INFO, "cl_com_close_connection() returned ", cl_get_error_text(retval));
    }
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "server_thread()"
 
 void *server_thread(void *t_conf) {
    struct timeval now;
@@ -402,11 +376,6 @@ void *server_thread(void *t_conf) {
    return (nullptr);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "client_cleanup_function()"
-
 void client_cleanup_function(cl_com_connection_t **con) {
    if (con && *con) {
       int retval;
@@ -415,11 +384,6 @@ void client_cleanup_function(cl_com_connection_t **con) {
       CL_LOG_STR(CL_LOG_INFO, "cl_com_close_connection() returned ", cl_get_error_text(retval));
    }
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "client_thread()"
 
 void *client_thread(void *t_conf) {
    int ret_val, retval, i, do_exit = 0;

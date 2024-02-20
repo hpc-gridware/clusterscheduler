@@ -32,12 +32,14 @@
 
 /*___INFO__MARK_END__*/
 
-typedef enum _binding_type_t {
+#include "uti/sge_dstring.h"
+
+enum binding_type_t {
    BINDING_TYPE_NONE,
    BINDING_TYPE_PE,
    BINDING_TYPE_ENV,
    BINDING_TYPE_SET
-} binding_type_t;
+};
 
 binding_type_t
 binding_type_to_enum(const char *parameter);

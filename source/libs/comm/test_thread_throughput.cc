@@ -30,12 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 #include "comm/lists/cl_lists.h"
@@ -87,11 +86,6 @@ void my_cleanup_func(cl_thread_settings_t *thread_config) {
    }
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -110,8 +104,6 @@ extern int main(int argc, char **argv) {
    unsigned long message_counter = 0;
    cl_thread_mode_t tmode = CL_NO_THREAD;
    int arg_found = 0;
-
-   prof_mt_init();
 
    printf("This module test does not work!\n");
    exit(1);
@@ -291,12 +283,6 @@ extern int main(int argc, char **argv) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_receive_thread"
-
 void *my_receive_thread(void *t_conf) {
    int do_exit = 0;
    char *message = "announce";
@@ -388,11 +374,6 @@ void *my_receive_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_sender_thread()"
 
 void *my_sender_thread(void *t_conf) {
    int do_exit = 0;

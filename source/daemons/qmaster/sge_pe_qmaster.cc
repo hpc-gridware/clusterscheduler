@@ -32,9 +32,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/config_file.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_pe.h"
@@ -216,20 +216,16 @@ int
 pe_spool(lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
-                              lGetString(pep, PE_name), SGE_TYPE_PE,
-                              job_spooling);
+                              lGetString(pep, PE_name), SGE_TYPE_PE, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(pep, PE_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(pep, PE_name));
    }
 
    DRETURN(dbret ? 0 : 1);

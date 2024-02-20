@@ -50,9 +50,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 
-#include "uti/sge_rmon_monitoring_level.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_rmon_monitoring_level.h"
 #include "uti/sge_stdio.h"
 
 #include "comm/commlib.h"

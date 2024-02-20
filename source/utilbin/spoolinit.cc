@@ -34,12 +34,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
@@ -48,9 +47,7 @@
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
 
-#include "sge_mt_init.h"
 #include "msg_utilbin.h"
-
 
 static void usage(const char *argv0)
 {
@@ -109,7 +106,6 @@ int main(int argc, char *argv[])
 
    log_state_set_log_gui(1);
    log_state_set_log_level(LOG_WARNING);
-   sge_mt_init();
    lInit(nmv);
 
    if (argc < 2) {

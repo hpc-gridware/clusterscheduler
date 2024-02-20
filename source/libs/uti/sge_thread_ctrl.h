@@ -33,7 +33,7 @@
 
 #include <pthread.h>
 
-typedef struct _thread_control_t {
+struct thread_control_t {
    /* Used to guard 'cond_var' and 'shutdown_started' variable of this structure */
    pthread_mutex_t mutex;
 
@@ -45,15 +45,15 @@ typedef struct _thread_control_t {
 
    /* flag thats indicates that the shutdown process has already started */
    bool shutdown_started;
-} thread_control_t;
+};
 
 extern thread_control_t Thread_Control;
 
 bool
-sge_thread_has_shutdown_started(void);
+sge_thread_has_shutdown_started();
 
 void
-sge_thread_notify_all_waiting(void);
+sge_thread_notify_all_waiting();
 
 void
-sge_thread_wait_for_signal(void);
+sge_thread_wait_for_signal();

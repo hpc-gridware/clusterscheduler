@@ -84,7 +84,6 @@ int test_params() {
    int ret = EXIT_SUCCESS;
 
    /* Test formerly broken actions for SGE_PROF_ALL level */
-   prof_mt_init();
 
    prof_start(SGE_PROF_ALL, nullptr);
 
@@ -111,14 +110,6 @@ int do_test() {
    pthread_t sleep_thread, calc_thread, calc2_thread, malloc_thread;
 
    dstring error = DSTRING_INIT;
-
-   prof_mt_init();
-
-/*   set_thread_name(pthread_self(), "Main Loop");
-   set_thread_prof_status_by_name(pthread_self(), "Main Loop", true);*/
-
-
-/*   if (thread_prof_active_by_id(pthread_self()) == true ) {*/
 
    if (!prof_start(SGE_PROF_OTHER, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));

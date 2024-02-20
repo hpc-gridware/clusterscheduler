@@ -36,13 +36,14 @@
 #include <cstring>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_dstring.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_host.h"
@@ -222,7 +223,7 @@ char **argv
       sge_exit(1);
    }
 
-   username = bootstrap_get_username();
+   username = component_get_username();
    cell_root = bootstrap_get_cell_root();
    lInit(nmv);      
 

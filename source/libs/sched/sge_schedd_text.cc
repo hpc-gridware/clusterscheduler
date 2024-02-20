@@ -32,7 +32,7 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sched/sge_schedd_text.h"
 #include "sched/msg_schedd.h"

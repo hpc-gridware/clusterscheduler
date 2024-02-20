@@ -45,16 +45,18 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_sl.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/sge_afsutil.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_bootstrap_files.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_sl.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
@@ -74,7 +76,6 @@
 
 #include "sig_handlers.h"
 #include "basis_types.h"
-#include "sge_mt_init.h"
 #include "symbols.h"
 #include "usage.h"
 #include "parse_qsub.h"
@@ -941,8 +942,8 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
    const char *session_type;
    const char *config_name;
 
-   u_long32 progid = bootstrap_get_component_id();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    const char *sge_root = bootstrap_get_sge_root();
 
@@ -1407,13 +1408,13 @@ int main(int argc, char **argv)
       sge_exit(1);
    }
 
-   progname = bootstrap_get_component_name();
-   unqualified_hostname = bootstrap_get_unqualified_hostname();
-   qualified_hostname = bootstrap_get_qualified_hostname();
+   progname = component_get_component_name();
+   unqualified_hostname = component_get_unqualified_hostname();
+   qualified_hostname = component_get_qualified_hostname();
    sge_root = bootstrap_get_sge_root();
    cell_root = bootstrap_get_cell_root();
-   myuid = bootstrap_get_uid();
-   username = bootstrap_get_username();
+   myuid = component_get_uid();
+   username = component_get_username();
    mastername = gdi3_get_act_master_host(false);
 
    if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
@@ -1902,8 +1903,8 @@ int main(int argc, char **argv)
        * attributes in the job so that the information is available
        * in the JSV client context
        */
-      job_set_owner_and_group(job, bootstrap_get_uid(), bootstrap_get_gid(),
-                              bootstrap_get_username(), bootstrap_get_groupname());
+      job_set_owner_and_group(job, component_get_uid(), component_get_gid(),
+                              component_get_username(), component_get_groupname());
 
       lp_jobs = lCreateList("submitted jobs", JB_Type);
       lAppendElem(lp_jobs, job);

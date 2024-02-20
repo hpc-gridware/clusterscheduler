@@ -32,7 +32,7 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 
@@ -43,10 +43,10 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_advance_reservation.h"
 
-#include "sge.h"
-#include "sge_select_queue.h"
 #include "sge_qeti.h"
 #include "sge_resource_utilization.h"
+#include "sge_select_queue.h"
+#include "uti/sge.h"
 
 /* At that point in time we only keep references to in the iterator that
  * allow for efficiently iterating trough relevant queue end times in 

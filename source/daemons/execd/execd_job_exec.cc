@@ -38,14 +38,15 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_string.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_log.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
@@ -82,7 +83,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
    int ret = 1;
    u_long32 feature_set;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *progname = bootstrap_get_component_name();
+   const char *progname = component_get_component_name();
 
    DENTER(TOP_LAYER);
 
@@ -110,7 +111,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
          DRETURN(0);
       }
 
-      if (!job_verify_execd_job(job, &answer_list, bootstrap_get_qualified_hostname())) {
+      if (!job_verify_execd_job(job, &answer_list, component_get_qualified_hostname())) {
          const char *err_str = lGetString(lFirst(answer_list), AN_text);
          ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
 
@@ -359,7 +360,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    */
    if (mconf_get_do_credentials()) {
       const char *sge_root = bootstrap_get_sge_root();
-      const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+      const char *unqualified_hostname = component_get_unqualified_hostname();
 
       if (store_sec_cred2(sge_root, unqualified_hostname, jelem, mconf_get_do_authentication(), &general, &err_str) != 0) {
          goto Error;
@@ -386,7 +387,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    }   
 
    /* check if job has queue limits and increase global flag if necessary */
-   modify_queue_limits_flag_for_job(bootstrap_get_qualified_hostname(), jelem, true);
+   modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
 
    /* put into job list */
    lAppendElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), jelem);
@@ -601,9 +602,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    char new_task_id[1024];
    lList *gdil = nullptr;
    int tid = 0;
-   const char *progname = bootstrap_get_component_name();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
-   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+   const char *progname = component_get_component_name();
+   const char *qualified_hostname = component_get_qualified_hostname();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
 
    DENTER(TOP_LAYER);
 

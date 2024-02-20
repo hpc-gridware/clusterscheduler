@@ -36,14 +36,14 @@
 #  include <sys/stream.h>
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_time.h"
-#include "uti/sge_thread_ctrl.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_thread_ctrl.h"
+#include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -88,7 +88,6 @@
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_job_category.h"
 #include "basis_types.h"
-#include "sge_mt_init.h"
 #include "sge.h"
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"

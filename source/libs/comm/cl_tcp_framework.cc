@@ -75,12 +75,6 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection);
 
 static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connection_t *connection);
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_get_fd()"
-
 int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || fd == nullptr) {
@@ -101,11 +95,6 @@ int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
    return CL_RETVAL_UNKNOWN;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_get_service_port()"
-
 int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -118,11 +107,6 @@ int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
    }
    return CL_RETVAL_UNKNOWN;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_get_client_socket_in_port()"
 
 int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
@@ -137,12 +121,6 @@ int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *p
    return CL_RETVAL_UNKNOWN;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_get_connect_port()"
-
 int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -155,11 +133,6 @@ int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
    }
    return CL_RETVAL_UNKNOWN;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_set_connect_port()"
 
 int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port) {
    cl_com_tcp_private_t *private_com = nullptr;
@@ -174,12 +147,7 @@ int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port) {
    return CL_RETVAL_UNKNOWN;
 }
 
-
 #if 0
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_dump_tcp_private()"
 static void cl_dump_tcp_private(cl_com_connection_t* connection) {
    cl_com_tcp_private_t* private_com = nullptr;
    if (connection == nullptr) {
@@ -193,8 +161,6 @@ static void cl_dump_tcp_private(cl_com_connection_t* connection) {
    }
 }
 #endif
-
-
 
 /****** cl_tcp_framework/cl_com_tcp_open_connection() **************************
 *  NAME
@@ -225,11 +191,6 @@ static void cl_dump_tcp_private(cl_com_connection_t* connection) {
 *  SEE ALSO
 *     cl_communication/cl_com_open_connection()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_open_connection()"
-
 int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
    cl_com_tcp_private_t *private_com = nullptr;
 
@@ -503,11 +464,6 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 *     cl_communication/cl_com_close_connection()
 *
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_setup_connection()"
-
 int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
                                 int server_port,
                                 int connect_port,
@@ -589,11 +545,6 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
 *     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
 *
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_free_com_private()"
-
 static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 
    if (connection == nullptr) {
@@ -631,11 +582,6 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 *  SEE ALSO
 *     cl_communication/cl_com_close_connection()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_close_connection()"
-
 int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
    cl_com_tcp_private_t *private_com = nullptr;
 
@@ -663,12 +609,6 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
    /* free com private structure */
    return cl_com_tcp_free_com_private(*connection);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_write()"
 
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write) {
@@ -742,11 +682,6 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_read()"
 
 int
 cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size, unsigned long *only_one_read) {
@@ -824,11 +759,6 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
    }
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_read_GMSH()"
 
 int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read) {
    int retval = CL_RETVAL_OK;
@@ -909,12 +839,6 @@ int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_on
    return retval;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler_setup_finalize()"
-
 static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connection_t *connection) {
    cl_com_tcp_private_t *private_com = nullptr;
    int sockfd = 0;
@@ -982,11 +906,6 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler()
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler_cleanup()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler_setup()"
-
 int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection, bool only_prepare_service) {
    int sockfd = 0;
    struct sockaddr_in serv_addr;
@@ -1101,11 +1020,6 @@ int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection,
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler()
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler_setup()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler_cleanup()"
-
 int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 
    cl_com_tcp_private_t *private_com = nullptr;
@@ -1126,10 +1040,6 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 
    return CL_RETVAL_OK;
 }
-
-
-
-
 
 /* caller must free new_connection pointer */
 
@@ -1166,11 +1076,6 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler_setup()
 *     cl_tcp_framework/cl_com_tcp_connection_request_handler_cleanup()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler()"
-
 int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_com_connection_t **new_connection) {
    cl_com_connection_t *tmp_connection = nullptr;
    struct sockaddr_in cli_addr;
@@ -1282,8 +1187,6 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
    return CL_RETVAL_OK;
 }
 
-
-
 /*
   fill connection struct with client information
   ==============================================
@@ -1311,21 +1214,12 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
 *     static cl_com_tcp_private_t* - pointer to private tcp data of tcp connection
 *
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_get_private()"
-
 static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connection) {  /* CR check */
    if (connection != nullptr) {
       return (cl_com_tcp_private_t *)connection->com_private;
    }
    return nullptr;
 }
-
-
-
-
 
 /****** cl_tcp_framework/cl_com_tcp_open_connection_request_handler() **********
 *  NAME
@@ -1354,10 +1248,6 @@ static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connect
 *  SEE ALSO
 *     cl_communication/cl_com_open_connection_request_handler()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_tcp_open_connection_request_handler()"
 int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle,
                                                cl_raw_list_t *connection_list, cl_com_connection_t *service_connection,
                                                int timeout_val_sec, int timeout_val_usec,

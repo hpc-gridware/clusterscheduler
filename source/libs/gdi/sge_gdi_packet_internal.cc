@@ -41,10 +41,11 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_tq.h"
+#include "uti/sge_bootstrap_env.h"
 
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi3.h"
@@ -579,7 +580,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
                cl_com_handle_t* handle = nullptr;
                DPRINTF(("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS="sge_U32CFormat"\n", sge_u32c(runs)));
 
-               handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+               handle = cl_com_get_handle(component_get_component_name(), 0);
                if (handle != nullptr) {
                   DPRINTF(("TEST_2372_OUTPUT: GDI_TIMEOUT="sge_U32CFormat"\n", sge_u32c(handle->synchron_receive_timeout)));
                }

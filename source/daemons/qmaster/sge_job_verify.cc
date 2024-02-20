@@ -36,14 +36,15 @@
 
 #include "sge.h"
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_binding_hlp.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_time.h"
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi_packet.h"
@@ -243,7 +244,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* verify the job name */
    if (ret == STATUS_OK) {
-      if (object_verify_name(jep, alpp, JB_job_name, SGE_OBJ_JOB)) {
+      if (object_verify_name(jep, alpp, JB_job_name)) {
          ret = STATUS_EUNKNOWN;
       }
    }

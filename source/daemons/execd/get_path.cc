@@ -33,13 +33,13 @@
 #include <cstring>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_string.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"

@@ -33,10 +33,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
@@ -57,8 +57,8 @@
 #include "msg_clients_common.h"
 #include "oge_client_job.h"
 #include "oge_client_print.h"
-#include "sge.h"
 #include "sig_handlers.h"
+#include "uti/sge.h"
 
 static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *task_str, u_long32 full_listing, int slots, int slot, lList *ehl, lList *cl,

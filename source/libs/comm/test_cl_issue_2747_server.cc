@@ -35,7 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <pwd.h>
 
@@ -50,12 +50,6 @@ static int pipe_signal = 0;
 static int hup_signal = 0;
 static int do_shutdown = 0;
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "sighandler_server()"
-
 void sighandler_server(int sig) {
    if (sig == SIGPIPE) {
       pipe_signal = 1;
@@ -67,12 +61,6 @@ void sighandler_server(int sig) {
    }
    do_shutdown = 1;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;
@@ -101,8 +89,6 @@ extern int main(int argc, char **argv) {
       printf("Use CL_RUNS to limit main loop runs.\n");
       exit(1);
    }
-
-   prof_mt_init();
 
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));

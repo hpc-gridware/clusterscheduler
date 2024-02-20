@@ -36,17 +36,17 @@
 #include <cerrno>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_signal.h"
-#include "uti/sge_string.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_signal.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_conf.h"
@@ -94,7 +94,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge.h"
 #include "sge_task_depend.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
@@ -165,7 +164,7 @@ void
 set_context(lList *jbctx, lListElem *job);
 
 static u_long32
-guess_highest_job_number(void);
+guess_highest_job_number();
 
 static bool
 contains_dependency_cycles(const lListElem *new_job, u_long32 job_number, lList **alpp);
@@ -219,7 +218,6 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    u_long32 start;
    u_long32 end;
    u_long32 step;
-   bool job_spooling = bootstrap_get_job_spooling();
    cl_thread_settings_t *tc = cl_thread_get_thread_config();
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    lList **master_suser_list = object_type_get_master_list_rw(SGE_TYPE_SUSER);
@@ -227,8 +225,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    DENTER(TOP_LAYER);
 
    if (jsv_is_enabled(tc->thread_name)) {
-      struct timeval start_time;
-      struct timeval end_time;
+      struct timeval start_time{};
+      struct timeval end_time{};
       int jsv_threshold = mconf_get_jsv_threshold();
       /*
        * first verify before JSV is executed
@@ -267,22 +265,20 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
 
    /* write script to file */
    spool_transaction(alpp, spool_get_default_context(), STC_begin);
-   if (job_spooling) {
-      if (lGetString(*jep, JB_script_file) &&
-          !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
-         if (spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep) == false) {
-            spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-            ERROR((SGE_EVENT, MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)),
-                    strerror(errno)));
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            DRETURN(STATUS_EDISK);
-         }
+   if (lGetString(*jep, JB_script_file) &&
+       !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
+      if (spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep) == false) {
+         spool_transaction(alpp, spool_get_default_context(), STC_rollback);
+         ERROR((SGE_EVENT, MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)),
+                 strerror(errno)));
+         answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
+         DRETURN(STATUS_EDISK);
       }
-
-      /* clean file out of memory */
-      lSetString(*jep, JB_script_ptr, nullptr);
-      lSetUlong(*jep, JB_script_size, 0);
    }
+
+   /* clean file out of memory */
+   lSetString(*jep, JB_script_ptr, nullptr);
+   lSetUlong(*jep, JB_script_size, 0);
 
    if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
@@ -290,7 +286,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
       spool_transaction(alpp, spool_get_default_context(), STC_rollback);
       ERROR((SGE_EVENT, MSG_JOB_NOWRITE_U, sge_u32c(lGetUlong(*jep, JB_job_number))));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      if ((lGetString(*jep, JB_exec_file) != nullptr) && job_spooling) {
+      if ((lGetString(*jep, JB_exec_file) != nullptr)) {
          unlink(lGetString(*jep, JB_exec_file));
          lSetString(*jep, JB_exec_file, nullptr);
       }
@@ -1029,7 +1025,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    } else {
       if (force) {
          u_long32 now = sge_get_gmt();
-         const char *qualified_hostname = bootstrap_get_qualified_hostname();
+         const char *qualified_hostname = component_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
          if (job_is_array(j)) {
@@ -1073,8 +1069,6 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
 
 void job_mark_job_as_deleted(lListElem *j,
                              lListElem *t) {
-   bool job_spooling = bootstrap_get_job_spooling();
-
    DENTER(TOP_LAYER);
    if (j && t) {
       lList *answer_list = nullptr;
@@ -1085,11 +1079,8 @@ void job_mark_job_as_deleted(lListElem *j,
       lSetUlong(t, JAT_state, state);
       lSetUlong(t, JAT_stop_initiate_time, sge_get_gmt());
       spool_write_object(&answer_list, spool_get_default_context(), j,
-                         job_get_key(lGetUlong(j, JB_job_number),
-                                     lGetUlong(t, JAT_task_number), nullptr,
-                                     &buffer),
-                         SGE_TYPE_JOB,
-                         job_spooling);
+                         job_get_key(lGetUlong(j, JB_job_number), lGetUlong(t, JAT_task_number), nullptr, &buffer),
+                         SGE_TYPE_JOB, true);
       lListElem_clear_changed_info(t);
       answer_list_output(&answer_list);
       sge_dstring_free(&buffer);
@@ -1144,7 +1135,6 @@ int sge_gdi_mod_job(
    bool job_name_flag = false;
    char *job_mod_name = nullptr;
    const char *job_name = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
@@ -1293,7 +1283,7 @@ int sge_gdi_mod_job(
          /* all job modifications to be saved on disk must be made in new_job */
          dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
                                     job_get_key(jobid, 0, nullptr, &buffer),
-                                    SGE_TYPE_JOB, job_spooling);
+                                    SGE_TYPE_JOB, true);
          answer_list_output(&answer_list);
 
          if (!dbret) {
@@ -2292,7 +2282,7 @@ static int mod_job_attributes(
          sprintf(job_descr, "job "sge_u32, jobid);
          job_name = lGetString(new_job, JB_job_name);
          lSetString(new_job, JB_job_name, new_name);
-         if (object_verify_name(new_job, alpp, JB_job_name, job_descr)) {
+         if (object_verify_name(new_job, alpp, JB_job_name)) {
             lSetString(new_job, JB_job_name, job_name);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -3105,7 +3095,7 @@ sge_get_job_number(monitoring_t *monitor) {
    DRETURN(job_nr);
 }
 
-void sge_init_job_number(void) {
+void sge_init_job_number() {
    FILE *fp = nullptr;
    u_long32 job_nr = 0;
    u_long32 guess_job_nr;
@@ -3450,7 +3440,6 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    const lListElem *old_jep;
    lListElem *new_jep;
    int dummy_trigger = 0;
-   bool job_spooling = bootstrap_get_job_spooling();
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -3482,8 +3471,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    new_jep = lCopyElem(old_jep);
 
    /* read script from old job and reuse it */
-   if (lGetString(new_jep, JB_exec_file) && job_spooling
-       && !JOB_TYPE_IS_BINARY(lGetUlong(new_jep, JB_type))) {
+   if (lGetString(new_jep, JB_exec_file) && !JOB_TYPE_IS_BINARY(lGetUlong(new_jep, JB_type))) {
       if (spool_read_script(alpp, seek_jid, new_jep) == false) {
          lFreeElem(&new_jep);
          DRETURN(STATUS_EUNKNOWN);
@@ -3507,126 +3495,6 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    lFreeElem(&new_jep);
 
    DRETURN(ret);
-}
-
-/****** sge_job_qmaster/sge_job_spool() ******************************
-*  NAME
-*     sge_job_spool() -- stores the Master_Job_List into the database
-*
-*  SYNOPSIS
-*     void
-*     sge_job_spool(void)
-*
-*  FUNCTION
-*     This function stores the current Master_Job_List into the database.
-*     This includes also the job scripts, which are stored in the common 
-*     place. 
-*     
-*     MT-NOTE: sge_job_spool() is MT safe, it uses the global lock (read)
-*
-*******************************************************************************/
-void sge_job_spool() {
-   lListElem *jep = nullptr;
-   lList *answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
-
-   if (!job_spooling) {
-
-      /* the job spooling is disabled, we have to force the spooling */
-      bootstrap_set_job_spooling(true);
-
-      INFO((SGE_EVENT, "job spooling is disabled - spooling the jobs"));
-
-      /* this function is used on qmaster shutdown, no need to monitor this lock */
-      SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
-
-      /* store each job */
-      for_each_rw(jep, master_job_list) {
-         u_long32 job_number = lGetUlong(jep, JB_job_number);
-         lListElem *ja_task = nullptr;
-         lListElem *pe_task = nullptr;
-         bool is_success = true;
-         bool dbret = true;
-
-         dbret = spool_transaction(nullptr, spool_get_default_context(),
-                                   STC_begin);
-
-         if (!dbret) {
-            answer_list_add_sprintf(&answer_list, STATUS_EUNKNOWN,
-                                    ANSWER_QUALITY_ERROR,
-                                    MSG_PERSISTENCE_OPENTRANSACTION_FAILED);
-         } else {
-            /* store job script*/
-            if (lGetString(jep, JB_exec_file) != nullptr && job_spooling) {
-               if (spool_write_script(&answer_list, job_number, jep) == false) {
-                  ERROR((SGE_EVENT, MSG_JOB_NOWRITE_US, sge_u32c(job_number), strerror(errno)));
-                  is_success = false;
-               } else {
-                  /* clean file out of memory */
-                  lSetString(jep, JB_script_ptr, nullptr);
-                  lSetUlong(jep, JB_script_size, 0);
-               }
-            }
-
-            /* store each ja task */
-            if (is_success) {
-               for_each_rw(ja_task, lGetList(jep, JB_ja_tasks)) {
-                  int jataskid = lGetUlong(ja_task, JAT_task_number);
-                  dstring buffer = DSTRING_INIT;
-
-                  if (spool_write_object(&answer_list, spool_get_default_context(), ja_task,
-                                         job_get_key(job_number, jataskid, nullptr, &buffer),
-                                         SGE_TYPE_JATASK, job_spooling)) {
-                     is_success = false;
-                     break;
-                  }
-
-                  sge_dstring_free(&buffer);
-
-                  for_each_rw(pe_task, lGetList(ja_task, JAT_task_list)) {
-                     const char *pe_task_id_str = lGetString(pe_task, PET_id);
-
-                     if (!sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
-                                          job_number, jataskid, pe_task_id_str, nullptr,
-                                          nullptr, jep, ja_task, pe_task, false, true)) {
-                        is_success = false;
-                        break;
-                     }
-                  }
-                  if (!is_success) {
-                     break;
-                  }
-               }
-
-               if (is_success && !sge_event_spool(&answer_list, 0, sgeE_JOB_ADD,
-                                                  job_number, 0, nullptr, nullptr, nullptr,
-                                                  jep, nullptr, nullptr, false, true)) {
-                  is_success = false;
-                  break;
-               }
-
-            }
-         }
-
-         /* commit or rollback database transaction */
-         spool_transaction(&answer_list, spool_get_default_context(),
-                           is_success ? STC_commit : STC_rollback);
-         if (!is_success) {
-            break;
-         }
-      }
-
-      SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-
-      /* reset spooling */
-      bootstrap_set_job_spooling(false);
-      answer_list_output(&answer_list);
-   }
-
-   DRETURN_VOID;
 }
 
 /****** sge_job_qmaster/spool_write_script() ***********************************
@@ -3930,8 +3798,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
             lList *answer_list = nullptr;
             spool_write_object(&answer_list, spool_get_default_context(),
                                job, job_get_job_key(job_number, &buffer),
-                               SGE_TYPE_JOB,
-                               bootstrap_get_job_spooling());
+                               SGE_TYPE_JOB, true);
             answer_list_output(&answer_list);
             lListElem_clear_changed_info(job);
             sge_dstring_free(&buffer);

@@ -39,11 +39,11 @@
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
-#include <time.h>
+#include <ctime>
 #include <setjmp.h>
 #include <cstdlib>
 
@@ -105,7 +105,7 @@ char ** argv;
    host = getenv("HOST");
    dpy_name = sge_malloc(strlen(host)+3);
    strcpy(dpy_name, host);
-   bootstrap_set_qualified_hostname(host);
+   component_set_qualified_hostname(host);
    strcat(dpy_name, ":0");
 
    for (i=1; i<argc; i++) {
@@ -160,7 +160,7 @@ char ** argv;
             tt = getidletime(dpy);
             printf("%s:idle:%d:%02d:%02d\n", host, tt.std, tt.min, tt.sek); fflush(nullptr);
             if (script != nullptr)
-               getextloadsensor(bootstrap_get_qualified_hostname(), bootstrap_get_binary_path(), script);
+               getextloadsensor(component_get_qualified_hostname(), bootstrap_get_binary_path(), script);
             printf("end\n"); fflush(nullptr);
          }
          else 

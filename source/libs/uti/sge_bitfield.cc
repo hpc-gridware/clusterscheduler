@@ -170,7 +170,7 @@ sge_bitfield_init(bitfield *bf, unsigned int size) {
       /* malloc bitfield buffer only if char * has less bits than required */
       if (size <= fixed_bits) {
          /* clear buffer */
-         bf->bf.dyn = (char *) 0;
+         bf->bf.dyn = (char *)nullptr;
       } else {
          bf->bf.dyn = sge_malloc(char_size);
          if (bf->bf.dyn == nullptr) {
@@ -355,7 +355,7 @@ sge_bitfield_reset(bitfield *bf) {
          unsigned int char_size = sge_bitfield_get_size_bytes(bf->size);
          memset(bf->bf.dyn, 0, char_size);
       } else {
-         bf->bf.dyn = (char *) 0;
+         bf->bf.dyn = (char *)nullptr;
       }
 
       return true;

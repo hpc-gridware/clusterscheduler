@@ -37,12 +37,6 @@
 #include "comm/dummy.h"
 #include "comm/lists/cl_lists.h"
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 int main(int argc, char **argv) {
    int test = 1;
    int my_error = 0;

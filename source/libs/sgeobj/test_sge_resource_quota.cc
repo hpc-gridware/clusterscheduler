@@ -30,8 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_hgroup.h"
@@ -163,8 +163,6 @@ int main(int argc, char *argv[])
    lListElem *userset;
 
    DENTER_MAIN(TOP_LAYER, "test_sge_resouce_quota");
-
-   bootstrap_mt_init();
 
    lInit(nmv);
 

@@ -39,21 +39,11 @@
 #include "comm/lists/cl_util.h"
 #include "comm/lists/cl_errors.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_number_length()"
-
 int cl_util_get_ulong_number_length(unsigned long id) {
    char help[512];
    snprintf(help, 512, "%lu", id);
    return (int) strlen(help);
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_int_number_length()"
 
 int cl_util_get_int_number_length(int id) {
    char help[512];
@@ -61,22 +51,11 @@ int cl_util_get_int_number_length(int id) {
    return (int) strlen(help);
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_double_number_length()"
-
 int cl_util_get_double_number_length(double id) {
    char help[512];
    snprintf(help, 512, "%f", id);
    return (int) strlen(help);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_ulong_value()"
 
 unsigned long cl_util_get_ulong_value(const char *text) {
    unsigned long value = 0;
@@ -85,12 +64,6 @@ unsigned long cl_util_get_ulong_value(const char *text) {
    }
    return value;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_ascii_hex_buffer()"
 
 int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, char **ascii_buffer, char *separator) {
    char *asc_buffer = nullptr;
@@ -135,11 +108,6 @@ int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, c
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_binary_buffer()"
-
 int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned long *buffer_lenght) {
    unsigned char *bin_buffer = nullptr;
    unsigned long bin_buffer_len = 0;
@@ -183,12 +151,6 @@ int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned
 
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_hex_value()"
 
 int cl_util_get_hex_value(char hex_char) {
    int ret_val;
@@ -252,12 +214,6 @@ int cl_util_get_hex_value(char hex_char) {
    }
    return ret_val;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_util_get_ascii_hex_char()"
 
 char cl_util_get_ascii_hex_char(unsigned char value) {
    char ret_val;

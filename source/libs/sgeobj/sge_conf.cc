@@ -41,16 +41,15 @@
 
 #include "cull/cull.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_parse_num_par.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_profiling.h"
 #include "uti/config_file.h"
-#include "uti/sge_lock.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 
 #include "comm/commlib.h"
 
@@ -60,8 +59,8 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 
-#include "sge.h"
 #include "basis_types.h"
+#include "uti/sge.h"
 
 #define SGE_BIN "bin"
 #define STREESPOOLTIMEDEF 240
@@ -1244,7 +1243,7 @@ void conf_update_thread_profiling(const char *thread_name)
       set_thread_prof_status_by_name("Scheduler Thread", prof_scheduler_thrd);
       set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
       set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
-      set_thread_prof_status_by_name("Deliver Thread", prof_deliver_thrd);
+      set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
       set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
    } else {
       if (strcmp(thread_name, "Signal Thread") == 0) {
@@ -1255,8 +1254,8 @@ void conf_update_thread_profiling(const char *thread_name)
          set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
       } else if (strcmp(thread_name, "Worker Thread") == 0) {
          set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
-      } else if (strcmp(thread_name, "Deliver Thread") == 0) {
-         set_thread_prof_status_by_name("Deliver Thread", prof_deliver_thrd);
+      } else if (strcmp(thread_name, "Event Master Thread") == 0) {
+         set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
       } else if (strcmp(thread_name, "TEvent Thread") == 0) {
          set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
       }

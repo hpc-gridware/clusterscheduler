@@ -37,10 +37,10 @@
 /* this code is used by shepherd */
 #include <cctype>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_binding_hlp.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_binding_hlp.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #if defined(BINDING_SOLARIS)
 #  include <sys/processor.h>
@@ -847,7 +847,7 @@ topology_string_to_socket_core_lists(const char *topology, int **sockets,
 *     sge_binding_hlp/check_explicit_binding_string()
 *******************************************************************************/
 int
-get_explicit_amount(const char *expl, const bool with_explicit_prefix) {
+get_explicit_amount(const char *expl, bool with_explicit_prefix) {
 
    int amount = 0;
    char *pair = nullptr;
@@ -904,8 +904,8 @@ get_explicit_amount(const char *expl, const bool with_explicit_prefix) {
 *     sge_binding_hlp/get_explicit_amount()
 *******************************************************************************/
 bool
-check_explicit_binding_string(const char *expl, const int amount,
-                              const bool with_explicit_prefix) {
+check_explicit_binding_string(const char *expl, int amount,
+                              bool with_explicit_prefix) {
    bool success = true;
    struct saved_vars_s *context = nullptr;
 

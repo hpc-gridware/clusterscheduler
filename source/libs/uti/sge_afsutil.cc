@@ -37,12 +37,12 @@
 
 #include "basis_types.h"
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_io.h"
-#include "uti/sge_unistd.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_unistd.h"
 
 /****** uti/afsutil/sge_read_token() ******************************************
 *  NAME

@@ -33,9 +33,9 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_answer.h"

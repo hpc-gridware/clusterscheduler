@@ -6,13 +6,13 @@
 #include <cctype>
 
 #include "basis_types.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_fgl.h"
 #include "uti/sge_htable.h"
 #include "uti/sge_lock_fifo.h"
 #include "uti/sge_log.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 
 #define COLLECT_STATS 1
 #define USE_FIFO_LOCK 0 // mem eater if enabled and slow (one queue and conditions for sync)
@@ -118,6 +118,17 @@ void fgl_mt_init(void) {
    pthread_mutex_unlock(&fgl_stats_mtx);
 #endif
 }
+
+class FeatureThreadInit {
+public:
+   FeatureThreadInit() {
+      fgl_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static FeatureThreadInit feature_obj{};
+
 
 int fgl_rsv_compare(const void *a, const void *b) {
    fgl_t *x = (fgl_t *) a;

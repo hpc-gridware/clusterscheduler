@@ -37,10 +37,10 @@
 #include <cstdlib>
 #include <fcntl.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_language.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_feature.h"

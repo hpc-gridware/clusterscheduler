@@ -1,4 +1,4 @@
-#include <time.h>
+#include <ctime>
 #include <pthread.h>
 #include <cstdio>
 #include <cstdlib>

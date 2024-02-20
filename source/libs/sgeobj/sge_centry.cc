@@ -33,12 +33,12 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
-#include <float.h>
+#include <cfloat>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "cull/cull_list.h"
 
@@ -60,9 +60,9 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "basis_types.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 #include "sge_centry_rsmap.h"
 

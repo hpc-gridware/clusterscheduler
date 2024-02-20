@@ -40,10 +40,10 @@
 #include <cstring>
 #include <unistd.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_attr.h"
@@ -268,24 +268,18 @@ userprj_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **
 int
 userprj_spool(lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   bool dbret;
    int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
    /* write user or project to file */
-   dbret = spool_write_object(alpp, spool_get_default_context(), upe,
-                              lGetString(upe, object->key_nm),
-                              user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT,
-                              job_spooling);
+   bool dbret = spool_write_object(alpp, spool_get_default_context(), upe,
+                                   lGetString(upe, object->key_nm), user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(upe, object->key_nm));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(upe, object->key_nm));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -443,7 +437,7 @@ void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
    const char *admin = bootstrap_get_admin_user();
-   const char *qmaster_host = bootstrap_get_qualified_hostname();
+   const char *qmaster_host = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -577,7 +571,7 @@ static int do_add_auto_user(lListElem *anUser, lList **anAnswer, monitoring_t *m
    lList *tmpAnswer = nullptr;
    lList *ppList = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

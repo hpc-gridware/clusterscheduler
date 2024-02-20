@@ -35,13 +35,14 @@
 #include <pthread.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_signal.h"
 #include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_signal.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"

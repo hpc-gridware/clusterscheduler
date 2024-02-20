@@ -33,7 +33,7 @@
 #include <pthread.h>
 
 #include "uti/sge_lock_fifo.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #define FIFO_LOCK_QUEUE_LENGTH 128
 
@@ -69,9 +69,7 @@
 bool
 sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
    bool ret = true;
-   int lret = 0;
-
-   lret = pthread_mutex_init(&(lock->mutex), nullptr);
+   int lret = pthread_mutex_init(&(lock->mutex), nullptr);
    if (lret == 0) {
       lock->array = (sge_fifo_elem_t *) sge_malloc(sizeof(sge_fifo_elem_t) * FIFO_LOCK_QUEUE_LENGTH);
 
@@ -176,10 +174,9 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
 bool
 sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    bool ret = true;
-   int lret = 0;
 
    /* lock the lock-structure */
-   lret = pthread_mutex_lock(&(lock->mutex));
+   int lret = pthread_mutex_lock(&(lock->mutex));
    if (lret == 0) {
       bool do_wait = false;
       bool do_wait_in_queue = false;
@@ -256,7 +253,7 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
           * The signal will be sent by an unlock call of another
           * reader or writer which hat the lock before.
           */
-         while (lock->array[index].is_signaled == false) {
+         while (!lock->array[index].is_signaled) {
             if (is_reader) {
                lock->reader_waiting++;
             } else {
@@ -273,7 +270,7 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
          /*
           * remove this thread from the signaled threads counter 
           */
-         if (lock->array[index].is_signaled == true) {
+         if (lock->array[index].is_signaled) {
             lock->signaled--;
          }
 
@@ -300,8 +297,7 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
           * simultaniously
           */
 
-         if (lock->array[index].is_reader == true && lock->reader_waiting > 0 &&
-             lock->array[lock->head].is_reader == true) {
+         if (lock->array[index].is_reader && lock->reader_waiting > 0 && lock->array[lock->head].is_reader) {
             lock->array[lock->head].is_signaled = true;
             lock->signaled++;
             pthread_cond_signal(&(lock->array[lock->head].cond));
@@ -376,10 +372,9 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
 bool
 sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    bool ret = true;
-   int lret = 0;
 
    /* lock the lock-structure */
-   lret = pthread_mutex_lock(&(lock->mutex));
+   int lret = pthread_mutex_lock(&(lock->mutex));
    if (lret == 0) {
 
       /*

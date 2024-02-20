@@ -30,16 +30,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <time.h>
+#include <ctime>
 #include <cctype>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_binding_parse.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
-#include "uti/sge_parse_num_par.h"
-#include "uti/sge_binding_parse.h"
 
 #include "gdi/sge_gdi_ctx.h"
 
@@ -1313,7 +1313,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * read-only
     */
    {
-      u_long32 progid = bootstrap_get_component_id();
+      u_long32 progid = component_get_component_id();
 
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s CLIENT %s", prefix, prognames[progid]);
@@ -2278,7 +2278,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
       display = lGetElemStr(env_list, VA_variable, "DISPLAY"); 
       if (display != nullptr) {
          const char *value = lGetString(display, VA_value);
-         u_long32 progid = bootstrap_get_component_id();
+         u_long32 progid = component_get_component_id();
 
          if (value != nullptr &&
              (strcmp(prognames[progid], "qsh") == 0 || strcmp(prognames[progid], "qrsh") == 0)) {

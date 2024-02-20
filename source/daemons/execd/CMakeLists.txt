@@ -21,7 +21,6 @@ add_executable(
       tmpdir.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      ../../common/sge_mt_init.cc
       ../../common/usage.cc
       ../../common/execution_states.cc)
 

@@ -36,14 +36,14 @@
 #include <cstdlib>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
-#include "uti/sge_language.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_io.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_io.h"
+#include "uti/sge_language.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_path_alias.h"

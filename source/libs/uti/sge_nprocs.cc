@@ -84,7 +84,7 @@ int sge_nprocs (void);
 *  NOTES
 *     MT-NOTE: sge_nprocs() is MT safe (SOLARIS, LINUX)
 ******************************************************************************/
-int sge_nprocs(void) {
+int sge_nprocs() {
    int nprocs = 1; /* default */
 
 #if defined(DARWIN)

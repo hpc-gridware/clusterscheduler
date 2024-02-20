@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
-#include <time.h>
+#include <ctime>
 
 #include "mir/sge_mirror.h"
 
@@ -169,7 +169,7 @@ typedef enum {
 } spooling_transaction_command;
 
 typedef const char *
-(*spooling_get_method_func)(void);
+(*spooling_get_method_func)();
 
 typedef lListElem *
 (*spooling_create_context_func)(lList **answer_list, const char *args);
@@ -272,11 +272,11 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
 
 lListElem *
 spool_context_search_type(const lListElem *context, 
-                          const sge_object_type object_type);
+                          sge_object_type object_type);
 
 lListElem *
 spool_context_create_type(lList **answer_list, lListElem *context, 
-                          const sge_object_type object_type);
+                          sge_object_type object_type);
 
 lListElem *
 spool_type_search_default_rule(const lListElem *spool_type);

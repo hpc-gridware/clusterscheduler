@@ -33,8 +33,8 @@
 #include <cstring>
 #include <pthread.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 
@@ -92,10 +92,20 @@ static feature_id_t feature_get_featureset_id(const char *name);
 *  NOTES
 *     MT-NOTE: feature_mt_init() is MT safe 
 *******************************************************************************/
-void feature_mt_init(void)
+static void feature_mt_init(void)
 {
    pthread_once(&feature_once, feature_once_init);
 }
+
+class FeatureThreadInit {
+public:
+   FeatureThreadInit() {
+      feature_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static FeatureThreadInit feature_obj{};
 
 /****** sgeobj/feature/feature_set_already_read_from_file() *******************
 *  NAME

@@ -30,7 +30,7 @@
  ************************************************************************/
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -40,10 +40,10 @@
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_multitypeP.h"

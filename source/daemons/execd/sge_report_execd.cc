@@ -31,9 +31,9 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_report.h"
@@ -73,7 +73,7 @@ int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
     * Don't reset stored communication errors. 
     */
 
-   cl_commlib_get_connect_time(cl_com_get_handle(bootstrap_get_component_name(), 0),
+   cl_commlib_get_connect_time(cl_com_get_handle(component_get_component_name(), 0),
                                (char *)gdi3_get_act_master_host(true), (char*)prognames[QMASTER], 1,
                                &connect_time);
 

@@ -35,12 +35,12 @@
 #include <cstring>
 #include <unistd.h>
 
-#include "uti/sge_lock.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -61,8 +61,6 @@
 
 #include "evm/sge_event_master.h"
 
-#include "sge_c_gdi.h"
-#include "sge_c_report.h"
 #include "sge_qmaster_main.h"
 #include "sge_thread_worker.h"
 #include "msg_qmaster.h"
@@ -205,7 +203,7 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    }
    if (local_ret) {
       const char *admin_user = bootstrap_get_admin_user();
-      const char *progname = bootstrap_get_component_name();
+      const char *progname = component_get_component_name();
 
       if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
@@ -255,8 +253,7 @@ static void
 do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = bootstrap_get_component_name();
-   sge_gdi_packet_class_t *packet = nullptr;
+   const char *myprogname = component_get_component_name();
 
    DENTER(TOP_LAYER);
 
@@ -275,7 +272,7 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
     * create a GDI packet to transport the list to the worker where
     * it will be handled
     */
-   packet = sge_gdi_packet_create_base(nullptr);
+   sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
    packet->host = sge_strdup(nullptr, aMsg->snd_host);
    packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
@@ -341,7 +338,7 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
    */
    if (client_id == 1) {
       const char *admin_user = bootstrap_get_admin_user();
-      const char *myprogname = bootstrap_get_component_name();
+      const char *myprogname = component_get_component_name();
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                          aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN_VOID;
@@ -371,7 +368,7 @@ static void
 do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = bootstrap_get_component_name();
+   const char *myprogname = component_get_component_name();
    lListElem *ack = nullptr;
 
    DENTER(TOP_LAYER);
@@ -431,7 +428,6 @@ static void
 sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
               u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    lList *answer_list = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -464,8 +460,8 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          {
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), jep,
-                               job_get_key(lGetUlong(jep, JB_job_number),
-                                           ack_ulong2, nullptr, &buffer), SGE_TYPE_JOB, job_spooling);
+                               job_get_key(lGetUlong(jep, JB_job_number), ack_ulong2, nullptr, &buffer),
+                               SGE_TYPE_JOB, true);
             sge_dstring_free(&buffer);
          }
          answer_list_output(&answer_list);
@@ -503,7 +499,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          lSetUlong(qinstance, QU_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
-                            lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, job_spooling);
+                            lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, true);
          answer_list_output(&answer_list);
          break;
       }

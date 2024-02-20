@@ -30,10 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstdio>
-#include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_conf.h"
@@ -54,7 +53,6 @@ check_reprioritize_interval(lList **alpp, char *ruser, char *rhost);
 int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
    lList *sched_conf = nullptr;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -68,7 +66,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
       }
 
       lAppendElem(sched_conf, ep);
-      spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF, job_spooling);
+      spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF, true);
    }
 
    if (!sconf_set_config(&sched_conf, anAnswer)) {

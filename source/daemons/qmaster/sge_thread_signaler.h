@@ -40,10 +40,10 @@ void
 sge_signaler_initialize();
 
 void
-sge_signaler_terminate(void);
+sge_signaler_terminate();
 
 void
-sge_signaler_initiate_termination(void);
+sge_signaler_initiate_termination();
 
 void *
 sge_signaler_main(void *arg);

@@ -35,7 +35,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 #include "uti/sge_profiling.h"
@@ -74,12 +74,6 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    struct timeval now;
@@ -88,8 +82,6 @@ extern int main(int argc, char **argv) {
    int i, first_message_sent = 0;
    int no_output = 0;
    cl_byte_t *reference = nullptr;
-
-   prof_mt_init();
 
    if (argc < 4) {
       printf("syntax: debug_level vmaster_port vmaster_host [no_output]\n");

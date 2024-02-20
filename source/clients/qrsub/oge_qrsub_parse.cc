@@ -32,11 +32,11 @@
 
 #include <pwd.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"

@@ -33,12 +33,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
@@ -59,13 +60,10 @@
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
-#include "sge.h"
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
-   lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTLEN];
-   int ret = -1;
    const lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -78,14 +76,14 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
     *    if it is not resolveable then
     *       ignore this and use the given hostname
     */
-   ret = sge_resolve_hostname(aName, unique_name, EH_name);
+   int ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
       DPRINTF(("%s: error %s resolving host %s\n", __func__,
               cl_get_error_text(ret), aName));
       strcpy(unique_name, aName);
    }
 
-   conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));
+   lListElem *conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));
 
    DRETURN(conf);
 }
@@ -96,8 +94,8 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
    lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
-   u_long32 progid = bootstrap_get_component_id();
+   const char *qualified_hostname = component_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -667,7 +665,7 @@ int main(int argc, char *argv[])
       
       sge_mirror_process_events(evc);
 
-      now = time(0);
+      now = time(nullptr);
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "test_sge_info:\n");
 /*          INFO((SGE_EVENT, "\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr))); */

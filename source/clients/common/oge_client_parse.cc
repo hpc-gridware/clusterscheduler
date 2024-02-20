@@ -34,7 +34,7 @@
 #include <unistd.h>
 
 #include "uti/sge_io.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 

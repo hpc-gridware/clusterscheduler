@@ -37,9 +37,9 @@
 #include <dlfcn.h>
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/config_file.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "cull/cull_list.h"
@@ -57,9 +57,9 @@
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "uti/sge.h"
 
 bool pe_name_is_matching(const char *pe_name, const char *wildcard)
 {

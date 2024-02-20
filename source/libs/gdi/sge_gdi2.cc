@@ -41,13 +41,15 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_bootstrap_files.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_hostname.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_feature.h"
@@ -70,8 +72,8 @@
 #include "gdi/msg_gdilib.h"
 
 #include "basis_types.h"
-#include "sge.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 #ifdef KERBEROS
 #  include "krb_lib.h"
@@ -226,7 +228,7 @@ sge_gdi_ctx_class_is_alive()
 {
    cl_com_SIRM_t* status = nullptr;
    int cl_ret = CL_RETVAL_OK;
-   cl_com_handle_t *handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
 
    /* TODO */
    const char* comp_name = prognames[QMASTER];
@@ -238,7 +240,7 @@ sge_gdi_ctx_class_is_alive()
 
    if (handle == nullptr) {
       sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              "handle not found %s:0", bootstrap_get_component_name());
+                              "handle not found %s:0", component_get_component_name());
       DRETURN(CL_RETVAL_PARAMS);
    }
 
@@ -411,7 +413,7 @@ int sge_gdi2_multi(lList **alpp,
       if (local_ret != false) {
          ret = sge_gdi_packet_get_last_task_id(packet);
          if (mode == SGE_GDI_SEND) {
-            if (bootstrap_is_qmaster_internal()) {
+            if (component_is_qmaster_internal()) {
                local_ret = sge_gdi_packet_execute_internal(alpp, packet);
             } else {
                local_ret = sge_gdi_packet_execute_external(alpp, packet);
@@ -551,7 +553,7 @@ sge_gdi2_wait(lList **alpp, lList **malpp,
    packet = state->packet;
    state->packet = nullptr;
    if (packet != nullptr) {
-      if (bootstrap_is_qmaster_internal()) {
+      if (component_is_qmaster_internal()) {
          ret = sge_gdi_packet_wait_for_result_internal(alpp, &packet, malpp);
       } else {
          ret = sge_gdi_packet_wait_for_result_external(alpp, &packet, malpp);
@@ -579,7 +581,7 @@ sge_gdi2_send_any_request(int synchron, u_long32 *mid,
 {
    int i;
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
-   cl_com_handle_t* handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   cl_com_handle_t* handle = cl_com_get_handle(component_get_component_name(), 0);
    unsigned long dummy_mid = 0;
    unsigned long* mid_pointer = nullptr;
 
@@ -676,7 +678,7 @@ sge_gdi2_get_any_request(char *rhost,
       DRETURN(-1);
    }
    
-   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   handle = cl_com_get_handle(component_get_component_name(), 0);
 
    /* TODO: do trigger or not? depends on syncrhron
     * TODO: Remove synchron flag from this function, it is only used for get_event_list call in event client.
@@ -1082,7 +1084,7 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid,
    unsigned long dummy_mid;
    unsigned long* mid_pointer = nullptr;
    int use_execd_handle = 0;
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    
    DENTER(GDI_LAYER);
 
@@ -1116,7 +1118,7 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid,
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
       DEBUG((SGE_EVENT,"standard gdi request to qmaster\n"));
-      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+      handle = cl_com_get_handle(component_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", tocomproc));
@@ -1176,7 +1178,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    cl_com_endpoint_t* sender = nullptr;
    int use_execd_handle = 0;
 
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
 
    DENTER(GDI_LAYER);
@@ -1213,7 +1215,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
       DEBUG((SGE_EVENT,"standard gdi receive message\n"));
-      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+      handle = cl_com_get_handle(component_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", fromcommproc));
@@ -1329,7 +1331,7 @@ int gdi2_get_configuration(const char *config_name,
    int success;
    static int already_logged = 0;
    u_long32 status;
-   u_long32 me = bootstrap_get_component_id();
+   u_long32 me = component_get_component_id();
 
    DENTER(GDI_LAYER);
 
@@ -1456,9 +1458,9 @@ int gdi2_wait_for_conf(lList **conf_list) {
    int ret;
    static u_long32 last_qmaster_file_read = 0;
    u_long32 now = sge_get_gmt();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    
    /* TODO: move this function to execd */
    DENTER(GDI_LAYER);
@@ -1481,7 +1483,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
       }
 
       DTRACE;
-      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+      handle = cl_com_get_handle(component_get_component_name(), 0);
       ret_val = cl_commlib_trigger(handle, 1);
       switch(ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
@@ -1533,9 +1535,9 @@ int gdi2_wait_for_conf(lList **conf_list) {
 int gdi2_get_merged_configuration(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    int ret;
 
    DENTER(GDI_LAYER);
@@ -1768,17 +1770,6 @@ const char* sge_dump_message_tag(unsigned long tag) {
    return "TAG_NOT_DEFINED";
 }
 
-#ifdef DEBUG_CLIENT_SUPPORT
-void gdi_rmon_print_callback_function(const char *progname, const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id) {
-   cl_com_handle_t* handle = nullptr;
-
-   handle = cl_com_get_handle(progname ,0);
-   if (handle != nullptr) {
-      cl_com_application_debug(handle, message);
-   }
-}
-#endif
-
 /****** sge_any_request/general_communication_error() **************************
 *  NAME
 *     general_communication_error() -- callback for communication errors
@@ -1988,7 +1979,7 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
     * for un-"cased" values 
     */
 
-   /* TODO: remove bootstrap_get_component_id()/progid cases for QMASTER and EXECD after
+   /* TODO: remove component_get_component_id()/progid cases for QMASTER and EXECD after
             BT: 6350264, IZ: 1893 is fixed */
    switch (error_type) {
       case SGE_COM_ACCESS_DENIED: {

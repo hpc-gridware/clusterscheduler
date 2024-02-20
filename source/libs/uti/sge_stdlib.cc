@@ -34,11 +34,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdlib.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 
 /****** uti/stdlib/sge_malloc() ***********************************************
 *  NAME
@@ -61,15 +61,13 @@
 *     MT-NOTE: sge_malloc() is MT safe
 ******************************************************************************/
 char *sge_malloc(int size) {
-   char *cp = nullptr;
-
    DENTER_(BASIS_LAYER);
 
    if (!size) {
       DRETURN_(nullptr);
    }
 
-   cp = (char *) malloc(size);
+   char *cp = (char *) malloc(size);
    if (!cp) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILED));
       abort();
@@ -100,8 +98,6 @@ char *sge_malloc(int size) {
 *     MT-NOTE: sge_realloc() is MT safe
 ******************************************************************************/
 void *sge_realloc(void *ptr, int size, int do_abort) {
-   void *cp = nullptr;
-
    DENTER_(BASIS_LAYER);
 
    /* if new size is 0, just free the currently allocated memory */
@@ -110,7 +106,7 @@ void *sge_realloc(void *ptr, int size, int do_abort) {
       DRETURN_(nullptr);
    }
 
-   cp = realloc(ptr, size);
+   void *cp = realloc(ptr, size);
    if (cp == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_REALLOCFAILED));
       if (do_abort) {
@@ -176,12 +172,8 @@ void sge_free(void *cp) {
 *     MT-NOTE: sge_getenv() is MT safe
 ******************************************************************************/
 const char *sge_getenv(const char *env_str) {
-   const char *cp = nullptr;
-
    DENTER_(BASIS_LAYER);
-
-   cp = (char *) getenv(env_str);
-
+   const char *cp = (char *) getenv(env_str);
    DRETURN_(cp);
 }
 

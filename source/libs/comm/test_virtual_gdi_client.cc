@@ -35,7 +35,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 #include "comm/lists/cl_lists.h"
@@ -74,12 +74,6 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 
@@ -94,8 +88,6 @@ extern int main(int argc, char **argv) {
 
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
    bool synchron = false;
-
-   prof_mt_init();
 
    if (argc < 5) {
       printf("syntax: debug_level vmaster_port vmaster_host reconnect [no_output]\n");

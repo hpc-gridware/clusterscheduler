@@ -72,9 +72,9 @@ int binding_striding_parse_step_size(const char *parameter);
 
 bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error);
 
-int get_explicit_amount(const char *expl, const bool with_explicit_prefix);
+int get_explicit_amount(const char *expl, bool with_explicit_prefix);
 
-bool check_explicit_binding_string(const char *expl, const int amount, const bool with_explicit_prefix);
+bool check_explicit_binding_string(const char *expl, int amount, bool with_explicit_prefix);
 
 const char *binding_get_topology_for_job(const char *binding_result);
 

@@ -30,21 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cerrno>
-#include <cstring>
 #include <sys/time.h>
-#include <cstdlib>
 
 #include "comm/cl_endpoint_list.h"
-#include "comm/cl_connection_list.h"
 #include "comm/cl_commlib.h"
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_setup()"
 
 int cl_endpoint_list_setup(cl_raw_list_t **list_p,
                            char *list_name,
@@ -108,11 +97,6 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_set_entry_life_time()"
-
 int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_time) {
    cl_endpoint_list_data_t *ldata = nullptr;
 
@@ -126,12 +110,6 @@ int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_
    }
    return CL_RETVAL_PARAMS;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_data()"
 
 cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
 
@@ -151,12 +129,6 @@ cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
    ldata = (cl_endpoint_list_data_t *) endpoint_list->list_data;
    return ldata;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_cleanup()"
 
 int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
    cl_endpoint_list_data_t *ldata = nullptr;
@@ -193,12 +165,6 @@ int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
 
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_define_endpoint()"
 
 int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, int service_port,
                                      cl_xml_connection_autoclose_t autoclose, bool is_static) {
@@ -288,12 +254,6 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_autoclose_mode()"
-
 int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint,
                                         cl_xml_connection_autoclose_t *autoclose) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
@@ -326,11 +286,6 @@ int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t
    return back;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_service_port()"
-
 int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, int *service_port) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
@@ -360,12 +315,6 @@ int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *
    }
    return back;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_last_touch_time()"
 
 int
 cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, unsigned long *touch_time) {
@@ -408,11 +357,6 @@ cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_undefine_endpoint()"
-
 int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
@@ -449,12 +393,6 @@ int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t 
    return back;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_first_elem()"
-
 cl_endpoint_list_elem_t *cl_endpoint_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -463,11 +401,6 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_first_elem(cl_raw_list_t *list_p) 
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_least_elem()"
-
 cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -475,11 +408,6 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) 
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_next_elem()"
 
 cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -494,12 +422,6 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t 
    return nullptr;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_last_elem()"
-
 cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
@@ -512,11 +434,6 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t 
    }
    return nullptr;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_endpoint_list_get_elem_endpoint()"
 
 cl_endpoint_list_elem_t *cl_endpoint_list_get_elem_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    cl_endpoint_list_elem_t *elem = nullptr;

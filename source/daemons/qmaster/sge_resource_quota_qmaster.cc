@@ -32,8 +32,8 @@
 #include <cstring>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_hgroup.h"
@@ -55,7 +55,6 @@
 #include "sge_userset_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_utility_qmaster.h"
-#include "sge.h"
 #include "sge_resource_quota_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -158,13 +157,11 @@ rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *r
       } else {
          /* *attr cases */
          const lList *rule_list = lGetList(rqs, RQS_rule);
-         const lListElem *rule = nullptr;
+         const lListElem *rule;
 
          for_each_ep(rule, rule_list) {
             lList *new_rule_list = lGetListRW(new_rqs, RQS_rule);
-            lListElem *new_rule = nullptr;
-
-            new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
+            lListElem *new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule,
@@ -224,20 +221,16 @@ int
 rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              lGetString(ep, RQS_name), SGE_TYPE_RQS,
-                              job_spooling);
+                              lGetString(ep, RQS_name), SGE_TYPE_RQS, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(ep, RQS_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(ep, RQS_name));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -277,18 +270,11 @@ rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *******************************************************************************/
 int
 rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   const char *rqs_name = nullptr;
-
    DENTER(TOP_LAYER);
-
-   rqs_name = lGetString(ep, RQS_name);
-
+   const char *rqs_name = lGetString(ep, RQS_name);
    rqs_update_categories(ep, old_ep);
-
-   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0,
-                 rqs_name, nullptr, nullptr, ep);
+   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
-
    DRETURN(0);
 }
 

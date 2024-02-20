@@ -41,7 +41,7 @@
 
 #include "sge_dstring.h"
 
-u_long32 sge_get_gmt(void);
+u_long32 sge_get_gmt();
 
 const char *sge_ctime(time_t, dstring *buffer);
 

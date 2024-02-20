@@ -10,7 +10,7 @@
 #  include <termio.h>
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sge_ijs_comm.h"
 

@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cstdlib>
 #include <cstdlib>
 #include <cstring>
 
@@ -41,12 +39,9 @@
 #include "comm/lists/cl_util.h"
 #include "comm/cl_xml_parsing.h"
 
-#include "basis_types.h"
-
 #include "uti/sge_string.h"
 
 #define CL_DO_XML_DEBUG 0
-
 
 typedef struct cl_xml_sequence_type {
    char character;
@@ -132,11 +127,6 @@ static char *cl_xml_parse_version(char *charptr, unsigned long buffer_length) {
 *  SEE ALSO
 *     commlib/cl_xml_parsing/cl_com_transformString2XML()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_transformXML2String()"
-
 int cl_com_transformXML2String(const char *input, char **output) {
    int i, pos, s;
    int input_length = 0;
@@ -229,11 +219,6 @@ int cl_com_transformXML2String(const char *input, char **output) {
 *  SEE ALSO
 *     commlib/cl_xml_parsing/cl_com_transformXML2String()
 *******************************************************************************/
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_transformString2XML()"
-
 int cl_com_transformString2XML(const char *input, char **output) {
    int input_length, i, s;
    int used = 0;
@@ -276,11 +261,6 @@ int cl_com_transformString2XML(const char *input, char **output) {
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_mih_mat_string()"
-
 const char *cl_com_get_mih_mat_string(cl_xml_ack_type_t mat) {
    switch (mat) {
       case CL_MIH_MAT_NAK:
@@ -294,11 +274,6 @@ const char *cl_com_get_mih_mat_string(cl_xml_ack_type_t mat) {
    }
    return "undefined";
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_get_mih_df_string()"
 
 const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df) {
    switch (df) {
@@ -326,11 +301,6 @@ const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df) {
    return "undefined";
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_free_gmsh_header()"
-
 int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
    if (header == nullptr || *header == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -338,11 +308,6 @@ int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
    sge_free(header);
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_free_cm_message()"
 
 int cl_com_free_cm_message(cl_com_CM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
@@ -404,11 +369,6 @@ int cl_com_free_ccm_message(cl_com_CCM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_free_ccrm_message()"
-
 int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -417,12 +377,6 @@ int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
    sge_free(message);
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_free_crm_message()"
 
 int cl_com_free_crm_message(cl_com_CRM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
@@ -436,11 +390,6 @@ int cl_com_free_crm_message(cl_com_CRM_t **message) {   /* CR check */
    sge_free(message);
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_GMSH()"
 
 int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com_GMSH_t *header,
                       unsigned long *used_buffer_length) {
@@ -503,12 +452,6 @@ int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com
    }
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_CM()"
 
 int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_CM_t **message) {
 
@@ -881,12 +824,6 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_CRM()"
-
 int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CRM_t **message) {
 
    unsigned long i;
@@ -1125,12 +1062,6 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_is_version()"
-
 static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, unsigned long buffer_length) {
    unsigned long i = 0;
    bool found = false;
@@ -1146,12 +1077,6 @@ static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, uns
    }
    return found;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_MIH()"
 
 int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_MIH_t **message) {
    unsigned long buf_pointer = 0;
@@ -1345,11 +1270,6 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
 
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_SIRM()"
 
 int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIRM_t **message) {
    unsigned long buf_pointer = 0;
@@ -1548,11 +1468,6 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    return CL_RETVAL_OK;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_AM()"
-
 int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_AM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1641,12 +1556,6 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
 
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_CCM()"
-
 int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1707,11 +1616,6 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
 #endif
    return CL_RETVAL_OK;
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_CCRM()"
 
 int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCRM_t **message) {
    unsigned long buf_pointer = 0;
@@ -1776,12 +1680,6 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
 
    return CL_RETVAL_OK;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_xml_parse_SIM()"
 
 int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIM_t **message) {
    unsigned long buf_pointer = 0;
@@ -1855,11 +1753,6 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
       - *endpoint is set to nullptr
       - int - CL_RETVAL_XXXX error number
 */
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_free_endpoint()"
-
 int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
    if (endpoint == nullptr || *endpoint == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1877,24 +1770,12 @@ int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_dup_endpoint()"
-
 cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint) {
    if (endpoint == nullptr || endpoint->comp_host == nullptr || endpoint->comp_name == nullptr) {
       return nullptr;
    }
    return cl_com_create_endpoint(endpoint->comp_host, endpoint->comp_name, endpoint->comp_id, &endpoint->addr);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_com_create_endpoint()"
 
 cl_com_endpoint_t *cl_com_create_endpoint(const char *host, const char *name,
                                           unsigned long id, const struct in_addr *in_addr) {

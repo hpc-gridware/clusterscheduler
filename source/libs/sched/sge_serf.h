@@ -71,7 +71,7 @@
 typedef void (*record_schedule_entry_func_t)(u_long32 job_id, u_long32 ja_taskid, 
       const char *state, u_long32 start_time, u_long32 end_time, char level_char, 
       const char *object_name, const char *name, double utilization);
-typedef void (*new_schedule_func_t)(u_long32 time);
+typedef void (*new_schedule_func_t)();
 
 void serf_init(record_schedule_entry_func_t, new_schedule_func_t);
 void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,

@@ -33,11 +33,11 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/sge_thread_ctrl.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_thread_ctrl.h"
 
 #include "comm/cl_commlib.h"
 
@@ -61,29 +61,23 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
 
 void
 sge_listener_initialize() {
-   const u_long32 max_initial_listener_threads = bootstrap_get_listener_thread_count();
+   const int max_initial_listener_threads = bootstrap_get_listener_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
-   u_long32 i;
 
    DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_listener_threads), threadnames[LISTENER_THREAD]));
    cl_thread_list_setup(&(Main_Control.listener_thread_pool), "thread pool");
-   for (i = 0; i < max_initial_listener_threads; i++) {
-      dstring thread_name = DSTRING_INIT;
-
-      sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[LISTENER_THREAD], i);
+   for (int i = 0; i < max_initial_listener_threads; i++) {
       cl_thread_list_create_thread(Main_Control.listener_thread_pool, &dummy_thread_p,
-                                   cl_com_get_log_list(), sge_dstring_get_string(&thread_name), i,
+                                   cl_com_get_log_list(), threadnames[LISTENER_THREAD], i,
                                    sge_listener_main, nullptr, nullptr, CL_TT_LISTENER);
-      sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
 }
 
 void
-sge_listener_terminate(void) {
-   cl_thread_settings_t *thread = nullptr;
+sge_listener_terminate() {
    DENTER(TOP_LAYER);
 
    /*
@@ -100,10 +94,9 @@ sge_listener_terminate(void) {
     * shutdown process will be faster
     */
    {
-      cl_thread_list_elem_t *thr = nullptr;
-      cl_thread_list_elem_t *thr_nxt = nullptr;
+      cl_thread_list_elem_t *thr;
 
-      thr_nxt = cl_thread_list_get_first_elem(Main_Control.listener_thread_pool);
+      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.listener_thread_pool);
       while ((thr = thr_nxt) != nullptr) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
@@ -114,7 +107,7 @@ sge_listener_terminate(void) {
    /*
     * delete all threads and wait for termination
     */
-   thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    while (thread != nullptr) {
       DPRINTF((SFN" gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.listener_thread_pool, thread);
@@ -124,10 +117,9 @@ sge_listener_terminate(void) {
    DRETURN_VOID;
 }
 
-void *
+[[noreturn]] void *
 sge_listener_main(void *arg) {
-   bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    time_t next_prof_output = 0;
 
@@ -143,7 +135,7 @@ sge_listener_main(void *arg) {
    conf_update_thread_profiling("Listener Thread");
 
    DPRINTF(("entering main loop\n"));
-   while (do_endlessly) {
+   while (true) {
       int execute = 0;
 
       if (sge_thread_has_shutdown_started() == false) {
@@ -157,7 +149,7 @@ sge_listener_main(void *arg) {
          sge_monitor_output(&monitor);
       }
 
-      /* pthread cancelation point */
+      /* pthread cancellation point */
       do {
          pthread_cleanup_push((void (*)(void *)) sge_listener_cleanup_monitor,
                               (void *) &monitor);
@@ -170,11 +162,7 @@ sge_listener_main(void *arg) {
       } while (sge_thread_has_shutdown_started());
    }
 
-   /*
-    * Don't add cleanup code here. It will never be executed. Instead register
-    * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before 
-    * the call of cl_thread_func_testcancel()
-    */
-   DRETURN(nullptr);
+   // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
+   // pthread_cleanup_push()/pthread_cleanup_pop() before the call of cl_thread_func_testcancel()
 }
 

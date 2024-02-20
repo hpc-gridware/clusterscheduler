@@ -34,9 +34,10 @@
 
 #include "gdi/qm_name.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "qmaster_heartbeat.h"
 #include "sge_qmaster_heartbeat.h"
@@ -122,7 +123,7 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
    char act_resolved_qmaster_name[CL_MAXHOSTLEN];
    char err_str[SGE_PATH_MAX+128];
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

@@ -117,7 +117,8 @@
 *     The last value defined as obect type is SGE_TYPE_ALL. 
 *****************************************************************************/
 typedef enum {
-   SGE_TYPE_ADMINHOST = 0,
+   SGE_TYPE_FIRST = 0,
+   SGE_TYPE_ADMINHOST = SGE_TYPE_FIRST,
    SGE_TYPE_CALENDAR,         /*1*/
    SGE_TYPE_CKPT,             /*2*/
    SGE_TYPE_CONFIG,           /*3*/
@@ -178,7 +179,6 @@ typedef struct {
 } object_description;
 
 
-void obj_mt_init(void);
 void obj_init(bool is_global);
 
 lList **object_type_get_master_list_rw(const sge_object_type type);
@@ -326,6 +326,6 @@ bool object_verify_double_null(const lListElem *ep, lList **answer_list, int nm)
 bool object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm);
 bool object_verify_expression_syntax(const lListElem *ep, lList **answer_list);
 
-int object_verify_name(const lListElem *object, lList **answer_list, int name, const char *object_descr);
+int object_verify_name(const lListElem *object, lList **answer_list, int name);
 int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr);
 int compress_ressources(lList **alpp, lList *rl, const char *object_descr );

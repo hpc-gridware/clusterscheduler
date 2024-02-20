@@ -30,20 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cerrno>
-#include <cstring>
-#include <sys/time.h>
-#include <cstdlib>
-
 #include "uti/sge_stdlib.h"
 
 #include "comm/cl_app_message_queue.h"
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_setup()"
 
 int cl_app_message_queue_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking) {
    int ret_val;
@@ -51,20 +40,9 @@ int cl_app_message_queue_setup(cl_raw_list_t **list_p, char *list_name, int enab
    return ret_val;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_cleanup()"
-
 int cl_app_message_queue_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_append()"
 
 int cl_app_message_queue_append(cl_raw_list_t *list_p,
                                 cl_com_connection_t *rcv_connection,
@@ -123,12 +101,6 @@ int cl_app_message_queue_append(cl_raw_list_t *list_p,
    return CL_RETVAL_OK;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_remove()"
-
 int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock,
                                 bool remove_all_elements) {
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
@@ -174,12 +146,6 @@ int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *conn
    return function_return;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_get_first_elem()"
-
 cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -188,11 +154,6 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *
    return nullptr;
 }
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_get_least_elem()"
-
 cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -200,12 +161,6 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_get_next_elem()"
 
 cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t *elem) {
 
@@ -220,12 +175,6 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_q
    }
    return nullptr;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_app_message_queue_get_last_elem()"
 
 cl_app_message_queue_elem_t *cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t *elem) {
 

@@ -36,7 +36,7 @@
 
 #include <sys/wait.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
 #include "cull/cull_multitype.h"
@@ -52,8 +52,6 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
-
-#include "sge_mt_init.h"
 
 #define allow_delete_time_modification
 
@@ -114,7 +112,6 @@ int main(int argc, char** argv)
    }
    else {
       int i = 0;
-      sge_mt_init();
       lInit(nmv);
 
       while (test_array[i] != nullptr) {

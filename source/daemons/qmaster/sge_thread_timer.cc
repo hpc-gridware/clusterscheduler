@@ -33,17 +33,16 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 
 #include "comm/cl_commlib.h"
 
-#include "uti/sge_spool.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_os.h"
 #include "uti/sge_thread_ctrl.h"
@@ -89,7 +88,7 @@ sge_timer_cleanup_monitor(monitoring_t *monitor) {
 *     sge_thread_timer/sge_timer_start_periodic_tasks
 *******************************************************************************/
 void
-sge_timer_register_event_handler(void) {
+sge_timer_register_event_handler() {
    DENTER(TOP_LAYER);
 
    /* 
@@ -147,7 +146,7 @@ sge_timer_register_event_handler(void) {
 *
 *  NOTES
 *******************************************************************************/
-void sge_timer_start_periodic_tasks(void) {
+void sge_timer_start_periodic_tasks() {
    te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
@@ -184,7 +183,6 @@ void
 sge_timer_initialize(monitoring_t *monitor) {
    cl_thread_settings_t *dummy_thread_p = nullptr;
    lList *answer_list = nullptr;
-   dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
@@ -212,21 +210,17 @@ sge_timer_initialize(monitoring_t *monitor) {
 
    DPRINTF((SFN" related initialisation has been done\n", threadnames[TIMER_THREAD]));
 
-   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[TIMER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
    cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                sge_dstring_get_string(&thread_name), 0, sge_timer_main, nullptr, nullptr, CL_TT_TIMER);
-   sge_dstring_free(&thread_name);
+                                threadnames[TIMER_THREAD], 0, sge_timer_main, nullptr, nullptr, CL_TT_TIMER);
    DRETURN_VOID;
 }
 
 void
-sge_timer_terminate(void) {
-   cl_thread_settings_t *thread = nullptr;
-
+sge_timer_terminate() {
    DENTER(TOP_LAYER);
 
-   thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    while (thread != nullptr) {
       DPRINTF(("getting canceled\n"));
       cl_thread_list_delete_thread(Main_Control.timer_thread_pool, thread);
@@ -287,10 +281,9 @@ sge_timer_terminate(void) {
 *     MT-NOTE: may occur due to recursive mutex locking.
 *
 *******************************************************************************/
-void *
+[[noreturn]] void *
 sge_timer_main(void *arg) {
-   bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
@@ -301,7 +294,7 @@ sge_timer_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started"));
+   DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, TET_EXT, TET_WARNING, TET_ERROR);
    sge_qmaster_thread_init(QMASTER, TIMER_THREAD, true);
@@ -310,7 +303,7 @@ sge_timer_main(void *arg) {
    set_thread_name(pthread_self(), "TEvent Thread");
    conf_update_thread_profiling("TEvent Thread");
 
-   while (do_endlessly) {
+   while (true) {
       int execute = 0;
 
       thread_start_stop_profiling();
@@ -365,7 +358,7 @@ sge_timer_main(void *arg) {
       thread_output_profiling("timed event thread profiling summary:\n",
                               &next_prof_output);
 
-      /* pthread cancelation point */
+      /* pthread cancellation point */
       do {
          pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor,
                               (void *) p_monitor);
@@ -378,12 +371,7 @@ sge_timer_main(void *arg) {
       } while (sge_thread_has_shutdown_started());
    }
 
-   /*
-    * Don't add cleanup code here. It will never be executed. Instead register
-    * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before 
-    * and after the call of cl_thread_func_testcancel()
-    */
-
-   DRETURN(nullptr);
+   // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
+   // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
 }
 

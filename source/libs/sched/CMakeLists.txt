@@ -34,7 +34,7 @@ add_executable(test_eval_performance test_eval_performance.cc)
 target_include_directories(test_eval_performance PRIVATE "./")
 target_link_libraries(test_eval_performance PRIVATE sched gdi sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 
-add_executable(test_resource_utilization test_resource_utilization.cc ../../common/sge_mt_init.cc)
+add_executable(test_resource_utilization test_resource_utilization.cc)
 target_include_directories(test_resource_utilization PRIVATE "./")
 target_link_libraries(test_resource_utilization PRIVATE sched sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 

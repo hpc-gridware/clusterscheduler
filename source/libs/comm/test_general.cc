@@ -31,8 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <unistd.h>
 
 #include "comm/cl_commlib.h"

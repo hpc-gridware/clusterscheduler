@@ -44,9 +44,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_feature.h"
 
@@ -83,9 +83,7 @@ int main(int argc, char *argv[]) {
    u_long32 old_total_tm=0;
    
    DENTER_MAIN(TOP_LAYER, "test_evel_performance");
-   bootstrap_mt_init();
-   feature_mt_init();
-   
+
    ret = 0;
    if(argc!=4){
       fprintf(stdout, "\nEval performance tests\n");

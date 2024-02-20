@@ -30,18 +30,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
-#include <fcntl.h>
+#include <csignal>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_time.h"
 #include "uti/sge_monitor.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
-#include "uti/sge_arch.h"
+#include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_conf.h"
 
@@ -49,9 +48,11 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-#include "sge_thread_main.h"
+#include "evm/sge_event_master.h"
 
 #include "basis_types.h"
+#include "oge_thread_event_mirror.h"
+#include "sge_thread_main.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
 #include "sge_thread_signaler.h"
@@ -60,11 +61,9 @@
 #include "sge_thread_worker.h"
 #include "sge_thread_event_master.h"
 #include "setup_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "sge_host_qmaster.h"
 #include "qmaster_heartbeat.h"
 #include "shutdown.h"
-#include "sge.h"
 #include "sge_qmaster_threads.h"
 #include "msg_qmaster.h"
 
@@ -72,7 +71,7 @@
 #   include "sge_smf.h"
 #endif
 
-static void init_sig_action_and_mask(void);
+static void init_sig_action_and_mask();
 
 /****** qmaster/sge_qmaster_main/sge_qmaster_application_status() ************
 *  NAME
@@ -149,14 +148,12 @@ sge_qmaster_application_status(char **info_message) {
 int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
-   bool has_daemonized = false;
    u_long32 start_time = sge_get_gmt();
    monitoring_t monitor;
 
    DENTER_MAIN(TOP_LAYER, "qmaster");
 
    sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR);
-   prof_mt_init();
 
    sge_get_root_dir(true, nullptr, 0, true);
 
@@ -185,13 +182,13 @@ int main(int argc, char *argv[]) {
     * also take care that finished child processed of this process become
     * zombie jobs
     */
-   has_daemonized = sge_daemonize_qmaster();
+   bool has_daemonized = sge_daemonize_qmaster();
    init_sig_action_and_mask();
 
    /* init qmaster threads without becomming admin user */
    sge_qmaster_thread_init(QMASTER, MAIN_THREAD, false);
 
-   bootstrap_set_daemonized(has_daemonized);
+   component_set_daemonized(has_daemonized);
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
@@ -226,7 +223,7 @@ int main(int argc, char *argv[]) {
    sge_become_admin_user(bootstrap_get_admin_user());
    sge_chdir_exit(bootstrap_get_qmaster_spool_dir(), 1);
    log_state_set_log_file(ERR_FILE);
-   bootstrap_set_exit_func(sge_exit_func);
+   component_set_exit_func(sge_exit_func);
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
@@ -263,6 +260,9 @@ int main(int argc, char *argv[]) {
     */
    sge_signaler_initialize();
    sge_event_master_initialize();
+#if OGE_ENABLE_MIRROR_THREADS
+   oge_event_mirror_initialize();
+#endif
    sge_timer_initialize(&monitor);
    sge_worker_initialize();
    sge_listener_initialize();
@@ -281,11 +281,11 @@ int main(int argc, char *argv[]) {
     */
    sge_scheduler_terminate(nullptr);
    sge_listener_terminate();
-#if 0
-   sge_test_terminate(ctx);
-#endif
    sge_worker_terminate();
    sge_timer_terminate();
+#if OGE_ENABLE_MIRROR_THREADS
+   oge_event_mirror_terminate();
+#endif
    sge_event_master_terminate();
    sge_signaler_terminate();
 
@@ -322,8 +322,8 @@ int main(int argc, char *argv[]) {
 *     none
 *
 *******************************************************************************/
-static void init_sig_action_and_mask(void) {
-   struct sigaction sa;
+static void init_sig_action_and_mask() {
+   struct sigaction sa{};
    sigset_t sig_set;
 
    sa.sa_handler = SIG_IGN;
@@ -333,6 +333,4 @@ static void init_sig_action_and_mask(void) {
 
    sigfillset(&sig_set);
    pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
-
-   return;
 }

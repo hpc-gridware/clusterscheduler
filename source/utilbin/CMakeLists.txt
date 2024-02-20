@@ -134,7 +134,7 @@ target_link_libraries(
       ${SGE_LIBS})
 
 # spoolinit
-add_executable(spoolinit spoolinit.cc ../common/sge_mt_init.cc)
+add_executable(spoolinit spoolinit.cc)
 target_include_directories(spoolinit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       spoolinit

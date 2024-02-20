@@ -10,7 +10,6 @@ add_executable(sge_shepherd
       shepherd.cc
       shepherd_binding.cc
       signal_queue.cc
-      ../../common/sge_mt_init.cc
       ../../common/execution_states.cc
       ../../common/sge_ijs_comm.cc
       ../../common/sge_ijs_threads.cc)

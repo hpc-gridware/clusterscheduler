@@ -47,22 +47,22 @@
 #endif
 
 bool
-sge_is_start_user_superuser(void);
+sge_is_start_user_superuser();
 
 int
 sge_set_admin_username(const char *username, char *err_str);
 
 const char *
-get_admin_user_name(void);
+get_admin_user_name();
 
 int
-sge_switch2admin_user(void);
+sge_switch2admin_user();
 
 int
-sge_switch2start_user(void);
+sge_switch2start_user();
 
 bool
-sge_has_admin_user(void);
+sge_has_admin_user();
 
 int
 sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries);
@@ -77,7 +77,7 @@ int
 sge_gid2group(gid_t gid, char *dst, size_t sz, int retries);
 
 int
-sge_gid2group(gid_t gid, gid_t *last_gid, char **grpnamep, int retries);
+sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries);
 
 int
 sge_add_group(gid_t newgid, char *err_str, bool skip_silently);
@@ -97,7 +97,7 @@ sge_is_user_superuser(const char *name);
 
 /* getting buffer sizes for getpwnam_r etc. */
 int
-get_group_buffer_size(void);
+get_group_buffer_size();
 
 int
-get_pw_buffer_size(void);
+get_pw_buffer_size();

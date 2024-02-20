@@ -1,8 +1,4 @@
-#include <cstdio>
-#include <cerrno>
-#include <cstring>
 #include <sys/time.h>
-#include <cstdlib>
 
 #include "uti/sge_stdlib.h"
 

@@ -38,11 +38,6 @@
 
 #include "comm/lists/cl_lists.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
-
 extern int main(void) {
    int ret;
    char *data1 = "string_1";

@@ -30,13 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cerrno>
-#include <cstring>
-#include <sys/time.h>
-#include <cstdlib>
-
-#include "comm/lists/cl_util.h"
 #include "comm/cl_fd_list.h"
 #include "comm/cl_commlib.h"
 

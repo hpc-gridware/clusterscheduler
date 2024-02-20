@@ -8,7 +8,6 @@ add_executable(
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      # ../../common/sge_mt_init.cc
       ../../common/usage.cc
       ../../common/sge_ijs_comm.cc
       ../../common/sge_ijs_threads.cc)

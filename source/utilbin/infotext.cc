@@ -35,14 +35,14 @@
 /* __          _          _        ____*/
 /* -> infotext binary */
 #include <unistd.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h" 
-#include "uti/sge_language.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_language.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "gdi/version.h"
 

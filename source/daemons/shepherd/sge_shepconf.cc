@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstring>
-#include <signal.h>
+#include <csignal>
 
 #include "uti/config_file.h"
 #include "uti/sge_signal.h"

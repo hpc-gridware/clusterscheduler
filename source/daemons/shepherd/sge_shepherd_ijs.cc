@@ -33,7 +33,7 @@
 
 #include <cstdio>
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #include <cstring>
 #include <unistd.h>
 

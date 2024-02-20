@@ -32,7 +32,7 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_str.h"

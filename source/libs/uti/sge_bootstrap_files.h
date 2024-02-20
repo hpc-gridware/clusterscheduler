@@ -1,5 +1,4 @@
 #pragma once
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -25,11 +24,56 @@
  * 
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
  * 
- *   Copyright: 2003 by Sun Microsystems, Inc.
+ *   Copyright: 2001 by Sun Microsystems, Inc.
  * 
  *   All Rights Reserved.
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void sge_mt_init(void);
+#include "basis_types.h"
+#include "sge_dstring.h"
+#include "uti/sge_component.h"
+
+#define PATH_SEPARATOR "/"
+#define COMMON_DIR "common"
+#define BOOTSTRAP_FILE "bootstrap"
+#define CONF_FILE "configuration"
+#define SCHED_CONF_FILE "sched_configuration"
+#define ACCT_FILE "accounting"
+#define REPORTING_FILE "reporting"
+#define LOCAL_CONF_DIR "local_conf"
+#define SHADOW_MASTERS_FILE "shadow_masters"
+
+#define PATH_SEPARATOR "/"
+#define PATH_SEPARATOR_CHAR '/'
+
+const char *
+bootstrap_get_cell_root();
+
+const char *
+bootstrap_get_bootstrap_file();
+
+const char *
+bootstrap_get_conf_file();
+
+const char *
+bootstrap_get_sched_conf_file();
+
+const char *
+bootstrap_get_act_qmaster_file();
+
+const char *
+bootstrap_get_acct_file();
+
+const char *
+bootstrap_get_reporting_file();
+
+const char *
+bootstrap_get_local_conf_dir();
+
+const char *
+bootstrap_get_shadow_masters_file();
+
+const char *
+bootstrap_get_alias_file();

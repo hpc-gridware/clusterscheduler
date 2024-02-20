@@ -41,7 +41,7 @@
 
 #include "gdi/sge_gdi_packet_type.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 int 
 sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp);

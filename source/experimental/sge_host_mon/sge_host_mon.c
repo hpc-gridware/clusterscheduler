@@ -34,9 +34,9 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 #include "uti/sge_language.h"
 #include "uti/sge_stdlib.h"

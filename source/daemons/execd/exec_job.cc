@@ -37,27 +37,26 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_afsutil.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_os.h"
-#include "uti/sge_stdio.h"
+#include "uti/sge_arch.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_binding_parse.h"
-#include "uti/sge_stdio.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_arch.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "gdi/qm_name.h"
 
@@ -319,7 +318,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    const char *default_cell = bootstrap_get_sge_cell();
    const char *binary_path = bootstrap_get_binary_path();
    const char *admin_user = bootstrap_get_admin_user();

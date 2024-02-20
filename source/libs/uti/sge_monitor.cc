@@ -41,13 +41,13 @@
 
 #endif
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_monitor.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_time.h"
-#include "uti/sge_log.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_log.h"
+#include "uti/sge_monitor.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 
 /*************************************************
@@ -284,10 +284,10 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          }
          break;
 
-      case EDT_EXT :
+      case EMAT_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_edt_t));
          if (monitor->ext_data != nullptr) {
-            monitor->ext_type = EDT_EXT;
+            monitor->ext_type = EMAT_EXT;
             monitor->ext_data_size = sizeof(m_edt_t);
             monitor->ext_output = &ext_edt_output;
          } else {
@@ -315,7 +315,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
       default :
          monitor->ext_type = NONE_EXT;
          ERROR((SGE_EVENT, MSG_UTI_MONITOR_UNSUPPORTEDEXT_D, ext));
-   };
+   }
 
    if (monitor->ext_type == NONE_EXT) {
       monitor->ext_data_size = 0;
@@ -327,7 +327,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
    {
       int i;
-      struct timeval time;
+      struct timeval time{};
       monitor->pos = -1;
 
       gettimeofday(&time, nullptr);
@@ -403,7 +403,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
    {/* this is the qping info section, it checks if each thread is still alive */
       int i;
       int error_count = 0;
-      struct timeval now;
+      struct timeval now{};
       double time;
       char state = 'R';
       gettimeofday(&now, nullptr);
@@ -552,8 +552,8 @@ void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) {
 void sge_monitor_output(monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
-   if ((monitor != nullptr) && (monitor->output == true)) {
-      struct timeval after;
+   if ((monitor != nullptr) && monitor->output) {
+      struct timeval after{};
       double time;
 
       gettimeofday(&after, nullptr);
@@ -578,14 +578,12 @@ void sge_monitor_output(monitoring_t *monitor) {
 
       /* only log into the message file, if the user wants it */
       if (monitor->log_monitor_mes) {
-         sge_log(LOG_PROF, sge_dstring_get_string(monitor->work_line), __FILE__, __func__, __LINE__);
+         sge_log(LOG_PROF, sge_dstring_get_string(monitor->work_line), __FILE__, __LINE__);
       }
 
       if (monitor->pos != -1) {
-         dstring *tmp = nullptr;
-
          sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
-         tmp = Output[monitor->pos].output;
+         dstring *tmp = Output[monitor->pos].output;
          Output[monitor->pos].output = monitor->work_line;
          Output[monitor->pos].update_time = after.tv_sec;
          sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
@@ -687,7 +685,7 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
 *     MT-NOTE: ext_gdi_output() is MT safe 
 *******************************************************************************/
 static void ext_gdi_output(dstring *message, void *monitoring_extension, double time) {
-   m_gdi_t *gdi_ext = (m_gdi_t *) monitoring_extension;
+   auto *gdi_ext = (m_gdi_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFI,
                               gdi_ext->eload_count / time, gdi_ext->ejob_count / time,
@@ -722,7 +720,7 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
 *     MT-NOTE: ext_lis_output() is MT safe 
 *******************************************************************************/
 static void ext_lis_output(dstring *message, void *monitoring_extension, double time) {
-   m_lis_t *gdi_ext = (m_lis_t *) monitoring_extension;
+   auto *gdi_ext = (m_lis_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_LISEXT_FFFF,
                               gdi_ext->inc_gdi / time,
@@ -754,7 +752,7 @@ static void ext_lis_output(dstring *message, void *monitoring_extension, double 
 *
 *******************************************************************************/
 static void ext_edt_output(dstring *message, void *monitoring_extension, double time) {
-   m_edt_t *edt_ext = (m_edt_t *) monitoring_extension;
+   auto *edt_ext = (m_edt_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_EDTEXT_FFFFFFFF,
                               ((double) edt_ext->client_count) / edt_ext->count,
@@ -790,7 +788,7 @@ static void ext_edt_output(dstring *message, void *monitoring_extension, double 
 *******************************************************************************/
 
 static void ext_tet_output(dstring *message, void *monitoring_extension, double time) {
-   m_tet_t *tet_ext = (m_tet_t *) monitoring_extension;
+   auto *tet_ext = (m_tet_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_TETEXT_FF,
                               ((double) tet_ext->event_count) / tet_ext->count,

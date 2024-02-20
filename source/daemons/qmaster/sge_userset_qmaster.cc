@@ -31,8 +31,8 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_pe.h"
@@ -142,14 +142,14 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
  **********************************************************************/
 static void
 sge_change_queue_version_acl(const char *acl_name) {
-   const lListElem *cqueue = nullptr;
+   const lListElem *cqueue;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
    for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = nullptr;
+      lListElem *qinstance;
 
       for_each_rw(qinstance, qinstance_list) {
          const lList *acl_list = lGetList(qinstance, QU_acl);
@@ -331,16 +331,12 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
 
 static lList *
 do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
-   const lList *new_users = nullptr;
-   const lList *old_users = nullptr;
+   DENTER(TOP_LAYER);
    const lListElem *np;
    lList *alp = nullptr;
    const char *nname;
-
-   DENTER(TOP_LAYER);
-
-   new_users = lGetList(new_dep, US_entries);
-   old_users = lGetList(old_dep, US_entries);
+   const lList *new_users = lGetList(new_dep, US_entries);
+   const lList *old_users = lGetList(old_dep, US_entries);
 
    if (!old_users || !new_users) {
       DRETURN(nullptr);
@@ -427,13 +423,12 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
 }
 
 
-static int verify_userset_deletion(
-        lList **alpp,
-        const char *userset_name
-) {
+static int
+verify_userset_deletion(lList **alpp, const char *userset_name) {
+   DENTER(TOP_LAYER);
    int ret = STATUS_OK;
-   const lListElem *ep = nullptr;
-   const lListElem *cqueue = nullptr;
+   const lListElem *ep;
+   const lListElem *cqueue;
    lList *user_lists = nullptr;
    const lListElem *cl;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -441,7 +436,6 @@ static int verify_userset_deletion(
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER);
 
    /*
     * fix for bug 6422335
@@ -750,7 +744,7 @@ int userset_mod(lList **alpp, lListElem *new_userset,
 
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         const lListElem *qinstance = nullptr;
+         const lListElem *qinstance;
 
          for_each_ep(qinstance, qinstance_list) {
             lListElem *ar;
@@ -831,20 +825,16 @@ DRETURN(STATUS_EUNKNOWN);
 int userset_spool(lList **alpp, lListElem *userset, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), userset,
-                              lGetString(userset, US_name), SGE_TYPE_USERSET,
-                              job_spooling);
+                              lGetString(userset, US_name), SGE_TYPE_USERSET, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(userset, US_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(userset, US_name));
    }
 
    DRETURN(dbret ? 0 : 1);

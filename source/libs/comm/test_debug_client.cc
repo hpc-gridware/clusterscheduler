@@ -35,7 +35,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 #include "comm/lists/cl_lists.h"
@@ -204,12 +204,6 @@ void print_line(char *buffer) {
    printf("\n");
 
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;

@@ -34,13 +34,12 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
@@ -378,7 +377,6 @@ int main(int argc, char *argv[])
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
 
    log_state_set_log_gui(0);
-   prof_mt_init();
 
    if (sge_setup2(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       show_answer(answer_list);

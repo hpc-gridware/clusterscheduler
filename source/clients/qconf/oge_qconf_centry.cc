@@ -36,7 +36,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "uti/sge_edit.h"
 #include "uti/sge_io.h"
@@ -106,8 +106,8 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
 
    DENTER(TOP_LAYER);
 
@@ -669,8 +669,8 @@ bool centry_list_modify_from_file(lList **answer_list, const char *filename) {
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list) {
    bool ret = false;
    int status = 0;
-   uid_t uid = bootstrap_get_uid();
-   gid_t gid = bootstrap_get_gid();
+   uid_t uid = component_get_uid();
+   gid_t gid = component_get_gid();
 
    DENTER(TOP_LAYER);
    if (this_list != nullptr) {

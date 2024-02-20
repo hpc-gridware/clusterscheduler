@@ -32,11 +32,11 @@
 
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_sl.h"
 #include "uti/sge_err.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_sl.h"
+#include "uti/sge_stdio.h"
 
 /* following is used in test_mt_support() */
 #define TEST_SL_MAX_THREADS 10
@@ -128,7 +128,7 @@ test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
          ret = false;
       }
 
-      ret &= sge_sl_unlock(list);
+      sge_sl_unlock(list);
    }
    DRETURN(ret);
 }
@@ -170,7 +170,7 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
          ret = false;
       }
 
-      ret &= sge_sl_unlock(list);
+      sge_sl_unlock(list);
    }
    DRETURN(ret);
 }
@@ -769,9 +769,6 @@ int main(int argc, char *argv[]) {
    bool ret = true;
 
    DENTER_MAIN(TOP_LAYER, "test_sl");
-
-   sge_err_init();
-
    ret &= test_create_insert_destroy();
    ret &= test_create_append();
    ret &= test_create_insort();
@@ -782,7 +779,6 @@ int main(int argc, char *argv[]) {
    ret &= test_dechain_before_after();
    ret &= test_for_each_ep();
    ret &= test_mt_support();
-
    DRETURN(ret == true ? 0 : 1);
 }
 

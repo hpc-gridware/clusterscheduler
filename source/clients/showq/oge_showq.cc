@@ -32,8 +32,8 @@
 #include <cstdio>
 #include <math.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
       sge_exit(1);
    }
 
-   if (!sge_parse_showq_tacc(&alp, &pcmdline, &user_list, bootstrap_get_username(),
+   if (!sge_parse_showq_tacc(&alp, &pcmdline, &user_list, component_get_username(),
                              &full, &binding, &sfa_list, &sfw_list)) {
       answer_list_output(&alp); 
       lFreeList(&pcmdline);

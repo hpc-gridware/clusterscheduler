@@ -129,14 +129,6 @@ void general_communication_error(const cl_application_error_list_elem_t *commlib
 
 int gdi_log_flush_func(cl_raw_list_t *list_p);
 
-#ifdef DEBUG_CLIENT_SUPPORT
-void gdi_rmon_print_callback_function(const char *progname,
-                                      const char *message,
-                                      unsigned long traceid,
-                                      unsigned long pid,
-                                      unsigned long thread_id);
-#endif
-
 bool
 sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 

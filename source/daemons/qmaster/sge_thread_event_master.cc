@@ -30,13 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <pthread.h>
 #include <cstring>
+#include <pthread.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_thread_ctrl.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_thread_ctrl.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
@@ -45,105 +45,87 @@
 
 #include "gdi/sge_gdi_packet.h"
 
+#include "evm/sge_event_master.h"
+
 #include "basis_types.h"
 #include "setup_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_thread_main.h"
 #include "sge_thread_event_master.h"
 
 static void
-sge_event_master_cleanup_monitor(monitoring_t *monitor)
-{
+sge_event_master_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
 static void
-sge_event_master_cleanup_report_list(lList **list)
-{
+sge_event_master_cleanup_report_list(lList **list) {
    DENTER(TOP_LAYER);
    lFreeList(list);
    DRETURN_VOID;
 }
 
-void 
-sge_event_master_initialize()
-{
-   cl_thread_settings_t* dummy_thread_p = nullptr;
-   dstring thread_name = DSTRING_INIT;
+void
+sge_event_master_initialize() {
+   cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);
 
    DPRINTF(("event master functionality has been initialized\n"));
 
-   sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[DELIVERER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
-   cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p,
-                                cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0, 
-                                sge_event_master_main, nullptr, nullptr, CL_TT_DELIVERER);
-   sge_dstring_free(&thread_name);
+   cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
+                                threadnames[EVENT_MASTER_THREAD], 0, sge_event_master_main, nullptr, nullptr,
+                                CL_TT_EVENT_MASTER);
    DRETURN_VOID;
 }
 
 void
-sge_event_master_terminate(void)
-{
-   cl_thread_settings_t* thread = nullptr;
-
+sge_event_master_terminate() {
    DENTER(TOP_LAYER);
 
-   thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    while (thread != nullptr) {
       DPRINTF((SFN" gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.event_master_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
-   }  
-   DPRINTF(("all "SFN" threads terminated\n", threadnames[DELIVERER_THREAD]));
+   }
+   DPRINTF(("all "SFN" threads terminated\n", threadnames[EVENT_MASTER_THREAD]));
 
    DRETURN_VOID;
 }
 
-void *
-sge_event_master_main(void *arg)
-{
-   bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+[[noreturn]] void *
+sge_event_master_main(void *arg) {
+   auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
-
-   lListElem *report = nullptr;
-   lList *report_list = nullptr;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started"));
+   DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, EDT_EXT, EMT_WARNING, EMT_ERROR);
-   sge_qmaster_thread_init(QMASTER, DELIVERER_THREAD, true);
+   sge_monitor_init(p_monitor, thread_config->thread_name, EMAT_EXT, EVENT_MASTER_THREAD_WARNING, EVENT_MASTER_THREAD_ERROR);
+   sge_qmaster_thread_init(QMASTER, EVENT_MASTER_THREAD, true);
 
-   /* register at profiling module */
-   set_thread_name(pthread_self(), "Deliver Thread");
-   conf_update_thread_profiling("Deliver Thread");
+   // register at profiling module
+   set_thread_name(pthread_self(), "Event Master Thread");
+   conf_update_thread_profiling("Event Master Thread");
 
-   report_list = lCreateListHash("report list", REP_Type, false);
-   report = lCreateElem(REP_Type);
+   lList *report_list = lCreateListHash("report list", REP_Type, false);
+   lListElem *report = lCreateElem(REP_Type);
    lSetUlong(report, REP_type, NUM_REP_REPORT_EVENTS);
-   lSetHost(report, REP_host, bootstrap_get_qualified_hostname());
+   lSetHost(report, REP_host, component_get_qualified_hostname());
    lAppendElem(report_list, report);
- 
-   while (do_endlessly) {
-      int execute = 0;
 
+   while (true) {
       thread_start_stop_profiling();
 
-      /*
-       * did a new event arrive which has a flush time of 0 seconds?
-       */
+      // did a new event arrive which has a flush time of 0 seconds?
       MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
-
       MONITOR_MESSAGES(p_monitor);
       MONITOR_EDT_COUNT(p_monitor);
       MONITOR_CLIENT_COUNT(p_monitor, lGetNumberOfElem(Event_Master_Control.clients));
@@ -152,27 +134,23 @@ sge_event_master_main(void *arg)
       sge_event_master_send_events(report, report_list, p_monitor);
       sge_monitor_output(p_monitor);
 
-      thread_output_profiling("event master thread profiling summary:\n",
-                              &next_prof_output);
+      thread_output_profiling("event master thread profiling summary:\n", &next_prof_output);
 
-      /* pthread cancelation point */
-      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_monitor, (void *)&monitor);
-      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_report_list, (void *)&report_list);
+      // pthread cancellation point
+      int execute = 0;
+      pthread_cleanup_push((void (*)(void *)) sge_event_master_cleanup_monitor, (void *) &monitor);
+      pthread_cleanup_push((void (*)(void *)) sge_event_master_cleanup_report_list, (void *) &report_list);
       cl_thread_func_testcancel(thread_config);
-      pthread_cleanup_pop(execute); 
-      pthread_cleanup_pop(execute); 
+      pthread_cleanup_pop(execute);
+      pthread_cleanup_pop(execute);
+
       if (sge_thread_has_shutdown_started()) {
          DPRINTF(("waiting for termination\n"));
-         sleep(1);
+         usleep(500);
       }
    }
 
-   /*
-    * Don't add cleanup code here. It will never be executed. Instead register
-    * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before 
-    * and after the call of cl_thread_func_testcancel()
-    */
-
-   DRETURN(nullptr);
+   // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
+   // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
 }
 

@@ -29,21 +29,21 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <float.h>
+#include <cfloat>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -357,7 +357,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    static u_long last_report_send = 0;
    lListElem *jep, *jatep;
    int return_value = 0;
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -682,7 +682,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
    u_long32 now;
    u_long32 job_id, ja_task_id;
    const char *pe_task_id = nullptr;
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -784,8 +784,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       }
       DRETURN(0);
    }
-   DTIMEPRINTF(("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n",
-                sge_get_gmt()-now));
+   DPRINTF(("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n", sge_get_gmt()-now));
    
    if (petep != nullptr) {
       lSetUlong(petep, PET_pid, pid);

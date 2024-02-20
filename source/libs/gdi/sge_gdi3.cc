@@ -31,10 +31,10 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
-#include "uti/sge_string.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_error_class.h"
 #include "uti/sge_csp_path.h"
+#include "uti/sge_error_class.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sge_gdi3.h"
 
@@ -134,10 +134,21 @@ gdi3_once_init() {
    gdi3_ts_init();
 }
 
-void
+static void
 gdi3_mt_init() {
    pthread_once(&gdi3_once, gdi3_once_init);
 }
+
+class GdiThreadInit {
+public:
+   GdiThreadInit() {
+      gdi3_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static GdiThreadInit gdi_obj{};
+
 
 void
 gdi3_mt_done() {

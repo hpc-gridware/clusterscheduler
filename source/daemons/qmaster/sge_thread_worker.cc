@@ -33,14 +33,13 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_lock.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_lock.h"
 #include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_os.h"
-#include "uti/sge_string.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -76,9 +75,8 @@ sge_worker_cleanup_monitor(monitoring_t *monitor) {
 
 void
 sge_worker_initialize() {
-   const u_long32 max_initial_worker_threads = bootstrap_get_worker_thread_count();
+   const int max_initial_worker_threads = bootstrap_get_worker_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
-   u_long32 i;
 
    DENTER(TOP_LAYER);
 
@@ -92,17 +90,13 @@ sge_worker_initialize() {
    DPRINTF(("job/ar counter have been initialized\n"));
 
    reporting_initialize(nullptr);
-   DPRINTF(("accounting and reporting modlue has been initialized\n"));
+   DPRINTF(("accounting and reporting module has been initialized\n"));
 
    INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]));
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
-   for (i = 0; i < max_initial_worker_threads; i++) {
-      dstring thread_name = DSTRING_INIT;
-
-      sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[WORKER_THREAD], i);
+   for (int i = 0; i < max_initial_worker_threads; i++) {
       cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   sge_dstring_get_string(&thread_name), i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
-      sge_dstring_free(&thread_name);
+                                   threadnames[WORKER_THREAD], i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
    }
    DRETURN_VOID;
 }
@@ -120,10 +114,9 @@ sge_worker_terminate() {
     * shutdown process will be faster
     */
    {
-      cl_thread_list_elem_t *thr = nullptr;
-      cl_thread_list_elem_t *thr_nxt = nullptr;
+      cl_thread_list_elem_t *thr;
 
-      thr_nxt = cl_thread_list_get_first_elem(Main_Control.worker_thread_pool);
+      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.worker_thread_pool);
       while ((thr = thr_nxt) != nullptr) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
@@ -135,9 +128,7 @@ sge_worker_terminate() {
     * Shutdown/delete the threads and wait for termination
     */
    {
-      cl_thread_settings_t *thread = nullptr;
-
-      thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
+      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
       while (thread != nullptr) {
          DPRINTF(("gets canceled\n"));
          cl_thread_list_delete_thread(Main_Control.worker_thread_pool, thread);
@@ -166,29 +157,27 @@ sge_worker_terminate() {
    if (do_final_spooling == true) {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
-      DPRINTF(("job/ar counter were made persistant\n"));
-      sge_job_spool();     /* store qmaster jobs to database */
+      DPRINTF(("job/ar counter were made persistent\n"));
       sge_userprj_spool(); /* spool the latest usage */
       DPRINTF(("final job and user/project spooling has been triggered\n"));
    }
 
    sge_shutdown_persistence(nullptr);
-   DPRINTF(("persistance module has been shutdown\n"));
+   DPRINTF(("persistence module has been shutdown\n"));
 
    DRETURN_VOID;
 }
 
-void *
+[[noreturn]] void *
 sge_worker_main(void *arg) {
-   bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started"));
+   DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
    sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);
@@ -197,7 +186,7 @@ sge_worker_main(void *arg) {
    set_thread_name(pthread_self(), "Worker Thread");
    conf_update_thread_profiling("Worker Thread");
 
-   while (do_endlessly) {
+   while (true) {
       sge_gdi_packet_class_t *packet = nullptr;
 
       /*
@@ -212,7 +201,7 @@ sge_worker_main(void *arg) {
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(Master_Task_Queue));
 
       if (packet != nullptr) {
-         sge_gdi_task_class_t *task = packet->first_task;
+         sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
 
          thread_start_stop_profiling();
@@ -315,7 +304,7 @@ sge_worker_main(void *arg) {
                 * Following if-block will only be executed in testsuite if the qmaster
                 * parameter __TEST_SLEEP_AFTER_REQUEST is defined. This will block the
                 * worker thread if it handled a request. Only this makes sure that
-                * other worker threads can handle incloming requests. Otherwise
+                * other worker threads can handle incoming requests. Otherwise,
                 * it might be possible that one worker threads handles all requests
                 * on fast qmaster hosts if testsuite is not fast enough to generate
                 * gdi requests.
@@ -350,12 +339,7 @@ sge_worker_main(void *arg) {
       }
    }
 
-   /*
-    * Don't add cleanup code here. It will never be executed. Instead register
-    * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before 
-    * and after the call of cl_thread_func_testcancel()
-    */
-
-   DRETURN(nullptr);
+   // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
+   // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
 }
 

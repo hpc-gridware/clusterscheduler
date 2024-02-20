@@ -30,15 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include <cstdio>
 #include <cstring>
-#include <sys/time.h>
 #include <cstdlib>
-#include <signal.h>
-#include <unistd.h>
-
-#include "uti/sge_language.h"
+#include <csignal>
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
@@ -71,12 +66,6 @@ void sighandler_client(
    /* shutdown all sockets */
    do_shutdown = 1;
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(void) {
    cl_thread_settings_t *thread_p = nullptr;
@@ -174,12 +163,6 @@ extern int main(void) {
    return 0;
 }
 
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_multi_thread"
-
 void *my_multi_thread(void *t_conf) {
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -224,12 +207,6 @@ void *my_multi_thread(void *t_conf) {
    cl_thread_func_cleanup(thread_config);
    return (nullptr);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "my_multi_read_thread()"
 
 void *my_multi_read_thread(void *t_conf) {
    int do_exit = 0;

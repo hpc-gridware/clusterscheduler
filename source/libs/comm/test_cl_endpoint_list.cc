@@ -36,7 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 
 
 #include "comm/cl_commlib.h"
@@ -66,8 +66,6 @@ main(int argc, char **argv) {
       printf("usage: test_cl_endpoint_list <DEBUGLEVEL> endpoint_names\n");
       exit(1);
    }
-
-   prof_mt_init();
 
    printf("\nfirst testing only endpoint list functionality ...\n");
    printf("================================================================\n");

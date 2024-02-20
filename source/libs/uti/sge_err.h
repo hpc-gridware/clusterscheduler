@@ -31,6 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "basis_types.h"
+
 enum _sge_err_t {
    SGE_ERR_SUCCESS = 0,
    SGE_ERR_MEMORY,
@@ -39,9 +41,6 @@ enum _sge_err_t {
 };
 
 typedef enum _sge_err_t sge_err_t;
-
-void
-sge_err_init(void);
 
 void
 sge_err_set(sge_err_t id, const char *format, ...);

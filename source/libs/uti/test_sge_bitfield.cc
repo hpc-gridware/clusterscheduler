@@ -34,7 +34,7 @@
 
 #include <cstdio>
 #include <unistd.h>
-#include <time.h>
+#include <ctime>
 #include <sys/times.h>
 
 #ifdef MALLINFO

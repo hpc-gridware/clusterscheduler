@@ -281,7 +281,7 @@ int reresolve_qualified_hostname(void) {
    int ret = CL_RETVAL_OK;
 
    char unique_hostname[256];
-   const char *qh = bootstrap_get_qualified_hostname();
+   const char *qh = component_get_qualified_hostname();
 
 #if 1
    // lazy initialize of the qualified hostname store in uti_state
@@ -291,9 +291,9 @@ int reresolve_qualified_hostname(void) {
 
       SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
       SGE_ASSERT(((hent = sge_gethostbyname(tmp_str,nullptr)) != nullptr));
-      bootstrap_set_qualified_hostname(hent->h_name);
+      component_set_qualified_hostname(hent->h_name);
       sge_free_hostent(&hent);
-      qh = bootstrap_get_qualified_hostname();
+      qh = component_get_qualified_hostname();
    }
 #endif
 
@@ -304,7 +304,7 @@ int reresolve_qualified_hostname(void) {
    }
 
    // store the re(resolved) name
-   bootstrap_set_qualified_hostname(unique_hostname);
+   component_set_qualified_hostname(unique_hostname);
    return ret;
 }
 

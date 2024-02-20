@@ -34,12 +34,12 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -64,7 +64,7 @@ static const char *random_string(int length)
    static char buf[1000];
    int i;
 
-   srand(time(0));
+   srand(time(nullptr));
 
    for (i = 0; i < length; i++) {
       buf[i] = rand() % 26 + 64;
@@ -168,7 +168,7 @@ static bool spool_data(void)
    return true;
 }
 #endif
-static bool read_spooled_data(void)
+static bool read_spooled_data()
 {
    lList *answer_list = nullptr;
    const lListElem *context;
@@ -183,7 +183,7 @@ static bool read_spooled_data(void)
    return true;
 }
 
-static bool delete_spooled_data(void)
+static bool delete_spooled_data()
 {
    lList *answer_list = nullptr;
    lListElem *job;
@@ -206,7 +206,7 @@ static bool delete_spooled_data(void)
    return true;
 }
 
-static void write_csv_header(void)
+static void write_csv_header()
 {
    static const char *header = "scenario,wallclock,utime,stime,utilization,jobs_per_second";
    FILE* csv;
@@ -238,7 +238,7 @@ static void write_csv(const char *scenario, prof_level level)
    fclose(csv);
 }
 
-void clear_caches(void)
+void clear_caches()
 {
    printf("\n===> clear the filesystem caches\n");
    printf("on linux as user root: echo 3 >/proc/sys/vm/drop_caches\n");
@@ -258,10 +258,6 @@ int main(int argc, char *argv[])
 #define NM5  "%I%I%I%I%I"
 #define NM2  "%I%I"
 #define NM1  "%I"
-
-   prof_mt_init();
-   obj_mt_init();
-   bootstrap_mt_init();
 
    prof_start(SGE_PROF_CUSTOM1, nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM1, "performance", nullptr);

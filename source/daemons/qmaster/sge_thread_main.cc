@@ -32,16 +32,16 @@
 
 #include <fcntl.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "comm/cl_commlib.h"
 
-#include "basis_types.h"
 #include "sge_thread_main.h"
 #include "sge_thread_signaler.h"
 
 main_control_t Main_Control = {
         0,
+        nullptr,
         nullptr,
         nullptr,
         nullptr,
@@ -65,7 +65,7 @@ sge_qmaster_shutdown_via_signal_thread(int i) {
 }
 
 int
-sge_qmaster_get_exit_state(void) {
+sge_qmaster_get_exit_state() {
    return Main_Control.exit_state;
 }
 
@@ -75,7 +75,7 @@ sge_qmaster_set_exit_state(int new_state) {
 }
 
 bool
-sge_qmaster_do_final_spooling(void) {
+sge_qmaster_do_final_spooling() {
    /*
     * If the exit_state is 100 than another qmaster has taken over!
     * and final spooling should not be done

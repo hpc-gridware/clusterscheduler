@@ -89,7 +89,7 @@ void
 job_suc_pre_ad(lListElem *jep);
 
 void
-sge_init_job_number(void);
+sge_init_job_number();
 
 void
 sge_store_job_number(te_event_t anEvent, monitoring_t *monitor);
@@ -104,9 +104,6 @@ get_rid_of_job_due_to_qdel(lListElem *j, lListElem *t, lList **answer_list, cons
 
 void
 job_mark_job_as_deleted(lListElem *j, lListElem *t);
-
-void
-sge_job_spool();
 
 bool
 spool_write_script(lList **answer_list, u_long32 jobid, const lListElem *jep);

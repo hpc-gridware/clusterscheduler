@@ -32,12 +32,12 @@
 #include <cstring>
 #include <cerrno>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_usage.h"
@@ -45,12 +45,12 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_report.h"
 
-#include "execution_states.h"
 #include "admin_mail.h"
+#include "execution_states.h"
 #include "mail.h"
-#include "sge.h"
 #include "msg_common.h"
 #include "msg_daemons_common.h"
+#include "uti/sge.h"
 
 int admail_states[MAX_SSTATE + 1] = {
                                       0,

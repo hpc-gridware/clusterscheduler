@@ -40,8 +40,9 @@
 #include "basis_types.h" 
 #include "sge.h"
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
@@ -177,7 +178,7 @@ int
 sge_before_dispatch(sge_evc_class_t *evc)
 {     
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = bootstrap_get_component_id();
+   u_long32 progid = component_get_component_id();
    
    DENTER(TOP_LAYER);
 

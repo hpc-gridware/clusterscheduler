@@ -36,13 +36,14 @@
 
 #include "basis_types.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/parse.h"
@@ -220,7 +221,7 @@ int main(int argc, char **argv)
    */
    {
       dstring file = DSTRING_INIT;
-      const char *user = bootstrap_get_username();
+      const char *user = component_get_username();
       const char *cell_root = bootstrap_get_cell_root();
 
       /* arguments from SGE_ROOT/common/sge_qquota file */

@@ -47,14 +47,14 @@
 #include <cctype>
 #include <unistd.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_tmpnam.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_profiling.h"
 
 #include "sgeobj/config.h"
 #include "sgeobj/sge_answer.h"

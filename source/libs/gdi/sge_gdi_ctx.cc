@@ -52,21 +52,22 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
+#include "uti/msg_utilib.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
+#include "uti/sge_bootstrap_files.h"
+#include "uti/sge_csp_path.h"
 #include "uti/sge_fgl.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_os.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_profiling.h"
-#include "uti/msg_utilib.h"
 #include "uti/sge_time.h"
-#include "uti/sge_csp_path.h"
-#include "uti/sge_os.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -79,7 +80,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 #include "msg_common.h"
 
@@ -90,13 +91,6 @@ extern lNameSpace nmv[];
 
 /* pipe for sge_daemonize_prepare() and sge_daemonize_finalize() */
 static int fd_pipe[2];
-
-#if  1
-
-/* TODO: throw this out asap */
-void sc_mt_init(void);
-
-#endif
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
@@ -124,7 +118,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmast
       answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
       DRETURN_VOID;
    }
-   bootstrap_set_exit_func(gdi2_default_exit_func);
+   component_set_exit_func(gdi2_default_exit_func);
    DRETURN_VOID;
 }
 
@@ -146,28 +140,11 @@ static bool
 sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client) {
    DENTER(TOP_LAYER);
 
-   /*
-    * Call all functions which have to be called once for each process.
-    * Those functions will then be called when the first thread of a process
-    * creates its context. 
-    */
-   prof_mt_init();
-   feature_mt_init();
-   bootstrap_mt_init();
-   gdi3_mt_init();
-   sc_mt_init();
-   obj_mt_init();
-   sc_mt_init();
-   fgl_mt_init();
-
-
-   /* TODO: shall we do that here ? */
    lInit(nmv);
 
-   bootstrap_set_qmaster_internal(qmaster_internal_client);
-   bootstrap_set_component_id(prog_number);
-   bootstrap_set_thread_name(thread_name ? thread_name : prognames[prog_number]);
-   bootstrap_log_parameter();
+   component_set_qmaster_internal(qmaster_internal_client);
+   component_set_component_id(prog_number);
+   component_set_thread_name(thread_name ? thread_name : prognames[prog_number]);
 
    if (feature_initialize_from_string(bootstrap_get_security_mode())) {
       CRITICAL((SGE_EVENT, "feature_initialize_from_string() failed"));
@@ -214,7 +191,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
 
    if (cl_com_setup_commlib_complete() == false) {
       char *env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
-      switch (bootstrap_get_component_id()) {
+      switch (component_get_component_id()) {
          case QMASTER:
          case DRMAA:
          case SCHEDD:
@@ -305,24 +282,14 @@ int sge_gdi_ctx_class_prepare_enroll() {
       DRETURN(cl_ret);
    }
 
-#ifdef DEBUG_CLIENT_SUPPORT
-   /* set debug client callback function to rmon's debug client callback */
-   cl_ret = cl_com_set_application_debug_client_callback_func(rmon_debug_client_callback);
-   if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) {
-      sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
-                         "cl_com_set_application_debug_client_callback_func failed: %s", cl_get_error_text(cl_ret));
-      DRETURN(cl_ret);
-   }
-#endif
-
-   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+   handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle == nullptr) {
       /* handle does not exist, create one */
 
-      int me_who = bootstrap_get_component_id();
-      const char *progname = bootstrap_get_component_name();
+      int me_who = component_get_component_id();
+      const char *progname = component_get_component_name();
       const char *master = gdi3_get_act_master_host(true);
-      const char *qualified_hostname = bootstrap_get_qualified_hostname();
+      const char *qualified_hostname = component_get_qualified_hostname();
       u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
       u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
       int my_component_id = 0; /* 1 for daemons, 0=automatical for clients */
@@ -375,7 +342,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
          if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
             DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret)));
             sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                                    bootstrap_get_component_name(), 0, sge_qmaster_port, cl_get_error_text(cl_ret));
+                                    component_get_component_name(), 0, sge_qmaster_port, cl_get_error_text(cl_ret));
             cl_com_free_ssl_setup(&sec_ssl_setup_config);
             DRETURN(cl_ret);
          }
@@ -402,7 +369,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                                           true,
                                           sge_execd_port,
                                           CL_TCP_DEFAULT,
-                                          (char *) bootstrap_get_component_name(),
+                                          (char *) component_get_component_name(),
                                           my_component_id,
                                           1,
                                           0);
@@ -414,7 +381,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                   */
                   ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
                           qualified_hostname,
-                          bootstrap_get_component_name(),
+                          component_get_component_name(),
                           sge_u32c(my_component_id),
                           sge_u32c(sge_execd_port),
                           cl_get_error_text(cl_ret)));
@@ -443,7 +410,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                                           true,
                                           sge_qmaster_port, /* create service on qmaster port */
                                           CL_TCP_DEFAULT,   /* use standard connect mode */
-                                          (char *) bootstrap_get_component_name(),
+                                          (char *) component_get_component_name(),
                                           my_component_id,  /* this endpoint is called "qmaster" 
                                                                and has id 1 */
                                           1,
@@ -454,7 +421,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                   ** TODO: eh error handler does no logging
                   */
                   ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname,
-                         bootstrap_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port),
+                         component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port),
                          cl_get_error_text(cl_ret)));
                }
             } else {
@@ -499,14 +466,14 @@ int sge_gdi_ctx_class_prepare_enroll() {
 
          default:
             /* this is for "normal" gdi clients of qmaster */
-         DPRINTF(("creating %s GDI handle\n", bootstrap_get_component_name()));
+         DPRINTF(("creating %s GDI handle\n", component_get_component_name()));
             handle = cl_com_create_handle(&cl_ret, communication_framework, CL_CM_CT_MESSAGE, false, sge_qmaster_port,
-                                          CL_TCP_DEFAULT, (char *) bootstrap_get_component_name(), my_component_id,
+                                          CL_TCP_DEFAULT, (char *) component_get_component_name(), my_component_id,
                                           1, 0);
             if (handle == nullptr) {
 /*             if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) { */
                sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                                       bootstrap_get_qualified_hostname(), bootstrap_get_component_name(),
+                                       component_get_qualified_hostname(), component_get_component_name(),
                                        sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
 /*             }        */
             }
@@ -515,12 +482,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
       ctx_set_last_commlib_error(cl_ret);
    }
 
-#ifdef DEBUG_CLIENT_SUPPORT
-   /* set rmon callback for message printing (after handle creation) */
-   rmon_set_print_callback(gdi_rmon_print_callback_function);
-#endif
-
-   if ((bootstrap_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
+   if ((component_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
       /* this is for testsuite socket bind test (issue 1096 ) */
       struct timeval now;
       gettimeofday(&now, nullptr);
@@ -633,10 +595,8 @@ sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_in
 
    DENTER(TOP_LAYER);
 
-   bootstrap_mt_init();
-   bootstrap_set_component_id(progid);
-   bootstrap_set_qmaster_internal(is_qmaster_intern_client);
-   gdi3_mt_init();
+   component_set_component_id(progid);
+   component_set_qmaster_internal(is_qmaster_intern_client);
 
    /*
    ** TODO:
@@ -673,9 +633,6 @@ int sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp) {
    bool alpp_was_null = true;
 
    DENTER(TOP_LAYER);
-
-   bootstrap_mt_init();
-   gdi3_mt_init();
 
    if (gdi3_is_setup()) {
       if (alpp_was_null) {
@@ -744,7 +701,7 @@ bool sge_daemonize_prepare() {
    pid_t pid;
    int fd;
 
-   int is_daemonized = bootstrap_is_daemonized();
+   int is_daemonized = component_is_daemonized();
 
    DENTER(TOP_LAYER);
 
@@ -899,7 +856,7 @@ bool sge_daemonize_prepare() {
 bool sge_daemonize_finalize() {
    int failed_fd;
    char tmp_buffer[4];
-   int is_daemonized = bootstrap_is_daemonized();
+   int is_daemonized = component_is_daemonized();
 
    DENTER(TOP_LAYER);
 
@@ -938,7 +895,7 @@ bool sge_daemonize_finalize() {
    SETPGRP;
 
    /* now have finished daemonizing */
-   bootstrap_set_daemonized(true);
+   component_set_daemonized(true);
 
    DRETURN(true);
 }
@@ -981,7 +938,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
    }
 #endif
 
-   if (bootstrap_is_daemonized()) {
+   if (component_is_daemonized()) {
       DRETURN(1);
    }
 
@@ -1019,7 +976,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
 
    SETPGRP;
 
-   bootstrap_set_daemonized(true);
+   component_set_daemonized(true);
 
    DRETURN(1);
 }

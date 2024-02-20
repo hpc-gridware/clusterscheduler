@@ -40,9 +40,9 @@
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 /* enable or disable lock printing*/
 /* #define PRINT_LOCK */
@@ -56,7 +56,7 @@
 *     int line, pthread_mutex_t *mutex) 
 *
 *  FUNCTION
-*     Locks the passed mutex. Before and after locking rmon DLOCKPRINTF() 
+*     Locks the passed mutex. Before and after locking rmon DPRINTF()
 *     is used to facilitate tracking of deadlocks that are caused by 
 *     mutexes.
 *
@@ -85,7 +85,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 
    DENTER(BASIS_LAYER);
 
-   DLOCKPRINTF(("%s() line %d: about to lock mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt()));
+   DPRINTF(("%s() line %d: about to lock mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt()));
 
 #ifdef PRINT_LOCK
    {
@@ -100,7 +100,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
       abort();
    }
  
-   DLOCKPRINTF(("%s() line %d: locked mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt()));
+   DPRINTF(("%s() line %d: locked mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt()));
  
 #ifdef PRINT_LOCK
    {
@@ -115,11 +115,10 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 #else
 
 void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex) {
-   int res = -1;
-
    DENTER(BASIS_LAYER);
 
-   if ((res = pthread_mutex_lock(mutex)) != 0) {
+   int res = pthread_mutex_lock(mutex);
+   if (res != 0) {
       CRITICAL((SGE_EVENT, MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res)));
       abort();
    }
@@ -138,7 +137,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 *     int line, pthread_mutex_t *mutex) 
 *
 *  FUNCTION
-*     Unlocks the passed mutex. Before and after unlocking rmon DLOCKPRINTF() 
+*     Unlocks the passed mutex. Before and after unlocking rmon DPRINTF()
 *     is used to facilitate tracking of deadlocks that are caused by 
 *     mutexes.
 *
@@ -181,7 +180,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
    }   
 #endif  
    
-   DLOCKPRINTF(("%s() line %d: unlocked mutex \"%s\"\n", func, line, mutex_name));
+   DPRINTF(("%s() line %d: unlocked mutex \"%s\"\n", func, line, mutex_name));
    
    DRETURN_VOID;
 } /* sge_mutex_unlock() */

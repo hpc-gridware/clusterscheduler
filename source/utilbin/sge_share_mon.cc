@@ -33,13 +33,13 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_language.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi.h"
@@ -264,10 +264,6 @@ main(int argc, char **argv)
    
    DENTER_MAIN(TOP_LAYER, "share_mon");
 
-   prof_mt_init();
-   obj_mt_init();
-   sc_mt_init();
-   
    format.name_format  = false;
    format.delim        = "\t";
    format.line_delim   = "\n";

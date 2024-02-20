@@ -33,11 +33,11 @@
 #include <cstring>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "comm/commlib.h"
 
@@ -70,11 +70,11 @@
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "symbols.h"
-#include "sge.h"
-#include "sge_utility_qmaster.h"
-#include "msg_common.h"
 #include "msg_clients_common.h"
+#include "msg_common.h"
+#include "sge_utility_qmaster.h"
+#include "symbols.h"
+#include "uti/sge.h"
 
 #define CQUEUE_LAYER TOP_LAYER
 

@@ -44,7 +44,7 @@ bool
 sge_shutdown_persistence(lList **answer_list);
 
 void
-sge_initialize_persistance_timer(void);
+sge_initialize_persistance_timer();
 
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor);

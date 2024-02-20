@@ -33,9 +33,9 @@
 #include <cstring>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sched/sge_resource_utilization.h"
@@ -55,7 +55,7 @@
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
+#include "uti/sge.h"
 
 static bool 
 rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope);

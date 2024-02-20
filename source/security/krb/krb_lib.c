@@ -34,14 +34,14 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
@@ -172,7 +172,7 @@ int krb_init(const char *progname)
    int rc;
    char keytab[256];
    struct hostent *he;
-   u_long32 prog_number = bootstrap_get_component_id();
+   u_long32 prog_number = component_get_component_id();
    
 
    DENTER(TOP_LAYER);
@@ -589,7 +589,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    krb5_rcache rcache;
    char *cp;
 #endif /* KRB_DO_REPLAY_STUFF */
-   const char *progname = bootstrap_get_component_name();
+   const char *progname = component_get_component_name();
 
    DENTER(TOP_LAYER);
 

@@ -35,13 +35,14 @@
 #include <cerrno>
 #include <pthread.h>
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_uidgid.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_parse_args.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
-#include "uti/sge_parse_args.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/config.h"
@@ -68,7 +69,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    struct passwd pw_struct;
    char *pw_buffer;
    size_t pw_buffer_size;
-   const char* user_name = bootstrap_get_username();
+   const char* user_name = component_get_username();
    const char* cell_root = bootstrap_get_cell_root();
 
    /* cell global settings */

@@ -35,7 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/time.h>
 
 #include "comm/cl_commlib.h"
@@ -63,12 +63,6 @@ void sighandler_client(
    do_shutdown = 1;
    cl_com_ignore_timeouts(true);
 }
-
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;
@@ -116,7 +110,6 @@ extern int main(int argc, char **argv) {
       printf("wrong parameters, param1 = server host, param2 = port number, param3 = client id, param4=debug_level, param5=sleep time, param6=do_close, [param7=framework(TCP/SSL)]\n");
       exit(1);
    }
-   prof_mt_init();
    cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[4]), nullptr);
    if (atoi(argv[6]) != 0) {
       close_connection = 1;

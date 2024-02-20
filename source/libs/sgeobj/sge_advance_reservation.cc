@@ -32,9 +32,9 @@
 
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
@@ -49,8 +49,8 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_qmaster.h"
+#include "uti/sge.h"
 
 /****** sge_advance_reservation/ar_list_locate() *******************************
 *  NAME
@@ -165,7 +165,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    if (in_master) {
       /*    AR_name, SGE_STRING */
       NULL_OUT_NONE(ar, AR_name);
-      if (object_verify_name(ar, alpp, AR_name, SGE_OBJ_AR)) {
+      if (object_verify_name(ar, alpp, AR_name)) {
          goto ERROR;
       }
       /*   AR_account, SGE_STRING */

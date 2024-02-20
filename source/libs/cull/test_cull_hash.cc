@@ -37,7 +37,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <cstring>
-#include <time.h>
+#include <ctime>
 #include <sys/times.h>
 
 #ifdef MALLINFO
@@ -320,7 +320,6 @@ int main(int argc, char *argv[]) {
    /* initialize globals */
    lInit(my_nmv);
    clk_tck = sysconf(_SC_CLK_TCK); /* JG: TODO: sge_sysconf? */
-   prof_mt_init();
 
    /* we need random numbers */
    srand(time(0));

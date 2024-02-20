@@ -62,6 +62,6 @@ const char *sge_gettext_(int msg_id, const char *msg_str);
 
 void sge_set_message_id_output(int flag);
 
-int sge_get_message_id_output(void);
+int sge_get_message_id_output();
 
 #endif

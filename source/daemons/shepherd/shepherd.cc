@@ -36,7 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <pwd.h>
 #include <limits.h>
@@ -92,7 +92,6 @@
 #include "shepherd.h"
 #include "sge_pset.h"
 #include "sge_shepconf.h"
-#include "sge_mt_init.h"
 #include "sge_fileio.h"
 #include "basis_types.h"
 #include "qlogin_starter.h"
@@ -698,8 +697,6 @@ int main(int argc, char **argv)
    int run_epilog, run_pe_stop;
    dstring ds;
    char buffer[256];
-
-   sge_mt_init();
 
    if (argc >= 2) {
       if ( strcmp(argv[1],"-help") == 0) {

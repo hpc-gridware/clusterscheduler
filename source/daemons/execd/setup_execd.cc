@@ -31,12 +31,12 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "cull/cull_file.h"
 
@@ -70,7 +70,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    char err_str[MAX_STRING_SIZE];
    int allowed_get_conf_errors     = 5;
    char* spool_dir = nullptr;
-   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
    const char *admin_user = bootstrap_get_admin_user();
 
    DENTER(TOP_LAYER);

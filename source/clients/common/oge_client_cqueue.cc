@@ -32,7 +32,7 @@
 #include <cstring>
 
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
@@ -57,7 +57,7 @@
 #include "msg_clients_common.h"
 #include "oge_client_cqueue.h"
 #include "oge_client_print.h"
-#include "sge.h"
+#include "uti/sge.h"
 
 bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
                               double *load, bool *is_load_available, u_long32 *used, u_long32 *resv, u_long32 *total,

@@ -32,18 +32,18 @@
 
 #include <cstring>
 #include <cstdio>
-#include <time.h>
+#include <ctime>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_varargs.h"
 #include "symbols.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_varargs.h"
 
 #define REALLOC_CHUNK   1024
 

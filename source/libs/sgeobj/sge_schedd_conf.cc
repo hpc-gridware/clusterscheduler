@@ -35,14 +35,14 @@
 
 #include "cull/cull.h"
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_lock.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_parse_num_par.h"
-#include "uti/sge_lock.h"
-#include "uti/sge_mtutil.h"
 
 #include "sched/msg_schedd.h"
 
@@ -56,8 +56,8 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "msg_common.h"
+#include "uti/sge.h"
 
 /******************************************************
  *
@@ -198,10 +198,20 @@ sc_thread_local_once_init(void)
 }
 
 
-void sc_mt_init(void) 
+static void sc_mt_init(void)
 {
    pthread_once(&sc_once, sc_thread_local_once_init);
-} 
+}
+
+class ScThreadInit {
+public:
+   ScThreadInit() {
+      sc_mt_init();
+   }
+};
+
+// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
+static ScThreadInit sc_obj{};
 
 /*-----*/
 /* end */

@@ -36,16 +36,16 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <pwd.h>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_uidgid.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "basis_types.h"
 
@@ -76,7 +76,6 @@ static void addenv(char *key, char *value) {
 
    putenv(str);
    /* there is intentionally no sge_free(&str) */
-   return;
 }
 
 /* 
@@ -173,7 +172,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 
       if (user) {
          struct passwd *pw;
-         struct passwd pw_struct;
+         struct passwd pw_struct{};
          char *buffer;
          int size;
 
@@ -403,7 +402,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
     * a deadlock of the child because getpwnam() is not async-thread safe.
     */
    if (user) {
-      struct passwd pw_struct;
+      struct passwd pw_struct {};
       int size = get_pw_buffer_size();
       char *buffer = sge_malloc(size);
 

@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #ifndef __SGE_H
-#   include "sge.h"
+#   include "uti/sge.h"
 #endif
 
 #include "sge_orders.h"

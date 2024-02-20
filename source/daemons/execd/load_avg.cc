@@ -34,20 +34,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <float.h>
+#include <cfloat>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
+#include "uti/sge_arch.h"
 #include "uti/sge_binding_hlp.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_uidgid.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_arch.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
 
 #include "comm/commlib.h"
 
@@ -196,7 +195,7 @@ void execd_trash_load_report(void) {
 static int 
 execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
-   const char* qualified_hostname = bootstrap_get_qualified_hostname();
+   const char* qualified_hostname = component_get_qualified_hostname();
    const char* binary_path = bootstrap_get_binary_path();
 
    DENTER(TOP_LAYER);
@@ -292,7 +291,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
 static int 
 execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
-   const char* qualified_hostname = bootstrap_get_qualified_hostname();
+   const char* qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
    if (*next_send <= now) {
@@ -323,7 +322,7 @@ execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
 {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
-      const char* qualified_hostname = bootstrap_get_qualified_hostname();
+      const char* qualified_hostname = component_get_qualified_hostname();
       lListElem *report;
 
       *next_send = now + mconf_get_load_report_time();
@@ -362,7 +361,7 @@ execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
    bool do_send = false;
    bool only_flush = false;
    static u_long32 last_send = 0;
-   const char* qualified_hostname = bootstrap_get_qualified_hostname();
+   const char* qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

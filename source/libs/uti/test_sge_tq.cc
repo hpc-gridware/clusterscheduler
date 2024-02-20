@@ -34,11 +34,11 @@
 #include <cstdio>
 #include <fnmatch.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_tq.h"
 #include "uti/sge_err.h"
-#include "uti/sge_thread_ctrl.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_thread_ctrl.h"
+#include "uti/sge_tq.h"
 
 /*
  * Producer and consumer maximum should be a multiple of 2 and 3 
@@ -229,20 +229,14 @@ test_mt_consumer_producer(void) {
 
    /* cleanup */
    pthread_mutex_destroy(&global.mutex);
-   ret &= sge_tq_destroy(&global.queue);
+   sge_tq_destroy(&global.queue);
 
    DRETURN(ret);
 }
 
 int main(int argc, char *argv[]) {
-   bool ret = true;
-
    DENTER_MAIN(TOP_LAYER, "test_sl");
-
-   sge_err_init();
-
-   ret &= test_mt_consumer_producer();
-
+   bool ret = test_mt_consumer_producer();
    DRETURN(ret == true ? 0 : 1);
 }
 

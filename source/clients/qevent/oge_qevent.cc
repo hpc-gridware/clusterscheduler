@@ -46,14 +46,14 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_time.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
@@ -69,7 +69,6 @@
 
 #include "oge_qevent.h"
 #include "usage.h"
-#include "sge_mt_init.h"
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -451,8 +450,6 @@ int main(int argc, char *argv[])
    sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qevent");
-
-/*    sge_mt_init(); */
 
    /* dump pid to file */
    qevent_dump_pid_file();

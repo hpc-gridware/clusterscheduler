@@ -40,21 +40,19 @@
 
 #include "cull/cull.h"
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/sge_afsutil.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_io.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_time.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_string.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_bootstrap.h"
+#include "uti/sge_hostname.h"
+#include "uti/sge_io.h"
+#include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_var.h"
@@ -1276,10 +1274,10 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle)
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet_handle->mutex));
 #endif
 
-   uid = bootstrap_get_uid();
-   gid = bootstrap_get_gid();
-   sge_strlcpy(username, bootstrap_get_username(), sizeof(username));
-   sge_strlcpy(groupname, bootstrap_get_groupname(), sizeof(groupname));
+   uid = component_get_uid();
+   gid = component_get_gid();
+   sge_strlcpy(username, component_get_username(), sizeof(username));
+   sge_strlcpy(groupname, component_get_groupname(), sizeof(groupname));
 
    DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
             username, uid, groupname, gid));

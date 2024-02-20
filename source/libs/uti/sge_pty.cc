@@ -51,11 +51,9 @@
 
 #endif
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_uidgid.h"
-
-extern char *ptsname(int); /* prototype not in any system header */
+#include "uti/sge_unistd.h"
 
 static struct termios prev_termios;
 static int g_raw_mode = 0;
@@ -176,9 +174,10 @@ int ptym_open(char *pts_name) {
 #if defined(DARWIN)
 int ptys_open(int fdm, char *pts_name)
 {
-   struct group gr_struct;
+   struct group gr_struct{};
    struct group *grptr;
-   int          gid, fds;
+   gid_t gid;
+   int fds;
    char *gr_buffer;
    size_t gr_buffer_size;
 
@@ -272,8 +271,8 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    pid_t pid;
    int fdm, fds;
    char pts_name[20];
-   int old_euid;
-   struct termios tio;
+   uid_t old_euid;
+   struct termios tio{};
 
    /* 
     * We run this either as root with euid="sge admin user" or as an unprivileged 
@@ -313,7 +312,6 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       }
       seteuid(old_euid);
       close(fdm);
-      fdm = -1;   /* all done with master in child */
 
       /*
        * Set the remote pty to break lines with NL, not CR NL. This ensures
@@ -328,7 +326,7 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
 #if   defined(TIOCSCTTY) && !defined(CIBAUD)
       /* 44BSD way to acquire controlling terminal */
       /* !CIBAUD to avoid doing this under SunOS */
-      if (ioctl(fds, TIOCSCTTY, (char *) 0) < 0) {
+      if (ioctl(fds, TIOCSCTTY, (char *) nullptr) < 0) {
          sge_dstring_sprintf(err_msg, "TIOCSCTTY error: %d, %s", 
                              errno, strerror(errno));
          return -1;
@@ -363,7 +361,6 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
 
       if (fds > STDERR_FILENO) {
          close(fds);
-         fds = -1;
       }
       return 0;      /* child returns 0 just like fork() */
    } else {          /* parent */
@@ -502,8 +499,8 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
 *  SEE ALSO
 *     pty/terminal_leave_raw_mode
 *******************************************************************************/
-int terminal_enter_raw_mode(void) {
-   struct termios tio;
+int terminal_enter_raw_mode() {
+   struct termios tio {};
    int ret = 0;
 
    if (tcgetattr(STDOUT_FILENO, &tio) == -1) {
@@ -551,7 +548,7 @@ int terminal_enter_raw_mode(void) {
 *  SEE ALSO
 *     pty/terminal_enter_raw_mode()
 *******************************************************************************/
-int terminal_leave_raw_mode(void) {
+int terminal_leave_raw_mode() {
    int ret = 0;
 
    if (g_raw_mode == 1) {

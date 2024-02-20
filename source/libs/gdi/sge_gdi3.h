@@ -37,9 +37,6 @@
 #include "uti/sge_csp_path.h"
 
 void
-gdi3_mt_init();
-
-void
 gdi3_mt_done();
 
 const char *

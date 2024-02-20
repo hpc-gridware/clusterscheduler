@@ -42,5 +42,5 @@ sge_worker_initialize();
 void
 sge_worker_terminate();
 
-void *
+[[noreturn]] void *
 sge_worker_main(void *arg);

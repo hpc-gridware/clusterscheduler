@@ -62,12 +62,13 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_args.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"
 
 /* RMON */
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 /* SGEOBJ */
 #include "sgeobj/sge_path_alias.h"
@@ -2323,7 +2324,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
    const char *new_path = nullptr;
    int drmaa_errno;
    lList *path_list = lCreateList("path_list", PN_Type);
-   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
    
    DENTER(TOP_LAYER);
 
@@ -2565,12 +2566,12 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    int read_scriptfile = 0;
    u_long32 jb_now = 0;
 
-   u_long32 prog_number = bootstrap_get_component_id();
-   u_long32 myuid = bootstrap_get_uid();
+   u_long32 prog_number = component_get_component_id();
+   u_long32 myuid = component_get_uid();
    const char *cell_root = bootstrap_get_cell_root();
-   const char *username = bootstrap_get_username();
-   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
-   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *username = component_get_username();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
    

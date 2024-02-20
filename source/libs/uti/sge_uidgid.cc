@@ -46,13 +46,13 @@
 #include <grp.h>
 #include <pthread.h>
 
-#include "uti/sge_mtutil.h"
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "basis_types.h"
 
@@ -170,7 +170,7 @@ sge_set_admin_username(const char *user, char *err_str) {
       int size = get_pw_buffer_size();
       char *buffer = sge_malloc(size);
 
-      struct passwd pw_struct;
+      struct passwd pw_struct{};
       struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
       if (admin) {
          set_admin_user(user, admin->pw_uid, admin->pw_gid);
@@ -370,7 +370,7 @@ DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) get
 int
 sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
    struct passwd *pw;
-   struct passwd pwentry;
+   struct passwd pwentry{};
    char *buffer;
    int size;
 
@@ -430,7 +430,7 @@ sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
 int
 sge_group2gid(const char *gname, gid_t *gidp, int retries) {
    struct group *gr;
-   struct group grentry;
+   struct group gr_entry {};
    char *buffer;
    int size;
 
@@ -444,7 +444,7 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
          sge_free(&buffer);
          DRETURN(1);
       }
-      if (getgrnam_r(gname, &grentry, buffer, size, &gr) != 0) {
+      if (getgrnam_r(gname, &gr_entry, buffer, size, &gr) != 0) {
          if (errno == ERANGE) {
             retries++;
             size += 1024;
@@ -490,7 +490,7 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 int
 sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    struct passwd *pw;
-   struct passwd pwentry;
+   struct passwd pw_entry {};
    int size;
    char *buffer;
 
@@ -500,7 +500,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    buffer = sge_malloc(size);
 
    /* max retries that are made resolving user name */
-   while (getpwuid_r(uid, &pwentry, buffer, size, &pw) != 0 || !pw) {
+   while (getpwuid_r(uid, &pw_entry, buffer, size, &pw) != 0 || !pw) {
       if (!retries--) {
          ERROR((SGE_EVENT, MSG_SYSTEM_GETPWUIDFAILED_US,
                  sge_u32c(uid), strerror(errno)));
@@ -544,7 +544,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 int
 sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    struct group *gr;
-   struct group grentry;
+   struct group gr_entry {};
    char *buf = nullptr;
    int size = 0;
 
@@ -553,10 +553,8 @@ sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    size = get_group_buffer_size();
    buf = sge_malloc(size);
 
-   gr = sge_getgrgid_r(gid, &grentry, buf, size, retries);
-   /* Bugfix: Issuezilla 1256
-    * We need to handle the case when the OS is unable to resolve the GID to
-    * a name. [DT] */
+   gr = sge_getgrgid_r(gid, &gr_entry, buf, size, retries);
+   // TODO: We need to handle the case when the OS is unable to resolve the GID to a name.
    if (gr == nullptr) {
       sge_free(&buf);
       DRETURN(1);
@@ -567,22 +565,20 @@ sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    sge_free(&buf);
 
    DRETURN(0);
-} /* sge_gid2group() */
-
-
+}
 
 int
-sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
+sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
    struct group *gr;
-   struct group grentry;
+   struct group gr_entry {};
 
    DENTER(TOP_LAYER);
 
-   if (!groupnamep || !last_gid) {
+   if (!group_name_p || !last_gid) {
       DRETURN(1);
    }
 
-   if (!(*groupnamep) || *last_gid != gid) {
+   if (!(*group_name_p) || *last_gid != gid) {
       char *buf = nullptr;
       int size = 0;
 
@@ -590,7 +586,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
       buf = sge_malloc(size);
 
       /* max retries that are made resolving group name */
-      while (getgrgid_r(gid, &grentry, buf, size, &gr) != 0) {
+      while (getgrgid_r(gid, &gr_entry, buf, size, &gr) != 0) {
          if (!retries--) {
             sge_free(&buf);
 
@@ -609,7 +605,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
       }
 
       /* cache group name */
-      *groupnamep = sge_strdup(*groupnamep, gr->gr_name);
+      *group_name_p = sge_strdup(*group_name_p, gr->gr_name);
       *last_gid = gid;
 
       sge_free(&buf);
@@ -640,9 +636,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
 *******************************************************************************/
 int
 get_pw_buffer_size() {
-   enum {
-      buf_size = 20480
-   };  /* default is 20 KB */
+   static const int buf_size = 20480;
 
    int sz = buf_size;
 
@@ -967,7 +961,7 @@ sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
          sge_free(&list);
          return -1;
       }
-   } else if (skip_silently == false) {
+   } else if (!skip_silently) {
       if (err_str != nullptr) {
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()),
                  MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
@@ -1223,7 +1217,7 @@ get_admin_user(uid_t *theUID, gid_t *theGID) {
 *     MT-NOTE: get_admin_user_name() is MT safe 
 *******************************************************************************/
 const char *
-get_admin_user_name(void) {
+get_admin_user_name() {
    return admin_user.user_name;
 }
 
@@ -1248,7 +1242,7 @@ get_admin_user_name(void) {
 *     MT-NOTE: sge_has_admin_user() is MT safe 
 *******************************************************************************/
 bool
-sge_has_admin_user(void) {
+sge_has_admin_user() {
    DENTER(TOP_LAYER);
    uid_t uid;
    gid_t gid;

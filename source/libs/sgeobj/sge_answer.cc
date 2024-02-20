@@ -30,15 +30,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstring>
 
 #include "cull/cull.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"

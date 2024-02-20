@@ -35,7 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 
 #include "comm/cl_commlib.h"
 #include "comm/cl_host_alias_list.h"

@@ -32,17 +32,17 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <float.h>
+#include <cfloat>
 #include <limits.h>
 #ifdef SGE_PQS_API
 #include <dlfcn.h>
 #endif
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -72,20 +72,20 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_calendar.h"
 
-#include "sge.h"
 #include "basis_types.h"
-#include "sge_select_queue.h"
+#include "schedd_message.h"
+#include "schedd_monitor.h"
 #include "sge_complex_schedd.h"
-#include "sge_resource_utilization.h"
-#include "valid_queue_user.h"
-#include "subordinate_schedd.h"
 #include "sge_pe_schedd.h"
 #include "sge_qeti.h"
-#include "sort_hosts.h"
-#include "schedd_monitor.h"
-#include "schedd_message.h"
-#include "sge_schedd_text.h"
 #include "sge_resource_quota_schedd.h"
+#include "sge_resource_utilization.h"
+#include "sge_schedd_text.h"
+#include "sge_select_queue.h"
+#include "sort_hosts.h"
+#include "subordinate_schedd.h"
+#include "uti/sge.h"
+#include "valid_queue_user.h"
 #ifdef SGE_PQS_API
 #include "sge_pqs_api.h"
 #endif

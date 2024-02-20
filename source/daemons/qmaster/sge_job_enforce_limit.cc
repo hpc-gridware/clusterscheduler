@@ -33,13 +33,13 @@
 #include "basis_types.h"
 #include "sge.h"
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_time.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "gdi/sge_gdi_ctx.h"
 

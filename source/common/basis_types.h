@@ -32,6 +32,7 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
+#include <cerrno>
 #include <sys/types.h>
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
@@ -174,14 +175,14 @@ typedef char stringT[MAX_STRING_SIZE];
 #  define FALSE !TRUE
 #endif
 
-#define GET_SPECIFIC(type, variable, init_func, key) \
-   auto variable = (type *)pthread_getspecific((pthread_key_t)key); \
-   if (variable == nullptr) { \
-      variable = (type *)malloc(sizeof(type)); \
-      init_func(variable); \
-      int ret = pthread_setspecific(key, (void*)variable); \
-      if (ret != 0) { \
-         fprintf(stderr, "pthread_setspecific(%s) failed: %s\n", __func__, strerror(ret)); \
+#define GET_SPECIFIC(type, _variable, init_func, _key) \
+   auto _variable = (type *)pthread_getspecific((pthread_key_t)(_key)); \
+   if ((_variable) == nullptr) { \
+      _variable = (type *)malloc(sizeof(type)); \
+      init_func(_variable); \
+      int _ret = pthread_setspecific(_key, (void*)_variable); \
+      if (_ret != 0) { \
+         fprintf(stderr, "pthread_setspecific(%s) failed: %s\n", __func__, strerror(_ret)); \
          abort(); \
       } \
    } \

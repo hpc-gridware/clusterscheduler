@@ -32,7 +32,7 @@
 
 #include <cstdio>
 
-#include "uti/sge_rmon.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_range.h"

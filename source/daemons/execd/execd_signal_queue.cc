@@ -32,13 +32,13 @@
 #include <cerrno>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_log.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_unistd.h"
+#include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
+#include "uti/sge_unistd.h"
 #if defined(DARWIN)
 #  include "uti/sge_uidgid.h"
 #endif

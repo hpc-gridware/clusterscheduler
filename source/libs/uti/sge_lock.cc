@@ -34,10 +34,10 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_rmon.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_lock_fifo.h"
-#include "uti/msg_utilib.h"
+#include "uti/sge_rmon_macros.h"
 
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -122,12 +122,12 @@ static const char *locktype_names[NUM_OF_LOCK_TYPES] = {
 
 static pthread_once_t lock_once = PTHREAD_ONCE_INIT;
 
-static void lock_once_init(void);
+static void lock_once_init();
 
 /* lock service provider */
-static sge_locker_t id_callback_impl(void);
+static sge_locker_t id_callback_impl();
 
-static sge_locker_t (*id_callback)(void) = id_callback_impl;
+static sge_locker_t (*id_callback)() = id_callback_impl;
 
 
 /****** sge_lock/sge_lock() ****************************************************
@@ -175,27 +175,27 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #endif   
 
    if (aMode == LOCK_READ) {
-      DLOCKPRINTF(("%s() about to lock rwlock \"%s\" for reading\n", func, locktype_names[aType]));
+      DPRINTF(("%s() about to lock rwlock \"%s\" for reading\n", func, locktype_names[aType]));
 #ifdef SGE_USE_LOCK_FIFO
       res = sge_fifo_lock(SGE_RW_Locks[aType], true) ? 0 : 1;
 #else
       res = pthread_rwlock_rdlock(SGE_RW_Locks[aType]);
 #endif
-      DLOCKPRINTF(("%s() locked rwlock \"%s\" for reading\n", func, locktype_names[aType]));
+      DPRINTF(("%s() locked rwlock \"%s\" for reading\n", func, locktype_names[aType]));
    } else if (aMode == LOCK_WRITE) {
-       DLOCKPRINTF(("%s() about to lock rwlock \"%s\" for writing\n", func, locktype_names[aType]));
+       DPRINTF(("%s() about to lock rwlock \"%s\" for writing\n", func, locktype_names[aType]));
 #ifdef SGE_USE_LOCK_FIFO
       res = sge_fifo_lock(SGE_RW_Locks[aType], false) ? 0 : 1;
 #else
       res = pthread_rwlock_wrlock(SGE_RW_Locks[aType]);
 #endif
-      DLOCKPRINTF(("%s() locked rwlock \"%s\" for writing\n", func, locktype_names[aType]));
+      DPRINTF(("%s() locked rwlock \"%s\" for writing\n", func, locktype_names[aType]));
    } else {
-      DLOCKPRINTF(("wrong lock type for global lock\n")); 
+      DPRINTF(("wrong lock type for global lock\n"));
    }   
 
    if (res != 0) {
-      DLOCKPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
       abort();
    }
 
@@ -242,11 +242,11 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
       res = pthread_rwlock_wrlock(SGE_RW_Locks[aType]);
 #endif
    } else {
-      DLOCKPRINTF(("wrong lock type for global lock\n"));
+      DPRINTF(("wrong lock type for global lock\n"));
    }
 
    if (res != 0) {
-      DLOCKPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
       abort();
    }
 
@@ -318,10 +318,10 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
    res = pthread_rwlock_unlock(SGE_RW_Locks[aType]);
 #endif
    if (res != 0) {
-      DLOCKPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
       abort();
    }
-   DLOCKPRINTF(("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]));
+   DPRINTF(("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]));
 
 #ifdef PRINT_LOCK
    {
@@ -348,7 +348,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
    res = pthread_rwlock_unlock(SGE_RW_Locks[aType]);
 #endif
    if (res != 0) {
-      DLOCKPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
       abort();
    }
 
@@ -380,7 +380,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 *
 *     MT-NOTE: sge_locker_id() is MT safe
 *******************************************************************************/
-sge_locker_t sge_locker_id(void) {
+sge_locker_t sge_locker_id() {
    sge_locker_t id = 0;
 
    if (nullptr != id_callback) {
@@ -417,7 +417,7 @@ sge_locker_t sge_locker_id(void) {
 *     libs/lck/sge_lock.c
 *
 *******************************************************************************/
-static void lock_once_init(void) {
+static void lock_once_init() {
 #ifdef SGE_USE_LOCK_FIFO
    sge_fifo_lock_init(&Global_Lock);
    sge_fifo_lock_init(&Master_Conf_Lock);
@@ -425,7 +425,6 @@ static void lock_once_init(void) {
    pthread_rwlock_init(&Global_Lock, nullptr);
    pthread_rwlock_init(&Master_Conf_Lock, nullptr);
 #endif
-   return;
 } /* prog_once_init() */
 
 /****** libs/lck/id_callback_impl() *********************************
@@ -448,7 +447,7 @@ static void lock_once_init(void) {
 *     MT-NOTE: id_callback() is MT safe. 
 *
 *******************************************************************************/
-static sge_locker_t id_callback_impl(void) {
+static sge_locker_t id_callback_impl() {
    return (sge_locker_t) pthread_self();
 } /* id_callback */
 

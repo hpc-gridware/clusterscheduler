@@ -37,16 +37,16 @@
 #include "gdi/sge_gdi_packet.h"
 
 void
-sge_timer_start_periodic_tasks(void);
+sge_timer_start_periodic_tasks();
 
 void
-sge_timer_register_event_handler(void);
+sge_timer_register_event_handler();
 
 void
 sge_timer_initialize(monitoring_t *monitor);
 
 void
-sge_timer_terminate(void);
+sge_timer_terminate();
 
-void *
+[[noreturn]] void *
 sge_timer_main(void *arg);

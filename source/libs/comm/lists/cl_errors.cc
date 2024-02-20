@@ -39,11 +39,6 @@
 #include "comm/lists/cl_errors.h"
 #include "comm/lists/msg_commlistslib.h"
 
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_is_commlib_error()"
-
 int cl_is_commlib_error(int error_id) {
    if (error_id >= CL_RETVAL_OK && error_id < CL_RETVAL_LAST_ID) {
       return 1;
@@ -51,11 +46,6 @@ int cl_is_commlib_error(int error_id) {
       return 0;
    }
 }
-
-#ifdef __CL_FUNCTION__
-#undef __CL_FUNCTION__
-#endif
-#define __CL_FUNCTION__ "cl_get_error_text()"
 
 const char *cl_get_error_text(int error_id) {
    switch (error_id) {

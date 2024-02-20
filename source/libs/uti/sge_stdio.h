@@ -34,7 +34,7 @@
 #include <cstdio>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <time.h>
+#include <ctime>
 #include <unistd.h>
 
 #include "basis_types.h"
@@ -72,7 +72,8 @@
 #define FPRINTF(x) \
    if (fprintf x < 0) { \
       goto FPRINTF_ERROR; \
-   }
+   } \
+   void()
 
 /****** uti/stdio/FPRINTF_ASSIGN() *******************************************
 *  NAME
@@ -128,7 +129,8 @@
       if (fclose(x) != 0) { \
          goto FCLOSE_ERROR; \
       } \
-   }
+   } \
+   void()
 
 #define FCLOSE_IGNORE_ERROR(x) fclose(x)
 

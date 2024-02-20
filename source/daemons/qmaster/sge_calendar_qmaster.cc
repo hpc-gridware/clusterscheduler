@@ -31,14 +31,12 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <cstring>
-#include <cctype>
-#include <time.h>
 #include <sys/time.h>
 
-#include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_time.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
@@ -52,7 +50,6 @@
 #include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
-#include "sge_qmod_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
@@ -141,21 +138,16 @@ DRETURN(STATUS_EUNKNOWN);
 int
 calendar_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   bool dbret;
-   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                              lGetString(cep, CAL_name), SGE_TYPE_CALENDAR,
-                              job_spooling);
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
+                                   lGetString(cep, CAL_name), SGE_TYPE_CALENDAR, true);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S,
-                              lGetString(cep, CAL_name));
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(cep, CAL_name));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -253,7 +245,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   calendar_update_queue_states(cep, 0, nullptr, &ppList, monitor);
+   calendar_update_queue_states(cep, nullptr, nullptr, &ppList, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
