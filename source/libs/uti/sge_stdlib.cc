@@ -60,7 +60,7 @@
 *  NOTES
 *     MT-NOTE: sge_malloc() is MT safe
 ******************************************************************************/
-char *sge_malloc(int size) {
+char *sge_malloc(size_t size) {
    DENTER_(BASIS_LAYER);
 
    if (!size) {
@@ -97,7 +97,7 @@ char *sge_malloc(int size) {
 *  NOTES
 *     MT-NOTE: sge_realloc() is MT safe
 ******************************************************************************/
-void *sge_realloc(void *ptr, int size, int do_abort) {
+void *sge_realloc(void *ptr, size_t size, int do_abort) {
    DENTER_(BASIS_LAYER);
 
    /* if new size is 0, just free the currently allocated memory */

@@ -44,28 +44,19 @@
 #include "uti/sge.h"
 
 int 
-sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp);
+sge_gdi2_setup(int component_id, u_long32 thread_id, lList **answer_list);
 
 int 
-sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client);
+sge_setup2(int progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client);
 
 bool
 sge_daemonize_prepare();
 
-bool
+void
 sge_daemonize_finalize();
 
 int
 sge_daemonize(int *keep_open, unsigned long nr_of_fds);
 
-void
-sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...);
-
 int
-sge_gdi_ctx_class_prepare_enroll();
-
-int
-sge_gdi_ctx_class_connect();
-
-lList *
-sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag);
+sge_gdi_ctx_class_prepare_enroll(lList **answer_list);

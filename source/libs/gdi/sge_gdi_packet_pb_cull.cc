@@ -134,7 +134,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
 
 /****** gdi/request_internal/sge_gdi_packet_get_pb_size() ********************
 *  NAME
-*     sge_gdi_packet_get_pb_size() -- returns the needed puckbuffer size 
+*     sge_gdi_packet_get_pb_size() -- returns the needed packbuffer size
 *
 *  SYNOPSIS
 *     u_long32 sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet) 
@@ -213,7 +213,7 @@ sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet) {
 *******************************************************************************/
 bool
 sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_pack_buffer *pb) {
-   bool aret = true;
+   bool ret = true;
    bool has_next;
    int pack_ret;
 
@@ -246,7 +246,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
          }
          /* JG: TODO (322): At this point we should check the version! 
           **                 The existent check function sge_gdi_packet_verify_version
-          **                 cannot be called as neccesary data structures are 
+          **                 cannot be called as necessary data structures are
           **                 available here (e.g. answer list).
           **                 Better do these changes at a more general place 
           **                 together with (hopefully coming) further communication
@@ -291,11 +291,11 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
          sge_gdi_packet_append_task(*packet, &a_list, target, command, &data_list, &a_list, &condition, &enumeration, false);
       } while (has_next);
    }
-   DRETURN(aret);
+   DRETURN(ret);
  error_with_mapping:
-   aret = sge_gdi_map_pack_errors(pack_ret, answer_list);
+   ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
    sge_gdi_packet_free(packet);
-   DRETURN(aret);
+   DRETURN(ret);
 }
 
 /****** gdi/request_internal/sge_gdi_packet_pack() ***************************
@@ -324,7 +324,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
 *  INPUTS
 *     sge_gdi_packet_class_t * packet - GDI packet 
 *     lList **answer_list             - answer list 
-*     sge_pack_buffer *pb             - backbuffer 
+*     sge_pack_buffer *pb             - packbuffer
 *
 *  RESULT
 *     bool - error state
@@ -366,7 +366,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *
 *  FUNCTION
 *     This functions packs all data representing one GDI request
-*     of a mutli GDI request (represented by "packet" and "task")
+*     of a multi GDI request (represented by "packet" and "task")
 *     into "pb". Errors will be reported with a corresponding
 *     "answer_list" message and a negative return value.
 *
@@ -435,7 +435,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
          task->data_list = nullptr;
 
          /* DIRTY HACK: The "ok" message should be removed from the answer list
-          * 05/21/2007 qualitiy was ANSWER_QUALITY_INFO but this results in "ok"
+          * 05/21/2007 quality was ANSWER_QUALITY_INFO but this results in "ok"
           * messages on qconf side */
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
       } else {

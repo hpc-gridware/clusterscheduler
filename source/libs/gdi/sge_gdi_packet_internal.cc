@@ -85,8 +85,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     after return.
 *
 *  INPUTS
-*     lList **answer_list             - answer_list (not used)
-*     sge_gdi_packet_class_t **packet - packet 
+*     sge_gdi_packet_class_t **packet - packet
 *     lList **malpp                   - multi answer
 *
 *  RESULT
@@ -104,7 +103,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     sge_gdi_packet_is_handled()
 *******************************************************************************/
 static void
-sge_gdi_packet_create_multi_answer(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
+sge_gdi_packet_create_multi_answer(sge_gdi_packet_class_t **packet, lList **malpp)
 {
    DENTER(TOP_LAYER);
 
@@ -465,12 +464,6 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
    /* 
     * pack packet into packbuffer
     */ 
-   /* 
-    * EB: TODO: dry run necessary to calculate initial buffer size?  
-    *    JG told me during review of ST that it might be possible that
-    *    the dry run to calculate the buffer size might be slower
-    *    than direcly packing. RD might have done tests...
-    */
    if (ret) {
       size_t size = sge_gdi_packet_get_pb_size(packet);
 
@@ -502,7 +495,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       commlib_error = sge_gdi2_send_any_request(0, &message_id, host, commproc, id, &pb,
                                                 TAG_GDI_REQUEST, response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
-         commlib_error = sge_gdi_ctx_class_is_alive();
+         commlib_error = sge_gdi_ctx_class_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
             const char *mastername = gdi3_get_act_master_host(true);
@@ -547,7 +540,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       u_short id = 1;
       int gdi_error = CL_RETVAL_OK;
       int runs = 0;
-      int retries = 0;
+      int retries;
 
       strcpy(rcv_host, host);
       strcpy(rcv_commproc, commproc);
@@ -599,7 +592,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       } while (retries == -1 || runs++ < retries);
       
       if (ret == false) {
-         commlib_error = sge_gdi_ctx_class_is_alive();
+         commlib_error = sge_gdi_ctx_class_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
             const char *mastername = gdi3_get_act_master_host(true);
@@ -795,14 +788,14 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 void
-sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp) {
+sge_gdi_packet_wait_for_result_external(sge_gdi_packet_class_t **packet, lList **malpp) {
    DENTER(TOP_LAYER);
 
    /* 
     * The packet itself has already be executed in sge_gdi_packet_execute_external() 
     * so it is only necessary to create the muti answer and do cleanup
     */
-   sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
+   sge_gdi_packet_create_multi_answer(packet, malpp);
 
    DRETURN_VOID;
 }
@@ -845,10 +838,10 @@ sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_clas
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 void
-sge_gdi_packet_wait_for_result_internal(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp) {
+sge_gdi_packet_wait_for_result_internal(sge_gdi_packet_class_t **packet, lList **malpp) {
    DENTER(TOP_LAYER);
    sge_gdi_packet_wait_till_handled(*packet);
-   sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
+   sge_gdi_packet_create_multi_answer(packet, malpp);
    DRETURN_VOID;
 }
 

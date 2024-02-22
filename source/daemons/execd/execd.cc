@@ -232,7 +232,7 @@ int main(int argc, char **argv)
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
-      sge_gdi_ctx_class_prepare_enroll();
+      sge_gdi_ctx_class_prepare_enroll(&alp);
       max_enroll_tries--;
 
       if (max_enroll_tries <= 0 || shut_me_down) {
@@ -479,7 +479,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && sge_gdi_ctx_class_is_alive() == CL_RETVAL_OK) {
+   if (master_host != nullptr && sge_gdi_ctx_class_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());

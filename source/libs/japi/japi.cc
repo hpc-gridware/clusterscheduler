@@ -523,15 +523,20 @@ int japi_init(const char *contact, const char *session_key_in,
    /* No need to worry about locking for this global since it is only used in
     * japi_init(), and only one thread may be in japi_init() at a time. */
    if (!virgin_session) {
+      lList *answer_list = nullptr;
       int commlib_error = CL_RETVAL_OK;
       handle = cl_com_get_handle(component_get_component_name(), 0);
       if (handle == nullptr) {
-         commlib_error = sge_gdi_ctx_class_connect();
+
+         /* check if master is alive */
+         commlib_error = sge_gdi_ctx_class_prepare_enroll(&answer_list);
+         if (commlib_error == CL_RETVAL_OK) {
+            commlib_error = sge_gdi_ctx_class_is_alive(&answer_list);
+         }
          handle = cl_com_get_handle(component_get_component_name(), 0);
       }
       if (handle == nullptr) {
-         sge_dstring_sprintf (diag, MSG_JAPI_NO_HANDLE_S,
-                              cl_get_error_text(commlib_error));
+         sge_dstring_sprintf (diag, MSG_JAPI_NO_HANDLE_S, cl_get_error_text(commlib_error));
          DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
       }
    }
@@ -3264,7 +3269,7 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
    
    jb_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_JB_LIST, SGE_GDI_GET, nullptr,
                           job_selection, job_fields, &state, true);
-   sge_gdi2_wait(&alp, &mal, &state);
+   sge_gdi2_wait(&mal, &state);
    lFreeWhere(&job_selection);
    lFreeWhat(&job_fields);
 
@@ -4955,7 +4960,7 @@ static int japi_stop_event_client (const char *default_cell)
    DPRINTF (("Requesting that GDI kill our event client.\n"));
    snprintf(id_string, sizeof(id_string)-1, sge_u32, japi_ec_id);
    lAddElemStr(&id_list, ID_str, id_string, ID_Type);
-   alp = sge_gdi_ctx_class_gdi_kill(id_list, EVENTCLIENT_KILL);
+   alp = gdi2_kill(id_list, EVENTCLIENT_KILL);
    lFreeList(&id_list);
    lFreeList(&alp);
    

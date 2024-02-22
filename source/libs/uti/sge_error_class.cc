@@ -31,14 +31,12 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
-#include <cstdio>
 
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 typedef struct sge_error_message_str sge_error_message_t;
-
 
 struct sge_error_message_str {
    int error_quality;
@@ -70,8 +68,7 @@ static bool sge_error_has_type(sge_error_class_t *thiz, int error_type);
 static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_quality,
                              const char *format, va_list ap);
 
-static void sge_error_error(sge_error_class_t *thiz, int error_type, int error_quality,
-                            const char *fmt, ...);
+static void sge_error_error(sge_error_class_t *thiz, int error_type, int error_quality, const char *format, ...);
 
 static void sge_error_clear(sge_error_t *et);
 
@@ -81,18 +78,17 @@ void sge_error_message_destroy(sge_error_message_t **elem);
 
 static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_class_t *ec);
 
-static const char *sge_error_iterator_get_message(sge_error_iterator_class_t *emc);
+static const char *sge_error_iterator_get_message(sge_error_iterator_class_t *thiz);
 
-static u_long32 sge_error_iterator_get_quality(sge_error_iterator_class_t *emc);
+static u_long32 sge_error_iterator_get_quality(sge_error_iterator_class_t *thiz);
 
-static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t *emc);
+static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t *thiz);
 
 static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz);
 
 
-sge_error_class_t *sge_error_class_create(void) {
-
-   sge_error_class_t *ret = (sge_error_class_t *) sge_malloc(sizeof(sge_error_class_t));
+sge_error_class_t *sge_error_class_create() {
+   auto *ret = (sge_error_class_t *) sge_malloc(sizeof(sge_error_class_t));
    if (ret == nullptr) {
       return nullptr;
    }
@@ -129,7 +125,7 @@ void sge_error_class_destroy(sge_error_class_t **ec) {
 
 void sge_error_class_clear(sge_error_class_t *thiz) {
    if (thiz != nullptr) {
-      sge_error_t *et = (sge_error_t *) thiz->sge_error_handle;
+      auto *et = (sge_error_t *) thiz->sge_error_handle;
       sge_error_clear(et);
    }
 }
@@ -172,7 +168,7 @@ void sge_error_message_destroy(sge_error_message_t **elem) {
 }
 
 static bool sge_error_has_error(sge_error_class_t *eh) {
-   sge_error_t *et = (sge_error_t *) eh->sge_error_handle;
+   auto *et = (sge_error_t *) eh->sge_error_handle;
    return (et->first != nullptr) ? true : false;
 }
 
@@ -181,7 +177,7 @@ static bool sge_error_has_quality(sge_error_class_t *thiz, int error_quality) {
 
    DENTER(TOP_LAYER);
    if (thiz) {
-      sge_error_t *et = (sge_error_t *) thiz->sge_error_handle;
+      auto *et = (sge_error_t *) thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
       while (elem) {
          if (elem->error_quality == error_quality) {
@@ -198,7 +194,7 @@ static bool sge_error_has_type(sge_error_class_t *thiz, int error_type) {
 
    DENTER(TOP_LAYER);
    if (thiz) {
-      sge_error_t *et = (sge_error_t *) thiz->sge_error_handle;
+      auto *et = (sge_error_t *) thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
       while (elem) {
          if (elem->error_type == error_type) {
@@ -211,36 +207,31 @@ static bool sge_error_has_type(sge_error_class_t *thiz, int error_type) {
 }
 
 static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_class_t *ec) {
-   sge_error_iterator_class_t *ret = nullptr;
-   sge_error_iterator_t *elem = nullptr;
-   sge_error_t *et = (sge_error_t *) ec->sge_error_handle;
-
    DENTER(TOP_LAYER);
 
-   elem = (sge_error_iterator_t *) sge_malloc(sizeof(sge_error_iterator_t));
+   auto *et = (sge_error_t *) ec->sge_error_handle;
+   auto *elem = (sge_error_iterator_t *) sge_malloc(sizeof(sge_error_iterator_t));
    elem->current = et->first;
    elem->is_first_flag = true;
 
-   ret = (sge_error_iterator_class_t *) sge_malloc(sizeof(sge_error_iterator_class_t));
+   auto ret = (sge_error_iterator_class_t *) sge_malloc(sizeof(sge_error_iterator_class_t));
    ret->sge_error_iterator_handle = elem;
    ret->get_message = sge_error_iterator_get_message;
    ret->get_quality = sge_error_iterator_get_quality;
    ret->get_type = sge_error_iterator_get_type;
    ret->next = sge_error_iterator_next;
-
    DRETURN(ret);
 }
 
 static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_quality,
                              const char *format, va_list ap) {
 
-   sge_error_message_t *error = nullptr;
-   sge_error_t *et = (sge_error_t *) thiz->sge_error_handle;
+   auto *et = (sge_error_t *) thiz->sge_error_handle;
    dstring ds = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
-   error = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
+   auto *error = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
 
    error->error_quality = error_quality;
    error->error_type = error_type;
@@ -264,9 +255,8 @@ static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_
    DRETURN_VOID;
 }
 
-
-static void sge_error_error(sge_error_class_t *thiz, int error_type, int error_quality,
-                            const char *format, ...) {
+static void
+sge_error_error(sge_error_class_t *thiz, int error_type, int error_quality, const char *format, ...) {
    DENTER(TOP_LAYER);
    if (format != nullptr) {
       va_list ap;
@@ -293,7 +283,7 @@ void sge_error_iterator_class_destroy(sge_error_iterator_class_t **thiz) {
 }
 
 static const char *sge_error_iterator_get_message(sge_error_iterator_class_t *thiz) {
-   sge_error_iterator_t *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
+   auto *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
 
    if (elem && elem->current) {
       return elem->current->message;
@@ -302,7 +292,7 @@ static const char *sge_error_iterator_get_message(sge_error_iterator_class_t *th
 }
 
 static u_long32 sge_error_iterator_get_quality(sge_error_iterator_class_t *thiz) {
-   sge_error_iterator_t *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
+   auto *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
 
    if (elem && elem->current) {
       return elem->current->error_quality;
@@ -311,7 +301,7 @@ static u_long32 sge_error_iterator_get_quality(sge_error_iterator_class_t *thiz)
 }
 
 static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t *thiz) {
-   sge_error_iterator_t *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
+   auto *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
 
    if (elem && elem->current) {
       return elem->current->error_type;
@@ -320,7 +310,7 @@ static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t *thiz) {
 }
 
 static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz) {
-   sge_error_iterator_t *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
+   auto *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
 
    if (!elem) {
       return false;
@@ -336,41 +326,3 @@ static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz) {
    }
    return false;
 }
-
-
-void showError(sge_error_class_t *eh) {
-   sge_error_iterator_class_t *iter = nullptr;
-   dstring ds = DSTRING_INIT;
-   bool first = true;
-
-   iter = eh->iterator(eh);
-
-   while (iter && iter->next(iter)) {
-      if (first) {
-         first = true;
-      } else {
-         sge_dstring_append(&ds, "\n");
-      }
-      sge_dstring_append(&ds, iter->get_message(iter));
-   }
-   printf("%s\n", sge_dstring_get_string(&ds));
-   sge_dstring_free(&ds);
-
-}
-
-void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds) {
-   sge_error_iterator_class_t *iter = nullptr;
-   bool first = true;
-
-   iter = eh->iterator(eh);
-
-   while (iter && iter->next(iter)) {
-      if (first) {
-         first = false;
-      } else {
-         sge_dstring_append(ds, "\n");
-      }
-      sge_dstring_append(ds, iter->get_message(iter));
-   }
-}
-

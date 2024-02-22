@@ -48,7 +48,6 @@
 #include "sgeobj/config.h"
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_qtcsh.h"
 
 #include "msg_common.h"
@@ -66,7 +65,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    lList *clp_cluster = nullptr, *clp_user = nullptr;
    lListElem *nxt, *cep_dest, *cep, *next;
    const char *task_name;
-   struct passwd pw_struct;
+   struct passwd pw_struct{};
    char *pw_buffer;
    size_t pw_buffer_size;
    const char* user_name = component_get_username();
@@ -232,10 +231,7 @@ Error:
 *******************************************************************************/
 char **sge_get_qtask_args(char *taskname, lList **answer_list)
 {
-   const char *value = nullptr;
    int num_args = 0;
-   const lListElem *task = nullptr;
-   char** args = nullptr;
 
    DENTER(TOP_LAYER);
    
@@ -256,25 +252,23 @@ char **sge_get_qtask_args(char *taskname, lList **answer_list)
        * like xprintf to pass in.  This was really meant for use with qtsch. */
       if (init_qtask_config(answer_list, (print_func_t)printf) != 0) {
          sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
-         DRETURN(args);
+         DRETURN(nullptr);
       }
    }
 
    sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
-   
-   task = lGetElemStr(task_config, CF_name, taskname);
-   
+
+   const lListElem *task = lGetElemStr(task_config, CF_name, taskname);
    if (task == nullptr) {
-      DRETURN(args);
+      DRETURN(nullptr);
    }
-  
-   value = lGetString(task, CF_value);
-   
+
+   const char *value = lGetString(task, CF_value);
    if (value != nullptr) {
       num_args = sge_quick_count_num_args(value);
    }
-   
-   args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));   
+
+   char **args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));
    memset(args, 0, sizeof(char *) * (num_args + 1));
    sge_parse_args (value, args);
    

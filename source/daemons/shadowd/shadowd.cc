@@ -254,7 +254,7 @@ main(int argc, char **argv) {
          }
       }
 
-      sge_gdi_ctx_class_prepare_enroll();
+      sge_gdi_ctx_class_prepare_enroll(&alp);
 
       /* is there a running shadowd on this host (with aliased name) */
       sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
@@ -267,7 +267,7 @@ main(int argc, char **argv) {
          }
       }
    } else {
-      sge_gdi_ctx_class_prepare_enroll();
+      sge_gdi_ctx_class_prepare_enroll(&alp);
    }
 
    if (parse_cmdline_shadowd(argc, argv) == 1) {

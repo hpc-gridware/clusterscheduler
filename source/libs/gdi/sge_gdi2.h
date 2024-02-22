@@ -79,7 +79,7 @@ sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp
                state_gdi_multi *state, bool do_copy);
 
 void
-sge_gdi2_wait(lList **alpp, lList **malpp, state_gdi_multi *state);
+sge_gdi2_wait(lList **malpp, state_gdi_multi *state);
 
 int sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, int *tag, int synchron,
                              u_long32 for_request_mid, u_long32 *mid);
@@ -139,4 +139,4 @@ const char *
 gdi3_get_act_master_host(bool reread);
 
 int
-sge_gdi_ctx_class_is_alive();
+sge_gdi_ctx_class_is_alive(lList **answer_list);

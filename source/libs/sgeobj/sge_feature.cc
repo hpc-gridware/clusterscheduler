@@ -42,6 +42,7 @@
 
 #include "sgeobj/sge_feature.h"         
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/sge_answer.h"
 
 #include "basis_types.h"
 
@@ -179,16 +180,15 @@ lList **feature_get_master_featureset_list(void)
 *  NOTES
 *     MT-NOTE: feature_initialize_from_string() is MT safe
 ******************************************************************************/
-int feature_initialize_from_string(const char *mode) 
+int feature_initialize_from_string(const char *mode, lList **answer_list)
 {
-   feature_id_t id;
+   DENTER(TOP_LAYER);
+   feature_id_t id = feature_get_featureset_id(mode);
    int ret;
 
-   DENTER(TOP_LAYER);
-   id = feature_get_featureset_id(mode);
-
    if (id == FEATURE_UNINITIALIZED) {
-      ERROR((SGE_EVENT, MSG_GDI_INVALIDPRODUCTMODESTRING_S, mode));
+      CRITICAL((SGE_EVENT, MSG_GDI_INVALIDPRODUCTMODESTRING_S, mode));
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
       ret = -3;
    } else {
       feature_activate(id);

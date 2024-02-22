@@ -67,4 +67,4 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *c
 
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 
-const char *qexec_last_err(void);
+const char *qexec_last_err();

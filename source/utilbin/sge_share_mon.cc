@@ -124,7 +124,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
       what = lWhat("%T(ALL)", US_Type);
       userset_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_US_LIST, SGE_GDI_GET,
                                  nullptr, nullptr, what, &state, true);
-      sge_gdi2_wait(&alp, &malp, &state);
+      sge_gdi2_wait(&malp, &state);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }

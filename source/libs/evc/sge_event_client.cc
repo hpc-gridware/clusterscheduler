@@ -2667,7 +2667,7 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
        */
       commit_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_EV_LIST, SGE_GDI_MOD,
                                 &lp, nullptr, nullptr, state, false);
-      sge_gdi2_wait(&alp, malpp, state);
+      sge_gdi2_wait(malpp, state);
       if (lp != nullptr) {
          lFreeList(&lp);
       }

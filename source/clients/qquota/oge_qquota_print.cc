@@ -470,7 +470,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
    eh_id = sge_gdi2_multi(alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
                           nullptr, where, what, &state, true);
-   sge_gdi2_wait(alpp, &mal, &state);
+   sge_gdi2_wait(&mal, &state);
    lFreeWhat(&what);
    lFreeWhere(&where);
 

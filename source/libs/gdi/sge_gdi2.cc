@@ -224,7 +224,7 @@ gdi3_get_act_master_host(bool reread) {
 }
 
 int
-sge_gdi_ctx_class_is_alive() {
+sge_gdi_ctx_class_is_alive(lList **answer_list) {
    DENTER(TOP_LAYER);
    cl_com_SIRM_t *status = nullptr;
    int cl_ret = CL_RETVAL_OK;
@@ -232,10 +232,10 @@ sge_gdi_ctx_class_is_alive() {
    const char *comp_name = prognames[QMASTER];
    const char *comp_host = gdi3_get_act_master_host(false);
    int comp_id = 1;
-   int comp_port = bootstrap_get_sge_qmaster_port();
+   u_long32 comp_port = bootstrap_get_sge_qmaster_port();
 
    if (handle == nullptr) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "handle not found %s:0", component_get_component_name());
       DRETURN(CL_RETVAL_PARAMS);
    }
@@ -245,13 +245,13 @@ sge_gdi_ctx_class_is_alive() {
     * qmaster could have changed due to migration
     */
    cl_com_append_known_endpoint_from_name((char *) comp_host, (char *) comp_name, comp_id,
-                                          comp_port, CL_CM_AC_DISABLED, true);
+                                          (int)comp_port, CL_CM_AC_DISABLED, true);
 
    DPRINTF(("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n", comp_host ? comp_host : "", comp_name ? comp_name
                                                                                                            : "", comp_id));
    cl_ret = cl_commlib_get_endpoint_status(handle, (char *) comp_host, (char *) comp_name, comp_id, &status);
    if (cl_ret != CL_RETVAL_OK) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_commlib_get_endpoint_status failed: "SFQ, cl_get_error_text(cl_ret));
    } else {
       DEBUG((SGE_EVENT, SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING));
@@ -356,7 +356,7 @@ lList *sge_gdi2(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnu
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
    int id = sge_gdi2_multi(&alp, SGE_GDI_SEND, target, cmd, lpp, cp, enp, &state, true);
    if (id != -1) {
-      sge_gdi2_wait(&alp, &mal, &state);
+      sge_gdi2_wait(&mal, &state);
       sge_gdi_extract_answer(&alp, cmd, target, id, mal, lpp);
       lFreeList(&mal);
    }
@@ -513,15 +513,15 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *     gdi/request/sge_gdi_extract_answer() 
 *******************************************************************************/
 void
-sge_gdi2_wait(lList **alpp, lList **malpp, state_gdi_multi *state) {
+sge_gdi2_wait(lList **malpp, state_gdi_multi *state) {
    DENTER(GDI_LAYER);
    sge_gdi_packet_class_t *packet = state->packet;
    state->packet = nullptr;
    if (packet != nullptr) {
       if (component_is_qmaster_internal()) {
-         sge_gdi_packet_wait_for_result_internal(alpp, &packet, malpp);
+         sge_gdi_packet_wait_for_result_internal(&packet, malpp);
       } else {
-         sge_gdi_packet_wait_for_result_external(alpp, &packet, malpp);
+         sge_gdi_packet_wait_for_result_external(&packet, malpp);
       }
    }
    DRETURN_VOID;
@@ -561,7 +561,7 @@ sge_gdi2_send_any_request(int synchron, u_long32 *mid, const char *rhost, const 
    }
 
    if (strcmp(commproc, (char *) prognames[QMASTER]) == 0 && id == 1) {
-      cl_com_append_known_endpoint_from_name((char *) rhost, (char *) commproc, id, to_port, CL_CM_AC_DISABLED, true);
+      cl_com_append_known_endpoint_from_name((char *) rhost, (char *) commproc, id, (int)to_port, CL_CM_AC_DISABLED, true);
    }
 
    if (synchron) {
@@ -841,8 +841,8 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
-      lListElem *hlep = nullptr;
-      const lListElem *hep = nullptr;
+      lListElem *hlep;
+      const lListElem *hep;
       lList *hlp = nullptr;
       if (id_list != nullptr) {
          /*
@@ -1145,7 +1145,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
          }
 
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
-                              false, sge_execd_port, CL_TCP_DEFAULT,
+                              false, (int)sge_execd_port, CL_TCP_DEFAULT,
                               "execd_handle", 0, 1, 0);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
@@ -1368,11 +1368,9 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
 int gdi2_wait_for_conf(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
-   cl_com_handle_t *handle = nullptr;
    int ret_val;
    int ret;
    static u_long32 last_qmaster_file_read = 0;
-   u_long32 now = sge_get_gmt();
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
@@ -1398,7 +1396,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
       }
 
       DTRACE;
-      handle = cl_com_get_handle(component_get_component_name(), 0);
+      cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
       ret_val = cl_commlib_trigger(handle, 1);
       switch (ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
@@ -1411,8 +1409,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
             break;
       }
 
-      now = sge_get_gmt();
-
+      u_long32 now = sge_get_gmt();
       if (now - last_qmaster_file_read >= 30) {
          gdi3_get_act_master_host(true);
          DPRINTF(("re-read actual qmaster file\n"));
@@ -1714,7 +1711,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
    DENTER(GDI_LAYER);
    if (commlib_error != nullptr) {
       struct timeval now{};
-      unsigned long time_diff = 0;
+      unsigned long time_diff;
 
       sge_mutex_lock("general_communication_error_mutex",
                      __func__, __LINE__, &general_communication_error_mutex);

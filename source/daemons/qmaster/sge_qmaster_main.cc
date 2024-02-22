@@ -150,6 +150,7 @@ int main(int argc, char *argv[]) {
    int ret_val;
    u_long32 start_time = sge_get_gmt();
    monitoring_t monitor;
+   lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qmaster");
 
@@ -193,7 +194,7 @@ int main(int argc, char *argv[]) {
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
-      sge_gdi_ctx_class_prepare_enroll();
+      sge_gdi_ctx_class_prepare_enroll(&alp);
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */

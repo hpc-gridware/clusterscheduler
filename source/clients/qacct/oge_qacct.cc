@@ -284,7 +284,8 @@ int main(int argc, char **argv)
                options.hostflag = 1;
             } else {
                char unique[CL_MAXHOSTLEN];
-               sge_gdi_ctx_class_prepare_enroll();
+               lList *answer_list = nullptr;
+               sge_gdi_ctx_class_prepare_enroll(&answer_list);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
                     * we can't resolve the hostname, but that's no drama for qacct.
@@ -622,10 +623,10 @@ int main(int argc, char **argv)
          }
          /* lDumpList(stdout, complex_options, 0); */
          if (!is_path_setup) {
-            sge_gdi_ctx_class_prepare_enroll();
+            sge_gdi_ctx_class_prepare_enroll(&alp);
             gdi3_get_act_master_host(true);
-            if (sge_gdi_ctx_class_is_alive() != CL_RETVAL_OK) {
-               ERROR((SGE_EVENT, "qmaster is not alive"));
+            if (sge_gdi_ctx_class_is_alive(&alp) != CL_RETVAL_OK) {
+               answer_list_output(&alp);
                goto QACCT_EXIT;
             }
             sge_setup_sig_handlers(QACCT);
@@ -1523,7 +1524,7 @@ lList **hgrp_l
    what = lWhat("%T(ALL)", QU_Type);
    q_id = sge_gdi2_multi(alpp, SGE_GDI_SEND, SGE_CQ_LIST, SGE_GDI_GET,
                            nullptr, nullptr, what, &state, true);
-   sge_gdi2_wait(alpp, &mal, &state);
+   sge_gdi2_wait(&mal, &state);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {

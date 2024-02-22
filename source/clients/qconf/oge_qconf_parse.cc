@@ -1779,7 +1779,7 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-ks", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
-         alp = sge_gdi_ctx_class_gdi_kill(nullptr, SCHEDD_KILL);
+         alp = gdi2_kill(nullptr, SCHEDD_KILL);
          for_each_ep(aep, alp) {
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK)
@@ -1798,7 +1798,7 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-km", *spp) == 0) {
          /* no adminhost/manager check needed here */
-         alp = sge_gdi_ctx_class_gdi_kill(nullptr, MASTER_KILL);
+         alp = gdi2_kill(nullptr, MASTER_KILL);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
 
@@ -1819,10 +1819,10 @@ int sge_parse_qconf(char *argv[])
          spp = sge_parser_get_next(spp);
          /* found namelist -> process */
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = sge_gdi_ctx_class_gdi_kill(nullptr, opt);
+            alp = gdi2_kill(nullptr, opt);
          } else {
             lString2List(*spp, &lp, ID_Type, ID_str, ", ");
-            alp = sge_gdi_ctx_class_gdi_kill(lp, opt);
+            alp = gdi2_kill(lp, opt);
          }      
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
@@ -1844,7 +1844,7 @@ int sge_parse_qconf(char *argv[])
          for_each_rw (ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_START);
          }
-         alp = sge_gdi_ctx_class_gdi_kill(lp, opt);
+         alp = gdi2_kill(lp, opt);
          lFreeList(&lp);
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
@@ -1866,7 +1866,7 @@ int sge_parse_qconf(char *argv[])
          for_each_rw(ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_STOP);
          }
-         alp = sge_gdi_ctx_class_gdi_kill(lp, opt);
+         alp = gdi2_kill(lp, opt);
          lFreeList(&lp);
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
@@ -1904,11 +1904,11 @@ int sge_parse_qconf(char *argv[])
          }
 
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = sge_gdi_ctx_class_gdi_kill(nullptr, opt);
+            alp = gdi2_kill(nullptr, opt);
          } else {   
             /* found namelist -> process */
             lString2List(*spp, &lp, EH_Type, EH_name, ", ");
-            alp = sge_gdi_ctx_class_gdi_kill(lp, opt);
+            alp = gdi2_kill(lp, opt);
          }
          sge_parse_return |= show_answer_list(alp);
 
