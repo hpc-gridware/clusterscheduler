@@ -102,7 +102,7 @@ namespace oge {
  */
    static int topo_get_total_amount_of_type(hwloc_obj_type_t type) {
       int amount = 0;
-      if (topo_has_core_binding() && topo_has_topology_information()) {
+      if (topo_has_topology_information()) {
          amount = hwloc_get_nbobjs_by_type(topo_hwloc_topology, type);
       }
 
@@ -159,7 +159,7 @@ namespace oge {
    int topo_get_amount_of_cores_for_socket(int socket_number) {
       int ret = 0;
 
-      if (topo_has_core_binding() && topo_has_topology_information()) {
+      if (topo_has_topology_information()) {
          hwloc_obj_t socket;
          socket = hwloc_get_obj_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_number);
          if (socket != nullptr) {
@@ -179,7 +179,7 @@ namespace oge {
    int topo_get_amount_of_threads_for_core(int socket_number, int core_number) {
       int ret = 0;
 
-      if (topo_has_core_binding() && topo_has_topology_information()) {
+      if (topo_has_topology_information()) {
          hwloc_obj_t core;
          core = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_number,
                                             HWLOC_OBJ_CORE, core_number);
@@ -206,7 +206,7 @@ namespace oge {
    bool topo_get_processor_ids(int socket_number, int core_number, int **proc_ids, int *amount) {
       bool ret = false;
 
-      if (topo_has_core_binding() && topo_has_topology_information()) {
+      if (topo_has_topology_information()) {
          hwloc_obj_t core;
          core = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET,
                                             socket_number, HWLOC_OBJ_CORE, core_number);
