@@ -78,7 +78,7 @@ int
 sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
                state_gdi_multi *state, bool do_copy);
 
-bool
+void
 sge_gdi2_wait(lList **alpp, lList **malpp, state_gdi_multi *state);
 
 int sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, int *tag, int synchron,

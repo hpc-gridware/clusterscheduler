@@ -1113,10 +1113,7 @@ void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_
    }
    iter = eh->iterator(eh);
    while (iter && iter->next(iter)) {
-      answer_list_add(alpp, 
-                      iter->get_message(iter), 
-                      iter->get_type(iter), 
-                      (answer_quality_t)iter->get_quality(iter));
+      answer_list_add(alpp, iter->get_message(iter), iter->get_type(iter), (answer_quality_t)iter->get_quality(iter));
    }
    if (clear_errors) {
       sge_error_class_clear(eh);

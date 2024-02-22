@@ -112,17 +112,6 @@ static int
 sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p);
 
 void
-sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmaster_internal_client, lList **alpp) {
-   DENTER(TOP_LAYER);
-   if (!sge_gdi_ctx_setup(prog_number, thread_name, is_qmaster_internal_client)) {
-      answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
-      DRETURN_VOID;
-   }
-   component_set_exit_func(gdi2_default_exit_func);
-   DRETURN_VOID;
-}
-
-void
 sge_gdi_ctx_class_error(int error_type, int error_quality, const char *fmt, ...) {
    DENTER(TOP_LAYER);
    if (gdi3_get_error_handle() && fmt != nullptr) {
@@ -618,8 +607,11 @@ sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_in
       DRETURN(AE_ERROR);
    }
 
-   /* a dynamic eh handler is created */
-   sge_gdi_ctx_class_create(progid, threadnames[thread_id], is_qmaster_intern_client, alpp);
+   if (!sge_gdi_ctx_setup(progid, threadnames[thread_id], is_qmaster_intern_client)) {
+      answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
+      DRETURN(AE_ERROR);
+   }
+   component_set_exit_func(gdi2_default_exit_func);
 
    DRETURN(AE_OK);
 }

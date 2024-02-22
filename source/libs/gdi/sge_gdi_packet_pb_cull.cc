@@ -56,11 +56,10 @@
 #include "msg_qmaster.h"
 
 static bool
-sge_pack_gdi_info(u_long32 command)
-{
+sge_pack_gdi_info(u_long32 command) {
+   DENTER(GDI_LAYER);
    bool ret = true;
 
-   DENTER(GDI_LAYER);
    switch (command) {
    case SGE_GDI_GET:
       DPRINTF(("packing SGE_GDI_GET request\n"));
@@ -104,42 +103,33 @@ sge_pack_gdi_info(u_long32 command)
       DPRINTF(("packing SGE_GDI_REPLACE request\n"));
       break;
    default:
-      ERROR((SGE_EVENT, MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D,
-             sge_u32c(command)));
+      ERROR((SGE_EVENT, MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D, sge_u32c(command)));
       ret = false;
    }
-
    DRETURN(ret);
 }
 
 static bool
-sge_gdi_map_pack_errors(int pack_ret, lList **answer_list)
-{
-   bool ret = true;
-
+sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
    DENTER(GDI_LAYER);
+
    switch (pack_ret) {
    case PACK_SUCCESS:
       break;
    case PACK_ENOMEM:
-      answer_list_add_sprintf(answer_list, STATUS_ERROR2,
-                              ANSWER_QUALITY_ERROR,
+      answer_list_add_sprintf(answer_list, STATUS_ERROR2, ANSWER_QUALITY_ERROR,
                               MSG_GDI_MEMORY_NOTENOUGHMEMORYFORPACKINGGDIREQUEST);
       break;
    case PACK_FORMAT:
-      answer_list_add_sprintf(answer_list, STATUS_ERROR3,
-                              ANSWER_QUALITY_ERROR,
+      answer_list_add_sprintf(answer_list, STATUS_ERROR3, ANSWER_QUALITY_ERROR,
                               MSG_GDI_REQUESTFORMATERROR);
       break;
    default:
-      answer_list_add_sprintf(answer_list, STATUS_ERROR1,
-                              ANSWER_QUALITY_ERROR,
+      answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                               MSG_GDI_UNEXPECTEDERRORWHILEPACKINGGDIREQUEST);
       break;
    }
-   ret = (pack_ret == PACK_SUCCESS) ? true : false;
-
-   DRETURN(ret);
+   DRETURN(pack_ret == PACK_SUCCESS);
 }
 
 /****** gdi/request_internal/sge_gdi_packet_get_pb_size() ********************
@@ -169,8 +159,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list)
 *     gdi/request_internal/sge_gdi_packet_pack_task() 
 *******************************************************************************/
 u_long32
-sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet)
-{
+sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet) {
    u_long32 ret = 0;
 
    DENTER(TOP_LAYER);
@@ -223,8 +212,7 @@ sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet)
 *     gdi/request_internal/sge_gdi_packet_pack()
 *******************************************************************************/
 bool
-sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_pack_buffer *pb)
-{
+sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_pack_buffer *pb) {
    bool aret = true;
    bool has_next;
    int pack_ret;
@@ -300,20 +288,12 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
             sge_free(&auth_info);
          }
 
-         /* EB: TODO: ST: cleanup - set last parameter to true */
-         aret = sge_gdi_packet_append_task(*packet, &a_list, target,
-                                           command, &data_list, &a_list,
-                                           &condition, &enumeration,
-                                           false, false);
-         if (aret == false) {
-            goto error;
-         }
+         sge_gdi_packet_append_task(*packet, &a_list, target, command, &data_list, &a_list, &condition, &enumeration, false);
       } while (has_next);
    }
    DRETURN(aret);
  error_with_mapping:
    aret = sge_gdi_map_pack_errors(pack_ret, answer_list);
- error:
    sge_gdi_packet_free(packet);
    DRETURN(aret);
 }
@@ -360,14 +340,11 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
 *     gdi/request_internal/sge_gdi_packet_unpack()
 *******************************************************************************/
 bool
-sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb)
-{
-   bool ret = true;
-   sge_gdi_task_class_t *task = nullptr;
-
+sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
+   bool ret = true;
 
-   task = packet->first_task;
+   sge_gdi_task_class_t *task = packet->first_task;
    while (ret && task != nullptr) {
       ret |= sge_gdi_packet_pack_task(packet, task, answer_list, pb);
       task = task->next;
@@ -422,12 +399,10 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *******************************************************************************/
 bool
 sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
-                         sge_pack_buffer *pb)
-{
-   bool ret = true;
-   int pack_ret = PACK_SUCCESS;
-
+                         sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
+   bool ret = true;
+   int pack_ret;
 
    if ((task != nullptr) && (packet != nullptr)
        && (packet->is_intern_request == false)) {

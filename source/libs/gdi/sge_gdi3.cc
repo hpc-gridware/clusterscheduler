@@ -68,15 +68,15 @@ static pthread_key_t gdi3_tl_key;
 // shared storage
 static sge_gdi_ts_t ts;
 
-static void
-set_master_host(const char *master_host) {
+void
+gdi_set_master_host(const char *master_host) {
    ts.master_host = sge_strdup(ts.master_host, master_host);
 }
 
 static void
 gdi3_log_tl_parameter(sge_gdi_tl_t *tl) {
    DENTER(TOP_LAYER);
-   DPRINTF(("request_id             >%d<\n", tl->request_id));
+   DPRINTF(("request_id              >%d<\n", tl->request_id));
    DPRINTF(("is_setup                >%s<\n", tl->is_setup ? "true" : "false"));
    DPRINTF(("error_handle            >%p<\n", tl->error_handle));
    DPRINTF(("last_commlib_error      >%d<\n", tl->last_commlib_error));
@@ -149,7 +149,6 @@ public:
 // although not used the constructor call has the side effect to initialize the pthread_key => do not delete
 static GdiThreadInit gdi_obj{};
 
-
 void
 gdi3_mt_done() {
    gdi3_ts_destroy();
@@ -158,11 +157,6 @@ gdi3_mt_done() {
 const char *
 gdi3_get_master_host() {
    return ts.master_host;
-}
-
-void
-gdi3_set_master_host(const char *master_host) {
-   set_master_host(master_host);
 }
 
 bool

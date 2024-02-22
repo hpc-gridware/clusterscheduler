@@ -755,22 +755,19 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
          if ((failed == SSTATE_NO_SHELL) && (job != nullptr) &&
              ((lGetList(job, JB_shell_list) != nullptr) ||
-              ((master_queue != nullptr) &&
-               JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type)) &&
-               JOB_TYPE_IS_NO_SHELL(lGetUlong(job, JB_type))))) {
+             ((master_queue != nullptr) && JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type))
+                                        && JOB_TYPE_IS_NO_SHELL(lGetUlong(job, JB_type))))) {
             job_caused_failure = 1;
          } else if ((failed == SSTATE_NO_SHELL) && (master_queue != nullptr)) {
             char* shell_start_mode = mconf_get_shell_start_mode();
-            const char *mode = job_get_shell_start_mode(job, master_queue, 
-                                                   shell_start_mode);
+            const char *mode = job_get_shell_start_mode(job, master_queue, shell_start_mode);
             sge_free(&shell_start_mode);
 
-            if (strcmp(mode, "unix_behavior") != 0) {
+            if (strcmp(mode, "unix_behavior") == 0) {
                job_caused_failure = 1;
             }
-         } else if ((failed == SSTATE_BEFORE_JOB) && (job != nullptr) &&
-                  JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type)) &&
-                  !sge_is_file(lGetString(job, JB_script_file))) {
+         } else if ((failed == SSTATE_BEFORE_JOB) && (job != nullptr) && JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type)) &&
+                    !sge_is_file(lGetString(job, JB_script_file))) {
             job_caused_failure = 1;
          } else if (failed == SSTATE_ADD_GRP_SET_ERROR) {
             job_caused_failure = 1;

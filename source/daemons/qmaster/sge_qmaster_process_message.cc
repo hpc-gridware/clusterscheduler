@@ -283,7 +283,7 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
    /* 
     * Append a pseudo GDI task
     */
-   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &rep, nullptr, nullptr, nullptr, false, false);
+   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &rep, nullptr, nullptr, nullptr, false);
 
    /*
     * Put the packet into the task queue so that workers can handle it

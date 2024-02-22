@@ -42,9 +42,6 @@ gdi3_mt_done();
 const char *
 gdi3_get_master_host();
 
-void
-gdi3_set_master_host(const char *master_host);
-
 bool
 gdi3_is_setup();
 
@@ -89,4 +86,7 @@ gdi3_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
 
 u_long32
 gdi3_get_next_request_id();
+
+void
+gdi_set_master_host(const char *master_host);
 
