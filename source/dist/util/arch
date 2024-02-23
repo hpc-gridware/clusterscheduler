@@ -160,6 +160,9 @@ Linux)
    s390x)
       lxmachine=s390x
       ;;
+   riscv64)
+      lxmachine=riscv64
+      ;;
    *)
       unsupported="UNSUPPORTED-"
       lxmachine=$osmachine

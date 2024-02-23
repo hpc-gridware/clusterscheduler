@@ -97,8 +97,10 @@ function(architecture_specific_settings)
       # newer Linuxes require libtirp
       if (EXISTS /usr/include/tirpc)
          set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif ()
+      if (EXISTS /usr/lib64/libtirpc.so)
+         set(TIRPC_LIB tirpc PARENT_SCOPE)
+      endif()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86")
          # we need patchelf for setting the run path in the db_* tools
@@ -111,6 +113,11 @@ function(architecture_specific_settings)
          add_compile_options(-static-libstdc++ -static-libgcc)
          add_link_options(-static-libstdc++ -static-libgcc)
       endif ()
+
+      if (SGE_ARCH STREQUAL "lx-riscv64")
+         # TODO: OGE-??? qmake can still not be build for this platform on Tumbleweed (current default build platform)
+         set(WITH_QMAKE OFF PARENT_SCOPE)
+      endif()
 
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
       # FreeBSD

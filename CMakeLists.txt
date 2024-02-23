@@ -43,6 +43,7 @@ option(WITH_HWLOC "Enable building with hwloc library" ON)
 option(WITH_JEMALLOC "Enable use of the jemalloc memory allocator" ON)
 option(WITH_OPENSSL "Enable use of the openssl library for CSP mode" OFF)
 option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON)
+option(WITH_QMAKE "Enable build of qmake" ON)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
