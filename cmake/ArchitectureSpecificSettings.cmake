@@ -50,8 +50,8 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       if (CMAKE_BUILD_TYPE STREQUAL "Debug")
          message(STATUS "Doing a debug build")
-         # cmake already adds -g, completely disable optimization @todo do we want
-         # to add a define like SGE_DEVELOPMENT_BUILD?
+         # cmake already adds -g, completely disable optimization
+         # @todo do we want to add a define like SGE_DEVELOPMENT_BUILD?
          add_compile_options(-O0)
       else ()
          message(STATUS "Doing a release build")
@@ -94,10 +94,12 @@ function(architecture_specific_settings)
          add_link_options("-fsanitize=address")
       endif ()
 
-      # newer Linuxes require libtirp
+      # newer Linuxes require libtirp header and library
       if (EXISTS /usr/include/tirpc)
          set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
+         set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif ()
+      # ... other Linuxes require the libtirp library but have the default header
       if (EXISTS /usr/lib64/libtirpc.so)
          set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif()
@@ -115,10 +117,29 @@ function(architecture_specific_settings)
       endif ()
 
       if (SGE_ARCH STREQUAL "lx-riscv64")
-         # TODO: OGE-??? qmake can still not be build for this platform on Tumbleweed (current default build platform)
+         # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
          set(WITH_QMAKE OFF PARENT_SCOPE)
       endif()
 
+   elseif (SGE_ARCH MATCHES "lx-riscv64")
+      # Linux RiscV
+      message(STATUS "We are on Linux: ${SGE_ARCH}")
+      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
+
+      add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
+      add_compile_options(-fPIC)
+      add_link_options(-pthread -rdynamic)
+
+      # Tumbleweed requires libtirp library but provides default header
+      if (EXISTS /usr/lib64/libtirpc.so)
+         set(TIRPC_LIB tirpc PARENT_SCOPE)
+      endif()
+
+      set(WITH_MTMALLOC OFF PARENT_SCOPE)
+
+      # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
+      set(WITH_QMAKE OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")

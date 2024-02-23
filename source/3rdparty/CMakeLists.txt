@@ -1,2 +1,4 @@
 # source/3rdparty
-add_subdirectory(qmake-4.4)
+if (WITH_QMAKE)
+   add_subdirectory(qmake-4.4)
+endif()
