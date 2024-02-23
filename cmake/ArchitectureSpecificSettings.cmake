@@ -20,33 +20,45 @@ function(architecture_specific_settings)
    message(STATUS "Compilearch: ${SGE_COMPILEARCH}")
    message(STATUS "Targetbits: ${SGE_TARGETBITS}")
 
-      # directory for installing 3rdparty tools once
-      # this allows us to delete the build directory without having to re-build all 3rdparty tools
-      set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
-      # spaces in file/directory names break the build
-      string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
-      message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
-      set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
-      set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
+   # directory for installing 3rdparty tools once
+   # this allows us to delete the build directory without having to re-build all 3rdparty tools
+   set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
+   # spaces in file/directory names break the build
+   string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
+   message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
+   set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
+   set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
    # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7
    # only LINUX: HAS_IN_PORT_T
-   add_compile_definitions(
-         SGE_ARCH_STRING="${SGE_ARCH}"
-         ${SGE_BUILDARCH}
-         ${SGE_COMPILEARCH}
-         ${SGE_TARGETBITS}
-         COMPILE_DC)
+   add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
 
-   if (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
-      # Linux
+   if (SGE_ARCH MATCHES "lx-riscv64")
+      # Linux RiscV
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
 
-      # @todo does -fPIC have any disadvantages when not required (only for shared
-      # libs)?
+      add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
+      add_compile_options(-fPIC)
+      add_link_options(-pthread -rdynamic)
+
+      # Tumbleweed requires libtirp library only but has old default header
+      if (EXISTS /usr/lib64/libtirpc.so)
+         set(TIRPC_LIB tirpc PARENT_SCOPE)
+      endif ()
+
+      # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
+      set(WITH_QMAKE OFF PARENT_SCOPE)
+      set(WITH_MTMALLOC OFF PARENT_SCOPE)
+   elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
+      # Linux supported/unsupported amd64/x86
+      message(STATUS "We are on Linux: ${SGE_ARCH}")
+      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
+
+      # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
       if (CMAKE_BUILD_TYPE STREQUAL "Debug")
          message(STATUS "Doing a debug build")
@@ -99,10 +111,6 @@ function(architecture_specific_settings)
          set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
          set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif ()
-      # ... other Linuxes require the libtirp library but have the default header
-      if (EXISTS /usr/lib64/libtirpc.so)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-      endif()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86")
          # we need patchelf for setting the run path in the db_* tools
@@ -115,31 +123,6 @@ function(architecture_specific_settings)
          add_compile_options(-static-libstdc++ -static-libgcc)
          add_link_options(-static-libstdc++ -static-libgcc)
       endif ()
-
-      if (SGE_ARCH STREQUAL "lx-riscv64")
-         # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
-         set(WITH_QMAKE OFF PARENT_SCOPE)
-      endif()
-
-   elseif (SGE_ARCH MATCHES "lx-riscv64")
-      # Linux RiscV
-      message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
-
-      add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
-      add_compile_options(-fPIC)
-      add_link_options(-pthread -rdynamic)
-
-      # Tumbleweed requires libtirp library but provides default header
-      if (EXISTS /usr/lib64/libtirpc.so)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-      endif()
-
-      set(WITH_MTMALLOC OFF PARENT_SCOPE)
-
-      # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
-      set(WITH_QMAKE OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
