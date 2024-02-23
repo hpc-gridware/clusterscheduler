@@ -32,6 +32,5 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "gdi/sge_gdi_ctx.h"
 
 bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar);

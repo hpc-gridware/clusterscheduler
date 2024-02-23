@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int sge_execd_register_at_qmaster(bool is_restart);
 u_long32 get_last_qmaster_register_time(void);

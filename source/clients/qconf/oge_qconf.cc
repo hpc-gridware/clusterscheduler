@@ -38,12 +38,12 @@
 #include "sgeobj/sge_feature.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
 
 #include "oge_qconf_parse.h"
 #include "sig_handlers.h"
-#include "msg_clients_common.h"
 
 extern char **environ;
 
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QCONF);
    
-   if (sge_gdi2_setup(QCONF, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QCONF, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

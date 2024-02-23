@@ -47,7 +47,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "comm/cl_commlib.h"
 
@@ -279,7 +279,7 @@ sge_become_admin_user(const char *admin_user) {
 void
 sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
 
    DRETURN_VOID;
 }

@@ -63,13 +63,14 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sched/sge_select_queue.h"
 
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(QACCT, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QACCT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto QACCT_EXIT;
    }
@@ -285,7 +286,7 @@ int main(int argc, char **argv)
             } else {
                char unique[CL_MAXHOSTLEN];
                lList *answer_list = nullptr;
-               sge_gdi_ctx_class_prepare_enroll(&answer_list);
+               gdi_client_prepare_enroll(&answer_list);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
                     * we can't resolve the hostname, but that's no drama for qacct.
@@ -623,7 +624,7 @@ int main(int argc, char **argv)
          }
          /* lDumpList(stdout, complex_options, 0); */
          if (!is_path_setup) {
-            sge_gdi_ctx_class_prepare_enroll(&alp);
+            gdi_client_prepare_enroll(&alp);
             gdi3_get_act_master_host(true);
             if (sge_gdi_ctx_class_is_alive(&alp) != CL_RETVAL_OK) {
                answer_list_output(&alp);

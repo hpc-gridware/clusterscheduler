@@ -33,7 +33,7 @@
 
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int
 sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost);

@@ -33,7 +33,7 @@
 
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int
 ckpt_mod(lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,

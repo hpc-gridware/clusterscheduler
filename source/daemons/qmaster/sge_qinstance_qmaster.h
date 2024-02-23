@@ -33,7 +33,7 @@
 
 #include "basis_types.h"
 #include "cull/cull.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 bool
 qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,

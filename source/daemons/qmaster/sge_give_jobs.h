@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "sge_qmaster_timed_event.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #define MAX_JOB_DELIVER_TIME (5*60)
 

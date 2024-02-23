@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 void
 process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,

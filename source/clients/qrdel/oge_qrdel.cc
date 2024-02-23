@@ -36,15 +36,15 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_profiling.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "parse_qsub.h"
 #include "usage.h"
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(QRDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QRDEL, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -109,12 +109,12 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

@@ -58,8 +58,8 @@
 
 #include "sched/sge_schedd_text.h"
 
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sig_handlers.h"
 #include "oge_client_job.h"
@@ -218,7 +218,7 @@ char **argv
    sge_setup_sig_handlers(QSTAT);
    log_state_set_log_gui(true);
 
-   if (sge_gdi2_setup(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

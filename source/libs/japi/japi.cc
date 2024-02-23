@@ -83,12 +83,13 @@
 
 #include "evc/sge_event_client.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
@@ -396,7 +397,7 @@ int japi_init_mt(dstring *diag)
    /*
    ** TODO: return error reason in diag
    */
-   gdi_errno = sge_gdi2_setup(prog_number, MAIN_THREAD, &alp);
+   gdi_errno = gdi_client_setup_and_enroll(prog_number, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       answer_to_dstring(lFirst(alp), diag);
       lFreeList(&alp);
@@ -435,7 +436,7 @@ int japi_init_mt(dstring *diag)
 *                                  a former session using this session key.
 *     int my_prog_num            - the index into prognames to use when
 *                                  registering with the qmaster.  See
-*                                  sge_gdi_setup().
+*                                  gdi_client_setup_and_enroll().
 *     bool enable_wait           - Whether to start up in mutli-threaded mode to
 *                                  allow japi_wait() and japi_synchronize() to
 *                                  function.
@@ -529,7 +530,7 @@ int japi_init(const char *contact, const char *session_key_in,
       if (handle == nullptr) {
 
          /* check if master is alive */
-         commlib_error = sge_gdi_ctx_class_prepare_enroll(&answer_list);
+         commlib_error = gdi_client_prepare_enroll(&answer_list);
          if (commlib_error == CL_RETVAL_OK) {
             commlib_error = sge_gdi_ctx_class_is_alive(&answer_list);
          }
@@ -4042,10 +4043,10 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   gdi_errno = sge_gdi2_setup(prog_number, MAIN_THREAD, &alp);
+   gdi_errno = gdi_client_setup_and_enroll(prog_number, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       const lListElem *aep = lFirst(alp);
-      DPRINTF(("error: sge_gdi2_setup() failed with gdi_error %d for event client thread\n", gdi_errno));
+      DPRINTF(("error: gdi_client_setup_and_enroll() failed with gdi_error %d for event client thread\n", gdi_errno));
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
          answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), lGetString(aep, AN_text), 

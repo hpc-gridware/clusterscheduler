@@ -40,8 +40,9 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
+#include "uti/sge_component.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sge_daemonize.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_job.h"

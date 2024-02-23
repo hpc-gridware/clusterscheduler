@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int do_ck_to_do(bool is_qmaster_down);
 int register_at_ptf(const lListElem *jep, const lListElem *jatep, const lListElem *petep);

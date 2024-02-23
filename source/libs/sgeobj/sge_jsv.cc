@@ -46,7 +46,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sge_daemonize.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"

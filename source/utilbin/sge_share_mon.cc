@@ -33,22 +33,21 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <cstring>
-#include <ctime>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_language.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_component.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_schedd_conf.h"
 
@@ -349,7 +348,7 @@ main(int argc, char **argv)
        names = (const char **)&argv[optind];
    }
 
-   if (sge_gdi2_setup(SGE_SHARE_MON, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(SGE_SHARE_MON, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -382,7 +381,7 @@ main(int argc, char **argv)
       }
    }
 
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
 
    sge_prof_cleanup();
    sge_dstring_free(&output_dstring);

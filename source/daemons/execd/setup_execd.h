@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 void sge_setup_sge_execd(const char* tmp_err_file_name);
 int daemonize_execd(void *context);

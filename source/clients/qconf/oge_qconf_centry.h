@@ -30,7 +30,7 @@
  *
  ************************************************************************/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 lListElem *
 centry_get_via_gdi(lList **answer_list, const char *group);

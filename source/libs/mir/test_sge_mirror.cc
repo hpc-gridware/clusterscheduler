@@ -44,7 +44,9 @@
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
+
+#include "gdi/oge_gdi_client.h"
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
    sge_setup_sig_handlers(QEVENT);
 
    /* setup event client */
-   cl_err = sge_gdi2_setup(QEVENT, MAIN_THREAD, &alp);
+   cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
    if (cl_err != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);

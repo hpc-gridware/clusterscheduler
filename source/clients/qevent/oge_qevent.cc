@@ -60,12 +60,13 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "oge_qevent.h"
 #include "usage.h"
@@ -481,7 +482,7 @@ int main(int argc, char *argv[])
    sge_setup_sig_handlers(QEVENT);
 
    /* setup event client */
-   gdi_setup = sge_gdi2_setup(QEVENT, MAIN_THREAD, &alp);
+   gdi_setup = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
    if (gdi_setup != AE_OK) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);

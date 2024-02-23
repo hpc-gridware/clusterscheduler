@@ -51,7 +51,7 @@
 #include "gdi/sge_security.h"
 #include "gdi/version.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi3.h"

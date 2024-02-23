@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
       
 #include "basis_types.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "oge_qrstat_filter.h"
       

@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 void
 sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor);

@@ -35,8 +35,9 @@
 #include <sys/types.h>
 
 #include "basis_types.h"
+#include "cull/cull_list.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 enum {
    TBL_GROW_FACTOR = 2, TBL_INIT_SIZE = 10

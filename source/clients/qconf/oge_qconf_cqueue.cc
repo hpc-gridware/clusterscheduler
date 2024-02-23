@@ -56,7 +56,7 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "oge_qconf_cqueue.h"
 #include "msg_qconf.h"

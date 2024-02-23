@@ -55,6 +55,7 @@
 #include "sgeobj/sge_cull_xml.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
 
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
 
    log_state_set_log_gui(true);
 
-   if (sge_gdi2_setup(QQUOTA, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QQUOTA, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);

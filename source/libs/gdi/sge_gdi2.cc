@@ -64,7 +64,7 @@
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi3.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_packet.h"
@@ -1491,25 +1491,7 @@ void gdi2_default_exit_func(int i) {
    cl_com_cleanup_commlib();
 }
 
-/****** gdi/setup/sge_gdi_shutdown() ******************************************
-*  NAME
-*     sge_gdi_shutdown() -- gdi shutdown.
-*
-*  SYNOPSIS
-*     int sge_gdi_shutdown()
-*
-*  FUNCTION
-*     This function has to be called before quitting the program. It 
-*     cancels registration at commd.
-*
-*  NOTES
-*     MT-NOTES: sge_gdi_setup() is MT safe
-******************************************************************************/
-int sge_gdi2_shutdown() {
-   DENTER(GDI_LAYER);
-   gdi2_default_exit_func(0);
-   DRETURN(0);
-}
+
 
 /****** sgeobj/sge_report/report_list_send() ******************************************
 *  NAME

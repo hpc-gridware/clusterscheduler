@@ -40,6 +40,10 @@
 #include <rpc/rpc.h>
 #include <rpc/types.h>
 
+#if defined(LINUXRISCV64)
+#  include <rpc/xdr.h>
+#endif
+
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG

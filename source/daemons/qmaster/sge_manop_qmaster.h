@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int
 sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);

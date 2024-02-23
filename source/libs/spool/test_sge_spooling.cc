@@ -40,6 +40,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap_files.h"
+#include "uti/sge.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
@@ -51,7 +52,7 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "mir/sge_mirror.h"
 
@@ -619,7 +620,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   if (sge_gdi2_setup(QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }

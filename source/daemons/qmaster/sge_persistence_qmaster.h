@@ -34,7 +34,7 @@
 #include "sgeobj/sge_event.h"
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 
 bool

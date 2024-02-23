@@ -5,6 +5,7 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/sge_profiling.h"
 
 #include "evm/sge_event_master.h"
 #include "mir/sge_mirror.h"

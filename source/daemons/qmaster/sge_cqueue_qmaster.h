@@ -33,7 +33,7 @@
 
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 bool
 cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,

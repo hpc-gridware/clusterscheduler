@@ -31,24 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_error_class.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_uidgid.h"
-
-#include "comm/commlib.h"
-
-#include "gdi/sge_gdi_packet_type.h"
-
-#include "uti/sge.h"
-
-int 
-sge_gdi2_setup(int component_id, u_long32 thread_id, lList **answer_list);
-
-int 
-sge_setup2(int progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client);
-
 bool
 sge_daemonize_prepare();
 
@@ -58,5 +40,3 @@ sge_daemonize_finalize();
 int
 sge_daemonize(int *keep_open, unsigned long nr_of_fds);
 
-int
-sge_gdi_ctx_class_prepare_enroll(lList **answer_list);

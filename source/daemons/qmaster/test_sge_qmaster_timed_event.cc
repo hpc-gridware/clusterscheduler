@@ -33,15 +33,10 @@
 #include <cstdio>
 #include <unistd.h>
 
-#include "sge_qmaster_timed_event.h"
-
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_feature.h"
-
-#include "gdi/sge_gdi_ctx.h"
+#include "sge_qmaster_timed_event.h"
 
  
 void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);

@@ -33,7 +33,7 @@
 
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 typedef char *sge_tid_t;
 

@@ -108,7 +108,7 @@ int gdi2_wait_for_conf(lList **conf_list);
 
 int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron);
 
-int sge_gdi2_shutdown();
+
 
 /* 
 ** commlib handler functions 

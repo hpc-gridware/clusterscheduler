@@ -34,7 +34,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/sge_answer.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name, char *variables[]);
 

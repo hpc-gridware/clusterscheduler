@@ -59,7 +59,7 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "basis_types.h"
 #include "../qstat/oge_qstat_filter.h"
