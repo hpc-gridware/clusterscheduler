@@ -85,8 +85,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     after return.
 *
 *  INPUTS
-*     lList **answer_list             - answer_list (not used)
-*     sge_gdi_packet_class_t **packet - packet 
+*     sge_gdi_packet_class_t **packet - packet
 *     lList **malpp                   - multi answer
 *
 *  RESULT
@@ -103,19 +102,16 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *     sge_gdi_packet_is_handled()
 *******************************************************************************/
-static bool
-sge_gdi_packet_create_multi_answer(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
+static void
+sge_gdi_packet_create_multi_answer(sge_gdi_packet_class_t **packet, lList **malpp)
 {
-   sge_gdi_task_class_t *task = nullptr;
-   bool ret = true;
-
    DENTER(TOP_LAYER);
 
    /* 
     * make multi answer list and move all data contained in packet 
     * into that structure 
     */
-   task = (*packet)->first_task;
+   sge_gdi_task_class_t *task = (*packet)->first_task;
    while (task != nullptr) {
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
@@ -137,8 +133,7 @@ sge_gdi_packet_create_multi_answer(lList **answer_list, sge_gdi_packet_class_t *
     * It is time to free the element. It is really not needed anymore.
     */
    sge_gdi_packet_free(packet);
-
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 
@@ -182,15 +177,14 @@ sge_gdi_packet_create_multi_answer(lList **answer_list, sge_gdi_packet_class_t *
 *     gdi/request_internal/sge_gdi_packet_is_handled()
 *******************************************************************************/
 void
-sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet)
-{
+sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
    if (packet != nullptr) {
       sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
       while (packet->is_handled == false) {
-         struct timespec ts; 
+         struct timespec ts{};
 
          DPRINTF(("waiting for packet to be handling by worker\n"));
          sge_relative_timespec(CLIENT_WAIT_TIME_S, &ts);
@@ -325,7 +319,7 @@ sge_gdi_packet_broadcast_that_handled(sge_gdi_packet_class_t *packet)
 *     gdi/request/get_cl_ping_value()
 *     gdi/request/get_gdi_retries_value()
 *******************************************************************************/
-static int get_gdi_retries_value(void) {
+static int get_gdi_retries_value() {
    char* gdi_retries = nullptr;
    int retries = 0;
    cl_com_get_parameter_list_value("gdi_retries", &gdi_retries);
@@ -359,7 +353,7 @@ static int get_gdi_retries_value(void) {
 *     gdi/request/get_cl_ping_value()
 *     gdi/request/get_gdi_retries_value()
 *******************************************************************************/
-static bool get_cl_ping_value(void) {
+static bool get_cl_ping_value() {
    char* cl_ping = nullptr;
    bool do_ping = false;
 
@@ -450,34 +444,26 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
      * job verification process might destroy the job and create a completely
      * new one with adjusted job attributes.
      */
-    if (ret) {
-       sge_gdi_task_class_t *task = packet->first_task;
+    sge_gdi_task_class_t *task = packet->first_task;
 
-       if (task->target == SGE_JB_LIST &&
-           ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
-           (SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_COPY))) {
-          lListElem *job, *next_job;
+    if (task->target == SGE_JB_LIST &&
+        ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
+        (SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_COPY))) {
+       lListElem *job, *next_job;
 
-          next_job = lLastRW(task->data_list);
-          while (ret && ((job = next_job) != nullptr)) {
-             next_job = lNextRW(job);
+       next_job = lLastRW(task->data_list);
+       while (ret && ((job = next_job) != nullptr)) {
+          next_job = lNextRW(job);
 
-             lDechainElem(task->data_list, job);
-             ret &= jsv_do_verify(JSV_CONTEXT_CLIENT, &job, answer_list, false);
-             lInsertElem(task->data_list, nullptr, job);
-          }
+          lDechainElem(task->data_list, job);
+          ret &= jsv_do_verify(JSV_CONTEXT_CLIENT, &job, answer_list, false);
+          lInsertElem(task->data_list, nullptr, job);
        }
     }
 
    /* 
     * pack packet into packbuffer
     */ 
-   /* 
-    * EB: TODO: dry run necessary to calculate initial buffer size?  
-    *    JG told me during review of ST that it might be possible that
-    *    the dry run to calculate the buffer size might be slower
-    *    than direcly packing. RD might have done tests...
-    */
    if (ret) {
       size_t size = sge_gdi_packet_get_pb_size(packet);
 
@@ -509,8 +495,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       commlib_error = sge_gdi2_send_any_request(0, &message_id, host, commproc, id, &pb,
                                                 TAG_GDI_REQUEST, response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
-         ret = false;
-         commlib_error = sge_gdi_ctx_class_is_alive();
+         commlib_error = sge_gdi_ctx_class_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
             const char *mastername = gdi3_get_act_master_host(true);
@@ -555,8 +540,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       u_short id = 1;
       int gdi_error = CL_RETVAL_OK;
       int runs = 0;
-      int retries = 0;
-      bool do_ping = false;
+      int retries;
 
       strcpy(rcv_host, host);
       strcpy(rcv_commproc, commproc);
@@ -565,7 +549,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       do {
          gdi_error = sge_gdi2_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag, true, message_id, nullptr);
 
-         do_ping = get_cl_ping_value();
+         bool do_ping = get_cl_ping_value();
          retries = get_gdi_retries_value();
 
          if (gdi_error == CL_RETVAL_OK) {
@@ -577,10 +561,9 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
             /*this error appears, if qmaster or any qmaster thread is not responding, or overloaded*/
             if (gdi_error == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
                cl_com_SIRM_t* cl_endpoint_status = nullptr;
-               cl_com_handle_t* handle = nullptr;
                DPRINTF(("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS="sge_U32CFormat"\n", sge_u32c(runs)));
 
-               handle = cl_com_get_handle(component_get_component_name(), 0);
+               cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
                if (handle != nullptr) {
                   DPRINTF(("TEST_2372_OUTPUT: GDI_TIMEOUT="sge_U32CFormat"\n", sge_u32c(handle->synchron_receive_timeout)));
                }
@@ -609,7 +592,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       } while (retries == -1 || runs++ < retries);
       
       if (ret == false) {
-         commlib_error = sge_gdi_ctx_class_is_alive();
+         commlib_error = sge_gdi_ctx_class_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
             const char *mastername = gdi3_get_act_master_host(true);
@@ -746,10 +729,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
 bool 
-sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet)
-{
-   bool ret = true;
-
+sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
    /* 
@@ -761,15 +741,14 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
    packet->host = strdup(gdi3_get_act_master_host(false));
    packet->is_intern_request = true;
 
-   ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
-                                        &(packet->uid), packet->user, sizeof(packet->user),
-                                        &(packet->gid), packet->group, sizeof(packet->group));
+   bool ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
+                                             &(packet->uid), packet->user, sizeof(packet->user),
+                                             &(packet->gid), packet->group, sizeof(packet->group));
 
    /* 
     * append the packet to the packet list of the worker threads
     */
    sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
-
    DRETURN(ret);
 }
 
@@ -808,20 +787,17 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_external()
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
-bool 
-sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
-{
-   bool ret = true;
-
+void
+sge_gdi_packet_wait_for_result_external(sge_gdi_packet_class_t **packet, lList **malpp) {
    DENTER(TOP_LAYER);
 
    /* 
     * The packet itself has already be executed in sge_gdi_packet_execute_external() 
     * so it is only necessary to create the muti answer and do cleanup
     */
-   ret = sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
+   sge_gdi_packet_create_multi_answer(packet, malpp);
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** gdi/request_internal/sge_gdi_packet_wait_for_result_internal() ******
@@ -861,23 +837,11 @@ sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_clas
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_external()
 *     gdi/request_internal/sge_gdi_packet_wait_for_result_internal()
 *******************************************************************************/
-bool 
-sge_gdi_packet_wait_for_result_internal(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
-{
-   bool ret = true;
-
+void
+sge_gdi_packet_wait_for_result_internal(sge_gdi_packet_class_t **packet, lList **malpp) {
    DENTER(TOP_LAYER);
-
-   /* 
-    * wait for response from worker thread that the packet is handled
-    */
    sge_gdi_packet_wait_till_handled(*packet);
-
-   /*
-    * create the multi answer and destroy the packet
-    */
-   ret = sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
-
-   DRETURN(ret);
+   sge_gdi_packet_create_multi_answer(packet, malpp);
+   DRETURN_VOID;
 }
 

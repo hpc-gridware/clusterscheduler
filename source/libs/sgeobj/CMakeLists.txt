@@ -18,6 +18,7 @@ set(LIBRARY_SOURCES
       sge_cqueue.cc
       sge_cqueue_verify.cc
       sge_cull_xml.cc
+      sge_daemonize.cc
       sge_eval_expression.cc
       sge_event.cc
       sge_feature.cc

@@ -48,7 +48,7 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(QDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QDEL, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(ret);
    return ret;
@@ -270,7 +270,7 @@ error_exit:
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

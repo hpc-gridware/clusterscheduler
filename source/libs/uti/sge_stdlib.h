@@ -60,9 +60,9 @@
       x = nullptr; \
    }
 
-char *sge_malloc(int size);
+char *sge_malloc(size_t size);
 
-void *sge_realloc(void *ptr, int size, int do_abort);
+void *sge_realloc(void *ptr, size_t size, int do_abort);
 
 void sge_free(void *cp);
 

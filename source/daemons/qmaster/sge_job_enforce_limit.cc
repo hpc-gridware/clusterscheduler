@@ -41,7 +41,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"

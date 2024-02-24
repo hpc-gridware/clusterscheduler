@@ -40,10 +40,9 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_centry.h"
@@ -57,9 +56,8 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/sge_dirent.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
-#include "sge.h"
 #include "msg_utilbin.h"
 
 static int spool_object_list(const char *directory,
@@ -378,7 +376,7 @@ int main(int argc, char *argv[])
 
    log_state_set_log_gui(0);
 
-   if (sge_setup2(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
+   if (gdi_client_setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       show_answer(answer_list);
       lFreeList(&answer_list);
       sge_exit(EXIT_FAILURE);

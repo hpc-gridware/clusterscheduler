@@ -54,7 +54,7 @@
 
 #include "msg_common.h"
 
-static lList *remote_task_list = 0;
+static lList *remote_task_list = nullptr;
 static char lasterror[4096];
 
 /* option flags for rcv_from_execd() */
@@ -64,7 +64,7 @@ static char lasterror[4096];
 
 static int rcv_from_execd(int options, int tag);
 
-const char *qexec_last_err(void) {
+const char *qexec_last_err() {
    return lasterror;
 }
 
@@ -104,8 +104,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
             const lList *path_aliases) {
    char myname[256];
    const char *s;
-   int ret, uid;
-   sge_tid_t tid = nullptr;
+   int ret;
    lListElem *petrep;
    lListElem *rt;
    sge_pack_buffer pb;
@@ -121,7 +120,8 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    }
 
    /* resolve user */
-   if (sge_uid2user((uid = getuid()), myname, sizeof(myname) - 1, MAX_NIS_RETRIES)) {
+   uid_t uid = getuid();
+   if (sge_uid2user(uid, myname, sizeof(myname) - 1, MAX_NIS_RETRIES)) {
       sprintf(lasterror, MSG_GDI_RESOLVINGUIDTOUSERNAMEFAILED_IS, uid, strerror(errno));
       DRETURN(nullptr);
    }
@@ -202,7 +202,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
 
    rcv_from_execd(OPT_SYNCHRON, TAG_JOB_EXECUTION);
 
-   tid = (sge_tid_t) lGetString(rt, RT_tid);
+   auto tid = (sge_tid_t) lGetString(rt, RT_tid);
 
    if (strcmp(tid, "none") == 0) {
       tid = nullptr;
@@ -248,7 +248,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    }
 
    if (status)
-      *status = lGetUlong(rt, RT_status);
+      *status = (int)lGetUlong(rt, RT_status);
    lSetUlong(rt, RT_state, RT_STATE_WAITED);
 
    DRETURN(0);

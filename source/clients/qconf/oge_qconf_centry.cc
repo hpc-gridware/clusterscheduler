@@ -545,7 +545,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
                                     &state,
                                     false);
             if (mode == SGE_GDI_SEND) {
-               sge_gdi2_wait(&gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(&mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -559,7 +559,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
             mod_id = sge_gdi2_multi(&gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
-               sge_gdi2_wait(&gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(&mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -573,7 +573,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
             add_id = sge_gdi2_multi(&gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
-               sge_gdi2_wait(&gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(&mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);

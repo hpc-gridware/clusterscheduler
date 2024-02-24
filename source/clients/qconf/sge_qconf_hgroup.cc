@@ -42,7 +42,7 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi2.h"
 
 #include "sge_qconf_hgroup.h"

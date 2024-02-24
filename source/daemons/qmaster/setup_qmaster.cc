@@ -70,6 +70,7 @@
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sched/debit.h"
 
@@ -238,7 +239,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 
    lInit(nmv);
 
-   if (sge_setup2(prog_id, thread_id, &alp, true) != AE_OK) {
+   if (gdi_client_setup(prog_id, thread_id, &alp, true) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -784,7 +785,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_LOCKFILE_ALREADY_EXISTS));
       }
    }
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
 
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */

@@ -47,19 +47,21 @@
 
 #include "cull/cull_list.h"
 
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_answer.h"
-
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_rmon_monitoring_level.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_component.h"
+
+#include "sgeobj/sge_daemonize.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_answer.h"
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "oge_client_job.h"
 #include "msg_common.h"
@@ -667,7 +669,7 @@ int main(int argc, char *argv[])
    ** since drmaa doesn't give an explicit handle to the context and sge_gdi 
    ** is used below, we provide our own context here
    */
-   int gdi_errno = sge_gdi2_setup(JAPI, MAIN_THREAD, &alp);
+   int gdi_errno = gdi_client_setup_and_enroll(JAPI, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       DPRINTF(("gdi_errno = %d", gdi_errno));
       answer_list_output(&alp);
@@ -744,7 +746,7 @@ int main(int argc, char *argv[])
       }
    } 
    drmaa_exit(nullptr, 0);
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
 
    sge_prof_cleanup();
    return failed;

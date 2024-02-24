@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 typedef int (*report_func_type)(lList *, u_long32 now, u_long32 *next_send);
 

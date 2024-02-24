@@ -39,7 +39,7 @@
 #include "uti/sge_uidgid.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/parse.h"

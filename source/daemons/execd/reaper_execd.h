@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int sge_reap_children_execd(int max_count, bool is_qmaster_down);
 lListElem *execd_job_start_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general);

@@ -43,7 +43,7 @@
 
 #include "sgeobj/sge_object.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
 
 typedef struct _gdi_object_t gdi_object_t;

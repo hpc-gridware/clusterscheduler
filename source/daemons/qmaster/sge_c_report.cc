@@ -37,6 +37,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge.h"
 
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"

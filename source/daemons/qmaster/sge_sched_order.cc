@@ -36,7 +36,7 @@
 #include "uti/sge_sl.h"
 
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -153,7 +153,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
        * wait for answer. this call might block if the request
        * has not been handled by any worker until now
        */
-      sge_gdi2_wait(answer_list, &multi_answer_list, current_state);
+      sge_gdi2_wait(&multi_answer_list, current_state);
 
       /*
        * now we have an answer. is it positive? 

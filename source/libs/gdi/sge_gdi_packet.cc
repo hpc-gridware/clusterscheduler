@@ -56,7 +56,6 @@
 
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/version.h"
 #include "gdi/sge_security.h"
 
@@ -170,24 +169,21 @@
 
 #if defined(SGE_GDI_PACKET_DEBUG)
 
-bool
+void
 sge_gdi_task_debug_print(sge_gdi_task_class_t *task);
 
 #endif
 
-static bool
+static void
 sge_gdi_task_free(sge_gdi_task_class_t **task);
-
-static bool
-sge_gdi_task_verify(sge_gdi_task_class_t *task, lList **answer_list);
 
 static sge_gdi_task_class_t *
 sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command, lList **lp,
-                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy, bool do_verify);
+                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
 
 #if defined(SGE_GDI_PACKET_DEBUG)
 
-bool
+void
 sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet);
 
 #endif
@@ -195,10 +191,8 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet);
 
 #if defined(SGE_GDI_PACKET_DEBUG)
 
-bool
+void
 sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
    if (task != nullptr) {
       DPRINTF(("task->id = " sge_U32CFormat "\n", sge_u32c(task->id)));
@@ -212,48 +206,17 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
    } else {
       DPRINTF(("task is nullptr\n"));
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 #endif
-
-static bool
-sge_gdi_task_verify(sge_gdi_task_class_t *task, lList **answer_list) {
-   bool ret = true;
-#if 0
-   int operation = 0;
-   lList *list = nullptr;
-   u_long32 target = 0;
-#endif
-
-   DENTER(TOP_LAYER);
-#if 0
-   operation = SGE_GDI_GET_OPERATION(task->command);
-   list = task->data_list;
-   target = task->target;
-   /* EB: TODO: this check does not work for AR objects why? */
-   if (!list
-       && !(operation == SGE_GDI_PERMCHECK || operation == SGE_GDI_GET
-            || operation == SGE_GDI_TRIGGER || (operation == SGE_GDI_DEL
-                                                && target ==
-                                                SGE_STN_LIST))
-      ) {
-      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC,
-                 ANSWER_QUALITY_ERROR, MSG_GDI_GDI_VERIFY_REQUEST_FAILED);
-      ret = false;
-   }
-#endif
-   DRETURN(ret);
-}
 
 static sge_gdi_task_class_t *
 sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command, lList **lp,
-                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy, bool do_verify) {
-   sge_gdi_task_class_t *task = nullptr;
-
+                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
 
-   task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
+   auto *task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
    if (task != nullptr) {
       task->id = ((packet->last_task != nullptr) ? (packet->last_task->id + 1) : 1);
       task->command = command;
@@ -300,20 +263,6 @@ sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long3
             task->enumeration = nullptr;
          }
       }
-      if (do_verify && !sge_gdi_task_verify(task, answer_list)) {
-         if (do_copy == true) {
-            lFreeList(&(task->data_list));
-            lFreeList(&(task->answer_list));
-            lFreeWhere(&(task->condition));
-            lFreeWhat(&(task->enumeration));
-         } else {
-            task->data_list = nullptr;
-            task->answer_list = nullptr;
-            task->condition = nullptr;
-            task->enumeration = nullptr;
-         }
-         sge_gdi_task_free(&task);
-      }
    } else {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
    }
@@ -346,27 +295,23 @@ sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long3
 *  SEE ALSO
 *     gdi/request_internal/sge_gdi_task_create()
 ******************************************************************************/
-static bool
+static void
 sge_gdi_task_free(sge_gdi_task_class_t **task) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
-   if (task != nullptr && *task != nullptr) {
+   if (/* task != nullptr && */ *task != nullptr) {
       lFreeList(&((*task)->data_list));
       lFreeList(&((*task)->answer_list));
       lFreeWhat(&((*task)->enumeration));
       lFreeWhere(&((*task)->condition));
       sge_free(task);
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 #if defined(SGE_GDI_PACKET_DEBUG)
 
-bool
+void
 sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
 
    if (packet != nullptr) {
@@ -388,7 +333,7 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
    } else {
       DPRINTF(("packet is nullptr\n"));;
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 #endif
@@ -425,10 +370,8 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
 ******************************************************************************/
 sge_gdi_packet_class_t *
 sge_gdi_packet_create_base(lList **answer_list) {
-   sge_gdi_packet_class_t *ret = nullptr;
-
    DENTER(TOP_LAYER);
-   ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
+   auto ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
    if (ret != nullptr) {
       int local_ret1;
       int local_ret2;
@@ -487,10 +430,8 @@ sge_gdi_packet_create_base(lList **answer_list) {
 ******************************************************************************/
 sge_gdi_packet_class_t *
 sge_gdi_packet_create(lList **answer_list) {
-   sge_gdi_packet_class_t *ret = nullptr;
-
    DENTER(TOP_LAYER);
-   ret = sge_gdi_packet_create_base(answer_list);
+   sge_gdi_packet_class_t *ret = sge_gdi_packet_create_base(answer_list);
    if (ret != nullptr) {
       sge_gdi_packet_initialize_auth_info(ret);
    }
@@ -527,7 +468,6 @@ sge_gdi_packet_create(lList **answer_list) {
 *     and the "answer_list" will be filled with a message.
 *     Causes for errors are:
 *        - malloc failure
-*        - verification failure (sgee sge_gdi_task_verify)
 *
 *  INPUTS
 *     sge_gdi_packet_class_t *packet - packet
@@ -552,19 +492,12 @@ sge_gdi_packet_create(lList **answer_list) {
 *
 *  SEE ALSO
 *     gdi/request_internal/sge_gdi_task_create()
-*     gdi/request_internal/sge_gdi_task_verify()
 ******************************************************************************/
-bool
+void
 sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command,
-                           lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy,
-                           bool do_verify) {
-   bool ret = true;
-   sge_gdi_task_class_t *task = nullptr;
-
+                           lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
-
-   task = sge_gdi_task_create(packet, answer_list, target, command, lp, a_list, condition, enumeration, do_copy, true);
-
+   sge_gdi_task_class_t *task = sge_gdi_task_create(packet, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);
    if (packet->last_task != nullptr) {
       packet->last_task->next = task;
       packet->last_task = task;
@@ -572,9 +505,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, 
       packet->first_task = task;
       packet->last_task = task;
    }
-   task = nullptr;
-
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** gdi/request_internal/sge_gdi_task_get_operation_name() ****************
@@ -601,7 +532,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, 
 *******************************************************************************/
 const char *
 sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task) {
-   const char *ret = nullptr;
+   const char *ret;
    int operation = SGE_GDI_GET_OPERATION(task->command);
 
    switch (operation) {
@@ -711,18 +642,15 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
 
    DENTER(TOP_LAYER);
    if (packet != nullptr && *packet != nullptr) {
-      sge_gdi_task_class_t *task = nullptr;
-      sge_gdi_task_class_t *next_task = nullptr;
-      int local_ret1;
-      int local_ret2;
+      sge_gdi_task_class_t *task;
 
-      next_task = (*packet)->first_task;
+      sge_gdi_task_class_t *next_task = (*packet)->first_task;
       while ((task = next_task) != nullptr) {
          next_task = task->next;
          sge_gdi_task_free(&task);
       }
-      local_ret1 = pthread_mutex_destroy(&((*packet)->mutex));
-      local_ret2 = pthread_cond_destroy(&((*packet)->cond));
+      int local_ret1 = pthread_mutex_destroy(&((*packet)->mutex));
+      int local_ret2 = pthread_cond_destroy(&((*packet)->cond));
       if (local_ret1 != 0 || local_ret2 != 0) {
          ret = false;
       }

@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi2.h"
 
 int do_get_new_conf(struct_msg_t *aMsg);

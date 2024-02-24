@@ -34,7 +34,7 @@
 #include "cull/cull.h"
 
 #include "gdi/sge_gdiP.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
 
 #include "sge_qmaster_timed_event.h"

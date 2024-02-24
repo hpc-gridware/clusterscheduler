@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "sgeobj/cull/sge_ack_ACK_L.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sge_daemonize.h"
 
 enum {
    ACK_JOB_EXIT,         /* sent back by qmaster, when execd sends a job_exit */

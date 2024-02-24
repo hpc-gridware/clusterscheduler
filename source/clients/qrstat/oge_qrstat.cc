@@ -36,13 +36,14 @@
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_bootstrap_files.h"
-
-#include "gdi/sge_gdi_ctx.h"
-#include "gdi/sge_gdi2.h"
+#include "uti/sge_profiling.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
+
+#include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "basis_types.h"
 #include "oge_client_parse.h"
@@ -146,7 +147,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(QRSTAT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QRSTAT, MAIN_THREAD, &answer_list) != AE_OK) {
       answer_list_output(&answer_list);
       goto error_exit;
    }
@@ -229,12 +230,12 @@ int main(int argc, char **argv) {
       }
    }
 
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

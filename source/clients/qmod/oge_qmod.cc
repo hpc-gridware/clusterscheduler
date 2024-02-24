@@ -45,8 +45,8 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
 
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sge_options.h"
 #include "sig_handlers.h"
@@ -79,7 +79,7 @@ char **argv
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QMOD);
 
-   if (sge_gdi2_setup(QMOD, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QMOD, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

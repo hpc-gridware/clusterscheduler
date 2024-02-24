@@ -51,8 +51,8 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 bool
 sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet);
 
-bool 
-sge_gdi_packet_wait_for_result_external(lList **answer_list, sge_gdi_packet_class_t **packet_handle, lList **malpp);
+void
+sge_gdi_packet_wait_for_result_external(sge_gdi_packet_class_t **packet_handle, lList **malpp);
 
-bool 
-sge_gdi_packet_wait_for_result_internal(lList **answer_list, sge_gdi_packet_class_t **packet_handle, lList **malpp);
+void
+sge_gdi_packet_wait_for_result_internal(sge_gdi_packet_class_t **packet_handle, lList **malpp);

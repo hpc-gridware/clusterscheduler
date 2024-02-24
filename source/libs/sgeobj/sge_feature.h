@@ -65,7 +65,7 @@ lList** feature_get_master_featureset_list(void);
 
 
 void            feature_initialize(void);
-int             feature_initialize_from_string(const char *mode);
+int             feature_initialize_from_string(const char *mode, lList **answer_list);
 void            feature_activate(feature_id_t id);
 const char*     feature_get_featureset_name(feature_id_t id);
 feature_id_t    feature_get_active_featureset_id(void);

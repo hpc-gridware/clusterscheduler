@@ -34,7 +34,7 @@
 
 #include "uti/sge_dstring.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sge_daemonize.h"
 
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 

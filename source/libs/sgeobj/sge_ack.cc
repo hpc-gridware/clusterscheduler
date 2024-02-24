@@ -31,6 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_component.h"
 
 #include "gdi/sge_gdi2.h"
 

@@ -103,7 +103,7 @@ typedef struct {
 } sge_pack_buffer;
 
 int
-init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count);
+init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count);
 
 int
 init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen);

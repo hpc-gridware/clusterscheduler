@@ -88,7 +88,7 @@ pkg install expect xterm gnuplot vim mailx
 pkg install hs-pandoc texlive-full tex-xetex
 ```
 
-### macOS 14
+### macOS 14 (default for darwin-arm64)
 
 ```
 XCode
@@ -99,7 +99,7 @@ brew install pandoc texlive
 brew install doxygen graphviz
 ```
 
-### Raspian 11
+### Raspian 11 (default for lx-arm64)
 
 ```
 apt-get install git autoconf automake gcc g++ patchelf libntirpc-dev libudev-dev
@@ -108,7 +108,7 @@ apt-get install expect xterm gnuplot tdom
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.18.
 
-### Rocky 8 / Alma 8 / CentOS 8
+### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64)
 
 ```
 dnf install -y automake autoconf gcc-toolset-11 patchelf git libtirpc-devel systemd-devel
@@ -118,7 +118,7 @@ dnf --enablerepo=devel install -y doxygen graphviz pandoc
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.20.
 
-### Solaris 11
+### Solaris 11 (default for sol-amd64)
 
 ```
 pkg install pkg:/developer/build/automake
@@ -132,6 +132,17 @@ pkg install pkg:/shell/expect
 pkg install pkg:/developer/documentation-tool/doxygen
 pkg install pkg:/image/graphviz
 pkg install pkg:/image/gnuplot
+```
+
+### SUSE Tumbleweed (default for lx-riscv64)
+
+```
+zypper install --type pattern devel_C_C++
+zypper install gdb cmake git patchelf 
+zypper install openssl libtirpc-devel systemd-devel
+zypper install doxygen graphviz
+zypper install tcl expect vim xterm mailx perl gnuplot
+zypper install texlive pandoc
 ```
 
 ### Ubuntu 22

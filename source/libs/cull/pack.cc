@@ -40,6 +40,10 @@
 #include <rpc/rpc.h>
 #include <rpc/types.h>
 
+#if defined(LINUXRISCV64)
+#  include <rpc/xdr.h>
+#endif
+
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
@@ -90,7 +94,7 @@
    get chunk_size
 
  */
-int pack_get_chunk(void) {
+int pack_get_chunk() {
    return CHUNK;
 }
 
@@ -143,7 +147,7 @@ int pack_get_chunk(void) {
 *     gdi/request_internal/sge_gdi_packet_get_pb_size()
 *******************************************************************************/
 int
-init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) {
+init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
    DENTER(PACK_LAYER);
 
    if (pb == nullptr) {
@@ -162,7 +166,7 @@ init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) {
 
       pb->head_ptr = sge_malloc(initial_size);
       if (pb->head_ptr == nullptr) {
-         ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORY_D, initial_size));
+         ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORY_D, (int)initial_size));
          DRETURN(PACK_ENOMEM);
       }
       pb->cur_ptr = pb->head_ptr;
@@ -240,7 +244,6 @@ void clear_packbuffer(sge_pack_buffer *pb) {
    if (pb != nullptr) {
       sge_free(&(pb->head_ptr));
    }
-   return;
 }
 
 /*************************************************************

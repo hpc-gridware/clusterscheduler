@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 bool
 cqueue_list_x_on_subordinate_gdil(const lList *this_list, bool suspend, const lList *gdil, monitoring_t *monitor);

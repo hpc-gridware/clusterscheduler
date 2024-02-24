@@ -70,7 +70,7 @@
 #include "sched/sge_select_queue.h"
 #include "sched/sge_complex_schedd.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
 
@@ -1170,7 +1170,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
    gc_what = lWhat("%T(ALL)", CONF_Type);
    gc_id = sge_gdi2_multi(alpp, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET, nullptr, gc_where, gc_what, &state, true);
-   sge_gdi2_wait(alpp, &mal, &state);
+   sge_gdi2_wait(&mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 

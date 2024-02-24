@@ -68,7 +68,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_job.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
 
@@ -1016,7 +1016,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    
    gc_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
                           nullptr, gc_where, gc_what, &state, true);
-   sge_gdi2_wait(answer_list, &mal, &state);
+   sge_gdi2_wait(&mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 

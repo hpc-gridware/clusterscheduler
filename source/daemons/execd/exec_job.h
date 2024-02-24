@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
 lListElem* responsible_queue(lListElem *jep, lListElem *, lListElem *petep);

@@ -70,7 +70,7 @@ struct sge_error_class_str {
 };
 
 
-sge_error_class_t *sge_error_class_create(void);
+sge_error_class_t *sge_error_class_create();
 
 void sge_error_class_clear(sge_error_class_t *thiz);
 

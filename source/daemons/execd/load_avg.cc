@@ -65,7 +65,7 @@
 #include "sgeobj/sge_usage.h"
 
 #include "gdi/version.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdiP.h"
 
 #include "job_report_execd.h"

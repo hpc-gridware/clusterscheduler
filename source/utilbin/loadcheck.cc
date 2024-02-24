@@ -295,7 +295,8 @@ void test_hwloc()
    }
 
    if (!oge::topo_has_core_binding()) {
-      printf("Your Linux kernel seems not to offer core binding capabilities for HWLOC!\n");
+      printf("Your " SFN " kernel seems not to offer core binding capabilities for HWLOC!\n",
+             name.sysname);
    }
 
    if (!oge::topo_has_topology_information()) {

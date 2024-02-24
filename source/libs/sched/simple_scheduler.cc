@@ -592,7 +592,7 @@ int main(int argc, char *argv[])
    /* setup signal handlers */
    sge_setup_sig_handlers(QSCHED);
 
-   if (sge_gdi2_setup(&ctx, SCHEDD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(&ctx, SCHEDD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(&ctx, 1);
    }

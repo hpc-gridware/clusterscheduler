@@ -41,9 +41,10 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_profiling.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
@@ -51,7 +52,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_conf.h"
 
 #include "spool/classic/read_write_job.h"
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(EXECD);
 
-   if (sge_setup2(EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
+   if (gdi_client_setup(EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
-      sge_gdi_ctx_class_prepare_enroll();
+      gdi_client_prepare_enroll(&alp);
       max_enroll_tries--;
 
       if (max_enroll_tries <= 0 || shut_me_down) {
@@ -420,7 +420,7 @@ static void execd_exit_func(int i)
 {
    DENTER(TOP_LAYER);
 
-   sge_gdi2_shutdown();
+   gdi_client_shutdown();
 
    /* trigger load sensors shutdown */
    sge_ls_stop(0);
@@ -479,7 +479,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && sge_gdi_ctx_class_is_alive() == CL_RETVAL_OK) {
+   if (master_host != nullptr && sge_gdi_ctx_class_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());

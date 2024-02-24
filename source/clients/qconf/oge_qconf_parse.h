@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include "spool/sge_spooling_utilities.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 typedef struct object_info_entry {
    u_long32 target;

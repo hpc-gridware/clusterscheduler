@@ -32,7 +32,7 @@
  ************************************************************************/
 
 #include "cull/cull.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 bool rqs_show(lList **answer_list, const char *name);
 

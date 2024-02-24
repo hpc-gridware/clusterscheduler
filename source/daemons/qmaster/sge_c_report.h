@@ -34,6 +34,6 @@
 
 #include "cull/cull.h"
 #include "uti/sge_monitor.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 void sge_c_report(char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);

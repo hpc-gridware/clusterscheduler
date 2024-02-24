@@ -55,7 +55,7 @@
 #include "comm/lists/cl_errors.h"
 #include "comm/cl_commlib.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi2.h"
 
 #include "sgeobj/sge_feature.h"

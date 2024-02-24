@@ -56,7 +56,7 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "oge_qconf_cqueue.h"
 #include "msg_qconf.h"
@@ -198,7 +198,7 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
          cq_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
                                SGE_GDI_GET, nullptr, cqueue_where, what,
                                &state, true);
-         sge_gdi2_wait(answer_list, &multi_answer_list, &state);
+         sge_gdi2_wait(&multi_answer_list, &state);
          lFreeWhat(&what);
       }
       if (ret && fetch_all_hgroup) {
@@ -266,7 +266,7 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
       cq_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
                             SGE_GDI_GET, nullptr, nullptr, cqueue_what,
                             &state, true);
-      sge_gdi2_wait(answer_list, &multi_answer_list, &state);
+      sge_gdi2_wait(&multi_answer_list, &state);
       lFreeWhat(&cqueue_what);
 
       /* HGRP */

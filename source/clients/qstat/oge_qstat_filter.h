@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 typedef struct qstat_env_str qstat_env_t;
 

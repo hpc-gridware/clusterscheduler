@@ -39,10 +39,10 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_daemonize.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
 
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
    log_state_set_log_gui(1);
 
-   if (sge_gdi2_setup(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

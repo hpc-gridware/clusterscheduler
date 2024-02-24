@@ -33,7 +33,7 @@
 
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 typedef char *sge_tid_t;
 
@@ -67,4 +67,4 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *c
 
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 
-const char *qexec_last_err(void);
+const char *qexec_last_err();

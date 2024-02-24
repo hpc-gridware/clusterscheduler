@@ -65,21 +65,15 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 
-#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_qexec.h"
-#include "gdi/qm_name.h"
-
-#include "comm/commlib.h"
+#include "gdi/oge_gdi_client.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
-#include "symbols.h"
 #include "usage.h"
 #include "parse_qsub.h"
-#include "parse_job_cull.h"
 #include "oge_qsh_parse.h"
 #include "oge_client_parse.h"
 #include "oge_client_job.h"
@@ -1403,7 +1397,7 @@ int main(int argc, char **argv)
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(my_who);
 
-   if (sge_gdi2_setup(my_who, MAIN_THREAD, &alp) != AE_OK) {
+   if (gdi_client_setup_and_enroll(my_who, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

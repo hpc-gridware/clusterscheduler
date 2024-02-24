@@ -84,7 +84,7 @@
 
 /* GDI */
 #include "gdi/sge_qtcsh.h"
-#include "gdi/sge_gdi_ctx.h"
+#include "sgeobj/sge_daemonize.h"
 
 /****** DRMAA/--DRMAA_Job_API ********************************************************
 *  NAME

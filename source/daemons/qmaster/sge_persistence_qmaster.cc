@@ -31,6 +31,8 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_component.h"
+#include "uti/sge_bootstrap.h"
 
 #include "cull/cull.h"
 
