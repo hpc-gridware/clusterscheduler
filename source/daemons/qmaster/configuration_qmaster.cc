@@ -77,7 +77,7 @@
 #include "msg_qmaster.h"
 
 /* Static configuration entries may be changed at runtime with a warning */
-static char *Static_Conf_Entries[] = {"execd_spool_dir", nullptr};
+static const char *Static_Conf_Entries[] = {"execd_spool_dir", nullptr};
 
 
 static int
@@ -313,7 +313,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
 *
 *******************************************************************************/
 int
-sge_mod_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
+sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost) {
    lListElem *old_conf;
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTLEN];

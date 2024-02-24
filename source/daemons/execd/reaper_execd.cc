@@ -113,8 +113,8 @@ static void unregister_from_ptf(u_long32 jobid, u_long32 jataskid, const char *p
 #endif
 
 static int clean_up_job(lListElem *jr, int failed, int signal, int is_array, const lListElem *ja_task, const char *job_owner);
-static void convert_attribute(lList **cflpp, lListElem *jr, char *name, u_long32 udefau);
-static int extract_ulong_attribute(lList **cflpp, char *name, u_long32 *valuep); 
+static void convert_attribute(lList **cflpp, lListElem *jr, const char *name, u_long32 udefau);
+static int extract_ulong_attribute(lList **cflpp, const char *name, u_long32 *valuep);
 
 static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general, int failed);
 static int read_dusage(lListElem *jr, const char *jobdir, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, int failed);
@@ -1819,7 +1819,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 static void convert_attribute(
 lList **cflpp,
 lListElem *jr,
-char *name,
+const char *name,
 u_long32 udefault 
 ) {
    const char *s;
@@ -1834,7 +1834,7 @@ u_long32 udefault
 
 static int extract_ulong_attribute(
 lList **cflpp,
-char *name,
+const char *name,
 u_long32 *valuep
 ) {
    const char *s;

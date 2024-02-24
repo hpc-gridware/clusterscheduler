@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 
-int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_locking);         /* CR check */
+int cl_raw_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_list_locking);         /* CR check */
 int cl_raw_list_cleanup(cl_raw_list_t **list_p);                                 /* CR check */
 cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data);                      /* CR check */
 void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_elem); /* CR check */

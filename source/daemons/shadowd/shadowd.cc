@@ -240,7 +240,7 @@ main(int argc, char **argv) {
 #endif
 
    if (bootstrap_get_qmaster_spool_dir() != nullptr) {
-      char *shadowd_name = SGE_SHADOWD;
+      const char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
       sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());

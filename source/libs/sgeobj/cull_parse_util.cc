@@ -1149,7 +1149,7 @@ FPRINTF_ERROR:
 
 int parse_list_hardsoft(
 lList *cmdline,
-char *option,
+const char *option,
 lListElem *job,
 int hard_field,
 int soft_field 
@@ -1196,7 +1196,7 @@ int soft_field
 }
 
 int 
-parse_list_simple(lList *cmdline, char *option, lListElem *job, int field, 
+parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, u_long32 flags) 
 {
    lList *destlist = nullptr;
@@ -1223,7 +1223,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
 }
 
 int 
-parse_list_simpler(lList *lp, lList **destlist, char *option, lListElem *job, int field, 
+parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, u_long32 flags) 
 {
    if (lp != nullptr) {

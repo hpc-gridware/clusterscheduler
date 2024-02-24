@@ -72,7 +72,7 @@ static int    cl_short_host_name_option = 0;
 static int    cl_show[]         = {1,1 ,1,1 ,1,1,1 ,1,1,1,1,0 ,0,1,1};
 static int    cl_alignment[]    = {1,0 ,1,0 ,1,1,1 ,1,1,1,1,0 ,0,1,1};
 static size_t cl_column_width[] = {0,0 ,0,30,0,0,22,0,0,0,0,20,5,0,0};
-static char*  cl_description[] = {
+static const char*  cl_description[] = {
           /* 00 */               "time of debug output creation",                       
           /* 01 */               "endpoint service name where debug client is connected",
           /* 02 */               "message direction",
@@ -90,7 +90,7 @@ static char*  cl_description[] = {
           /* 14 */               "nr. of connections"
 };
 
-static char* cl_names[] = {
+static const char* cl_names[] = {
                        "time",
                        "local",
                        "d.",
@@ -240,11 +240,11 @@ static void qping_convert_time(char* buffer, char* dest, bool show_hour) {
 
    help=sge_strtok_r(buffer, ".", &context);
    if (help == nullptr) {
-      help = "-";
+      help = (char*)"-";
    }
    help2=sge_strtok_r(nullptr,".", &context);
    if (help2 == nullptr) {
-      help2 = "nullptr";
+      help2 = (char*)"nullptr";
    }
 
    if (strcmp(help,"-") == 0) {
@@ -299,7 +299,7 @@ static void qping_parse_environment(void) {
    }
 }
 
-static void qping_printf_fill_up(FILE* fd, char* name, int length, char c, int before) {
+static void qping_printf_fill_up(FILE* fd, const char* name, int length, char c, int before) {
    int n = strlen(name);
    int i;
 
@@ -389,9 +389,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (nonewline != 0) {
          message_debug_data = cl_values[11];
          if ( strstr( cl_values[4] , "bin") != nullptr ) {
-            cl_values[11] = "binary message data";
+            cl_values[11] = (char*)"binary message data";
          } else {
-            cl_values[11] = "xml message data";
+            cl_values[11] = (char*)"xml message data";
          }
       }
    
@@ -411,7 +411,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (show_header == 1) {
          for (i=0;i<ARGUMENT_COUNT;i++) {
             if (cl_show[i]) {
-               qping_printf_fill_up(stdout, cl_names[i],cl_column_width[i],' ',cl_alignment[i]);
+               qping_printf_fill_up(stdout, cl_names[i], cl_column_width[i],' ',cl_alignment[i]);
                printf("|");
             }
          }
@@ -437,8 +437,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (nonewline != 0 && cl_show[11]) {
          if ( strstr( cl_values[4] , "bin") != nullptr ) {
             unsigned char* binary_buffer = nullptr;
-            char* bin_start = "--- BINARY block start ";
-            char* bin_end   = "--- BINARY block end ";
+            const char* bin_start = "--- BINARY block start ";
+            const char* bin_end   = "--- BINARY block end ";
             int counter = 0;
             size_t message_debug_data_length = strlen(message_debug_data);
             printf("%s", bin_start);
@@ -816,8 +816,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
             int spaces = 1;
             int new_line = -1;
             int x;
-            char* xml_start = "--- XML block start ";
-            char* xml_end   = "--- XML block end ";
+            const char* xml_start = "--- XML block start ";
+            const char* xml_end   = "--- XML block end ";
             unsigned long message_debug_data_length = strlen(message_debug_data);
             printf("%s", xml_start);
             for(i=strlen(xml_start);i<full_width;i++) {
@@ -934,7 +934,7 @@ static void usage(int ret)
   }
 
   for(i=0;i<ARGUMENT_COUNT;i++) {
-     char* visible="yes";
+     const char *visible="yes";
      if (cl_show[i] == 0) {
         visible="no";
      }
@@ -967,7 +967,7 @@ int main(int argc, char *argv[]) {
    cl_framework_t   communication_framework = CL_CT_TCP;
    cl_tcp_connect_t connect_type = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
-   char* client_name  = "qping";
+   const char* client_name  = "qping";
 #ifdef SECURE
    int   got_no_framework  = 0;
 #endif

@@ -48,16 +48,16 @@
 typedef struct {
    int        test_nr;                 /* test number */
    u_long32   type;                    /* the job type */
-   char       *project;                /* the job project */
-   char       *owner;                  /* the job owner */
-   char       *group;                  /* the job group */
-   char       *checkpointing;          /* the checkpointing */
-   char       *rqs;                    /* the resource quota set */
-   char       *hard_resource_list;     /* the hard requested resources */
-   char       *soft_resource_list;     /* the soft requested resources */
-   char       *hard_queue_list;        /* the hard requested queues */
-   char       *hard_master_queue_list; /* hard master queue list */
-   char       *pe;                     /* the requested pe */
+   const char *project;                /* the job project */
+   const char *owner;                  /* the job owner */
+   const char *group;                  /* the job group */
+   const char *checkpointing;          /* the checkpointing */
+   const char *rqs;                    /* the resource quota set */
+   const char *hard_resource_list;     /* the hard requested resources */
+   const char *soft_resource_list;     /* the soft requested resources */
+   const char *hard_queue_list;        /* the hard requested queues */
+   const char *hard_master_queue_list; /* hard master queue list */
+   const char *pe;                     /* the requested pe */
    int        is_access_list;          /* if 1, generate a access list */
 }data_entry_t;
 
@@ -66,7 +66,7 @@ typedef struct {
  * This describes the acces list configuration. Each line is one acces list. The first
  * item is the access_list name, the others are the users in the access list
  */
-static char *AccessList[] = {"test2_acc user test_user irgendwas",
+static const char *AccessList[] = {"test2_acc user test_user irgendwas",
                              "test1_acc help user what-ever",
                              "test0_acc nothing",
                              nullptr};
@@ -108,7 +108,7 @@ static data_entry_t tests[] = { {1, 128, nullptr, "user", nullptr, nullptr, null
 /**
  * result strings
  **/
-static char *result_category[] = { nullptr,
+static const char *result_category[] = { nullptr,
                                    "-P my_pr",
                                    "-ckpt my_check",
                                    "-ckpt my_check -P my_pr",
@@ -562,7 +562,7 @@ static double test_performance(lListElem *job_elem, int max, lList* access_list,
 *     MT-NOTE: test() is MT safe 
 *
 *******************************************************************************/
-static int test(data_entry_t *test, char *result, int count) 
+static int test(data_entry_t *test, const char *result, int count)
 {
    int ret = 0;
    lListElem *job_elem = nullptr;

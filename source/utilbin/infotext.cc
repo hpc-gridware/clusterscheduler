@@ -53,11 +53,11 @@ typedef struct sge_infotext_opt {
       int e;     /* print to stderr */
       int n;     /* no new line */
       int u;     /* underline output */
-      char* D;   /* dash string */
+      const char* D;   /* dash string */
       int S;     /* nr of spaces */
-      char* yes; /* yes parameter for -ask */
-      char* no;  /* no parameter for -ask */
-      char* def; /* default parameter for -ask */
+      const char* yes; /* yes parameter for -ask */
+      const char* no;  /* no parameter for -ask */
+      const char* def; /* default parameter for -ask */
       int log; /* file logging on/off */
    } sge_infotext_options;
 
@@ -77,8 +77,8 @@ static void  sge_infotext_print_line(dstring* dash_buf, sge_infotext_options* op
 static void  sge_infotext_format_output(dstring* dash_buf, sge_infotext_options* options, char* text);
 static char* sge_infotext_get_next_word(dstring* buf,char* text);
 static const char* sge_infotext_build_dash(dstring* dash_buf, sge_infotext_options* options);
-static char* sge_infotext_build_test_msgstr(dstring* buffer, char* text);
-static char* sge_infotext_make_line_break(dstring* buffer, char* text);
+static char* sge_infotext_build_test_msgstr(dstring* buffer, const char* text);
+static char* sge_infotext_make_line_break(dstring* buffer, const char* text);
 static int   sge_infotext_all_spaces(char* text);
 int main(int argc, char *argv[]);
 
@@ -97,7 +97,7 @@ static int   sge_infotext_all_spaces(char* text) {
 }
 
 
-static char* sge_infotext_make_line_break(dstring* buffer, char* text) {
+static char* sge_infotext_make_line_break(dstring* buffer, const char* text) {
 
    size_t h;
    int line;
@@ -141,7 +141,7 @@ static char* sge_infotext_make_line_break(dstring* buffer, char* text) {
 }
 
 
-static char* sge_infotext_build_test_msgstr(dstring* buffer, char* text) {
+static char* sge_infotext_build_test_msgstr(dstring* buffer, const char* text) {
    size_t h;
    char app_text[2];
 
@@ -606,7 +606,7 @@ static int sge_infotext_get_nr_of_substrings(const char* buffer, const char* sub
 
 static void sge_infotext_welcome(void) {
 
-   char* user = nullptr;
+   const char* user = nullptr;
    user = getenv("USER");
    if (user == nullptr) {
       user = "(no USER environment variable set)";

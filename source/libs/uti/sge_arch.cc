@@ -248,7 +248,7 @@ const char *sge_get_default_cell() {
     * Use default? 
     */
    if (!s || strlen(s) == 0) {
-      s = DEFAULT_CELL;
+      DRETURN_(DEFAULT_CELL);
    } else {
       /*
        * Get rid of trailing slash

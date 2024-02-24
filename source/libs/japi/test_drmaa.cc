@@ -444,10 +444,10 @@ enum {
 };
 
 const struct test_name2number_map {
-   char *test_name;       /* name of the test                                    */
+   const char *test_name;       /* name of the test                                    */
    int test_number;       /* number the test is internally mapped to             */
    int nargs;             /* number of test case arguments required              */
-   char *opt_arguments;   /* description of test case arguments for usage output */
+   const char *opt_arguments;   /* description of test case arguments for usage output */
 } test_map[] = {
 
    /* all automated tests - ST_* and MT_* tests */
@@ -564,7 +564,7 @@ static int set_path_attribute_plus_colon(drmaa_job_template_t *jt,
                                          const char *name, const char *value,
                                          char *error_diagnosis,
                                          size_t error_diag_len);
-static bool test_error_code(char *name, int code, int expected);
+static bool test_error_code(const char *name, int code, int expected);
 static void report_wrong_job_finish(const char *comment, const char *jobid,
                                     int stat);
 
@@ -572,15 +572,15 @@ typedef struct {
    char *native;
    int time;
 } test_job_t;
-static int test_dispatch_order_njobs(int n, test_job_t jobs[], char *jsr_str);
+static int test_dispatch_order_njobs(int n, test_job_t jobs[], const char *jsr_str);
 static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order[]);
-static int **job_run_sequence_parse(char *jrs_str);
+static int **job_run_sequence_parse(const char *jrs_str);
 
 static int test_case;
 static int is_sun_grid_engine;
 
 /* global test case parameters */
-char *sleeper_job = nullptr,
+const char *sleeper_job = nullptr,
      *exit_job = nullptr,
      *mirror_job = nullptr,
      *input_path = nullptr,
@@ -1047,7 +1047,7 @@ static int test(int *argc, char **argv[], int parse_args)
          if (parse_args)
             sleeper_job = NEXT_ARGV(argc, argv);
 
-         putenv("SGE_DELAY_AFTER_SUBMIT=20");
+         putenv((char *)"SGE_DELAY_AFTER_SUBMIT=20");
 
          if (drmaa_init(nullptr, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
             fprintf(stderr, "drmaa_init() failed: %s\n", diagnosis);
@@ -1064,7 +1064,7 @@ static int test(int *argc, char **argv[], int parse_args)
          }
          printf("drmaa_exit() succeeded\n");
          
-         putenv("SGE_DELAY_AFTER_SUBMIT=0");
+         putenv((char *)"SGE_DELAY_AFTER_SUBMIT=0");
 
          for (i=0; i<NTHREADS; i++)
             if (pthread_join(submitter_threads[i], nullptr))
@@ -3175,7 +3175,7 @@ static int test(int *argc, char **argv[], int parse_args)
           */
          do {
             /* First submit job to create tar file */
-            char *tar_path = "test.tar";
+            const char *tar_path = "test.tar";
             char abs_path[128]; 
 
             printf ("Testing join files\n");
@@ -4229,8 +4229,8 @@ static int test(int *argc, char **argv[], int parse_args)
          int aborted, stat, remote_ps;
          bool bFound=false;
          char jobid[100];
-         char *szPath;
-         char *szTemp;
+         const char *szPath;
+         const char *szTemp;
          char attr_name[DRMAA_ATTR_BUFFER];
          drmaa_attr_names_t *vector = nullptr;
          const char *session_all[] = { DRMAA_JOB_IDS_SESSION_ALL, nullptr };
@@ -5157,7 +5157,7 @@ static init_signal_handling()
 
 
 const struct drmaa_errno_descr_s {
-  char *descr;
+  const char *descr;
   int drmaa_errno;
 } errno_vector[] = {
   { "DRMAA_ERRNO_SUCCESS",                      DRMAA_ERRNO_SUCCESS },
@@ -5239,7 +5239,7 @@ static const char *drmaa_errno2str(int drmaa_errno)
 }
 
 const struct ctrl_descr_s {
-  char *descr;
+  const char *descr;
   int ctrl;
 } ctrl_vector[] = {
   { "DRMAA_CONTROL_SUSPEND",          DRMAA_CONTROL_SUSPEND },
@@ -5303,7 +5303,7 @@ static int str2drmaa_ctrl(const char *str)
 }
 
 const struct state_descr_s {
-  char *descr;
+  const char *descr;
   int state;
 } state_vector[] = {
   { "DRMAA_PS_UNDETERMINED",          DRMAA_PS_UNDETERMINED },
@@ -5507,7 +5507,7 @@ static void free_order(int **order)
    sge_free(&order);
 }
 
-static int test_dispatch_order_njobs(int njobs, test_job_t job[], char *jsr_str)
+static int test_dispatch_order_njobs(int njobs, test_job_t job[], const char *jsr_str)
 {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    const char *all_jobids[10];
@@ -5703,7 +5703,7 @@ static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order
 *******************************************************************************/
 #define GROUP_CHUNK 5
 #define NUMBER_CHUNK 10
-static int **job_run_sequence_parse(char *jrs_str)
+static int **job_run_sequence_parse(const char *jrs_str)
 {
    char *s = nullptr, *group_str = nullptr;
 
@@ -5820,7 +5820,7 @@ static int set_path_attribute_plus_colon(drmaa_job_template_t *jt,
                               error_diag_len);         
 }
 
-static bool test_error_code(char *name, int code, int expected)
+static bool test_error_code(const char *name, int code, int expected)
 {
    if (code != expected) {
       fprintf(stderr, "%s = %d; should be %d\n", name, code, expected);

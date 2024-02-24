@@ -642,7 +642,7 @@ static int diff(const char *file1, const char *file2)
 {
    int ret = 1;
    char **argv =(char **)sge_malloc(sizeof(char *) * 4);
-   char *path = "/usr/bin/diff";
+   const char *path = "/usr/bin/diff";
 
    if(file1 == nullptr || file2 == nullptr) {
       printf("file pointer is <nullptr>\n");
@@ -650,7 +650,7 @@ static int diff(const char *file1, const char *file2)
    }
    
    if(!fork()) {
-      argv[0] = path;
+      argv[0] = (char *)path;
       argv[1] = (char *)file1;
       argv[2] = (char *)file2;
       argv[3] = nullptr;

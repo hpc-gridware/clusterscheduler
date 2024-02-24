@@ -47,7 +47,7 @@ int njobs    = 100;
 int nthreads = 1;
 int dowait   = 1;
 int quiet   = 0;
-char *native_spec = "-w n";
+const char *native_spec = "-w n";
 char *job_path = nullptr;
 char **job_args = nullptr;
 

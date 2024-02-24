@@ -39,7 +39,7 @@
 
 #include "comm/lists/cl_string_list.h"
 
-int cl_string_list_setup(cl_raw_list_t **list_p, char *list_name) {
+int cl_string_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;

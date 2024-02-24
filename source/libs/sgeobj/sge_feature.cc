@@ -354,7 +354,7 @@ feature_id_t feature_get_active_featureset_id(void)
 const char *feature_get_featureset_name(feature_id_t id) 
 {
    int i = 0;
-   char *ret = "<<unknown>>";
+   const char *ret = "<<unknown>>";
 
    DENTER(TOP_LAYER);
    while (featureset_list[i].name && featureset_list[i].id != id) {

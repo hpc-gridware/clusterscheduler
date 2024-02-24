@@ -308,7 +308,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    DSTRING_STATIC(dstr_script_file, SGE_PATH_MAX);
    const char *str_script_file = ""; // @todo initialization shouldn't be necessary, but compiler seems to find a path in which str_script_file is not initialized!
 
-   char mail_str[1024], *shepherd_name;
+   char mail_str[1024];
+   const char *shepherd_name;
    const lList *gdil;
    const lListElem *gdil_ep;
    lListElem *master_q;

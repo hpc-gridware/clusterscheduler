@@ -47,7 +47,7 @@ enum {
    RCL_NO_VALUE = 0x0001
 };
 
-int read_config_list(FILE *fp, lList **clpp, lList **alpp, lDescr *dp, int nm1, int nm2, int nm3, char *delimitor, int flag, char *buf, int size);
+int read_config_list(FILE *fp, lList **clpp, lList **alpp, lDescr *dp, int nm1, int nm2, int nm3, const char *delimitor, int flag, char *buf, int size);
 
 char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm, const char *key);
 

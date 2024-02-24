@@ -178,7 +178,7 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid);
 static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri);
 
-static lList *ptf_build_usage_list(char *name, lList *old_usage_list);
+static lList *ptf_build_usage_list(const char *name, lList *old_usage_list);
 
 static lListElem *ptf_get_job(u_long job_id);
 
@@ -273,7 +273,7 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 *  RESULT
 *     static lList* - copy of "old_usage_list" or a real new one 
 ******************************************************************************/
-static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
+static lList *ptf_build_usage_list(const char *name, lList *old_usage_list)
 {
    lList *usage_list;
    lListElem *usage;

@@ -552,7 +552,7 @@ static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, l
    DRETURN(0);
 }
 
-static char* ADDITIONAL_TAG_NAMES[] = {
+static const char* ADDITIONAL_TAG_NAMES[] = {
    "ERROR",
    "checkpoint_env",
    "master_queue",

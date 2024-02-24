@@ -37,7 +37,7 @@
 #include "comm/cl_application_error_list.h"
 #include "comm/cl_commlib.h"
 
-int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
+int cl_application_error_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    int ret_val2 = CL_RETVAL_OK;
    cl_raw_list_t *logged_error_list = nullptr;

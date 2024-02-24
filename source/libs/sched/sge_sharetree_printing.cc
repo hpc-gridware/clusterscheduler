@@ -55,7 +55,7 @@ typedef enum {
 } item_type_t;
 
 typedef struct {
-   char *name;
+   const char *name;
    item_type_t type;
    void *val;
 } item_t;

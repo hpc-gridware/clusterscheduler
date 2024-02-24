@@ -285,7 +285,7 @@ extern int main(int argc, char **argv) {
 
 void *my_receive_thread(void *t_conf) {
    int do_exit = 0;
-   char *message = "announce";
+   const char *message = "announce";
    cl_com_handle_t *handle = nullptr;
    struct timeval now;
    struct timeval last_now;

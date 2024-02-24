@@ -36,17 +36,17 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
 
-int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name, char *variables[]);
+int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, const char *attr_name, const char *variables[]);
 
-int attr_mod_zerostr(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
+int attr_mod_zerostr(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
-int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
+int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
 int attr_mod_double(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
 
-int attr_mod_bool(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
+int attr_mod_bool(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
-int attr_mod_ulong(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
+int attr_mod_ulong(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
 int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
 

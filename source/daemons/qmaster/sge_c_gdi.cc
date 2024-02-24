@@ -202,7 +202,7 @@ void sge_clean_lists(void) {
  * MT-NOTE: verify_request_version() is MT safe
  */
 int verify_request_version(lList **alpp, u_long32 version, char *host, char *commproc, int id) {
-   char *client_version = nullptr;
+   const char *client_version = nullptr;
    dstring ds;
    char buffer[256];
    const vdict_t *vp, *vdict = GRM_GDI_VERSION_ARRAY;

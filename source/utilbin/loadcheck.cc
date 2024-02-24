@@ -58,7 +58,7 @@
 #endif
 
 void usage();
-void print_mem_load(char *, char *, int, double, char*);
+void print_mem_load(const char *, const char *, int, double, const char*);
 void check_core_binding();
 
 #if defined(OGE_HWLOC)
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 #endif
 
    int pos = 0, print_as_int = 0, precision, core_binding = 0;
-   char *m;
+   const char *m;
 
    DENTER_MAIN(TOP_LAYER, "loadcheck");
 
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void print_mem_load(char *name, char *thisone, int precision, double value, char *m) {
+void print_mem_load(const char *name, const char *thisone, int precision, double value, const char *m) {
    if ((thisone && !strcmp(name, thisone)) || !thisone)
       printf("%-15s %.*f%s\n", name, precision, value, m);
 }

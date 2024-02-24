@@ -2931,7 +2931,7 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 *     sge_job/sge_unparse_ulong_option_dstring()
 *******************************************************************************/
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, char *option)
+                               int nm, const char *option)
 {
    const char *string = nullptr;
 
@@ -2978,7 +2978,7 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
 *     sge_job/sge_unparse_string_option_dstring()
 *******************************************************************************/
 bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, char *option)
+                               int nm, const char *option)
 {
    u_long32 ul = 0;
 

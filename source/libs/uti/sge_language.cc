@@ -595,7 +595,7 @@ static int sge_get_message_id_output_implementation(void) {
 *     uti/language/sge_get_message_id_output()
 *     uti/language/sge_set_message_id_output()
 *******************************************************************************/
-const char *sge_gettext(char *x) {
+const char *sge_gettext(const char *x) {
    return x;
 }
 
@@ -737,8 +737,8 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 *     uti/language/sge_get_message_id_output()
 *     uti/language/sge_set_message_id_output()
 *******************************************************************************/
-const char *sge_gettext__(char *x) {
-   char *z;
+const char *sge_gettext__(const char *x) {
+   const char *z;
    DENTER_(BASIS_LAYER);
 
    if ((sge_language_functions.gettext_func != nullptr) &&

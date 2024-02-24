@@ -1968,7 +1968,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
    if (pc) {
       d->granted_pe = pc;
    } else {
-      d->granted_pe = "none";   
+      d->granted_pe = (char *)"none";
    }
    if (options->granted_pe != nullptr && sge_strnullcmp(options->granted_pe, d->granted_pe)) {
       DRETURN(-2);

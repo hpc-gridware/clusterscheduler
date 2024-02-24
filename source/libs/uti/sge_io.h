@@ -68,7 +68,7 @@ int sge_writenbytes(int sfd, const char *ptr,
 
 int sge_filecmp(const char *file0, const char *file1);
 
-int sge_copy_append(char *dst, const char *src, sge_mode_t mode);
+int sge_copy_append(const char *dst, const char *src, sge_mode_t mode);
 
 char *sge_bin2string(FILE *fp, int size);
 

@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
    int name_only = 0;
    int sge_aliasing = 0;
    int all_option = 0;
-   char* unresolved_name = nullptr;
+   const char* unresolved_name = nullptr;
    int system_error = 0;
 
    if (argc < 2 ) {

@@ -36,7 +36,7 @@
 #include "comm/cl_commlib.h"
 
 int cl_endpoint_list_setup(cl_raw_list_t **list_p,
-                           char *list_name,
+                           const char *list_name,
                            long entry_life_time,
                            long refresh_interval,
                            bool create_hash) {

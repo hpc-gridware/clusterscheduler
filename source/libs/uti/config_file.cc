@@ -67,7 +67,7 @@ typedef struct config_entry {
 static config_entry *config_list = nullptr;
 
 /* these variables may get used to replace variables in pe_start */
-char *pe_variables[] = {
+const char *pe_variables[] = {
         "pe_hostfile",
         "host",
         "job_owner",
@@ -97,7 +97,7 @@ char *pe_variables[] = {
 };
 
 /* these variables may get used to replace variables in prolog/epilog */
-char *prolog_epilog_variables[] = {
+const char *prolog_epilog_variables[] = {
         "host",
         "job_owner",
         "job_id",
@@ -125,14 +125,14 @@ char *prolog_epilog_variables[] = {
 
 
 /* these variables may get used to replace variables in the allocation rule of a pe */
-char *pe_alloc_rule_variables[] = {
+const char *pe_alloc_rule_variables[] = {
         "pe_slots",
         "fill_up",
         "round_robin",
         nullptr
 };
 
-char *ckpt_variables[] = {
+const char *ckpt_variables[] = {
         "host",
         "job_owner",
         "job_id",
@@ -144,7 +144,7 @@ char *ckpt_variables[] = {
         nullptr
 };
 
-char *ctrl_method_variables[] = {
+const char *ctrl_method_variables[] = {
         "host",
         "job_owner",
         "job_id",
@@ -378,7 +378,7 @@ int replace_params(
         const char *src,
         char *dst,
         int dst_len,
-        char **allowed
+        const char **allowed
 ) {
    char err_str[MAX_STRING_SIZE];
    char name[256];
@@ -388,7 +388,8 @@ int replace_params(
 /*
    size_t max_dst_len = dst_len - 1;
 */
-   char **spp, *value = nullptr;
+   const char **spp;
+   char *value = nullptr;
    int just_check = 0;
 
 

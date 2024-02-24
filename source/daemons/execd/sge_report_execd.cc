@@ -48,7 +48,7 @@
 #include "sge_report_execd.h"
 
 #ifndef NO_SGE_COMPILE_DEBUG
-static char* report_types[] = {
+static const char* report_types[] = {
    " REPORT_LOAD",
    " REPORT_EVENTS",
    " REPORT_CONF",
@@ -114,8 +114,8 @@ int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
    add a double value to the load report list lpp 
  
 */
-int sge_add_double2load_report(lList **lpp, char *name, double value,
-                               const char *host, char *units)
+int sge_add_double2load_report(lList **lpp, const char *name, double value,
+                               const char *host, const char *units)
 {
    char load_string[255];
  

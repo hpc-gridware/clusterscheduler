@@ -48,7 +48,7 @@
 #include "msg_common.h"
 
 static void
-check_reprioritize_interval(lList **alpp, char *ruser, char *rhost);
+check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost);
 
 
 int
@@ -129,7 +129,7 @@ sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *r
 
 
 static void
-check_reprioritize_interval(lList **alpp, char *ruser, char *rhost) {
+check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
    if (((sconf_get_reprioritize_interval() == 0) && (mconf_get_reprioritize())) ||

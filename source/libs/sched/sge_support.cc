@@ -813,7 +813,7 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
 
    lListElem *job = nullptr, *nxt_job = nullptr;
    lList *tmp_list = nullptr;    /* SGEJ_Type */
-   char *sortorder = nullptr;
+   const char *sortorder = nullptr;
 
    DENTER(TOP_LAYER);
 

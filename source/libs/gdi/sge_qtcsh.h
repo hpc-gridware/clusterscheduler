@@ -31,5 +31,5 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-typedef void (*print_func_t)(char *fmt, ...);
+typedef void (*print_func_t)(const char *fmt, ...);
 char** sge_get_qtask_args(char *taskname, lList **answer_list);

@@ -561,7 +561,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
 int select_by_queue_state(u_long32 queue_states, lList *exechost_list, lList *queue_list, lList *centry_list) {
    bool has_value_from_object;
    double load_avg;
-   char *load_avg_str;
+   const char *load_avg_str;
    const lListElem *cqueue = nullptr;
    u_long32 interval;
 

@@ -92,7 +92,7 @@ static int cl_thread_list_del_thread(cl_raw_list_t *list_p, cl_thread_settings_t
    return CL_RETVAL_THREAD_NOT_FOUND;
 }
 
-int cl_thread_list_setup(cl_raw_list_t **list_p, char *list_name) {        /* CR check */
+int cl_thread_list_setup(cl_raw_list_t **list_p, const char *list_name) {        /* CR check */
    return cl_raw_list_setup(list_p, list_name, 1); /* enable list locking */
 }
 

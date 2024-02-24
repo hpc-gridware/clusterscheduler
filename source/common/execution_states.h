@@ -110,7 +110,7 @@
 #define GFSTATE_SYSTEM            3
 #define GFSTATE_JOB               4
 
-char *get_sstate_description(int sstate);
+const char *get_sstate_description(int sstate);
 
 extern int shepherd_state;
 extern pid_t coshepherd_pid;

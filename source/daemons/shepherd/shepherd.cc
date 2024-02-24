@@ -2263,7 +2263,7 @@ static void handle_signals_and_methods(
          
    /* here we reap the control action methods */
    for (i=0; i<3; i++) {
-      static char *cm_descr[] = {
+      static const char *cm_descr[] = {
          "resume",
          "suspend",
          "terminate"
@@ -2963,7 +2963,8 @@ static int notify_tasker(u_long32 exit_status)
 {
    const char *const filename = "environment";
    FILE *fp;
-   char buf[10000], *name, *value;
+   char buf[10000], *name;
+   const char *value;
    int line=0;
    pid_t tasker_pid;
    char pvm_tasker_pid[1000], sig_info_file[1000], pvm_task_id[1000];
@@ -3068,7 +3069,7 @@ static pid_t start_token_cmd(int wait_for_finish, const char *cmd,
       return -1;
    } else if (pid == 0) {
       if (!wait_for_finish && (getenv("SGE_DEBUG_LEVEL"))) {
-         putenv("SGE_DEBUG_LEVEL=0 0 0 0 0 0 0 0");
+         putenv((char *)"SGE_DEBUG_LEVEL=0 0 0 0 0 0 0 0");
       }   
       execle(cmd, cmd, arg1, arg2, arg3, nullptr, sge_get_environment ());
       exit(1);

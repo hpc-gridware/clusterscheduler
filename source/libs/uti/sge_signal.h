@@ -77,7 +77,7 @@
 struct sig_mapT {
    u_long32 sge_sig;
    int sig;
-   char *signame;
+   const char *signame;
 };
 
 int sge_unmap_signal(u_long32 sge_sig);

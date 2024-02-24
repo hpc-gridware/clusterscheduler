@@ -82,7 +82,7 @@ qevent_options *Global_qevent_options;
 static void qevent_show_usage(void);
 static void qevent_testsuite_mode(sge_evc_class_t *evc);
 static void qevent_subscribe_mode(sge_evc_class_t *evc);
-static char* qevent_get_event_name(int event);
+static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
 static qevent_options* qevent_get_option_struct(void);
@@ -597,8 +597,7 @@ int main(int argc, char *argv[])
    return 1;
 }
 
-static char* qevent_get_event_name(int event) {
-  
+static const char* qevent_get_event_name(int event) {
    switch(event) {
       case QEVENT_JB_END:
          return "JB_END";

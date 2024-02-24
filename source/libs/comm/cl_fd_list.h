@@ -40,7 +40,7 @@ typedef struct cl_fd_list_elem_t {
 } cl_fd_list_elem_t;
 
 /* basic functions */
-int cl_fd_list_setup(cl_raw_list_t **list_p, char *list_name);
+int cl_fd_list_setup(cl_raw_list_t **list_p, const char *list_name);
 
 int cl_fd_list_cleanup(cl_raw_list_t **list_p);
 

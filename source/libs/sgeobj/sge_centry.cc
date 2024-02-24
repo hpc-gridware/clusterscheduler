@@ -288,7 +288,7 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
 const char *
 map_op2str(u_long32 op)
 {
-   static char *opv[] = {
+   static const char *opv[] = {
       "??",
       "==",  /* CMPLXEQ_OP */
       ">=",  /* CMPLXGE_OP */
@@ -308,7 +308,7 @@ map_op2str(u_long32 op)
 const char *
 map_req2str(u_long32 op)
 {
-   static char *opv[] = {
+   static const char *opv[] = {
       "??",
       "NO",       /* REQU_NO */
       "YES",      /* REQU_YES */
@@ -342,7 +342,7 @@ map_req2str(u_long32 op)
 *******************************************************************************/
 const char * map_consumable2str(u_long32 op)
 {
-   static char *opv[] = {
+   static const char *opv[] = {
       "NO",       /* CONSUMABLE_NO */
       "YES",      /* CONSUMABLE_YES */
       "JOB",      /* CONSUMABLE_JOB */
@@ -357,7 +357,7 @@ const char * map_consumable2str(u_long32 op)
 const char *
 map_type2str(u_long32 type)
 {
-   static char *typev[] = {
+   static const char *typev[] = {
       "??????",
       "INT",     /* TYPE_INT */
       "STRING",  /* TYPE_STR */
@@ -891,7 +891,7 @@ centry_list_parse_from_string(lList *complex_attributes,
        * If no default value was specified then use TRUE
        */
       if (check_value == false && value == nullptr) {
-         value = TRUE_STR;
+         value = (char*)TRUE_STR;
       } else if (check_value == true && (value == nullptr || *value == '\0')) {
          ERROR((SGE_EVENT, MSG_CPLX_VALUEMISSING_S, attr));
          lFreeList(&complex_attributes);

@@ -5495,7 +5495,7 @@ parallel_available_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
 */
 int
-sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q,
+sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
                      const lList *exechost_list, const lList *centry_list,
                      bool *has_value_from_object)
 {
@@ -5553,7 +5553,7 @@ sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q,
 int sge_get_string_qattr(
 char *dst,
 int dst_len,
-char *attrname,
+const char *attrname,
 lListElem *q,
 const lList *exechost_list,
 const lList *centry_list

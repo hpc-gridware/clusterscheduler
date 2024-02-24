@@ -46,7 +46,7 @@
 #include "msg_common.h"
 
 static void print_marked(u_long32 prog_number, FILE *fp);
-static char* get_argument_syntax(u_long32 prog_number, int nr);
+static const char* get_argument_syntax(u_long32 prog_number, int nr);
 static void usage_silent(FILE *fp);
 
 
@@ -59,7 +59,7 @@ int argument_number
 }
 
 
-static char* get_argument_syntax(u_long32 prog_number, int nr)
+static const char* get_argument_syntax(u_long32 prog_number, int nr)
 { 
    switch (nr)
    {

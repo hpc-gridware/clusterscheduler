@@ -118,7 +118,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
             sge_dstring_sprintf_append(string, "slots=" sge_u32"(", slots_sum);
 
             for_each_ep(elem, this_list) {
-               char *action_str = "sr";
+               const char *action_str = "sr";
 
                if (lGetUlong(elem, SO_action) == SO_ACTION_LR) {
                   action_str = "lr";

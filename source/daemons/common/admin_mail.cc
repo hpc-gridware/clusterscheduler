@@ -112,7 +112,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    lList *lp_mail = nullptr;
    u_long32 now;
    int ret;
-   char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
+   const char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
    int num_files = 3;
    struct {
       int exists;

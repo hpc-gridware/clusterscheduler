@@ -81,7 +81,7 @@ sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p) {
 
    cl_log_list_elem_t *elem = cl_log_list_get_first_elem(list_p);
    while (elem != nullptr) {
-      char *param;
+      const char *param;
       if (elem->log_parameter == nullptr) {
          param = "";
       } else {

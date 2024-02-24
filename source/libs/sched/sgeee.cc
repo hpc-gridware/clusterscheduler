@@ -1076,8 +1076,8 @@ create_usage_elem( const char *name )
  *--------------------------------------------------------------------*/
 
 lList *
-build_usage_list( char *name,
-                  lList *old_usage_list )
+build_usage_list(const char *name,
+                 lList *old_usage_list)
 {
    lList *usage_list = nullptr;
    lListElem *usage;

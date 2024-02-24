@@ -236,7 +236,7 @@ int sge_filecmp(const char *name0, const char *name1) {
 *  NOTES
 *     MT-NOTE: sge_copy_append() is MT safe
 ******************************************************************************/
-int sge_copy_append(char *src, const char *dst, sge_mode_t mode) {
+int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
 #define CPBUF 1024
 
    char buf[CPBUF];

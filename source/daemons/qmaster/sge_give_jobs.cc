@@ -99,7 +99,7 @@ sge_clear_granted_resources(lListElem *jep, lListElem *ja_task, int incslots,
                             monitoring_t *monitor);
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, char *rlimit_name);
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name);
 
 static void
 release_successor_jobs(const lListElem *jep);
@@ -1636,7 +1636,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 */
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, char *rlimit_name) {
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name) {
    DENTER(BASIS_LAYER);
    const char *s;
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);

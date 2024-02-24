@@ -43,7 +43,7 @@
 #include "comm/cl_communication.h"
 #include "comm/lists/cl_util.h"
 
-int cl_connection_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking, bool create_hash) {
+int cl_connection_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_locking, bool create_hash) {
    cl_connection_list_data_t *ldata = nullptr;
    int ret_val;
    ldata = (cl_connection_list_data_t *) sge_malloc(sizeof(cl_connection_list_data_t));

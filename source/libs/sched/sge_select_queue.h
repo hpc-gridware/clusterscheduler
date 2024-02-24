@@ -189,11 +189,11 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host);
 /* not used */
 /* int sge_get_ulong_qattr(u_long32 *uvalp, char *attrname, lListElem *q, lList *exechost_list, lList *complex_list); */
 
-int sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q, 
+int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
                          const lList *exechost_list, const lList *complex_list,
                          bool *has_value_from_object);
 
-int sge_get_string_qattr(char *dst, int dst_len, char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
+int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
 
 dispatch_t
 parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests, 

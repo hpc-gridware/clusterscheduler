@@ -2299,10 +2299,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
             sge_dstring_sprintf(&buffer, "ENV ADD %s ", name);
             length = (value != nullptr) ? strlen(value) : 0;
             for (i = 0; i < length; i++) {
-               char in[] = {  
+               char in[] = {
                   '\\', '\n', '\r', '\t', '\a', '\b', '\v', '\0'
                };
-               char *out[] = {
+               const char *out[] = {
                   "\\", "\\n", "\\r", "\\t", "\\a", "\\b", "\\v", ""
                };
                int j = 0;
@@ -2662,10 +2662,10 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
    return ret;
 }
 
-static char *
+static const char *
 jsv_cull_attr2switch_name(int cull_attr, lListElem *job) 
 {
-   char *ret = nullptr;
+   const char *ret = nullptr;
 
    DENTER(TOP_LAYER);
    if (cull_attr == JB_execution_time) {

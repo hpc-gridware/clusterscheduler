@@ -49,7 +49,7 @@
 
 typedef struct {
    pthread_mutex_t mutex;
-   char *log_file;
+   const char *log_file;
    u_long32 log_level;
    int log_as_admin_user;
    int verbose;
@@ -112,7 +112,7 @@ u_long32 log_state_get_log_level() {
 *******************************************************************************/
 const char *log_state_get_log_file() {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   char *file = Log_State.log_file;
+   const char *file = Log_State.log_file;
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    return file;
 }
@@ -188,7 +188,7 @@ void log_state_set_log_level(u_long32 theLevel) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-void log_state_set_log_file(char *theFile) {
+void log_state_set_log_file(const char *theFile) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_file = theFile;
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);

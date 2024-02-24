@@ -112,7 +112,7 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep);
 
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   char *attr_name, char *object_name);
+                   const char *attr_name, const char *object_name);
 
 void
 host_initalitze_timer(void) {
@@ -257,7 +257,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
    char unique[CL_MAXHOSTLEN];
    lList **host_list = nullptr;
    int nm = 0;
-   char *name = nullptr;
+   const char *name = nullptr;
    int ret;
    const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
@@ -1468,7 +1468,7 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep) {
 *******************************************************************************/
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   char *attr_name, char *object_name) {
+                   const char *attr_name, const char *object_name) {
 
    DENTER(TOP_LAYER);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);

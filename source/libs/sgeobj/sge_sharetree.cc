@@ -83,7 +83,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
  ************************************************************************/
 int show_sharetree(
 const lListElem *ep,
-char *indent 
+const char *indent
 ) {
    const lListElem *cep;
    FILE *fp = stdout;
@@ -333,7 +333,7 @@ lListElem *search_ancestor_list( lListElem *ep,  /* root of the tree */
 
 lListElem *
 search_ancestors( lListElem *ep,
-                  char *name,
+                  const char *name,
                   ancestors_t *ancestors,
                   int depth )
 {

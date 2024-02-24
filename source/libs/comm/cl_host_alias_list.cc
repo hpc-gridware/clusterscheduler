@@ -35,7 +35,7 @@
 #include "comm/cl_host_alias_list.h"
 #include "comm/cl_commlib.h"
 
-int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name) {
+int cl_host_alias_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    if (list_name != nullptr) {
@@ -70,7 +70,7 @@ int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
    return ret_val;
 }
 
-int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_name, char *alias_name, int lock_list) {
+int cl_host_alias_list_append_host(cl_raw_list_t *list_p, const char *local_resolved_name, const char *alias_name, int lock_list) {
 
    cl_host_alias_list_elem_t *new_elem = nullptr;
    int ret_val;
@@ -236,7 +236,7 @@ int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alia
    return CL_RETVAL_UNKNOWN;
 }
 
-int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolved_name, char **alias_name) {
+int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, const char *local_resolved_name, char **alias_name) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
    if (list_p == nullptr || local_resolved_name == nullptr || alias_name == nullptr) {

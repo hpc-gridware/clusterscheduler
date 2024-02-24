@@ -86,7 +86,7 @@
 *
 *******************************************************************************/
 int
-attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, char *variables[]) {
+attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name, const char *variables[]) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -149,7 +149,7 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char
 *
 *******************************************************************************/
 int
-attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -188,7 +188,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *     
 *******************************************************************************/
 int
-attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    int dataType;
    int pos;
 
@@ -252,7 +252,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr
 *
 *******************************************************************************/
 int
-attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -288,7 +288,7 @@ attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *     MT-NOTE: attr_mod_ulong() is MT safe 
 *    
 *******************************************************************************/
-int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */

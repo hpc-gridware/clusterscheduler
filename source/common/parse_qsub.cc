@@ -727,7 +727,7 @@ u_long32 flags
       if (!strcmp("-h", *sp)) {
             int hold;
             char *cmd_switch;
-            char *cmd_arg = "";
+            const char *cmd_arg = "";
          is_hold_option = true;
          cmd_switch = *sp;
 

@@ -77,7 +77,7 @@ typedef enum st_shepherd_file_def {
    st_error
 } st_shepherd_file_t;
 
-static char *g_shepherd_file_name[3] = {"trace", "exit_status", "error"};
+static const char *g_shepherd_file_name[3] = {"trace", "exit_status", "error"};
 static char  g_shepherd_file_path[3][SGE_PATH_MAX];
 
 static char g_job_owner[SGE_PATH_MAX] = "";

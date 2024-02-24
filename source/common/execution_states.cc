@@ -48,11 +48,11 @@ pid_t coshepherd_pid = -999;
 ** DESCRIPTION
 **   string description of execution exit states
 */
-char *
+const char *
 get_sstate_description(int sstate) {
    unsigned int i;
    static struct _state_message {
-      char *message;
+      const char *message;
       int state;
    } state_message[] = {
            {"", 0},

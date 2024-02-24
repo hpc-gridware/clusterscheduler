@@ -48,7 +48,7 @@ void sighandler_issue_tests(int sig);
 
 static int do_shutdown = 0;
 static long issue_list[] = {2728, 0};
-static char *issue_desc[] = {"Commlib does not compare hosts with strcasecmp", nullptr};
+static const char *issue_desc[] = {"Commlib does not compare hosts with strcasecmp", nullptr};
 
 void sighandler_issue_tests(int sig) {
    if (sig == SIGPIPE) {
@@ -72,9 +72,9 @@ void usage(void) {
 }
 
 int issue_2728_test(void) {
-   char *host1 = "Foo.domain.Net";
-   char *host2 = "foo.domain.net";
-   char *host3 = "notFoo";
+   const char *host1 = "Foo.domain.Net";
+   const char *host2 = "foo.domain.net";
+   const char *host3 = "notFoo";
    int retval = CL_RETVAL_UNKNOWN;
 
    printf("issue 2728 test ...\n");

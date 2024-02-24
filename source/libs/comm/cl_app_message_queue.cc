@@ -34,7 +34,7 @@
 
 #include "comm/cl_app_message_queue.h"
 
-int cl_app_message_queue_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking) {
+int cl_app_message_queue_setup(cl_raw_list_t **list_p, const char *list_name, int enable_locking) {
    int ret_val;
    ret_val = cl_raw_list_setup(list_p, list_name, enable_locking);
    return ret_val;

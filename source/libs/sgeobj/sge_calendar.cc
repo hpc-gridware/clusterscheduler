@@ -67,7 +67,7 @@ enum {
 
 typedef struct {
    int token;
-   char *text;
+   const char *text;
 } token_set_t;
 
 
@@ -109,7 +109,7 @@ static void eat_token(void);
 
 static char *save_error(void);
 
-static int cheap_scan(char *s, token_set_t tokenv[], int n, char *name);
+static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name);
 
 static int disabled_year_entry(lListElem **calep);
 
@@ -2333,7 +2333,7 @@ static int scan(const char *s, token_set_t token_set[]) {
    DRETURN(token);
 }
 
-static int cheap_scan(char *s, token_set_t tokenv[], int n, char *name) {
+static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name) {
    int i;
    int len;
    int match_all_chars = 0;

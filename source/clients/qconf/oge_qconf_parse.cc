@@ -105,12 +105,12 @@ static int sge_next_is_an_opt(char **ptr);
 static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
-static bool show_object_list(u_long32, lDescr *, int, char *);
+static bool show_object_list(u_long32, lDescr *, int, const char *);
 static int show_processors(bool has_binding_param);
 static int show_eventclients();
 
 /* ------------------------------------------------------------- */
-static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm, char *s);
+static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
 static bool add_host_of_type(lList *arglp, u_long32 target);
 static bool del_host_of_type(lList *arglp, u_long32 target);
 static int print_acl(lList *arglp);
@@ -4842,7 +4842,7 @@ int sge_parse_qconf(char *argv[])
       /* "-ahgrp group"  */
       if (strcmp("-ahgrp", *spp) == 0) {
          lList *answer_list = nullptr;
-         char* group = "@template";
+         const char* group = "@template";
          bool is_validate_name = false; /* This boolean is needed to create a
                                            hgrp templete. One could have done
                                            it with a string compare deep in
@@ -5286,7 +5286,7 @@ int sge_parse_qconf(char *argv[])
 
 /***********************************************************************/
 
-static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm, char *s)
+static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s)
 {
    char *cp2 = nullptr;
    lListElem *ep = nullptr;
@@ -5379,7 +5379,7 @@ static bool add_host_of_type(lList *arglp, u_long32 target)
    const char *host = nullptr;
    int nm = NoName;
    lDescr *type = nullptr;
-   char *name = nullptr;
+   const char *name = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -5902,7 +5902,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
 
 /* ------------------------------------------------------------ */
 
-static bool show_object_list(u_long32 target, lDescr *type, int keynm, char *name)
+static bool show_object_list(u_long32 target, lDescr *type, int keynm, const char *name)
 {
    lEnumeration *what = nullptr;
    lCondition *where = nullptr;

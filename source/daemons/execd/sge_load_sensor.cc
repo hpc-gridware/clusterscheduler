@@ -55,7 +55,7 @@ static int ls_send_command(lListElem *elem, const char *command);
 static pid_t sge_ls_get_pid(const lListElem *this_ls);
 static void sge_ls_set_pid(lListElem *this_ls, pid_t pid);
 static int sge_ls_status(lListElem *this_ls);
-static lListElem *sge_ls_create_ls(const char* qualified_hostname, char *name, const char *scriptfile);
+static lListElem *sge_ls_create_ls(const char* qualified_hostname, const char *name, const char *scriptfile);
 static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls);
 static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command);
 static int sge_ls_start(const char* qualified_hostname, const char *binary_path, char *scriptfile);
@@ -236,7 +236,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
        && !strcmp(lGetString(this_ls, LS_name), IDLE_LOADSENSOR_NAME)) {
       envp = (char **) sge_malloc(sizeof(char *) * 3);
       envp[0] = buffer;
-      envp[1] = "XAUTHORITY=/tmp/.xauthority";
+      envp[1] = (char *)"XAUTHORITY=/tmp/.xauthority";
       envp[2] = nullptr;
    } else {
       envp = (char **) sge_malloc(sizeof(char *) * 2);
@@ -297,7 +297,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 *     new CULL element of type LS_Type will be returned
 *     and a new loadsensor process will be created by this function
 ******************************************************************************/
-static lListElem *sge_ls_create_ls(const char *qualified_hostname, char *name, const char *scriptfile)
+static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile)
 {
    lListElem *new_ls = nullptr;    /* LS_Type */
    SGE_STRUCT_STAT st;

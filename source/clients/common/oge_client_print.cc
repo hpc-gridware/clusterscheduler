@@ -62,7 +62,7 @@
 
 static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *task_str, u_long32 full_listing, int slots, int slot, lList *ehl, lList *cl,
-                         const lList *pe_list, char *intend, u_long32 group_opt, int slots_per_line,
+                         const lList *pe_list, const char *intend, u_long32 group_opt, int slots_per_line,
                          int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp);
 
 static char hashes[] =
@@ -177,7 +177,7 @@ static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
 /*-------------------------------------------------------------------------*/
 /* actually just called by qhost */
 int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
-                         lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, char *indent,
+                         lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
                          u_long32 group_opt, int queue_name_length, qhost_report_handler_t *report_handler,
                          lList **alpp) {
    lListElem *jlep;
@@ -389,7 +389,7 @@ static char jhul6[] = "-----------------------------------";
 
 static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *dyn_task_str, u_long32 full_listing, int slots, int slot, lList *exechost_list,
-                         lList *centry_list, const lList *pe_list, char *indent, u_long32 group_opt,
+                         lList *centry_list, const lList *pe_list, const char *indent, u_long32 group_opt,
                          int slots_per_line, /* number of slots to be printed in slots column
                                                when 0 is passed the number of requested slots printed */
                          int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp) {

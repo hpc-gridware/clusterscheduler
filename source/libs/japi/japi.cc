@@ -3759,7 +3759,7 @@ const char *japi_strerror(int drmaa_errno)
 {
    const struct error_text_s {
       int drmaa_errno;
-      char *str;
+      const char *str;
    } error_text[] = {
       /* -------------- these are relevant to all sections ---------------- */
       { DRMAA_ERRNO_SUCCESS, "Routine returned normally with success." },

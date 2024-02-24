@@ -1334,7 +1334,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
 static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) {
    char arch_string[80];
-   char *load_avg_str;
+   const char *load_avg_str;
    char load_alarm_reason[MAX_STRING_SIZE];
    char suspend_alarm_reason[MAX_STRING_SIZE];
    const char *queue_name = nullptr;
@@ -3200,7 +3200,7 @@ int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList 
        * when you add options, make sure that single byte options (e.g. "h")
        * come after multi byte options starting with the same character (e.g. "hs")!
        */
-      static char* flags[] = {
+      static const char* flags[] = {
          "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "z", "a", nullptr
       };
       static u_long32 bits[] = {

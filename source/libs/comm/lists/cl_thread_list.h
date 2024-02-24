@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 /* basic functions */
-int cl_thread_list_setup(cl_raw_list_t **list_p, char *list_name);  /* CR check */
+int cl_thread_list_setup(cl_raw_list_t **list_p, const char *list_name);  /* CR check */
 int cl_thread_list_cleanup(cl_raw_list_t **list_p);                 /* CR check */
 
 

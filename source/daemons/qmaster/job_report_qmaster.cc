@@ -68,13 +68,13 @@
  */
 #define MAX_MASTER_TASK_FINISH_BEFORE_EXIT 20
 
-static char *status2str(u_long32 status);
+static const char *status2str(u_long32 status);
 
 #define is_running(state) (state==JWRITTEN || state==JRUNNING|| state==JWAITING4OSJID)
 
-static char *
+static const char *
 status2str(u_long32 status) {
-   char *s;
+   const char *s;
 
    switch (status) {
       case JTRANSFERING:

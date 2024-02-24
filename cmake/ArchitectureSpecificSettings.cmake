@@ -38,7 +38,7 @@ function(architecture_specific_settings)
       # Linux RiscV
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
 
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
@@ -56,7 +56,7 @@ function(architecture_specific_settings)
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
 
       # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
@@ -127,8 +127,8 @@ function(architecture_specific_settings)
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-writable-strings -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-writable-strings -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
 
@@ -139,24 +139,14 @@ function(architecture_specific_settings)
       # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
-      # Need to supress the following warnings.
-      # Apparently they are not enabled on Linux - these are general (minor) issues:
-      # warning: invalid suffix on literal; C++11 requires a space between literal and string macro [-Wliteral-suffix]
-      # e.g. for SFQ " failed to unlock " SFQ " - error: " SFQ
-      # and
-      # warning: ISO C++ forbids converting a string constant to 'char*' [-Wwrite-strings]
-      # when assigning a (constant) string literal to a char *
-      add_compile_options(-Wno-literal-suffix -Wno-write-strings)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
-      # -Wno-unneeded-internal-declaration -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal
-      # -Wno-unused-const-variable -Wno-strict-aliasing
       set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 

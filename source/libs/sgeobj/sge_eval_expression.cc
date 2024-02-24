@@ -77,7 +77,7 @@ enum { T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END, T_EXP, T_ERROR };
 
 /* ATTENTION! The order of TERMINALS and enumTypes have to match */
 const int eTypes[] = {T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END};
-char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<end>",
+const char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<end>",
 "<pattern>", "<error>" };
 
 

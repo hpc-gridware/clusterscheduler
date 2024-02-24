@@ -60,7 +60,7 @@
 
 /* ---------- global variable --------------------------------- */
 
-static char *_lNm2Str(const lNameSpace *nsp, int nm);
+static const char *_lNm2Str(const lNameSpace *nsp, int nm);
 
 static int _lStr2Nm(const lNameSpace *nsp, const char *str);
 
@@ -218,7 +218,7 @@ const char *lMt2Str(int mt) {
 const char *lNm2Str(int nm) {
    const lNameSpace *nsp;
    char stack_noinit[50];
-   char *cp;
+   const char *cp;
    const lNameSpace *ns;
 
    DENTER(CULL_BASIS_LAYER);
@@ -241,7 +241,7 @@ const char *lNm2Str(int nm) {
    DRETURN(cull_state_get_noinit());
 }
 
-static char *_lNm2Str(const lNameSpace *nsp, int nm) {
+static const char *_lNm2Str(const lNameSpace *nsp, int nm) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!nsp) {

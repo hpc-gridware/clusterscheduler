@@ -199,7 +199,7 @@ char *sge_get_file_path(char *buffer, sge_file_path_id_t id,
               id == TASK_SPOOL_FILE || id == PE_TASK_SPOOL_FILE) {
       dstring dstr_job_dir = DSTRING_INIT;
       const char *job_dir;
-      char *file_prefix = "";
+      const char *file_prefix = "";
       char id_range[SGE_PATH_MAX] = "";
       char job_dir_first[SGE_PATH_MAX] = "";
       char job_dir_second[SGE_PATH_MAX] = "";

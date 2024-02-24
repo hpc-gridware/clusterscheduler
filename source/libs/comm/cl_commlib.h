@@ -46,7 +46,7 @@ cl_raw_list_t *cl_com_get_log_list(void);
 
 cl_raw_list_t *cl_com_get_endpoint_list(void);
 
-int cl_com_set_parameter_list_value(const char *parameter, char *value);
+int cl_com_set_parameter_list_value(const char *parameter, const char *value);
 
 int cl_com_get_parameter_list_value(const char *parameter, char **value);
 
@@ -73,7 +73,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       bool service_provider,
                                       int port,
                                       cl_tcp_connect_t tcp_connect_mode,
-                                      char *component_name,
+                                      const char *component_name,
                                       unsigned long component_id,
                                       int select_sec_timeout,
                                       int select_usec_timeout);
@@ -106,17 +106,17 @@ int cl_com_remove_host_alias(char *alias_name);
 
 int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config);
 
-int cl_com_append_known_endpoint_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
+int cl_com_append_known_endpoint_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                            int service_port, cl_xml_connection_autoclose_t autoclose, bool is_static);
 
 int
 cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const char *comp_name, unsigned long comp_id);
 
-int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
+int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                              int *service_port);
 
 int
-cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
+cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                                    cl_xml_connection_autoclose_t *auto_close_mode);
 
 int cl_com_append_known_endpoint(cl_com_endpoint_t *endpoint, int service_port, cl_xml_connection_autoclose_t autoclose,
@@ -192,11 +192,11 @@ int cl_commlib_trigger(cl_com_handle_t *handle, int synchron);
 
 
 int cl_commlib_close_connection(cl_com_handle_t *handle,
-                                char *un_resolved_hostname, char *component_name, unsigned long component_id,
+                                char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                                 bool return_for_messages);
 
 int cl_commlib_open_connection(cl_com_handle_t *handle,
-                               char *un_resolved_hostname, char *component_name, unsigned long component_id);
+                               const char *un_resolved_hostname, const char *component_name, unsigned long component_id);
 
 
 int cl_commlib_receive_message(cl_com_handle_t *handle,
@@ -207,7 +207,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                                cl_com_endpoint_t **sender);
 
 int cl_commlib_send_message(cl_com_handle_t *handle,
-                            char *un_resolved_hostname, char *component_name, unsigned long component_id,
+                            const char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                             cl_xml_ack_type_t ack_type,
                             cl_byte_t **data, unsigned long size,
                             unsigned long *mid,
@@ -217,7 +217,7 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
                             bool wait_for_ack);
 
 int cl_commlib_check_for_ack(cl_com_handle_t *handle,
-                             char *un_resolved_hostname, char *component_name, unsigned long component_id,
+                             char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                              unsigned long mid,
                              bool do_block);
 

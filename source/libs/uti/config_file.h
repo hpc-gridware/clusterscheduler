@@ -44,7 +44,7 @@ char *search_conf_val(const char *name);
 
 char *search_nonone_conf_val(const char *name);
 
-int replace_params(const char *src, char *dst, int dst_len, char **allowed);
+int replace_params(const char *src, char *dst, int dst_len, const char **allowed);
 
 void delete_config(void);
 
@@ -61,8 +61,8 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value);
 
 extern void (*config_errfunc)(const char *);
 
-extern char *pe_variables[];
-extern char *prolog_epilog_variables[];
-extern char *pe_alloc_rule_variables[];
-extern char *ckpt_variables[];
-extern char *ctrl_method_variables[];
+extern const char *pe_variables[];
+extern const char *prolog_epilog_variables[];
+extern const char *pe_alloc_rule_variables[];
+extern const char *ckpt_variables[];
+extern const char *ctrl_method_variables[];

@@ -2348,7 +2348,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
           * obviously doesn't  have to start with a colon.
           */
          if( strlen( new_path )==0 ) {
-            path = "";
+            path = (char*)"";
          } else if (new_path[0] == ':') {  /* :path */
             path = (char *)new_path + 1;
          } else if ((path = strstr((char *)new_path, ":"))){ /* host:path */

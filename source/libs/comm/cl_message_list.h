@@ -41,7 +41,7 @@ typedef struct cl_message_list_elem_t {
 
 
 /* basic functions */
-int cl_message_list_setup(cl_raw_list_t **list_p, char *list_name);   /* CR check */
+int cl_message_list_setup(cl_raw_list_t **list_p, const char *list_name);   /* CR check */
 int cl_message_list_cleanup(cl_raw_list_t **list_p);   /* CR check */
 
 
