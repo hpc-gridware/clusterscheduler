@@ -116,7 +116,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
     */
    lSetUlong(jatep, JAT_pvm_ckpt_pid, lGetUlong(jr, JR_job_pid));
 
-   DPRINTF(("reaping job "sge_u32"."sge_u32" in queue >%s< job_pid %d\n", 
+   DPRINTF(("reaping job " sge_u32"." sge_u32" in queue >%s< job_pid %d\n",
       jobid, jataskid, qname, (int) lGetUlong(jatep, JAT_pvm_ckpt_pid)));
 
    queueep = cqueue_list_locate_qinstance(master_cqueue_list, qname);
@@ -207,7 +207,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       *    --> application controlled job error
       */
    else if ((failed && general_failure==GFSTATE_JOB)) {
-      DPRINTF(("set job "sge_u32"."sge_u32" in ERROR state\n", 
+      DPRINTF(("set job " sge_u32"." sge_u32" in ERROR state\n",
                lGetUlong(jep, JB_job_number), jataskid));
       reporting_create_acct_record(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */

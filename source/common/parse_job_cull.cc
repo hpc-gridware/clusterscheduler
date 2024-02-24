@@ -808,7 +808,7 @@ u_long32 flags
          DPRINTF(("directive prefix = <null> - will skip parsing of script\n"));
          dpl = 0;
       } else {
-         DPRINTF(("directive prefix = "SFQ"\n", directive_prefix));
+         DPRINTF(("directive prefix = " SFQ "\n", directive_prefix));
          dpl = strlen(directive_prefix);
       }
 

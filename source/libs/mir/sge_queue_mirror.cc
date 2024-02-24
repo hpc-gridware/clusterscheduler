@@ -114,7 +114,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
       const char *key = nullptr;
       bool is_list = list != nullptr ? true : false;
       
-      sge_dstring_sprintf(&key_buffer, SFN"@"SFN, name, hostname);
+      sge_dstring_sprintf(&key_buffer, SFN "@" SFN, name, hostname);
       key = sge_dstring_get_string(&key_buffer);
 
       if (action == SGE_EMA_MOD) {

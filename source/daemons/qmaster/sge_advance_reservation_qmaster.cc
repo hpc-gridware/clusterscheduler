@@ -959,7 +959,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    } else {
       /* AR_RUNNING */
-      DPRINTF(("AR: started, changing state of AR "sge_u32"\n", ar_id));
+      DPRINTF(("AR: started, changing state of AR " sge_u32"\n", ar_id));
 
       sge_ar_state_set_running(ar);
 

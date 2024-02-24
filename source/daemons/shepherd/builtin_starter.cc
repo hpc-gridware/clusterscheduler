@@ -276,8 +276,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       intermediate_user = get_conf_val("job_owner");
    }
 
-   shepherd_trace("pid="pid_t_fmt" pgrp="pid_t_fmt" sid="pid_t_fmt" old pgrp="
-                  pid_t_fmt" getlogin()=%s", pid, newpgrp, newpgrp, pgrp, 
+   shepherd_trace("pid=" pid_t_fmt " pgrp=" pid_t_fmt " sid=" pid_t_fmt " old pgrp="
+                  pid_t_fmt " getlogin()=%s", pid, newpgrp, newpgrp, pgrp,
                   (cp = getlogin()) ? cp : "<no login set>");
 
    shepherd_trace("reading passwd information for user '%s'",
@@ -778,7 +778,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          shepherd_error(1, err_str);
       }
    }
-   shepherd_trace("now running with uid="uid_t_fmt", euid="uid_t_fmt, 
+   shepherd_trace("now running with uid=" uid_t_fmt ", euid=" uid_t_fmt,
                   (int)getuid(), (int)geteuid());
 
    /*
@@ -1540,14 +1540,14 @@ int type
          char *t;
          sprintf(err_str, "can't stat() \"%s\" as %s: %s",
             base, name, strerror(errno));
-         sprintf(err_str+strlen(err_str), " KRB5CCNAME=%s uid="uid_t_fmt" gid="uid_t_fmt" ",
+         sprintf(err_str+strlen(err_str), " KRB5CCNAME=%s uid=" uid_t_fmt " gid=" uid_t_fmt " ",
                  (t=getenv("KRB5CCNAME"))?t:"none", getuid(), getgid());
          {
             gid_t groups[10];
             int i, ngid;
             ngid = getgroups(10, groups);
             for(i=0; i<ngid; i++)
-               sprintf(err_str+strlen(err_str), uid_t_fmt" ", groups[i]);
+               sprintf(err_str+strlen(err_str), uid_t_fmt " ", groups[i]);
          }
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
          shepherd_error(1, err_str);
@@ -1561,7 +1561,7 @@ int type
       /* 'base' is a existing directory, but not a file! */
       if (type == SGE_STDIN) {
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
-         shepherd_error(1, SFQ" is a directory not a file", base);
+         shepherd_error(1, SFQ " is a directory not a file", base);
          return "/dev/null";
       } else {
          job_name = get_conf_val("job_name");

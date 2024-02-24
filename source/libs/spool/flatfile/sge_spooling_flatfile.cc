@@ -449,7 +449,7 @@ static bool read_validate_object(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("reading "SFN" "SFQ"\n", object_type_get_name(object_type), key));
+   DPRINTF(("reading " SFN " " SFQ "\n", object_type_get_name(object_type), key));
 
    ep = spool_classic_default_read_func(answer_list, type, rule, key, 
                                          object_type);

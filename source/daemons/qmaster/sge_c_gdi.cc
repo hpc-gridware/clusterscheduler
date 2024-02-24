@@ -575,7 +575,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                      case -1 :
                      case -3 :
                         /* stop the order processing */
-                        WARNING((SGE_EVENT, "Skipping remaining "sge_uu32" orders", lGetNumberOfRemainingElem(ep)));
+                        WARNING((SGE_EVENT, "Skipping remaining " sge_uu32 " orders", lGetNumberOfRemainingElem(ep)));
                         next = nullptr;
                         break;
 

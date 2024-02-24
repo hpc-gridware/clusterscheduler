@@ -1598,7 +1598,7 @@ static void verify_method(const char *method_name)
 
       if (override_signal[0] != '/' && 
          shepherd_sys_str2signal(override_signal)<0) {
-         shepherd_error(1, "cannot convert " SFN " " SFQ" into a "
+         shepherd_error(1, "cannot convert " SFN " " SFQ " into a "
                               "valid signal number at this machine", 
                               method_name, override_signal);
       } /* else: 

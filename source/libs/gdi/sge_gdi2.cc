@@ -252,7 +252,7 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
    cl_ret = cl_commlib_get_endpoint_status(handle, (char *) comp_host, (char *) comp_name, comp_id, &status);
    if (cl_ret != CL_RETVAL_OK) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              "cl_commlib_get_endpoint_status failed: "SFQ, cl_get_error_text(cl_ret));
+                              "cl_commlib_get_endpoint_status failed: " SFQ, cl_get_error_text(cl_ret));
    } else {
       DEBUG((SGE_EVENT, SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING));
    }
@@ -483,11 +483,11 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *              ERROR((SGE_EVENT, "GDI multi request failed"));
 *           } else {
 *              INFO((SGE_EVENT, "GDI multi request was successful"));
-*              INFO((SGE_EVENT, "got cqueue list with "sge_U32CFormat" and cqueue answer "
-*                    "list with "sge_U32CFormat" elements.", sge_u32c(lGetNumberOfElem(list_cqueue)),
+*              INFO((SGE_EVENT, "got cqueue list with " sge_U32CFormat " and cqueue answer "
+*                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_cqueue)),
 *                    sge_u32c(lGetNumberOfElem(answer_cqueue))));
-*              INFO((SGE_EVENT, "got job list with "sge_U32CFormat" and job answer "
-*                    "list with "sge_U32CFormat" elements.", sge_u32c(lGetNumberOfElem(list_job)),
+*              INFO((SGE_EVENT, "got job list with " sge_U32CFormat " and job answer "
+*                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_job)),
 *                    sge_u32c(lGetNumberOfElem(answer_job))));
 *           }
 *           lFreeList(&multi_answer_list);
@@ -638,7 +638,7 @@ sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buff
       if (commproc[0] != '\0' && rhost[0] != '\0') {
          /* The connection was closed, reopen it */
          i = cl_commlib_open_connection(handle, (char *) rhost, (char *) commproc, usid);
-         INFO((SGE_EVENT, "reopen connection to %s,%s,"sge_U32CFormat" (2)\n",
+         INFO((SGE_EVENT, "reopen connection to %s,%s," sge_U32CFormat " (2)\n",
                  rhost, commproc, sge_u32c(usid)));
          if (i == CL_RETVAL_OK) {
             INFO((SGE_EVENT, "reconnected successfully\n"));
@@ -697,7 +697,7 @@ sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buff
 
       /* TODO: there are two cases for any and addressed communication partner, two functions are needed */
       if (sender != nullptr) {
-         DEBUG((SGE_EVENT, "received from: %s,"sge_U32CFormat"\n", sender->comp_host, sge_u32c(sender->comp_id)));
+         DEBUG((SGE_EVENT, "received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id)));
          if (rhost[0] == '\0') {
             strcpy(rhost, sender->comp_host); /* If we receive from anybody return the sender */
          }
@@ -722,11 +722,11 @@ static void dump_receive_info(cl_com_message_t **message, cl_com_endpoint_t **se
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
       DEBUG((SGE_EVENT, "<<<<<<<<<<<<<<<<<<<<"));
-      DEBUG((SGE_EVENT, "gdi_rcv: received message from %s/%s/"sge_U32CFormat": ", (*sender)->comp_host, (*sender)->comp_name, sge_u32c(
+      DEBUG((SGE_EVENT, "gdi_rcv: received message from %s/%s/" sge_U32CFormat ": ", (*sender)->comp_host, (*sender)->comp_name, sge_u32c(
               (*sender)->comp_id)));
       DEBUG((SGE_EVENT, "gdi_rcv: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string((*message)->message_mat)));
       DEBUG((SGE_EVENT, "gdi_rcv: message tag:       %s", sge_dump_message_tag((*message)->message_tag)));
-      DEBUG((SGE_EVENT, "gdi_rcv: message id:        "sge_U32CFormat"", sge_u32c((*message)->message_id)));
+      DEBUG((SGE_EVENT, "gdi_rcv: message id:        " sge_U32CFormat "", sge_u32c((*message)->message_id)));
       DEBUG((SGE_EVENT, "gdi_rcv: receive time:      %s", sge_ctime((*message)->message_receive_time.tv_sec, &ds)));
       DEBUG((SGE_EVENT, "<<<<<<<<<<<<<<<<<<<<"));
    }
@@ -744,12 +744,12 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
 
    if (comp_host != nullptr && comp_name != nullptr) {
       DEBUG((SGE_EVENT, ">>>>>>>>>>>>>>>>>>>>"));
-      DEBUG((SGE_EVENT, "gdi_snd: sending message to %s/%s/"sge_U32CFormat": ",
+      DEBUG((SGE_EVENT, "gdi_snd: sending message to %s/%s/" sge_U32CFormat ": ",
               (char *) comp_host, comp_name, sge_u32c(comp_id)));
       DEBUG((SGE_EVENT, "gdi_snd: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string(ack_type)));
       DEBUG((SGE_EVENT, "gdi_snd: message tag:       %s", sge_dump_message_tag(tag)));
       if (mid) {
-         DEBUG((SGE_EVENT, "gdi_snd: message id:        "sge_U32CFormat"", sge_u32c(*mid)));
+         DEBUG((SGE_EVENT, "gdi_snd: message id:        " sge_U32CFormat "", sge_u32c(*mid)));
       } else {
          DEBUG((SGE_EVENT, "gdi_snd: message id:        not handled by caller"));
       }
@@ -1161,7 +1161,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       if (fromcommproc[0] != '\0' && fromhost[0] != '\0') {
          /* The connection was closed, reopen it */
          ret = cl_commlib_open_connection(handle, fromhost, fromcommproc, *fromid);
-         INFO((SGE_EVENT, "reopen connection to %s,%s,"sge_U32CFormat" (1)\n", fromhost, fromcommproc, sge_u32c(
+         INFO((SGE_EVENT, "reopen connection to %s,%s," sge_U32CFormat " (1)\n", fromhost, fromcommproc, sge_u32c(
                  *fromid)));
          if (ret == CL_RETVAL_OK) {
             INFO((SGE_EVENT, "reconnected successfully\n"));
@@ -1182,7 +1182,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       }
 
       if (sender != nullptr) {
-         DEBUG((SGE_EVENT, "received from: %s,"sge_U32CFormat"\n", sender->comp_host, sge_u32c(sender->comp_id)));
+         DEBUG((SGE_EVENT, "received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id)));
          if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
             strcpy(fromcommproc, sender->comp_name);
          }

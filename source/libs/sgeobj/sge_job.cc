@@ -548,10 +548,10 @@ u_long32 job_get_ja_tasks(const lListElem *job)
    DENTER(TOP_LAYER);
    n = job_get_not_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Not enrolled ja_tasks: "sge_u32"\n", n));
+   DPRINTF(("Not enrolled ja_tasks: " sge_u32"\n", n));
    n = job_get_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Enrolled ja_tasks: "sge_u32"\n", n));
+   DPRINTF(("Enrolled ja_tasks: " sge_u32"\n", n));
    DRETURN(ret);
 }
 

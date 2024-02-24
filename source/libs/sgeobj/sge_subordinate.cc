@@ -89,7 +89,7 @@ tst_sos(int used, int total, const lListElem *so)
       ret = (bool)(used >= total);
    } else {
       /* used slots greater or equal threshold */
-      DPRINTF(("TSTSOS: "sge_u32" slots used (limit "sge_u32") -> %ssuspended\n",
+      DPRINTF(("TSTSOS: " sge_u32" slots used (limit " sge_u32") -> %ssuspended\n",
             used, threshold, ((u_long32)(used) >= threshold)?"":"not "));
       ret = (bool)((u_long32)used >= threshold);
    }
@@ -115,7 +115,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
             /*
              * slot-wise suspend on subordinate
              */
-            sge_dstring_sprintf_append(string, "slots="sge_u32"(", slots_sum);
+            sge_dstring_sprintf_append(string, "slots=" sge_u32"(", slots_sum);
 
             for_each_ep(elem, this_list) {
                char *action_str = "sr";
@@ -124,7 +124,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
                   action_str = "lr";
                }
 
-               sge_dstring_sprintf_append(string, "%s:"sge_u32":%s%s",
+               sge_dstring_sprintf_append(string, "%s:" sge_u32":%s%s",
                   lGetString(elem, SO_name),
                   lGetUlong(elem, SO_seq_no),
                   action_str,
@@ -143,7 +143,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
                
                sge_dstring_append(string, lGetString(elem, SO_name));
                if (lGetUlong(elem, SO_threshold)) {
-                  sge_dstring_sprintf_append(string, "="sge_u32"%s",
+                  sge_dstring_sprintf_append(string, "=" sge_u32"%s",
                                              lGetUlong(elem, SO_threshold),
                                              lNext(elem) ? "," : "");
                }

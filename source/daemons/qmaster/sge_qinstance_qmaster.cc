@@ -127,7 +127,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                const lListElem *calendar = lGetElemStr(master_calendar_list, CAL_name, new_value);
 
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                         lNm2Str(attribute_name),
                         old_value ? old_value : "<null>",
                         new_value ? new_value : "<null>"));
@@ -162,7 +162,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                         matching_group, is_ambiguous, master_hgroup_list);
             if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ" from "sge_u32" to "sge_u32"\n",
+               DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
                         lNm2Str(attribute_name), old_value, new_value));
 #endif
                lSetUlong(this_elem, attribute_name, new_value);
@@ -190,7 +190,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             if (old_value == nullptr || new_value == nullptr ||
                 strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                         lNm2Str(attribute_name),
                         old_value ? old_value : "<null>",
                         new_value ? new_value : "<null>"));
@@ -213,7 +213,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             if (old_value == nullptr || new_value == nullptr ||
                 strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                         lNm2Str(attribute_name),
                         old_value ? old_value : "<null>",
                         new_value ? new_value : "<null>"));
@@ -234,7 +234,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             if (old_value == nullptr || new_value == nullptr ||
                 strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                         lNm2Str(attribute_name),
                         old_value ? old_value : "<null>",
                         new_value ? new_value : "<null>"));
@@ -267,7 +267,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
                /*
                 * check if the modification is possible or if
@@ -301,7 +301,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             if (object_list_has_differences(old_value, answer_list,
                                             new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
                lSetList(this_elem, attribute_name, lCopyList("", new_value));
                *has_changed_conf_attr = true;
@@ -317,7 +317,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
                lSetList(this_elem, attribute_name, lCopyList("", new_value));
                *has_changed_conf_attr = true;
@@ -340,7 +340,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   ret &= false;
                } else {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed "SFQ" from "sge_u32" to "sge_u32"\n",
+                  DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
                            lNm2Str(attribute_name),
                            old_value, new_value));
 #endif
@@ -386,7 +386,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
                if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+                  DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
                   if (!initial_modify &&
                       ar_list_has_reservation_due_to_qinstance_complex_attr(master_ar_list, answer_list,
@@ -419,7 +419,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
                /*
                 * Suspend Threshold state will be reset later
@@ -518,7 +518,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * check "classic" queuewise subordinations
                 */
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
+               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
 #endif
 
                /*
@@ -580,7 +580,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                if (old_value == nullptr || new_value == nullptr ||
                    strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+                  DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                            lNm2Str(attribute_name),
                            old_value ? old_value : "<null>",
                            new_value ? new_value : "<null>"));
@@ -598,7 +598,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_group, is_ambiguous, master_hgroup_list);
                if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed "SFQ" from "sge_u32" to "sge_u32"\n",
+                  DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
                            lNm2Str(attribute_name),
                            old_value, new_value));
 #endif
@@ -623,7 +623,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_group, is_ambiguous, master_hgroup_list);
                if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
+                  DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
                            lNm2Str(attribute_name),
                            (old_value ? "true" : "false"),
                            (new_value ? "true" : "false")));

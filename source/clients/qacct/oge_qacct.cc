@@ -1129,7 +1129,7 @@ static void print_full_ulong(int full_length, u_long32 value) {
    char tmp_buf[100];
 
    DENTER(TOP_LAYER);
-   sprintf(tmp_buf, "%5"sge_fu32, value);
+   sprintf(tmp_buf, "%5" sge_fu32, value);
    print_full(full_length, tmp_buf); 
    DRETURN_VOID;
 }
@@ -1261,14 +1261,14 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
          } 
 
          /* slots */
-         sprintf(tmp_buf,"%5"sge_fu32, lGetUlong(lep, QAJ_slots));
+         sprintf(tmp_buf,"%5" sge_fu32, lGetUlong(lep, QAJ_slots));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->slots <= tmp_length) {
             column_size_data->slots  = tmp_length + 1;
          }
 
          /* advance reservations */
-         sprintf(tmp_buf,"%5"sge_fu32, lGetUlong(lep, QAJ_arid));
+         sprintf(tmp_buf,"%5" sge_fu32, lGetUlong(lep, QAJ_arid));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->arid <= tmp_length) {
             column_size_data->arid = tmp_length + 1;
@@ -1369,16 +1369,16 @@ sge_rusage_type *dusage
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_PROJECT, (dusage->project ? dusage->project : MSG_HISTORY_SHOWJOB_NULL));
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_DEPARTMENT, (dusage->department ? dusage->department : MSG_HISTORY_SHOWJOB_NULL));
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_JOBNAME, (dusage->job_name ? dusage->job_name : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_JOBNUMBER, dusage->job_number);
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_JOBNUMBER, dusage->job_number);
    
    if (dusage->task_number) {
-      printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_TASKID, dusage->task_number);              /* job-array task number */
+      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_TASKID, dusage->task_number);              /* job-array task number */
    } else {
       printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_TASKID, "undefined");             
    }
 
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
    printf("%-13.12s%-20s",MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime32(&dusage->submission_time, pdstr_buffer));
 
    if (dusage->start_time)
@@ -1393,28 +1393,28 @@ sge_rusage_type *dusage
 
 
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_GRANTEDPE, dusage->granted_pe);
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_SLOTS, dusage->slots);
-   printf("%-13.12s%-3"sge_fu32" %s %s\n",MSG_HISTORY_SHOWJOB_FAILED, dusage->failed, (dusage->failed ? ":" : ""), get_sstate_description(dusage->failed));
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_EXITSTATUS, dusage->exit_status);
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_SLOTS, dusage->slots);
+   printf("%-13.12s%-3" sge_fu32" %s %s\n",MSG_HISTORY_SHOWJOB_FAILED, dusage->failed, (dusage->failed ? ":" : ""), get_sstate_description(dusage->failed));
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_EXITSTATUS, dusage->exit_status);
    printf("%-13.12s%-13.0f\n",MSG_HISTORY_SHOWJOB_RUWALLCLOCK, dusage->ru_wallclock);  
 
    printf("%-13.12s%-13.3f\n",MSG_HISTORY_SHOWJOB_RUUTIME, dusage->ru_utime);    /* user time used */
    printf("%-13.12s%-13.3f\n", MSG_HISTORY_SHOWJOB_RUSTIME, dusage->ru_stime);    /* system time used */
-      printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAXRSS,  dusage->ru_maxrss);     /* maximum resident set size */
-      printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIXRSS,  dusage->ru_ixrss);       /* integral shared text size */
-      printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISMRSS,  dusage->ru_ismrss);     /* integral shared memory size*/
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIDRSS,      dusage->ru_idrss);      /* integral unshared data "  */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISRSS,      dusage->ru_isrss);      /* integral unshared stack "  */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMINFLT,     dusage->ru_minflt);     /* page reclaims */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAJFLT,     dusage->ru_majflt);     /* page faults */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSWAP,      dusage->ru_nswap);      /* swaps */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUINBLOCK,    dusage->ru_inblock);    /* block input operations */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUOUBLOCK,    dusage->ru_oublock);    /* block output operations */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGSND,     dusage->ru_msgsnd);     /* messages sent */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGRCV,     dusage->ru_msgrcv);     /* messages received */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSIGNALS,   dusage->ru_nsignals);   /* signals received */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
-   printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
+      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAXRSS,  dusage->ru_maxrss);     /* maximum resident set size */
+      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIXRSS,  dusage->ru_ixrss);       /* integral shared text size */
+      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISMRSS,  dusage->ru_ismrss);     /* integral shared memory size*/
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIDRSS,      dusage->ru_idrss);      /* integral unshared data "  */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISRSS,      dusage->ru_isrss);      /* integral unshared stack "  */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMINFLT,     dusage->ru_minflt);     /* page reclaims */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAJFLT,     dusage->ru_majflt);     /* page faults */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSWAP,      dusage->ru_nswap);      /* swaps */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUINBLOCK,    dusage->ru_inblock);    /* block input operations */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUOUBLOCK,    dusage->ru_oublock);    /* block output operations */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGSND,     dusage->ru_msgsnd);     /* messages sent */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGRCV,     dusage->ru_msgrcv);     /* messages received */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSIGNALS,   dusage->ru_nsignals);   /* signals received */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
+   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
 
    printf("%-13.12s%-13.3f\n",   MSG_HISTORY_SHOWJOB_CPU,          dusage->cpu);
    printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MEM,          dusage->mem);
@@ -1431,7 +1431,7 @@ sge_rusage_type *dusage
    printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
 #endif
    if (dusage->ar != 0) {
-      printf("%-13.12s%-20"sge_fu32"\n",MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
+      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
    } else {
       printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_ARID, "undefined");             
    }

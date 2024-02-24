@@ -170,7 +170,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 
    while (pid > 0) {
       if (reap_count >= max_count) {
-         DPRINTF(("max. reap count is reached - returning. reaped "sge_U32CFormat" childs.\n", sge_u32c(reap_count)));
+         DPRINTF(("max. reap count is reached - returning. reaped " sge_U32CFormat " childs.\n", sge_u32c(reap_count)));
          return 1;
       }
 
@@ -277,7 +277,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
           *  if not it should be a job kept with SGE_KEEP_ACTIVE (without
           *  keeping job object itself)
           */
-         DPRINTF(("Job: "sge_u32", JA-Task: "sge_u32", PE-Task: %s\n", jobid, jataskid, 
+         DPRINTF(("Job: " sge_u32", JA-Task: " sge_u32", PE-Task: %s\n", jobid, jataskid,
             petep != nullptr ? lGetString(petep, PET_id) : ""));
          if (!(jr=get_job_report(jobid, jataskid, petep != nullptr ? lGetString(petep, PET_id) : nullptr))) {
             ERROR((SGE_EVENT, MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, 
@@ -292,7 +292,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          /* when restarting execd it happens that cleanup_old_jobs()
             has already cleaned up this job */
          if (lGetUlong(jr, JR_state) == JEXITING) {
-            DPRINTF(("State of job "sge_u32" already changed to JEXITING\n", jobid));
+            DPRINTF(("State of job " sge_u32" already changed to JEXITING\n", jobid));
             continue;
          }
 
@@ -342,7 +342,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
                   exit_status));
       }
    }
-   DPRINTF(("reaped "sge_U32CFormat" childs - no child remaining\n", sge_u32c(reap_count)));
+   DPRINTF(("reaped " sge_U32CFormat " childs - no child remaining\n", sge_u32c(reap_count)));
 
    DRETURN(0);
 }
@@ -706,13 +706,13 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    
    /* failed */
    lSetUlong(jr, JR_failed, failed);
-   DPRINTF(("job report for job "SFN": failed = %ld\n", 
+   DPRINTF(("job report for job " SFN ": failed = %ld\n",
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
             failed));
    /* err_str */
    if (*error) {
       lSetString(jr, JR_err_str, error);
-      DPRINTF(("job report for job "SFN": err_str = %s\n", 
+      DPRINTF(("job report for job " SFN ": err_str = %s\n",
                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
                error));
    }
@@ -832,7 +832,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    } /* switch */
    
    lSetUlong(jr, JR_general_failure, general_failure);
-   DPRINTF(("job report for job "SFN": general_failure = %ld\n", 
+   DPRINTF(("job report for job " SFN ": general_failure = %ld\n",
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
             general_failure));
 
@@ -1495,7 +1495,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    /* if the state is already JEXITING work is done  
       for this job and we wait for ACK from qmaster */
    if (lGetUlong(jr, JR_state)==JEXITING) {
-      DPRINTF(("State of job "sge_u32"."sge_u32" already changed to JEXITING\n", jobid, jataskid));
+      DPRINTF(("State of job " sge_u32"." sge_u32" already changed to JEXITING\n", jobid, jataskid));
       DRETURN_VOID;
    }
 
@@ -1599,7 +1599,7 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
       dstring buffer = DSTRING_INIT;
       const char *qinstance_name = nullptr;
    
-      qinstance_name = sge_dstring_sprintf(&buffer, SFN"@"SFN,
+      qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN,
                                            get_conf_val("queue"),
                                            get_conf_val("host"));
       lSetString(jr, JR_queue_name, qinstance_name);
@@ -2266,7 +2266,7 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
       jep = lGetElemUlongNext(lp, JB_job_number, job_id, &iterator);
    }
 
-   DPRINTF(("Found %d master jobs for "sge_u32, master_jobs, job_id));
+   DPRINTF(("Found %d master jobs for " sge_u32, master_jobs, job_id));
 
    DRETURN(master_jobs);
 }

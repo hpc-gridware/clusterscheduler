@@ -789,7 +789,7 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
                lListElem *object = nullptr;
                int cull_ret;
 
-               DPRINTF(("read object with key "SFQ", size %d\n", 
+               DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
                cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, 
                                                       data_dbt.size);
@@ -904,7 +904,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
                data_dbt.data = pb.head_ptr;
                data_dbt.size = pb.bytes_used;
 
-               DPRINTF(("storing object with key "SFQ", size = %d "
+               DPRINTF(("storing object with key " SFQ ", size = %d "
                         "to env = %p, db = %p, txn = %p, txn_id = %d\n",
                         key, data_dbt.size, bdb_get_env(info), db,
                         txn, (txn->id == nullptr) ? 0 : txn->id(txn)));
@@ -922,7 +922,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
                                           key, dbret, db_strerror(dbret));
                   ret = false;
                } else {
-                  DEBUG((SGE_EVENT, "stored object with key "SFQ", size %d", key, data_dbt.size));
+                  DEBUG((SGE_EVENT, "stored object with key " SFQ ", size %d", key, data_dbt.size));
                }
             }
          }
@@ -969,7 +969,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
          data_dbt.data = (void *) str;
          data_dbt.size = strlen(str) + 1;
 
-         DPRINTF(("storing string with key "SFQ", size = %d "
+         DPRINTF(("storing string with key " SFQ ", size = %d "
                   "to env = %p, db = %p, txn = %p, txn_id = %d\n", 
                   key, data_dbt.size, bdb_get_env(info), db, 
                   txn, (txn->id == nullptr) ? 0 : txn->id(txn)));
@@ -987,7 +987,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
                                     key, dbret, db_strerror(dbret));
             ret = false;
          } else {
-            DEBUG((SGE_EVENT, "stored object with key "SFQ", size %d", key, data_dbt.size));
+            DEBUG((SGE_EVENT, "stored object with key " SFQ ", size %d", key, data_dbt.size));
          }
       }
    }
@@ -1237,7 +1237,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
                      done = true;
                      break;
                   } else {
-                     DEBUG((SGE_EVENT, "deleted record with key "SFQ, (char *)delete_dbt.data));
+                     DEBUG((SGE_EVENT, "deleted record with key " SFQ, (char *)delete_dbt.data));
                   }
                   sge_free(&(delete_dbt.data));
                }
@@ -1262,7 +1262,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
                                     key, dbret, db_strerror(dbret));
             ret = false;
          } else {
-            DEBUG((SGE_EVENT, "deleted record with key "SFQ, key));
+            DEBUG((SGE_EVENT, "deleted record with key " SFQ, key));
          }
       }
    }
@@ -1661,7 +1661,7 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
                done = true;
                break;
             } else {
-               DPRINTF(("read object with key "SFQ", size %d\n", 
+               DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
                lAddElemStr(list, STU_name, (const char *)key_dbt.data, STU_Type);
 
@@ -1725,7 +1725,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
          int cull_ret;
          const lDescr *descr;
 
-         DPRINTF(("read object with key "SFQ", size %d\n", 
+         DPRINTF(("read object with key " SFQ ", size %d\n",
                   key_dbt.data, data_dbt.size));
          cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, 
                                                 data_dbt.size);

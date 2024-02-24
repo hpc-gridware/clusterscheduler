@@ -1422,7 +1422,7 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
    /*
     * do operation
     */
-   DPRINTF(("qinstance "SFQ" "SFN" "SFN" on subordinate\n", full_name,
+   DPRINTF(("qinstance " SFQ " " SFN " " SFN " on subordinate\n", full_name,
            (do_action ? "" : "already"),
            (suspend ? "suspended" : "unsuspended")));
    if (do_action) {

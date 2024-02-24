@@ -2202,7 +2202,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
           */
          if (tmp_decr1->nm != tmp_decr2->nm ||
              mt_get_type(type1) != mt_get_type(type2)) {
-            DPRINTF(("Attribute "SFQ" of type "SFQ" cannot be compared with attribute "SFQ" of type "SFQ".\n",
+            DPRINTF(("Attribute " SFQ " of type " SFQ " cannot be compared with attribute " SFQ " of type " SFQ ".\n",
                      lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)],
                      lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]));
             ret = true;
@@ -2292,7 +2292,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
          }
 
          if (!equiv) {
-            DPRINTF(("Attributes "SFQ" of type "SFQ" are not equivalent.\n", 
+            DPRINTF(("Attributes " SFQ " of type " SFQ " are not equivalent.\n",
                      lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]));
             DTRACE;
             ret = true;
@@ -2869,7 +2869,7 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
       while ((rm_ep=prev)) {
          prev = lPrevRW(rm_ep);
          if (!strcmp(lGetString(rm_ep, CE_name), attr_name)) {
-            DPRINTF(("resource request -l "SFN"="SFN" overrides previous -l "SFN"="SFN"\n",
+            DPRINTF(("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
                attr_name, lGetString(ep, CE_stringval), 
                attr_name, lGetString(rm_ep, CE_stringval)));
             lRemoveElem(rl, &rm_ep);

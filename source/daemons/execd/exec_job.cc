@@ -1016,7 +1016,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
          /* write add_grp_id to job-structure and file */
          sprintf(str_id, "%ld", (long) last_addgrpid);
-         fprintf(fp, "add_grp_id="gid_t_fmt"\n", last_addgrpid);
+         fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
          if(petep == nullptr) {
             lSetString(jatep, JAT_osjobid, str_id);
          } else {
@@ -1360,8 +1360,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    } else {
       fprintf(fp, "job_name=%s\n", lGetString(jep, JB_job_name));
    }
-   fprintf(fp, "job_id="sge_u32"\n", job_id);
-   fprintf(fp, "ja_task_id="sge_u32"\n", job_is_array(jep) ? ja_task_id : 0);
+   fprintf(fp, "job_id=" sge_u32"\n", job_id);
+   fprintf(fp, "ja_task_id=" sge_u32"\n", job_is_array(jep) ? ja_task_id : 0);
    if(petep != nullptr) {
       fprintf(fp, "pe_task_id=%s\n", pe_task_id);
    }
@@ -1437,7 +1437,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          args = lGetList(jep, JB_job_args);
       }
 
-      fprintf(fp, "njob_args="sge_uu32"\n", lGetNumberOfElem(args));
+      fprintf(fp, "njob_args=" sge_uu32 "\n", lGetNumberOfElem(args));
 
       for_each_ep(se, args) {
          const char *arg = lGetString(se, ST_name);
@@ -1515,7 +1515,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "notify_susp=%s\n", notify_susp?notify_susp:"default");   
    sge_free(&notify_susp);
    if (mconf_get_use_qsub_gid()) {
-      fprintf(fp, "qsub_gid="sge_u32"\n", lGetUlong(jep, JB_gid));
+      fprintf(fp, "qsub_gid=" sge_u32"\n", lGetUlong(jep, JB_gid));
    } else {
       fprintf(fp, "qsub_gid=%s\n", "no");
    }
@@ -1858,7 +1858,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    DPRINTF(("**********************CHILD*********************\n"));
    shepherd_name = SGE_SHEPHERD;
-   sprintf(ps_name, "%s-"sge_u32, shepherd_name, job_id);
+   sprintf(ps_name, "%s-" sge_u32, shepherd_name, job_id);
 
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();

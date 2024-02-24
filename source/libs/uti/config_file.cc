@@ -529,7 +529,7 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value) 
             }
          }
 
-         DPRINTF(("%s = "sge_u32"\n", variable, value));
+         DPRINTF(("%s = " sge_u32"\n", variable, value));
       }
    }
 

@@ -498,12 +498,12 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
          break;
 
       case FS_SHORT_VERSION:
-         sge_dstring_sprintf(buffer, ""SFN" "SFN"", short_name, version);
+         sge_dstring_sprintf(buffer, "" SFN " " SFN "", short_name, version);
          ret = sge_dstring_get_string(buffer);
          break;
 
       case FS_LONG_VERSION:
-         sge_dstring_sprintf(buffer, ""SFN" "SFN"", long_name, version);
+         sge_dstring_sprintf(buffer, "" SFN " " SFN "", long_name, version);
          ret = sge_dstring_get_string(buffer);
          break;
 

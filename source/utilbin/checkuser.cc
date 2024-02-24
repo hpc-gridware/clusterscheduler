@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
    if (!strcmp(argv[1], "-check"))
       return 0;
    else if (!strcmp(argv[1], "-uid"))
-      printf(uid_t_fmt"\n", pw->pw_uid);
+      printf(uid_t_fmt "\n", pw->pw_uid);
    else if (!strcmp(argv[1], "-gid"))
       printf(gid_t_fmt"\n", pw->pw_gid);
    else

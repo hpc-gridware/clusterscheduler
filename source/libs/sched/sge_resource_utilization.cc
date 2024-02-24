@@ -184,7 +184,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          name = lGetString(queue, QU_full_name);
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
             DPRINTF(("-------------------------------------------\n"));
-            DPRINTF(("AR "sge_U32CFormat" QUEUE \"%s\"\n", ar_id, name));
+            DPRINTF(("AR " sge_U32CFormat " QUEUE \"%s\"\n", ar_id, name));
             for_each_ep(cr, lGetList(queue, QU_resource_utilization)) {
                utilization_print(cr, name);
             }
@@ -206,13 +206,13 @@ void utilization_print(const lListElem *cr, const char *object_name)
          object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
             lGetDouble(cr, RUE_utilized_now)));
    for_each_ep(rde, lGetList(cr, RUE_utilized)) {
-      DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
+      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
    }
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now non-exclusive\n", 
          object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
             lGetDouble(cr, RUE_utilized_now_nonexclusive)));
    for_each_ep(rde, lGetList(cr, RUE_utilized_nonexclusive)) {
-      DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
+      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
    }
 
    DRETURN_VOID;
@@ -659,7 +659,7 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
    if (when == DISPATCH_TIME_NOW) {
       DPRINTF(("no utilization\n"));
    } else {
-      DPRINTF(("utilization below %f (%f) starting at "sge_U32CFormat"\n", max_util, util, when));
+      DPRINTF(("utilization below %f (%f) starting at " sge_U32CFormat "\n", max_util, util, when));
    }
 
    DRETURN(when); 
@@ -808,14 +808,14 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
 
    if (!ep) {
       ERROR((SGE_EVENT, "rc_add_job_utilization nullptr object "
-            "(job "sge_u32" obj %s type %s) slots %d ep %p\n", 
+            "(job " sge_u32" obj %s type %s) slots %d ep %p\n",
             lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
       DRETURN(0);
    }
 
    if (!slots) {
       ERROR((SGE_EVENT, "rc_add_job_utilization 0 slot amount "
-            "(job "sge_u32" obj %s type %s) slots %d ep %p\n", 
+            "(job " sge_u32" obj %s type %s) slots %d ep %p\n",
             lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
       DRETURN(0);
    }
@@ -1051,8 +1051,8 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
          a.ar_list = ar_list;
          a.gep     = gep;
 
-         DPRINTF(("Adding job "sge_U32CFormat"."sge_U32CFormat" into schedule " "start "
-                  sge_U32CFormat" duration "sge_U32CFormat"\n", lGetUlong(jep, JB_job_number), 
+         DPRINTF(("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
+                  sge_U32CFormat" duration " sge_U32CFormat "\n", lGetUlong(jep, JB_job_number),
                   lGetUlong(ja_task, JAT_task_number), a.start, a.duration));
 
          /* only update resource utilization schedule  

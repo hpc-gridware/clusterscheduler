@@ -1049,13 +1049,13 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now)));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
-      DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
+      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
    }
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now non-exclusive\n", 
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive)));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
-      DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
+      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
    }
 }
 
@@ -1155,7 +1155,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 
                lSetUlong(qep, QU_tagged4schedule, MIN(tagged4schedule, lGetUlong(qep, QU_tagged4schedule)));
 
-               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for "SFQ" (cache)\n",
+               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (cache)\n",
                      queue, host, result, tslots, tslots_qend, limit_s));
             } else {
                int ttslots = INT_MAX;
@@ -1210,7 +1210,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 
                }
 
-               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for "SFQ" (fresh)\n",
+               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (fresh)\n",
                      queue, host, result, ttslots, ttslots_qend, limit_s));
 
                /* store result for reuse */
@@ -1517,9 +1517,9 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       result = DISPATCH_OK;
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
-      DPRINTF(("rqs_by_slots(%s@%s) returns <at specified time> "sge_U32CFormat"\n", queue, host, tt_rqs_all));
+      DPRINTF(("rqs_by_slots(%s@%s) returns <at specified time> " sge_U32CFormat "\n", queue, host, tt_rqs_all));
    } else {
-      DPRINTF(("rqs_by_slots(%s@%s) returns <later> "sge_U32CFormat" (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global"));
+      DPRINTF(("rqs_by_slots(%s@%s) returns <later> " sge_U32CFormat " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global"));
    }
 
    DRETURN(result);

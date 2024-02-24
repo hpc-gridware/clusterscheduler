@@ -1647,7 +1647,7 @@ void ptf_show_registered_jobs(void)
          pe_task_id_str = pe_task_id_str ? pe_task_id_str : "<null>";
          ja_task_id = lGetUlong(os_job, JO_ja_task_ID);
 
-         DPRINTF(("\t\tosjobid: "sge_u32" ja_task_id: "sge_u32" petaskid: %s\n",
+         DPRINTF(("\t\tosjobid: " sge_u32" ja_task_id: " sge_u32" petaskid: %s\n",
                   lGetUlong(os_job, JO_OS_job_ID), ja_task_id,
                   pe_task_id_str));
          process_list = lGetList(os_job, JO_pid_list);
@@ -1677,13 +1677,13 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
       next_job = lNextRW(job);
 
       if (lGetUlong(job, JL_job_ID) == job_id) {
-         DPRINTF(("PTF: found job id "sge_U32CFormat"\n", job_id));
+         DPRINTF(("PTF: found job id " sge_U32CFormat "\n", job_id));
          os_job_list = lGetListRW(job, JL_OS_job_list);
          next_os_job = lFirstRW(os_job_list);
          while ((os_job = next_os_job)) {
             next_os_job = lNextRW(os_job);
             if (lGetUlong(os_job, JO_ja_task_ID ) == ja_task_id) {
-               DPRINTF(("PTF: found job task id "sge_U32CFormat"\n", ja_task_id));
+               DPRINTF(("PTF: found job task id " sge_U32CFormat "\n", ja_task_id));
                psIgnoreJob(ptf_get_osjobid(os_job));
                DPRINTF(("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n",
                         lGetUlong(os_job, JO_OS_job_ID)));

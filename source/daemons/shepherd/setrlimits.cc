@@ -507,7 +507,7 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       sge_switch2admin_user();
       if (ret) {
          /* exit or not exit ? */
-         sprintf(trace_str, "setrlimit(%s, {"limit_fmt", "limit_fmt"}) failed: %s",
+         sprintf(trace_str, "setrlimit(%s, {" limit_fmt ", " limit_fmt "}) failed: %s",
             limit_str, FORMAT_LIMIT(rlp->rlim_cur), FORMAT_LIMIT(rlp->rlim_max), strerror(errno));
             shepherd_trace(trace_str);
       } else {
@@ -515,8 +515,8 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       }
 
       if (trace_rlimit) {
-         sprintf(trace_str, "%s setting: (soft "limit_fmt" hard "limit_fmt") "
-            "resulting: (soft "limit_fmt" hard "limit_fmt")",
+         sprintf(trace_str, "%s setting: (soft " limit_fmt " hard " limit_fmt ") "
+            "resulting: (soft " limit_fmt " hard " limit_fmt ")",
             limit_str,
             FORMAT_LIMIT(rlp->rlim_cur),
             FORMAT_LIMIT(rlp->rlim_max),
@@ -533,8 +533,8 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
          rlp->rlim_cur = rlp->rlim_max;
 
       if (trace_rlimit) {
-         sprintf(trace_str, "Job %s setting: (soft "limit_fmt" hard "limit_fmt
-            ") resulting: (soft "limit_fmt" hard "limit_fmt")",
+         sprintf(trace_str, "Job %s setting: (soft " limit_fmt " hard " limit_fmt
+            ") resulting: (soft " limit_fmt " hard " limit_fmt ")",
             limit_str,
             FORMAT_LIMIT(rlp->rlim_cur),
             FORMAT_LIMIT(rlp->rlim_max),

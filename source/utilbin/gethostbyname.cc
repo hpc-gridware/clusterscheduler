@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
      if (unresolved_name == nullptr) {
         unresolved_name = "nullptr";
      }
-     fprintf(stderr,"error resolving host "SFQ": %s (%s)\n",unresolved_name,cl_get_error_text(retval),err_text );
+     fprintf(stderr,"error resolving host " SFQ ": %s (%s)\n",unresolved_name,cl_get_error_text(retval),err_text );
      sge_free(&err_text); 
      cl_com_cleanup_commlib();
      exit(1);

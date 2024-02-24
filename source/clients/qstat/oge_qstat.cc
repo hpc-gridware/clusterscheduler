@@ -1465,7 +1465,7 @@ static int job_stdout_predecessor(job_handler_t* handler, u_long32 jid, lList **
    DENTER(TOP_LAYER);
 
    if (ctx->predecessor_count > 0 ) {
-      printf(", "sge_u32, jid);
+      printf(", " sge_u32, jid);
    } else {
       printf(sge_u32, jid);
    }
@@ -1535,7 +1535,7 @@ static int job_stdout_ad_predecessor(job_handler_t* handler, u_long32 jid, lList
    DENTER(TOP_LAYER);
 
    if (ctx->ad_predecessor_count > 0) {
-      printf(", "sge_u32, jid);
+      printf(", " sge_u32, jid);
    } else {
       printf(sge_u32, jid);
    }

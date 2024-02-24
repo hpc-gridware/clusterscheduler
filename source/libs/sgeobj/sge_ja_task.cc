@@ -207,7 +207,7 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
 
    pe_task = lGetSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list);
    if (pe_task != nullptr) {
-      INFO((SGE_EVENT, "already handled exit of pe task "SFQ" in ja_task "
+      INFO((SGE_EVENT, "already handled exit of pe task " SFQ " in ja_task "
          sge_U32CFormat"\n", pe_task_id, sge_u32c(lGetUlong(ja_task, JAT_task_number))));
       DRETURN(false);
    }
@@ -255,14 +255,14 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
    /* get list of finished pe tasks */
    pe_task_list = lGetList(ja_task, JAT_finished_task_list);
    if (pe_task_list == nullptr) {
-      DPRINTF(("no finished pe task list to clear in ja_task "sge_U32CFormat"\n", lGetUlong(ja_task, JAT_task_number)));
+      DPRINTF(("no finished pe task list to clear in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number)));
       DRETURN(false);
    }
 
    /* if we have such a list, delete it (lSetList will free the list) */
    lSetList(ja_task, JAT_finished_task_list, nullptr);
 
-   DPRINTF(("cleared finished pe task list in ja_task "sge_U32CFormat"\n", lGetUlong(ja_task, JAT_task_number)));
+   DPRINTF(("cleared finished pe task list in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number)));
 
    DRETURN(true);
 }

@@ -677,7 +677,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
       /* join files must be either 'y' or 'n' */
       if (!strcmp(name, DRMAA_JOIN_FILES)) {
          if (strlen(value)!=1 || (value[0] != 'y' && value[0] != 'n' )) {
-            sge_dstring_sprintf(diagp, "attribute "SFQ" must be either "SFQ" or "SFQ"\n", 
+            sge_dstring_sprintf(diagp, "attribute " SFQ " must be either " SFQ " or " SFQ "\n",
                                 DRMAA_JOIN_FILES, "y", "n");
             DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
          }
@@ -688,7 +688,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
          if (strcmp(value, DRMAA_SUBMISSION_STATE_ACTIVE) &&
              strcmp(value, DRMAA_SUBMISSION_STATE_HOLD)) {
             sge_dstring_sprintf(diagp,
-                                "attribute "SFQ" must be either "SFQ" or "SFQ"\n", 
+                                "attribute " SFQ " must be either " SFQ " or " SFQ "\n",
                                 DRMAA_JS_STATE,
                                 DRMAA_SUBMISSION_STATE_ACTIVE,
                                 DRMAA_SUBMISSION_STATE_HOLD);
@@ -704,7 +704,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
             if ((value[count] != 'e') && (value[count] != 'i') &&
                 (value[count] != 'o')) {
                sge_dstring_sprintf(diagp,
-                                   "attribute "SFQ" must contain only 'e', 'i', and/or 'o'\n",
+                                   "attribute " SFQ " must contain only 'e', 'i', and/or 'o'\n",
                                    DRMAA_TRANSFER_FILES);
                DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
             }
@@ -2484,7 +2484,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
          }
          else {
             sge_dstring_free(&ds);
-            sge_dstring_sprintf(diag, "working directory placeholder "SFQ" is not allowed "
+            sge_dstring_sprintf(diag, "working directory placeholder " SFQ " is not allowed "
                   "in the working directory path\n", DRMAA_PLACEHOLDER_WD);
             DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
          }
@@ -2496,7 +2496,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
          if (!is_bulk) {
             /* reject incr placeholder for non-array jobs */
             sge_dstring_free(&ds);
-            sge_dstring_sprintf(diag, "increment placeholder "SFQ" is only allowed in pathes "
+            sge_dstring_sprintf(diag, "increment placeholder " SFQ " is only allowed in pathes "
                   "for bulk jobs\n", DRMAA_PLACEHOLDER_INCR);
             DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
          }
@@ -3214,7 +3214,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    if (!(ep=lGetElemStr(attrs, VA_variable, DRMAA_REMOTE_COMMAND))) {      
       DPRINTF(("no remote command given\n"));
       
-      sge_dstring_copy_string(diag, "job template must have \""DRMAA_REMOTE_COMMAND"\" attribute set");
+      sge_dstring_copy_string(diag, "job template must have \"" DRMAA_REMOTE_COMMAND "\" attribute set");
       
       DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
    }

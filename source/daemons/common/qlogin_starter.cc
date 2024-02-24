@@ -454,8 +454,8 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
       shepherd_trace("cannot change uid/gid\n");
       return 4;
    }
-   shepherd_trace("uid = "uid_t_fmt", euid = "uid_t_fmt", gid = "gid_t_fmt 
-                  ", egid = "gid_t_fmt, getuid(), geteuid(), getgid(), getegid());
+   shepherd_trace("uid = " uid_t_fmt ", euid = " uid_t_fmt ", gid = " gid_t_fmt ", egid = " gid_t_fmt,
+                  getuid(), geteuid(), getgid(), getegid());
    
    /* socket stuff from here */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);

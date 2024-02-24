@@ -1730,7 +1730,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_ADD:
          /* check for duplicate */
          if (ep != nullptr) {
-            ERROR((SGE_EVENT, "duplicate list element "SFQ"\n", (key != nullptr) ?key:"nullptr"));
+            ERROR((SGE_EVENT, "duplicate list element " SFQ "\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_DUPLICATE_KEY);
          }
    
@@ -1747,7 +1747,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_DEL:
          /* check for existence */
          if (ep == nullptr) {
-            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != nullptr) ?key:"nullptr"));
+            ERROR((SGE_EVENT, "element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
 
@@ -1758,7 +1758,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_MOD:
          /* check for existence */
          if (ep == nullptr) {
-            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != nullptr) ?key:"nullptr"));
+            ERROR((SGE_EVENT, "element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
          lRemoveElem(*list, &ep);

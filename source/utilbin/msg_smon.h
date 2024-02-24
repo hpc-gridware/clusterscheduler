@@ -51,8 +51,8 @@
 #define MSG_SGESHAREMON_t_OPT_USAGE             _MESSAGE(47244, _("show formatted times"))
 #define MSG_SGESHAREMON_u_OPT_USAGE             _MESSAGE(47245, _("show decayed usage (since timestamp) in nodes"))
 #define MSG_SGESHAREMON_x_OPT_USAGE             _MESSAGE(47246, _("exclude non-leaf nodes"))
-#define MSG_ERROR_XISNOTAVALIDINTERVAL_S        _MESSAGE(47247, _(""SFN" is not a valid interval"))
-#define MSG_ERROR_XISNOTAVALIDCOUNT_S           _MESSAGE(47248, _(""SFN" is not a valid count"))
-#define MSG_FILE_COULDNOTOPENXFORY_SS           _MESSAGE(47249, _("could not open "SFN" for "SFN))
+#define MSG_ERROR_XISNOTAVALIDINTERVAL_S        _MESSAGE(47247, _("" SFN " is not a valid interval"))
+#define MSG_ERROR_XISNOTAVALIDCOUNT_S           _MESSAGE(47248, _("" SFN " is not a valid count"))
+#define MSG_FILE_COULDNOTOPENXFORY_SS           _MESSAGE(47249, _("could not open " SFN " for " SFN))
 
 // clang-format on

@@ -364,7 +364,7 @@ delete_object(const char *key)
          answer_list_output(&answer_list);
          ret = EXIT_FAILURE;
       } else {
-         fprintf(stdout, "deleted object with key "SFQ"\n", key);
+         fprintf(stdout, "deleted object with key " SFQ "\n", key);
       }
    }
 

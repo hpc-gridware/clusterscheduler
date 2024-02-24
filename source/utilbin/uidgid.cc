@@ -51,9 +51,9 @@ int main(int argc, char *argv[])
     usage();
  
  if (!strcmp(argv[1], "-uid"))
-    printf(uid_t_fmt"\n", getuid());
+    printf(uid_t_fmt "\n", getuid());
  else if (!strcmp(argv[1], "-euid"))
-    printf(uid_t_fmt"\n", geteuid());
+    printf(uid_t_fmt "\n", geteuid());
  else if (!strcmp(argv[1], "-gid"))
     printf(gid_t_fmt"\n", getgid());
  else if (!strcmp(argv[1], "-egid"))

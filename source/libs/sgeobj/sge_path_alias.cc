@@ -434,7 +434,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
             sge_dstring_append(outpath, path + orign_str_len );
          }
 
-         DPRINTF(("Path "SFQ" has been aliased to "SFQ"\n", inpath, sge_dstring_get_string(outpath))); 
+         DPRINTF(("Path " SFQ " has been aliased to " SFQ "\n", inpath, sge_dstring_get_string(outpath)));
  
          /* and we have to start all over again for subsequent aliases */
          sge_dstring_copy_dstring(&the_path, outpath);

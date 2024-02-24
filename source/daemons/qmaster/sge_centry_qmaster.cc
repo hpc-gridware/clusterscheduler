@@ -89,7 +89,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
       if (pos >= 0) {
          const char *name = lGetPosString(reduced_elem, pos);
 
-         DPRINTF(("Got CE_name: "SFQ"\n", name));
+         DPRINTF(("Got CE_name: " SFQ "\n", name));
          lSetString(centry, CE_name, name);
          if (!strcmp("slots", name)) {
             is_slots_attr = true;
@@ -106,7 +106,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
       if (pos >= 0) {
          const char *shortcut = lGetPosString(reduced_elem, pos);
 
-         DPRINTF(("Got CE_shortcut: "SFQ"\n", shortcut ? shortcut : "-NA-"));
+         DPRINTF(("Got CE_shortcut: " SFQ "\n", shortcut ? shortcut : "-NA-"));
          lSetString(centry, CE_shortcut, shortcut);
       }
    }
@@ -123,7 +123,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
          if (is_slots_attr) {
             type = TYPE_INT;
          }
-         DPRINTF(("Got CE_valtype: "sge_u32"\n", type));
+         DPRINTF(("Got CE_valtype: " sge_u32"\n", type));
          lSetUlong(centry, CE_valtype, type);
       }
    }
@@ -140,7 +140,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
          if (is_slots_attr) {
             relop = CMPLXLE_OP;
          }
-         DPRINTF(("Got CE_relop: "sge_u32"\n", relop));
+         DPRINTF(("Got CE_relop: " sge_u32"\n", relop));
          lSetUlong(centry, CE_relop, relop);
       }
    }
@@ -157,7 +157,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
          if (is_slots_attr) {
             request = REQU_YES;
          }
-         DPRINTF(("Got CE_requestable: "sge_u32"\n", request));
+         DPRINTF(("Got CE_requestable: " sge_u32"\n", request));
          lSetUlong(centry, CE_requestable, request);
       }
    }
@@ -174,7 +174,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
          if (is_slots_attr) {
             consumable = CONSUMABLE_YES;
          }
-         DPRINTF(("Got CE_consumable: "sge_u32"\n", consumable));
+         DPRINTF(("Got CE_consumable: " sge_u32"\n", consumable));
          lSetUlong(centry, CE_consumable, consumable);
       }
    }
@@ -191,7 +191,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
          if (is_slots_attr) {
             defaultval = "1";
          }
-         DPRINTF(("Got CE_defaultval: "SFQ"\n", defaultval ? defaultval : "-NA-"));
+         DPRINTF(("Got CE_defaultval: " SFQ "\n", defaultval ? defaultval : "-NA-"));
          lSetString(centry, CE_defaultval, defaultval);
       }
    }
@@ -204,7 +204,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
 
       if (pos >= 0) {
          const char *urgency_weight = lGetPosString(reduced_elem, pos);
-         DPRINTF(("Got CE_defaultval: "SFQ"\n", urgency_weight ? urgency_weight : "-NA-"));
+         DPRINTF(("Got CE_defaultval: " SFQ "\n", urgency_weight ? urgency_weight : "-NA-"));
 
          /* Check first that the entry is not nullptr */
          if (!pos) {

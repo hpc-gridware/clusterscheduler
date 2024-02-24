@@ -51,7 +51,7 @@ bool shepherd_write_pid_file(pid_t pid, dstring *errmsg)
 
    fp = fopen("pid", "w");
    if (fp != nullptr) {
-      if (fprintf(fp, pid_t_fmt"\n", pid) < 0) {
+      if (fprintf(fp, pid_t_fmt "\n", pid) < 0) {
          sge_dstring_sprintf(errmsg, MSG_FILE_CANNOT_WRITE_SS, "pid", strerror(errno));
          ret = false;
       } else {
@@ -130,13 +130,13 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
        * the wait status is returned by japi_wait()
        * see sge_reportL.h for bitmask and makro definition
        */
-      FPRINTF((fp, "wait_status="sge_u32"\n", wait_status));
+      FPRINTF((fp, "wait_status=" sge_u32"\n", wait_status));
       FPRINTF((fp, "exit_status=%d\n", exit_status));
       FPRINTF((fp, "signal=%d\n", child_signal));
 
       FPRINTF((fp, "start_time=%d\n", (int) start_time));
       FPRINTF((fp, "end_time=%d\n", (int) end_time));
-      FPRINTF((fp, "ru_wallclock="sge_u32"\n", (u_long32) end_time-start_time));
+      FPRINTF((fp, "ru_wallclock=" sge_u32"\n", (u_long32) end_time-start_time));
       FPRINTF((fp, "ru_utime=%f\n", (double)rusage->ru_utime.tv_sec + (double)rusage->ru_utime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_stime=%f\n", (double)rusage->ru_stime.tv_sec + (double)rusage->ru_stime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_maxrss=%ld\n", rusage->ru_maxrss));
@@ -201,7 +201,7 @@ shepherd_write_sig_info_file(const char *filename, const char *task_id,
 
    fp = fopen(filename, "a");
    if (fp != nullptr) {
-      FPRINTF((fp, "%s "sge_u32"\n", task_id, exit_status));
+      FPRINTF((fp, "%s " sge_u32"\n", task_id, exit_status));
       FCLOSE(fp);
    } else {
       shepherd_error(1, MSG_FILE_NOOPEN_SS, filename, strerror(errno));

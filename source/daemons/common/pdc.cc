@@ -620,7 +620,7 @@ static int psRetrieveOSJobData(void) {
               
                /* remove process entry from list */
 #ifdef MONITOR_PDC
-               INFO((SGE_EVENT, "lost process "pid_t_fmt" for job "pid_t_fmt" (utime = %f stime = %f)\n", 
+               INFO((SGE_EVENT, "lost process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n",
                      proc->pd_pid, job->jd_jid, proc->pd_utime, proc->pd_stime));
 #endif
                LNK_DELETE(currp);
@@ -958,8 +958,8 @@ print_job_data(psJob_t *job)
    printf("%s\n", MSG_SGE_JOBDATA );
    printf("jd_jid="OSJOBID_FMT"\n", job->jd_jid);
    printf("jd_length=%d\n", job->jd_length);
-   printf("jd_uid="uid_t_fmt"\n", job->jd_uid);
-   printf("jd_gid="uid_t_fmt"\n", job->jd_gid);
+   printf("jd_uid=" uid_t_fmt "\n", job->jd_uid);
+   printf("jd_gid=" uid_t_fmt "\n", job->jd_gid);
    printf("jd_tstamp=%s\n", ctime(&job->jd_tstamp));
    printf("jd_proccount=%d\n", (int)job->jd_proccount);
    printf("jd_refcnt=%d\n", (int)job->jd_refcnt);
@@ -980,11 +980,11 @@ static void
 print_process_data(psProc_t *proc)
 {
    printf("\t******* Process Data *******\n");
-   printf("\tpd_pid="pid_t_fmt"\n", proc->pd_pid);
+   printf("\tpd_pid=" pid_t_fmt "\n", proc->pd_pid);
    printf("\tpd_length=%d\n", (int)proc->pd_length);
    printf("\tpd_tstamp=%s\n", ctime(&proc->pd_tstamp));
-   printf("\tpd_uid="uid_t_fmt"\n", proc->pd_uid);
-   printf("\tpd_gid="uid_t_fmt"\n", proc->pd_gid);
+   printf("\tpd_uid=" uid_t_fmt "\n", proc->pd_uid);
+   printf("\tpd_gid=" uid_t_fmt "\n", proc->pd_gid);
    printf("\tpd_acid=%lu\n", proc->pd_acid);
    printf("\tpd_state=%d\n", (int)proc->pd_state);
    printf("\tpd_pstart=%8.3f\n", proc->pd_pstart);
@@ -1288,12 +1288,12 @@ main(int argc, char **argv)
                       getuid() == procs->pd_uid) {
                      if (kill(procs->pd_pid, signo)<0) {
                         char buf[128];
-                        sprintf(buf, "kill("pid_t_fmt", %d)", procs->pd_pid, signo);
+                        sprintf(buf, "kill(" pid_t_fmt ", %d)", procs->pd_pid, signo);
                         perror(buf);
                      } else if (verbose)
-                        printf("kill("pid_t_fmt", %d) issued\n", procs->pd_pid, signo);
+                        printf("kill(" pid_t_fmt ", %d) issued\n", procs->pd_pid, signo);
                   } else {
-                     fprintf(stderr, "kill: "pid_t_fmt ": %s\n",
+                     fprintf(stderr, "kill: " pid_t_fmt ": %s\n",
                              procs->pd_pid, MSG_SGE_PERMISSIONDENIED);
                   }
                }

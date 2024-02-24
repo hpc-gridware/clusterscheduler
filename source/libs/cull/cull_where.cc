@@ -269,16 +269,16 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
                break;
             case lUlongT:
                if (!fp) {
-                  DPRINTF(("%s "sge_u32"\n", out, cp->operand.cmp.val.ul));
+                  DPRINTF(("%s " sge_u32"\n", out, cp->operand.cmp.val.ul));
                } else {
-                  fprintf(fp, "%s "sge_u32"\n", out, cp->operand.cmp.val.ul);
+                  fprintf(fp, "%s " sge_u32"\n", out, cp->operand.cmp.val.ul);
                }
                break;
             case lUlong64T:
                if (!fp) {
-                  DPRINTF(("%s "sge_u64"\n", out, cp->operand.cmp.val.ul64));
+                  DPRINTF(("%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64));
                } else {
-                  fprintf(fp, "%s "sge_u64"\n", out, cp->operand.cmp.val.ul64);
+                  fprintf(fp, "%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64);
                }
                break;
             case lStringT:

@@ -35,17 +35,17 @@
 
 // clang-format off
 
-#define MSG_QRSH_STARTER_CANNOTOPENFILE_SS   _MESSAGE(15000, _("qrsh_starter: cannot open file "SFN": "SFN))
-#define MSG_QRSH_STARTER_CANNOTREADCONFIGFROMFILE_S _MESSAGE(15001, _("qrsh_starter: cannot read job configuration from file "SFN))
-#define MSG_QRSH_STARTER_CANNOTCHANGEDIR_SS  _MESSAGE(15002, _("qrsh_starter: cannot change to directory "SFN": "SFN))
-#define MSG_QRSH_STARTER_MALLOCFAILED_S      _MESSAGE(15003, _("qrsh_starter: malloc failed: "SFN))
-#define MSG_QRSH_STARTER_CANNOTWRITEPID_SS   _MESSAGE(15005, _("qrsh_starter: cannot write pid file "SFN": "SFN))
-#define MSG_QRSH_STARTER_CANNOTFORKCHILD_S   _MESSAGE(15006, _("qrsh_starter: cannot fork child process: "SFN))
-#define MSG_QRSH_STARTER_CANNOTGETLOGIN_S    _MESSAGE(15007, _("qrsh_starter: cannot get login name: "SFN))
-#define MSG_QRSH_STARTER_CANNOTGETUSERINFO_S _MESSAGE(15008, _("qrsh_starter: cannot get user information: "SFN))
-#define MSG_QRSH_STARTER_CANNOTDETERMSHELL_S _MESSAGE(15009, _("qrsh_starter: cannot determine login shell, using "SFQ))
+#define MSG_QRSH_STARTER_CANNOTOPENFILE_SS   _MESSAGE(15000, _("qrsh_starter: cannot open file " SFN ": " SFN))
+#define MSG_QRSH_STARTER_CANNOTREADCONFIGFROMFILE_S _MESSAGE(15001, _("qrsh_starter: cannot read job configuration from file " SFN))
+#define MSG_QRSH_STARTER_CANNOTCHANGEDIR_SS  _MESSAGE(15002, _("qrsh_starter: cannot change to directory " SFN ": " SFN))
+#define MSG_QRSH_STARTER_MALLOCFAILED_S      _MESSAGE(15003, _("qrsh_starter: malloc failed: " SFN))
+#define MSG_QRSH_STARTER_CANNOTWRITEPID_SS   _MESSAGE(15005, _("qrsh_starter: cannot write pid file " SFN ": " SFN))
+#define MSG_QRSH_STARTER_CANNOTFORKCHILD_S   _MESSAGE(15006, _("qrsh_starter: cannot fork child process: " SFN))
+#define MSG_QRSH_STARTER_CANNOTGETLOGIN_S    _MESSAGE(15007, _("qrsh_starter: cannot get login name: " SFN))
+#define MSG_QRSH_STARTER_CANNOTGETUSERINFO_S _MESSAGE(15008, _("qrsh_starter: cannot get user information: " SFN))
+#define MSG_QRSH_STARTER_CANNOTDETERMSHELL_S _MESSAGE(15009, _("qrsh_starter: cannot determine login shell, using " SFQ))
 #define MSG_QRSH_STARTER_EMPTY_WRAPPER       _MESSAGE(15010, _("qrsh_starter: environment variable QRSH_WRAPPER has no value"))
-#define MSG_QRSH_STARTER_EXECCHILDFAILED_S   _MESSAGE(15011, _("qrsh_starter: executing child process "SFN" failed: "SFN))
+#define MSG_QRSH_STARTER_EXECCHILDFAILED_S   _MESSAGE(15011, _("qrsh_starter: executing child process " SFN " failed: " SFN))
 #define MSG_QRSH_STARTER_INVALIDCOMMAND      _MESSAGE(15012, _("qrsh_starter: received invalid command to execute"))
 #define MSG_QRSH_STARTER_NOCWDINCONFIG       _MESSAGE(15013, _("qrsh_starter: can't get cwd from config"))
 

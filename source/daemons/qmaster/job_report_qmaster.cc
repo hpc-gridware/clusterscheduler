@@ -278,7 +278,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                       * minute - better send a kill signal immediately.
                       */
                      if (ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
-                        DPRINTF(("Received report from "sge_u32"."sge_u32
+                        DPRINTF(("Received report from " sge_u32"." sge_u32
                                 " which is already in \"deleted\" state. "
                                 "==> send kill signal\n", jobid, jataskid));
 
@@ -298,7 +298,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                     lGetListRW(jatep, JAT_scaled_usage_list));
 
                         if (status == JTRANSFERING) { /* got async ack for this job */
-                           DPRINTF(("--- transfering job "SFN" is running\n", job_id_string));
+                           DPRINTF(("--- transfering job " SFN " is running\n", job_id_string));
                            sge_commit_job(jep, jatep, jr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT,
                                           monitor); /* implicitly sending usage to schedd */
                            cancel_job_resend(jobid, jataskid);
@@ -324,7 +324,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               /* here qmaster hears the first time about this task
                                  and thus adds it to the task list of the appropriate job */
                               new_task = true;
-                              DPRINTF(("--- task (#%d) "SFN" -> running\n",
+                              DPRINTF(("--- task (#%d) " SFN " -> running\n",
                                       lGetNumberOfElem(lGetList(jatep, JAT_task_list)), job_id_string));
                               petask = lAddSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list, PET_Type);
                               lSetUlong(petask, PET_status, JRUNNING);
@@ -451,7 +451,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
              *   exit of the job
              */
             if (jep == nullptr || jatep == nullptr) {
-               DPRINTF(("send cleanup request for slave job "SFN"\n", job_id_string));
+               DPRINTF(("send cleanup request for slave job " SFN "\n", job_id_string));
                pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
             } else {
                /* must be ack (or later slave job report) for slave job */
@@ -470,7 +470,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                   if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
                      /* if tag is still 1, this is the ACK for slave notification */
                      if (lGetUlong(first_at_host, JG_tag_slave_job) != 0) {
-                        DPRINTF(("slave job "SFN" arrived on host %s\n", job_id_string, rhost));
+                        DPRINTF(("slave job " SFN " arrived on host %s\n", job_id_string, rhost));
                         lSetUlong(first_at_host, JG_tag_slave_job, 0);
 
                         /* should trigger a fast delivery of the job to master execd
@@ -497,10 +497,10 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         if (lGetElemStr(lGetList(jr, JR_usage), UA_name, "exit_status") != nullptr) {
                            /* the job is done in this slave exec host */
                            lSetUlong(first_at_host, JG_tag_slave_job, 0);
-                           DPRINTF(("slave job "SFN" exited on host %s\n", job_id_string, rhost));
+                           DPRINTF(("slave job " SFN " exited on host %s\n", job_id_string, rhost));
                            pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
                         } else {
-                           DPRINTF(("trigger exit of slave job "SFN" on host %s\n", job_id_string, rhost));
+                           DPRINTF(("trigger exit of slave job " SFN " on host %s\n", job_id_string, rhost));
                            pack_ack(pb, ACK_SIGNAL_SLAVE, jobid, jataskid, pe_task_id_str);
                         }
                      }
@@ -515,7 +515,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                   host = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), rhost);
                   update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 
-                  DPRINTF(("RU: CLEANUP FOR SLAVE JOB "SFN" on host "SFN"\n", job_id_string, rhost));
+                  DPRINTF(("RU: CLEANUP FOR SLAVE JOB " SFN " on host " SFN "\n", job_id_string, rhost));
 
                   /* clean up */
                   pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
@@ -530,7 +530,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                 * or job was deleted using "qdel -f"
                 * while execd was down or ...
                 */
-               DPRINTF(("exiting job "SFN" does not exist\n", job_id_string));
+               DPRINTF(("exiting job " SFN " does not exist\n", job_id_string));
             } else {
                /* job exited */
                if (pe_task_id_str == nullptr) {
@@ -582,7 +582,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                      case JRUNNING:
                      case JTRANSFERING:
                         if (!skip_job_exit) {
-                           DPRINTF(("--- running job "SFN" is exiting, previous status: "SFN"\n",
+                           DPRINTF(("--- running job " SFN " is exiting, previous status: " SFN "\n",
                                    job_id_string, (status == JTRANSFERING) ? "transfering" : "running"));
 
                            sge_job_exit(jr, jep, jatep, monitor);
@@ -646,7 +646,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                             lGetUlong(petask, PET_status) == JTRANSFERING) {
                            u_long32 failed = lGetUlong(jr, JR_failed);
 
-                           DPRINTF(("--- petask "SFN" -> final usage\n", job_id_string));
+                           DPRINTF(("--- petask " SFN " -> final usage\n", job_id_string));
                            lSetUlong(petask, PET_status, JFINISHED);
 
                            reporting_create_acct_record(nullptr, jr, jep, jatep, false);

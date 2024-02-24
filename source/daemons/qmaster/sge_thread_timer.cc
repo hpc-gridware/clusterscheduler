@@ -208,7 +208,7 @@ sge_timer_initialize(monitoring_t *monitor) {
    sge_add_check_limit_trigger();
    DPRINTF(("added timer event to check load reports and possibly to enforce limits\n"));
 
-   DPRINTF((SFN" related initialisation has been done\n", threadnames[TIMER_THREAD]));
+   DPRINTF((SFN " related initialisation has been done\n", threadnames[TIMER_THREAD]));
 
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
    cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
@@ -227,11 +227,11 @@ sge_timer_terminate() {
 
       thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    }
-   DPRINTF(("all "SFN" threads terminated\n", threadnames[TIMER_THREAD]));
+   DPRINTF(("all " SFN " threads terminated\n", threadnames[TIMER_THREAD]));
 
    te_shutdown();
 
-   DPRINTF((SFN" related cleanup has been done\n", threadnames[TIMER_THREAD]));
+   DPRINTF((SFN " related cleanup has been done\n", threadnames[TIMER_THREAD]));
 
    DRETURN_VOID;
 }
@@ -333,7 +333,7 @@ sge_timer_main(void *arg) {
                            mconf_is_monitor_message());
 
          if ((Event_Control.next < te->when) || (Event_Control.deleted == true)) {
-            DPRINTF(("%s: event list changed - next:"sge_u32" --> start over\n", __func__,
+            DPRINTF(("%s: event list changed - next:" sge_u32" --> start over\n", __func__,
                     Event_Control.next));
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);

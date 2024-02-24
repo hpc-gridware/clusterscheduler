@@ -256,7 +256,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                   task_number = lGetUlong(tmp_task, JAT_task_number);
                   if ((task_number >= start && task_number <= end &&
                        ((task_number - start) % step) == 0) || alltasks) {
-                     DPRINTF(("Modify job: "sge_u32"."sge_u32"\n", jobid,
+                     DPRINTF(("Modify job: " sge_u32"." sge_u32"\n", jobid,
                              task_number));
 
                      /* this specifies no queue, so lets probe for a job */
@@ -288,7 +288,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                      for (taskid = min; taskid <= max; taskid += step) {
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
-                           DPRINTF(("Modify job: "sge_u32"."sge_u32"\n", jobid,
+                           DPRINTF(("Modify job: " sge_u32"." sge_u32"\n", jobid,
                                    taskid));
                            sge_change_job_state(packet->user, packet->host, job, nullptr, taskid,
                                                 action, lGetUlong(dep, ID_force), &alp, monitor);
@@ -303,7 +303,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                      for (taskid = min; taskid <= max; taskid += step) {
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
-                           DPRINTF(("Modify job: "sge_u32"."sge_u32"\n", jobid,
+                           DPRINTF(("Modify job: " sge_u32"." sge_u32"\n", jobid,
                                    taskid));
                            sge_change_job_state(packet->user, packet->host, job, nullptr, taskid,
                                                 action, lGetUlong(dep, ID_force), &alp, monitor);
@@ -321,7 +321,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         }
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
-                           DPRINTF(("Modify job: "sge_u32"."sge_u32"\n", jobid,
+                           DPRINTF(("Modify job: " sge_u32"." sge_u32"\n", jobid,
                                    taskid));
                            sge_change_job_state(packet->user, packet->host, job, nullptr, taskid,
                                                 action, lGetUlong(dep, ID_force), &alp, monitor);
@@ -340,7 +340,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         }
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
-                           DPRINTF(("Modify job: "sge_u32"."sge_u32"\n", jobid,
+                           DPRINTF(("Modify job: " sge_u32"." sge_u32"\n", jobid,
                                    taskid));
                            sge_change_job_state(packet->user, packet->host, job, nullptr, taskid,
                                                 action, lGetUlong(dep, ID_force), &alp, monitor);
@@ -1033,7 +1033,7 @@ sge_propagate_queue_suspension(const char *qnm, int how) {
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          if (lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname, qnm)) {
             u_long32 jstate;
-            DPRINTF(("found "sge_u32"."sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number)));
+            DPRINTF(("found " sge_u32"." sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number)));
             jstate = lGetUlong(jatep, JAT_state);
             if (how == SGE_SIGSTOP)
                jstate |= JSUSPENDED_ON_SUBORDINATE;
@@ -1139,7 +1139,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
    if (jep) {
       te_event_t ev = nullptr;
 
-      DPRINTF(("JOB "sge_u32": %s signal %s (retry after "sge_u32" seconds) host: %s\n",
+      DPRINTF(("JOB " sge_u32": %s signal %s (retry after " sge_u32" seconds) host: %s\n",
               lGetUlong(jep, JB_job_number), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
               lGetHost(qep, QU_qhostname)));
       te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, lGetUlong(jep, JB_job_number),
@@ -1156,7 +1156,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
    } else {
       te_event_t ev = nullptr;
 
-      DPRINTF(("QUEUE %s: %s signal %s (retry after "sge_u32" seconds) host %s\n",
+      DPRINTF(("QUEUE %s: %s signal %s (retry after " sge_u32" seconds) host %s\n",
               lGetString(qep, QU_full_name), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
               lGetHost(qep, QU_qhostname)));
       te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qep, QU_full_name));
@@ -1223,7 +1223,7 @@ signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
             /* search master queue - needed for signalling of a job */
             if ((mq = cqueue_list_locate_qinstance(master_cqueue_list,
                                                    mqname = lGetString(lFirst(gdil_lp), JG_qname)))) {
-               DPRINTF(("found slave job "sge_u32" in queue %s master queue is %s\n", lGetUlong(jep,
+               DPRINTF(("found slave job " sge_u32" in queue %s master queue is %s\n", lGetUlong(jep,
                                                                                                 JB_job_number), qname, mqname));
                sge_signal_queue(how, mq, jep, jatep, monitor);
             } else {
@@ -1262,7 +1262,7 @@ signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_
          !lGetBool(pe, PE_control_slaves)))
       for (gdil_ep = lNext(lFirst(gdil_lp)); gdil_ep; gdil_ep = lNext(gdil_ep))
          if ((mq = cqueue_list_locate_qinstance(master_cqueue_list, qname = lGetString(gdil_ep, JG_qname)))) {
-            DPRINTF(("found slave job "sge_u32" in queue %s\n", lGetUlong(jep, JB_job_number), qname));
+            DPRINTF(("found slave job " sge_u32" in queue %s\n", lGetUlong(jep, JB_job_number), qname));
             sge_signal_queue(how, mq, jep, jatep, monitor);
          }
 

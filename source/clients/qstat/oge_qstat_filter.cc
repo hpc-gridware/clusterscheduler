@@ -787,7 +787,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
 
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
-               DPRINTF(("show task "sge_u32"."sge_u32"\n",
+               DPRINTF(("show task " sge_u32"." sge_u32"\n",
                        lGetUlong(jep, JB_job_number),
                        lGetUlong(jatep, JAT_task_number)));
                lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
@@ -1204,11 +1204,11 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
          for_each_ep(elem, *job_l) {
             lListElem *task = lFirst(lGetList(elem, JB_ja_tasks));
 
-            fprintf(stderr, "jid="sge_u32" ", lGetUlong(elem, JB_job_number));
+            fprintf(stderr, "jid=" sge_u32" ", lGetUlong(elem, JB_job_number));
             if (task) {
                dstring string = DSTRING_INIT;
 
-               fprintf(stderr, "state=%s status=%s job_restarted="sge_u32"\n", sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_state)), sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_status)), lGetUlong(task, JAT_job_restarted));
+               fprintf(stderr, "state=%s status=%s job_restarted=" sge_u32"\n", sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_state)), sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_status)), lGetUlong(task, JAT_job_restarted));
                sge_dstring_free(&string);
             } else {
                fprintf(stderr, "\n");
@@ -1225,7 +1225,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
        * debug output to perform testsuite tests
        */
       if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != nullptr) {
-         fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received="sge_uu32"\n", 
+         fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received=" sge_uu32 "\n",
                  lGetNumberOfElem(*job_l));
       }
    }

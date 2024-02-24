@@ -135,7 +135,7 @@ extern int main(int argc, char **argv) {
 
       gettimeofday(&now, nullptr);
       if (now.tv_sec != last_time && !no_output) {
-         printf("virtual event client["pid_t_fmt"] message count[sent |%d|] events[received |%d|]...\n",
+         printf("virtual event client[" pid_t_fmt "] message count[sent |%d|] events[received |%d|]...\n",
                 getpid(), snd_messages, events_received);
          last_time = now.tv_sec;
       }

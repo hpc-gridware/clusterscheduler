@@ -3001,7 +3001,7 @@ int sge_parse_qconf(char *argv[])
       }
 
       if (!info_entry[index].object_name) {
-         fprintf(stderr, "Modification of object "SFQ" not supported\n", *spp);
+         fprintf(stderr, "Modification of object " SFQ " not supported\n", *spp);
          sge_free(&(info_entry[1].fields));
          DRETURN(1);
       } 
@@ -6073,7 +6073,7 @@ static int show_processors(bool has_binding_param)
          u_long32 cores = 0;
 
          printf("%-25.24s", ((cp = lGetHost(ep, EH_name)) ? cp : ""));
-         printf("%10"sge_fu32, lGetUlong(ep, EH_processors));
+         printf("%10" sge_fu32, lGetUlong(ep, EH_processors));
 
          if (has_binding_param) {
             lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list); 
@@ -6106,15 +6106,15 @@ static int show_processors(bool has_binding_param)
       }
       printf("\n");
         
-      printf("%-25.24s%10"sge_fu32, MSG_TABLE_SUM_F, sum);
+      printf("%-25.24s%10" sge_fu32, MSG_TABLE_SUM_F, sum);
       if (has_binding_param) { 
          if (socket_sum > 0) {
-            printf("%6"sge_fu32, socket_sum);
+            printf("%6" sge_fu32, socket_sum);
          } else {
             printf("%6.5s", "-");
          }
          if (core_sum > 0) {
-            printf("%6"sge_fu32, core_sum);
+            printf("%6" sge_fu32, core_sum);
          } else {
             printf("%6.5s", "-");
          }

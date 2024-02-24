@@ -317,7 +317,7 @@ sge_setup_job_resend(void) {
             te_add_event(ev);
             te_free_event(&ev);
 
-            DPRINTF(("Did add job resend for "sge_u32"/"sge_u32" at %d\n", job_num, task_num, when));
+            DPRINTF(("Did add job resend for " sge_u32"/" sge_u32" at %d\n", job_num, task_num, when));
          }
 
          task = lNext(task);
@@ -598,7 +598,7 @@ communication_setup() {
    cl_com_handle_t *com_handle = cl_com_get_handle(prognames[QMASTER], 1);
 
    if (com_handle == nullptr) {
-      ERROR((SGE_EVENT, "port "sge_u32" already bound\n", qmaster_port));
+      ERROR((SGE_EVENT, "port " sge_u32" already bound\n", qmaster_port));
 
       if (is_qmaster_already_running(qmaster_spool_dir) == true) {
          char *host = nullptr;
@@ -1103,7 +1103,7 @@ setup_qmaster() {
 
       for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
 
-         DPRINTF(("JOB "sge_u32" PRIORITY %d\n", lGetUlong(jep, JB_job_number),
+         DPRINTF(("JOB " sge_u32" PRIORITY %d\n", lGetUlong(jep, JB_job_number),
                  (int) lGetUlong(jep, JB_priority) - BASE_PRIORITY));
 
          /* doing this operation we need the complete job list read in */
@@ -1247,7 +1247,7 @@ remove_invalid_job_references(int user) {
          jobid = lGetUlong(upu, UPU_job_number);
          if (!lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid)) {
             lRemoveElem(lGetListRW(up, debited_job_usage_key), &upu);
-            WARNING((SGE_EVENT, "removing reference to no longer existing job "sge_u32" of %s "SFQ"\n",
+            WARNING((SGE_EVENT, "removing reference to no longer existing job " sge_u32" of %s " SFQ "\n",
                     jobid, object_name, lGetString(up, object_key)));
             spool_me = 1;
          }
@@ -1327,7 +1327,7 @@ static int debit_all_jobs_from_qs() {
                   if (queue != nullptr) {
                      qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, nullptr);
                   } else {
-                     ERROR((SGE_EVENT, "job "sge_U32CFormat" runs in queue "SFQ" not reserved by AR "sge_U32CFormat,
+                     ERROR((SGE_EVENT, "job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
                              sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id)));
                   }
                }

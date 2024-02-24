@@ -210,7 +210,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
             const char *hgroup_name = lGetHost(href, HR_name);
             const char *qinstance_name = nullptr;
 
-            qinstance_name = sge_dstring_sprintf(&buffer, SFN"@"SFN,
+            qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN,
                                                  cqueue_name, hgroup_name);
             lAddElemStr(qref_list, QR_name,
                         qinstance_name, QR_Type);

@@ -46,7 +46,7 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 {
    FILE *fp=nullptr;
 
-   shepherd_trace("setosjobid: uid = "pid_t_fmt", euid = "pid_t_fmt, getuid(), geteuid());
+   shepherd_trace("setosjobid: uid = " pid_t_fmt ", euid = " pid_t_fmt, getuid(), geteuid());
 
 #  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
       /* Read SgeId from config-File and create Addgrpid-File */

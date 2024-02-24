@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "Try:$time test_eval_performance [0..old, 1..new] '<expresion>' '<value>'\n");
       fprintf(stdout, "All eval_tests result is: %s \n", RESULT(ret));
       if(ret==0){
-         fprintf(stdout, "The consumed time old is "sge_u32", new  is "sge_u32" \n", old_total_tm, new_total_tm);
+         fprintf(stdout, "The consumed time old is " sge_u32", new  is " sge_u32" \n", old_total_tm, new_total_tm);
          ret = (int)((double) new_total_tm/(3*old_total_tm)); /* No more than 3x slower */
          fprintf(stdout, "Performance tests result is: %s \n", RESULT(ret));
       }

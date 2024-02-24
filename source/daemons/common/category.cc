@@ -296,13 +296,13 @@ sge_build_job_cs_category(dstring *category_str, lListElem *job, lListElem *cat_
    /* 
     *  deadline
     */
-   sge_dstring_sprintf_append(category_str, "-dl "sge_u32, lGetUlong(job, JB_deadline));
+   sge_dstring_sprintf_append(category_str, "-dl " sge_u32, lGetUlong(job, JB_deadline));
    /*
     * priority
     */
-   sge_dstring_sprintf_append(category_str, "-p "sge_u32, lGetUlong(job, JB_priority));
-   sge_dstring_sprintf_append(category_str, "-ot "sge_u32, lGetUlong(job, JB_override_tickets));
-   sge_dstring_sprintf_append(category_str, "-js "sge_u32, lGetUlong(job, JB_jobshare));
+   sge_dstring_sprintf_append(category_str, "-p " sge_u32, lGetUlong(job, JB_priority));
+   sge_dstring_sprintf_append(category_str, "-ot " sge_u32, lGetUlong(job, JB_override_tickets));
+   sge_dstring_sprintf_append(category_str, "-js " sge_u32, lGetUlong(job, JB_jobshare));
    sge_dstring_sprintf_append(category_str, "-u %s", lGetString(job, JB_owner));
 
    /*

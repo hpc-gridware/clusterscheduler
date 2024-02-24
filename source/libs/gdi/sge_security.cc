@@ -1037,10 +1037,10 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
       lListElem *vep;
 
       /* set up credentials cache for this job */
-      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_%s_"sge_u32, "sge", lGetUlong(jelem, JB_job_number));
+      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_%s_" sge_u32, "sge", lGetUlong(jelem, JB_job_number));
       snprintf(ccenv, sizeof(ccenv), "FILE:%s", ccfile);
       snprintf(ccname, sizeof(ccname), "KRB5CCNAME=%s", ccenv);
-      snprintf(jobstr, sizeof(jobstr), "JOB_ID="sge_u32, lGetUlong(jelem, JB_job_number));
+      snprintf(jobstr, sizeof(jobstr), "JOB_ID=" sge_u32, lGetUlong(jelem, JB_job_number));
       env[0] = ccname;
       env[1] = jobstr;
       env[2] = nullptr;
@@ -1282,7 +1282,7 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle)
    DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
             username, uid, groupname, gid));
 
-   snprintf(buffer, sizeof(buffer), pid_t_fmt" "pid_t_fmt" %s %s", uid, gid, username, groupname);
+   snprintf(buffer, sizeof(buffer), pid_t_fmt " " pid_t_fmt " %s %s", uid, gid, username, groupname);
    if (sge_encrypt(buffer, sizeof(buffer), obuffer, sizeof(obuffer))) {
       packet_handle->auth_info = sge_strdup(nullptr, obuffer);
    } else {
@@ -1354,7 +1354,7 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
       char userbuf[2 * SGE_SEC_BUFSIZE];
       char groupbuf[2 * SGE_SEC_BUFSIZE];
 
-      if (sscanf(dbuffer, uid_t_fmt" "gid_t_fmt" %s %s", uid, gid, userbuf, groupbuf) == 4) {
+      if (sscanf(dbuffer, uid_t_fmt " " gid_t_fmt " %s %s", uid, gid, userbuf, groupbuf) == 4) {
          if (strlen(userbuf) <= user_len && strlen(groupbuf) <= group_len) {
             sge_strlcpy(user, userbuf, user_len);
             sge_strlcpy(group, groupbuf, group_len);
@@ -1394,14 +1394,14 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 
    DENTER(TOP_LAYER);
 
-/*    DPRINTF(("======== intext:\n"SFN"\n=========\n", intext)); */
+/*    DPRINTF(("======== intext:\n" SFN "\n=========\n", intext)); */
 
    len = strlen(intext);
    if (!change_encoding(outbuf, &outsize, (unsigned char*) intext, &len, ENCODE_TO_STRING)) {
       DRETURN(false);
    }   
 
-/*    DPRINTF(("======== outbuf:\n"SFN"\n=========\n", outbuf)); */
+/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
 
    DRETURN(true);
 }
@@ -1423,7 +1423,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
 
    strcpy(outbuf, (char*)decbuf);
 
-/*    DPRINTF(("======== outbuf:\n"SFN"\n=========\n", outbuf)); */
+/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
 
    DRETURN(true);
 }
@@ -1445,7 +1445,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 
    DENTER(TOP_LAYER);
 
-/*    DPRINTF(("======== intext:\n"SFN"\n=========\n", intext)); */
+/*    DPRINTF(("======== intext:\n" SFN "\n=========\n", intext)); */
 
    if (!EVP_EncryptInit(&ctx, /*EVP_enc_null() EVP_bf_cbc()*/EVP_cast5_ofb(), key, iv)) {
       printf("EVP_EncryptInit failure !!!!!!!\n");
@@ -1466,7 +1466,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
       DRETURN(false);
    }   
 
-/*    DPRINTF(("======== outbuf:\n"SFN"\n=========\n", outbuf)); */
+/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
 
    DRETURN(true);
 }
@@ -1503,7 +1503,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
 
    *outsize = outlen+tmplen;
 
-/*    DPRINTF(("======== outbuf:\n"SFN"\n=========\n", outbuf)); */
+/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
 
    DRETURN(true);
 }
@@ -1635,8 +1635,8 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
       DPRINTF(("sge_security_verify_unique_identifier: hostname, commproc, commid = %s, %s, %d\n", hostname, commproc, (int)commid));
       ret = cl_com_ssl_get_unique_id(handle, (char*)hostname, (char*)commproc, commid, &unique_identifier);
       if (ret == CL_RETVAL_OK) {
-         DPRINTF(("unique identifier = "SFQ"\n", unique_identifier ));
-         DPRINTF(("user = "SFQ"\n", user));
+         DPRINTF(("unique identifier = " SFQ "\n", unique_identifier ));
+         DPRINTF(("user = " SFQ "\n", user));
       } else {
          DPRINTF(("-------> CL_RETVAL: %s\n", cl_get_error_text(ret)));
       }

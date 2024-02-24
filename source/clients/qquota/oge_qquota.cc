@@ -388,7 +388,7 @@ sge_parse_from_file_qquota(const char *file, lList **ppcmdline, lList **alpp)
          /*
           * This is no error
           */
-         DPRINTF(("file "SFQ" does not exist\n", file));
+         DPRINTF(("file " SFQ " does not exist\n", file));
          ret = true;
       } else {
          char *file_as_string = nullptr;

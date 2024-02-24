@@ -139,7 +139,7 @@ int sge_get_qmaster_port(bool *from_services) {
    gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
-      DPRINTF(("reresolve port timeout in "sge_U32CFormat"\n", sge_u32c(next_timeout - now.tv_sec)));
+      DPRINTF(("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec)));
    }
 
    /* get port from cache when next_timeout for re-resolving is not reached */
@@ -148,7 +148,7 @@ int sge_get_qmaster_port(bool *from_services) {
       if (from_services != nullptr) {
          *from_services = is_port_from_services_file;
       }
-      DPRINTF(("returning cached port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
+      DPRINTF(("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
       sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
       DRETURN(int_port);
    }
@@ -189,7 +189,7 @@ int sge_get_qmaster_port(bool *from_services) {
          sge_exit(1);
       }
    } else {
-      DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
+      DPRINTF(("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
@@ -219,11 +219,11 @@ int sge_get_execd_port() {
    gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
-      DPRINTF(("reresolve port timeout in "sge_U32CFormat"\n", sge_u32c(next_timeout - now.tv_sec)));
+      DPRINTF(("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec)));
    }
    if (cached_port >= 0 && next_timeout > now.tv_sec) {
       int_port = cached_port;
-      DPRINTF(("returning cached port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
+      DPRINTF(("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
       sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
       return int_port;
    }
@@ -255,7 +255,7 @@ int sge_get_execd_port() {
          sge_exit(1);
       }
    } else {
-      DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
+      DPRINTF(("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;

@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
    sge_listener_initialize();
    sge_scheduler_initialize(nullptr);
 
-   INFO((SGE_EVENT, "qmaster startup took "sge_u32" seconds", sge_get_gmt() - start_time));
+   INFO((SGE_EVENT, "qmaster startup took " sge_u32" seconds", sge_get_gmt() - start_time));
 
    /*
     * Block till signal from signal thread arrives us
