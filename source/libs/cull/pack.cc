@@ -876,8 +876,8 @@ void
 pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *file) {
    size_t i;
 
-   fprintf(file, "head_ptr: %p\n", pb->head_ptr);
-   fprintf(file, "cur_ptr: %p\n", pb->cur_ptr);
+   fprintf(file, "head_ptr: %p\n", (void *)pb->head_ptr);
+   fprintf(file, "cur_ptr: %p\n", (void *)pb->cur_ptr);
    fprintf(file, "mem_size: %d\n", (int) pb->mem_size);
    fprintf(file, "bytes_used: %d\n", (int) pb->bytes_used);
    fprintf(file, "buffer:\n");
