@@ -4,9 +4,8 @@ set(LIBRARY_SOURCES sge_flatfile.cc sge_flatfile_obj.cc sge_spooling_flatfile.cc
       sge_spooling_flatfile_scanner.cc ../classic/read_write_job.cc)
 set(LIBRARY_INCLUDES "./")
 
-# sge_spooling_flatfile_scanner is generated from flex it will produce compiler
-# warnings, disable -Werror
-set_source_files_properties(sge_spooling_flatfile_scanner.c PROPERTIES COMPILE_FLAGS -Wno-error)
+# sge_spooling_flatfile_scanner is generated from flex it will produce compiler that we need to disable
+set_source_files_properties(sge_spooling_flatfile_scanner.cc PROPERTIES COMPILE_FLAGS -Wno-unneeded-internal-declaration)
 
 add_library(${LIBRARY_NAME}_objlib OBJECT ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME}_objlib PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
