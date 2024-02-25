@@ -536,11 +536,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING)
             continue;
 
+         printf("%-12s %11d:   ", first_task ? "usage" : " ", (int) lGetUlong(jatep, JAT_task_number));
+
          if (first_task) {
-            printf("usage %11d:          ", (int) lGetUlong(jatep, JAT_task_number));
             first_task = 0;
-         } else
-            printf("      %11d:          ", (int) lGetUlong(jatep, JAT_task_number));
+         }
 
          cpu = mem = io = vmem = maxvmem = 0.0;
 
@@ -604,7 +604,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                break;
             }
          }
-         printf("%s %11d:        %s\n", first_task ? "binding" : "       ",
+         printf("%-12s %11d:   %s\n", first_task ? "binding" : " ",
                 (int) lGetUlong(jatep, JAT_task_number), binding_inuse != nullptr ? binding_inuse : "NONE");
          if (first_task) {
             first_task = 0;
@@ -650,7 +650,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          /* print out granted resources */
          resource_ids = sge_dstring_get_string(&task_resources);
 
-         printf("%s %4d:          %s\n", first_task ? "resource map" : "            ",
+         printf("%-12s %11d:   %s\n", first_task ? "resource map" : " ",
                 (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
          if (first_task) {
             first_task = false;
