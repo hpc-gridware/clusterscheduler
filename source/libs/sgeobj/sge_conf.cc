@@ -163,6 +163,7 @@ static long ptf_max_priority = -999;
 static long ptf_min_priority = -999;
 static int max_dynamic_event_clients = 1000;
 static bool keep_active = false;
+static u_long32 script_timeout = 120;
 #ifdef LINUX
 static bool enable_binding = true;
 #else
@@ -837,6 +838,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_max_priority = -999;
       ptf_min_priority = -999;
       keep_active = false;
+      script_timeout = 120;
 #ifdef LINUX
       enable_binding = true;
 #else
@@ -882,8 +884,11 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             if (parse_bool_param(s, "DO_AUTHENTICATION", &do_authentication)) {
                continue;
             }
-         }   
+         }
          if (parse_bool_param(s, "KEEP_ACTIVE", &keep_active)) {
+            continue;
+         }
+         if (parse_time_param(s, "SCRIPT_TIMEOUT", &script_timeout)) {
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
@@ -2586,3 +2591,16 @@ int mconf_get_jsv_timeout(void) {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);
 }
+
+u_long32 mconf_get_script_timeout() {
+   u_long32 ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = script_timeout;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
