@@ -235,8 +235,10 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
    u_long32 comp_port = bootstrap_get_sge_qmaster_port();
 
    if (handle == nullptr) {
+#if 0
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "handle not found %s:0", component_get_component_name());
+#endif
       DRETURN(CL_RETVAL_PARAMS);
    }
 
@@ -247,12 +249,14 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
    cl_com_append_known_endpoint_from_name((char *) comp_host, (char *) comp_name, comp_id,
                                           (int)comp_port, CL_CM_AC_DISABLED, true);
 
-   DPRINTF(("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n", comp_host ? comp_host : "", comp_name ? comp_name
-                                                                                                           : "", comp_id));
+   DPRINTF(("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n",
+            comp_host ? comp_host : "", comp_name ? comp_name : "", comp_id));
    cl_ret = cl_commlib_get_endpoint_status(handle, (char *) comp_host, (char *) comp_name, comp_id, &status);
    if (cl_ret != CL_RETVAL_OK) {
+#if 0
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_commlib_get_endpoint_status failed: " SFQ, cl_get_error_text(cl_ret));
+#endif
    } else {
       DEBUG((SGE_EVENT, SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING));
    }

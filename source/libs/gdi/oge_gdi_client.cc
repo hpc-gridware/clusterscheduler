@@ -386,6 +386,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                      cl_com_set_error_func(nullptr);
 
                      int alive_back = sge_gdi_ctx_class_is_alive(answer_list);
+
                      cl_ret = cl_com_set_error_func(general_communication_error);
                      if (cl_ret != CL_RETVAL_OK) {
                         ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(cl_ret)));
