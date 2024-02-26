@@ -803,7 +803,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    }
    /* busy_handling changed */
    if (busy_handling != lGetUlong(event_client, EV_busy_handling)) {
-      DPRINTF(("EVM: event client %s changes to "sge_U32CFormat"\n", 
+      DPRINTF(("EVM: event client %s changes to " sge_U32CFormat "\n",
          lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling)));
       lSetUlong(event_client, EV_busy_handling, busy_handling);
    }
@@ -2372,7 +2372,7 @@ static void build_subscription(lListElem *event_el)
       DRETURN_VOID;
    }
 
-   DPRINTF(("rebuild event mask for client(id): %s("sge_u32")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id)));
+   DPRINTF(("rebuild event mask for client(id): %s(" sge_u32")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id)));
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
    memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE); 

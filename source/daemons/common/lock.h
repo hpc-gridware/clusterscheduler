@@ -33,6 +33,6 @@
 
 #define QMASTER_LOCK_FILE "lock"
 
-int qmaster_lock(char *file);
-int qmaster_unlock(char *file);
-int isLocked(char *file);
+int qmaster_lock(const char *file);
+int qmaster_unlock(const char *file);
+int isLocked(const char *file);

@@ -81,13 +81,13 @@ const char GE_SHORTNAME[] = "GE";
 #endif
 
 #if !(ADD_COPYRIGHT || ADD_UNIVA_COPYRIGHT)
-const char SFLN_ELN[] = "\n\
+extern const char SFLN_ELN[] = "\n\
    Grid Engine is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
    It has been made available to the open source community under the SISSL license.\n\
    For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n";
 
-const char DQS_ACK[] = "\n\
+extern const char DQS_ACK[] = "\n\
 We would like to acknowledge and thank the efforts of the\n\
 Florida State University in creating the DQS program.\n";
 
@@ -95,7 +95,7 @@ Florida State University in creating the DQS program.\n";
 
 #ifndef ADD_UNIVA_COPYRIGHT
 
-const char SISSL[] = "\n\
+extern const char SISSL[] = "\n\
 The Contents of this file are made available subject to the terms of\n\
 the Sun Industry Standards Source License Version 1.2\n\
 \n\

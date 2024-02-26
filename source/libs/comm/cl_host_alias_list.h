@@ -42,16 +42,16 @@ typedef struct cl_host_alias_list_elem_t {
 
 
 /* basic functions */
-int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name);
+int cl_host_alias_list_setup(cl_raw_list_t **list_p, const char *list_name);
 
 int cl_host_alias_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_name, char *alias_name, int lock_list);
+int cl_host_alias_list_append_host(cl_raw_list_t *list_p, const char *local_resolved_name, const char *alias_name, int lock_list);
 
 int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_elem_t *element, int lock_list);
 
-int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolved_name, char **alias_name);
+int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, const char *local_resolved_name, char **alias_name);
 
 int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alias_name, char **local_resolved_name);
 

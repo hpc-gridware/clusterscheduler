@@ -151,7 +151,7 @@ enum _enum_lMultiType {
  */
 #define CULL_ANY_SUBTYPE 0
 
-#define NAMEDEF( name ) char *name[] = {
+#define NAMEDEF( name ) const char *name[] = {
 #define NAME( name ) name ,
 #define NAMEEND    };
 
@@ -195,7 +195,7 @@ enum _enum_lMultiType {
 #define SGE_OBJECT_D(name, type, flags, def)
 #define SGE_REF_D(name, type, flags, def)
 
-#define NAMEDEF(name) extern char *name[];
+#define NAMEDEF(name) extern const char *name[];
 #define NAME(name)
 #define NAMEEND
 
@@ -204,7 +204,7 @@ enum _enum_lMultiType {
 struct _lNameSpace {
    int lower;
    int size;
-   char **namev;
+   const char **namev;
    lDescr *descr;
 };
 

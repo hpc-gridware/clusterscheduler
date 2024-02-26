@@ -169,7 +169,7 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
    const char *ret = nullptr;
 
    if (this_elem != nullptr && string_buffer != nullptr) {
-      ret = sge_dstring_sprintf(string_buffer, SFN"@"SFN,
+      ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
                                 lGetString(this_elem, QU_qname),
                                 lGetHost(this_elem, QU_qhostname));
    }

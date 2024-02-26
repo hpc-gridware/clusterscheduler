@@ -58,7 +58,7 @@
 
 /* Local functions and variables */
 static int test_match(u_long32 , const char *, const char *, int );
-static int test_tolower( char *, char *, int );
+static int test_tolower(const char *, const char *, int );
 
 /*-----------------------------------------------------------
  * call:   test_eval_expression or test_eval_expression expr value
@@ -192,7 +192,7 @@ static int test_match(u_long32 type, const char *expression, const char *value, 
    return 0;
 }
 
-static int test_tolower(char *expression, char *value, int expected) {
+static int test_tolower(const char *expression, const char *value, int expected) {
    int match;
    char *t1;
    char *t2;

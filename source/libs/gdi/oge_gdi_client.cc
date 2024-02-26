@@ -81,7 +81,7 @@ sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p) {
 
    cl_log_list_elem_t *elem = cl_log_list_get_first_elem(list_p);
    while (elem != nullptr) {
-      char *param;
+      const char *param;
       if (elem->log_parameter == nullptr) {
          param = "";
       } else {
@@ -380,12 +380,13 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                   if (getuniquehostname(master, act_resolved_qmaster_name, 0) == CL_RETVAL_OK &&
                       sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0) {
 
-                     DPRINTF(("act_qmaster file contains host "SFQ" which doesn't match local host name "SFQ"\n",
+                     DPRINTF(("act_qmaster file contains host " SFQ " which doesn't match local host name " SFQ "\n",
                              master, qualified_hostname));
 
                      cl_com_set_error_func(nullptr);
 
                      int alive_back = sge_gdi_ctx_class_is_alive(answer_list);
+
                      cl_ret = cl_com_set_error_func(general_communication_error);
                      if (cl_ret != CL_RETVAL_OK) {
                         ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(cl_ret)));
@@ -396,7 +397,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                         /* TODO: remove !!! */
                         sge_exit(1);
                      } else {
-                        DPRINTF(("qmaster on host "SFQ" is down\n", master));
+                        DPRINTF(("qmaster on host " SFQ " is down\n", master));
                      }
                   } else {
                      DPRINTF(("act_qmaster file contains local host name\n"));
@@ -433,7 +434,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
          communication lib setup */
       DPRINTF(("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n"));
       while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
-         DPRINTF(("timeout: "sge_U32CFormat"\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec)));
+         DPRINTF(("timeout: " sge_U32CFormat "\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec)));
          cl_commlib_trigger(handle, 1);
          gettimeofday(&now, nullptr);
       }

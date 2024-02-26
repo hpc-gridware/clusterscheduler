@@ -46,7 +46,7 @@
 
 struct resource_table_entry {
    u_long32 resource;
-   char *resource_name;
+   const char *resource_name;
    int resource_type[2];
 };
 

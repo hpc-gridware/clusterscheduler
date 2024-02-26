@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
    int return_value = 0;
    int i;
    int runs = 0;
-   char* filename = "test.txt";
+   const char* filename = "test.txt";
    time_t  timeout  = 15;
    int todo = 0;
    struct timeval now;

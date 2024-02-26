@@ -45,7 +45,7 @@
 
 typedef struct cl_xml_sequence_type {
    char character;
-   char *sequence;
+   const char *sequence;
    int sequence_length;
 } cl_xml_sequence_t;
 

@@ -33,7 +33,7 @@
 #include "comm/cl_fd_list.h"
 #include "comm/cl_commlib.h"
 
-int cl_fd_list_setup(cl_raw_list_t **list_p, char *list_name) {
+int cl_fd_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    return cl_raw_list_setup(list_p, list_name, 1);
 }
 

@@ -86,7 +86,7 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 
       fp = fopen(schedd_log_file, "a");
       if (!fp) {
-         DPRINTF(("could not open schedd_log_file "SFQ"\n", schedd_log_file));
+         DPRINTF(("could not open schedd_log_file " SFQ "\n", schedd_log_file));
          DRETURN(-1);
       }
 
@@ -147,7 +147,7 @@ u_long32 jobid
    static char descr[20];
 
    if (jobid) {
-      sprintf(descr, "Job "sge_u32, jobid);
+      sprintf(descr, "Job " sge_u32, jobid);
       return descr;
    } else
       return "Job";

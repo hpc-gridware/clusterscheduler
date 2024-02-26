@@ -488,7 +488,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
       account = lGetStringNotNull(job, JB_account);
 
       sge_dstring_sprintf(&job_dstring,
-                          sge_U32CFormat"%c%s%c"sge_U32CFormat"%c%d%c%s%c%s%c%s%c%s%c"sge_U32CFormat"%c"sge_U32CFormat"%c"sge_U32CFormat"%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
+                          sge_U32CFormat"%c%s%c" sge_U32CFormat "%c%d%c%s%c%s%c%s%c%s%c" sge_U32CFormat "%c" sge_U32CFormat "%c" sge_U32CFormat "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
                           sge_u32c(event_time), REPORTING_DELIMITER,
                           event, REPORTING_DELIMITER,
                           sge_u32c(job_id), REPORTING_DELIMITER,
@@ -756,7 +756,7 @@ reporting_create_queue_record(lList **answer_list,
    if (mconf_get_do_reporting() && queue != nullptr) {
       dstring queue_dstring = DSTRING_INIT;
 
-      sge_dstring_sprintf(&queue_dstring, "%s%c%s%c"sge_U32CFormat"%c",
+      sge_dstring_sprintf(&queue_dstring, "%s%c%s%c" sge_U32CFormat "%c",
                           lGetString(queue, QU_qname),
                           REPORTING_DELIMITER,
                           lGetHost(queue, QU_qhostname),
@@ -825,7 +825,7 @@ reporting_create_queue_consumable_record(lList **answer_list,
 
       if (sge_dstring_strlen(&consumable_dstring) > 0) {
          dstring queue_dstring = DSTRING_INIT;
-         sge_dstring_sprintf(&queue_dstring, "%s%c%s%c"sge_U32CFormat"%c",
+         sge_dstring_sprintf(&queue_dstring, "%s%c%s%c" sge_U32CFormat "%c",
                              lGetString(queue, QU_qname),
                              REPORTING_DELIMITER,
                              lGetHost(queue, QU_qhostname),
@@ -894,7 +894,7 @@ reporting_create_host_record(lList **answer_list,
        */
       if (sge_dstring_strlen(&load_dstring) > 0) {
          dstring host_dstring = DSTRING_INIT;
-         sge_dstring_sprintf(&host_dstring, "%s%c"sge_U32CFormat"%c%s%c%s\n",
+         sge_dstring_sprintf(&host_dstring, "%s%c" sge_U32CFormat "%c%s%c%s\n",
                              lGetHost(host, EH_name), REPORTING_DELIMITER,
                              sge_u32c(report_time), REPORTING_DELIMITER,
                              "X", REPORTING_DELIMITER,
@@ -959,7 +959,7 @@ reporting_create_host_consumable_record(lList **answer_list,
       if (sge_dstring_strlen(&consumable_dstring) > 0) {
          dstring host_dstring = DSTRING_INIT;
 
-         sge_dstring_sprintf(&host_dstring, "%s%c"sge_U32CFormat"%c%s%c%s\n",
+         sge_dstring_sprintf(&host_dstring, "%s%c" sge_U32CFormat "%c%s%c%s\n",
                              lGetHost(host, EH_name), REPORTING_DELIMITER,
                              sge_u32c(report_time), REPORTING_DELIMITER,
                              "X", REPORTING_DELIMITER,
@@ -1550,7 +1550,7 @@ reporting_create_new_ar_record(lList **answer_list,
    sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer),
                               sge_U32CFormat"%c"
-                              SFN"%c"
+                              SFN "%c"
                               sge_U32CFormat"%c"
                               sge_U32CFormat"%c"
                               "%s\n",
@@ -1616,7 +1616,7 @@ reporting_create_ar_attribute_record(lList **answer_list,
    centry_list_append_to_dstring(lGetList(ar, AR_resource_list), &ar_granted_resources);
    sge_dstring_sprintf_append(&(buf->buffer),
                               sge_U32CFormat"%c"
-                              SFN"%c"
+                              SFN "%c"
                               sge_U32CFormat"%c"   /* report_time */
                               sge_U32CFormat"%c"   /* AR_submission_time */
                               sge_U32CFormat"%c"   /* AR_id */
@@ -1694,7 +1694,7 @@ reporting_create_ar_log_record(lList **answer_list,
    sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer),
                               sge_U32CFormat"%c"
-                              SFN"%c"
+                              SFN "%c"
                               sge_U32CFormat"%c"   /* report_time */
                               sge_U32CFormat"%c"   /* AR submission time */
                               sge_U32CFormat"%c"   /* AR_id */
@@ -1823,7 +1823,7 @@ reporting_create_ar_acct_record(lList **answer_list,
    sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer),
                               sge_U32CFormat"%c"
-                              SFN"%c"
+                              SFN "%c"
                               sge_U32CFormat"%c"   /* report_time */
                               sge_U32CFormat"%c"   /* AR_submission_time */
                               sge_U32CFormat"%c"   /* AR_id */

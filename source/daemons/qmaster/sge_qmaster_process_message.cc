@@ -454,7 +454,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF(("JOB "sge_u32": SIGNAL ACK\n", lGetUlong(jep, JB_job_number)));
+         DPRINTF(("JOB " sge_u32": SIGNAL ACK\n", lGetUlong(jep, JB_job_number)));
          lSetUlong(jatep, JAT_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          {

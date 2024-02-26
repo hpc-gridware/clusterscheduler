@@ -72,7 +72,7 @@ static int    cl_short_host_name_option = 0;
 static int    cl_show[]         = {1,1 ,1,1 ,1,1,1 ,1,1,1,1,0 ,0,1,1};
 static int    cl_alignment[]    = {1,0 ,1,0 ,1,1,1 ,1,1,1,1,0 ,0,1,1};
 static size_t cl_column_width[] = {0,0 ,0,30,0,0,22,0,0,0,0,20,5,0,0};
-static char*  cl_description[] = {
+static const char*  cl_description[] = {
           /* 00 */               "time of debug output creation",                       
           /* 01 */               "endpoint service name where debug client is connected",
           /* 02 */               "message direction",
@@ -90,7 +90,7 @@ static char*  cl_description[] = {
           /* 14 */               "nr. of connections"
 };
 
-static char* cl_names[] = {
+static const char* cl_names[] = {
                        "time",
                        "local",
                        "d.",
@@ -240,11 +240,11 @@ static void qping_convert_time(char* buffer, char* dest, bool show_hour) {
 
    help=sge_strtok_r(buffer, ".", &context);
    if (help == nullptr) {
-      help = "-";
+      help = (char*)"-";
    }
    help2=sge_strtok_r(nullptr,".", &context);
    if (help2 == nullptr) {
-      help2 = "nullptr";
+      help2 = (char*)"nullptr";
    }
 
    if (strcmp(help,"-") == 0) {
@@ -299,7 +299,7 @@ static void qping_parse_environment(void) {
    }
 }
 
-static void qping_printf_fill_up(FILE* fd, char* name, int length, char c, int before) {
+static void qping_printf_fill_up(FILE* fd, const char* name, int length, char c, int before) {
    int n = strlen(name);
    int i;
 
@@ -389,9 +389,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (nonewline != 0) {
          message_debug_data = cl_values[11];
          if ( strstr( cl_values[4] , "bin") != nullptr ) {
-            cl_values[11] = "binary message data";
+            cl_values[11] = (char*)"binary message data";
          } else {
-            cl_values[11] = "xml message data";
+            cl_values[11] = (char*)"xml message data";
          }
       }
    
@@ -411,7 +411,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (show_header == 1) {
          for (i=0;i<ARGUMENT_COUNT;i++) {
             if (cl_show[i]) {
-               qping_printf_fill_up(stdout, cl_names[i],cl_column_width[i],' ',cl_alignment[i]);
+               qping_printf_fill_up(stdout, cl_names[i], cl_column_width[i],' ',cl_alignment[i]);
                printf("|");
             }
          }
@@ -437,8 +437,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
       if (nonewline != 0 && cl_show[11]) {
          if ( strstr( cl_values[4] , "bin") != nullptr ) {
             unsigned char* binary_buffer = nullptr;
-            char* bin_start = "--- BINARY block start ";
-            char* bin_end   = "--- BINARY block end ";
+            const char* bin_start = "--- BINARY block start ";
+            const char* bin_end   = "--- BINARY block end ";
             int counter = 0;
             size_t message_debug_data_length = strlen(message_debug_data);
             printf("%s", bin_start);
@@ -530,7 +530,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         printf("         packet:\n");
 
                         if (packet->id) {
-                           printf("id   : "sge_U32CFormat"\n", sge_u32c(packet->id));
+                           printf("id   : " sge_U32CFormat "\n", sge_u32c(packet->id));
                         } else {
                            printf("id   : %s\n", "nullptr");
                         } 
@@ -545,7 +545,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("commproc   : %s\n", "nullptr");
                         }
                         if (packet->version) {
-                           printf("version   : "sge_U32CFormat"\n", sge_u32c(packet->version));
+                           printf("version   : " sge_U32CFormat "\n", sge_u32c(packet->version));
                         } else {
                            printf("version   : %s\n", "nullptr");
                         }
@@ -559,12 +559,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("         task:\n");
 
                            if (task->command) {
-                              printf("op     : "sge_U32CFormat"\n", sge_u32c(task->command));
+                              printf("op     : " sge_U32CFormat "\n", sge_u32c(task->command));
                            } else {
                               printf("op     : %s\n", "nullptr");
                            }
                            if (task->target) {
-                              printf("target : "sge_U32CFormat"\n", sge_u32c(task->target));
+                              printf("target : " sge_U32CFormat "\n", sge_u32c(task->target));
                            } else {
                               printf("target : %s\n", "nullptr");
                            }
@@ -592,7 +592,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                               printf("enp   : %s\n", "nullptr");
                            }
                            if (task->id) {
-                              printf("id     : "sge_U32CFormat"\n", sge_u32c(task->id));
+                              printf("id     : " sge_U32CFormat "\n", sge_u32c(task->id));
                            } else {
                               printf("id    : %s\n", "nullptr");
                            }
@@ -639,7 +639,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      u_long32 client_id = 0;
                      if (unpackint(&buf, &client_id) == PACK_SUCCESS) {
                         printf("      unpacked event client exit (binary buffer length %lu):\n", buffer_length );
-                        printf("event client "sge_U32CFormat" exit\n", sge_u32c(client_id));
+                        printf("event client " sge_U32CFormat " exit\n", sge_u32c(client_id));
                      }
                      clear_packbuffer(&buf);
                   }
@@ -680,7 +680,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         lListElem *job = nullptr;
                         if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
                            printf("      unpacked %s (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: "sge_U32CFormat"\n", sge_u32c(feature_set));
+                           printf("feature_set: " sge_U32CFormat "\n", sge_u32c(feature_set));
                         }
                         if (cull_unpack_elem(&buf, &job, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(job, stdout); /* job */
@@ -693,7 +693,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         lListElem *petr = nullptr;
                         if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
                            printf("      unpacked %s - PE TASK REQUEST (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: "sge_U32CFormat"\n", sge_u32c(feature_set));
+                           printf("feature_set: " sge_U32CFormat "\n", sge_u32c(feature_set));
                         }
                         if (cull_unpack_elem(&buf, &petr, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(petr, stdout);
@@ -719,10 +719,10 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      char *qname       = nullptr;
    
                      if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
-                        printf("jobid (JB_job_number):    "sge_U32CFormat"\n", sge_u32c(jobid));
+                        printf("jobid (JB_job_number):    " sge_U32CFormat "\n", sge_u32c(jobid));
                      }
                      if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
-                        printf("jataskid (JAT_task_number): "sge_U32CFormat"\n", sge_u32c(jataskid));
+                        printf("jataskid (JAT_task_number): " sge_U32CFormat "\n", sge_u32c(jataskid));
                      }
                      if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
@@ -733,7 +733,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      }
    
                      if (unpackint(&buf, &job_signal) == PACK_SUCCESS) {
-                        printf("signal:   "sge_U32CFormat" (%s)\n", sge_u32c(job_signal), sge_sig2str(job_signal));
+                        printf("signal:   " sge_U32CFormat " (%s)\n", sge_u32c(job_signal), sge_sig2str(job_signal));
                      }
    
                      if (qname) {
@@ -759,10 +759,10 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      char *qname       = nullptr;
    
                      if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
-                        printf("jobid (0 - unused):    "sge_U32CFormat"\n", sge_u32c(jobid));
+                        printf("jobid (0 - unused):    " sge_U32CFormat "\n", sge_u32c(jobid));
                      }
                      if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
-                        printf("jataskid (0 - unused): "sge_U32CFormat"\n", sge_u32c(jataskid));
+                        printf("jataskid (0 - unused): " sge_U32CFormat "\n", sge_u32c(jataskid));
                      }
                      if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
@@ -772,7 +772,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                      }
                      if (unpackint(&buf, &queue_signal) == PACK_SUCCESS) {
-                        printf("signal:   "sge_U32CFormat" (%s)\n", sge_u32c(queue_signal), sge_sig2str(queue_signal));
+                        printf("signal:   " sge_U32CFormat " (%s)\n", sge_u32c(queue_signal), sge_sig2str(queue_signal));
                      }
    
                      if (qname) {
@@ -816,8 +816,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
             int spaces = 1;
             int new_line = -1;
             int x;
-            char* xml_start = "--- XML block start ";
-            char* xml_end   = "--- XML block end ";
+            const char* xml_start = "--- XML block start ";
+            const char* xml_end   = "--- XML block end ";
             unsigned long message_debug_data_length = strlen(message_debug_data);
             printf("%s", xml_start);
             for(i=strlen(xml_start);i<full_width;i++) {
@@ -934,7 +934,7 @@ static void usage(int ret)
   }
 
   for(i=0;i<ARGUMENT_COUNT;i++) {
-     char* visible="yes";
+     const char *visible="yes";
      if (cl_show[i] == 0) {
         visible="no";
      }
@@ -967,7 +967,7 @@ int main(int argc, char *argv[]) {
    cl_framework_t   communication_framework = CL_CT_TCP;
    cl_tcp_connect_t connect_type = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
-   char* client_name  = "qping";
+   const char* client_name  = "qping";
 #ifdef SECURE
    int   got_no_framework  = 0;
 #endif
@@ -1295,7 +1295,7 @@ int main(int argc, char *argv[]) {
          cl_com_SIRM_t* status = nullptr;
          retval = cl_commlib_get_endpoint_status(handle, resolved_comp_host , comp_name, comp_id, &status);
          if (retval != CL_RETVAL_OK) {
-            printf("endpoint %s/%s/"sge_U32CFormat" at port %d: %s\n", 
+            printf("endpoint %s/%s/" sge_U32CFormat " at port %d: %s\n",
                    resolved_comp_host, comp_name, sge_u32c(comp_id), comp_port, 
                    cl_get_error_text(retval) );  
             exit_value = 1;
@@ -1316,13 +1316,13 @@ int main(int argc, char *argv[]) {
                   starttime = (time_t)status->starttime;
                   
                   printf(":\nSIRM version:             %s\n",           status->version );
-                  printf("SIRM message id:          "sge_U32CFormat"\n", sge_u32c(status->mid) );
-                  printf("start time:               %s ("sge_U32CFormat")\n", sge_ctime(starttime, &ds),sge_u32c(status->starttime));
-                  printf("run time [s]:             "sge_U32CFormat"\n", sge_u32c(status->runtime) );
-                  printf("messages in read buffer:  "sge_U32CFormat"\n", sge_u32c(status->application_messages_brm) );
-                  printf("messages in write buffer: "sge_U32CFormat"\n", sge_u32c(status->application_messages_bwm) );
-                  printf("nr. of connected clients: "sge_U32CFormat"\n", sge_u32c(status->application_connections_noc) );
-                  printf("status:                   "sge_U32CFormat"\n", sge_u32c(status->application_status) );
+                  printf("SIRM message id:          " sge_U32CFormat "\n", sge_u32c(status->mid) );
+                  printf("start time:               %s (" sge_U32CFormat ")\n", sge_ctime(starttime, &ds),sge_u32c(status->starttime));
+                  printf("run time [s]:             " sge_U32CFormat "\n", sge_u32c(status->runtime) );
+                  printf("messages in read buffer:  " sge_U32CFormat "\n", sge_u32c(status->application_messages_brm) );
+                  printf("messages in write buffer: " sge_U32CFormat "\n", sge_u32c(status->application_messages_bwm) );
+                  printf("nr. of connected clients: " sge_U32CFormat "\n", sge_u32c(status->application_connections_noc) );
+                  printf("status:                   " sge_U32CFormat "\n", sge_u32c(status->application_status) );
                   printf("info:                     %s\n",           status->info );
                   printf("\n");
                }
@@ -1366,7 +1366,7 @@ int main(int argc, char *argv[]) {
             if ( retval == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                 char command_buffer[256];
                 cl_byte_t *reference = (cl_byte_t *)command_buffer;
-                printf("open connection to \"%s/%s/"sge_U32CFormat"\" ... " ,resolved_comp_host , comp_name, sge_u32c(comp_id) );
+                printf("open connection to \"%s/%s/" sge_U32CFormat "\" ... " ,resolved_comp_host , comp_name, sge_u32c(comp_id) );
                 retval = cl_commlib_open_connection(handle, resolved_comp_host , comp_name, comp_id);
                 printf("%s\n", cl_get_error_text(retval));
                 if (retval == CL_RETVAL_CREATE_RESERVED_PORT_SOCKET) {

@@ -52,7 +52,7 @@ char *cl_values[ARGUMENT_COUNT];
 int cl_show[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int cl_alignment[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 size_t cl_column_width[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 10};
-char *cl_description[] = {
+const char *cl_description[] = {
         "time of debug output creation",
         "endpoint service name where debug client is connected",
         "message direction",
@@ -68,7 +68,7 @@ char *cl_description[] = {
         "additional information"
 };
 
-char *cl_names[] = {
+const char *cl_names[] = {
         "time",
         "local",
         "d.",
@@ -101,7 +101,7 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-void printf_fill_up(char *name, int length, char c, int before) {
+void printf_fill_up(const char *name, int length, char c, int before) {
    int n = strlen(name);
    int i;
 

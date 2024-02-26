@@ -82,7 +82,7 @@ qevent_options *Global_qevent_options;
 static void qevent_show_usage(void);
 static void qevent_testsuite_mode(sge_evc_class_t *evc);
 static void qevent_subscribe_mode(sge_evc_class_t *evc);
-static char* qevent_get_event_name(int event);
+static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
 static qevent_options* qevent_get_option_struct(void);
@@ -149,7 +149,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
          if (task_running) {
-            fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME="sge_U32CFormat")\n", job_id ,task_id,sge_u32c(timestamp));
+            fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id ,task_id,sge_u32c(timestamp));
             fflush(stdout);  
             Global_jobs_running++;
          }
@@ -160,7 +160,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          u_long job_id = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          /* lWriteElemTo(event, stdout); */
-         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME="sge_U32CFormat")\n", job_id, task_id,sge_u32c(timestamp));
+         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id, task_id,sge_u32c(timestamp));
          Global_jobs_running--;
          fflush(stdout);  
       }
@@ -173,14 +173,14 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          if (job_project == nullptr) {
             job_project = "NONE";
          }
-         fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME="sge_U32CFormat":project=%s)\n", job_id, task_id, sge_u32c(timestamp),job_project);
+         fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME=" sge_U32CFormat ":project=%s)\n", job_id, task_id, sge_u32c(timestamp),job_project);
          Global_jobs_registered++;
          fflush(stdout);  
       }
       if (type == sgeE_JOB_DEL) { 
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
-         fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME="sge_U32CFormat")\n", job_id, task_id,sge_u32c(timestamp));
+         fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id, task_id,sge_u32c(timestamp));
          Global_jobs_registered--;
          fflush(stdout);  
       }
@@ -251,7 +251,7 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
    int i=0;
    DENTER(TOP_LAYER);
    if (option_struct->trigger_option_count > 0) {
-      INFO((SGE_EVENT, "trigger for event "SFN"\n", qevent_get_event_name(qevent_event) ));
+      INFO((SGE_EVENT, "trigger for event " SFN "\n", qevent_get_event_name(qevent_event) ));
       for (i=0;i<option_struct->trigger_option_count;i++) {
          if ( (option_struct->trigger_option_events)[i] == qevent_event ) {
             qevent_start_trigger_script(qevent_event ,(option_struct->trigger_option_scripts)[i], event);
@@ -277,13 +277,13 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
 
    /* test if script is executable and valid file */
    if (!sge_is_file(script_file)) {
-      ERROR((SGE_EVENT, "no script file: "SFQ"\n", script_file));
+      ERROR((SGE_EVENT, "no script file: " SFQ "\n", script_file));
       DRETURN_VOID;
    }
 
    /* is file executable ? */
    if (!sge_is_executable(script_file)) {  
-      ERROR((SGE_EVENT, "file not executable: "SFQ"\n", script_file));
+      ERROR((SGE_EVENT, "file not executable: " SFQ "\n", script_file));
       DRETURN_VOID;
    } 
 
@@ -301,9 +301,9 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
          exit_status = status;
 
       if ( WEXITSTATUS(exit_status) == 0 ) {
-         INFO((SGE_EVENT,"exit status of script: "sge_U32CFormat"\n", sge_u32c(WEXITSTATUS(exit_status))));
+         INFO((SGE_EVENT,"exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status))));
       } else {
-         ERROR((SGE_EVENT,"exit status of script: "sge_U32CFormat"\n", sge_u32c(WEXITSTATUS(exit_status))));
+         ERROR((SGE_EVENT,"exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status))));
       }
       DRETURN_VOID;
    } else {
@@ -372,7 +372,7 @@ static void qevent_parse_command_line(int argc, char **argv, qevent_options *opt
          int ok = 0;
          if (option_struct->trigger_option_count >= MAX_TRIGGER_SCRIPTS ) {
             sge_dstring_sprintf(option_struct->error_message,
-                                "option \"-trigger\": only "sge_U32CFormat" trigger arguments supported\n",
+                                "option \"-trigger\": only " sge_U32CFormat " trigger arguments supported\n",
                                 sge_u32c(MAX_TRIGGER_SCRIPTS) );
             break; 
          }
@@ -597,8 +597,7 @@ int main(int argc, char *argv[])
    return 1;
 }
 
-static char* qevent_get_event_name(int event) {
-  
+static const char* qevent_get_event_name(int event) {
    switch(event) {
       case QEVENT_JB_END:
          return "JB_END";
@@ -679,7 +678,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 
 #ifndef QEVENT_SHOW_ALL
       timestamp = sge_get_gmt();
-      fprintf(stdout,"ECL_STATE (jobs_running=%ld:jobs_registered=%ld:ECL_TIME="sge_U32CFormat")\n",
+      fprintf(stdout,"ECL_STATE (jobs_running=%ld:jobs_registered=%ld:ECL_TIME=" sge_U32CFormat ")\n",
               Global_jobs_running,Global_jobs_registered,sge_u32c(timestamp));
       fflush(stdout);  
 #endif

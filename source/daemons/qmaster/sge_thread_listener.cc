@@ -109,11 +109,11 @@ sge_listener_terminate() {
     */
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    while (thread != nullptr) {
-      DPRINTF((SFN" gets canceled\n", thread->thread_name));
+      DPRINTF((SFN " gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.listener_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    }
-   DPRINTF(("all "SFN" threads exited\n", threadnames[LISTENER_THREAD]));
+   DPRINTF(("all " SFN " threads exited\n", threadnames[LISTENER_THREAD]));
    DRETURN_VOID;
 }
 

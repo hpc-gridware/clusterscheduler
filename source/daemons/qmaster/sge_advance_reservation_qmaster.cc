@@ -959,7 +959,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    } else {
       /* AR_RUNNING */
-      DPRINTF(("AR: started, changing state of AR "sge_u32"\n", ar_id));
+      DPRINTF(("AR: started, changing state of AR " sge_u32"\n", ar_id));
 
       sge_ar_state_set_running(ar);
 
@@ -1609,7 +1609,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
                                QU_s_vmem,
                                QU_h_vmem,
                                NoName};
-   static char *value = "INFINITY";
+   static const char *value = "INFINITY";
    static int attr[] = {
            QU_s_cpu, QU_h_cpu, QU_s_fsize, QU_h_fsize, QU_s_data,
            QU_h_data, QU_s_stack, QU_h_stack, QU_s_core, QU_h_core,

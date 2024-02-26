@@ -40,7 +40,7 @@
 #include "sort_hosts.h"
 
 typedef struct {
-   char *formula;
+   const char *formula;
    double value;
 } filter_test_t;
 

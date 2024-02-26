@@ -62,11 +62,11 @@ static char *sge_unparse_checkpoint_attr(int opr, char *string);
 static char *sge_unparse_mail_options(u_long32 mail_opt);
 static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList **alpp);
 static int sge_unparse_account_string(lListElem *job, lList **pcmdline, lList **alpp);
-static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp);
+static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp);
 static int sge_unparse_pe(lListElem *job, lList **pcmdline, lList **alpp);
 
 static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, lList **alpp);
-static int sge_unparse_string_option(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp);
+static int sge_unparse_string_option(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp);
 
 lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 {
@@ -628,7 +628,7 @@ static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList
 static int sge_unparse_string_option(
 lListElem *job,
 int nm,
-char *option,
+const char *option,
 lList **pcmdline,
 lList **alpp 
 ) {
@@ -738,7 +738,7 @@ lList **alpp
 }
 
 /*-------------------------------------------------------------------------*/
-static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp)
+static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp)
 {
    const lList *lp = nullptr;
    int ret = 0;

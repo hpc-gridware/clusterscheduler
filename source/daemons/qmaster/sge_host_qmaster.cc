@@ -112,7 +112,7 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep);
 
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   char *attr_name, char *object_name);
+                   const char *attr_name, const char *object_name);
 
 void
 host_initalitze_timer(void) {
@@ -257,7 +257,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
    char unique[CL_MAXHOSTLEN];
    lList **host_list = nullptr;
    int nm = 0;
-   char *name = nullptr;
+   const char *name = nullptr;
    int ret;
    const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
@@ -777,7 +777,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
          lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);
          if (lep == nullptr) {
             lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
-            DPRINTF(("%s: adding load value: "SFQ" = "SFQ"\n", host, name, value));
+            DPRINTF(("%s: adding load value: " SFQ " = " SFQ "\n", host, name, value));
             if (is_static == 1) {
                statics_changed = true;
             }
@@ -930,7 +930,7 @@ load_report_interval(lListElem *hep) {
          lFreeElem(&conf_entry);
       }
 
-      DPRINTF(("%s: load value timeout for host %s is "sge_u32"\n", __func__, host, timeout));
+      DPRINTF(("%s: load value timeout for host %s is " sge_u32"\n", __func__, host, timeout));
 
       lSetUlong(hep, EH_load_report_interval, timeout);
    }
@@ -968,7 +968,7 @@ exec_host_change_queue_version(const char *exechost_name) {
             next_qinstance = lGetElemHostNextRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
             name = exechost_name;
          }
-         DPRINTF((SFQ" has changed. Increasing qversion of"SFQ"\n",
+         DPRINTF((SFQ " has changed. Increasing qversion of" SFQ "\n",
                  name, lGetString(qinstance, QU_full_name)));
          qinstance_increase_qversion(qinstance);
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
@@ -1469,7 +1469,7 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep) {
 *******************************************************************************/
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   char *attr_name, char *object_name) {
+                   const char *attr_name, const char *object_name) {
 
    DENTER(TOP_LAYER);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);

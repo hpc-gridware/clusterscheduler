@@ -47,7 +47,7 @@ static struct in_addr *cl_com_copy_in_addr(struct in_addr *in_addr);
 static cl_com_hostent_t *cl_com_copy_hostent(cl_com_hostent_t *hostent);
 
 int cl_host_list_setup(cl_raw_list_t **list_p,
-                       char *list_name,
+                       const char *list_name,
                        cl_host_resolve_method_t method,
                        char *host_alias_file,
                        char *local_domain_name,

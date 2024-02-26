@@ -112,7 +112,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    lList *lp_mail = nullptr;
    u_long32 now;
    int ret;
-   char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
+   const char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
    int num_files = 3;
    struct {
       int exists;
@@ -264,7 +264,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       }
       for (i=0; i<num_files; i++) {
          /* JG: TODO (254): use function creating path */
-         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32"."sge_u32"/%s", ACTIVE_DIR, 
+         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32"." sge_u32"/%s", ACTIVE_DIR,
                      jobid, jataskid, shepherd_filenames[i]);
          if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) 
              && (shepherd_files[i].statbuf.st_size > 0)) {

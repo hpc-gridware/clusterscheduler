@@ -147,7 +147,7 @@ int startprog(int out, int err,
  } else if (pid == 0) {
    /* child */
    if (getenv("SGE_DEBUG_LEVEL")) {
-      putenv("SGE_DEBUG_LEVEL=0 0 0 0 0 0 0 0");
+      putenv((char *)"SGE_DEBUG_LEVEL=0 0 0 0 0 0 0 0");
    }
    if (out != 1) {
       close(1);

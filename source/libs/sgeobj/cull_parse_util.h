@@ -50,9 +50,9 @@
 #define FLG_LIST_MERGE    4
 #define FLG_LIST_MERGE_DOUBLE_KEY    8
 
-int parse_list_simple(lList *cmdline, char *option, lListElem *job, int field, int nm_var, int nm_value, u_long32 flags);
+int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var, int nm_value, u_long32 flags);
 
-int parse_list_hardsoft(lList *cmdline, char *option, lListElem *job, int hard_field, int soft_field);
+int parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, int hard_field, int soft_field);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, lDescr *descr, int *interpretation_rule);
 
@@ -73,7 +73,7 @@ int fprint_thresholds(FILE *fp, char *str, lList *thresholds, int print_slots);
 int fprint_resource_utilizations(FILE *fp, char *str, lList *thresholds, int print_slots); 
 
 int 
-parse_list_simpler(lList *lp, lList **destlist, char *option, lListElem *job, int field, 
+parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, u_long32 flags);
 
 int cull_parse_path_list(lList **lpp, const char *path_str);

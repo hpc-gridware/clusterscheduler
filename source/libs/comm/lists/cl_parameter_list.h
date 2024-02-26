@@ -41,12 +41,12 @@ typedef struct cl_parameter_list_elem_t {
 
 
 /* basic functions */
-int cl_parameter_list_setup(cl_raw_list_t **list_p, char *list_name);
+int cl_parameter_list_setup(cl_raw_list_t **list_p, const char *list_name);
 
 int cl_parameter_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, char *value, int lock_list);
+int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, const char *value, int lock_list);
 
 int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parameter, int lock_list);
 

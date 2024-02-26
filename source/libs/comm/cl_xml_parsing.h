@@ -288,7 +288,7 @@
 typedef struct cl_com_endpoint {
    /* internal identification tripple */
    char *comp_host;
-   char *comp_name;
+   const char *comp_name;
    unsigned long comp_id;
    struct in_addr addr;
    char *hash_id;

@@ -37,7 +37,7 @@
 #include "comm/cl_message_list.h"
 
 
-int cl_message_list_setup(cl_raw_list_t **list_p, char *list_name) {  /* CR check */
+int cl_message_list_setup(cl_raw_list_t **list_p, const char *list_name) {  /* CR check */
    return cl_raw_list_setup(list_p, list_name, 1); /* enable list locking */
 }
 

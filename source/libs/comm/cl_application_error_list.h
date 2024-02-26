@@ -35,7 +35,7 @@
 #include "comm/cl_data_types.h"
 
 /* basic functions */
-int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name);
+int cl_application_error_list_setup(cl_raw_list_t **list_p, const char *list_name);
 
 int cl_application_error_list_cleanup(cl_raw_list_t **list_p);
 

@@ -255,7 +255,7 @@ main(int argc, char **argv)
    extern char *optarg;
    extern int optind;
    FILE *outfile = nullptr;
-   char *output_mode = "a";
+   const char *output_mode = "a";
 
    dstring output_dstring = DSTRING_INIT;
 

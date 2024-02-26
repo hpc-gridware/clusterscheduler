@@ -514,7 +514,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
       href = attr_list_locate(this_list, hostname, href_nm);
       if (href != nullptr) {
          object_get_any_type(href, value_nm, value_buffer);
-         DPRINTF(("Found value for host "SFQ"\n", hostname));
+         DPRINTF(("Found value for host " SFQ "\n", hostname));
          ret = true;
       } else {
          bool already_found = false;
@@ -546,12 +546,12 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                      already_found = true;
                      object_get_any_type(href, value_nm, value_buffer);
                      *matching_host_or_group = href_name;
-                     DPRINTF(("Found value for domain "SFQ"\n", href_name));
+                     DPRINTF(("Found value for domain " SFQ "\n", href_name));
                      ret = true;
                   } else {
                      *is_ambiguous = true;
                      *matching_group = href_name;
-                     DPRINTF(("Found ambiguous value in domain "SFQ"\n", 
+                     DPRINTF(("Found ambiguous value in domain " SFQ "\n",
                                href_name));
                      ret = false;
                      lFreeList(&host_list);

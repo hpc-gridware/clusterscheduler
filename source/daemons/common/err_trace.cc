@@ -77,7 +77,7 @@ typedef enum st_shepherd_file_def {
    st_error
 } st_shepherd_file_t;
 
-static char *g_shepherd_file_name[3] = {"trace", "exit_status", "error"};
+static const char *g_shepherd_file_name[3] = {"trace", "exit_status", "error"};
 static char  g_shepherd_file_path[3][SGE_PATH_MAX];
 
 static char g_job_owner[SGE_PATH_MAX] = "";
@@ -316,7 +316,7 @@ int shepherd_trace(const char *format, ...)
    if (shepherd_trace_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-      sprintf(header_str, "%s ["uid_t_fmt":"pid_t_fmt"]: ", sge_ctime(0, &ds), geteuid(), getpid());
+      sprintf(header_str, "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
      
       if (format != nullptr) {
          va_list     ap;
@@ -396,7 +396,7 @@ void shepherd_error(int do_exit, const char *format, ...)
 	}
 	if (shepherd_error_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
-      sprintf(header_str, "%s ["uid_t_fmt":"pid_t_fmt"]: ",
+      sprintf(header_str, "%s [" uid_t_fmt ":" pid_t_fmt "]: ",
               sge_ctime(0, &ds), geteuid(), getpid());
 
       sh_str2file(header_str, sge_dstring_get_string(&message), shepherd_error_fp);
@@ -847,14 +847,14 @@ static void shepherd_panic(const char *s)
    FILE *panic_fp;
    char panic_file[255];
 
-   sprintf(panic_file, "/tmp/shepherd."pid_t_fmt, getpid());
+   sprintf(panic_file, "/tmp/shepherd." pid_t_fmt, getpid());
    panic_fp = fopen(panic_file, "a");
    if (panic_fp) {
       dstring ds;
       char buffer[128];
 
       sge_dstring_init(&ds, buffer, sizeof(buffer));
-      fprintf(panic_fp, "%s ["uid_t_fmt":"uid_t_fmt" "pid_t_fmt"]: PANIC: %s\n",
+      fprintf(panic_fp, "%s [" uid_t_fmt ":" uid_t_fmt " " pid_t_fmt "]: PANIC: %s\n",
            sge_ctime(0, &ds), getuid(), geteuid(), getpid(), s);
       FCLOSE(panic_fp);
    }

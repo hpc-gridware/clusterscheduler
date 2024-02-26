@@ -36,9 +36,9 @@
 
 typedef struct object_info_entry {
    u_long32 target;
-   char *object_name;
+   const char *object_name;
    lDescr *cull_descriptor;
-   char *attribute_name;
+   const char *attribute_name;
    int nm_name;
    spooling_field *fields;
    const struct spool_flatfile_instr *instr;

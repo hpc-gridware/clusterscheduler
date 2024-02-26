@@ -206,7 +206,7 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
                          "sge_init_lib", func_name[i]));
                  DRETURN(1);
              } else {
-                 DPRINTF(("function "SFQ" successfully initialized\n",
+                 DPRINTF(("function " SFQ " successfully initialized\n",
                          func_name[i]));
              }
              i++;

@@ -80,7 +80,7 @@ struct _gdi_object_t {
    u_long32 target;          /* SGE_QUEUE_LIST */
    int key_nm;          /* QU_qname */
    lDescr *type;           /* QU_Type */
-   char *object_name;    /* "queue" */
+   const char *object_name;    /* "queue" */
    sge_object_type list_type;       /* identifier to retrive the master list via object_type_get_master_list*/
    modifier_func_t modifier;        /* responsible for validating each our attribute modifier */
    writer_func_t writer;          /* function that spools our object */

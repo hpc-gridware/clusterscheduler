@@ -66,7 +66,7 @@ typedef struct cl_host_list_data_type {                      /* list specific da
 
 /* basic functions */
 int cl_host_list_setup(cl_raw_list_t **list_p,
-                       char *list_name,
+                       const char *list_name,
                        cl_host_resolve_method_t method,
                        char *host_alias_file,
                        char *local_domain_name,

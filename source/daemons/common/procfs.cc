@@ -488,7 +488,7 @@ time_t last_time
             if (errno != ENOENT) {
 #ifdef MONITOR_PDC
                if (errno == EACCES)
-                  INFO((SGE_EVENT, "(uid:"gid_t_fmt" euid:"gid_t_fmt") could not open %s: %s\n",
+                  INFO((SGE_EVENT, "(uid:" gid_t_fmt " euid:" gid_t_fmt ") could not open %s: %s\n",
                            getuid(), geteuid(), procnam, strerror(errno)));
                else
                   INFO((SGE_EVENT, "could not open %s: %s\n", procnam, strerror(errno)));
@@ -731,13 +731,13 @@ time_t last_time
          utime = ((double)lGetPosUlong(pr, pos_utime))/HZ;
          stime = ((double)lGetPosUlong(pr, pos_stime))/HZ;
 
-         INFO((SGE_EVENT, "new process "sge_u32" for job "pid_t_fmt" (utime = %f stime = %f)\n", 
+         INFO((SGE_EVENT, "new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n",
                lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime)); 
 #else
          utime = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
          stime = pr.pr_stime.tv_sec + pr.pr_stime.tv_nsec*1E-9;
 
-         INFO((SGE_EVENT, "new process "pid_t_fmt" for job "pid_t_fmt" (utime = %f stime = %f)\n", 
+         INFO((SGE_EVENT, "new process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n",
                pr.pr_pid, job_elem->job.jd_jid, utime, stime)); 
 #endif
       }

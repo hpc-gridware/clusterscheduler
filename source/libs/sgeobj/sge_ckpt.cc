@@ -238,7 +238,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    };
    static struct attr {
       int nm;
-      char *text;
+      const char *text;
    } ckpt_commands[] = {
       { CK_ckpt_command, "ckpt_command" },
       { CK_migr_command, "migr_command" },

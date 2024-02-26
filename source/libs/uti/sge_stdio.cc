@@ -60,9 +60,9 @@
 #   define sge_exit(x)     exit(x)
 #endif
 
-static void addenv(char *, char *);
+static void addenv(const char *, const char *);
 
-static void addenv(char *key, char *value) {
+static void addenv(const char *key, const char *value) {
    char *str;
 
    str = sge_malloc(strlen(key) + strlen(value) + 2);

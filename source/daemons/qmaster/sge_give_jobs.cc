@@ -101,7 +101,7 @@ sge_clear_granted_resources(lListElem *jep, lListElem *ja_task, int incslots,
                             monitoring_t *monitor);
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, char *rlimit_name);
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name);
 
 static void
 release_successor_jobs(const lListElem *jep);
@@ -799,7 +799,7 @@ void
 cancel_job_resend(u_long32 jid, u_long32 ja_task_id) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("CANCEL JOB RESEND "sge_u32"/"sge_u32"\n", jid, ja_task_id));
+   DPRINTF(("CANCEL JOB RESEND " sge_u32"/" sge_u32"\n", jid, ja_task_id));
    te_delete_one_time_event(TYPE_JOB_RESEND_EVENT, jid, ja_task_id, "job-resend_event");
 
    DRETURN_VOID;
@@ -821,7 +821,7 @@ trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 ja_task_
    } else {
       seconds = hep ? MAX(load_report_interval(hep), MAX_JOB_DELIVER_TIME) : 0;
    }
-   DPRINTF(("TRIGGER JOB RESEND "sge_u32"/"sge_u32" in %d seconds\n", jid, ja_task_id, seconds));
+   DPRINTF(("TRIGGER JOB RESEND " sge_u32"/" sge_u32" in %d seconds\n", jid, ja_task_id, seconds));
 
    when = (time_t) (now + seconds);
    ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, jid, ja_task_id, "job-resend_event");
@@ -1099,7 +1099,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
                         add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_HANDLE_JR_WAIT);
 
-                        DPRINTF(("RU: sge_commit_job: granted_queue %s job "sge_u32"."sge_u32"\n",
+                        DPRINTF(("RU: sge_commit_job: granted_queue %s job " sge_u32"." sge_u32"\n",
                                 lGetString(granted_queue, JG_qname), jobid, jataskid,
                                 lGetUlong(jatep, JAT_task_number)));
                      }
@@ -1380,14 +1380,14 @@ release_successor_jobs(const lListElem *jep) {
          job_ident = lGetUlong(jep, JB_job_number);
          if (!lDelSubUlong(suc_jep, JRE_job_number, job_ident, JB_jid_predecessor_list)) {
 
-            DPRINTF(("no reference "sge_u32" and %s to job "sge_u32" in predecessor list of job "sge_u32"\n",
+            DPRINTF(("no reference " sge_u32" and %s to job " sge_u32" in predecessor list of job " sge_u32"\n",
                     job_ident, lGetString(jep, JB_job_name),
                     lGetUlong(suc_jep, JB_job_number), lGetUlong(jep, JB_job_number)));
          } else {
             if (lGetList(suc_jep, JB_jid_predecessor_list)) {
-               DPRINTF(("removed job "sge_u32"'s dependance from exiting job "sge_u32"\n",
+               DPRINTF(("removed job " sge_u32"'s dependance from exiting job " sge_u32"\n",
                        lGetUlong(suc_jep, JB_job_number), lGetUlong(jep, JB_job_number)));
-            } else DPRINTF(("job "sge_u32"'s job exit triggers start of job "sge_u32"\n",
+            } else DPRINTF(("job " sge_u32"'s job exit triggers start of job " sge_u32"\n",
                     lGetUlong(jep, JB_job_number), lGetUlong(suc_jep, JB_job_number)));
             sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr);
          }
@@ -1413,15 +1413,15 @@ release_successor_jobs_ad(const lListElem *jep) {
          /* if we don't find it by job id we try it with the name */
          job_ident = lGetUlong(jep, JB_job_number);
          if (!lDelSubUlong(suc_jep, JRE_job_number, job_ident, JB_ja_ad_predecessor_list)) {
-            DPRINTF(("no reference "sge_u32" and %s to job "sge_u32" in array predecessor list of job "sge_u32"\n",
+            DPRINTF(("no reference " sge_u32" and %s to job " sge_u32" in array predecessor list of job " sge_u32"\n",
                     job_ident, lGetString(jep, JB_job_name),
                     lGetUlong(suc_jep, JB_job_number), lGetUlong(jep, JB_job_number)));
          } else {
             if (lGetList(suc_jep, JB_ja_ad_predecessor_list)) {
-               DPRINTF(("removed job "sge_u32"'s array dependance from exiting job "sge_u32"\n",
+               DPRINTF(("removed job " sge_u32"'s array dependance from exiting job " sge_u32"\n",
                        lGetUlong(suc_jep, JB_job_number), lGetUlong(jep, JB_job_number)));
             } else {
-               DPRINTF(("job "sge_u32"'s job exit triggers release of array tasks in job "sge_u32"\n",
+               DPRINTF(("job " sge_u32"'s job exit triggers release of array tasks in job " sge_u32"\n",
                        lGetUlong(jep, JB_job_number), lGetUlong(suc_jep, JB_job_number)));
             }
             Modified = 1;
@@ -1543,7 +1543,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                  queue_name, sge_u32c(job_id)));
          master_task = false;
       } else if (ar_id != 0 && (ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id)) == nullptr) {
-         ERROR((SGE_EVENT, "can't find advance reservation "sge_U32CFormat" referenced in job "sge_U32CFormat,
+         ERROR((SGE_EVENT, "can't find advance reservation " sge_U32CFormat " referenced in job " sge_U32CFormat,
                  sge_u32c(ar_id), sge_u32c(job_id)));
          master_task = false;
       } else {
@@ -1647,7 +1647,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 */
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, char *rlimit_name) {
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name) {
    DENTER(BASIS_LAYER);
    const char *s;
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
@@ -1839,7 +1839,7 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
       }
 
    } else {
-      WARNING((SGE_EVENT, "It is impossible to move task "sge_u32" of job "sge_u32
+      WARNING((SGE_EVENT, "It is impossible to move task " sge_u32" of job " sge_u32
               " to the list of finished jobs\n", ja_task_id, job_id));
    }
 

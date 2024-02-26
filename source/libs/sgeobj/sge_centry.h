@@ -102,7 +102,7 @@ enum{
 
 /* Mapping list for generating a complex out of a queue */
 struct queue2cmplx {
-   char *name;    /* name of the centry element, not the shortcut */
+   const char *name;    /* name of the centry element, not the shortcut */
    int  field;    /* name of the element in the queue structure */
    int  cqfld;    /* cluster queue field */
    int  valfld;   /* value field in cluster queue sublist */

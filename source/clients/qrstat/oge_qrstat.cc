@@ -255,7 +255,7 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
          /*
           * This is no error
           */
-         DPRINTF(("file "SFQ" does not exist\n", file));
+         DPRINTF(("file " SFQ " does not exist\n", file));
       } else {
          char *file_as_string = nullptr;
          int file_as_string_length;

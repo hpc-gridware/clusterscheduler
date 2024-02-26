@@ -126,9 +126,9 @@ static char *skip_token(char *p);
 
 static int sge_get_kernel_fd(kernel_fd_type *kernel_fd);
 
-static int sge_get_kernel_address(char *name, long *address);
+static int sge_get_kernel_address(const char *name, long *address);
  
-static int getkval(unsigned long offset, int *ptr, int size, char *refstr);
+static int getkval(unsigned long offset, int *ptr, int size, const char *refstr);
 
 #endif
 
@@ -142,7 +142,7 @@ static int kernel_initialized = 0;
 #if defined(FREEBSD)
 
 static int sge_get_kernel_address(
-char *name,
+const char *name,
 long *address 
 ) {
    int ret = 0;
@@ -190,7 +190,7 @@ static int getkval(
 unsigned long offset, 
 int *ptr, 
 int size, 
-char *refstr 
+const char *refstr
 ) {
    kernel_fd_type kernel_fd;
 

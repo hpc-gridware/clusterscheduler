@@ -53,7 +53,7 @@ static int sge_testmode_timeout_at_heartbeat = 0;
  *         -3   read timeout
  *         -4   fclose error
  *-------------------------------------------------------------*/
-int get_qmaster_heartbeat(char *file, time_t read_timeout) {
+int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
    FILE *fp   = nullptr;
    int hb     = 0; 
    struct timeval start_time;
@@ -119,7 +119,7 @@ FCLOSE_ERROR:
  *
  * Notice:   if return != 0 then beat_value is not written !
  *-------------------------------------------------------------*/
-int inc_qmaster_heartbeat(char *file, time_t write_timeout , int* beat_value) {
+int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_value) {
 
    FILE *fp = nullptr;
    int hb   = 1;

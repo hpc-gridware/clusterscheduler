@@ -224,7 +224,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
       if ((descr[i].mt & instr->selection) != 0) {
          spooling_field *sub_fields = nullptr;
 
-         DPRINTF(("field "SFQ" will be spooled\n", lNm2Str(descr[i].nm)));
+         DPRINTF(("field " SFQ " will be spooled\n", lNm2Str(descr[i].nm)));
 
          fields[j].nm = descr[i].nm;
 

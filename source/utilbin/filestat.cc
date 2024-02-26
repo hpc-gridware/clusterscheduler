@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
  }
  
  if (!strcmp(argv[1], "-uid"))
-    printf(uid_t_fmt"\n", s.st_uid);
+    printf(uid_t_fmt "\n", s.st_uid);
  else if (!strcmp(argv[1], "-gid"))
     printf(gid_t_fmt"\n", s.st_gid);
  else if (!strcmp(argv[1], "-mode"))

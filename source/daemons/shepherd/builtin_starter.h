@@ -36,6 +36,6 @@ int sge_set_environment(void);
 char** sge_get_environment(void);
 int sge_set_env_value(const char *, const char *);
 const char *sge_get_env_value(const char *);
-void start_command(const char *, char *, char *, char *, char *, int, int, int, int, char *, int);
+void start_command(const char *, char *, char *, char *, const char *, int, int, int, int, const char *, int);
 int check_configured_method(const char *method, const char *name, char *err_str);
 char* build_path(int type);

@@ -330,7 +330,7 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
    if (handler->show_summary) {
       fprintf(out, "%7" sge_U32CLetter " ", sge_u32c(value));  
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" "sge_U32CFormat"\n", name, sge_u32c(value));  
+      fprintf(out, SFN_FIRST_COLUMN" " sge_U32CFormat "\n", name, sge_u32c(value));
    }
    DRETURN(ret); 
 }
@@ -391,10 +391,10 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
       } else if (strcmp("name", name) == 0) {
          fprintf(out, "%-10.10s ", value);
       } else if (strcmp("message", name) == 0) {
-         fprintf(out, "\n       "SFN, value);
+         fprintf(out, "\n       " SFN, value);
       }
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" " SFN"\n", name, value);  
+      fprintf(out, SFN_FIRST_COLUMN" " SFN "\n", name, value);
    }
    DRETURN(ret); 
 } 
@@ -415,7 +415,7 @@ qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
          fprintf(out, "%-20.20s ", sge_dstring_get_string(&time_string));
       }
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" "SFN"\n", name, sge_dstring_get_string(&time_string));  
+      fprintf(out, SFN_FIRST_COLUMN" " SFN "\n", name, sge_dstring_get_string(&time_string));
    }
    sge_dstring_free(&time_string);
 
@@ -436,7 +436,7 @@ qrstat_report_ar_node_state(qrstat_report_handler_t* handler, lList **alpp,
    if (handler->show_summary) {
       fprintf(out, "%-5.5s ", sge_dstring_get_string(&state_string));
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" "SFN"\n", name, sge_dstring_get_string(&state_string));
+      fprintf(out, SFN_FIRST_COLUMN" " SFN "\n", name, sge_dstring_get_string(&state_string));
    }
    sge_dstring_free(&state_string);
 
@@ -479,7 +479,7 @@ qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
 
    DENTER(TOP_LAYER);
    if (!handler->show_summary) {
-      fprintf(out, SFN SFN"="SFN, (handler->first_resource ? "" : ", "), name, value);
+      fprintf(out, SFN SFN "=" SFN, (handler->first_resource ? "" : ", "), name, value);
       if (handler->first_resource) {
          handler->first_resource = false;
       } 
@@ -496,9 +496,9 @@ qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp, co
 
    DENTER(TOP_LAYER);
    if (handler->show_summary) {
-      fprintf(out, "       "SFN, chvalue);
+      fprintf(out, "       " SFN, chvalue);
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" "SFN"\n", name, chvalue);  
+      fprintf(out, SFN_FIRST_COLUMN" " SFN "\n", name, chvalue);
    }
    DRETURN(ret); 
 
@@ -542,7 +542,7 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
    if (!handler->show_summary) {
-      fprintf(out, SFN SFN"="sge_U32CFormat, (handler->first_granted_slot ? "" : ","), name, sge_u32c(value));
+      fprintf(out, SFN SFN "=" sge_U32CFormat, (handler->first_granted_slot ? "" : ","), name, sge_u32c(value));
       if (handler->first_granted_slot) {
          handler->first_granted_slot = false;
       } 
@@ -586,7 +586,7 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
 
    DENTER(TOP_LAYER);
    if (!handler->show_summary) {
-      fprintf(out, SFN" slots "SFN, name, slots_range);
+      fprintf(out, SFN " slots " SFN, name, slots_range);
    }
    DRETURN(ret); 
 }
@@ -628,7 +628,7 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
    if (!handler->show_summary) {
-      fprintf(out, SFN SFN"@"SFN, (handler->first_mail ? "" : ","), name?name:"", host?host:"");
+      fprintf(out, SFN SFN "@" SFN, (handler->first_mail ? "" : ","), name?name:"", host?host:"");
       if (handler->first_mail) {
          handler->first_mail = false;
       } 

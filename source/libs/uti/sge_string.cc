@@ -1444,7 +1444,7 @@ size_t sge_strlen(const char *str) {
 **     MT-NOTE: string_list() is MT safe
 **
 */
-char **string_list(char *str, char *delis, char **pstr) {
+char **string_list(char *str, const char *delis, char **pstr) {
    unsigned int i = 0, j = 0;
    bool is_space = false;
    int found_first_quote = 0;

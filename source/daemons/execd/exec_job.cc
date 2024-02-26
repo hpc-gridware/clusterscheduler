@@ -315,7 +315,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    DSTRING_STATIC(dstr_script_file, SGE_PATH_MAX);
    const char *str_script_file = ""; // @todo initialization shouldn't be necessary, but compiler seems to find a path in which str_script_file is not initialized!
 
-   char mail_str[1024], *shepherd_name;
+   char mail_str[1024];
+   const char *shepherd_name;
    const lList *gdil;
    const lListElem *gdil_ep;
    lListElem *master_q;
@@ -1029,6 +1030,33 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
       if (rlp == nullptr) {
+         /* search next add_grp_id */
+         temp_id = last_addgrpid;
+         last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
+         while (addgrpid_already_in_use(last_addgrpid)) {
+            last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
+            if (temp_id == last_addgrpid) {
+               snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
+               lFreeList(&environmentList);
+               FCLOSE(fp);
+               DRETURN((-1));
+            }
+         }
+
+         /* write add_grp_id to job-structure and file */
+         sprintf(str_id, "%ld", (long) last_addgrpid);
+         fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
+         if(petep == nullptr) {
+            lSetString(jatep, JAT_osjobid, str_id);
+         } else {
+            lSetString(petep, PET_osjobid, str_id);
+         }
+
+         if (mconf_get_ignore_ngroups_max_limit() == true) {
+         	fprintf(fp, "skip_ngroups_max_silently=yes\n");
+         }
+         
+         lFreeList(&rlp);
          lFreeList(&alp);
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          lFreeList(&environmentList);

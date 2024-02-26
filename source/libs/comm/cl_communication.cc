@@ -172,21 +172,21 @@ int cl_com_add_debug_message(cl_com_connection_t *connection, const char *messag
    char message_tag_number[256];
 
    const char *message_tag = nullptr;
-   char *xml_data = "n.a.";
-   char *snd_host = "?";
-   char *snd_comp = "?";
+   const char *xml_data = "n.a.";
+   const char *snd_host = "?";
+   const char *snd_comp = "?";
    unsigned long snd_id = 0;
-   char *rcv_host = "?";
-   char *rcv_comp = "?";
+   const char *rcv_host = "?";
+   const char *rcv_comp = "?";
    unsigned long rcv_id = 0;
    bool outgoing = false;
-   char *direction = "<-";
+   const char *direction = "<-";
    unsigned long nr_of_connections = 0;
 
    double time_now = 0.0;
    double msg_time = 0.0;
    double com_time = 0.0;
-   char *info = nullptr;
+   const char *info = nullptr;
 
    if (connection == nullptr || ms == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2274,7 +2274,7 @@ int cl_com_read_alias_file(cl_raw_list_t *hostlist) {
    FILE *fp;
    char alias_file_buffer[LINE_MAX * 4];
    int max_line = LINE_MAX * 4;
-   char *alias_delemiters = "\n\t ,;";
+   const char *alias_delemiters = "\n\t ,;";
    char printbuf[(2 * CL_MAXHOSTLEN) + 100];
 
    if (hostlist == nullptr) {
@@ -3757,7 +3757,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
 
       if (connection->connection_sub_state == CL_COM_READ_INIT_CRM) {
          char *params = nullptr;
-         char *connection_status = CL_CONNECT_RESPONSE_MESSAGE_CONNECTION_STATUS_OK;
+         const char *connection_status = CL_CONNECT_RESPONSE_MESSAGE_CONNECTION_STATUS_OK;
          const char *connection_status_text = MSG_CL_TCP_FW_CONNECTION_STATUS_TEXT_OK;
          unsigned long connect_response_message_size = 0;
          unsigned long gmsh_message_size = 0;
@@ -4214,9 +4214,9 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
          unsigned long gmsh_message_size = 0;
          unsigned long local_service_port_number = 0;
          int service_port = 0;
-         char *format_type = "";
-         char *flow_type = "";
-         char *autoclose = "";
+         const char *format_type = "";
+         const char *flow_type = "";
+         const char *autoclose = "";
 
          CL_LOG(CL_LOG_INFO, "connection state: CL_COM_SEND_INIT");
 

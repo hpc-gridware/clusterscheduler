@@ -44,7 +44,7 @@
 
 void log_state_set_log_level(u_long32);
 
-void log_state_set_log_file(char *file);
+void log_state_set_log_file(const char *file);
 
 void log_state_set_log_verbose(int i);
 

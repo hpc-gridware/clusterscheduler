@@ -43,7 +43,7 @@
  *         -1 if file couldn't be created
  *-------------------------------------------------------------*/
 int qmaster_lock(
-char *file 
+const char *file
 ) {
    int fd;
 
@@ -65,7 +65,7 @@ char *file
  *         -1 if file couldn't be unlinked
  *-------------------------------------------------------------*/
 int qmaster_unlock(
-char *file 
+const char *file
 ) {
    int ret;
 
@@ -82,7 +82,7 @@ char *file
  *         0 if file doesn't exist
  *-------------------------------------------------------------*/
 int isLocked(
-char *file 
+const char *file
 ) {
    int ret;
    SGE_STRUCT_STAT sb;

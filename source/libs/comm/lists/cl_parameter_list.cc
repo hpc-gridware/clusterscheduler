@@ -36,7 +36,7 @@
 
 #include "uti/sge_string.h"
 
-int cl_parameter_list_setup(cl_raw_list_t **list_p, char *list_name) {
+int cl_parameter_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;
@@ -66,7 +66,7 @@ int cl_parameter_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
-int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, char *value, int lock_list) {
+int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, const char *value, int lock_list) {
 
    int ret_val;
    cl_parameter_list_elem_t *new_elem = nullptr;

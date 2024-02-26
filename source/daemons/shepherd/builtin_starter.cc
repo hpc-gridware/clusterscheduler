@@ -138,7 +138,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    char  *stdout_path = nullptr;
    char  *stderr_path = nullptr;
    char  *stdin_path_for_fs = nullptr;
-   char  *target_user = nullptr;
+   const char  *target_user = nullptr;
    char  *intermediate_user = nullptr;
    char  fs_stdin_tmp_path[SGE_PATH_MAX] = "\"\"";
    char  fs_stdout_tmp_path[SGE_PATH_MAX] = "\"\"";
@@ -147,7 +147,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    char  fs_stdout_path[SGE_PATH_MAX] = "\"\"";
    char  fs_stderr_path[SGE_PATH_MAX] = "\"\"";
    char  err_str[MAX_STRING_SIZE];
-   char  *shell_start_mode, *cp, *shell_basename, argv0[256];
+   const char  *shell_start_mode;
+   char  *cp, *shell_basename, argv0[256];
    char  str_title[512]="";
    char  *tmp_str;
    char  *starter_method;
@@ -276,8 +277,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       intermediate_user = get_conf_val("job_owner");
    }
 
-   shepherd_trace("pid="pid_t_fmt" pgrp="pid_t_fmt" sid="pid_t_fmt" old pgrp="
-                  pid_t_fmt" getlogin()=%s", pid, newpgrp, newpgrp, pgrp, 
+   shepherd_trace("pid=" pid_t_fmt " pgrp=" pid_t_fmt " sid=" pid_t_fmt " old pgrp="
+                  pid_t_fmt " getlogin()=%s", pid, newpgrp, newpgrp, pgrp,
                   (cp = getlogin()) ? cp : "<no login set>");
 
    shepherd_trace("reading passwd information for user '%s'",
@@ -778,7 +779,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          shepherd_error(1, err_str);
       }
    }
-   shepherd_trace("now running with uid="uid_t_fmt", euid="uid_t_fmt, 
+   shepherd_trace("now running with uid=" uid_t_fmt ", euid=" uid_t_fmt,
                   (int)getuid(), (int)geteuid());
 
    /*
@@ -872,7 +873,7 @@ int sge_set_environment()
 
       value = strtok(nullptr, "\n");
       if (value == nullptr) {
-         value = "";
+         value = (char *)"";
       }
 
       new_value = sge_replace_substring(value, "\\n", "\n");
@@ -1141,7 +1142,7 @@ static char **read_job_args(char **preargs, int extra_args)
       if(cp != nullptr) {
          args[i + n_preargs] = strdup(cp);
       } else {
-         args[i + n_preargs] = "";
+         args[i + n_preargs] = (char *)"";
       }
    }
    args[i + n_preargs] = nullptr;
@@ -1158,12 +1159,12 @@ const char *childname,
 char *shell_path,
 char *script_file,
 char *argv0,
-char *shell_start_mode,
+const char *shell_start_mode,
 int is_interactive,
 int is_qlogin,
 int is_rsh,
 int is_rlogin,
-char *str_title,
+const char *str_title,
 int use_starter_method /* If this flag is set the shellpath contains the
                         * starter_method */
 ) {
@@ -1207,7 +1208,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 
       pre_args_ptr[arg_id++] = argv0;
       n_job_args = atoi(get_conf_val("njob_args"));
-      pre_args_ptr[arg_id++] = "-c";
+      pre_args_ptr[arg_id++] = (char*)"-c";
       sge_dstring_append(&arguments, script_file);
      
       sge_dstring_append(&arguments, " ");
@@ -1243,7 +1244,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       ** will interpret and eat them
       */
       pre_args_ptr[0] = argv0;
-      pre_args_ptr[1] = "-s";
+      pre_args_ptr[1] = (char *)"-s";
       pre_args_ptr[2] = nullptr;
       args = read_job_args(pre_args, 0);
    /* Binary, noshell jobs have to make it to the else */
@@ -1268,7 +1269,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[0] = argv0;
       shepherd_trace("start_as_command: pre_args_ptr[0] = argv0; \"%s\""
                      " shell_path = \"%s\"", argv0, shell_path); 
-      pre_args_ptr[1] = "-c";
+      pre_args_ptr[1] = (char *)"-c";
       pre_args_ptr[2] = script_file;
       pre_args_ptr[3] = nullptr;
       args = pre_args;
@@ -1281,19 +1282,19 @@ int use_starter_method /* If this flag is set the shellpath contains the
 #endif
 
       pre_args_ptr[0] = script_file;
-      pre_args_ptr[1] = "-display";
+      pre_args_ptr[1] = (char *)"-display";
       pre_args_ptr[2] = get_conf_val("display");
-      pre_args_ptr[3] = "-n";
-      pre_args_ptr[4] = str_title;
+      pre_args_ptr[3] = (char *)"-n";
+      pre_args_ptr[4] = (char *)str_title;
       pre_args_ptr[5] = nullptr;
       args = read_job_args(pre_args, 2);
       njob_args = atoi(get_conf_val("njob_args"));
-      args[njob_args + 5] = "-e";
+      args[njob_args + 5] = (char *)"-e";
       args[njob_args + 6] = get_conf_val("shell_path");
       args[njob_args + 7] = nullptr;
    /* No need to test for binary since qlogin handles that itself */
    } else if (is_qlogin) {
-      char *conf_name = nullptr;
+      const char *conf_name = nullptr;
 #if 0
      shepherd_trace("Case 6: qlogin");
 #endif
@@ -1315,7 +1316,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          shepherd_error(1, err_str);
       }
 
-      pre_args_ptr[2] = "-d"; 
+      pre_args_ptr[2] = (char *)"-d";
       pre_args_ptr[3] = nullptr;
       args = read_job_args(pre_args, 0);
    /* Here we finally deal with binary, noshell jobs */
@@ -1502,7 +1503,9 @@ int type
 ) {
    SGE_STRUCT_STAT statbuf;
    char *path, *base;
-   char *postfix, *name, *job_id, *job_name, *ja_task_id;
+   char *job_id, *job_name, *ja_task_id;
+   const char *name;
+   const char *postfix;
    int pathlen;
    char err_str[SGE_PATH_MAX+128];
 
@@ -1540,14 +1543,14 @@ int type
          char *t;
          sprintf(err_str, "can't stat() \"%s\" as %s: %s",
             base, name, strerror(errno));
-         sprintf(err_str+strlen(err_str), " KRB5CCNAME=%s uid="uid_t_fmt" gid="uid_t_fmt" ",
+         sprintf(err_str+strlen(err_str), " KRB5CCNAME=%s uid=" uid_t_fmt " gid=" uid_t_fmt " ",
                  (t=getenv("KRB5CCNAME"))?t:"none", getuid(), getgid());
          {
             gid_t groups[10];
             int i, ngid;
             ngid = getgroups(10, groups);
             for(i=0; i<ngid; i++)
-               sprintf(err_str+strlen(err_str), uid_t_fmt" ", groups[i]);
+               sprintf(err_str+strlen(err_str), uid_t_fmt " ", groups[i]);
          }
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
          shepherd_error(1, err_str);
@@ -1561,8 +1564,8 @@ int type
       /* 'base' is a existing directory, but not a file! */
       if (type == SGE_STDIN) {
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
-         shepherd_error(1, SFQ" is a directory not a file", base);
-         return "/dev/null";
+         shepherd_error(1, SFQ " is a directory not a file", base);
+         return (char*)"/dev/null";
       } else {
          job_name = get_conf_val("job_name");
          job_id = get_conf_val("job_id");
@@ -1842,7 +1845,7 @@ static void start_qrsh_job(void)
       args[0] = buf;
       args[1] = shepherd_job_dir;
       if (g_noshell == 1) {
-         args[2] = "noshell";
+         args[2] = (char *)"noshell";
          args[3] = nullptr;
       } else {
          args[2] = nullptr;

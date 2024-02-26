@@ -41,7 +41,7 @@
 
 typedef struct {
       gdi_ulong32 version;
-      char *release;
+      const char *release;
 } vdict_t;
 
 extern const char GDI_VERSION[]; /* set in version.c */

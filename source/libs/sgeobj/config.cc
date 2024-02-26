@@ -70,7 +70,7 @@
 **    A nullptr pointer as answer list signals success.
 */
 int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
-                     int nm2, int nm3, char *delimitor, int flag, char *buffer,
+                     int nm2, int nm3, const char *delimitor, int flag, char *buffer,
                      int buffer_size) 
 {
    lListElem *ep;

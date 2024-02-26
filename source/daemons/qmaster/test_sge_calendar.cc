@@ -47,9 +47,9 @@
 /* new data types */
 
 typedef struct {
-   char *year_cal; /* year calendar definition */ 
-   char *week_cal; /* week calendar definition */
-   char *description; /* a calendar description for the test output */
+   const char *year_cal; /* year calendar definition */
+   const char *week_cal; /* week calendar definition */
+   const char *description; /* a calendar description for the test output */
 } cal_entry_t;
 
 typedef struct {

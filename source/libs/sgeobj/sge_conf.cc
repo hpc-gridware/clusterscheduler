@@ -256,16 +256,16 @@ static int   notify_kill_type = 1;
 static char* notify_kill = nullptr;
 
 typedef struct {
-  char *name;              /* name of parameter */                              
+  const char *name;              /* name of parameter */
   int local;               /* 0 | 1 -> local -> may be overidden by local conf */
-  char *value;             /* value of parameter */            
+  const char *value;             /* value of parameter */
   int isSet;               /* 0 | 1 -> is already set */        
   char *envp;              /* pointer to environment variable */
 } tConfEntry;
 
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg);
 static void setConfFromCull(lList *lpCfg);
-static tConfEntry *getConfEntry(char *name, tConfEntry conf_entries[]);
+static tConfEntry *getConfEntry(const char *name, tConfEntry conf_entries[]);
 static void clean_conf(void);
 
 /*
@@ -371,10 +371,10 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
    pConf = getConfEntry("execd_spool_dir", conf_entries);
    if ( pConf->value == nullptr ) {
       int size = strlen(cell_root) + strlen(SPOOL_DIR) + 2;
-      
-      pConf->value = sge_malloc(size * sizeof(char));
-      snprintf(pConf->value, size, "%s/%s", cell_root,
-               SPOOL_DIR);
+
+      auto new_value = (char *)sge_malloc(size * sizeof(char));
+      snprintf(new_value, size, "%s/%s", cell_root, SPOOL_DIR);
+      pConf->value = new_value;
    }
 
    lFreeList(lpCfg);
@@ -399,7 +399,7 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
  *----------------------------------------------------*/
 static void chg_conf_val(
 lList *lp_cfg,
-char *name,
+const char *name,
 char **cpp,
 u_long32 *val,
 int type 
@@ -545,7 +545,7 @@ lList *lpCfg
  * return a pointer to the config element "name"
  *----------------------------------------------------*/
 static tConfEntry *getConfEntry(
-char *name,
+const char *name,
 tConfEntry conf[] 
 ) {
  int i;

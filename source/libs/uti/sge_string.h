@@ -101,7 +101,7 @@ void sge_compress_slashes(char *str);
 
 void sge_strip_quotes(char **pstr);
 
-char **string_list(char *str, char *delis, char **pstr);
+char **string_list(char *str, const char *delis, char **pstr);
 
 const char *sge_strerror(int errnum, dstring *buffer);
 

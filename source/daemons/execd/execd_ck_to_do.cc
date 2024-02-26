@@ -214,9 +214,9 @@ static void force_job_rlimit(const char* qualified_hostname)
             vmem_val = lGetDouble(vmem_ep, UA_value);
          }
             
-         DPRINTF(("JOB "sge_u32" %s %10.5f %s %10.5f\n", jobid,
-            cpu_ep != nullptr ? USAGE_ATTR_CPU : "("USAGE_ATTR_CPU")", cpu_val,
-            vmem_ep != nullptr ? USAGE_ATTR_VMEM : "("USAGE_ATTR_VMEM")", vmem_val));
+         DPRINTF(("JOB " sge_u32" %s %10.5f %s %10.5f\n", jobid,
+            cpu_ep != nullptr ? USAGE_ATTR_CPU : "(" USAGE_ATTR_CPU ")", cpu_val,
+            vmem_ep != nullptr ? USAGE_ATTR_VMEM : "(" USAGE_ATTR_VMEM ")", vmem_val));
 
          /* free no longer needed usage_list */
          lFreeList(&usage_list);
@@ -502,7 +502,7 @@ int do_ck_to_do(bool is_qmaster_down) {
                jobid = lGetUlong(jep, JB_job_number);
                jataskid = lGetUlong(jatep, JAT_task_number);
 
-               DPRINTF(("Simulated job "sge_u32"."sge_u32" is exiting\n", jobid, jataskid));
+               DPRINTF(("Simulated job " sge_u32"." sge_u32" is exiting\n", jobid, jataskid));
 
                if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
                   ERROR((SGE_EVENT, MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, 
@@ -669,7 +669,7 @@ static int sge_start_jobs()
          }
       }
    }
-   DPRINTF(("execd_ck_to_do: started "sge_U32CFormat" jobs\n", sge_u32c(jobs_started)));
+   DPRINTF(("execd_ck_to_do: started " sge_U32CFormat " jobs\n", sge_u32c(jobs_started)));
 
    DRETURN(0);
 }
@@ -716,7 +716,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       const lList *job_args;
       u_long32 duration = 60;
 
-      DPRINTF(("Simulating job "sge_u32"."sge_u32"\n", job_id, ja_task_id));
+      DPRINTF(("Simulating job " sge_u32"." sge_u32"\n", job_id, ja_task_id));
       lSetUlong(jatep, JAT_start_time, now);
       lSetUlong(jatep, JAT_status, JRUNNING);
 
@@ -729,7 +729,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 
          arg = lGetString(lFirst(job_args), ST_name);
          if (arg != nullptr) {
-            DPRINTF(("Trying to use first argument ("SFQ") as duration for simulated job\n", arg));
+            DPRINTF(("Trying to use first argument (" SFQ ") as duration for simulated job\n", arg));
             
             duration_in = strtol(arg, &endptr, 0);
             if (arg != endptr) {
@@ -792,7 +792,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       lSetUlong(jatep, JAT_pid, pid);
    }
 
-   DPRINTF(("***EXECING "sge_u32"."sge_u32" on %s (tid = %s) (pid = %d)\n",
+   DPRINTF(("***EXECING " sge_u32"." sge_u32" on %s (tid = %s) (pid = %d)\n",
             job_id, ja_task_id, 
             qualified_hostname, pe_task_id != nullptr ? pe_task_id : "null", pid));
 
@@ -879,7 +879,7 @@ const lListElem *pe_task
    {
       int ptf_error;
 
-      DPRINTF(("Register job with AddGrpId at "pid_t_fmt" PTF\n", addgrpid));
+      DPRINTF(("Register job with AddGrpId at " pid_t_fmt " PTF\n", addgrpid));
       if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id))) {
          ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS, 
                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 

@@ -83,7 +83,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
  ************************************************************************/
 int show_sharetree(
 const lListElem *ep,
-char *indent 
+const char *indent
 ) {
    const lListElem *cep;
    FILE *fp = stdout;
@@ -98,7 +98,7 @@ char *indent
 
    for (i=0;i<level;i++)
       fprintf(fp, "%s", indent ? indent : "");
-   fprintf(fp, "%s="sge_u32"\n", lGetString(ep, STN_name), 
+   fprintf(fp, "%s=" sge_u32"\n", lGetString(ep, STN_name),
             lGetUlong(ep, STN_shares));
    for_each_ep(cep, lGetList(ep, STN_children)) {
       level++;
@@ -143,9 +143,9 @@ const char *path
       for(i=0; i<ancestors.depth; i++)
          fprintf(fp, "/%s", lGetString(ancestors.nodes[i], STN_name));
       if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         fprintf(fp, "/="sge_u32"\n", lGetUlong(node, STN_shares));
+         fprintf(fp, "/=" sge_u32"\n", lGetUlong(node, STN_shares));
       else
-         fprintf(fp, "="sge_u32"\n", lGetUlong(node, STN_shares));
+         fprintf(fp, "=" sge_u32"\n", lGetUlong(node, STN_shares));
       free_ancestors(&ancestors);
       for_each_ep(cep, lGetList(node, STN_children)) {
 
@@ -333,7 +333,7 @@ lListElem *search_ancestor_list( lListElem *ep,  /* root of the tree */
 
 lListElem *
 search_ancestors( lListElem *ep,
-                  char *name,
+                  const char *name,
                   ancestors_t *ancestors,
                   int depth )
 {

@@ -142,7 +142,7 @@ static bool spool_data(void)
 
    context = spool_get_default_context();
 
-   fprintf(stdout, "spooling "sge_uu32" jobs\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)));
+   fprintf(stdout, "spooling " sge_uu32 " jobs\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)));
 
    for_each_rw(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);

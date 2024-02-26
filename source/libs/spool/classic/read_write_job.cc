@@ -175,7 +175,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
          char spool_dir_tasks[SGE_PATH_MAX];
          const lListElem *ja_task_entry;
 
-         snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN"/"SFN, spool_dir_job, entry);
+         snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN "/" SFN, spool_dir_job, entry);
          ja_task_entries = sge_get_dirents(spool_dir_tasks);
          for_each_ep(ja_task_entry, ja_task_entries) {
             const char *ja_task_string;
@@ -192,7 +192,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
                   DTRACE;
                   goto error;
                }
-               snprintf(spool_dir_pe_tasks, sizeof(spool_dir_pe_tasks), SFN"/"SFN, spool_dir_tasks,
+               snprintf(spool_dir_pe_tasks, sizeof(spool_dir_pe_tasks), SFN "/" SFN, spool_dir_tasks,
                        ja_task_string);
 
                if (sge_is_directory(spool_dir_pe_tasks)) {
@@ -639,7 +639,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
        sge_get_file_path(pe_task_spool_file, PE_TASK_SPOOL_FILE, 
                          FORMAT_DEFAULT, flags, jobid, ja_taskid, pe_task_id);
       
-       DPRINTF(("try to remove "SFN"\n", pe_task_spool_file));
+       DPRINTF(("try to remove " SFN "\n", pe_task_spool_file));
        if (sge_is_file(pe_task_spool_file) &&
            !sge_unlink(nullptr, pe_task_spool_file)) {
          ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, 
@@ -666,7 +666,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
       DPRINTF(("remove_task_spool_file = %d\n", remove_task_spool_file));;
 
       if (remove_task_spool_file) {
-         DPRINTF(("removing "SFN"\n", task_spool_file));
+         DPRINTF(("removing " SFN "\n", task_spool_file));
          if (sge_is_directory(task_spool_file)) {
             if (sge_rmdir(task_spool_file, &error_msg)) {
                ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer));
@@ -682,7 +682,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
           * This is only an indicator that another task is running which has 
           * been spooled in the directory.
           */  
-         DPRINTF(("try to remove "SFN"\n", task_spool_dir));
+         DPRINTF(("try to remove " SFN "\n", task_spool_dir));
          if (sge_rmdir(task_spool_dir, &error_msg)) {
             ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer));
          } 
@@ -706,18 +706,18 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
    try_to_remove_sub_dirs = 0;
    if (!one_file) {
       if (ja_taskid == 0) { 
-         DPRINTF(("removing "SFN"\n", spoolpath_common));
+         DPRINTF(("removing " SFN "\n", spoolpath_common));
          if (!sge_unlink(nullptr, spoolpath_common)) {
             ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_FILE, spoolpath_common)); 
          }
-         DPRINTF(("removing "SFN"\n", spool_dir));
+         DPRINTF(("removing " SFN "\n", spool_dir));
          if (sge_rmdir(spool_dir, nullptr)) {
             ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_DIRECTORY, spool_dir));
          }
          try_to_remove_sub_dirs = 1;
       }
    } else {
-      DPRINTF(("removing "SFN"\n", spool_dir));
+      DPRINTF(("removing " SFN "\n", spool_dir));
       if (!sge_unlink(nullptr, spool_dir)) {
          ERROR((SGE_EVENT, MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_FILE,
                 spool_dir));
@@ -730,10 +730,10 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
     * spooled in the same directory.
     */
    if (try_to_remove_sub_dirs) {
-      DPRINTF(("try to remove "SFN"\n", spool_dir_third));
+      DPRINTF(("try to remove " SFN "\n", spool_dir_third));
 
       if (!sge_rmdir(spool_dir_third, nullptr)) {
-         DPRINTF(("try to remove "SFN"\n", spool_dir_second));
+         DPRINTF(("try to remove " SFN "\n", spool_dir_second));
          sge_rmdir(spool_dir_second, nullptr);
       }
    }
@@ -764,7 +764,7 @@ static int job_remove_script_file(u_long32 job_id)
    DRETURN(ret);
 }
 
-int job_list_read_from_disk(lList **job_list, char *list_name, int check,
+int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                             sge_spool_flags_t flags, int (*init_function)(lListElem*)) 
 {
    char first_dir[SGE_PATH_MAX] = ""; 
@@ -799,7 +799,7 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
          break;
       }
    
-      snprintf(second_dir, sizeof(second_dir), SFN"/"SFN, first_dir, first_entry_string); 
+      snprintf(second_dir, sizeof(second_dir), SFN "/" SFN, first_dir, first_entry_string);
       second_direnties = sge_get_dirents(second_dir);
       for (; (second_direntry = lFirstRW(second_direnties)); lRemoveElem(second_direnties, &second_direntry)) {
          char third_dir[SGE_PATH_MAX] = "";
@@ -815,7 +815,7 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
             break;
          } 
 
-         snprintf(third_dir, sizeof(third_dir), SFN"/"SFN, second_dir, second_entry_string);
+         snprintf(third_dir, sizeof(third_dir), SFN "/" SFN, second_dir, second_entry_string);
          third_direnties = sge_get_dirents(third_dir);
          for (; (third_direntry = lFirstRW(third_direnties)); lRemoveElem(third_direnties, &third_direntry)) {
             lListElem *job;
@@ -829,7 +829,7 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
             int all_finished;
 
             sge_status_next_turn();
-            snprintf(fourth_dir, sizeof(fourth_dir), SFN"/"SFN, third_dir,
+            snprintf(fourth_dir, sizeof(fourth_dir), SFN "/" SFN, third_dir,
                     lGetString(third_direntry, ST_name));
             snprintf(job_id_string, sizeof(job_id_string), SFN SFN SFN, 
                     lGetString(first_direntry, ST_name),
@@ -849,7 +849,7 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
             /* check directory name */
             if (strcmp(fourth_dir, job_dir)) {
                fprintf(stderr, "%s %s\n", fourth_dir, job_dir);
-               DPRINTF(("Invalid directory "SFN"\n", fourth_dir));
+               DPRINTF(("Invalid directory " SFN "\n", fourth_dir));
                continue;
             }
 

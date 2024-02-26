@@ -621,10 +621,10 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
          job_get_submit_task_ids(job, &start, &end, &step);
 
          if (job_is_array(job)) {
-            DPRINTF(("Added job-array "sge_u32"."sge_u32"-"sge_u32":"sge_u32"\n",
+            DPRINTF(("Added job-array " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n",
                     job_id, start, end, step));
          } else {
-            DPRINTF(("Added job "sge_u32"\n", job_id));
+            DPRINTF(("Added job " sge_u32"\n", job_id));
          }
       }
          break;

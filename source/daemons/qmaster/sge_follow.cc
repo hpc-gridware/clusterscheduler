@@ -786,7 +786,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
 #if 0
-            DPRINTF(("PRIORITY: "sge_u32"."sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
+            DPRINTF(("PRIORITY: " sge_u32"." sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
                lGetUlong(jep, JB_job_number),
                lGetUlong(jatp, JAT_task_number),
                lGetDouble(jatp, JAT_tix),

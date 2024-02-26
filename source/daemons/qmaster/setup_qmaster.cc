@@ -97,14 +97,14 @@
 #include "msg_common.h"
 
 struct cmplx_tmp {
-   char *name;
-   char *shortcut;
+   const char *name;
+   const char *shortcut;
    u_long32 valtype;
    u_long32 relop;
    u_long32 consumable;
-   char *valdefault;
+   const char *valdefault;
    u_long32 requestable;
-   char *urgency_weight;
+   const char *urgency_weight;
 };
 
 static void

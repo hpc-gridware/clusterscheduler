@@ -311,7 +311,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       prof_stop_measurement(SGE_PROF_CUSTOM0, nullptr);
 
       PROFILING(
-              (SGE_EVENT, "PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, "sge_uu32" orders, "sge_uu32" H, "sge_uu32" Q, "sge_uu32" QA, "sge_uu32" J(qw), "sge_uu32" J(r), "sge_uu32" J(s), "sge_uu32" J(h), "sge_uu32" J(e), "sge_uu32" J(x), %d J(all), "sge_uu32" C, "sge_uu32" ACL, "sge_uu32" PE, "sge_uu32" U, "sge_uu32" D, "sge_uu32" PRJ, "sge_uu32" ST, "sge_uu32" CKPT, "sge_uu32" RU, %d gMes, %d jMes, "sge_uu32"/"sge_uu32" pre-send, %d/%d/%d pe-alg\n",
+              (SGE_EVENT, "PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_uu32 " orders, " sge_uu32 " H, " sge_uu32 " Q, " sge_uu32 " QA, " sge_uu32 " J(qw), " sge_uu32 " J(r), " sge_uu32 " J(s), " sge_uu32 " J(h), " sge_uu32 " J(e), " sge_uu32 " J(x), %d J(all), " sge_uu32 " C, " sge_uu32 " ACL, " sge_uu32 " PE, " sge_uu32 " U, " sge_uu32 " D, " sge_uu32 " PRJ, " sge_uu32 " ST, " sge_uu32 " CKPT, " sge_uu32 " RU, %d gMes, %d jMes, " sge_uu32 "/" sge_uu32 " pre-send, %d/%d/%d pe-alg\n",
                       prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
@@ -562,7 +562,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * FILTER JOBS
     *---------------------------------------------------------------------*/
 
-   DPRINTF(("STARTING PASS 1 WITH "sge_uu32" PENDING JOBS\n",
+   DPRINTF(("STARTING PASS 1 WITH " sge_uu32 " PENDING JOBS\n",
            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]))));
 
    user_list_init_jc(&user_list, splitted_job_lists);
@@ -757,9 +757,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             }
 
             if (job_get_next_task(job, &ja_task, &ja_task_id) != 0) {
-               DPRINTF(("Found job "sge_u32" with no job array tasks\n", job_id));
+               DPRINTF(("Found job " sge_u32" with no job array tasks\n", job_id));
             } else {
-               DPRINTF(("Found pending job "sge_u32"."sge_u32". Try %sto start and %sto reserve\n",
+               DPRINTF(("Found pending job " sge_u32"." sge_u32". Try %sto start and %sto reserve\n",
                        job_id, ja_task_id, is_start ? "" : "not ", is_reserve ? "" : "not "));
                DPRINTF(("-----------------------------------------\n"));
 
@@ -869,7 +869,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
                /* mark the category as rejected */
                if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                  DPRINTF(("SKIP JOB (R)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
+                  DPRINTF(("SKIP JOB (R)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
                   sge_reject_category(cat, false);
                }
@@ -898,7 +898,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             case DISPATCH_NEVER_CAT: /* never this category */
                /* before deleting the element mark the category as rejected */
                if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                  DPRINTF(("SKIP JOB (N)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
+                  DPRINTF(("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
                   sge_reject_category(cat, is_reserve);
                }
@@ -1088,7 +1088,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (is_start) {
 
          DPRINTF(("looking for immediate parallel assignment for job "
-                         sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
+                         sge_U32CFormat"." sge_U32CFormat " requesting pe \"%s\" duration " sge_U32CFormat "\n",
                          a.job_id, a.ja_task_id, pe_name, a.duration));
 
          a.start = DISPATCH_TIME_NOW;
@@ -1099,7 +1099,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF(("looking for parallel reservation for job "
-                            sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
+                            sge_U32CFormat"." sge_U32CFormat " requesting pe \"%s\" duration " sge_U32CFormat "\n",
                             a.job_id, a.ja_task_id, pe_name, a.duration));
             is_computed_reservation = true;
             a.start = DISPATCH_TIME_QUEUE_END;
@@ -1126,7 +1126,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (is_start) {
 
          DPRINTF(("looking for immediate sequential assignment for job "
-                         sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n", a.job_id,
+                         sge_U32CFormat"." sge_U32CFormat " duration " sge_U32CFormat "\n", a.job_id,
                          a.ja_task_id, a.duration));
 
          a.start = DISPATCH_TIME_NOW;
@@ -1140,7 +1140,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF(("looking for sequential reservation for job "
-                            sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n",
+                            sge_U32CFormat"." sge_U32CFormat " duration " sge_U32CFormat "\n",
                             a.job_id, a.ja_task_id, a.duration));
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;

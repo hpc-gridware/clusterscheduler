@@ -35,13 +35,13 @@
 /* 
 ** gss/acquire_cred.c 
 */ 
-#define MSG_GSS_ACQUIREX_USAGE_S        _MESSAGE(51000, _("Usage: "SFN" [-s service]"))
+#define MSG_GSS_ACQUIREX_USAGE_S        _MESSAGE(51000, _("Usage: " SFN " [-s service]"))
 #define MSG_GSS_ACQUIREX_s_OPT_USAGE    _MESSAGE(51001, _("       -s service      Get credentials for service"))
 
 /* 
 ** gss/sge_gsslib.c 
 */ 
-#define MSG_GSS_APIERRORXY_SS          _MESSAGE(51002, _("GSS-API error "SFN": "SFN))
+#define MSG_GSS_APIERRORXY_SS          _MESSAGE(51002, _("GSS-API error " SFN ": " SFN))
 #define MSG_GSS_CONTEXTFLAG_GSS_C_DELEG_FLAG       _MESSAGE(51003, _("context flag: GSS_C_DELEG_FLAG"))
 #define MSG_GSS_CONTEXTFLAG_GSS_C_MUTUAL_FLAG      _MESSAGE(51004, _("context flag: GSS_C_MUTUAL_FLAG"))
 #define MSG_GSS_CONTEXTFLAG_GSS_C_REPLAY_FLAG      _MESSAGE(51005, _("context flag: GSS_C_REPLAY_FLAG"))
@@ -49,7 +49,7 @@
 #define MSG_GSS_CONTEXTFLAG_GSS_C_CONF_FLAG        _MESSAGE(51007, _("context flag: GSS_C_CONF_FLAG"))
 #define MSG_GSS_CONTEXTFLAG_GSS_C_INTEG_FLAG       _MESSAGE(51008, _("context flag: GSS_C_INTEG_FLAG"))
 #define MSG_GSS_ACCEPTSECCONTEXTREQUIRESTOKENTOBESENTBACK  _MESSAGE(51009, _("accept_sec_context requires token to be sent back"))
-#define MSG_GSS_CLIENTNAMEXDOESNOTMATCHUNAMEY_SS   _MESSAGE(51010, _("client name \"%.*s\" does not match user name "SFQ))
+#define MSG_GSS_CLIENTNAMEXDOESNOTMATCHUNAMEY_SS   _MESSAGE(51010, _("client name \"%.*s\" does not match user name " SFQ))
 #define MSG_GSS_DISPLAYSTATUS_PARSINGNAME          _MESSAGE(51011, _("parsing name"))
 #define MSG_GSS_DISPLAYSTATUS_INITIALIZINGCONTEXT  _MESSAGE(51012, _("initializing context"))
 #define MSG_GSS_DISPLAYSTATUS_ACQUIRINGCREDENTIALS _MESSAGE(51013, _("acquiring credentials"))
@@ -64,10 +64,10 @@
 #define MSG_GSS_DISPLAYSTATUS_GSSDCECREDTOLOGINCONTEXT      _MESSAGE(51022, _("gssdce_cred_to_login_context"))
 #define MSG_GSS_PRINTERROR_CREDENTIALBUFFERLENGTHISZERO  _MESSAGE(51023, _("credential buffer length is zero"))
 #define MSG_GSS_PRINTERROR_CREDENTIALDUMP          _MESSAGE(51024, _("Credential dump"))
-#define MSG_GSS_PRINTERROR_COULDNOTDISABLEDELEGATIONX_S  _MESSAGE(51025, _("Could not disable delegation - "SFN))
-#define MSG_GSS_PRINTERROR_COULDNOTCERTIFYIDENTITYX_S    _MESSAGE(51026, _("Could not certify identity - "SFN))
-#define MSG_GSS_PRINTERROR_COULDNOTSETUPLOGINCONTEXTX_S  _MESSAGE(51027, _("Could not set up login context - "SFN))
-#define MSG_GSS_PRINTERROR_NEWKRB5CCNAMEISX_S            _MESSAGE(51028, _("New KRB5CCNAME="SFN))
+#define MSG_GSS_PRINTERROR_COULDNOTDISABLEDELEGATIONX_S  _MESSAGE(51025, _("Could not disable delegation - " SFN))
+#define MSG_GSS_PRINTERROR_COULDNOTCERTIFYIDENTITYX_S    _MESSAGE(51026, _("Could not certify identity - " SFN))
+#define MSG_GSS_PRINTERROR_COULDNOTSETUPLOGINCONTEXTX_S  _MESSAGE(51027, _("Could not set up login context - " SFN))
+#define MSG_GSS_PRINTERROR_NEWKRB5CCNAMEISX_S            _MESSAGE(51028, _("New KRB5CCNAME=" SFN))
 #define MSG_GSS_PRINTERROR_KRB5CCNAMENOTFOUND            _MESSAGE(51029, _("KRB5CCNAME not found"))
 #define MSG_GSS_PRINTERROR_GETTINGKRB5CONTEXT            _MESSAGE(51030, _("getting krb5 context"))
 #define MSG_GSS_PRINTERROR_KRB5PARSENAMERETURNEDX_I      _MESSAGE(51031, _("krb5_parse_name returned %d"))
@@ -98,12 +98,12 @@
 ** gss/put_cred.c
 */ 
 #define MSG_GSS_GETCRED_USAGE       _( \
-"Usage: "SFN" [-v] service\n" \
+"Usage: " SFN " [-v] service\n" \
 "   -v          verbose output\n" \
 "   service     Get credentials for service" )
 
 #define MSG_GSS_PUTCRED_USAGE       _( \
-"Usage: "SFN" [-u user] [-b user] [-s service] [-c cmd]\n" \
+"Usage: " SFN " [-u user] [-b user] [-s service] [-c cmd]\n" \
 "   -b user     Become user before storing credentials and/or executing cmd\n" \
 "   -o user     Change ownership of credentials cache files to user\n" \
 "   -u user     Authenticate user\n" \
@@ -115,21 +115,21 @@
 #define MSG_GSS_FAILEDREADINGCREDENTIALLENGTHFROMSTDIN   _MESSAGE(51044, _("failed reading credential length from stdin"))
 #define MSG_GSS_COULDNOTALLOCATEXBYTESFORCREDENTIALS_I   _MESSAGE(51045, _("could not allocate %d bytes for credentials"))
 #define MSG_GSS_FAILEDREADINGCREDENTIALFROMSTDIN         _MESSAGE(51046, _("failed reading credential from stdin"))
-#define MSG_GSS_COULDNOTGETUSERIDFORXY_SS                _MESSAGE(51047, _("could not get user ID for "SFN" - "SFN))
-#define MSG_GSS_COULDNOTCHANGEOWNERSHIPOFCREDENTIALSCACHETOXINVALIDKRB5CCNAME_S _MESSAGE(51048, _("could not change ownership of credentials cache to "SFN" - invalid KRB5CCNAME" ))
-#define MSG_GSS_COULDNOTCHANGEOWNERSHIPOFXTOYZ_SSS       _MESSAGE(51049, _("could not change ownership of "SFN" to "SFN" - "SFN))
+#define MSG_GSS_COULDNOTGETUSERIDFORXY_SS                _MESSAGE(51047, _("could not get user ID for " SFN " - " SFN))
+#define MSG_GSS_COULDNOTCHANGEOWNERSHIPOFCREDENTIALSCACHETOXINVALIDKRB5CCNAME_S _MESSAGE(51048, _("could not change ownership of credentials cache to " SFN " - invalid KRB5CCNAME" ))
+#define MSG_GSS_COULDNOTCHANGEOWNERSHIPOFXTOYZ_SSS       _MESSAGE(51049, _("could not change ownership of " SFN " to " SFN " - " SFN))
 #define MSG_GSS_PERROR_SETGID                            _MESSAGE(51050, _("setgid"))
 #define MSG_GSS_PERROR_SETUID                            _MESSAGE(51051, _("setuid"))
 /* #define MSG_GSS_PERROR_EXECFAILED                        _message(51052, _("exec failed")) __TS Removed automatically from testsuite!! TS__*/
-#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYZ_SSS   _MESSAGE(51053, _("Could not link "SFN" to DCE credentials cache file "SFN" - "SFN))
-#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYINVALIDKRB5CCNAMEENVIRONMENTVARIABLEFORMAT_SS  _MESSAGE(51054, _("Could not link "SFN" to DCE credentials cache file "SFN" - invalid KRB5CCNAME environment variable format"))
+#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYZ_SSS   _MESSAGE(51053, _("Could not link " SFN " to DCE credentials cache file " SFN " - " SFN))
+#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYINVALIDKRB5CCNAMEENVIRONMENTVARIABLEFORMAT_SS  _MESSAGE(51054, _("Could not link " SFN " to DCE credentials cache file " SFN " - invalid KRB5CCNAME environment variable format"))
 
 
 /* 
 ** gss/write_cred.c
 */ 
-#define MSG_GSS_WRITECRED_USAGE_S         _MESSAGE(51055, _("Usage: "SFN" file"))
-#define MSG_GSS_COULDNOTOPENXY_SS         _MESSAGE(51056, _("could not open "SFN" - "SFN))
+#define MSG_GSS_WRITECRED_USAGE_S         _MESSAGE(51055, _("Usage: " SFN " file"))
+#define MSG_GSS_COULDNOTOPENXY_SS         _MESSAGE(51056, _("could not open " SFN " - " SFN))
 #define MSG_GSS_READINGCREDENTIALLENGTH   _MESSAGE(51057, _("reading credential length"))
 #define MSG_GSS_READLENGTHOFX_I           _MESSAGE(51058, _("read length of %d"))
 #define MSG_GSS_READXBYTES_I              _MESSAGE(51059, _("read %d bytes"))

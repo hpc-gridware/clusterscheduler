@@ -190,7 +190,7 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    }
 
    /* cell_root */
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s", sge_root, sge_cell);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s", sge_root, sge_cell);
 
    if (SGE_STAT(sge_dstring_get_string(&bw), &sbuf)) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NOSGECELL_S, sge_dstring_get_string(&bw)));
@@ -201,37 +201,37 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    const char *cell_root = tl->cell_root;
 
    /* common dir */
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR);
    if (SGE_STAT(buffer, &sbuf)) {
       CRITICAL((SGE_EVENT, MSG_UTI_DIRECTORYNOTEXIST_S, buffer));
       DRETURN_VOID;
    }
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, BOOTSTRAP_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, BOOTSTRAP_FILE);
    set_bootstrap_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, CONF_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, CONF_FILE);
    set_conf_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, SCHED_CONF_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, SCHED_CONF_FILE);
    set_sched_conf_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, ACT_QMASTER_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ACT_QMASTER_FILE);
    set_act_qmaster_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, ACCT_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ACCT_FILE);
    set_acct_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, REPORTING_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, REPORTING_FILE);
    set_reporting_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, LOCAL_CONF_DIR);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, LOCAL_CONF_DIR);
    set_local_conf_dir(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, SHADOW_MASTERS_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, SHADOW_MASTERS_FILE);
    set_shadow_masters_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, ALIAS_FILE);
+   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ALIAS_FILE);
    set_alias_file(tl, sge_dstring_get_string(&bw));
 
    DRETURN_VOID;

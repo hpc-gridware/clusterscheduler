@@ -50,7 +50,7 @@ int
 sge_del_configuration(lListElem *cxp, lList **alpp, char *ruser, char *rhost);
 
 int
-sge_mod_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHost);
+sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost);
 
 int
 sge_compare_configuration(const lListElem *aHost, const lList *aConf);

@@ -58,7 +58,7 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
 
    /* Note could have multiple instantiations of same job, */
    /* on same machine, under same queue */
-   sprintf(tmpdir, "%s/"sge_u32"."sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   sprintf(tmpdir, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF(("making TMPDIR=%s\n", tmpdir));
 
@@ -100,7 +100,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
       DRETURN(0);
    }
 
-   sprintf(tmpstr, "%s/"sge_u32"."sge_u32".%s", dir, jobid, jataskid, queue_name);
+   sprintf(tmpstr, "%s/" sge_u32"." sge_u32".%s", dir, jobid, jataskid, queue_name);
    DPRINTF(("recursively unlinking \"%s\"\n", tmpstr));
    sge_switch2start_user();
    if (sge_rmdir(tmpstr, &err_str)) {
@@ -124,7 +124,7 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tm
       DRETURN(nullptr);
    }
 
-   sprintf(tmpdir, "%s/"sge_u32"."sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   sprintf(tmpdir, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF(("TMPDIR=%s\n", tmpdir));
 

@@ -102,7 +102,7 @@ static int cl_commlib_send_sirm_message(cl_com_connection_t *connection,
                                         unsigned long buffered_write_messages,
                                         unsigned long connection_count,
                                         unsigned long application_status,
-                                        char *infotext);
+                                        const char *infotext);
 
 static int cl_com_trigger(cl_com_handle_t *handle, int synchron);
 
@@ -349,7 +349,7 @@ int cl_com_get_parameter_list_string(char **param_string) {
    return retval;
 }
 
-int cl_com_set_parameter_list_value(const char *parameter, char *value) {
+int cl_com_set_parameter_list_value(const char *parameter, const char *value) {
    cl_parameter_list_elem_t *elem = nullptr;
    int retval = CL_RETVAL_UNKNOWN_PARAMETER;
 
@@ -966,7 +966,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       bool service_provider,
                                       int handle_port,
                                       cl_tcp_connect_t tcp_connect_mode,
-                                      char *component_name, unsigned long component_id,
+                                      const char *component_name, unsigned long component_id,
                                       int select_sec_timeout, int select_usec_timeout) {
    int thread_start_error = 0;
    cl_com_handle_t *new_handle = nullptr;
@@ -2265,7 +2265,7 @@ int cl_com_remove_host_alias(char *alias_name) {
 
 int
 cl_com_append_known_endpoint_from_name(char *unresolved_comp_host,
-                                       char *comp_name,
+                                       const char *comp_name,
                                        unsigned long comp_id,
                                        int comp_port,
                                        cl_xml_connection_autoclose_t autoclose,
@@ -2351,7 +2351,7 @@ cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const c
 }
 
 int
-cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
+cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                                    cl_xml_connection_autoclose_t *auto_close_mode) {
    int retval = CL_RETVAL_PARAMS;
 
@@ -2383,7 +2383,7 @@ cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, c
    return retval;
 }
 
-int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, char *comp_name, unsigned long comp_id,
+int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                              int *service_port) {
    int retval = CL_RETVAL_OK;
 
@@ -3452,7 +3452,7 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t *connection) {
 
                if (connection->handler != nullptr) {
                   cl_com_handle_t *handle = connection->handler;
-                  char *application_info = "not available";
+                  const char *application_info = "not available";
 
                   /* we force an statistic update for qping client */
                   if (connection->remote != nullptr && connection->remote->comp_name != nullptr) {
@@ -5346,7 +5346,7 @@ static int cl_commlib_send_sirm_message(cl_com_connection_t *connection,
                                         unsigned long buffered_write_messages,
                                         unsigned long connection_count,
                                         unsigned long application_status,
-                                        char *infotext) {
+                                        const char *infotext) {
    cl_byte_t *sirm_message_data = nullptr;
    char *xml_infotext = nullptr;
    unsigned long sirm_message_size = 0;
@@ -5449,7 +5449,7 @@ static int cl_commlib_send_ccrm_message(cl_com_connection_t *connection) {
    CL_MIH_MAT_ACK  = send message and block till communication partner application has read the message
    CL_MIH_MAT_SYNC = send message and block till communication partner application has processed all message actions (TODO)
 */
-int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
+int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname, const char *component_name,
                              unsigned long component_id, unsigned long mid, bool do_block) {
    int found_message = 0;
    int message_added = 0;
@@ -5584,7 +5584,7 @@ int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname
    return CL_RETVAL_UNKNOWN;
 }
 
-int cl_commlib_open_connection(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
+int cl_commlib_open_connection(cl_com_handle_t *handle, const char *un_resolved_hostname, const char *component_name,
                                unsigned long component_id) {
 
    int ret_val = CL_RETVAL_UNKNOWN;
@@ -5854,7 +5854,7 @@ int cl_commlib_open_connection(cl_com_handle_t *handle, char *un_resolved_hostna
    return ret_val;
 }
 
-int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostname, char *component_name,
+int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostname, const char *component_name,
                                 unsigned long component_id, bool return_for_messages) {
    int closed = 0;
    int return_value = CL_RETVAL_OK;
@@ -6502,7 +6502,7 @@ static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
 }
 
 int cl_commlib_send_message(cl_com_handle_t *handle,
-                            char *un_resolved_hostname, char *component_name, unsigned long component_id,
+                            const char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                             cl_xml_ack_type_t ack_type,
                             cl_byte_t **data,
                             unsigned long size,

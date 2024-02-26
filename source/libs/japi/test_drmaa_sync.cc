@@ -47,7 +47,7 @@ static void *submit_thread(void *arg)
    drmaa_allocate_job_template (&jt, nullptr, 0);
    drmaa_set_attribute (jt, DRMAA_REMOTE_COMMAND, (char *)arg, nullptr, 0);
    drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);
-   drmaa_set_attribute (jt, DRMAA_OUTPUT_PATH, ":"DRMAA_PLACEHOLDER_HD"/DRMAA_JOB", nullptr, 0);
+   drmaa_set_attribute (jt, DRMAA_OUTPUT_PATH, ":" DRMAA_PLACEHOLDER_HD "/DRMAA_JOB", nullptr, 0);
    drmaa_set_attribute (jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
    
    while (drmaa_run_job (jobid, DRMAA_JOBNAME_BUFFER, jt, nullptr, 0) == DRMAA_ERRNO_SUCCESS) {

@@ -295,10 +295,10 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    spool_transaction(alpp, spool_get_default_context(), STC_commit);
 
    if (!job_is_array(*jep)) {
-      DPRINTF(("Added Job "sge_u32"\n", lGetUlong(*jep, JB_job_number)));
+      DPRINTF(("Added Job " sge_u32"\n", lGetUlong(*jep, JB_job_number)));
    } else {
       job_get_submit_task_ids(*jep, &start, &end, &step);
-      DPRINTF(("Added JobArray "sge_u32"."sge_u32"-"sge_u32":"sge_u32"\n",
+      DPRINTF(("Added JobArray " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n",
               lGetUlong(*jep, JB_job_number), start, end, step));
    }
 
@@ -930,10 +930,10 @@ static void get_rid_of_schedd_job_messages(u_long32 job_number) {
             */
             if (lGetNumberOfElem(lGetList(mes, MES_job_number_list)) > 1) {
                lRemoveElem(lGetListRW(mes, MES_job_number_list), &job_ulng);
-               DPRINTF(("Removed jobid "sge_u32" from list of scheduler messages\n", job_number));
+               DPRINTF(("Removed jobid " sge_u32" from list of scheduler messages\n", job_number));
             } else {
                lRemoveElem(mes_list, &mes);
-               DPRINTF(("Removed message from list of scheduler messages "sge_u32"\n", job_number));
+               DPRINTF(("Removed message from list of scheduler messages " sge_u32"\n", job_number));
             }
          }
       }
@@ -1326,13 +1326,13 @@ int sge_gdi_mod_job(
             for_each_rw(jid, lGetList(jobep, JB_jid_predecessor_list)) {
                u_long32 pre_ident = lGetUlong(jid, JRE_job_number);
 
-               DPRINTF((" JOB #"sge_u32": P: "sge_u32"\n", jobid, pre_ident));
+               DPRINTF((" JOB #" sge_u32": P: " sge_u32"\n", jobid, pre_ident));
 
                if ((suc_jobep = lGetElemUlongRW(*master_job_list, JB_job_number, pre_ident))) {
                   lListElem *temp_job = lGetElemUlongRW(lGetList(suc_jobep, JB_jid_successor_list), JRE_job_number,
                                                         jobid);
-                  DPRINTF(("  JOB "sge_u32" removed from trigger "
-                                          "list of job "sge_u32"\n", jobid, pre_ident));
+                  DPRINTF(("  JOB " sge_u32" removed from trigger "
+                                          "list of job " sge_u32"\n", jobid, pre_ident));
                   lRemoveElem(lGetListRW(suc_jobep, JB_jid_successor_list), &temp_job);
                }
             }
@@ -1343,12 +1343,12 @@ int sge_gdi_mod_job(
             for_each_rw(jid, lGetList(jobep, JB_ja_ad_predecessor_list)) {
                u_long32 pre_ident = lGetUlong(jid, JRE_job_number);
 
-               DPRINTF((" JOB #"sge_u32": P: "sge_u32"\n", jobid, pre_ident));
+               DPRINTF((" JOB #" sge_u32": P: " sge_u32"\n", jobid, pre_ident));
 
                if ((suc_jobep = lGetElemUlongRW(*master_job_list, JB_job_number, pre_ident))) {
                   lListElem *temp_job = lGetElemUlongRW(lGetList(suc_jobep, JB_ja_ad_successor_list), JRE_job_number,
                                                         jobid);
-                  DPRINTF(("  JOB "sge_u32" removed from trigger list of job "sge_u32"\n", jobid, pre_ident));
+                  DPRINTF(("  JOB " sge_u32" removed from trigger list of job " sge_u32"\n", jobid, pre_ident));
                   lRemoveElem(lGetListRW(suc_jobep, JB_ja_ad_successor_list), &temp_job);
                }
             }
@@ -1476,7 +1476,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
             }
          }
          if (!Exited) {
-            DPRINTF(("adding jid "sge_u32" into successor list of job "sge_u32"\n",
+            DPRINTF(("adding jid " sge_u32" into successor list of job " sge_u32"\n",
                     lGetUlong(jep, JB_job_number), pre_ident));
 
             /* add jid to successor_list of parent job */
@@ -1484,13 +1484,13 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
 
             prep = lNext(prep);
          } else {
-            DPRINTF(("job "sge_u32" from predecessor list already exited - ignoring it\n", pre_ident));
+            DPRINTF(("job " sge_u32" from predecessor list already exited - ignoring it\n", pre_ident));
 
             prep = lNext(prep);
             lDelSubUlong(jep, JRE_job_number, pre_ident, pre_nm);
          }
       } else {
-         DPRINTF(("predecessor job "sge_u32" does not exist\n", pre_ident));
+         DPRINTF(("predecessor job " sge_u32" does not exist\n", pre_ident));
          prep = lNext(prep);
          lDelSubUlong(jep, JRE_job_number, pre_ident, pre_nm);
       }
@@ -1602,7 +1602,7 @@ static int mod_task_attributes(
          uval = lGetPosUlong(tep, pos);
          if (uval != lGetUlong(new_ja_task, JAT_fshare)) {
             lSetUlong(new_ja_task, JAT_fshare, uval);
-            DPRINTF(("JAT_fshare = "sge_u32"\n", uval));
+            DPRINTF(("JAT_fshare = " sge_u32"\n", uval));
             *trigger |= MOD_EVENT;
          }
 
@@ -1643,19 +1643,19 @@ static int mod_task_attributes(
       switch (op_code) {
          case MINUS_H_CMD_SUB:
             new_hold = old_hold & ~target;
-/*             DPRINTF(("MINUS_H_CMD_SUB = "sge_u32"\n", new_hold)); */
+/*             DPRINTF(("MINUS_H_CMD_SUB = " sge_u32"\n", new_hold)); */
             break;
          case MINUS_H_CMD_ADD:
             new_hold = old_hold | target;
-/*             DPRINTF(("MINUS_H_CMD_ADD = "sge_u32"\n", new_hold)); */
+/*             DPRINTF(("MINUS_H_CMD_ADD = " sge_u32"\n", new_hold)); */
             break;
          case MINUS_H_CMD_SET:
             new_hold = target;
-/*             DPRINTF(("MINUS_H_CMD_SET = "sge_u32"\n", new_hold)); */
+/*             DPRINTF(("MINUS_H_CMD_SET = " sge_u32"\n", new_hold)); */
             break;
          default:
             new_hold = old_hold;
-/*             DPRINTF(("MINUS_H_CMD_[default] = "sge_u32"\n", new_hold)); */
+/*             DPRINTF(("MINUS_H_CMD_[default] = " sge_u32"\n", new_hold)); */
             break;
       }
 
@@ -2279,7 +2279,7 @@ static int mod_job_attributes(
          char job_descr[100];
          const char *job_name;
 
-         sprintf(job_descr, "job "sge_u32, jobid);
+         sprintf(job_descr, "job " sge_u32, jobid);
          job_name = lGetString(new_job, JB_job_name);
          lSetString(new_job, JB_job_name, new_name);
          if (object_verify_name(new_job, alpp, JB_job_name)) {
@@ -2338,7 +2338,7 @@ static int mod_job_attributes(
          u_long32 pre_ident = lGetUlong(pre, JRE_job_number);
 
          nxt = lNextRW(pre);
-         DPRINTF(("jid: "sge_u32"\n", pre_ident));
+         DPRINTF(("jid: " sge_u32"\n", pre_ident));
 
          job = lGetElemUlongRW(master_job_list, JB_job_number, pre_ident);
 
@@ -2423,7 +2423,7 @@ static int mod_job_attributes(
          u_long32 pre_ident = lGetUlong(pre, JRE_job_number);
 
          nxt = lNextRW(pre);
-         DPRINTF(("jid: "sge_u32"\n", pre_ident));
+         DPRINTF(("jid: " sge_u32"\n", pre_ident));
 
          job = lGetElemUlongRW(master_job_list, JB_job_number, pre_ident);
 
@@ -3453,7 +3453,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
 
    /* seek job */
    seek_jid = lGetUlong(jep, JB_job_number);
-   DPRINTF(("SEEK jobid "sge_u32" for COPY operation\n", seek_jid));
+   DPRINTF(("SEEK jobid " sge_u32" for COPY operation\n", seek_jid));
 
    if (!(old_jep = lGetElemUlong(master_job_list, JB_job_number, seek_jid))) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SU, SGE_OBJ_JOB, sge_u32c(seek_jid)));

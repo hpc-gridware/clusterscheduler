@@ -1307,7 +1307,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       name = lGetString(req, CE_name);
 
       if (!(ce = lGetElemStr(centry_list, CE_name, name))) {
-         sge_dstring_sprintf(unsatisfied, "unknown: "SFN, name);
+         sge_dstring_sprintf(unsatisfied, "unknown: " SFN, name);
          DRETURN(true);
       }
 
@@ -1381,7 +1381,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       if (rejected) {
          DPRINTF(("cluster queue \"%s\" will never match due to -l %s=%s\n",
             lGetString(cq, CQ_name), name, request));
-         sge_dstring_sprintf(unsatisfied, SFN"="SFN, name, request);
+         sge_dstring_sprintf(unsatisfied, SFN "=" SFN, name, request);
          DRETURN(true);
       }
 

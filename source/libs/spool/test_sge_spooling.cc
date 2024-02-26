@@ -526,7 +526,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                key = lGetString(event, ET_strkey);
                ep = lGetElemHost(*master_list, key_nm, lGetString(event, ET_strkey));
                if(ep == nullptr) {
-                  ERROR((SGE_EVENT, "%s element with id "SFQ" not found\n",
+                  ERROR((SGE_EVENT, "%s element with id " SFQ " not found\n",
                          object_type_get_name(type), key));
                   ret = SGE_EMA_FAILURE;
                }
@@ -549,7 +549,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                key = lGetString(event, ET_strkey);
                ep = lGetElemStr(*master_list, key_nm, lGetString(event, ET_strkey));
                if(ep == nullptr) {
-                  ERROR((SGE_EVENT, "%s element with id "SFQ" not found\n",
+                  ERROR((SGE_EVENT, "%s element with id " SFQ " not found\n",
                          object_type_get_name(type), key));
                   ret = SGE_EMA_FAILURE;
                }

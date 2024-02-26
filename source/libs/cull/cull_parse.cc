@@ -89,7 +89,7 @@ int scan(
         const char *s,
         cull_parse_state *state
 ) {
-   static char *opv[] =
+   static const char *opv[] =
            {
                    "%T",                     /* DESCRIPTOR TYPE OF LIST */
                    "%I",                     /* FIELD                   */

@@ -291,16 +291,17 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
 }
 
 const char *
-map_op2str(u_long32 op) {
-   static char *opv[] = {
-           "??",
-           "==",  /* CMPLXEQ_OP */
-           ">=",  /* CMPLXGE_OP */
-           ">",   /* CMPLXGT_OP */
-           "<",   /* CMPLXLT_OP */
-           "<=",  /* CMPLXLE_OP */
-           "!=",  /* CMPLXNE_OP */
-           "EXCL" /* CMPLXEXCL_OP */
+map_op2str(u_long32 op)
+{
+   static const char *opv[] = {
+      "??",
+      "==",  /* CMPLXEQ_OP */
+      ">=",  /* CMPLXGE_OP */
+      ">",   /* CMPLXGT_OP */
+      "<",   /* CMPLXLT_OP */
+      "<=",  /* CMPLXLE_OP */
+      "!=",  /* CMPLXNE_OP */
+      "EXCL" /* CMPLXEXCL_OP */
    };
 
    if (op < CMPLXEQ_OP || op > CMPLXEXCL_OP) {
@@ -310,12 +311,13 @@ map_op2str(u_long32 op) {
 }
 
 const char *
-map_req2str(u_long32 op) {
-   static char *opv[] = {
-           "??",
-           "NO",       /* REQU_NO */
-           "YES",      /* REQU_YES */
-           "FORCED",   /* REQU_FORCED */
+map_req2str(u_long32 op)
+{
+   static const char *opv[] = {
+      "??",
+      "NO",       /* REQU_NO */
+      "YES",      /* REQU_YES */
+      "FORCED",   /* REQU_FORCED */
    };
 
    if (op < REQU_NO || op > REQU_FORCED) {
@@ -343,11 +345,12 @@ map_req2str(u_long32 op) {
 *  NOTES
 *     MT-NOTE: map_consumable2str() is not safe 
 *******************************************************************************/
-const char *map_consumable2str(u_long32 op) {
-   static char *opv[] = {
-           "NO",       /* CONSUMABLE_NO */
-           "YES",      /* CONSUMABLE_YES */
-           "JOB",      /* CONSUMABLE_JOB */
+const char * map_consumable2str(u_long32 op)
+{
+   static const char *opv[] = {
+      "NO",       /* CONSUMABLE_NO */
+      "YES",      /* CONSUMABLE_YES */
+      "JOB",      /* CONSUMABLE_JOB */
    };
 
    if (op > CONSUMABLE_JOB) {
@@ -357,22 +360,23 @@ const char *map_consumable2str(u_long32 op) {
 }
 
 const char *
-map_type2str(u_long32 type) {
-   static char *typev[] = {
-           "??????",
-           "INT",      /*  1 TYPE_INT */
-           "STRING",   /*  2 TYPE_STR */
-           "TIME",     /*  3 TYPE_TIM */
-           "MEMORY",   /*  4 TYPE_MEM */
-           "BOOL",     /*  5 TYPE_BOO */
-           "CSTRING",  /*  6 TYPE_CSTR */
-           "HOST",     /*  7 TYPE_HOST */
-           "DOUBLE",   /*  8 TYPE_DOUBLE */
-           "RESTRING", /*  9 TYPE_RESTR */
-           "RSMAP",    /* 10 TYPE_RSMAP */
+map_type2str(u_long32 type)
+{
+   static const char *typev[] = {
+      "??????",
+      "INT",      /*  1 TYPE_INT */
+      "STRING",   /*  2 TYPE_STR */
+      "TIME",     /*  3 TYPE_TIM */
+      "MEMORY",   /*  4 TYPE_MEM */
+      "BOOL",     /*  5 TYPE_BOO */
+      "CSTRING",  /*  6 TYPE_CSTR */
+      "HOST",     /*  7 TYPE_HOST */
+      "DOUBLE",   /*  8 TYPE_DOUBLE */
+      "RESTRING", /*  9 TYPE_RESTR */
+      "RSMAP",    /* 10 TYPE_RSMAP */
 
-           "TYPE_ACC", /* 11 TYPE_ACC */
-           "TYPE_LOG"  /* 12 TYPE_LOG */
+      "TYPE_ACC", /* 11 TYPE_ACC */
+      "TYPE_LOG"  /* 12 TYPE_LOG */
    };
 
    if (type < TYPE_FIRST || type > TYPE_LAST) {
@@ -884,7 +888,7 @@ centry_list_parse_from_string(lList *complex_attributes,
        * If no default value was specified then use TRUE
        */
       if (check_value == false && value == nullptr) {
-         value = TRUE_STR;
+         value = (char*)TRUE_STR;
       } else if (check_value == true && (value == nullptr || *value == '\0')) {
          ERROR((SGE_EVENT, MSG_CPLX_VALUEMISSING_S, attr));
          lFreeList(&complex_attributes);

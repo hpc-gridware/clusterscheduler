@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 #endif
 
       if(sge_strnullcmp(value, reread_value) != 0) {
-         fprintf(stderr, "regression test for object_[gs]et_field_contents failed for attribute "SFQ": "SFQ" != "SFQ"\n", 
+         fprintf(stderr, "regression test for object_[gs]et_field_contents failed for attribute " SFQ ": " SFQ " != " SFQ "\n",
                  name, 
                  value != nullptr ? value : "<null>",
                  reread_value != nullptr ? reread_value : "<null>");

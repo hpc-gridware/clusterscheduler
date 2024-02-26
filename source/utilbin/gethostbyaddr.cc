@@ -158,11 +158,9 @@ int main(int argc, char *argv[])
               err_text = strdup("unexpected error");
            }
         }
-        if ( ip_string == nullptr) {
-            ip_string = "nullptr";
-        }
-
-        fprintf(stderr,"error resolving ip "SFQ": %s (%s)\n",ip_string, cl_get_error_text(retval), err_text); 
+        fprintf(stderr, "error resolving ip " SFQ ": %s (%s)\n",
+                ip_string != nullptr ? ip_string : "nullptr",
+                cl_get_error_text(retval), err_text);
 
         sge_free(&err_text); 
      }

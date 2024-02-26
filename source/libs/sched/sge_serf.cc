@@ -135,7 +135,7 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
    DENTER(TOP_LAYER);
 
    /* human readable format */
-   DPRINTF(("J="sge_U32CFormat"."sge_U32CFormat" T=%s S="sge_U32CFormat" E="sge_U32CFormat" L=%c O=%s R=%s U=%f\n",
+   DPRINTF(("J=" sge_U32CFormat "." sge_U32CFormat " T=%s S=" sge_U32CFormat " E=" sge_U32CFormat " L=%c O=%s R=%s U=%f\n",
       job_id, ja_taskid, type, start_time, end_time, 
             level_char, object_name, name, utilization));
 

@@ -328,7 +328,7 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "      <"SFN">"sge_U32CFormat"</"SFN">\n", 
+   sge_dstring_sprintf_append(buffer, "      <" SFN ">" sge_U32CFormat "</" SFN ">\n",
                               name, value, name);
 
    DRETURN(ret); 
@@ -346,7 +346,7 @@ qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "      <"SFN">%02d:%02d:%02d</"SFN">\n", 
+   sge_dstring_sprintf_append(buffer, "      <" SFN ">%02d:%02d:%02d</" SFN ">\n",
                               name, hours, minutes, seconds, name);
 
    DRETURN(ret); 
@@ -362,9 +362,9 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
    DENTER(TOP_LAYER);
  
    if (value != nullptr) {
-      sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", name, value, name);
+      sge_dstring_sprintf_append(buffer, "      <" SFN ">" SFN "</" SFN ">\n", name, value, name);
    } else {
-      sge_dstring_sprintf_append(buffer, "      <"SFN"/>\n", name);
+      sge_dstring_sprintf_append(buffer, "      <" SFN "/>\n", name);
    }
 
    DRETURN(ret); 
@@ -381,7 +381,7 @@ qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
    DENTER(TOP_LAYER);
  
    sge_dstring_append_time(&time_string, value, true); 
-   sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", 
+   sge_dstring_sprintf_append(buffer, "      <" SFN ">" SFN "</" SFN ">\n",
                               name, sge_dstring_get_string(&time_string), name);
    sge_dstring_free(&time_string);
 
@@ -399,7 +399,7 @@ qrstat_report_ar_node_state(qrstat_report_handler_t* handler, lList **alpp,
    DENTER(TOP_LAYER);
  
    ar_state2dstring((ar_state_t)state, &state_string);
-   sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", 
+   sge_dstring_sprintf_append(buffer, "      <" SFN ">" SFN "</" SFN ">\n",
                               name, sge_dstring_get_string(&state_string), name);
    sge_dstring_free(&state_string);
 
@@ -441,7 +441,7 @@ qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <resource name="SFQ" type="SFQ"/>\n",
+   sge_dstring_sprintf_append(buffer, "         <resource name=" SFQ " type=" SFQ "/>\n",
                               name, value);
 
    DRETURN(ret); 
@@ -456,7 +456,7 @@ qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp, co
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer,"      <"SFN">"SFN"</"SFN">\n", 
+   sge_dstring_sprintf_append(buffer,"      <" SFN ">" SFN "</" SFN ">\n",
                               name, value ? "true":"false", name);
 
    DRETURN(ret); 
@@ -498,8 +498,8 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <granted_slots  queue_instance="SFQ
-                              " slots=\""sge_U32CFormat"\"/>\n", name, value);
+   sge_dstring_sprintf_append(buffer, "         <granted_slots  queue_instance=" SFQ
+                              " slots=\"" sge_U32CFormat "\"/>\n", name, value);
 
    DRETURN(ret); 
 }
@@ -540,8 +540,8 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <parallel_environment>"SFN"</parallel_environment>\n", (name != nullptr) ? name : "");
-   sge_dstring_sprintf_append(buffer, "         <slots>"SFN"</slots>\n", (slots_range != nullptr) ? slots_range : "");
+   sge_dstring_sprintf_append(buffer, "         <parallel_environment>" SFN "</parallel_environment>\n", (name != nullptr) ? name : "");
+   sge_dstring_sprintf_append(buffer, "         <slots>" SFN "</slots>\n", (slots_range != nullptr) ? slots_range : "");
 
    DRETURN(ret); 
 }
@@ -582,8 +582,8 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <mail  user="SFQ
-                              " host="SFQ"/>\n", name, host?host:"nullptr");
+   sge_dstring_sprintf_append(buffer, "         <mail  user=" SFQ
+                              " host=" SFQ "/>\n", name, host?host:"nullptr");
 
    DRETURN(ret); 
 }
@@ -624,7 +624,7 @@ qrstat_report_acl_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <acl  user="SFQ"/>\n", name);
+   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", name);
 
    DRETURN(ret); 
 }
@@ -665,7 +665,7 @@ qrstat_report_xacl_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <acl  user="SFQ"/>\n", name);
+   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", name);
 
    DRETURN(ret); 
 }

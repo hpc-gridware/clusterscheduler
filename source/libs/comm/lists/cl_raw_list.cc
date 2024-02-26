@@ -54,7 +54,7 @@
 
    - On CL_RETVAL_OK the list must be freed by calling the function cl_raw_list_cleanup()
 */
-int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_locking) {  /* CR check */
+int cl_raw_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_list_locking) {  /* CR check */
 
    if (list_p == nullptr || list_name == nullptr) {
       /* don't accept nullptr pointer for list pointer */

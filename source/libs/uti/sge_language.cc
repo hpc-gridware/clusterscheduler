@@ -175,9 +175,9 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          packName = strdup(package);
       } else if (getenv(PACKAGE) != nullptr) {
          packName = strdup(getenv(PACKAGE));
-         DPRINTF_(("try to get language package name from environment "SFQ"\n", PACKAGE));
+         DPRINTF_(("try to get language package name from environment " SFQ "\n", PACKAGE));
       } else {
-         DPRINTF_(("could not get environment variable "SFQ"\n", PACKAGE));
+         DPRINTF_(("could not get environment variable " SFQ "\n", PACKAGE));
       }
 
       /* no package name given, using default one */
@@ -191,14 +191,14 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          locDir = strdup(localeDir);
       } else if (getenv(LOCALEDIR) != nullptr) {
          if (stop != 0) {
-            DPRINTF_(("ignoring environment "SFQ"\n", LOCALEDIR ));
+            DPRINTF_(("ignoring environment " SFQ "\n", LOCALEDIR ));
          } else {
             locDir = strdup(getenv(LOCALEDIR)); /* only the first time */
             stop++;
-            DPRINTF_(("try to get language package directory path from environment "SFQ"\n", LOCALEDIR));
+            DPRINTF_(("try to get language package directory path from environment " SFQ "\n", LOCALEDIR));
          }
       } else {
-         DPRINTF_(("could not get environment variable "SFQ"\n", LOCALEDIR));
+         DPRINTF_(("could not get environment variable " SFQ "\n", LOCALEDIR));
       }
 
       /* no directory given, using default one */
@@ -595,7 +595,7 @@ static int sge_get_message_id_output_implementation(void) {
 *     uti/language/sge_get_message_id_output()
 *     uti/language/sge_set_message_id_output()
 *******************************************************************************/
-const char *sge_gettext(char *x) {
+const char *sge_gettext(const char *x) {
    return x;
 }
 
@@ -698,7 +698,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
             DRETURN_(sge_gettext__((char *) msg_str));
          } else {
             message_p.l->counter = (message_p.l->counter) + 1;
-            DPRINTF_(("message count: "sge_U32CFormat"\n", sge_u32c(message_p.l->counter)));
+            DPRINTF_(("message count: " sge_U32CFormat "\n", sge_u32c(message_p.l->counter)));
             DRETURN_(message_p.l->local_message);
          }
       }
@@ -737,8 +737,8 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 *     uti/language/sge_get_message_id_output()
 *     uti/language/sge_set_message_id_output()
 *******************************************************************************/
-const char *sge_gettext__(char *x) {
-   char *z;
+const char *sge_gettext__(const char *x) {
+   const char *z;
    DENTER_(BASIS_LAYER);
 
    if ((sge_language_functions.gettext_func != nullptr) &&

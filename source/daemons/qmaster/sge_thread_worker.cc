@@ -135,7 +135,7 @@ sge_worker_terminate() {
 
          thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
       }
-      DPRINTF(("all "SFN" threads terminated\n", threadnames[WORKER_THREAD]));
+      DPRINTF(("all " SFN " threads terminated\n", threadnames[WORKER_THREAD]));
    }
 
    do_final_spooling = sge_qmaster_do_final_spooling();

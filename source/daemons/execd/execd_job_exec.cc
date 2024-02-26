@@ -223,7 +223,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("got %s job "sge_u32"\n",
+   DPRINTF(("got %s job " sge_u32"\n",
            slave ?"slave ":"", lGetUlong(jelem, JB_job_number)));
 
    jobid = lGetUlong(jelem, JB_job_number);
@@ -239,7 +239,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    jep = lGetElemUlongFirstRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    while (jep != nullptr) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
-         DPRINTF(("Job "sge_u32"."sge_u32" is already running - skip the new one\n", jobid, jataskid));
+         DPRINTF(("Job " sge_u32"." sge_u32" is already running - skip the new one\n", jobid, jataskid));
          goto Ignore;   /* don't set queue in error state */
       }
 
@@ -250,7 +250,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    lSetUlong(jatep, JAT_status, slave?JSLAVE:JIDLE);
 
    /* now we have a queue and a job filled */
-   DPRINTF(("===>JOB_EXECUTION: >"sge_u32"."sge_u32"< with "sge_u32" tickets\n", jobid, jataskid,
+   DPRINTF(("===>JOB_EXECUTION: >" sge_u32"." sge_u32"< with " sge_u32" tickets\n", jobid, jataskid,
                (u_long32)lGetDouble(jatep, JAT_tix)));
 
    /* initialize job */
@@ -665,7 +665,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    /* generate unique task id by combining consecutive number 1-max(u_long32) */
    tid = MAX(1, lGetUlong(jatep, JAT_next_pe_task_id));
    sprintf(new_task_id, "%d.%s", tid, unqualified_hostname);
-   DPRINTF(("using pe_task_id_str %s for job "sge_u32"."sge_u32"\n", new_task_id, jobid, jataskid));
+   DPRINTF(("using pe_task_id_str %s for job " sge_u32"." sge_u32"\n", new_task_id, jobid, jataskid));
    petep = lCreateElem(PET_Type);
    lSetString(petep, PET_id, new_task_id);
 
@@ -682,7 +682,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    requested_queue = lGetString(petrep, PETR_queuename);
 
-   DPRINTF(("got task ("sge_u32"/%s) from (%s/%s/%d) %s queue selection\n", 
+   DPRINTF(("got task (" sge_u32"/%s) from (%s/%s/%d) %s queue selection\n",
             lGetUlong(jep, JB_job_number), new_task_id,
             commproc, host, id,
             requested_queue != nullptr ? "with" : "without"));

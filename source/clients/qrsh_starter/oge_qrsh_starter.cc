@@ -653,11 +653,11 @@ static int startJob(char *command, char *wrapper, int noshell)
       char *buffer = nullptr;
       int size;
       struct passwd pw_struct;
-      char *shell    = nullptr;
+      const char *shell    = nullptr;
       char *userName = nullptr;
       int    argc = 0;
       const char **args = nullptr;
-      char *cmd = nullptr;
+      const char *cmd = nullptr;
       int cmdargc;
       char **cmdargs = nullptr;
       int i;

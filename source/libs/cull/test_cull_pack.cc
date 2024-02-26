@@ -131,11 +131,11 @@ int main(int argc, char *argv[]) {
    }
 
    if (counted_size != pb.bytes_used) {
-      printf("just_count does not work, reported "sge_u32", expected "sge_u32"\n", counted_size,
+      printf("just_count does not work, reported " sge_u32", expected " sge_u32"\n", counted_size,
              (u_long32) pb.bytes_used);
       return EXIT_FAILURE;
    }
-   printf("element uses "sge_u32" kb, mem_size is "sge_u32" kb\n", (u_long32) pb.bytes_used / 1024,
+   printf("element uses " sge_u32" kb, mem_size is " sge_u32" kb\n", (u_long32) pb.bytes_used / 1024,
           (u_long32) pb.mem_size / 1024);
 
    buffer = sge_malloc(pb.bytes_used);

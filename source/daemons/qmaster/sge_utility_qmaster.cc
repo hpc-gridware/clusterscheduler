@@ -86,7 +86,7 @@
 *
 *******************************************************************************/
 int
-attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, char *variables[]) {
+attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name, const char *variables[]) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -149,7 +149,7 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char
 *
 *******************************************************************************/
 int
-attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -188,7 +188,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *     
 *******************************************************************************/
 int
-attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    int dataType;
    int pos;
 
@@ -252,7 +252,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr
 *
 *******************************************************************************/
 int
-attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -288,7 +288,7 @@ attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *     MT-NOTE: attr_mod_ulong() is MT safe 
 *    
 *******************************************************************************/
-int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -619,13 +619,13 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                if (ret) {
                   if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
-                     INFO((SGE_EVENT, SFQ" does not exist in "SFQ" of "SFQ"\n",
+                     INFO((SGE_EVENT, SFQ " does not exist in " SFQ " of " SFQ "\n",
                              rstring, sub_list_name, object_name));
                      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      if (!full_sublist) {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                           INFO((SGE_EVENT, SFQ" of "SFQ" is empty - Adding new element(s).\n",
+                           INFO((SGE_EVENT, SFQ " of " SFQ " is empty - Adding new element(s).\n",
                                    sub_list_name, object_name));
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
@@ -636,7 +636,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                         break;
                      } else {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                           INFO((SGE_EVENT, "Unable to find "SFQ" in "SFQ" of "SFQ" - Adding new element.\n",
+                           INFO((SGE_EVENT, "Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.\n",
                                    rstring, sub_list_name, object_name));
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
@@ -752,7 +752,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
             next_elem = lNextRW(elem);
             mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
             if (mod_elem == nullptr) {
-               DPRINTF(("Removing attribute list for "SFQ"\n", name));
+               DPRINTF(("Removing attribute list for " SFQ "\n", name));
                lRemoveElem(org_list, &elem);
             }
          }

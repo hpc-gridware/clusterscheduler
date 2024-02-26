@@ -548,10 +548,10 @@ u_long32 job_get_ja_tasks(const lListElem *job)
    DENTER(TOP_LAYER);
    n = job_get_not_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Not enrolled ja_tasks: "sge_u32"\n", n));
+   DPRINTF(("Not enrolled ja_tasks: " sge_u32"\n", n));
    n = job_get_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Enrolled ja_tasks: "sge_u32"\n", n));
+   DPRINTF(("Enrolled ja_tasks: " sge_u32"\n", n));
    DRETURN(ret);
 }
 
@@ -2931,7 +2931,7 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 *     sge_job/sge_unparse_ulong_option_dstring()
 *******************************************************************************/
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, char *option)
+                               int nm, const char *option)
 {
    const char *string = nullptr;
 
@@ -2978,7 +2978,7 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
 *     sge_job/sge_unparse_string_option_dstring()
 *******************************************************************************/
 bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, char *option)
+                               int nm, const char *option)
 {
    u_long32 ul = 0;
 

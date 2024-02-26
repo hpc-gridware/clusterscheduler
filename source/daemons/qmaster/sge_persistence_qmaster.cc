@@ -401,7 +401,7 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
       case sgeE_QINSTANCE_MOD:
       case sgeE_QINSTANCE_SOS:
       case sgeE_QINSTANCE_USOS:
-         sge_dstring_sprintf(&buffer, SFN"/"SFN, strkey, strkey2);
+         sge_dstring_sprintf(&buffer, SFN "/" SFN, strkey, strkey2);
          key = sge_dstring_get_string(&buffer);
          element = object;
          object_type = SGE_TYPE_QINSTANCE;

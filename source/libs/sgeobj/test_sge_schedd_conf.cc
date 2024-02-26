@@ -48,14 +48,14 @@
 
 typedef struct {
    int  test_nr;                /* identifies the test */
-   char *test_value;            /* the test setting */
+   const char *test_value;      /* the test setting */
    bool result;                 /* expected result; true = valid setting */
 } conf_settings_t;
 
 typedef struct {
    u_long      test_attribute;   /* identifies the attribute to test */
    u_long      type;             /* identifies the attribute type */
-   char        *description;     /* the test description */
+   const char  *description;     /* the test description */
 } schedd_conf_t;
 
 /**
@@ -66,8 +66,8 @@ typedef struct {
  * - lUlongT
  */
 static schedd_conf_t conf_tests[] = {
-   {SC_halflife_decay_list, lStringT,"test the halflife_decay_list settings"},
-   {0,0,nullptr}
+   {SC_halflife_decay_list, lStringT, "test the halflife_decay_list settings"},
+   {0, 0, nullptr}
 };
 
 static conf_settings_t tests[] = {

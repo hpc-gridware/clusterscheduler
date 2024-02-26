@@ -54,7 +54,7 @@ typedef struct cl_app_message_queue_elem_t {
 
 
 /* basic functions */
-int cl_app_message_queue_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking);
+int cl_app_message_queue_setup(cl_raw_list_t **list_p, const char *list_name, int enable_locking);
 
 int cl_app_message_queue_cleanup(cl_raw_list_t **list_p);
 

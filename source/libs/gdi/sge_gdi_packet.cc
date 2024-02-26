@@ -699,7 +699,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
 bool
 sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp) {
    bool ret = true;
-   char *client_version = nullptr;
+   const char *client_version = nullptr;
    dstring ds;
    char buffer[256];
    const vdict_t *vp;

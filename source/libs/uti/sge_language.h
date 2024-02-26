@@ -45,7 +45,7 @@ int sge_init_languagefunc(char *package, char *localeDir);
 #ifndef EXTRACT_MESSAGES
 
 /* define all language function types */
-typedef char *(*gettext_func_type)(char *);
+typedef char *(*gettext_func_type)(const char *);
 
 typedef char *(*setlocale_func_type)(int lc, const char *name);
 
@@ -55,9 +55,9 @@ typedef char *(*textdomain_func_type)(const char *donainname);
 
 void sge_init_language_func(gettext_func_type, setlocale_func_type, bindtextdomain_func_type, textdomain_func_type);
 
-const char *sge_gettext__(char *x);
+const char *sge_gettext__(const char *x);
 
-const char *sge_gettext(char *x); /* applicatio code */
+const char *sge_gettext(const char *x); /* applicatio code */
 const char *sge_gettext_(int msg_id, const char *msg_str);
 
 void sge_set_message_id_output(int flag);

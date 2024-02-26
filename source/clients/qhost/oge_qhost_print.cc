@@ -572,7 +572,7 @@ lList **alpp
             ** number of used/free slots 
             */
             if (report_handler == nullptr) {
-               sprintf(buf, sge_uu32"/%d/"sge_uu32" ",
+               sprintf(buf, sge_uu32"/%d/" sge_uu32 " ",
                        qinstance_slots_reserved(qep),
                        qinstance_slots_used(qep),
                        lGetUlong(qep, QU_job_slots));

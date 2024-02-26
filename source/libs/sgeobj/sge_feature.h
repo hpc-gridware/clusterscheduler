@@ -56,7 +56,7 @@ typedef enum {
 
 typedef struct {
    feature_id_t id;
-   char *name;
+   const char *name;
 } featureset_names_t;            
 
 void    feature_set_already_read_from_file(int i);

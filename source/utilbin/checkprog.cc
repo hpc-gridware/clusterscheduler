@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
       else {
          printf(MSG_PROC_FOUNDPIDSWITHNAME_S , argv[1]);
          for (i = 0; i < res; i++)
-            printf(pid_t_fmt"\n", pids[i]);
+            printf(pid_t_fmt "\n", pids[i]);
       }
 
       if (res == -1)

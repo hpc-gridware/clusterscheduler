@@ -94,7 +94,7 @@ unsigned long my_application_status(char **info_message) {
 }
 
 static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
-   char *user_name = nullptr;
+   const char *user_name = nullptr;
    struct passwd *paswd = nullptr;
    struct passwd pw_struct;
    char *pw_buffer;

@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
       time_new = after - before;
 
       ret = validate(i);
-      printf("the test took "sge_U32CFormat"s and was %s\n", time_new, ret == 0 ? "successful" : "unsuccessful");
+      printf("the test took " sge_U32CFormat "s and was %s\n", time_new, ret == 0 ? "successful" : "unsuccessful");
       if (ret != 0) {
          break;
       }

@@ -88,7 +88,7 @@ sge_err_get_object(sge_err_object_t **object) {
          sge_err_object_init(new_object);
          *object = new_object;
       } else {
-         ERROR(("pthread_setspecific failed to initialize sge_err_object_t in %s\n", __func__));
+         ERROR((SGE_EVENT, "pthread_setspecific failed to initialize sge_err_object_t in %s\n", __func__));
          abort();
       }
    }

@@ -408,7 +408,7 @@ static void debug_flatfile(const char *msg, int line, int token,
       et = end_token;
    }
    
-   DPRINTF(("%-20s: line %4d, token %2d, text "SFQ", end_token = "SFQ"\n",
+   DPRINTF(("%-20s: line %4d, token %2d, text " SFQ ", end_token = " SFQ "\n",
             msg, line, token, text, et));
 
    DRETURN_VOID;
