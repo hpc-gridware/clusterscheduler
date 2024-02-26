@@ -6922,7 +6922,8 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
           * lListT. */
          for (nm = ep->descr[0].nm; nm != NoName; nm = ep->descr[count++].nm) {            
             if (lGetType(ep->descr, nm) == lListT) {
-               if (lGetList(ep, nm) == nullptr) {
+               // for CE_Type objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK
+               if (lGetList(ep, nm) == nullptr && nm != CE_resource_map_list) {
                   SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   lFreeElem(epp);
