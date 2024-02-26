@@ -1298,12 +1298,22 @@ default and therefore all binding related information will be ignored.
 Find more information for job to core binding in the section *-binding*
 of *qsub*(1).
 
+<!-- -->
+
+SCRIPT_TIMEOUT  
+This parameter allows to configure the allowed runtime of execution side
+scripts like prolog, epilog, and the PE start and stop procedure.
+SCRIPT_TIMEOUT is a time value (see *xxqs_name_sxx_queue_conf*(5) for a
+definition of the syntax of time values).
+The default value is 120 seconds.
+
 Changing **execd_params** will take effect after it was propagated to
 the execution daemons. The propagation is done in one load report
 interval. The default for **execd_params** is none.
 
 The global configuration entry for this value may be overwritten by the
 execution host local configuration.
+
 
 ## **reporting_params**
 

@@ -1272,8 +1272,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "resume_method=%s\n", (cp=lGetString(master_q, QU_resume_method))? cp : "none");
    fprintf(fp, "terminate_method=%s\n", (cp=lGetString(master_q, QU_terminate_method))? cp : "none");
 
-   /* JG: TODO: should at least be a define, better configurable */
-   fprintf(fp, "script_timeout=120\n");
+   fprintf(fp, "script_timeout=" sge_uu32 "\n", mconf_get_script_timeout());
 
    fprintf(fp, "pe=%s\n", lGetString(jatep, JAT_granted_pe)?lGetString(jatep, JAT_granted_pe):"none");
    fprintf(fp, "pe_slots=%d\n", pe_slots);
