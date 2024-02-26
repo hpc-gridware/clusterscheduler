@@ -49,8 +49,7 @@ function(architecture_specific_settings)
          set(TIRPC_LIB tirpc PARENT_SCOPE)
       endif ()
 
-      # TODO: OGE-160 qmake can still not be build for this platform on Tumbleweed
-      set(WITH_QMAKE OFF PARENT_SCOPE)
+      set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
       # Linux supported/unsupported amd64/x86
