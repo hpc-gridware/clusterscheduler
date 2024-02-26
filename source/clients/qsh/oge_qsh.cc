@@ -2108,15 +2108,17 @@ int main(int argc, char **argv)
                         sge_dstring_get_string(&err_msg)));
                   }
                   stop_ijs_server(&comm_handle, &err_msg);
-                  DPRINTF(("stop_ijs_server returned: %s\n",
-                     sge_dstring_get_string(&err_msg)));
-                  if (ret != 0) {
-                     sge_dstring_free(&err_msg);
+                  DPRINTF(("stop_ijs_server returned: %s\n", sge_dstring_get_string(&err_msg)));
+
+                  if (ret == 0) {
+                     // we are done
                      do_exit = 1;
-                     continue;
+                  } else {
+                     /* run_ijs_server() didn't return 0, some unexpected error
+                      * occurred -> do the while loop again. */
                   }
-                  /* run_ijs_server() didn't return 0, some unexpected error
-                   * occured -> do the while loop again. */
+                  sge_dstring_free(&err_msg);
+                  continue;
                }
                sge_dstring_free(&err_msg);
             }
