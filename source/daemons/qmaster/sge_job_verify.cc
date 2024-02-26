@@ -107,7 +107,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
    if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }
@@ -115,7 +115,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    /* check min_uid */
    if (ret == STATUS_OK) {
       if (uid < mconf_get_min_uid()) {
-         ERROR((SGE_EVENT, MSG_JOB_UID2LOW_II, (int) uid, (int) mconf_get_min_uid()));
+         ERROR(MSG_JOB_UID2LOW_II, (int) uid, (int) mconf_get_min_uid());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -124,7 +124,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    /* check min_gid */
    if (ret == STATUS_OK) {
       if (gid < mconf_get_min_gid()) {
-         ERROR((SGE_EVENT, MSG_JOB_GID2LOW_II, (int) gid, (int) mconf_get_min_gid()));
+         ERROR(MSG_JOB_GID2LOW_II, (int) gid, (int) mconf_get_min_gid());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -146,7 +146,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    /* check for non-parallel job that define a master queue */
    if (ret == STATUS_OK) {
       if (lGetList(jep, JB_master_hard_queue_list) != nullptr && lGetString(jep, JB_pe) == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MQNONPE));
+         ERROR(SFNMAX, MSG_JOB_MQNONPE);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -190,7 +190,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    if (ret == STATUS_OK) {
       if ((!JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type)) &&
            !lGetString(jep, JB_script_ptr) && lGetString(jep, JB_script_file))) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NOSCRIPT));
+         ERROR(SFNMAX, MSG_JOB_NOSCRIPT);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -258,7 +258,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          u_long32 submit_size = range_list_get_number_of_ids(range_list);
 
          if (submit_size > max_aj_tasks) {
-            ERROR((SGE_EVENT, MSG_JOB_MORETASKSTHAN_U, sge_u32c(max_aj_tasks)));
+            ERROR(MSG_JOB_MORETASKSTHAN_U, sge_u32c(max_aj_tasks));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
@@ -308,7 +308,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* check max_jobs */
    if (job_list_register_new_job(master_job_list, mconf_get_max_jobs(), 0)) {
-      INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs())));
+      INFO(MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs()));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_NOTOK_DOAGAIN);
    }
@@ -316,8 +316,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    if (lGetUlong(jep, JB_verify_suitable_queues) != JUST_VERIFY &&
        lGetUlong(jep, JB_verify_suitable_queues) != POKE_VERIFY) {
       if (suser_check_new_job(jep, mconf_get_max_u_jobs(), master_suser_list) != 0) {
-         INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()),
-                 sge_u32c(suser_job_count(jep, master_suser_list))));
+         INFO(MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()), sge_u32c(suser_job_count(jep, master_suser_list)));
          answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_NOTOK_DOAGAIN);
       }
@@ -329,7 +328,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
       if (!sge_has_access_(ruser, lGetString(jep, JB_group), /* read */
                            user_lists, xuser_lists, master_userset_list)) {
-         ERROR((SGE_EVENT, MSG_JOB_NOPERMS_SS, ruser, rhost));
+         ERROR(MSG_JOB_NOPERMS_SS, ruser, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
          lFreeList(&xuser_lists);
@@ -401,7 +400,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
          pep = pe_list_find_matching(master_pe_list, pe_name);
          if (!pep) {
-            ERROR((SGE_EVENT, MSG_JOB_PEUNKNOWN_S, pe_name));
+            ERROR(MSG_JOB_PEUNKNOWN_S, pe_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -466,18 +465,18 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       if (ckpt_err) {
          switch (ckpt_err) {
             case 1:
-               ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
+               ERROR(MSG_JOB_CKPTUNKNOWN_S, ckpt_name);
                break;
             case 2:
             case 3:
-               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTMINUSC));
+               ERROR("%s", MSG_JOB_CKPTMINUSC);
                break;
             case 4:
             case 5:
-               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
+               ERROR("%s", MSG_JOB_CKPTDENIED);
                break;
             default:
-               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
+               ERROR("%s", MSG_JOB_CKPTDENIED);
                break;
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -527,7 +526,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       /* ensure user exists if enforce_user flag is set */
       if (enforce_user && !strcasecmp(enforce_user, "true") &&
           !user_list_locate(master_user_list, ruser)) {
-         ERROR((SGE_EVENT, MSG_JOB_USRUNKNOWN_S, ruser));
+         ERROR(MSG_JOB_USRUNKNOWN_S, ruser);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          sge_free(&enforce_user);
          DRETURN(STATUS_EUNKNOWN);
@@ -562,7 +561,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     */
    if (lGetUlong(jep, JB_deadline)) {
       if (!userset_is_deadline_user(master_userset_list, ruser)) {
-         ERROR((SGE_EVENT, MSG_JOB_NODEADLINEUSER_S, ruser));
+         ERROR(MSG_JOB_NODEADLINEUSER_S, ruser);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -580,12 +579,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
          ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == nullptr) {
-            ERROR((SGE_EVENT, MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id)));
+            ERROR(MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          } else if ((lGetUlong(ar, AR_state) == AR_DELETED) ||
                     (lGetUlong(ar, AR_state) == AR_EXITED)) {
-            ERROR((SGE_EVENT, MSG_JOB_ARNOLONGERAVAILABE_U, sge_u32c(ar_id)));
+            ERROR(MSG_JOB_ARNOLONGERAVAILABE_U, sge_u32c(ar_id));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -614,12 +613,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
             /* fit the timeframe */
             if (job_duration > (ar_end_time - ar_start_time)) {
-               ERROR((SGE_EVENT, MSG_JOB_HRTLIMITTOOLONG_U, sge_u32c(ar_id)));
+               ERROR(MSG_JOB_HRTLIMITTOOLONG_U, sge_u32c(ar_id));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
             }
             if ((job_execution_time + job_duration) > ar_end_time) {
-               ERROR((SGE_EVENT, MSG_JOB_HRTLIMITOVEREND_U, sge_u32c(ar_id)));
+               ERROR(MSG_JOB_HRTLIMITOVEREND_U, sge_u32c(ar_id));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
             }
@@ -642,7 +641,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     */
    if (lGetUlong(jep, JB_priority) > BASE_PRIORITY &&
        !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NONADMINPRIO));
+      ERROR(SFNMAX, MSG_JOB_NONADMINPRIO);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -715,7 +714,7 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
    if ((strategy = lGetString(binding_elem, BN_strategy)) == nullptr) {
       /* no binding strategy set */
-      ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_strategy", "nullptr"));
+      ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_strategy", "nullptr");
       DRETURN(false);
    }
 
@@ -725,7 +724,7 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
       /* amount must be > 0 */
       if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter", "n"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter", "n");
          DRETURN(false);
       }
 
@@ -733,13 +732,13 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
       /* check if step_size > 0 */
       if (lGetUlong(binding_elem, BN_parameter_striding_step_size) > 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0");
          DRETURN(false);
       }
 
       /* check if explicit value is set */
       if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr");
          DRETURN(false);
       }
 
@@ -747,11 +746,11 @@ check_binding_param_consistency(const lListElem *binding_elem) {
          must not be > 0 */
       if (strcmp(strategy, "linear_automatic") == 0) {
          if (lGetUlong(binding_elem, BN_parameter_socket_offset) > 0) {
-            ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0"));
+            ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0");
             DRETURN(false);
          }
          if (lGetUlong(binding_elem, BN_parameter_core_offset) > 0) {
-            ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0"));
+            ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0");
             DRETURN(false);
          }
       }
@@ -763,7 +762,7 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
       /* the amount of cores requested must be > 0 */
       if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "0");
          DRETURN(false);
       }
 
@@ -771,7 +770,7 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
       /* check explicit socket core list */
       if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr");
          DRETURN(false);
       }
 
@@ -784,31 +783,31 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
       /* the explicit parameter must be set */
       if (lGetString(binding_elem, BN_parameter_explicit) == nullptr) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== nullptr"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== nullptr");
          DRETURN(false);
       }
 
       /* amount makes no sense */
       if (lGetUlong(binding_elem, BN_parameter_n) > 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "> 0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "> 0");
          DRETURN(false);
       }
 
       /* step size makes no sense */
       if (lGetUlong(binding_elem, BN_parameter_striding_step_size) > 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0");
          DRETURN(false);
       }
 
       /* check if socket offset was set */
       if (lGetUlong(binding_elem, BN_parameter_socket_offset) > 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0");
          DRETURN(false);
       }
 
       /* check if core offset was set */
       if (lGetUlong(binding_elem, BN_parameter_core_offset) > 0) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0"));
+         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0");
          DRETURN(false);
       }
 

@@ -123,9 +123,8 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    if (!*pjob) {
       *pjob = lCreateElem(JB_Type);
       if (!*pjob) {
-         sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-         answer_list_add(&answer, SGE_EVENT,
-                         STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+         answer_list_add(&answer, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          DRETURN(answer);
       }
    }
@@ -633,16 +632,14 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    }
    
    for_each_rw(ep, cmdline) {
-      sprintf(error_string, MSG_ANSWER_UNKOWNOPTIONX_S,
-         lGetString(ep, SPA_switch_val));
+      snprintf(error_string, sizeof(error_string), MSG_ANSWER_UNKOWNOPTIONX_S, lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {
          strcat(error_string, " ");
          strcat(error_string, cp);
       }
       strcat(error_string, "\n");
-      answer_list_add(&answer, error_string,
-                      STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+      answer_list_add(&answer, error_string, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    } 
 
    cp = lGetString(*pjob, JB_script_file);

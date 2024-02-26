@@ -1122,7 +1122,7 @@ reporting_is_intermediate_acct_required(const lListElem *job,
    /* valid input data? */
    if (job == nullptr || ja_task == nullptr) {
       /* JG: TODO: i18N */
-      WARNING((SGE_EVENT, "reporting_is_intermediate_acct_required: invalid input data\n"));
+      WARNING("reporting_is_intermediate_acct_required: invalid input data\n");
       DRETURN(false);
    }
 
@@ -1186,13 +1186,7 @@ tm_last_intermediate.tm_year < tm_now.tm_year
       char timebuffer[100];
       dstring buffer_dstring;
       sge_dstring_init(&buffer_dstring, buffer, sizeof(buffer));
-      INFO((SGE_EVENT, MSG_REPORTING_INTERMEDIATE_SS,
-              job_get_key(lGetUlong(job, JB_job_number),
-                          lGetUlong(ja_task, JAT_task_number),
-                          pe_task != nullptr ? lGetString(pe_task, PET_id)
-                                          : nullptr,
-                          &buffer_dstring),
-              asctime_r(&tm_now, timebuffer)));
+      INFO(MSG_REPORTING_INTERMEDIATE_SS, job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), pe_task != nullptr ? lGetString(pe_task, PET_id) : nullptr, &buffer_dstring), asctime_r(&tm_now, timebuffer));
       ret = true;
    }
 
@@ -1375,8 +1369,7 @@ static bool reporting_flush_report_file(lList **answer_list,
       fp = fopen(filename, "a");
       if (fp == nullptr) {
          if (answer_list == nullptr) {
-            ERROR((SGE_EVENT, MSG_ERROROPENINGFILEFORWRITING_SS, filename,
-                    sge_strerror(errno, &error_dstring)));
+            ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename, sge_strerror(errno, &error_dstring));
          } else {
             answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                     ANSWER_QUALITY_ERROR,
@@ -1403,8 +1396,7 @@ static bool reporting_flush_report_file(lList **answer_list,
             spool_ret = sge_spoolmsg_write(fp, COMMENT_CHAR, version_string);
             if (spool_ret != 0) {
                if (answer_list == nullptr) {
-                  ERROR((SGE_EVENT, MSG_ERRORWRITINGFILE_SS, filename,
-                          sge_strerror(errno, &error_dstring)));
+                  ERROR(MSG_ERRORWRITINGFILE_SS, filename, sge_strerror(errno, &error_dstring));
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                           ANSWER_QUALITY_ERROR,
@@ -1420,8 +1412,7 @@ static bool reporting_flush_report_file(lList **answer_list,
       if (ret) {
          if (fwrite(sge_dstring_get_string(&(buf->buffer)), size, 1, fp) != 1) {
             if (answer_list == nullptr) {
-               ERROR((SGE_EVENT, MSG_ERRORWRITINGFILE_SS, filename,
-                       sge_strerror(errno, &error_dstring)));
+               ERROR(MSG_ERRORWRITINGFILE_SS, filename, sge_strerror(errno, &error_dstring));
             } else {
                answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                        ANSWER_QUALITY_ERROR,
@@ -1452,8 +1443,7 @@ static bool reporting_flush_report_file(lList **answer_list,
    FCLOSE_ERROR:
    sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    if (answer_list == nullptr) {
-      ERROR((SGE_EVENT, MSG_ERRORCLOSINGFILE_SS, filename,
-              sge_strerror(errno, &error_dstring)));
+      ERROR(MSG_ERRORCLOSINGFILE_SS, filename, sge_strerror(errno, &error_dstring));
    } else {
       answer_list_add_sprintf(answer_list, STATUS_EDISK,
                               ANSWER_QUALITY_ERROR,

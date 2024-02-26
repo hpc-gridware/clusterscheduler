@@ -316,7 +316,7 @@ int shepherd_trace(const char *format, ...)
    if (shepherd_trace_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-      sprintf(header_str, "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
+      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
      
       if (format != nullptr) {
          va_list     ap;
@@ -396,8 +396,7 @@ void shepherd_error(int do_exit, const char *format, ...)
 	}
 	if (shepherd_error_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
-      sprintf(header_str, "%s [" uid_t_fmt ":" pid_t_fmt "]: ",
-              sge_ctime(0, &ds), geteuid(), getpid());
+      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
 
       sh_str2file(header_str, sge_dstring_get_string(&message), shepherd_error_fp);
    }
@@ -416,7 +415,7 @@ void shepherd_error(int do_exit, const char *format, ...)
 		shepherd_exit_status_fp = shepherd_trace_init_intern(st_exit_status);
 	}
 	if (shepherd_exit_status_fp != nullptr) {
-      sprintf(header_str, "%d", shepherd_state);
+      snprintf(header_str, sizeof(header_str), "%d", shepherd_state);
       sh_str2file(header_str, nullptr, shepherd_exit_status_fp);
 	}
 	
@@ -428,9 +427,9 @@ void shepherd_error(int do_exit, const char *format, ...)
      
    if (g_new_interactive_job_support == false && 
       search_conf_val("qrsh_control_port") != nullptr) {
-      char buffer[1024];
-      snprintf(buffer, 1024, "1:%s", sge_dstring_get_string(&message));
-      write_to_qrsh(buffer);  
+      char local_buffer[1024];
+      snprintf(local_buffer, sizeof(local_buffer), "1:%s", sge_dstring_get_string(&message));
+      write_to_qrsh(local_buffer);
    }
    sge_dstring_free(&message);
 
@@ -847,7 +846,7 @@ static void shepherd_panic(const char *s)
    FILE *panic_fp;
    char panic_file[255];
 
-   sprintf(panic_file, "/tmp/shepherd." pid_t_fmt, getpid());
+   snprintf(panic_file, sizeof(panic_file), "/tmp/shepherd." pid_t_fmt, getpid());
    panic_fp = fopen(panic_file, "a");
    if (panic_fp) {
       dstring ds;
@@ -902,7 +901,7 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
                 */
                seteuid(old_euid);
                if (fchmod(fd, 0666) == -1) {
-                  sprintf(buffer, "can't fchmod(fd, 0666): %s\n", strerror(errno));
+                  snprintf(buffer, sizeof(buffer), "can't fchmod(fd, 0666): %s\n", strerror(errno));
                   shepherd_panic(buffer);
                   return;
                }
@@ -924,7 +923,7 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
          } else {
             /* Can't get jobuser_id -> grant access for everyone */
             if (fchmod(fd, 0666)==-1) {
-               sprintf(buffer, "could not fchmod(): %s", strerror(errno));
+               snprintf(buffer, sizeof(buffer), "could not fchmod(): %s", strerror(errno));
                shepherd_panic(buffer);
             }
          }

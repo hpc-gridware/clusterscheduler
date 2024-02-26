@@ -80,8 +80,7 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
    job = lGetElemUlongRW(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id);
    if (job == nullptr) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, 
-             job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__));
+      ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
@@ -89,8 +88,7 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
    ja_task = job_search_task(job, nullptr, ja_task_id);
    if (ja_task == nullptr) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, 
-             job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__));
+      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
@@ -98,8 +96,7 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
    pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
    if (pe_task == nullptr) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, 
-             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__));
+      ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
@@ -175,15 +172,13 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    
    job = lGetElemUlongRW(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id);
    if (job == nullptr) {
-      ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, 
-             job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__));
+      ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
    }
    
    ja_task = job_search_task(job, nullptr, ja_task_id);
    if (ja_task == nullptr) {
-      ERROR((SGE_EVENT, MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, 
-             job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__));
+      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
    }
    
@@ -198,8 +193,7 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
        * - PET_scaled_usage - it is maintained by JOB_USAGE events
        */
       if (pe_task == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, 
-                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__));
+         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
          DRETURN(SGE_EMA_FAILURE);
       }
       lXchgList(pe_task, PET_scaled_usage, &usage);
@@ -217,8 +211,7 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    if (action == SGE_EMA_MOD) {
       pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
       if (pe_task == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, 
-                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__));
+         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
          lFreeList(&usage);       
          DRETURN(SGE_EMA_FAILURE);
       }

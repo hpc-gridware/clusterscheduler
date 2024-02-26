@@ -57,7 +57,7 @@
  *    MT-NOTE: get_qm_name() is MT safe
  *-----------------------------------------------------------------------*/
 int
-get_qm_name(char *master_host, const char *master_file, char *err_str) {
+get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
    FILE *fp;
    char buf[CL_MAXHOSTLEN * 3 + 1], *cp, *first;
    size_t len;
@@ -67,16 +67,16 @@ get_qm_name(char *master_host, const char *master_file, char *err_str) {
    if (!master_host || !master_file) {
       if (err_str) {
          if (master_host) {
-            sprintf(err_str, SFNMAX, MSG_GDI_NULLPOINTERPASSED);
+            snprintf(err_str, err_str_size, SFNMAX, MSG_GDI_NULLPOINTERPASSED);
          }
       }
       DRETURN(-1);
    }
 
    if (!(fp = fopen(master_file, "r"))) {
-      ERROR((SGE_EVENT, MSG_GDI_FOPEN_FAILED, master_file, strerror(errno)));
+      ERROR(MSG_GDI_FOPEN_FAILED, master_file, strerror(errno));
       if (err_str) {
-         sprintf(err_str, MSG_GDI_OPENMASTERFILEFAILED_S, master_file);
+         snprintf(err_str, err_str_size, MSG_GDI_OPENMASTERFILEFAILED_S, master_file);
       }
       DRETURN(-1);
    }
@@ -84,7 +84,7 @@ get_qm_name(char *master_host, const char *master_file, char *err_str) {
    /* read file in one sweep and append O Byte to the end */
    if (!(len = fread(buf, 1, CL_MAXHOSTLEN * 3, fp))) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_READMASTERHOSTNAMEFAILED_S, master_file);
+         snprintf(err_str, err_str_size, MSG_GDI_READMASTERHOSTNAMEFAILED_S, master_file);
       }
    }
    buf[len] = '\0';
@@ -106,7 +106,7 @@ get_qm_name(char *master_host, const char *master_file, char *err_str) {
 
    if (len == 0) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEHASZEROLENGTH_S, master_file);
+         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEHASZEROLENGTH_S, master_file);
       }
       FCLOSE(fp);
       DRETURN(-1);
@@ -114,8 +114,7 @@ get_qm_name(char *master_host, const char *master_file, char *err_str) {
 
    if (len > CL_MAXHOSTLEN - 1) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, (int) CL_MAXHOSTLEN);
-         sprintf(err_str, "\n");
+         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, (int) CL_MAXHOSTLEN);
       }
       FCLOSE(fp);
       DRETURN(-1);
@@ -138,18 +137,18 @@ FCLOSE_ERROR:
       MT-NOTE: write_qm_name() is MT safe
  *********************************************************************/
 int
-write_qm_name(const char *master_host, const char *master_file, char *err_str) {
+write_qm_name(const char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
    FILE *fp;
 
    if (!(fp = fopen(master_file, "w"))) {
       if (err_str)
-         sprintf(err_str, MSG_GDI_OPENWRITEMASTERHOSTNAMEFAILED_SS, master_file, strerror(errno));
+         snprintf(err_str, err_str_size,  MSG_GDI_OPENWRITEMASTERHOSTNAMEFAILED_SS, master_file, strerror(errno));
       return -1;
    }
 
    if (fprintf(fp, "%s\n", master_host) == EOF) {
       if (err_str)
-         sprintf(err_str, MSG_GDI_WRITEMASTERHOSTNAMEFAILED_S, master_file);
+         snprintf(err_str, err_str_size, MSG_GDI_WRITEMASTERHOSTNAMEFAILED_S, master_file);
       FCLOSE(fp);
       return -1;
    }

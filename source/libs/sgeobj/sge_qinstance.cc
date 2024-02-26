@@ -604,8 +604,7 @@ qinstance_slots_used(const lListElem *this_elem)
       /* this happens on qinstance_create when a queue instance is created 
          before others queue instances in the subordinate lists  
          are created */
-      CRITICAL((SGE_EVENT, MSG_QINSTANCE_MISSLOTS_S, 
-                lGetString(this_elem, QU_full_name)));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, lGetString(this_elem, QU_full_name));
    }
    DRETURN(ret);
 }
@@ -680,8 +679,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots)
       lSetDouble(slots, RUE_utilized_now, new_slots);
    } else {
       /* because this should never happen and an critical error */
-      CRITICAL((SGE_EVENT, MSG_QINSTANCE_MISSLOTS_S, 
-                lGetString(this_elem, QU_full_name)));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, lGetString(this_elem, QU_full_name));
    }
 
    DRETURN_VOID;
@@ -1034,7 +1032,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
 
       /* search default request */
       if (!(dcep = centry_list_locate(centry_list, name))) {
-         ERROR((SGE_EVENT, MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name));
+         ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       }
 
@@ -1078,9 +1076,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
                   debit_slots = 1;
                }
                if ((config_value - actual_value - debit_slots * dval) < 0) {
-                  ERROR((SGE_EVENT, MSG_CAPACITYEXCEEDED_FSSSIF, dval, name,
-                        (config_nm==QU_consumable_config_list)?"queue":"host",
-                        obj_name, debit_slots, config_value - actual_value));
+                  ERROR(MSG_CAPACITYEXCEEDED_FSSSIF, dval, name, (config_nm==QU_consumable_config_list)?"queue":"host", obj_name, debit_slots, config_value - actual_value);
                   *just_check = false;
                   break;
                }
@@ -1106,9 +1102,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
             } else {
                double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
                if (actual_value > 0) {
-                  ERROR((SGE_EVENT, MSG_EXCLCAPACITYEXCEEDED_FSSSI, dval, name,
-                        (config_nm==QU_consumable_config_list)?"queue":"host",
-                        obj_name, debit_slots));
+                  ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, dval, name, (config_nm==QU_consumable_config_list)?"queue":"host", obj_name, debit_slots);
                   *just_check = false;
                   break;
                }

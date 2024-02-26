@@ -91,28 +91,28 @@ sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p) {
       switch (elem->log_type) {
          case CL_LOG_ERROR:
             if (log_state_get_log_level() >= LOG_ERR) {
-               ERROR((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               ERROR("%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_WARNING:
             if (log_state_get_log_level() >= LOG_WARNING) {
-               WARNING((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               WARNING("%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_INFO:
             if (log_state_get_log_level() >= LOG_INFO) {
-               INFO((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               INFO("%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_DEBUG:
             if (log_state_get_log_level() >= LOG_DEBUG) {
-               DEBUG((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               DEBUG("%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
@@ -150,7 +150,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
          case DRMAA:
          case SCHEDD:
          case EXECD:
-            INFO((SGE_EVENT, SFNMAX, MSG_GDI_MULTI_THREADED_STARTUP));
+            INFO(SFNMAX, MSG_GDI_MULTI_THREADED_STARTUP);
             /* if SGE_DEBUG_LEVEL environment is set we use gdi log flush function */
             /* you can set commlib debug level with env SGE_COMMLIB_DEBUG */
             if (env_sge_commlib_debug != nullptr) {
@@ -161,7 +161,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
             }
             break;
          default:
-            INFO((SGE_EVENT, SFNMAX, MSG_GDI_SINGLE_THREADED_STARTUP));
+            INFO(SFNMAX, MSG_GDI_SINGLE_THREADED_STARTUP);
             if (env_sge_commlib_debug != nullptr) {
                cl_ret = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, sge_gdi_ctx_log_flush_func);
             } else {
@@ -328,12 +328,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
             cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED);
             if (handle == nullptr) {
                if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
-                  ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
-                          qualified_hostname,
-                          component_get_component_name(),
-                          sge_u32c(my_component_id),
-                          sge_u32c(sge_execd_port),
-                          cl_get_error_text(cl_ret)));
+                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_execd_port), cl_get_error_text(cl_ret));
                }
             }
             break;
@@ -366,9 +361,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           0); /* select timeout is set to 1 second 0 usec */
             if (handle == nullptr) {
                if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
-                  ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname,
-                         component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port),
-                         cl_get_error_text(cl_ret)));
+                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
                }
             } else {
                char act_resolved_qmaster_name[CL_MAXHOSTLEN];
@@ -389,11 +382,11 @@ int gdi_client_prepare_enroll(lList **answer_list) {
 
                      cl_ret = cl_com_set_error_func(general_communication_error);
                      if (cl_ret != CL_RETVAL_OK) {
-                        ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(cl_ret)));
+                        ERROR(SFNMAX, cl_get_error_text(cl_ret));
                      }
 
                      if (alive_back == CL_RETVAL_OK && getenv("SGE_TEST_HEARTBEAT_TIMEOUT") == nullptr) {
-                        CRITICAL((SGE_EVENT, MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S, master));
+                        CRITICAL(MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S, master);
                         /* TODO: remove !!! */
                         sge_exit(1);
                      } else {
@@ -481,7 +474,7 @@ gdi_client_setup(int component_id, u_long32 thread_id, lList **answer_list, bool
    gdi3_set_csp_path_obj(sge_csp_path_class_create(gdi3_get_error_handle()));
    if (!gdi3_get_csp_path_obj()) {
       // EB: TODO: I18N + replace by an end user error message
-      CRITICAL((SGE_EVENT, "sge_csp_path_class_create() failed"));
+      CRITICAL("sge_csp_path_class_create() failed");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
       DRETURN(AE_ERROR);
    }

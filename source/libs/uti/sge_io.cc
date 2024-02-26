@@ -514,7 +514,7 @@ char *sge_file2string(const char *fname, int *len) {
    size = statbuf.st_size;
 
    if ((fp = fopen(fname, "r")) == nullptr) {
-      ERROR((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
+      ERROR(MSG_FILE_FOPENFAILED_SS, fname, strerror(errno));
       DRETURN(nullptr);
    }
 
@@ -538,7 +538,7 @@ char *sge_file2string(const char *fname, int *len) {
    if (size > 0) {
       i = fread(str, size, 1, fp);
       if (i != 1) {
-         ERROR((SGE_EVENT, MSG_FILE_FREADFAILED_SS, fname, strerror(errno)));
+         ERROR(MSG_FILE_FREADFAILED_SS, fname, strerror(errno));
          sge_free(&str);
          FCLOSE(fp);
          DRETURN(nullptr);
@@ -659,7 +659,7 @@ int sge_string2file(const char *str, int len, const char *fname) {
    if (!(fp = open(fname, O_WRONLY | O_CREAT, 0666)))
 #endif
    {
-      ERROR((SGE_EVENT, MSG_FILE_OPENFAILED_S, fname));
+      ERROR(MSG_FILE_OPENFAILED_S, fname);
       DRETURN(-1);
    }
    if (!len) {
@@ -673,7 +673,7 @@ int sge_string2file(const char *str, int len, const char *fname) {
 #endif
    {
       int old_errno = errno;
-      ERROR((SGE_EVENT, MSG_FILE_WRITEBYTESFAILED_IS, len, fname));
+      ERROR(MSG_FILE_WRITEBYTESFAILED_IS, len, fname);
 #ifdef USE_FOPEN
       FCLOSE(fp);
 #else
@@ -695,7 +695,7 @@ int sge_string2file(const char *str, int len, const char *fname) {
 #endif
    DRETURN(0);
    FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_FILE_FCLOSEFAILED_SS, fname, strerror(errno)));
+   ERROR(MSG_FILE_FCLOSEFAILED_SS, fname, strerror(errno));
    DRETURN(-1);
 }          
 

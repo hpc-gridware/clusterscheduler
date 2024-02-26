@@ -87,29 +87,28 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no userset element, if ep has no US_name */
    if ((pos = lGetPosViaElem(ep, US_name, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(US_name), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(US_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    userset_name = lGetPosString(ep, pos);
    if (!userset_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* search for userset with this name and remove it from the list */
    if (!(found = userset_list_locate(*userset_list, userset_name))) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -126,8 +125,7 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
    sge_event_spool(alpp, 0, sgeE_USERSET_DEL, 0, 0, userset_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-           ruser, rhost, userset_name, MSG_OBJ_USERSET));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, userset_name, MSG_OBJ_USERSET);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
@@ -276,13 +274,13 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
    if (dept != nullptr) {
       /* test 'type' */
       if (!(lGetUlong(dept, US_type) & US_DEPT)) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_DEPTFORDEFDEPARTMENT));
+         ERROR(SFNMAX, MSG_QMASTER_DEPTFORDEFDEPARTMENT);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = 0;
       }
       /* test user list */
       if (lGetNumberOfElem(lGetList(dept, US_entries)) > 0) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_AUTODEFDEPARTMENT));
+         ERROR(SFNMAX, MSG_QMASTER_AUTODEFDEPARTMENT);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = 0;
       }
@@ -315,12 +313,12 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
    if (acl != nullptr) {
       if (!(lGetUlong(acl, US_type) & US_DEPT)) {
          if (lGetUlong(acl, US_fshare) > 0) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_ACLNOSHARE));
+            ERROR(SFNMAX, MSG_QMASTER_ACLNOSHARE);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             ret = 0;
          }
          if (lGetUlong(acl, US_oticket) > 0) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_ACLNOTICKET));
+            ERROR(SFNMAX, MSG_QMASTER_ACLNOTICKET);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             ret = 0;
          }
@@ -416,7 +414,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
       DRETURN(1);
    }
 
-   ERROR((SGE_EVENT, MSG_SGETEXT_NO_DEPARTMENT4USER_SS, owner, group));
+   ERROR(MSG_SGETEXT_NO_DEPARTMENT4USER_SS, owner, group);
    answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
    DRETURN(0);
@@ -444,21 +442,15 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    for_each_ep(cqueue, master_cqueue_list) {
       for_each_ep(cl, lGetList(cqueue, CQ_acl)) {
          if (lGetSubStr(cl, US_name, userset_name, AUSRLIST_value)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS,
-                    userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE,
-                    lGetString(cqueue, CQ_name)));
-            answer_list_add(alpp, SGE_EVENT,
-                            STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE, lGetString(cqueue, CQ_name));
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
       }
       for_each_ep(cl, lGetList(cqueue, CQ_xacl)) {
          if (lGetSubStr(cl, US_name, userset_name, AUSRLIST_value)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS,
-                    userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE,
-                    lGetString(cqueue, CQ_name)));
-            answer_list_add(alpp, SGE_EVENT,
-                            STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE, lGetString(cqueue, CQ_name));
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
       }
@@ -466,14 +458,12 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    for_each_ep(ep, master_pe_list) {
       if (lGetElemStr(lGetList(ep, PE_user_list), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_USERLIST, MSG_OBJ_PE, lGetString(ep, PE_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PE, lGetString(ep, PE_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
       if (lGetElemStr(lGetList(ep, PE_xuser_list), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_XUSERLIST, MSG_OBJ_PE, lGetString(ep, PE_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PE, lGetString(ep, PE_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -481,14 +471,12 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    for_each_ep(ep, master_project_list) {
       if (lGetElemStr(lGetList(ep, PR_acl), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_USERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
       if (lGetElemStr(lGetList(ep, PR_xacl), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -497,14 +485,12 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    /* hosts */
    for_each_ep(ep, master_ehost_list) {
       if (lGetElemStr(lGetList(ep, EH_acl), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_USERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
       if (lGetElemStr(lGetList(ep, EH_xacl), US_name, userset_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-                 MSG_OBJ_XUSERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -513,8 +499,7 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    /* global configuration */
    user_lists = mconf_get_user_lists();
    if (lGetElemStr(user_lists, US_name, userset_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-              MSG_OBJ_USERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL));
+      ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }
@@ -522,8 +507,7 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    user_lists = mconf_get_xuser_lists();
    if (lGetElemStr(user_lists, US_name, userset_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
-              MSG_OBJ_XUSERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL));
+      ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }

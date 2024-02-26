@@ -180,9 +180,9 @@ int sge_get_qmaster_port(bool *from_services) {
    }
 
    if (int_port <= 0) {
-      ERROR((SGE_EVENT, MSG_UTI_CANT_GET_ENV_OR_PORT_SS, "SGE_QMASTER_PORT", "sge_qmaster"));
+      ERROR(MSG_UTI_CANT_GET_ENV_OR_PORT_SS, "SGE_QMASTER_PORT", "sge_qmaster");
       if (cached_port > 0) {
-         WARNING((SGE_EVENT, MSG_UTI_USING_CACHED_PORT_SU, "sge_qmaster", sge_u32c(cached_port)));
+         WARNING(MSG_UTI_USING_CACHED_PORT_SU, "sge_qmaster", sge_u32c(cached_port));
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
@@ -246,9 +246,9 @@ int sge_get_execd_port() {
    }
 
    if (int_port <= 0) {
-      ERROR((SGE_EVENT, MSG_UTI_CANT_GET_ENV_OR_PORT_SS, "SGE_EXECD_PORT", "sge_execd"));
+      ERROR(MSG_UTI_CANT_GET_ENV_OR_PORT_SS, "SGE_EXECD_PORT", "sge_execd");
       if (cached_port > 0) {
-         WARNING((SGE_EVENT, MSG_UTI_USING_CACHED_PORT_SU, "sge_execd", sge_u32c(cached_port)));
+         WARNING(MSG_UTI_USING_CACHED_PORT_SU, "sge_execd", sge_u32c(cached_port));
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
@@ -480,13 +480,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
 
    /* warn about blocking gethostbyname() calls */
    if (time > MAX_RESOLVER_BLOCKING) {
-      WARNING((SGE_EVENT, "gethostbyname(%s) took %d seconds and returns %s\n",
-              name, (int) time, he ? "success" :
-                                (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" :
-                                (l_errno == TRY_AGAIN) ? "TRY_AGAIN" :
-                                (l_errno == NO_RECOVERY) ? "NO_RECOVERY" :
-                                (l_errno == NO_DATA) ? "NO_DATA" :
-                                (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>"));
+      WARNING("gethostbyname(%s) took %d seconds and returns %s\n", name, (int) time, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
    }
    if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;
@@ -719,18 +713,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 
    /* warn about blocking gethostbyaddr() calls */
    if (time > MAX_RESOLVER_BLOCKING) {
-      WARNING((SGE_EVENT, "gethostbyaddr() took %d seconds and returns %s\n", (int) time, he ? "success" :
-                                                                                          (l_errno == HOST_NOT_FOUND)
-                                                                                          ? "HOST_NOT_FOUND" :
-                                                                                          (l_errno == TRY_AGAIN)
-                                                                                          ? "TRY_AGAIN" :
-                                                                                          (l_errno == NO_RECOVERY)
-                                                                                          ? "NO_RECOVERY" :
-                                                                                          (l_errno == NO_DATA)
-                                                                                          ? "NO_DATA" :
-                                                                                          (l_errno == NO_ADDRESS)
-                                                                                          ? "NO_ADDRESS"
-                                                                                          : "<unknown error>"));
+      WARNING("gethostbyaddr() took %d seconds and returns %s\n", (int) time, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
    }
    if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;

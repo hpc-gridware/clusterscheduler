@@ -103,7 +103,7 @@ sge_pack_gdi_info(u_long32 command) {
       DPRINTF(("packing SGE_GDI_REPLACE request\n"));
       break;
    default:
-      ERROR((SGE_EVENT, MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D, sge_u32c(command)));
+      ERROR(MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D, sge_u32c(command));
       ret = false;
    }
    DRETURN(ret);

@@ -1759,7 +1759,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
         s; s = sge_strtok_r(nullptr, RANGE_SEPARATOR_CHARS, &context)) {
       if (!first && undefined) {
          /* first was undefined - no more ranges allowed */
-         ERROR((SGE_EVENT, SFNMAX, MSG_GDI_UNEXPECTEDRANGEFOLLOWINGUNDEFINED));
+         ERROR(SFNMAX, MSG_GDI_UNEXPECTEDRANGEFOLLOWINGUNDEFINED);
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
@@ -1775,7 +1775,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             undefined = true;
          } else {
             /* second range may not be undefined ! */
-            ERROR((SGE_EVENT, SFNMAX, MSG_GDI_UNEXPECTEDUNDEFINEDFOLLOWINGRANGE));
+            ERROR(SFNMAX, MSG_GDI_UNEXPECTEDUNDEFINEDFOLLOWINGRANGE);
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);

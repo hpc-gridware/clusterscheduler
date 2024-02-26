@@ -289,14 +289,14 @@ sge_scheduler_initialize(lList **answer_list) {
          Master_Scheduler.thread_id++;
          Master_Scheduler.is_running = true;
 
-         INFO((SGE_EVENT, MSG_THREAD_XHASSTARTED_S, threadnames[SCHEDD_THREAD]));
+         INFO(MSG_THREAD_XHASSTARTED_S, threadnames[SCHEDD_THREAD]);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
       } else {
-         INFO((SGE_EVENT, MSG_THREAD_XSTARTDISABLED_S, threadnames[SCHEDD_THREAD]));
+         INFO(MSG_THREAD_XSTARTDISABLED_S, threadnames[SCHEDD_THREAD]);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
       }
    } else {
-      ERROR((SGE_EVENT, MSG_THREAD_XISRUNNING_S, threadnames[SCHEDD_THREAD]));
+      ERROR(MSG_THREAD_XISRUNNING_S, threadnames[SCHEDD_THREAD]);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
    sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -423,12 +423,12 @@ sge_scheduler_terminate(lList **answer_list) {
 
       sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
-      INFO((SGE_EVENT, MSG_THREAD_XTERMINATED_S, threadnames[SCHEDD_THREAD]));
+      INFO(MSG_THREAD_XTERMINATED_S, threadnames[SCHEDD_THREAD]);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
    } else {
       sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
-      ERROR((SGE_EVENT, MSG_THREAD_XNOTRUNNING_S, threadnames[SCHEDD_THREAD]));
+      ERROR(MSG_THREAD_XNOTRUNNING_S, threadnames[SCHEDD_THREAD]);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
 
@@ -842,11 +842,11 @@ sge_scheduler_main(void *arg) {
          double prof_total = prof_get_measurement_wallclock(SGE_PROF_CUSTOM6, true, nullptr);
 
          if (prof_is_active(SGE_PROF_CUSTOM6)) {
-            PROFILING((SGE_EVENT, "PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
+            PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
                                   "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
                     prof_total, prof_init, prof_copy, prof_run, prof_free,
                     lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)), sge_category_count(),
-                    sge_cs_category_count()));
+                    sge_cs_category_count());
          }
          if (getenv("SGE_ND") != nullptr) {
             printf("--------------STOP-SCHEDULER-RUN-------------\n");

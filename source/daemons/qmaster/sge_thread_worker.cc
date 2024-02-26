@@ -92,7 +92,7 @@ sge_worker_initialize() {
    reporting_initialize(nullptr);
    DPRINTF(("accounting and reporting module has been initialized\n"));
 
-   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]));
+   INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]);
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_worker_threads; i++) {
       cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
@@ -244,7 +244,7 @@ sge_worker_main(void *arg) {
 
 #ifdef OBSERVE
          lObserveStart();
-         INFO((SGE_EVENT, "======================"));
+         INFO("======================");
 #endif
 
          if (packet->is_gdi_request == true) {
@@ -270,7 +270,7 @@ sge_worker_main(void *arg) {
             struct saved_vars_s *context = nullptr;
             const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
             while (line) {
-               INFO((SGE_EVENT, "%s", line));
+               INFO("%s", line);
                line = sge_strtok_r(nullptr, "\n", &context);
             }
             sge_free_saved_vars(context);

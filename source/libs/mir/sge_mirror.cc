@@ -370,7 +370,7 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
    DENTER(TOP_LAYER);
 
    if (type < 0 || type > SGE_TYPE_ALL) {
-      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type);
       DRETURN(SGE_EM_BAD_ARG);
    }
 
@@ -764,7 +764,7 @@ sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type ty
    DENTER(TOP_LAYER);
 
    if (type < 0 || type > SGE_TYPE_ALL) {
-      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type);
       DRETURN(SGE_EM_BAD_ARG);
    }
 
@@ -906,10 +906,10 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
          evc->ec_unsubscribe(evc, sgeE_SCHEDDMONITOR);
          break;
       case SGE_TYPE_SHUTDOWN:
-         ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_HAVETOHANDLEEVENTS));
+         ERROR(SFNMAX, MSG_EVENT_HAVETOHANDLEEVENTS);
          break;
       case SGE_TYPE_MARK_4_REGISTRATION:
-         ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_HAVETOHANDLEEVENTS));
+         ERROR(SFNMAX, MSG_EVENT_HAVETOHANDLEEVENTS);
          break;
       case SGE_TYPE_SUBMITHOST:
          evc->ec_unsubscribe(evc, sgeE_SUBMITHOST_LIST);
@@ -954,7 +954,7 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
       case SGE_TYPE_JOBSCRIPT:
             DRETURN(SGE_EM_NOT_INITIALIZED);
      default:
-         ERROR((SGE_EVENT, "received invalid event group %d", type));
+         ERROR("received invalid event group %d", type);
          DRETURN(SGE_EM_BAD_ARG);
    }
 
@@ -1007,7 +1007,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
          lFreeList(&event_list);
       }
    } else {
-      WARNING((SGE_EVENT, SFNMAX, MSG_MIRROR_QMASTERALIVETIMEOUTEXPIRED));
+      WARNING(SFNMAX, MSG_MIRROR_QMASTERALIVETIMEOUTEXPIRED);
       evc->ec_mark4registration(evc);
       ret = SGE_EM_TIMEOUT;
    }
@@ -1016,7 +1016,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
       test_debug++;
       if (test_debug > 3) {
          test_debug = 0;
-         WARNING((SGE_EVENT, SFNMAX, MSG_MIRROR_QMASTERALIVETIMEOUTEXPIRED));
+         WARNING(SFNMAX, MSG_MIRROR_QMASTERALIVETIMEOUTEXPIRED);
          evc->ec_mark4registration(evc);
          ret = SGE_EM_TIMEOUT;
       }
@@ -1437,9 +1437,9 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
 
    if (prof_is_active(SGE_PROF_MIRROR)) {
       prof_stop_measurement(SGE_PROF_MIRROR, nullptr);
-      PROFILING((SGE_EVENT, "PROF: sge_mirror processed %d events in %.3f s",
+      PROFILING("PROF: sge_mirror processed %d events in %.3f s",
                  num_events, prof_get_measurement_wallclock(SGE_PROF_MIRROR,
-                 false, nullptr)));
+                 false, nullptr));
    }
 
    DRETURN(function_ret);
@@ -1489,7 +1489,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    if (mirror_base[type].callback_before != nullptr) {
       ret = mirror_base[type].callback_before(evc, type, action, event, mirror_base[type].clientdata);
       if (ret == SGE_EMA_FAILURE) {
-         ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
+         ERROR(MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper));
          DRETURN(SGE_EM_CALLBACK_FAILED);
       } else if (ret == SGE_EMA_IGNORE) {
          DRETURN(SGE_EM_OK);
@@ -1499,7 +1499,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    if (mirror_base[type].callback_default != nullptr) {
       ret = mirror_base[type].callback_default(evc, type, action, event, nullptr);
       if (ret == SGE_EMA_FAILURE) {
-         ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
+         ERROR(MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper));
          DRETURN(SGE_EM_CALLBACK_FAILED);
       } else if (ret == SGE_EMA_IGNORE) {
          DRETURN(SGE_EM_OK);
@@ -1509,7 +1509,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    if (mirror_base[type].callback_after != nullptr) {
       ret = mirror_base[type].callback_after(evc, type, action, event, mirror_base[type].clientdata);
       if (ret == SGE_EMA_FAILURE) {
-         ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
+         ERROR(MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper));
          DRETURN(SGE_EM_CALLBACK_FAILED);
       }
    }
@@ -1730,7 +1730,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_ADD:
          /* check for duplicate */
          if (ep != nullptr) {
-            ERROR((SGE_EVENT, "duplicate list element " SFQ "\n", (key != nullptr) ?key:"nullptr"));
+            ERROR("duplicate list element " SFQ "\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_DUPLICATE_KEY);
          }
    
@@ -1747,7 +1747,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_DEL:
          /* check for existence */
          if (ep == nullptr) {
-            ERROR((SGE_EVENT, "element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr"));
+            ERROR("element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
 
@@ -1758,7 +1758,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
       case SGE_EMA_MOD:
          /* check for existence */
          if (ep == nullptr) {
-            ERROR((SGE_EVENT, "element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr"));
+            ERROR("element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
          lRemoveElem(*list, &ep);

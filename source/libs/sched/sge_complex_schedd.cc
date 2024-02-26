@@ -264,7 +264,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
 
                   s = lGetString(job_load, CE_stringval);
                   if (!parse_ulong_val(&load_correction, nullptr, type, s, err_str, 255)) {
-                     ERROR((SGE_EVENT, MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname));
+                     ERROR(MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname);
                   } else if (lc_factor) {
                      double old_dval;
                      u_long32 relop;
@@ -285,7 +285,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                         dval -= load_correction;
                      }
 
-                     sprintf(sval, "%8.3f", dval);
+                     snprintf(sval, sizeof(sval), "%8.3f", dval);
                      DPRINTF(("%s: uc: %f c(%f): %f\n", attrname, old_dval, lc_factor, dval));
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }

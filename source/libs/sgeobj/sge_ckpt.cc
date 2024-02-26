@@ -253,7 +253,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    DENTER(TOP_LAYER);
 
    if (!this_elem) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -285,7 +285,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    }
 
    if (!found) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_NO_INTERFACE_S, interface));
+      ERROR(MSG_SGETEXT_NO_INTERFACE_S, interface);
       answer_list_add(alpp, SGE_EVENT, 
                       STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -294,8 +294,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    for (i = 0; ckpt_commands[i].nm != NoName; i++) {
       if (replace_params(lGetString(this_elem, ckpt_commands[i].nm),
                nullptr, 0, ckpt_variables)) {
-         ERROR((SGE_EVENT, MSG_OBJ_CKPTENV_SSS,
-               ckpt_commands[i].text, lGetString(this_elem, CK_name), err_msg));
+         ERROR(MSG_OBJ_CKPTENV_SSS, ckpt_commands[i].text, lGetString(this_elem, CK_name), err_msg);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -305,7 +304,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    if ((s=lGetString(this_elem, CK_signal)) &&
          strcasecmp(s, "none") &&
          sge_sys_str2signal(s)==SIGUNKNOWN) {
-      ERROR((SGE_EVENT, MSG_CKPT_XISNOTASIGNALSTRING_S , s));
+      ERROR(MSG_CKPT_XISNOTASIGNALSTRING_S , s);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }

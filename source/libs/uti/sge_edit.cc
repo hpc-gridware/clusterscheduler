@@ -54,18 +54,18 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
    DENTER(TOP_LAYER);;
 
    if (fname == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_NULLPOINTER));
+      ERROR(SFNMAX, MSG_NULLPOINTER);
       DRETURN(-1);
    }
 
    if (SGE_STAT(fname, &before)) {
-      ERROR((SGE_EVENT, MSG_FILE_EDITFILEXDOESNOTEXIST_S, fname));
+      ERROR(MSG_FILE_EDITFILEXDOESNOTEXIST_S, fname);
       DRETURN(-1);
    }
 
    if (chown(fname, myuid, mygid) != 0) {
       dstring ds = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_FILE_NOCHOWN_SS, fname, sge_strerror(errno, &ds)));
+      ERROR(MSG_FILE_NOCHOWN_SS, fname, sge_strerror(errno, &ds));
       sge_dstring_free(&ds);
       DRETURN(-1);
    }
@@ -76,11 +76,11 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
          ws = waitpid(pid, &status, 0);
          if (WIFEXITED(status)) {
             if (WEXITSTATUS(status) != 0) {
-               ERROR((SGE_EVENT, MSG_QCONF_EDITOREXITEDWITHERROR_I, (int) WEXITSTATUS(status)));
+               ERROR(MSG_QCONF_EDITOREXITEDWITHERROR_I, (int) WEXITSTATUS(status));
                DRETURN(-1);
             } else {
                if (SGE_STAT(fname, &after)) {
-                  ERROR((SGE_EVENT, MSG_QCONF_EDITFILEXNOLONGEREXISTS_S, fname));
+                  ERROR(MSG_QCONF_EDITFILEXNOLONGEREXISTS_S, fname);
                   DRETURN(-1);
                }
                if ((before.st_mtime != after.st_mtime) ||
@@ -93,8 +93,7 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
             }
          }
          if (WIFSIGNALED(status)) {
-            ERROR((SGE_EVENT, MSG_QCONF_EDITORWASTERMINATEDBYSIGX_I,
-                    (int) WTERMSIG(status)));
+            ERROR(MSG_QCONF_EDITORWASTERMINATEDBYSIGX_I, (int) WTERMSIG(status));
             DRETURN(-1);
          }
       }
@@ -112,7 +111,7 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
       }
 
       execlp(cp, cp, fname, (char *) 0);
-      ERROR((SGE_EVENT, MSG_QCONF_CANTSTARTEDITORX_S, cp));
+      ERROR(MSG_QCONF_CANTSTARTEDITORX_S, cp);
       sge_exit(1);
    }
 

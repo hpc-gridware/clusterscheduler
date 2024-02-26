@@ -1368,7 +1368,7 @@ static bool write_manop(int spool, int target) {
 
    fp = fopen(filename, "w");
    if (!fp) {
-      ERROR((SGE_EVENT, MSG_ERRORWRITINGFILE_SS, filename, strerror(errno)));
+      ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
       DRETURN(false);
    }
 
@@ -1435,7 +1435,7 @@ static bool read_manop(int target) {
 
    fp = fopen(filename, "r");
    if (!fp) {
-      ERROR((SGE_EVENT, MSG_FILE_ERROROPENINGX_S, filename));
+      ERROR(MSG_FILE_ERROROPENINGX_S, filename);
       DRETURN(false);
    }
    
@@ -1452,6 +1452,6 @@ static bool read_manop(int target) {
 
    DRETURN(true);
 FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_FILE_ERRORCLOSEINGX_S, filename));
+   ERROR(MSG_FILE_ERRORCLOSEINGX_S, filename);
    DRETURN(false);
 }

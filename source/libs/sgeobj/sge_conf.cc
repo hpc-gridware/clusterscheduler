@@ -417,7 +417,7 @@ int type
           * but log into log file 
           */
          log_state_set_log_verbose(0);
-         INFO((SGE_EVENT, MSG_CONF_USING_SS, s, name));
+         INFO(MSG_CONF_USING_SS, s, name);
          log_state_set_log_verbose(old_verbose);
       }
       if (cpp)
@@ -1064,7 +1064,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    lFreeList(&mlist);
 
    if (!global) {
-      WARNING((SGE_EVENT, SFNMAX, MSG_CONF_NOCONFIGFROMMASTER));
+      WARNING(SFNMAX, MSG_CONF_NOCONFIGFROMMASTER);
       DRETURN(-2);
    }
 

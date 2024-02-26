@@ -74,7 +74,7 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
    /* Flawfinder: ignore */
    if (chown(tmpdir, uid, gid) != 0) {
       dstring ds = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds)));
+      ERROR(MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds));
       sge_dstring_free(&ds);
       unlink(tmpdir);
       DRETURN(nullptr);
@@ -104,8 +104,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
    DPRINTF(("recursively unlinking \"%s\"\n", tmpstr));
    sge_switch2start_user();
    if (sge_rmdir(tmpstr, &err_str)) {
-      ERROR((SGE_EVENT, MSG_FILE_RECURSIVERMDIR_SS, 
-             tmpstr, err_str_buffer));
+      ERROR(MSG_FILE_RECURSIVERMDIR_SS, tmpstr, err_str_buffer);
       sge_switch2admin_user();
       DRETURN(-1);
    }

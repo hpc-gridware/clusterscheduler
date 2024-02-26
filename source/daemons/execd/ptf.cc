@@ -472,9 +472,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    for_each_ep(pid, lGetList(osjob, JO_pid_list)) {
       if (setpriority(PRIO_PROCESS, lGetUlong(pid, JP_pid), pri) < 0 &&
           errno != ESRCH) {
-         ERROR((SGE_EVENT, MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS,
-                sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)),
-                strerror(errno)));
+         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)), strerror(errno));
       } else {
          DPRINTF(("Changing Priority of process " sge_u32 " to " sge_u32 "\n",
                   sge_u32c(lGetUlong(pid, JP_pid)), sge_u32c((u_long32) pri)));
@@ -558,7 +556,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
 #endif
 
    if (!where) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_WHERE_FAILEDTOBUILDWHERECONDITION));
+      CRITICAL(SFNMAX, MSG_WHERE_FAILEDTOBUILDWHERECONDITION);
       DRETURN(nullptr);
    }
 
@@ -1119,7 +1117,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
       pri_range = pri_min - pri_max;
    
       log_state_set_log_level(LOG_INFO);   
-      INFO((SGE_EVENT, MSG_PRIO_PTFMINMAX_II, (int) pri_max, (int) pri_min));
+      INFO(MSG_PRIO_PTFMINMAX_II, (int) pri_max, (int) pri_min);
       log_state_set_log_level(old_ll);   
    }
 
@@ -1592,7 +1590,7 @@ int ptf_init(void)
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    if (getuid() == 0) {
       if (setpriority(PRIO_PROCESS, getpid(), PTF_MAX_PRIORITY) < 0) {
-         ERROR((SGE_EVENT, MSG_PRIO_SETPRIOFAILED_S, strerror(errno)));
+         ERROR(MSG_PRIO_SETPRIOFAILED_S, strerror(errno));
       }
    }
 #endif

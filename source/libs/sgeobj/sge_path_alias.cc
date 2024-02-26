@@ -152,7 +152,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
    DENTER(GDI_LAYER);
 
    if (!path_alias_list || !file_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
@@ -414,7 +414,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
             /* no '*', so we have to look closer   */
             /* resolv the exec host from the alias */
             if (sge_resolve_host(pap, PA_exec_host) != CL_RETVAL_OK) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host)); 
+               ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host);
                continue;
             }
             exec_host = lGetHost(pap, PA_exec_host);

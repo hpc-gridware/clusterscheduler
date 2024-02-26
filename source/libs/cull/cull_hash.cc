@@ -746,12 +746,12 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    pos = lGetPosInDescr(descr, nm);
 
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(0);
    }
 
    if (descr[pos].ht != nullptr) {
-      WARNING((SGE_EVENT, MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm)));
+      WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm));
       DRETURN(0);
    }
 

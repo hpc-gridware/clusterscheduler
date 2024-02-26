@@ -187,7 +187,7 @@ int feature_initialize_from_string(const char *mode, lList **answer_list)
    int ret;
 
    if (id == FEATURE_UNINITIALIZED) {
-      CRITICAL((SGE_EVENT, MSG_GDI_INVALIDPRODUCTMODESTRING_S, mode));
+      CRITICAL(MSG_GDI_INVALIDPRODUCTMODESTRING_S, mode);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
       ret = -3;
    } else {
@@ -284,9 +284,7 @@ void feature_activate(feature_id_t id)
       lSetUlong(inactive_set, FES_active, 1);
 
       if (lGetUlong(active_set, FES_id) != id) {
-         WARNING((SGE_EVENT, MSG_GDI_SWITCHFROMTO_SS, 
-            feature_get_featureset_name((feature_id_t)lGetUlong(active_set, FES_id)),
-            feature_get_featureset_name(id)));
+         WARNING(MSG_GDI_SWITCHFROMTO_SS, feature_get_featureset_name((feature_id_t)lGetUlong(active_set, FES_id)), feature_get_featureset_name(id));
       }
    } else if (inactive_set) {
       /* there was no active feature before */

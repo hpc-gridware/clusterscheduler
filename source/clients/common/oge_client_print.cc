@@ -439,7 +439,8 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             const char *part1 = "%s%-7.7s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
             const char *part3 = ".";
             const char *part5 = "s %s %s%s%s%s%s%s";
-            char *part6 = sge_malloc(strlen(part1) + strlen(part3) + strlen(part5) + 20);
+            size_t part6_size = strlen(part1) + strlen(part3) + strlen(part5) + 20;
+            char *part6 = sge_malloc(part6_size);
             {
                int i;
                for (i = 0; i < line_length; i++) {
@@ -447,7 +448,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
                }
             }
             seperator[line_length - 1] = '\0';
-            sprintf(part6, "%s%d%s%d%s", part1, queue_name_length, part3, queue_name_length, part5);
+            snprintf(part6, part6_size, "%s%d%s%d%s", part1, queue_name_length, part3, queue_name_length, part5);
 
             printf(part6, indent, "job-ID", "prior ", (sge_pri || sge_urg) ? " nurg   " : "", sge_pri ? " npprior" : "",
                    (sge_pri || sge_ext) ? " ntckts " : "", sge_urg ? " urg      rrcontr  wtcontr  dlcontr " : "",
@@ -789,7 +790,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          report_handler->report_job_string_value(report_handler, cqname, jobid, "queue_name", queue_name, alpp);
       } else {
          char temp[20];
-         sprintf(temp, "%%-%d.%ds ", queue_name_length, queue_name_length);
+         snprintf(temp, sizeof(temp), "%%-%d.%ds ", queue_name_length, queue_name_length);
          printf(temp, queue_name ? queue_name : "");
       }
    }

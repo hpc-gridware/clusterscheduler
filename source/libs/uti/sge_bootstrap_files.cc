@@ -180,12 +180,12 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
 
    SGE_STRUCT_STAT sbuf{};
    if (SGE_STAT(sge_root, &sbuf)) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root));
+      CRITICAL(MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root);
       DRETURN_VOID;
    }
 
    if (!S_ISDIR(sbuf.st_mode)) {
-      CRITICAL((SGE_EVENT, MSG_UTI_SGEROOTNOTADIRECTORY_S, sge_root));
+      CRITICAL(MSG_UTI_SGEROOTNOTADIRECTORY_S, sge_root);
       DRETURN_VOID;
    }
 
@@ -193,7 +193,7 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s", sge_root, sge_cell);
 
    if (SGE_STAT(sge_dstring_get_string(&bw), &sbuf)) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NOSGECELL_S, sge_dstring_get_string(&bw)));
+      CRITICAL(MSG_SGETEXT_NOSGECELL_S, sge_dstring_get_string(&bw));
       DRETURN_VOID;
    }
 
@@ -203,7 +203,7 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    /* common dir */
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR);
    if (SGE_STAT(buffer, &sbuf)) {
-      CRITICAL((SGE_EVENT, MSG_UTI_DIRECTORYNOTEXIST_S, buffer));
+      CRITICAL(MSG_UTI_DIRECTORYNOTEXIST_S, buffer);
       DRETURN_VOID;
    }
 

@@ -103,12 +103,10 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
       }
 
       if (exit_on_error) {
-         CRITICAL((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
-                 strerror(errno)));
+         CRITICAL(MSG_FILE_CREATEDIRFAILED_SS, path_, strerror(errno));
          sge_exit(1);
       } else {
-         ERROR((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
-                 strerror(errno)));
+         ERROR(MSG_FILE_CREATEDIRFAILED_SS, path_, strerror(errno));
          DRETURN(-1);
       }
    }
@@ -143,21 +141,21 @@ bool sge_unlink(const char *prefix, const char *suffix) {
    DENTER(TOP_LAYER);
 
    if (!suffix) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_SUFFIXISNULLINSGEUNLINK));
+      ERROR(SFNMAX, MSG_POINTER_SUFFIXISNULLINSGEUNLINK);
       DRETURN(false);
    }
 
    if (prefix) {
-      sprintf(str, "%s/%s", prefix, suffix);
+      snprintf(str, sizeof(str), "%s/%s", prefix, suffix);
    } else {
-      sprintf(str, "%s", suffix);
+      snprintf(str, sizeof(str), "%s", suffix);
    }
 
    DPRINTF(("file to unlink: \"%s\"\n", str));
    status = unlink(str);
 
    if (status) {
-      ERROR((SGE_EVENT, MSG_FILE_UNLINKFAILED_SS, str, strerror(errno)));
+      ERROR(MSG_FILE_UNLINKFAILED_SS, str, strerror(errno));
       DRETURN(false);
    } else {
       DRETURN(true);
@@ -215,10 +213,10 @@ int sge_chdir_exit(const char *path, int exit_on_error) {
 
    if (chdir(path)) {
       if (exit_on_error) {
-         CRITICAL((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
+         CRITICAL(MSG_FILE_NOCDTODIRECTORY_S, path);
          sge_exit(1);
       } else {
-         ERROR((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
+         ERROR(MSG_FILE_NOCDTODIRECTORY_S, path);
          return -1;
       }
    }
@@ -321,10 +319,10 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
    DENTER(TOP_LAYER);
    if (path == nullptr) {
       if (exit_on_error) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
+         CRITICAL(SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR);
          sge_exit(1);
       } else {
-         ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
+         ERROR(SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR);
          DRETURN(-1);
       }
    }
@@ -360,10 +358,10 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 
    if (base_dir == nullptr || name == nullptr) {
       if (exit_on_error) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
+         CRITICAL(SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR);
          sge_exit(1);
       } else {
-         ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
+         ERROR(SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR);
          DRETURN(-1);
       }
    }
@@ -418,7 +416,7 @@ int sge_rmdir(const char *cp, dstring *error) {
    while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
       if (strcmp(dent->d_name, ".") != 0 && strcmp(dent->d_name, "..") != 0) {
 
-         sprintf(fname, "%s/%s", cp, dent->d_name);
+         snprintf(fname, sizeof(fname), "%s/%s", cp, dent->d_name);
 
          if (SGE_LSTAT(fname, &stat_buffer)) {
             sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
@@ -544,7 +542,7 @@ u_long32 sge_sysconf(sge_sysconf_t id) {
          ret = sysconf(_SC_NGROUPS_MAX);
          break;
       default:
-         CRITICAL((SGE_EVENT, MSG_SYSCONF_UNABLETORETRIEVE_I, (int) id));
+         CRITICAL(MSG_SYSCONF_UNABLETORETRIEVE_I, (int) id);
          break;
    }
    DRETURN(ret);

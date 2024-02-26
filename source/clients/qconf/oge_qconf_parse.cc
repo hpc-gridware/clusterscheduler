@@ -140,7 +140,7 @@ static char **sge_parser_get_next(char **arg)
 {
    DENTER(TOP_LAYER);
    if (!*(arg+1)) {
-      ERROR((SGE_EVENT, MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S , *arg));
+      ERROR(MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S , *arg);
       sge_usage(QCONF, stderr);
       sge_exit(1);
    }
@@ -1319,7 +1319,7 @@ int sge_parse_qconf(char *argv[])
          /* get user list */
          spp = sge_parser_get_next(spp);
          if (!*(spp+1)) {
-            ERROR((SGE_EVENT, MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S, *spp));
+            ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S, *spp);
             sge_usage(QCONF, stderr);
             DRETURN(1);
          }
@@ -1569,7 +1569,7 @@ int sge_parse_qconf(char *argv[])
          /* get user list */
          spp = sge_parser_get_next(spp);
          if (!*(spp+1)) {
-            ERROR((SGE_EVENT, MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S, *spp));
+            ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S, *spp);
             sge_usage(QCONF, stderr);
             DRETURN(1);
          }
@@ -1886,7 +1886,7 @@ int sge_parse_qconf(char *argv[])
             case 'e':
                break;
             default:
-               ERROR((SGE_EVENT, MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, sge_u32c(prog_number)));
+               ERROR(MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, sge_u32c(prog_number));
                sge_usage(QCONF, stderr);
                DRETURN(1);
          }
@@ -3072,14 +3072,14 @@ int sge_parse_qconf(char *argv[])
    }
 
    if (!info_entry[index].object_name) {
-      ERROR((SGE_EVENT, MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, *spp));
+      ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, *spp);
       DRETURN(1);
    } 
 
    /* parse command line arguments */
    attr = sge_strdup(nullptr, *spp);
    if (attr == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN));
+      ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
       DRETURN(1);
    }
    spp = sge_parser_get_next(spp);
@@ -3092,7 +3092,7 @@ int sge_parse_qconf(char *argv[])
    }
    
    if (object == nullptr || hgroup_or_hostname == nullptr) {
-      ERROR((SGE_EVENT, MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, object_instance));
+      ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, object_instance);
       sge_free(&attr);
       sge_free(&object_instance);
       sge_free(&object);
@@ -3103,7 +3103,7 @@ int sge_parse_qconf(char *argv[])
    sge_free(&object_instance);
 
    if (strcmp("@/", hgroup_or_hostname) == 0) {
-      ERROR((SGE_EVENT, MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, hgroup_or_hostname));
+      ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, hgroup_or_hostname);
       sge_free(&attr);
       sge_free(&object);
       sge_free(&hgroup_or_hostname);
@@ -3114,7 +3114,7 @@ int sge_parse_qconf(char *argv[])
       cqueue = cqueue_get_via_gdi(&alp, object);
 
       if (cqueue == nullptr) {
-         ERROR((SGE_EVENT, MSG_CQUEUE_DOESNOTEXIST_S, object));  
+         ERROR(MSG_CQUEUE_DOESNOTEXIST_S, object);
          sge_free(&attr); 
          sge_free(&object);
          sge_free(&hgroup_or_hostname);
@@ -3125,7 +3125,7 @@ int sge_parse_qconf(char *argv[])
       if (cqueue_purge_host(cqueue, &alp, lp, hgroup_or_hostname) == true) {
          cqueue_add_del_mod_via_gdi(cqueue, &alp, SGE_GDI_MOD | SGE_GDI_SET_ALL);
       } else {
-         WARNING((SGE_EVENT, MSG_QCONF_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname));
+         WARNING(MSG_QCONF_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname);
       }
       lFreeList(&lp);
 
@@ -5274,7 +5274,7 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-huh?" */
 
-      ERROR((SGE_EVENT, MSG_ANSWER_INVALIDOPTIONARGX_S, *spp));
+      ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, *spp);
       fprintf(stderr, MSG_SRC_X_HELP_USAGE_S , "qconf");
       fprintf(stderr, "\n");
       DRETURN(1);

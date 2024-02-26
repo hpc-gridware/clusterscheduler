@@ -182,11 +182,11 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    DPRINTF(("qualified_hostname: '%s'\n", qualified_hostname));
    if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
       /* write a warning into messages file, if no local config exists*/
-      WARNING((SGE_EVENT, MSG_CONFIG_NOLOCAL_S, qualified_hostname));
+      WARNING(MSG_CONFIG_NOLOCAL_S, qualified_hostname);
    }
 
    if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_NOGLOBAL));
+      ERROR(SFNMAX, MSG_CONFIG_NOGLOBAL);
       DRETURN(-1);
    }
 
@@ -197,7 +197,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    lFreeElem(&global);
 
    if (0 != ret) {
-      ERROR((SGE_EVENT, MSG_CONFIG_ERRORXMERGINGCONFIGURATIONY_IS, ret, qualified_hostname));
+      ERROR(MSG_CONFIG_ERRORXMERGINGCONFIGURATIONY_IS, ret, qualified_hostname);
       DRETURN(-1);
    }
 
@@ -221,17 +221,14 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
    DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
-      answer_list_add(anAnswer, SGE_EVENT,
-                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
+      answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(CONF_name), __func__));
-      answer_list_add(anAnswer, SGE_EVENT,
-                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
+      answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -255,7 +252,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
          strcpy(unique_name, lGetHost(conf_obj, CONF_name));
          lFreeElem(&conf_obj);
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name));
+         ERROR(MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name);
          answer_list_add(anAnswer, SGE_EVENT,
                          STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -264,7 +261,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
 
    /* Do not allow to delete global configuration */
    if (!strcasecmp(SGE_GLOBAL_NAME, unique_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_CANT_DEL_CONFIG_S, unique_name));
+      ERROR(MSG_SGETEXT_CANT_DEL_CONFIG_S, unique_name);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -273,7 +270,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
 
    remove_conf_by_name(unique_name);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF);
    answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    update_reschedule_unknown_timout_values(unique_name);
@@ -325,20 +322,20 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((ret = sge_resolve_hostname(tmp_name, unique_name, EH_name)) != CL_RETVAL_OK) {
       DPRINTF(("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), tmp_name));
-      ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, tmp_name));
+      ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, tmp_name);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -355,7 +352,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       lFreeElem(&old_conf);
 
       if (ret == 0) {
-         INFO((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF));
+         INFO(MSG_SGETEXT_MODIFIEDINLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF);
          answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } else {
          DRETURN(STATUS_EUNKNOWN);
@@ -363,7 +360,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    } else {
       do_add_config(unique_name, aConf, anAnswer);
 
-      INFO((SGE_EVENT, MSG_SGETEXT_ADDEDTOLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF));
+      INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -383,15 +380,15 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       int accounting_flush_time = mconf_get_accounting_flush_time();
 
       if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
-         WARNING((SGE_EVENT, MSG_CONFIG_NOLOCAL_S, qualified_hostname));
+         WARNING(MSG_CONFIG_NOLOCAL_S, qualified_hostname);
       }
 
       if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_NOGLOBAL));
+         ERROR(SFNMAX, MSG_CONFIG_NOGLOBAL);
       }
 
       if (merge_configuration(&answer_list, progid, cell_root, global, local, nullptr) != 0) {
-         ERROR((SGE_EVENT, MSG_CONF_CANTMERGECONFIGURATIONFORHOST_S, qualified_hostname));
+         ERROR(MSG_CONF_CANTMERGECONFIGURATIONFORHOST_S, qualified_hostname);
       }
       answer_list_output(&answer_list);
 
@@ -442,14 +439,12 @@ check_config(lList **alpp, lListElem *conf) {
       value = lGetString(ep, CF_value);
 
       if (name == nullptr) {
-         ERROR((SGE_EVENT, MSG_CONF_NAMEISNULLINCONFIGURATIONLISTOFX_S,
-                 conf_name));
+         ERROR(MSG_CONF_NAMEISNULLINCONFIGURATIONLISTOFX_S, conf_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
       if (value == nullptr) {
-         ERROR((SGE_EVENT, MSG_CONF_VALUEISNULLFORATTRXINCONFIGURATIONLISTOFY_SS,
-                 name, conf_name));
+         ERROR(MSG_CONF_VALUEISNULLFORATTRXINCONFIGURATIONLISTOFY_SS, name, conf_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -457,7 +452,7 @@ check_config(lList **alpp, lListElem *conf) {
       if (!strcmp(name, "loglevel")) {
          u_long32 tmp_uval;
          if (sge_parse_loglevel_val(&tmp_uval, value) != 1) {
-            ERROR((SGE_EVENT, MSG_CONF_GOTINVALIDVALUEXFORLOGLEVEL_S, value));
+            ERROR(MSG_CONF_GOTINVALIDVALUEXFORLOGLEVEL_S, value);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -484,27 +479,27 @@ check_config(lList **alpp, lListElem *conf) {
          if ((strcasecmp("unix_behavior", value) != 0) &&
              (strcasecmp("posix_compliant", value) != 0) &&
              (strcasecmp("script_from_stdin", value) != 0)) {
-            ERROR((SGE_EVENT, MSG_CONF_GOTINVALIDVALUEXFORSHELLSTARTMODE_S, value));
+            ERROR(MSG_CONF_GOTINVALIDVALUEXFORSHELLSTARTMODE_S, value);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "shell")) {
          if (!path_verify(name, alpp, "shell", true)) {
-            ERROR((SGE_EVENT, MSG_CONF_GOTINVALIDVALUEXFORSHELL_S, value));
+            ERROR(MSG_CONF_GOTINVALIDVALUEXFORSHELL_S, value);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "load_report_time")) {
          /* do not allow infinity entry for load_report_time */
          if (strcasecmp(value, "infinity") == 0) {
-            ERROR((SGE_EVENT, MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name));
+            ERROR(MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "max_unheard")) {
          /* do not allow infinity entry */
          if (strcasecmp(value, "infinity") == 0) {
-            ERROR((SGE_EVENT, MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name));
+            ERROR(MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -516,7 +511,7 @@ check_config(lList **alpp, lListElem *conf) {
          size = get_pw_buffer_size();
          buffer = sge_malloc(size);
          if (strcasecmp(value, "none") && !sge_getpwnam_r(value, &pw_struct, buffer, size)) {
-            ERROR((SGE_EVENT, MSG_CONF_GOTINVALIDVALUEXASADMINUSER_S, value));
+            ERROR(MSG_CONF_GOTINVALIDVALUEXASADMINUSER_S, value);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             sge_free(&buffer);
             DRETURN(STATUS_EEXIST);
@@ -528,7 +523,7 @@ check_config(lList **alpp, lListElem *conf) {
 
          /* parse just for .. */
          if (lString2ListNone(value, &tmp, US_Type, US_name, " \t,")) {
-            ERROR((SGE_EVENT, MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, conf_name));
+            ERROR(MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -545,7 +540,7 @@ check_config(lList **alpp, lListElem *conf) {
 
          /* parse just for .. */
          if (lString2ListNone(value, &tmp, PR_Type, PR_name, " \t,")) {
-            ERROR((SGE_EVENT, MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, conf_name));
+            ERROR(MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -567,14 +562,14 @@ check_config(lList **alpp, lListElem *conf) {
 
             /* force use of absolute paths if string <> none */
             if (script[0] != '/') {
-               ERROR((SGE_EVENT, MSG_CONF_THEPATHGIVENFORXMUSTSTARTWITHANY_S, name));
+               ERROR(MSG_CONF_THEPATHGIVENFORXMUSTSTARTWITHANY_S, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
 
             /* ensure that variables are valid */
             if (replace_params(script, nullptr, 0, prolog_epilog_variables)) {
-               ERROR((SGE_EVENT, MSG_CONF_PARAMETERXINCONFIGURATION_SS, name, err_msg));
+               ERROR(MSG_CONF_PARAMETERXINCONFIGURATION_SS, name, err_msg);
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
@@ -582,7 +577,7 @@ check_config(lList **alpp, lListElem *conf) {
       } else if (!strcmp(name, "auto_user_oticket") || !strcmp(name, "auto_user_fshare")) {
          u_long32 uval = 0;
          if (!extended_parse_ulong_val(nullptr, &uval, TYPE_INT, value, nullptr, 0, 0, true)) {
-            ERROR((SGE_EVENT, MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, value ? value : "(nullptr)"));
+            ERROR(MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, value ? value : "(nullptr)");
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -899,15 +894,15 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
 
          if (((nullptr != old_value) && (nullptr != new_value)) && (strcmp(old_value, new_value) != 0)) {
             /* log in qmaster messages file */
-            WARNING((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name));
-            /*   INFO((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name)); */
+            WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name);
+            /*   INFO(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name); */
             answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
       } else if ((nullptr != old_entry) != (nullptr != new_entry)) {
          /* log error only if one value is set */
          /* log in qmaster messages file */
-         WARNING((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name));
-         /* INFO((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name)); */
+         WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name);
+         /* INFO(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name); */
          answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
       entry_idx++;

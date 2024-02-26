@@ -178,12 +178,12 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
       proc_elem = LNK_DATA(proc, proc_elem_t, link);
       proc_elem->proc.pd_tstamp = time_stamp;
 #ifdef MONITOR_PDC
-      INFO((SGE_EVENT, "found job to process %s: set time stamp\n", d_name));
+      INFO("found job to process %s: set time stamp\n", d_name);
 #endif
    }
 #ifdef MONITOR_PDC
    else
-      INFO((SGE_EVENT, "found no job to process %s\n", d_name));
+      INFO("found no job to process %s\n", d_name);
 #endif
 
    DRETURN_VOID;
@@ -424,13 +424,13 @@ time_t last_time
 
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SGE_NGROUPS_MAXOSRECONFIGURATIONNECESSARY));
+      ERROR(SFNMAX, MSG_SGE_NGROUPS_MAXOSRECONFIGURATIONNECESSARY);
       DRETURN(1);  
    }   
 
    list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
    if (list == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED));
+      ERROR(SFNMAX, MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED);
       DRETURN(1);
    }
 
@@ -470,7 +470,7 @@ time_t last_time
       if (SGE_STAT(procnam, &fst)) {
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO((SGE_EVENT, "could not stat %s: %s\n", procnam, strerror(errno)));
+            INFO("could not stat %s: %s\n", procnam, strerror(errno));
 #endif
             touch_time_stamp(dent->d_name, time_stamp, job_list);
          }
@@ -488,10 +488,9 @@ time_t last_time
             if (errno != ENOENT) {
 #ifdef MONITOR_PDC
                if (errno == EACCES)
-                  INFO((SGE_EVENT, "(uid:" gid_t_fmt " euid:" gid_t_fmt ") could not open %s: %s\n",
-                           getuid(), geteuid(), procnam, strerror(errno)));
+                  INFO("(uid:" gid_t_fmt " euid:" gid_t_fmt ") could not open %s: %s\n", getuid(), geteuid(), procnam, strerror(errno));
                else
-                  INFO((SGE_EVENT, "could not open %s: %s\n", procnam, strerror(errno)));
+                  INFO("could not open %s: %s\n", procnam, strerror(errno));
 #endif
                   touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
@@ -513,7 +512,7 @@ time_t last_time
             close(fd);
             if (ret == -1 && errno != ENOENT) {
 #ifdef MONITOR_PDC
-               INFO((SGE_EVENT, "could not read %s: %s\n", procnam, strerror(errno)));
+               INFO("could not read %s: %s\n", procnam, strerror(errno));
 #endif
                touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
@@ -563,7 +562,7 @@ time_t last_time
          if (SGE_STAT(procnam, &fst) != 0) {
             if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-               INFO((SGE_EVENT, "could not stat %s: %s\n", procnam, strerror(errno)));
+               INFO("could not stat %s: %s\n", procnam, strerror(errno));
 #endif
                touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
@@ -615,7 +614,7 @@ time_t last_time
          close(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO((SGE_EVENT, "could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno)));
+            INFO("could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno));
 #endif
             touch_time_stamp(dent->d_name, time_stamp, job_list);
          }
@@ -630,7 +629,7 @@ time_t last_time
          close(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO((SGE_EVENT, "could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno)));
+            INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
 #endif
             touch_time_stamp(dent->d_name, time_stamp, job_list);
          }
@@ -646,7 +645,7 @@ time_t last_time
          close(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO((SGE_EVENT, "could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno)));
+            INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
 #endif
             touch_time_stamp(dent->d_name, time_stamp, job_list);
          }
@@ -731,14 +730,12 @@ time_t last_time
          utime = ((double)lGetPosUlong(pr, pos_utime))/HZ;
          stime = ((double)lGetPosUlong(pr, pos_stime))/HZ;
 
-         INFO((SGE_EVENT, "new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n",
-               lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime)); 
+         INFO("new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime);
 #else
          utime = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
          stime = pr.pr_stime.tv_sec + pr.pr_stime.tv_nsec*1E-9;
 
-         INFO((SGE_EVENT, "new process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n",
-               pr.pr_pid, job_elem->job.jd_jid, utime, stime)); 
+         INFO("new process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n", pr.pr_pid, job_elem->job.jd_jid, utime, stime);
 #endif
       }
 #endif

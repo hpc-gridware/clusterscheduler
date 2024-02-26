@@ -245,9 +245,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
       gettimeofday(&end_time, nullptr);
       if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000)
           > jsv_threshold || jsv_threshold == 0) {
-         INFO((SGE_EVENT, MSG_JSV_THRESHOLD_UU, sge_u32c(lGetUlong(*jep, JB_job_number)),
-                 sge_u32c((end_time.tv_sec - start_time.tv_sec) * 1000 +
-                          (end_time.tv_usec - start_time.tv_usec) / 1000)));
+         INFO(MSG_JSV_THRESHOLD_UU, sge_u32c(lGetUlong(*jep, JB_job_number)), sge_u32c((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000));
       }
       if (!lret) {
          DRETURN(STATUS_EUNKNOWN);
@@ -269,8 +267,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
        !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
       if (spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep) == false) {
          spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-         ERROR((SGE_EVENT, MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)),
-                 strerror(errno)));
+         ERROR(MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)), strerror(errno));
          answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EDISK);
       }
@@ -284,7 +281,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
                         *jep, nullptr, nullptr, true, true)) {
       spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-      ERROR((SGE_EVENT, MSG_JOB_NOWRITE_U, sge_u32c(lGetUlong(*jep, JB_job_number))));
+      ERROR(MSG_JOB_NOWRITE_U, sge_u32c(lGetUlong(*jep, JB_job_number)));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       if ((lGetString(*jep, JB_exec_file) != nullptr)) {
          unlink(lGetString(*jep, JB_exec_file));
@@ -386,7 +383,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    DENTER(TOP_LAYER);
 
    if (!idep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -396,7 +393,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
          forced = true;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_NMNOTINELEMENT_S, "ID_force"));
+      CRITICAL(MSG_NMNOTINELEMENT_S, "ID_force");
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -404,7 +401,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    /* first lets make sure they have permission if a force is involved */
    if (!mconf_get_enable_forced_qdel()) {/* Flag ENABLE_FORCED_QDEL in qmaster_params */
       if (forced && !manop_is_manager(ruser, master_manager_list)) {
-         ERROR((SGE_EVENT, MSG_JOB_FORCEDDELETEPERMS_S, ruser));
+         ERROR(MSG_JOB_FORCEDDELETEPERMS_S, ruser);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -418,7 +415,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    if (lGetPosViaElem(idep, ID_user_list, SGE_NO_ABORT) >= 0) {
       user_list = lGetListRW(idep, ID_user_list);
    } else {
-      CRITICAL((SGE_EVENT, MSG_NMNOTINELEMENT_S, "ID_user_list"));
+      CRITICAL(MSG_NMNOTINELEMENT_S, "ID_user_list");
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -483,8 +480,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
 
       /* Does user have privileges to delete the job/task? */
       if (job_check_owner(ruser, job_number, master_job_list, master_manager_list, master_operator_list)) {
-         ERROR((SGE_EVENT, MSG_DELETEPERMS_SSU, ruser, SGE_OBJ_JOB,
-                 sge_u32c(job_number)));
+         ERROR(MSG_DELETEPERMS_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          njobs++;
          /* continue with next job */
@@ -704,7 +700,7 @@ empty_job_list_filter(lList **alpp, int was_modify, int user_list_flag, lList *u
    DENTER(TOP_LAYER);
 
    if (all_users_flag) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_THEREARENOJOBS));
+      ERROR(SFNMAX, MSG_SGETEXT_THEREARENOJOBS);
    } else if (user_list_flag) {
       dstring user_list_string = DSTRING_INIT;
 
@@ -732,40 +728,35 @@ empty_job_list_filter(lList **alpp, int was_modify, int user_list_flag, lList *u
       if (jid_flag) {
          if (is_array) {
             if (start == end) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXISTTASK_SUS,
-                       jobid, sge_u32c(start), sge_dstring_get_string(&user_list_string)));
+               ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SUS, jobid, sge_u32c(start), sge_dstring_get_string(&user_list_string));
             } else {
-               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUUS,
-                       jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step),
-                       sge_dstring_get_string(&user_list_string)));
+               ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUUS, jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step), sge_dstring_get_string(&user_list_string));
             }
          } else {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DEL_JOB_SS, jobid, sge_dstring_get_string(&user_list_string)));
+            ERROR(MSG_SGETEXT_DEL_JOB_SS, jobid, sge_dstring_get_string(&user_list_string));
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_JOB, sge_dstring_get_string(&user_list_string)));
+         ERROR(MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_JOB, sge_dstring_get_string(&user_list_string));
       }
 
       sge_dstring_free(&user_list_string);
 
    } else if (all_jobs_flag) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_JOB, ruser));
+      ERROR(MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_JOB, ruser);
    } else if (jid_flag) {
       /* should not be possible */
       if (is_array) {
          if (start == end) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXISTTASK_SU,
-                    jobid, sge_u32c(start)));
+            ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SU, jobid, sge_u32c(start));
          } else {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUU,
-                    jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step)));
+            ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUU, jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step));
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_JOB, jobid));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_JOB, jobid);
       }
    } else {
       /* Should not be possible */
-      ERROR((SGE_EVENT, SFNMAX, was_modify ? MSG_SGETEXT_NOJOBSMODIFIED : MSG_SGETEXT_NOJOBSDELETED));
+      ERROR(SFNMAX, was_modify ? MSG_SGETEXT_NOJOBSMODIFIED : MSG_SGETEXT_NOJOBSDELETED);
    }
 
    answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -804,7 +795,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
    DENTER(TOP_LAYER);
 
    if (job_filter == nullptr) {
-      ERROR((SGE_EVENT, "job_list_filter() got no filters"));
+      ERROR("job_list_filter() got no filters");
       DRETURN_VOID;
    }
 
@@ -869,7 +860,7 @@ verify_job_list_filter( lList **alpp, int all_users_flag, int all_jobs_flag, int
 
    /* Reject incorrect requests */
    if (!all_users_flag && !all_jobs_flag && !jid_flag && !user_list_flag) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_SPECIFYUSERORID_S, SGE_OBJ_JOB));
+      ERROR(MSG_SGETEXT_SPECIFYUSERORID_S, SGE_OBJ_JOB);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -877,7 +868,7 @@ verify_job_list_filter( lList **alpp, int all_users_flag, int all_jobs_flag, int
    /* case 9 */
 
    if (all_users_flag && user_list_flag) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_SPECIFYONEORALLUSER));
+      ERROR(SFNMAX, MSG_SGETEXT_SPECIFYONEORALLUSER);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -885,7 +876,7 @@ verify_job_list_filter( lList **alpp, int all_users_flag, int all_jobs_flag, int
 #if 0
    /* case 2,5 */
    if ((all_users_flag || user_list_flag) && jid_flag) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_NOTALLOWEDTOSPECUSERANDJID));
+      ERROR(SFNMAX, MSG_SGETEXT_NOTALLOWEDTOSPECUSERANDJID);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -893,8 +884,7 @@ verify_job_list_filter( lList **alpp, int all_users_flag, int all_jobs_flag, int
 
    /* case 1,3: Only manager can modify all jobs of all users */
    if (all_users_flag && !jid_flag && !manop_is_manager(ruser, master_manager_list)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser,
-              "modify all jobs"));
+      ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all jobs");
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -1002,7 +992,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    task_number = lGetUlong(t, JAT_task_number);
    qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(t, JAT_master_queue));
    if (!qep) {
-      ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDQOFJOB_S, lGetString(t, JAT_master_queue)));
+      ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, lGetString(t, JAT_master_queue));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    }
    if (sge_signal_queue(SGE_SIGKILL, qep, j, t, monitor)) {
@@ -1013,13 +1003,13 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          j = nullptr;
 
          if (job_is_array(j)) {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
+            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number)));
+            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
          }
          answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } else {
-         ERROR((SGE_EVENT, MSG_COM_NOSYNCEXECD_SU, ruser, sge_u32c(job_number)));
+         ERROR(MSG_COM_NOSYNCEXECD_SU, ruser, sge_u32c(job_number));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       }
    } else {
@@ -1029,9 +1019,9 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
          if (job_is_array(j)) {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
+            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number)));
+            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
@@ -1056,9 +1046,9 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
           */
 
          if (job_is_array(j)) {
-            INFO((SGE_EVENT, MSG_JOB_REGDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
+            INFO(MSG_JOB_REGDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
-            INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
+            INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
          }
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -1142,7 +1132,7 @@ int sge_gdi_mod_job(
    DENTER(TOP_LAYER);
 
    if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -1250,7 +1240,7 @@ int sge_gdi_mod_job(
       if (strcmp(ruser, lGetString(jobep, JB_owner))
           && !manop_is_operator(ruser, master_manager_list, master_operator_list)
           && !manop_is_manager(ruser, master_manager_list)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, ruser, sge_u32c(jobid), MSG_JOB_CHANGEATTR));
+         ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, ruser, sge_u32c(jobid), MSG_JOB_CHANGEATTR);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          lFreeWhere(&job_where);
          sge_free(&job_mod_name);
@@ -1287,7 +1277,7 @@ int sge_gdi_mod_job(
          answer_list_output(&answer_list);
 
          if (!dbret) {
-            ERROR((SGE_EVENT, MSG_JOB_NOALTERNOWRITE_U, sge_u32c(jobid)));
+            ERROR(MSG_JOB_NOALTERNOWRITE_U, sge_u32c(jobid));
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeList(&tmp_alp);
@@ -1367,7 +1357,7 @@ int sge_gdi_mod_job(
          if (trigger & RECHAIN_JA_AD_HOLD)
             job_suc_pre_ad(new_job);
 
-         INFO((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSUS, ruser, rhost, sge_u32c(jobid), MSG_JOB_JOB));
+         INFO(MSG_SGETEXT_MODIFIEDINLIST_SSUS, ruser, rhost, sge_u32c(jobid), MSG_JOB_JOB);
       }
    }
    lFreeWhere(&job_where);
@@ -1594,8 +1584,7 @@ static int mod_task_attributes(
 
          /* need to be operator */
          if (!manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser,
-                    MSG_JOB_CHANGESHAREFUNC));
+            ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGESHAREFUNC);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
          }
@@ -1664,8 +1653,7 @@ static int mod_task_attributes(
             if (!manop_is_manager(ruser, master_manager_list)) {
                u_long32 new_mask = op_code_and_hold & ~MINUS_H_TGT_SYSTEM;
                lSetPosUlong(tep, pos, new_mask);
-               ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser,
-                       is_sub_op_code ? MSG_JOB_RMHOLDMNG : MSG_JOB_SETHOLDMNG));
+               ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, is_sub_op_code ? MSG_JOB_RMHOLDMNG : MSG_JOB_SETHOLDMNG);
                answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_ENOOPR);
             }
@@ -1676,8 +1664,7 @@ static int mod_task_attributes(
                u_long32 new_mask = op_code_and_hold & ~MINUS_H_TGT_OPERATOR;
                lSetPosUlong(tep, pos, new_mask);
 
-               ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser,
-                       is_sub_op_code ? MSG_JOB_RMHOLDOP : MSG_JOB_SETHOLDOP));
+               ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, is_sub_op_code ? MSG_JOB_RMHOLDOP : MSG_JOB_SETHOLDOP);
                answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_ENOOPR);
             }
@@ -1689,9 +1676,7 @@ static int mod_task_attributes(
                 !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
                u_long32 new_mask = op_code_and_hold & ~MINUS_H_TGT_USER;
                lSetPosUlong(tep, pos, new_mask);
-               ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, ruser,
-                       sge_u32c(jobid), is_sub_op_code ?
-                                        MSG_JOB_RMHOLDUSER : MSG_JOB_SETHOLDUSER));
+               ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, ruser, sge_u32c(jobid), is_sub_op_code ? MSG_JOB_RMHOLDUSER : MSG_JOB_SETHOLDUSER);
                answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_ENOOPR);
             }
@@ -1753,7 +1738,7 @@ static bool is_changes_consumables(lList **alpp, const lList *new_lp, const lLis
 
       /* search it in new hard resource list */
       if (lGetElemStr(new_lp, CE_name, name) == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_MOD_MISSINGRUNNINGJOBCONSUMABLE_S, name));
+         ERROR(MSG_JOB_MOD_MISSINGRUNNINGJOBCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);
       }
@@ -1772,7 +1757,7 @@ static bool is_changes_consumables(lList **alpp, const lList *new_lp, const lLis
 
       /* search it in old hard resource list */
       if ((old_entry = lGetElemStr(old_lp, CE_name, name)) == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_MOD_ADDEDRUNNINGJOBCONSUMABLE_S, name));
+         ERROR(MSG_JOB_MOD_ADDEDRUNNINGJOBCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);
       }
@@ -1784,7 +1769,7 @@ static bool is_changes_consumables(lList **alpp, const lList *new_lp, const lLis
 
       if (lGetDouble(old_entry, CE_doubleval) !=
           lGetDouble(new_entry, CE_doubleval)) {
-         ERROR((SGE_EVENT, MSG_JOB_MOD_CHANGEDRUNNINGJOBCONSUMABLE_S, name));
+         ERROR(MSG_JOB_MOD_CHANGEDRUNNINGJOBCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);
       }
@@ -1824,14 +1809,14 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
       name = lGetString(entry, CE_name);
 
       if (!(dcep = centry_list_locate(master_centry_list, name))) {
-         ERROR((SGE_EVENT, MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S, name));
+         ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
 
       /* ignore non-consumables */
       if (lGetUlong(dcep, CE_consumable)) {
-         ERROR((SGE_EVENT, MSG_JOB_MOD_SOFTREQCONSUMABLE_S, name));
+         ERROR(MSG_JOB_MOD_SOFTREQCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
@@ -1892,19 +1877,17 @@ static int mod_job_attributes(
        *    - multi tasks requests are only valid for array jobs 
        */
       if (!ja_task) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_NEEDONEELEMENT_SS,
-                 lNm2Str(JB_ja_tasks), __func__));
+         ERROR(MSG_SGETEXT_NEEDONEELEMENT_SS, lNm2Str(JB_ja_tasks), __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
       if ((pos = lGetPosViaElem(ja_task, JAT_task_number, SGE_NO_ABORT)) < 0) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                 lNm2Str(JAT_task_number), __func__));
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(JAT_task_number), __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
       if (!new_job_is_array && jep_ja_task_number > 1) {
-         ERROR((SGE_EVENT, MSG_JOB_NOJOBARRAY_U, sge_u32c(jobid)));
+         ERROR(MSG_JOB_NOJOBARRAY_U, sge_u32c(jobid));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -1990,8 +1973,7 @@ static int mod_job_attributes(
 
       /* need to be operator */
       if (!manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser,
-                 MSG_JOB_CHANGEOVERRIDETICKS));
+         ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGEOVERRIDETICKS);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ENOOPR);
       }
@@ -2014,7 +1996,7 @@ static int mod_job_attributes(
       if (uval > (old_priority = lGetUlong(new_job, JB_priority))) {
          /* need to be at least operator */
          if (!manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_PRIOINC));
+            ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_PRIOINC);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
          }
@@ -2039,7 +2021,7 @@ static int mod_job_attributes(
          /* need to be owner or at least operator */
          if (strcmp(ruser, lGetString(new_job, JB_owner)) &&
              !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGEJOBSHARE));
+            ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGEJOBSHARE);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
          }
@@ -2064,7 +2046,7 @@ static int mod_job_attributes(
          /* need to be owner or at least operator */
          if (strcmp(ruser, lGetString(new_job, JB_owner)) &&
              !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGEJOBAR));
+            ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, ruser, MSG_JOB_CHANGEJOBAR);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
          }
@@ -2085,7 +2067,7 @@ static int mod_job_attributes(
    /* If it is a deadline job the user has to be a deadline user */
    if ((pos = lGetPosViaElem(jep, JB_deadline, SGE_NO_ABORT)) >= 0) {
       if (!userset_is_deadline_user(master_userset_list, ruser)) {
-         ERROR((SGE_EVENT, MSG_JOB_NODEADLINEUSER_S, ruser));
+         ERROR(MSG_JOB_NODEADLINEUSER_S, ruser);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       } else {
@@ -2133,8 +2115,7 @@ static int mod_job_attributes(
       DPRINTF(("got new JB_checkpoint_name\n"));
       ckpt_name = lGetString(jep, JB_checkpoint_name);
       if (ckpt_name && !ckpt_list_locate(master_ckpt_list, ckpt_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS,
-                 MSG_OBJ_CKPT, ckpt_name));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2527,7 +2508,7 @@ static int mod_job_attributes(
       DPRINTF(("got new JB_pe\n"));
       pe_name = lGetString(jep, JB_pe);
       if (pe_name && !pe_list_find_matching(master_pe_list, pe_name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PE, pe_name));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PE, pe_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2545,7 +2526,7 @@ static int mod_job_attributes(
 
       /* reject PE ranges change requests for jobs without PE request */
       if (!(pe_name = lGetString(new_job, JB_pe))) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_PERANGE_ONLY_FOR_PARALLEL));
+         ERROR(SFNMAX, MSG_JOB_PERANGE_ONLY_FOR_PARALLEL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2721,7 +2702,7 @@ static int mod_job_attributes(
       task_concurrency = lGetUlong(jep, JB_ja_task_concurrency);
 
       if (task_concurrency > 0 && !job_is_array(new_job)) {
-         ERROR((SGE_EVENT, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, MSG_JOB_TASK_CONCURRENCY));
+         ERROR(MSG_PARSE_INVALIDOPTIONARGUMENTX_S, MSG_JOB_TASK_CONCURRENCY);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2734,7 +2715,7 @@ static int mod_job_attributes(
 
    /* deny certain modifications of running jobs */
    if (may_not_be_running && is_running) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_CANT_MOD_RUNNING_JOBS_U, sge_u32c(jobid)));
+      ERROR(MSG_SGETEXT_CANT_MOD_RUNNING_JOBS_U, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -2782,7 +2763,7 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
-         ERROR((SGE_EVENT, MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp)));
+         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          is_cycle = true;
@@ -2797,7 +2778,7 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
-         ERROR((SGE_EVENT, MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp)));
+         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          is_cycle = true;
@@ -2847,7 +2828,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
    predecessors_req = lGetList(job, JB_jid_request_list);
    predecessors_id = lCreateList("job_predecessors", JRE_Type);
    if (!predecessors_id) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MOD_JOBDEPENDENCY_MEMORY));
+      ERROR(SFNMAX, MSG_JOB_MOD_JOBDEPENDENCY_MEMORY);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -2859,14 +2840,14 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF(("a job cannot wait for a task to finish\n"));
-            ERROR((SGE_EVENT, MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident));
+            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
          if (SGE_STRTOU_LONG32(pre_ident) == jobid) {
             lFreeList(&predecessors_id);
             DPRINTF(("got my own jobid in JRE_job_name\n"));
-            ERROR((SGE_EVENT, MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid)));
+            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -2950,7 +2931,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
    predecessors_req = lGetList(job, JB_ja_ad_request_list);
    predecessors_id = lCreateList("job_predecessors_ad", JRE_Type);
    if (!predecessors_id) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MOD_JOBDEPENDENCY_MEMORY));
+      ERROR(SFNMAX, MSG_JOB_MOD_JOBDEPENDENCY_MEMORY);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -2961,7 +2942,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
       if (!job_is_array(job)) {
          lFreeList(&predecessors_id);
          DPRINTF(("could not create array dependence for non-array job\n"));
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MOD_CANONLYSPECIFYHOLDJIDADWITHADOPT));
+         ERROR(SFNMAX, MSG_JOB_MOD_CANONLYSPECIFYHOLDJIDADWITHADOPT);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2973,14 +2954,14 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF(("a job cannot wait for a task to finish\n"));
-            ERROR((SGE_EVENT, MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident));
+            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
          if (SGE_STRTOU_LONG32(pre_ident) == jobid) {
             lFreeList(&predecessors_id);
             DPRINTF(("got my own jobid in JRE_job_name\n"));
-            ERROR((SGE_EVENT, MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid)));
+            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -3036,7 +3017,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
       if (!job_is_array(pred_job)) {
          lFreeList(&predecessors_id);
          DPRINTF(("could not create array dependence on non-array job\n"));
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MOD_CANONLYSPECIFYHOLDJIDADWITHADOPT));
+         ERROR(SFNMAX, MSG_JOB_MOD_CANONLYSPECIFYHOLDJIDADWITHADOPT);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -3044,7 +3025,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
       if (!sge_task_depend_is_same_range(pred_job, job)) {
          lFreeList(&predecessors_id);
          DPRINTF(("could not create array dependence for jobs with different sub-task range\n"));
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MOD_ARRAYJOBMUSTHAVESAMERANGEWITHADOPT));
+         ERROR(SFNMAX, MSG_JOB_MOD_ARRAYJOBMUSTHAVESAMERANGEWITHADOPT);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -3104,13 +3085,13 @@ void sge_init_job_number() {
 
    if ((fp = fopen(SEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_uu32, &job_nr) != 1) {
-         ERROR((SGE_EVENT, MSG_NOSEQNRREAD_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
+         ERROR(MSG_NOSEQNRREAD_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno));
       }
       FCLOSE(fp);
       FCLOSE_ERROR:
       fp = nullptr;
    } else {
-      WARNING((SGE_EVENT, MSG_NOSEQFILEOPEN_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
+      WARNING(MSG_NOSEQFILEOPEN_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno));
    }
 
    guess_job_nr = guess_highest_job_number();
@@ -3148,7 +3129,7 @@ void sge_store_job_number(te_event_t anEvent, monitoring_t *monitor) {
       FILE *fp = fopen(SEQ_NUM_FILE, "w");
 
       if (fp == nullptr) {
-         ERROR((SGE_EVENT, MSG_NOSEQFILECREATE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
+         ERROR(MSG_NOSEQFILECREATE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno));
       } else {
          FPRINTF((fp, sge_u32"\n", job_nr));
          FCLOSE(fp);
@@ -3158,7 +3139,7 @@ void sge_store_job_number(te_event_t anEvent, monitoring_t *monitor) {
 
    FPRINTF_ERROR:
    FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_NOSEQFILECLOSE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
+   ERROR(MSG_NOSEQFILECLOSE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno));
    DRETURN_VOID;
 }
 
@@ -3446,7 +3427,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    DENTER(TOP_LAYER);
 
    if (!jep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -3456,14 +3437,14 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    DPRINTF(("SEEK jobid " sge_u32" for COPY operation\n", seek_jid));
 
    if (!(old_jep = lGetElemUlong(master_job_list, JB_job_number, seek_jid))) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SU, SGE_OBJ_JOB, sge_u32c(seek_jid)));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SU, SGE_OBJ_JOB, sge_u32c(seek_jid));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ensure copy is allowed */
    if (strcmp(ruser, lGetString(old_jep, JB_owner)) && !manop_is_manager(ruser, master_manager_list)) {
-      ERROR((SGE_EVENT, MSG_JOB_NORESUBPERMS_SSS, ruser, rhost, lGetString(old_jep, JB_owner)));
+      ERROR(MSG_JOB_NORESUBPERMS_SSS, ruser, rhost, lGetString(old_jep, JB_owner));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -3759,7 +3740,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
          sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                         COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor);
 
-         INFO((SGE_EVENT, MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
+         INFO(MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          njobs++;
          continue;
@@ -3854,7 +3835,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                          * qdel will delete the job (code part of the qmaster<->execd protocol)
                          */
                         if (qinstance_state_is_unknown(qinstance) == true) {
-                           INFO((SGE_EVENT, MSG_JOB_CHGFORCED_UU, sge_u32c(job_number), sge_u32c(task_number)));
+                           INFO(MSG_JOB_CHGFORCED_UU, sge_u32c(job_number), sge_u32c(task_number));
                            forced = true;
                         } else {
                            if (job_is_tight_parallel(job, master_pe_list) == true) {
@@ -3888,7 +3869,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                    (lGetUlong(tmp_task, JAT_state) & JDELETED &&
                     lGetUlong(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt() &&
                     !forced)) {
-                  INFO((SGE_EVENT, MSG_JOB_ALREADYDELETED_U, sge_u32c(job_number)));
+                  INFO(MSG_JOB_ALREADYDELETED_U, sge_u32c(job_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   continue;
                }
@@ -3898,8 +3879,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 * qdel and delete remaining jobs later
                 */
                if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
-                  INFO((SGE_EVENT, MSG_JOB_DISCONTTASKTRANS_SUU, ruser,
-                          sge_u32c(job_number), sge_u32c(task_number)));
+                  INFO(MSG_JOB_DISCONTTASKTRANS_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
                   *deletion_time_reached = true;
                   sge_free(&dupped_session);
@@ -3932,28 +3912,24 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
 
             range_list_sort_uniq_compress(range_list, nullptr, true);
             range_list_print_to_string(range_list, &tid_string, false, false, false);
-            INFO((SGE_EVENT, MSG_JOB_DELETETASKS_SSU,
-                    ruser, sge_dstring_get_string(&tid_string),
-                    sge_u32c(job_number)));
+            INFO(MSG_JOB_DELETETASKS_SSU, ruser, sge_dstring_get_string(&tid_string), sge_u32c(job_number));
             sge_dstring_free(&tid_string);
          } else {
             u_long32 task_id = range_list_get_first_id(range_list, nullptr);
 
-            INFO((SGE_EVENT, MSG_JOB_DELETETASK_SUU,
-                    ruser, sge_u32c(job_number), sge_u32c(task_id)));
+            INFO(MSG_JOB_DELETETASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_id));
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
       if ((*alltasks) && showmessage) {
          get_rid_of_schedd_job_messages(job_number);
-         INFO((SGE_EVENT, MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
+         INFO(MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
       if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
-         INFO((SGE_EVENT, MSG_JOB_DISCONTINUEDTRANS_SU, ruser,
-                 sge_u32c(job_number)));
+         INFO(MSG_JOB_DISCONTINUEDTRANS_SU, ruser, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
          *deletion_time_reached = true;
          sge_free(&dupped_session);
@@ -4017,7 +3993,7 @@ job_verify_project(const lListElem *job, lList **alpp,
       /* make sure the requested project exists at all */
       const lListElem *pep = prj_list_locate(master_project_list, project);
       if (pep == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_PRJUNKNOWN_S, project));
+         ERROR(MSG_JOB_PRJUNKNOWN_S, project);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -4025,7 +4001,7 @@ job_verify_project(const lListElem *job, lList **alpp,
       if (ret == STATUS_OK) {
          /* ensure user belongs to this project */
          if (!sge_has_access_(user, group, lGetList(pep, PR_acl), lGetList(pep, PR_xacl), master_userset_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NO_ACCESS2PRJ4USER_SS, project, user));
+            ERROR(MSG_SGETEXT_NO_ACCESS2PRJ4USER_SS, project, user);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
@@ -4037,7 +4013,7 @@ job_verify_project(const lListElem *job, lList **alpp,
 
          if ((xprojects != nullptr && prj_list_locate(xprojects, project)) ||
              (projects != nullptr && prj_list_locate(projects, project) == nullptr)) {
-            ERROR((SGE_EVENT, MSG_JOB_PRJNOSUBMITPERMS_S, project));
+            ERROR(MSG_JOB_PRJNOSUBMITPERMS_S, project);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
@@ -4052,7 +4028,7 @@ job_verify_project(const lListElem *job, lList **alpp,
        * every job *must* request a project
        */
       if (lGetNumberOfElem(projects) > 0) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_PRJREQUIRED));
+         ERROR(SFNMAX, MSG_JOB_PRJREQUIRED);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -4061,7 +4037,7 @@ job_verify_project(const lListElem *job, lList **alpp,
          char *enforce_project = mconf_get_enforce_project();
 
          if (enforce_project != nullptr && strcasecmp(enforce_project, "true") == 0) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_NO_PROJECT));
+            ERROR(SFNMAX, MSG_SGETEXT_NO_PROJECT);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }

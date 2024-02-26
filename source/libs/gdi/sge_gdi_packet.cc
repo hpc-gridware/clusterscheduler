@@ -717,11 +717,9 @@ sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp) {
       }
 
       if (client_version) {
-         WARNING((SGE_EVENT, MSG_GDI_WRONG_GDI_SSISS, packet->host, packet->commproc, (int) (packet->id),
-                 client_version, feature_get_product_name(FS_VERSION, &ds)));
+         WARNING(MSG_GDI_WRONG_GDI_SSISS, packet->host, packet->commproc, (int) (packet->id), client_version, feature_get_product_name(FS_VERSION, &ds));
       } else {
-         WARNING((SGE_EVENT, MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id),
-                 sge_u32c(version), feature_get_product_name(FS_VERSION, &ds)));
+         WARNING(MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id), sge_u32c(version), feature_get_product_name(FS_VERSION, &ds));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
       ret = false;

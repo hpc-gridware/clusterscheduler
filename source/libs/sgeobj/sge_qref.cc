@@ -774,13 +774,13 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
             lFreeList(&qref_list);
             lFreeList(&resolved_qref_list);
             if (!found_matching_qinstance) {
-               ERROR((SGE_EVENT, MSG_QREF_QUNKNOWN_S, qref_pattern == nullptr ? "" : qref_pattern));
+               ERROR(MSG_QREF_QUNKNOWN_S, qref_pattern == nullptr ? "" : qref_pattern);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
       } else {
-         ERROR((SGE_EVENT, SFNMAX, MSG_QREF_QNOTREQUESTABLE));
+         ERROR(SFNMAX, MSG_QREF_QNOTREQUESTABLE);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }

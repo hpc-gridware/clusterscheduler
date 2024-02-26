@@ -162,21 +162,21 @@ sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!cep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no calendar element, if cep has no CAL_name */
    if (lGetPosViaElem(cep, CAL_name, SGE_NO_ABORT) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
    cal_name = lGetString(cep, CAL_name);
 
    if (!lGetElemStrRW(*master_calendar_list, CAL_name, cal_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -188,7 +188,7 @@ sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
+         ERROR("denied: %s", lGetString(answer, AN_text));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
@@ -203,8 +203,7 @@ sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
                    nullptr, nullptr, nullptr, true, true);
    lDelElemStr(master_calendar_list, CAL_name, cal_name);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-           ruser, rhost, cal_name, MSG_OBJ_CALENDAR));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, cal_name, MSG_OBJ_CALENDAR);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
@@ -240,7 +239,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
    if (!(cep = lGetElemStrRW(master_calendar_list, CAL_name, cal_name))) {
-      ERROR((SGE_EVENT, MSG_EVE_TE4CAL_S, cal_name));
+      ERROR(MSG_EVE_TE4CAL_S, cal_name);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
    }

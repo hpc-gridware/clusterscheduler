@@ -94,7 +94,7 @@ sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *r
    DENTER(TOP_LAYER);
 
    if (!confp || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -121,7 +121,7 @@ sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *r
 
    check_reprioritize_interval(alpp, ruser, rhost);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration"));
+   INFO(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration");
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);

@@ -191,12 +191,12 @@ sge_setup_qmaster(char *anArgv[]) {
 
    process_cmdline(anArgv);
 
-   INFO((SGE_EVENT, SFNMAX, MSG_STARTUP_BEGINWITHSTARTUP));
+   INFO(SFNMAX, MSG_STARTUP_BEGINWITHSTARTUP);
 
    qmaster_unlock(QMASTER_LOCK_FILE);
 
-   if (write_qm_name(qualified_hostname, act_qmaster_file, err_str)) {
-      ERROR((SGE_EVENT, "%s\n", err_str));
+   if (write_qm_name(qualified_hostname, act_qmaster_file, err_str, sizeof(err_str))) {
+      ERROR("%s\n", err_str);
       sge_exit(1);
    }
 
@@ -246,18 +246,18 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
       sge_exit(1);
    }
    reresolve_qualified_hostname();
-   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname()));
+   DEBUG("%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname());
    admin_user = bootstrap_get_admin_user();
 
    if (switch_to_admin_user == true) {
       char str[MAX_STRING_SIZE];
-      if (sge_set_admin_username(admin_user, str) == -1) {
-         CRITICAL((SGE_EVENT, SFNMAX, str));
+      if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
+         CRITICAL(SFNMAX, str);
          sge_exit(1);
       }
 
       if (sge_switch2admin_user()) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
+         CRITICAL(SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER);
          sge_exit(1);
       }
    }
@@ -542,7 +542,7 @@ qmaster_init(char **anArgv) {
    DENTER(TOP_LAYER);
 
    if (setup_qmaster()) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_STARTUP_SETUPFAILED));
+      CRITICAL(SFNMAX, MSG_STARTUP_SETUPFAILED);
       sge_exit(1);
    }
 
@@ -593,12 +593,12 @@ communication_setup() {
 
    DENTER(TOP_LAYER);
 
-   DEBUG((SGE_EVENT, "my resolved hostname name is: \"%s\"\n", qualified_hostname));
+   DEBUG("my resolved hostname name is: \"%s\"\n", qualified_hostname);
 
    cl_com_handle_t *com_handle = cl_com_get_handle(prognames[QMASTER], 1);
 
    if (com_handle == nullptr) {
-      ERROR((SGE_EVENT, "port " sge_u32" already bound\n", qmaster_port));
+      ERROR("port " sge_u32" already bound\n", qmaster_port);
 
       if (is_qmaster_already_running(qmaster_spool_dir) == true) {
          char *host = nullptr;
@@ -606,8 +606,7 @@ communication_setup() {
 
          res = cl_com_gethostname(&host, nullptr, nullptr, nullptr);
 
-         CRITICAL((SGE_EVENT, MSG_QMASTER_FOUNDRUNNINGQMASTERONHOSTXNOTSTARTING_S, ((CL_RETVAL_OK == res) ? host
-                                                                                                          : "unknown")));
+         CRITICAL(MSG_QMASTER_FOUNDRUNNINGQMASTERONHOSTXNOTSTARTING_S, ((CL_RETVAL_OK == res) ? host : "unknown"));
 
          if (CL_RETVAL_OK == res) {
             sge_free(&host);
@@ -642,10 +641,10 @@ communication_setup() {
 
       /* log startup info into qmaster messages file */
       log_state_set_log_level(LOG_INFO);
-      INFO((SGE_EVENT, MSG_QMASTER_FD_HARD_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_max)));
-      INFO((SGE_EVENT, MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_cur)));
-      INFO((SGE_EVENT, MSG_QMASTER_MAX_FILE_DESCRIPTORS_LIMIT_U, sge_u32c(max_connections)));
-      INFO((SGE_EVENT, MSG_QMASTER_MAX_EVC_LIMIT_U, sge_u32c(mconf_get_max_dynamic_event_clients())));
+      INFO(MSG_QMASTER_FD_HARD_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_max));
+      INFO(MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_cur));
+      INFO(MSG_QMASTER_MAX_FILE_DESCRIPTORS_LIMIT_U, sge_u32c(max_connections));
+      INFO(MSG_QMASTER_MAX_EVC_LIMIT_U, sge_u32c(mconf_get_max_dynamic_event_clients()));
       log_state_set_log_level(old_ll);
    }
 
@@ -784,7 +783,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
 
    if (anExitValue == 0) {
       if (qmaster_lock(QMASTER_LOCK_FILE) == -1) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_LOCKFILE_ALREADY_EXISTS));
+         CRITICAL(SFNMAX, MSG_QMASTER_LOCKFILE_ALREADY_EXISTS);
       }
    }
    gdi_client_shutdown();
@@ -808,7 +807,7 @@ setup_qmaster() {
    if (first) {
       first = false;
    } else {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SETUP_SETUPMAYBECALLEDONLYATSTARTUP));
+      CRITICAL(SFNMAX, MSG_SETUP_SETUPMAYBECALLEDONLYATSTARTUP);
       DRETURN(-1);
    }
 
@@ -853,7 +852,7 @@ setup_qmaster() {
    /* get aliased hostname from commd */
    reresolve_qualified_hostname();
    qualified_hostname = component_get_qualified_hostname();
-   DEBUG((SGE_EVENT, "component_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
+   DEBUG("component_get_qualified_hostname() returned \"%s\"\n", qualified_hostname);
 
    /*
    ** read in all objects and check for correctness
@@ -920,14 +919,14 @@ setup_qmaster() {
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
       if (sge_add_host_of_type(SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
-         ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST));
+         ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST);
    }
 
    /* add host "global" to Master_Exechost_List as an exec host */
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
       if (sge_add_host_of_type(SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
-         ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST));
+         ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
 
    /* add qmaster host to Master_Adminhost_List as an administrativ host */
@@ -946,7 +945,7 @@ setup_qmaster() {
 
       if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_MANAGER, true)) {
          answer_list_output(&answer_list);
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST));
+         CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
          DRETURN(-1);
       }
    }
@@ -968,7 +967,7 @@ setup_qmaster() {
 
       if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_OPERATOR, true)) {
          answer_list_output(&answer_list);
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_CONFIG_CANTWRITEOPERATORLIST));
+         CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEOPERATORLIST);
          DRETURN(-1);
       }
    }
@@ -1091,9 +1090,7 @@ setup_qmaster() {
    {
       u_long32 saved_logginglevel = log_state_get_log_level();
       log_state_set_log_level(LOG_INFO);
-      INFO((SGE_EVENT, MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU,
-              sge_u32c(lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB))),
-              sge_u32c(time_end - time_start)));
+      INFO(MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU, sge_u32c(lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB))), sge_u32c(time_end - time_start));
       log_state_set_log_level(saved_logginglevel);
    }
 
@@ -1247,8 +1244,7 @@ remove_invalid_job_references(int user) {
          jobid = lGetUlong(upu, UPU_job_number);
          if (!lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid)) {
             lRemoveElem(lGetListRW(up, debited_job_usage_key), &upu);
-            WARNING((SGE_EVENT, "removing reference to no longer existing job " sge_u32" of %s " SFQ "\n",
-                    jobid, object_name, lGetString(up, object_key)));
+            WARNING("removing reference to no longer existing job " sge_u32" of %s " SFQ "\n", jobid, object_name, lGetString(up, object_key));
             spool_me = 1;
          }
       }
@@ -1301,12 +1297,10 @@ static int debit_all_jobs_from_qs() {
             slots = lGetUlong(gdi, JG_slots);
 
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name))) {
-               ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU,
-                       queue_name, sge_u32c(lGetUlong(jep, JB_job_number))));
+               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(lGetUlong(jep, JB_job_number)));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else if (ar_id != 0 && (ar = lGetElemUlong(master_ar_list, AR_id, ar_id)) == nullptr) {
-               ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU,
-                       sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number))));
+               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number)));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else {
                /* debit in all layers */
@@ -1327,8 +1321,7 @@ static int debit_all_jobs_from_qs() {
                   if (queue != nullptr) {
                      qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, nullptr);
                   } else {
-                     ERROR((SGE_EVENT, "job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
-                             sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id)));
+                     ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat, sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
                   }
                }
             }

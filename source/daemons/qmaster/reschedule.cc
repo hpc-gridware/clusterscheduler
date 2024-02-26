@@ -143,7 +143,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     */
    new_timeout = reschedule_unknown_timeout(hep);
    if (new_timeout == 0) {
-      INFO((SGE_EVENT, MSG_RU_CANCELED_S, hostname));
+      INFO(MSG_RU_CANCELED_S, hostname);
       DTRACE;
       goto Error;
    } else if (new_timeout + add_time > timeout) {
@@ -402,12 +402,12 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        */
       if (!force && lGetUlong(jep, JB_restart) == 2) {
          if (mconf_get_enable_reschedule_kill()) {
-            INFO((SGE_EVENT, MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids));
+            INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                            COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
             continue;
          } else {
-            INFO((SGE_EVENT, MSG_RU_NOT_RESTARTABLE_SS, mail_type, mail_ids));
+            INFO(MSG_RU_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          }
          continue;
@@ -420,7 +420,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       job_now = lGetUlong(jep, JB_type);
       if (JOB_TYPE_IS_QSH(job_now) || JOB_TYPE_IS_QLOGIN(job_now)
           || JOB_TYPE_IS_QRSH(job_now) || JOB_TYPE_IS_QRLOGIN(job_now)) {
-         INFO((SGE_EVENT, MSG_RU_INTERACTIVEJOB_SSS, mail_ids, mail_type, mail_type));
+         INFO(MSG_RU_INTERACTIVEJOB_SSS, mail_ids, mail_type, mail_type);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          continue;
       }
@@ -440,12 +440,12 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                flags = sge_parse_checkpoint_attr(lGetString(ckpt_ep, CK_when));
             }
             if (!(flags & CHECKPOINT_AT_AUTO_RES)) {
-               INFO((SGE_EVENT, MSG_RU_CKPTNOTVALID_SSS, mail_ids, lGetString(ckpt_ep, CK_name), mail_type));
+               INFO(MSG_RU_CKPTNOTVALID_SSS, mail_ids, lGetString(ckpt_ep, CK_name), mail_type);
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
          } else {
-            INFO((SGE_EVENT, MSG_RU_CKPTEXIST_SS, mail_ids, lGetString(ckpt_ep, CK_name)));
+            INFO(MSG_RU_CKPTEXIST_SS, mail_ids, lGetString(ckpt_ep, CK_name));
             answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
             continue;
          }
@@ -456,7 +456,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * not be automaticly rescheduled (exception: forced flag)
        */
       if (!force && (lGetUlong(this_jatep, JAT_state) & JDELETED)) {
-         INFO((SGE_EVENT, MSG_RU_INDELETEDSTATE_SS, mail_type, mail_ids));
+         INFO(MSG_RU_INDELETEDSTATE_SS, mail_type, mail_ids);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          continue;
       }
@@ -477,14 +477,13 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          }
          if (queue == nullptr || !lGetBool(queue, QU_rerun)) {
             if (mconf_get_enable_reschedule_kill()) {
-               INFO((SGE_EVENT, MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids));
+               INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
                sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                               COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
                continue;
 
             } else {
-               INFO((SGE_EVENT, MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : lGetString(queue,
-                                                                                                          QU_full_name)));
+               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : lGetString(queue, QU_full_name));
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
@@ -954,7 +953,7 @@ update_reschedule_unknown_timeout(lListElem *host) {
          const char *value = lGetString(conf_entry, CF_value);
 
          if (parse_ulong_val(nullptr, &timeout, TYPE_TIM, value, nullptr, 0) == 0) {
-            ERROR((SGE_EVENT, MSG_OBJ_RESCHEDULEUNKN_SS, hostname, value));
+            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, hostname, value);
             timeout = 0;
          }
 
@@ -1008,7 +1007,7 @@ reschedule_unknown_timeout(lListElem *hep) {
 
       if ((conf_entry = sge_get_configuration_entry_by_name(host, "reschedule_unknown")) != nullptr) {
          if (parse_ulong_val(nullptr, &timeout, TYPE_TIM, lGetString(conf_entry, CF_value), nullptr, 0) == 0) {
-            ERROR((SGE_EVENT, MSG_OBJ_RESCHEDULEUNKN_SS, host, lGetString(conf_entry, CF_value)));
+            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, host, lGetString(conf_entry, CF_value));
             timeout = 0;
          }
 

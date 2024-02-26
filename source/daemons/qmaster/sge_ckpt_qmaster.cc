@@ -119,8 +119,7 @@ ckpt_mod(lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char
          DRETURN(STATUS_EUNKNOWN);
       }
    } else {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(CK_name), __func__));
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CK_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       goto ERROR;
    }
@@ -159,7 +158,7 @@ ckpt_mod(lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char
       if (is_checkpoint_when_valid(new_flags)) {
          lSetString(new_ckpt, CK_when, get_checkpoint_when(new_flags));
       } else {
-         ERROR((SGE_EVENT, MSG_CKPT_INVALIDWHENATTRIBUTE_S, ckpt_name));
+         ERROR(MSG_CKPT_INVALIDWHENATTRIBUTE_S, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          goto ERROR;
       }
@@ -307,29 +306,28 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no ckpt element, if ep has no CK_name */
    if ((pos = lGetPosViaElem(ep, CK_name, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(CK_name), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CK_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    ckpt_name = lGetPosString(ep, pos);
    if (!ckpt_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
    found = ckpt_list_locate(*lpp, ckpt_name);
 
    if (!found) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -344,7 +342,7 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
                              *object_type_get_master_list(SGE_TYPE_CQUEUE))) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
+         ERROR("denied: %s", lGetString(answer, AN_text));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
@@ -355,7 +353,7 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    /* remove ckpt file 1st */
    if (!sge_event_spool(alpp, 0, sgeE_CKPT_DEL, 0, 0, ckpt_name, nullptr, nullptr,
                         nullptr, nullptr, nullptr, true, true)) {
-      ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, MSG_OBJ_CKPT, ckpt_name));
+      ERROR(MSG_CANTSPOOL_SS, MSG_OBJ_CKPT, ckpt_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EDISK);
    }
@@ -363,8 +361,7 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    /* now we can remove the element */
    lRemoveElem(*lpp, &found);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-           ruser, rhost, ckpt_name, MSG_OBJ_CKPT));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, ckpt_name, MSG_OBJ_CKPT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }

@@ -208,8 +208,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
 
          /* Check first that the entry is not nullptr */
          if (!pos) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                    lNm2Str(CE_urgency_weight), "urgency_weight"));
+            ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CE_urgency_weight), "urgency_weight");
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -387,41 +386,35 @@ sge_del_centry(lListElem *centry, lList **answer_list, char *remote_user, char *
                                       nullptr, nullptr, nullptr, true, true)) {
 
                      lRemoveElem(master_centry_list, &tmp_centry);
-                     INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-                             remote_user, remote_host, name, MSG_OBJ_CPLX));
+                     INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, MSG_OBJ_CPLX);
                      answer_list_add(answer_list, SGE_EVENT,
                                      STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
-                     ERROR((SGE_EVENT, MSG_CANTSPOOL_SS,
-                             "complex entry", name));
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
-                                     ANSWER_QUALITY_ERROR);
+                     ERROR(MSG_CANTSPOOL_SS, "complex entry", name);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
                } else {
                   const lListElem *answer = lFirst(local_answer_list);
 
-                  ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                                  ANSWER_QUALITY_ERROR);
+                  ERROR("denied: %s", lGetString(answer, AN_text));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   lFreeList(&local_answer_list);
                   ret = false;
                }
             } else {
-               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS,
-                       MSG_OBJ_CPLX, name));
+               ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CPLX, name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
       } else {
-         CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                 lNm2Str(CE_name), __func__));
+         CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CE_name), __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }

@@ -1370,7 +1370,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
                                                  qstat_env->exechost_list, qstat_env->centry_list, 
                                                  &(summary.has_load_value_from_object)) ? true : false;
 
-   if (sge_load_alarm(nullptr, q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, true)) {
+   if (sge_load_alarm(nullptr, 0, q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, true)) {
       qinstance_state_set_alarm(q, true);
       sge_load_alarm_reason(q, lGetListRW(q, QU_load_thresholds), qstat_env->exechost_list, 
                             qstat_env->centry_list, load_alarm_reason, 
@@ -1381,7 +1381,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
                    lGetString(q, QU_suspend_interval), nullptr, 0);
    if (lGetUlong(q, QU_nsuspend) != 0 &&
        interval != 0 &&
-       sge_load_alarm(nullptr, q, lGetList(q, QU_suspend_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, false)) {
+       sge_load_alarm(nullptr, 0, q, lGetList(q, QU_suspend_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, false)) {
       qinstance_state_set_suspend_alarm(q, true);
       sge_load_alarm_reason(q, lGetListRW(q, QU_suspend_thresholds), 
                             qstat_env->exechost_list, qstat_env->centry_list, suspend_alarm_reason, 

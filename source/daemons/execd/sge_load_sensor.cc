@@ -307,8 +307,7 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *n
    if (scriptfile != nullptr) {
       if (SGE_STAT(scriptfile, &st) != 0) {
          if (strcmp(name, "extern") == 0) {
-            WARNING((SGE_EVENT, MSG_LS_NOMODTIME_SS, scriptfile,
-                   strerror(errno)));
+            WARNING(MSG_LS_NOMODTIME_SS, scriptfile, strerror(errno));
          }
          DRETURN(nullptr);
       }
@@ -473,7 +472,7 @@ static int read_ls(void)
          strcat(input, "\n");
          if (sscanf(input, "%[^:]:%[^:]:%[^\n]", host, name, value) != 3) {
             DPRINTF(("format error in line: \"%100s\"\n", input));
-            ERROR((SGE_EVENT, MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input));
+            ERROR(MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input);
          } else {
             {
                lList *tmp_list = lGetListRW(ls_elem, LS_incomplete);
@@ -528,37 +527,37 @@ static int ls_send_command(lListElem *this_ls, const char *command)
       switch (errno) {
       case EINTR:
          DPRINTF(("select failed with EINTR\n"));
-         WARNING((SGE_EVENT, "[load_sensor %s] select failed with EINTR", lGetString(this_ls, LS_pid)));
+         WARNING("[load_sensor %s] select failed with EINTR", lGetString(this_ls, LS_pid));
          break;
       case EBADF:
          DPRINTF(("select failed with EBADF\n"));
-         WARNING((SGE_EVENT, "[load_sensor %s] select failed with EBADF", lGetString(this_ls, LS_pid)));
+         WARNING("[load_sensor %s] select failed with EBADF", lGetString(this_ls, LS_pid));
          break;
       case EINVAL:
          DPRINTF(("select failed with EINVAL\n"));
-         WARNING((SGE_EVENT, "[load_sensor %s] select failed with EINVAL", lGetString(this_ls, LS_pid)));
+         WARNING("[load_sensor %s] select failed with EINVAL", lGetString(this_ls, LS_pid));
          break;
       default:
          DPRINTF(("select failed with unexpected errno %d", errno));
-         WARNING((SGE_EVENT, "[load_sensor %s] select failed with [%s]", lGetString(this_ls, LS_pid), strerror(errno)));
+         WARNING("[load_sensor %s] select failed with [%s]", lGetString(this_ls, LS_pid), strerror(errno));
       }
       DRETURN(-1);
    }
 
    if (!FD_ISSET(fileno((FILE *) lGetRef(this_ls, LS_in)), &writefds)) {
       DPRINTF(("received: cannot read\n"));
-      WARNING((SGE_EVENT, "[load_sensor %s] received: cannot read", lGetString(this_ls, LS_pid)));
+      WARNING("[load_sensor %s] received: cannot read", lGetString(this_ls, LS_pid));
       DRETURN(-1);
    }
 
    /* send command to load sensor */
    file = (FILE *)lGetRef(this_ls, LS_in);
    if (fprintf(file, "%s", command) != (int)strlen(command)) {
-      WARNING((SGE_EVENT, "[load_sensor %s] couldn't send command [%s]", lGetString(this_ls, LS_pid), strerror(errno)));
+      WARNING("[load_sensor %s] couldn't send command [%s]", lGetString(this_ls, LS_pid), strerror(errno));
       DRETURN(-1);
    }
    if (fflush(file) != 0) {
-      WARNING((SGE_EVENT, "[load_sensor %s] fflush failed [%s]", lGetString(this_ls, LS_pid), strerror(errno)));
+      WARNING("[load_sensor %s] fflush failed [%s]", lGetString(this_ls, LS_pid), strerror(errno));
       DRETURN(-1);
    }
 
@@ -663,7 +662,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
          ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfile);
 
          if (ls_elem == nullptr) {
-            INFO((SGE_EVENT, MSG_LS_STARTLS_S, scriptfile));
+            INFO(MSG_LS_STARTLS_S, scriptfile);
             ls_elem = sge_ls_create_ls(qualified_hostname, "extern", scriptfile);
 
             if (ls_list == nullptr) {
@@ -734,7 +733,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
    while ((ls_elem = nxt_ls_elem)) {
       nxt_ls_elem = lNextRW(ls_elem);
       if (lGetUlong(ls_elem, LS_tag) == 1) {
-         INFO((SGE_EVENT, MSG_LS_STOPLS_S, lGetString(ls_elem, LS_command)));
+         INFO(MSG_LS_STOPLS_S, lGetString(ls_elem, LS_command));
          sge_ls_stop_ls(ls_elem, 0);
          lRemoveElem(ls_list, &ls_elem);
       }
@@ -858,8 +857,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
          if (ls_command && SGE_STAT(ls_command, &st)) {
             if (!strcmp(GNU_LOADSENSOR_NAME, ls_name) ||
                 !strcmp(IDLE_LOADSENSOR_NAME, ls_name)) {
-               WARNING((SGE_EVENT, MSG_LS_NOMODTIME_SS, ls_command,
-                      strerror(errno)));
+               WARNING(MSG_LS_NOMODTIME_SS, ls_command, strerror(errno));
             }
             continue;
          }
@@ -870,7 +868,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
       }
 
       if (restart) {
-         INFO((SGE_EVENT, MSG_LS_RESTARTLS_S, ls_command ? ls_command : ""));
+         INFO(MSG_LS_RESTARTLS_S, ls_command ? ls_command : "");
          sge_ls_stop_ls(ls_elem, 0);
          /* start the load sensor script, set the restart flag if the load
           * sensor didn't start so that we try to start it again in the next

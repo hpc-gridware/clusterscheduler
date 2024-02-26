@@ -83,7 +83,7 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
 
    if(ja_task_id == 0) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_JOB_RECEIVEDINVALIDUSAGEEVENTFORJOB_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
+      ERROR(MSG_JOB_RECEIVEDINVALIDUSAGEEVENTFORJOB_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
       sge_dstring_free(&id_dstring);
       ret = false;
    }
@@ -159,8 +159,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       u_long32 event_type = lGetUlong(event, ET_type);
 
       if (job == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
-                job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list"));
+         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
          DRETURN(SGE_EMA_FAILURE);
       }
 
@@ -205,8 +204,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       /* we have to search the replaced job */
       job = lGetElemUlongRW(*list, JB_job_number, job_id);
       if (job == nullptr) {
-         ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
-                job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list"));
+         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
          lFreeList(&ja_tasks);
          DRETURN(SGE_EMA_FAILURE);
       }

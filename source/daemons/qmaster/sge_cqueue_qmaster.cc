@@ -207,7 +207,7 @@ cqueue_add_qinstances(lListElem *cqueue, lList **answer_list, lList *add_hosts,
                 * We might already have this QI if it is in orphaned state.
                 * If this is not true, than there is a bug!
                 */
-               ERROR((SGE_EVENT, MSG_QINSTANCE_QIALREADYHERE_S, hostname));
+               ERROR(MSG_QINSTANCE_QIALREADYHERE_S, hostname);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                                ANSWER_QUALITY_ERROR);
             }
@@ -530,8 +530,7 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
                   if (!sge_ar_have_users_access(nullptr, ar, lGetString(qinstance, QU_full_name),
                                                 lGetList(qinstance, QU_acl), lGetList(qinstance, QU_xacl),
                                                 master_userset_list)) {
-                     ERROR((SGE_EVENT, MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c(
-                             lGetUlong(ar, AR_id))));
+                     ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c( lGetUlong(ar, AR_id)));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                      break;
@@ -603,7 +602,7 @@ cqueue_mod(lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int 
             DTRACE;
             lSetString(cqueue, CQ_name, name);
          } else {
-            ERROR((SGE_EVENT, MSG_CQUEUE_NAMENOTGUILTY_S, name));
+            ERROR(MSG_CQUEUE_NAMENOTGUILTY_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
@@ -612,17 +611,15 @@ cqueue_mod(lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int 
          const char *old_name = lGetString(cqueue, CQ_name);
 
          if (strcmp(old_name, name)) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_CQUEUE_NONAMECHANGE));
+            ERROR(SFNMAX, MSG_CQUEUE_NONAMECHANGE);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
          }
       }
    } else {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(CQ_name), __func__));
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                      ANSWER_QUALITY_ERROR);
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CQ_name), __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }
 
@@ -886,7 +883,7 @@ cqueue_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
              */
             for_each_rw(qinstance, qinstances) {
                if (qinstance_slots_used(qinstance) > 0 || qinstance_slots_reserved(qinstance) > 0) {
-                  ERROR((SGE_EVENT, SFNMAX, MSG_QINSTANCE_STILLJOBS));
+                  ERROR(SFNMAX, MSG_QINSTANCE_STILLJOBS);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
                                   ANSWER_QUALITY_ERROR);
                   do_del = false;
@@ -904,10 +901,8 @@ cqueue_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
                for_each_ep(tmp_cqueue, master_cqueue_list) {
 
                   if (cqueue_is_used_in_subordinate(name, tmp_cqueue)) {
-                     ERROR((SGE_EVENT, MSG_CQUEUE_DEL_ISREFASSUBORDINATE_SS,
-                             name, lGetString(tmp_cqueue, CQ_name)));
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                                     ANSWER_QUALITY_ERROR);
+                     ERROR(MSG_CQUEUE_DEL_ISREFASSUBORDINATE_SS, name, lGetString(tmp_cqueue, CQ_name));
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                      do_del = false;
                      break;
                   }
@@ -942,10 +937,10 @@ cqueue_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
                   cqueue_update_categories(nullptr, cqueue);
                   lRemoveElem(master_cqueue_list, &cqueue);
 
-                  INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "cluster queue"));
+                  INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "cluster queue");
                   answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                } else {
-                  ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, "cluster queue", name));
+                  ERROR(MSG_CANTSPOOL_SS, "cluster queue", name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
@@ -953,17 +948,17 @@ cqueue_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
                ret = false;
             }
          } else {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, "cluster queue", name));
+            ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, "cluster queue", name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             ret = false;
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CQ_name), __func__));
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CQ_name), __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }

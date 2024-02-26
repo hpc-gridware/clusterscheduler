@@ -226,7 +226,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    ** -js
    */
    if ((ul = lGetUlong(job, JB_jobshare)) != 0)  {
-      sprintf(str, sge_u32, ul);
+      snprintf(str, sizeof(str), sge_u32, ul);
       ep_opt = sge_add_arg(pcmdline, js_OPT, lUlongT, "-js", str);
       lSetUlong(ep_opt, SPA_argval_lUlongT, ul);
    }
@@ -352,7 +352,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
                                  MSG_PROC_INVALIDPRIORITYMUSTBEGREATERTHANMINUS1024);
          DRETURN(answer);
       }
-      sprintf(str, "%d", prty);
+      snprintf(str, sizeof(str), "%d", prty);
       ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, "-p", str);
       lSetInt(ep_opt, SPA_argval_lIntT, prty);
    }

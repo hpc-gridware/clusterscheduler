@@ -457,7 +457,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                   /*
                    * Cleanup
                    */
-                  INFO((SGE_EVENT, MSG_JOB_TERMJOBDUETOLIMIT_UU, sge_u32c(job_id), sge_u32c(ja_task_id)));
+                  INFO(MSG_JOB_TERMJOBDUETOLIMIT_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
                   cancel_job_resend(job_id, ja_task_id);
                }
             }
@@ -695,9 +695,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                te_add_event(ev);
                te_free_event(&ev);
 
-               INFO((SGE_EVENT, MSG_JOB_ADDJOBTRIGGER_UUUU,
-                       sge_u32c(job_id), sge_u32c(ja_task_id),
-                       sge_u32c(delta_seconds), sge_u32c(duration_offset)));
+               INFO(MSG_JOB_ADDJOBTRIGGER_UUUU, sge_u32c(job_id), sge_u32c(ja_task_id), sge_u32c(delta_seconds), sge_u32c(duration_offset));
             }
          }
       }
@@ -784,7 +782,7 @@ sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id) {
     * Delete the time which triggers the job removal
     */
    if (delete_trigger) {
-      INFO((SGE_EVENT, MSG_JOB_DELJOBTRIGGER_UU, sge_u32c(job_id), sge_u32c(ja_task_id)));
+      INFO(MSG_JOB_DELJOBTRIGGER_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
       te_delete_one_time_event(TYPE_ENFORCE_LIMIT_EVENT, job_id, ja_task_id, nullptr);
    }
 

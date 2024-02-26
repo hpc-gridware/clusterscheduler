@@ -139,7 +139,7 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
       if (buffer != nullptr) {
          sge_strlcpy(buffer, MSG_SGEROOTNOTSET, size);
       } else {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_SGEROOTNOTSET));
+         CRITICAL(SFNMAX, MSG_SGEROOTNOTSET);
       }
    }
 
@@ -277,7 +277,7 @@ const char *sge_get_default_cell() {
 const char *sge_get_alias_path() {
    const char *sge_root, *sge_cell;
    char *cp;
-   int len;
+   int cp_len;
    SGE_STRUCT_STAT sbuf;
 
    DENTER_(TOP_LAYER);
@@ -286,16 +286,16 @@ const char *sge_get_alias_path() {
    sge_cell = sge_get_default_cell();
 
    if (SGE_STAT(sge_root, &sbuf)) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root));
+      CRITICAL(MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root);
       sge_exit(1);
    }
 
-   len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
-   if (!(cp = sge_malloc(len))) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE));
+   cp_len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
+   if (!(cp = sge_malloc(cp_len))) {
+      CRITICAL(SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE);
       sge_exit(1);
    }
 
-   sprintf(cp, "%s/%s/%s/%s", sge_root, sge_cell, COMMON_DIR, ALIAS_FILE);
+   snprintf(cp, cp_len, "%s/%s/%s/%s", sge_root, sge_cell, COMMON_DIR, ALIAS_FILE);
    DRETURN_(cp);
 }

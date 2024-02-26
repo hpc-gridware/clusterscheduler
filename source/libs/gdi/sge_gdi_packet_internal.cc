@@ -472,7 +472,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 
          pack_ret = init_packbuffer(&pb, size, 0);
          if (pack_ret != PACK_SUCCESS) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, "unable to prepare packbuffer for sending request"));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, "unable to prepare packbuffer for sending request");
             ret = false;
          } else {
             pb_initialized = true;
@@ -503,18 +503,15 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_UNABLE_TO_CONNECT_SUS,
-                                      prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<nullptr>"));
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
+                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>");
             } else {
                /* For unusual errors, give more detail */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS,
-                                      prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<nullptr>",
-                                      cl_get_error_text(commlib_error))); 
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
+                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_SENDINGGDIREQUESTFAILED));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_SENDINGGDIREQUESTFAILED);
          }
          answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -600,20 +597,15 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_UNABLE_TO_CONNECT_SUS,
-                                      prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<nullptr>"));
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
+                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>");
             } else { 
                /* For unusual errors, give more detail */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS,
-                                      prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<nullptr>",
-                                      cl_get_error_text(commlib_error))); 
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
+                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_RECEIVEGDIREQUESTFAILED_US,
-                    sge_u32c(message_id),
-                    cl_get_error_text(gdi_error)));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_RECEIVEGDIREQUESTFAILED_US, sge_u32c(message_id), cl_get_error_text(gdi_error));
          }
          answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
       }
@@ -663,7 +655,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
       }
       if (gdi_mismatch) {
          /* For unusual errors, give more detail */
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_MISMATCH_SEND_RECEIVE));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_MISMATCH_SEND_RECEIVE);
          answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
          ret = false;
       }

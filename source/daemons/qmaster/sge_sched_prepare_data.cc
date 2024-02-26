@@ -396,7 +396,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
        where_what->what_queue == nullptr || where_what->where_queue2 == nullptr ||
        where_what->what_queue2 == nullptr || where_what->where_all_queue == nullptr ||
        where_what->what_pe == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SCHEDD_UNABLE_TO_SETUP_FILTER));
+      CRITICAL(SFNMAX, MSG_SCHEDD_UNABLE_TO_SETUP_FILTER);
    }
    /* cleanup tmp data */
    if (tmp_what_descr != nullptr) {
@@ -418,7 +418,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
    new_ep = lFirstRW(lGetList(event, ET_new_version));
 
    if (new_ep == nullptr) {
-      ERROR((SGE_EVENT, "> > > > > no scheduler configuration available < < < < <\n"));
+      ERROR("> > > > > no scheduler configuration available < < < < <\n");
       DRETURN(SGE_EMA_FAILURE);
    }
    /* check for valid load formula */
@@ -431,7 +431,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
       if (master_centry_list != nullptr &&
           !validate_load_formula(new_load_formula, &alpp, master_centry_list, SGE_ATTR_LOAD_FORMULA)) {
 
-         ERROR((SGE_EVENT, MSG_INVALID_LOAD_FORMULA, new_load_formula));
+         ERROR(MSG_INVALID_LOAD_FORMULA, new_load_formula);
          answer_list_output(&alpp);
          if (old_ep) {
             lSetString(new_ep, SC_load_formula, lGetString(old_ep, SC_load_formula));
@@ -550,7 +550,7 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
       job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring)));
+         ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
          sge_dstring_free(&id_dstring);
          DRETURN(SGE_EMA_FAILURE);
       }
@@ -596,7 +596,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
       job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring)));
+         ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
          sge_dstring_free(&id_dstring);
          DRETURN(SGE_EMA_FAILURE);
       }
@@ -657,8 +657,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                   ja_task = job_search_task(job, nullptr, ja_task_id);
 
                   if (ja_task == nullptr) {
-                     ERROR((SGE_EVENT, MSG_CANTFINDTASKINJOB_UU,
-                             sge_u32c(ja_task_id), sge_u32c(job_id)));
+                     ERROR(MSG_CANTFINDTASKINJOB_UU, sge_u32c(ja_task_id), sge_u32c(job_id));
                      DRETURN(SGE_EMA_FAILURE);
                   }
 
@@ -701,7 +700,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
       job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring)));
+         ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
          sge_dstring_free(&id_dstring);
          DRETURN(SGE_EMA_FAILURE);
       }

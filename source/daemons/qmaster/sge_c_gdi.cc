@@ -223,11 +223,9 @@ int verify_request_version(lList **alpp, u_long32 version, char *host, char *com
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    if (client_version) {
-      WARNING((SGE_EVENT, MSG_GDI_WRONG_GDI_SSISS,
-              host, commproc, id, client_version, feature_get_product_name(FS_VERSION, &ds)));
+      WARNING(MSG_GDI_WRONG_GDI_SSISS, host, commproc, id, client_version, feature_get_product_name(FS_VERSION, &ds));
    } else {
-      WARNING((SGE_EVENT, MSG_GDI_WRONG_GDI_SSIUS,
-              host, commproc, id, sge_u32c(version), feature_get_product_name(FS_VERSION, &ds)));
+      WARNING(MSG_GDI_WRONG_GDI_SSIUS, host, commproc, id, sge_u32c(version), feature_get_product_name(FS_VERSION, &ds));
    }
    answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
 
@@ -315,14 +313,10 @@ sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **an
    } else {
       sge_dstring_sprintf(&target_dstr, "%s", target_name);
    }
-   INFO((SGE_EVENT, "GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)",
-         operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc,
-         (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid));
+   INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc, (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid);
    sge_dstring_free(&target_dstr);
 #else
-   INFO((SGE_EVENT, "GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)",
-           operation_name, target_name, packet->host, packet->commproc,
-           (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid));
+   INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, target_name, packet->host, packet->commproc, (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 #endif
 
    switch (operation) {
@@ -480,7 +474,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
    DENTER(TOP_LAYER);
 
    if (!packet->host || !packet->commproc) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
@@ -505,8 +499,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
             /* fill in authentication infos from request */
             lSetUlong(ep, EV_uid, packet->uid);
             if (!event_client_verify(ep, &(task->answer_list), true)) {
-               ERROR((SGE_EVENT, MSG_QMASTER_INVALIDEVENTCLIENT_SSS,
-                       packet->user, packet->commproc, packet->host));
+               ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
             } else {
                mconf_set_max_dynamic_event_clients(
                        sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients()));
@@ -527,8 +520,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
 
             /* fill address infos from request into event client that must be added */
             if (!job_verify_submitted_job(ep, &(task->answer_list))) {
-               ERROR((SGE_EVENT, MSG_QMASTER_INVALIDJOBSUBMISSION_SSS,
-                       packet->user, packet->commproc, packet->host));
+               ERROR(MSG_QMASTER_INVALIDJOBSUBMISSION_SSS, packet->user, packet->commproc, packet->host);
             } else {
                /* submit needs to know user and group */
                sge_gdi_add_job(&ep, &(task->answer_list),
@@ -575,7 +567,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                      case -1 :
                      case -3 :
                         /* stop the order processing */
-                        WARNING((SGE_EVENT, "Skipping remaining " sge_uu32 " orders", lGetNumberOfRemainingElem(ep)));
+                        WARNING("Skipping remaining " sge_uu32 " orders", lGetNumberOfRemainingElem(ep));
                         next = nullptr;
                         break;
 
@@ -781,7 +773,7 @@ static void sge_c_gdi_copy(gdi_object_t *ao,
    DENTER(TOP_LAYER);
 
    if (!packet->host || !packet->commproc) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
@@ -902,7 +894,7 @@ sge_c_gdi_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
          sge_gdi_do_permcheck(packet, task);
          break;
       default:
-         WARNING((SGE_EVENT, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET));
+         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    }
    DRETURN_VOID;
@@ -968,7 +960,7 @@ sge_c_gdi_trigger(sge_gdi_packet_class_t *packet,
       case SGE_MASTER_EVENT:  /* kill master */
       case SGE_SC_LIST:       /* trigger scheduler monitoring */
          if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOADMINHOST_S, packet->host));
+            ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
          }
@@ -1003,7 +995,7 @@ sge_c_gdi_trigger(sge_gdi_packet_class_t *packet,
       default:
          /* permissions should be checked in the functions. Here we don't
             know what is to do, so we don't know what permissions we need */
-         WARNING((SGE_EVENT, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET));
+         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          break;
    }
@@ -1030,15 +1022,15 @@ sge_gdi_tigger_thread_state_transition(sge_gdi_packet_class_t *packet,
             } else if (action == SGE_THREAD_TRIGGER_STOP) {
                sge_scheduler_terminate(answer_list);
             } else {
-               ERROR((SGE_EVENT, MSG_TRIGGER_STATENOTSUPPORTED_DS, action, name));
+               ERROR(MSG_TRIGGER_STATENOTSUPPORTED_DS, action, name);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
             }
          } else {
-            ERROR((SGE_EVENT, MSG_TRIGGER_NOTSUPPORTED_S, name));
+            ERROR(MSG_TRIGGER_NOTSUPPORTED_S, name);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
       } else {
-         ERROR((SGE_EVENT, MSG_TRIGGER_NOTSUPPORTED_S, ""));
+         ERROR(MSG_TRIGGER_NOTSUPPORTED_S, "");
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
       }
    }
@@ -1091,12 +1083,12 @@ sge_gdi_shutdown_event_client(sge_gdi_packet_class_t *packet, sge_gdi_task_class
 
       if (client_id == EV_ID_SCHEDD &&
           !host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_NOADMINHOST_S, packet->host));
+         ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
       } else if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_SUBMITHOST), packet->host)
                  && !host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host));
+         ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
       }
@@ -1163,7 +1155,7 @@ static int get_client_id(lListElem *anElem, int *anID) {
    *anID = strtol(id, nullptr, 0);
 
    if (errno != 0) {
-      ERROR((SGE_EVENT, MSG_GDI_EVENTCLIENTIDFORMAT_S, id));
+      ERROR(MSG_GDI_EVENTCLIENTIDFORMAT_S, id);
       DRETURN(EINVAL);
    }
 
@@ -1204,17 +1196,17 @@ trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
    DENTER(GDI_LAYER);
 
    if (!manop_is_manager(packet->user, master_manager_list)) {
-      WARNING((SGE_EVENT, SFNMAX, MSG_COM_NOSCHEDMONPERMS));
+      WARNING(SFNMAX, MSG_COM_NOSCHEDMONPERMS);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_WARNING);
       DRETURN_VOID;
    }
    if (!sge_add_event_for_client(EV_ID_SCHEDD, 0, sgeE_SCHEDDMONITOR, 0, 0, nullptr, nullptr, nullptr, nullptr)) {
-      WARNING((SGE_EVENT, SFNMAX, MSG_COM_NOSCHEDDREGMASTER));
+      WARNING(SFNMAX, MSG_COM_NOSCHEDDREGMASTER);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
       DRETURN_VOID;
    }
 
-   INFO((SGE_EVENT, MSG_COM_SCHEDMON_SS, packet->user, packet->host));
+   INFO(MSG_COM_SCHEDMON_SS, packet->user, packet->host);
    answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN_VOID;
@@ -1251,8 +1243,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
          /* fill in authentication infos from request */
          lSetUlong(ep, EV_uid, packet->uid);
          if (!event_client_verify(ep, &(task->answer_list), false)) {
-            ERROR((SGE_EVENT, MSG_QMASTER_INVALIDEVENTCLIENT_SSS,
-                    packet->user, packet->commproc, packet->host));
+            ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
             sge_mod_event_client(ep, &(task->answer_list), packet->user, packet->host);
          }
@@ -1338,7 +1329,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
       case SGE_RQS_LIST:
          /* user must be a manager */
          if (!manop_is_manager(user, master_manager_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEMANAGER_S, user));
+            ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, user);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1347,7 +1338,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
       case SGE_US_LIST:
          /* user must be a operator */
          if (!manop_is_operator(user, master_manager_list, master_operator_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEOPERATOR_S, user));
+            ERROR(MSG_SGETEXT_MUSTBEOPERATOR_S, user);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1380,7 +1371,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
          */
          if (!manop_is_manager(user, master_manager_list) &&
              !userset_is_ar_user(*object_type_get_master_list(SGE_TYPE_USERSET), user)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEMANAGERORUSER_SS, user, AR_USERS));
+            ERROR(MSG_SGETEXT_MUSTBEMANAGERORUSER_SS, user, AR_USERS);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1427,7 +1418,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
 
          /* host must be SGE_AH_LIST */
          if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), host)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOADMINHOST_S, host));
+            ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1440,7 +1431,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
          if (!(host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), host) ||
                (host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), host) &&
                 !strcmp(commproc, prognames[EXECD])))) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOADMINHOST_S, host));
+            ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1454,7 +1445,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
          if (mod && (lGetPosViaElem(ep, JB_override_tickets, SGE_NO_ABORT) >= 0)) {
             /* host must be SGE_AH_LIST */
             if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), host)) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_NOADMINHOST_S, host));
+               ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
                answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
                DRETURN(1);
             }
@@ -1462,7 +1453,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
          }
          /* host must be SGE_SH_LIST */
          if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_SUBMITHOST), host)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOSUBMITHOST_S, host));
+            ERROR(MSG_SGETEXT_NOSUBMITHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1475,7 +1466,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
           */
          if ((!host_list_locate(*object_type_get_master_list(SGE_TYPE_SUBMITHOST), host))
              && (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), host))) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOSUBMITORADMINHOST_S, host));
+            ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1483,7 +1474,7 @@ int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *comm
       case SGE_AR_LIST:
          /* host must be SGE_SH_LIST */
          if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_SUBMITHOST), host)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_NOSUBMITHOST_S, host));
+            ERROR(MSG_SGETEXT_NOSUBMITHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(1);
          }
@@ -1597,14 +1588,14 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
 
    /* DO COMMON CHECKS AND SEARCH OLD OBJECT */
    if (!instructions || !object) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no element of this type, if ep doesn't contain the the primary key attribute */
    if (lGetPosViaElem(instructions, object->key_nm, SGE_NO_ABORT) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(object->key_nm), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(object->key_nm), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -1618,7 +1609,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
        object->key_nm == SH_name) {
       if (sge_resolve_host(instructions, object->key_nm) != CL_RETVAL_OK) {
          const char *host = lGetHost(instructions, object->key_nm);
-         ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, host ? host : "nullptr"));
+         ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, host ? host : "nullptr");
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -1649,8 +1640,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
 
    /* prevent duplicates / modifying non existing objects */
    if ((old_obj && add) || (!old_obj && !add)) {
-      ERROR((SGE_EVENT, add ? MSG_SGETEXT_ALREADYEXISTS_SS : MSG_SGETEXT_DOESNOTEXIST_SS,
-              object->object_name, name));
+      ERROR(add ? MSG_SGETEXT_ALREADYEXISTS_SS : MSG_SGETEXT_DOESNOTEXIST_SS, object->object_name, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -1659,7 +1649,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
    if (!(new_obj = (add
                     ? lCreateElem(object->type)
                     : lCopyElem(old_obj)))) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_MEM_MALLOC));
+      ERROR(SFNMAX, MSG_MEM_MALLOC);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -1735,9 +1725,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
    lFreeElem(&old_obj);
 
    if (!SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_RETURN_NEW_VERSION)) {
-      INFO((SGE_EVENT,
-              add ? MSG_SGETEXT_ADDEDTOLIST_SSSS :
-              MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, name, object->object_name));
+      INFO(add ? MSG_SGETEXT_ADDEDTOLIST_SSSS : MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, name, object->object_name);
 
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }

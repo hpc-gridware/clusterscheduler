@@ -31,5 +31,5 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int get_qm_name(char *master_host, const char *master_file, char *err_str);
-int write_qm_name(const char *master_host, const char *master_file, char *err_str);
+int get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size);
+int write_qm_name(const char *master_host, const char *master_file, char *err_str, size_t err_str_size);

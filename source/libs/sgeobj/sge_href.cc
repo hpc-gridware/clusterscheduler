@@ -740,7 +740,7 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
                lSetHost(href, HR_name, resolved_name);
             } else {
                if (!ignore_errors) {
-                  INFO((SGE_EVENT, MSG_HGRP_UNKNOWNHOST, name));
+                  INFO(MSG_HGRP_UNKNOWNHOST, name);
                   answer_list_add(answer_list, SGE_EVENT, 
                                   STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   ret = false;

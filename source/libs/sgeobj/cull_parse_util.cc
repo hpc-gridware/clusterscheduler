@@ -704,7 +704,7 @@ int *interpretation_rule
 int uni_print_list(
 FILE *fp,
 char *buff,
-u_long32 max_len,
+u_long32 buff_size,
 const lList *lp,
 int *which_elements_rule,
 const char *pdelis[],
@@ -733,13 +733,13 @@ unsigned long flags
       DPRINTF(("uni_print_list: must have either file or buffer\n"));
       DRETURN(-1);
    }
-   if (buff && !max_len) {
+   if (buff && !buff_size) {
       DPRINTF(("uni_print_list: zero len output required\n"));
       DRETURN(-1);
    }
 
    if (!lp) {
-      if (max_len && (cb_sum + (sizeof("NONE") - 1) > max_len)) {
+      if (buff_size && (cb_sum + (sizeof("NONE") - 1) > buff_size)) {
          DPRINTF(("max_len too small even for zero list\n"));
          DRETURN(-1);
       }
@@ -754,7 +754,7 @@ unsigned long flags
       buff += cb;
       cb_sum += cb;
       if (pdelis[2] && *pdelis[2]) {
-         if (max_len && (cb_sum + strlen(pdelis[2]) > max_len)) {
+         if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
             DPRINTF(("max_len too small even for zero list plus delimiter\n"));
             DRETURN(-1);
          }
@@ -762,7 +762,7 @@ unsigned long flags
             cb = fprintf(fp, "%s", pdelis[2]);
          } else {
             cb = strlen(pdelis[2]);
-            sprintf(buff, "%s", pdelis[2]);
+            snprintf(buff, buff_size, "%s", pdelis[2]);
          }
          buff += cb;
          cb_sum += cb;
@@ -783,7 +783,7 @@ unsigned long flags
    for_each_rw(ep, lp) {
 
       if (!begin && pdelis[1] && *pdelis[1]) {
-         if (max_len && (cb_sum + strlen(pdelis[1]) > max_len)) {
+         if (buff_size && (cb_sum + strlen(pdelis[1]) > buff_size)) {
             DPRINTF(("max_len too small\n"));
             DRETURN(-1);
          }
@@ -793,7 +793,7 @@ unsigned long flags
          }
          else {
             cb = strlen(pdelis[1]);
-            sprintf(buff, "%s", pdelis[1]);
+            snprintf(buff, buff_size, "%s", pdelis[1]);
          }
          if (cb <= 0) {
             DPRINTF(("uni_print_list: error writing delimiter 1\n"));
@@ -814,27 +814,27 @@ unsigned long flags
          switch (type) {
          case lFloatT:
 
-            sprintf(str, "%.10g", lGetFloat(ep, *rule));
+            snprintf(str, sizeof(str), "%.10g", lGetFloat(ep, *rule));
             break;
 
          case lDoubleT:
-            sprintf(str, "%.10g", lGetDouble(ep, *rule));
+            snprintf(str, sizeof(str), "%.10g", lGetDouble(ep, *rule));
             break;
        
          case lUlongT:
-            sprintf(str, sge_u32, lGetUlong(ep, *rule));
+            snprintf(str, sizeof(str), sge_u32, lGetUlong(ep, *rule));
             break;
 
          case lLongT:
-            sprintf(str, "%ld", lGetLong(ep, *rule));
+            snprintf(str, sizeof(str), "%ld", lGetLong(ep, *rule));
             break;
 
          case lCharT:
-            sprintf(str, "%c", lGetChar(ep, *rule));
+            snprintf(str, sizeof(str), "%c", lGetChar(ep, *rule));
             break;
 
          case lIntT:
-            sprintf(str, "%d", lGetInt(ep, *rule));
+            snprintf(str, sizeof(str), "%d", lGetInt(ep, *rule));
             break;
 
          case lStringT:
@@ -877,7 +877,7 @@ unsigned long flags
              (!(flags & FLG_NO_DELIS_STRINGS) || (*cp && cb))  &&
              (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) 
                || strcmp(cp, "0"))) {
-            if (max_len && (cb_sum + strlen(pdelis[0]) > max_len)) {
+            if (buff_size && (cb_sum + strlen(pdelis[0]) > buff_size)) {
                DPRINTF(("max_len too small\n"));
                DRETURN(-1);
             }
@@ -887,7 +887,7 @@ unsigned long flags
             }
             else {
                cb = strlen(pdelis[0]);
-               sprintf(buff, "%s", pdelis[0]);
+               snprintf(buff, sizeof(buff_size), "%s", pdelis[0]);
             }
             if (cb <= 0) {
                DPRINTF(("uni_print_list: error writing delimiter\n"));
@@ -897,7 +897,7 @@ unsigned long flags
             cb_sum += cb;
          }
 
-         if (max_len && (cb_sum + strlen(cp) > max_len)) {
+         if (buff_size && (cb_sum + strlen(cp) > buff_size)) {
             DPRINTF(("max_len too small\n"));
             DRETURN(-1);
          }
@@ -922,7 +922,7 @@ unsigned long flags
    } /* end for_each */
 
    if (!begin && pdelis[2] && *pdelis[2]) {
-      if (max_len && (cb_sum + strlen(pdelis[2]) > max_len)) {
+      if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
          DPRINTF(("max_len too small\n"));
          DRETURN(-1);
       }

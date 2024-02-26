@@ -209,7 +209,7 @@ u_long32 sge_get_ja_tasks_per_directory();
 
 u_long32 sge_get_ja_tasks_per_file();
 
-char *sge_get_file_path(char *buffer, sge_file_path_id_t,
+char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t,
                         sge_file_path_format_t format_flags,
                         sge_spool_flags_t spool_flags,
                         u_long32 ulong_val1, u_long32 ulong_val2,

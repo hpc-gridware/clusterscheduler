@@ -121,13 +121,13 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
    userprj = lGetString(ep, obj_key);
    if (add) {
       if (!strcmp(userprj, "default")) {
-         ERROR((SGE_EVENT, MSG_UP_NOADDDEFAULT_S, obj_name));
+         ERROR(MSG_UP_NOADDDEFAULT_S, obj_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          goto Error;
       }
       /* may not add user/project with same name as an existing project/user */
       if (lGetElemStr(obj_master_list, obj_key, userprj)) {
-         ERROR((SGE_EVENT, MSG_UP_ALREADYEXISTS_SS, obj_name, userprj));
+         ERROR(MSG_UP_ALREADYEXISTS_SS, obj_name, userprj);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          goto Error;
       }
@@ -181,7 +181,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
          if ((dproj = lGetPosString(ep, pos))) {
             const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
             if (master_project_list == nullptr || !prj_list_locate(master_project_list, dproj)) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj));
+               ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj);
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                goto Error;
             }
@@ -299,7 +299,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
    DENTER(TOP_LAYER);
 
    if (!up_ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -307,14 +307,14 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
    if (user) {
       name = lGetString(up_ep, UU_name);
       if (!(ep = user_list_locate(*upl, name))) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USER, name));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USER, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
    } else {
       name = lGetString(up_ep, PR_name);
       if (!(ep = prj_list_locate(*upl, name))) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, name));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -322,7 +322,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
 
    /* ensure this u/p object is not referenced in actual share tree */
    if (getNode(*object_type_get_master_list(SGE_TYPE_SHARETREE), name, user ? STT_USER : STT_PROJECT, 0)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_CANT_DELETE_UP_IN_SHARE_TREE_SS, user ? MSG_OBJ_USER : MSG_OBJ_PRJ, name));
+      ERROR(MSG_SGETEXT_CANT_DELETE_UP_IN_SHARE_TREE_SS, user ? MSG_OBJ_USER : MSG_OBJ_PRJ, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -338,16 +338,14 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       for_each_ep(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
          for_each_ep(prj, lGetList(cqueue, CQ_projects)) {
             if (lGetSubStr(prj, PR_name, name, APRJLIST_value)) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE, lGetString(
-                       cqueue, CQ_name)));
+               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE, lGetString( cqueue, CQ_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
          }
          for_each_ep(prj, lGetList(cqueue, CQ_xprojects)) {
             if (lGetSubStr(prj, PR_name, name, APRJLIST_value)) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_QUEUE, lGetString(
-                       cqueue, CQ_name)));
+               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_QUEUE, lGetString( cqueue, CQ_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
@@ -357,14 +355,12 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       /* check hosts */
       for_each_ep(host, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
          if (prj_list_locate(lGetList(host, EH_prj), name)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host,
-                                                                                                                EH_name)));
+            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host, EH_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
          if (prj_list_locate(lGetList(host, EH_xprj), name)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH, lGetHost(host,
-                                                                                                                 EH_name)));
+            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH, lGetHost(host, EH_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -373,7 +369,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       /* check global configuration */
       projects = mconf_get_projects();
       if (prj_list_locate(projects, name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL));
+         ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&projects);
          DRETURN(STATUS_EEXIST);
@@ -381,7 +377,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       lFreeList(&projects);
       projects = mconf_get_xprojects();
       if (prj_list_locate(projects, name)) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL));
+         ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&projects);
          DRETURN(STATUS_EEXIST);
@@ -390,7 +386,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
 
       /* check user list for reference */
       if ((prj = lGetElemStr(*object_type_get_master_list(SGE_TYPE_USER), UU_default_project, name))) {
-         ERROR((SGE_EVENT, MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, lGetString(prj, UU_name)));
+         ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, lGetString(prj, UU_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -403,7 +399,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       DRETURN(STATUS_EDISK);
    }
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, name, user ? MSG_OBJ_USER : MSG_OBJ_PRJ));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, name, user ? MSG_OBJ_USER : MSG_OBJ_PRJ);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    lRemoveElem(*upl, &ep);
@@ -420,7 +416,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 
    for_each_ep(up, name_list) {
       if (!lGetElemStr(prj_list, PR_name, lGetString(up, PR_name))) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWNPROJECT_SSSS, lGetString(up, PR_name), attr_name, obj_descr, obj_name));
+         ERROR(MSG_SGETEXT_UNKNOWNPROJECT_SSSS, lGetString(up, PR_name), attr_name, obj_descr, obj_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }

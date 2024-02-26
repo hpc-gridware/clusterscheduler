@@ -248,7 +248,7 @@ void rmon_mopen() {
 
 void rmon_menter(const char *func, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
-    sprintf(msgbuf, "--> %s() {\n", func);
+    snprintf(msgbuf, sizeof(msgbuf), "--> %s() {\n", func);
     mwrite(msgbuf, thread_name ? thread_name : "NA", thread_id);
 }
 
@@ -276,7 +276,7 @@ void rmon_menter(const char *func, const char *thread_name, int thread_id) {
 *******************************************************************************/
 void rmon_mexit(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
-    sprintf(msgbuf, "<-- %s() %s %d }\n", func, file, line);
+    snprintf(msgbuf, sizeof(msgbuf), "<-- %s() %s %d }\n", func, file, line);
     mwrite(msgbuf, thread_name, thread_id);
 }
 
@@ -305,7 +305,7 @@ void rmon_mexit(const char *func, const char *file, int line, const char *thread
 void rmon_mtrace(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
     strcpy(msgbuf, empty);
-    sprintf(&msgbuf[4], "%s:%s:%d\n", func, file, line);
+    snprintf(&msgbuf[4], sizeof(msgbuf) - 4, "%s:%s:%d\n", func, file, line);
     mwrite(msgbuf, thread_name, thread_id);
 }
 

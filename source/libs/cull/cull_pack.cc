@@ -1695,21 +1695,3 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
 
    return size;
 }
-
-void cull_dump_pack_buffer(sge_pack_buffer *pb, FILE *fp) {
-   size_t i;
-   int j = 0;
-   char hex[2048], tex[2048];
-
-   for (i = 0; i < pb->bytes_used; i++) {
-      sprintf(&hex[j * 3], "%2x ", pb->head_ptr[i]);
-      sprintf(&tex[j], "%c", isalnum(pb->head_ptr[i]) ? pb->head_ptr[i] : '.');
-
-      if ((i % 16) == 0) {
-         fprintf(fp, "%s  %s\n", hex, tex);
-         j = 0;
-      } else {
-         j++;
-      }
-   }
-}

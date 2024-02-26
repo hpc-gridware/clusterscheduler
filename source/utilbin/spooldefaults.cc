@@ -109,13 +109,13 @@ static int init_framework()
                                                    spooling_params);
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT));
+      CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT);
    } else {
       spool_set_default_context(spooling_context);
 
       /* initialize spooling context */
       if (!spool_startup_context(&answer_list, spooling_context, true)) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTSTARTUPCONTEXT));
+         CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANNOTSTARTUPCONTEXT);
       } else {
          ret = EXIT_SUCCESS;
       }
@@ -169,7 +169,7 @@ static int spool_configuration(int argc, char *argv[])
                                    SP_FORM_ASCII, nullptr, argv[2]);
    sge_free(&fields);
    if (conf == nullptr) {
-      ERROR((SGE_EVENT, MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S, argv[2]));
+      ERROR(MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S, argv[2]);
       ret = EXIT_FAILURE;
    } else {
       /* put config into a list - we can't spool free objects */
@@ -206,7 +206,7 @@ static int spool_local_conf(int argc, char *argv[])
       sge_free(&fields);
 
       if (conf == nullptr) {
-         ERROR((SGE_EVENT, MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S, argv[2]));
+         ERROR(MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S, argv[2]);
          ret = EXIT_FAILURE;
       } else {
          /* check if a config is already there */

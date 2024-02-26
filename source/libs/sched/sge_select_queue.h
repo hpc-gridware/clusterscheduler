@@ -48,7 +48,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
-int sge_load_alarm(char *reason, const lListElem *queue, const lList *threshold, 
+int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
                    const lList *exechost_list, const lList *complex_list, 
                    const lList *load_adjustments, bool is_check_consumable);
 

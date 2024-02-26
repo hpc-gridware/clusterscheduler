@@ -807,16 +807,12 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    DENTER(TOP_LAYER);
 
    if (!ep) {
-      ERROR((SGE_EVENT, "rc_add_job_utilization nullptr object "
-            "(job " sge_u32" obj %s type %s) slots %d ep %p\n",
-            lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
+      ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
    if (!slots) {
-      ERROR((SGE_EVENT, "rc_add_job_utilization 0 slot amount "
-            "(job " sge_u32" obj %s type %s) slots %d ep %p\n",
-            lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
+      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
@@ -828,7 +824,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
 
       /* search default request */  
       if (!(dcep = centry_list_locate(centry_list, name))) {
-         ERROR((SGE_EVENT, MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name));
+         ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       } 
 
@@ -1026,9 +1022,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
                aren't cancelled due to default_duration only be in effect */
 
             if (for_job_scheduling && sconf_get_max_reservations() > 0) {
-               WARNING((SGE_EVENT, MSG_SCHEDD_SHOULDHAVEFINISHED_UUU, 
-                     sge_u32c(a.job_id), sge_u32c(a.ja_task_id), 
-                     sge_u32c(now - a.duration - a.start + 1)));
+               WARNING(MSG_SCHEDD_SHOULDHAVEFINISHED_UUU, sge_u32c(a.job_id), sge_u32c(a.ja_task_id), sge_u32c(now - a.duration - a.start + 1));
             }
             a.duration = (now - a.start) + interval;
          }
@@ -1037,7 +1031,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
          a.slots = nslots_granted(a.gdil, nullptr);
          if ((pe_name = lGetString(ja_task, JAT_granted_pe)) && 
              !(a.pe = pe_list_locate(pe_list, pe_name))) {
-            ERROR((SGE_EVENT, MSG_OBJ_UNABLE2FINDPE_S, pe_name));
+            ERROR(MSG_OBJ_UNABLE2FINDPE_S, pe_name);
             continue;
          }
          /* no need (so far) for passing ckpt information to debit_scheduled_job() */

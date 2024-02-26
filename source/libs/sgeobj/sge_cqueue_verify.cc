@@ -312,14 +312,13 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
                 */
                ;
             } else {
-               ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNSUB_SS,
-                      so_name, cqueue_name));
+               ERROR(MSG_CQUEUE_UNKNOWNSUB_SS, so_name, cqueue_name);
                answer_list_add(answer_list, SGE_EVENT,
                                STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          } else {
-            ERROR((SGE_EVENT, MSG_CQUEUE_SUBITSELF_S, cqueue_name));
+            ERROR(MSG_CQUEUE_SUBITSELF_S, cqueue_name);
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;

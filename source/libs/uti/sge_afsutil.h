@@ -36,6 +36,6 @@
 char *sge_read_token(const char *file);
 
 int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
-                         int token_extend_time, char *err_str);
+                         int token_extend_time, char *err_str, size_t err_str_size);
 
-int sge_get_token_cmd(const char *tokencmdname, char *buf);
+int sge_get_token_cmd(const char *tokencmdname, char *buf, size_t buf_size);

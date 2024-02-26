@@ -313,7 +313,7 @@ jsv_start(lListElem *jsv, lList **answer_list)
             fcntl(fileno(fp_out), F_SETFL, O_NONBLOCK);
             fcntl(fileno(fp_err), F_SETFL, O_NONBLOCK);
 
-            INFO((SGE_EVENT, MSG_JSV_STARTED_S, scriptfile));
+            INFO(MSG_JSV_STARTED_S, scriptfile);
          }
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -386,7 +386,7 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
       sge_peclose(pid, (FILE *)lGetRef(jsv, JSV_in), 
                   (FILE *)lGetRef(jsv, JSV_out), (FILE *)lGetRef(jsv, JSV_err), &t);
 
-      INFO((SGE_EVENT, MSG_JSV_STOPPED_S, scriptfile));
+      INFO(MSG_JSV_STOPPED_S, scriptfile);
 
       jsv_set_pid(jsv, -1);
    }   
@@ -867,12 +867,12 @@ jsv_list_update(const char *name, const char *context,
                   lSetString(jsv, JSV_user, sge_dstring_get_string(&user));
                   lSetString(jsv, JSV_command, sge_dstring_get_string(&path));
                   lSetString(jsv, JSV_url, jsv_url);
-                  INFO((SGE_EVENT, MSG_JSV_SETTING_S, context));
+                  INFO(MSG_JSV_SETTING_S, context);
                   jsv_stop(jsv, answer_list, true);
                } else {
                   jsv_stop(jsv, answer_list, true);
                   lRemoveElem(jsv_list, &jsv);
-                  INFO((SGE_EVENT, MSG_JSV_STOP_S, context));
+                  INFO(MSG_JSV_STOP_S, context);
                }
             } else {
                SGE_STRUCT_STAT st;
@@ -881,7 +881,7 @@ jsv_list_update(const char *name, const char *context,
    
                if (SGE_STAT(lGetString(jsv, JSV_command), &st) == 0 && 
                    lGetUlong(jsv, JSV_last_mod) != (u_long32)st.st_mtime) {
-                  INFO((SGE_EVENT, MSG_JSV_TIME_S, context));
+                  INFO(MSG_JSV_TIME_S, context);
                   jsv_stop(jsv, answer_list, true);    
                }
             }
@@ -1101,9 +1101,9 @@ jsv_do_verify(const char *context, lListElem **job,
 
                DPRINTF(("JSV rejects job\n"));
                if (jid == 0) {
-                  INFO((SGE_EVENT, MSG_JSV_REJECTED_S, context));
+                  INFO(MSG_JSV_REJECTED_S, context);
                } else {
-                  INFO((SGE_EVENT, MSG_JSV_REJECTED_SU, context, jid));
+                  INFO(MSG_JSV_REJECTED_SU, context, jid);
                }
                ret = false;
                lFreeElem(&new_job);
@@ -1112,7 +1112,7 @@ jsv_do_verify(const char *context, lListElem **job,
                bool soft_shutdown = lGetBool(jsv, JSV_soft_shutdown) ? true : false;
 
                DPRINTF(("JSV has to be rstarted\n"));
-               INFO((SGE_EVENT, MSG_JSV_RESTART_S, context));
+               INFO(MSG_JSV_RESTART_S, context);
                ret &= jsv_stop(jsv, answer_list, soft_shutdown);
             }
          }

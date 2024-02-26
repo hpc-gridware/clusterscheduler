@@ -181,9 +181,9 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
          u = MSG_SMALLNULL;
 
       if (!(h = lGetHost(elem, MR_host)))
-         sprintf(tmpstr, "%s", u);
+         snprintf(tmpstr, sizeof(tmpstr), "%s", u);
       else
-         sprintf(tmpstr, "%s@%s", u, h);
+         snprintf(tmpstr, sizeof(tmpstr), "%s@%s", u, h);
 
       if (strlen(tmpstr)+len+1+comma_needed > mail_str_len)
          return 1;              /* forgot the rest */

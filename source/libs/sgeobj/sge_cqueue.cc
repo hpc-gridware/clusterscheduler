@@ -1043,7 +1043,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                         const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
                         if (hgroup == nullptr) {
-                           ERROR((SGE_EVENT, MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname));
+                           ERROR(MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname);
                            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            ret = false;
                            break;
@@ -1483,15 +1483,14 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
          ret = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
       } else {
          if (raise_error) {
-            ERROR((SGE_EVENT, MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>",
-                    hostname != nullptr ? hostname: "<null>", (int)has_hostname, (int)has_domain));
+            ERROR(MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>", hostname != nullptr ? hostname: "<null>", (int)has_hostname, (int)has_domain);
          }
       }
       sge_dstring_free(&cqueue_name_buffer);
       sge_dstring_free(&host_domain_buffer);
    } else {
       if (raise_error) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_CQUEUE_FULLNAMEISNULL));
+         ERROR(SFNMAX, MSG_CQUEUE_FULLNAMEISNULL);
       }
    }
    DRETURN(ret);

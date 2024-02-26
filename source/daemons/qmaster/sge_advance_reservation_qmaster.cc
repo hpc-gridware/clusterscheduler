@@ -246,14 +246,14 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
       lSetString(new_ar, AR_owner, ruser);
       lSetString(new_ar, AR_group, component_get_groupname());
    } else {
-      ERROR((SGE_EVENT, MSG_NOTYETIMPLEMENTED_S, "advance reservation modification"));
+      ERROR(MSG_NOTYETIMPLEMENTED_S, "advance reservation modification");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       goto ERROR;
    }
 
    if (max_advance_reservations > 0 &&
        max_advance_reservations <= (u_long32) lGetNumberOfElem(master_ar_list)) {
-      ERROR((SGE_EVENT, MSG_AR_MAXARSPERCLUSTER_U, sge_u32c(max_advance_reservations)));
+      ERROR(MSG_AR_MAXARSPERCLUSTER_U, sge_u32c(max_advance_reservations));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       goto DOITAGAIN;
    }
@@ -306,7 +306,7 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
       goto ERROR;
    }
 
-   INFO((SGE_EVENT, MSG_AR_GRANTED_U, sge_u32c(ar_id)));
+   INFO(MSG_AR_GRANTED_U, sge_u32c(ar_id));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(0);
 
@@ -484,7 +484,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
@@ -492,8 +492,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
    /* ep is no ar_del element, if ep has no ID_str */
    if (lGetPosViaElem(ep, ID_str, SGE_NO_ABORT) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(ID_str), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(ID_str), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
@@ -506,7 +505,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
       for_each_ep(user, user_list) {
          if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(ruser, master_manager_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all advance reservations"));
+            ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all advance reservations");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeWhere(&ar_where);
@@ -542,7 +541,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
       } else {
          bool error = false;
          if (isdigit(id_str[0])) {
-            ERROR((SGE_EVENT, MSG_OBJECT_INVALID_NAME_S, id_str));
+            ERROR(MSG_OBJECT_INVALID_NAME_S, id_str);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             error = true;
          } else if (verify_str_key(alpp, id_str, MAX_VERIFY_STRING,
@@ -570,7 +569,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    }
 
    if (id_str == nullptr && user_list == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_SPECIFYUSERORID_S, SGE_OBJ_AR));
+      CRITICAL(MSG_SGETEXT_SPECIFYUSERORID_S, SGE_OBJ_AR);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       lFreeWhere(&ar_where);
@@ -596,8 +595,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
       removed_one = true;
 
       if (!has_manager_privileges && strcmp(ruser, lGetString(ar, AR_owner))) {
-         ERROR((SGE_EVENT, MSG_DELETEPERMS_SSU,
-                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+         ERROR(MSG_DELETEPERMS_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          continue;
       }
@@ -626,16 +624,14 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
          lRemoveElem(*master_ar_list, &ar);
 
-         INFO((SGE_EVENT, MSG_JOB_DELETEX_SSU,
-                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+         INFO(MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          sge_event_spool(alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true);
       } else {
-         INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU,
-                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+         INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          sge_event_spool(alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
@@ -647,7 +643,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    if (!removed_one) {
       if (id_str != nullptr) {
          sge_dstring_sprintf(&buffer, "%s", id_str);
-         ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer)));
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer));
       } else {
          const lListElem *user;
          bool first = true;
@@ -667,7 +663,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
             sge_dstring_append(&buffer, lGetString(user, ST_name));
             umax--;
          }
-         ERROR((SGE_EVENT, MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer)));
+         ERROR(MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer));
       }
 
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -775,7 +771,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
       FILE *fp = fopen(ARSEQ_NUM_FILE, "w");
 
       if (fp == nullptr) {
-         ERROR((SGE_EVENT, MSG_NOSEQFILECREATE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
+         ERROR(MSG_NOSEQFILECREATE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
       } else {
          FPRINTF((fp, sge_u32"\n", ar_id));
          FCLOSE(fp);
@@ -785,7 +781,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
 
    FPRINTF_ERROR:
    FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_NOSEQFILECLOSE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
+   ERROR(MSG_NOSEQFILECLOSE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
    DRETURN_VOID;
 }
 
@@ -812,13 +808,13 @@ sge_init_ar_id(void) {
 
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_uu32, &ar_id) != 1) {
-         ERROR((SGE_EVENT, MSG_NOSEQNRREAD_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
+         ERROR(MSG_NOSEQNRREAD_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
       }
       FCLOSE(fp);
       FCLOSE_ERROR:
       fp = nullptr;
    } else {
-      WARNING((SGE_EVENT, MSG_NOSEQFILEOPEN_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
+      WARNING(MSG_NOSEQFILEOPEN_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
    }
 
    guess_ar_id = guess_highest_ar_id();
@@ -922,7 +918,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lList *master_ar_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
 
    if (!(ar = ar_list_locate(master_ar_list, ar_id))) {
-      ERROR((SGE_EVENT, MSG_EVE_TE4AR_U, sge_u32c(ar_id)));
+      ERROR(MSG_EVE_TE4AR_U, sge_u32c(ar_id));
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
    }
@@ -1297,7 +1293,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
 
       if (!queue) {
-         ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDQOFJOB_S, queue_name));
+         ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, queue_name);
          is_master_task = false;
          continue;
       }
@@ -1352,7 +1348,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       lListElem *pe = pe_list_locate(master_pe_list, granted_pe);
 
       if (!pe) {
-         ERROR((SGE_EVENT, MSG_OBJ_UNABLE2FINDPE_S, granted_pe));
+         ERROR(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
       } else {
          utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
                          duration, pe_slots, 0, 0, PE_TAG, granted_pe,
@@ -1416,10 +1412,8 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 
       if (ckpt_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(ckpt_string_list, ST_name, ckpt_string) == nullptr) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string,
-                    SGE_ATTR_CKPT_LIST, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, SGE_ATTR_CKPT_LIST, sge_u32c(lGetUlong(ar, AR_id)));
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
       }
@@ -1476,10 +1470,8 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 
       if (pe_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(pe_string_list, ST_name, pe_string) == nullptr) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string,
-                    SGE_ATTR_PE_LIST, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, SGE_ATTR_PE_LIST, sge_u32c(lGetUlong(ar, AR_id)));
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
       }
@@ -1547,10 +1539,8 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
       }
    }
    if (max_res_slots > new_slots) {
-      ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_PE_SLOTS_U,
-              sge_u32c(max_res_slots)));
-      answer_list_add(answer_list, SGE_EVENT,
-                      STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_PE_SLOTS_U, sge_u32c(max_res_slots));
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = true;
    }
    DRETURN(ret);
@@ -1879,10 +1869,8 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
          u_long32 duration = lGetUlong(ar, AR_duration);
 
          if (!calendar_open_in_time_frame(cal_ep, start_time, duration)) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name),
-                    SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id)));
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
       }
@@ -2275,10 +2263,8 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                   lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
 
                   if (compare_complexes(slots, request, current, text, false, true) == 0) {
-                     ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                             SGE_ATTR_COMPLEX_VALUES));
-                     answer_list_add(answer_list, SGE_EVENT,
-                                     STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                     ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      lFreeElem(&current);
                      DRETURN(true);
                   }
@@ -2303,10 +2289,8 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
 
                if (cv == nullptr) {
-                  ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS,
-                          ce_name, SGE_ATTR_COMPLEX_VALUES));
-                  answer_list_add(answer_list, SGE_EVENT,
-                                  STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                  ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   DRETURN(true);
                } else {
                   double configured = lGetDouble(cv, CE_doubleval);
@@ -2315,10 +2299,8 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                      double amount = lGetDouble(rde, RDE_amount);
 
                      if (amount > configured) {
-                        ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                                SGE_ATTR_COMPLEX_VALUES));
-                        answer_list_add(answer_list, SGE_EVENT,
-                                        STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                        ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                        answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                         DRETURN(true);
                      }
                   }
@@ -2397,10 +2379,8 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                      lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
 
                      if (compare_complexes(slots, request, current, text, false, true) == 0) {
-                        ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                                SGE_ATTR_COMPLEX_VALUES));
-                        answer_list_add(answer_list, SGE_EVENT,
-                                        STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                        ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                        answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                         lFreeElem(&current);
                         DRETURN(true);
                      }
@@ -2419,10 +2399,8 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                   lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
 
                   if (cv == nullptr) {
-                     ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS,
-                             ce_name, SGE_ATTR_COMPLEX_VALUES));
-                     answer_list_add(answer_list, SGE_EVENT,
-                                     STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                     ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      DRETURN(true);
                   } else {
                      double configured = lGetDouble(cv, CE_doubleval);
@@ -2431,10 +2409,8 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                         double amount = lGetDouble(rde, RDE_amount);
 
                         if (amount > configured) {
-                           ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS,
-                                   ce_name, SGE_ATTR_COMPLEX_VALUES));
-                           answer_list_add(answer_list, SGE_EVENT,
-                                           STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                           ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
+                           answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            DRETURN(true);
                         }
                      }

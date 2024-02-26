@@ -79,7 +79,7 @@ int do_get_new_conf(struct_msg_t *aMsg)
   
    spool_dir = mconf_get_execd_spool_dir(); 
    if (strcmp(old_spool, spool_dir)) {
-      WARNING((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir"));
+      WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir");
    }
 
 #ifdef COMPILE_DC

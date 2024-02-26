@@ -450,7 +450,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
                && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
             
-            INFO((SGE_EVENT, "core binding: %s", sge_dstring_get_string(&core_binding_strategy_string)));
+            INFO("core binding: %s", sge_dstring_get_string(&core_binding_strategy_string));
 
             /* add to job report */
             jr = get_job_report(job_id, ja_task_id, pe_task_id);
@@ -480,7 +480,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             of creating processor sets, this have to be done here (on Linux 
             this is done from shepherd itself) */
          if (sge_binding_environment != nullptr) {
-            INFO((SGE_EVENT, "SGE_BINDING variable set: %s", sge_binding_environment));
+            INFO("SGE_BINDING variable set: %s", sge_binding_environment);
          }
          
          if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
@@ -502,7 +502,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 #endif
    }
       if (rankfileinput != nullptr) {
-         INFO((SGE_EVENT, "appended socket,core list to hostfile %s", rankfileinput));
+         INFO("appended socket,core list to hostfile %s", rankfileinput);
       }
 
       /***************** write out sge host file ******************************/
@@ -1331,7 +1331,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* the following values are needed by the reaper */
    if (mailrec_unparse(lGetList(jep, JB_mail_list), mail_str, sizeof(mail_str))) {
-      ERROR((SGE_EVENT, MSG_MAIL_MAILLISTTOOLONG_U, sge_u32c(job_id)));
+      ERROR(MSG_MAIL_MAILLISTTOOLONG_U, sge_u32c(job_id));
    }
    fprintf(fp, "mail_list=%s\n", mail_str);
    fprintf(fp, "mail_options=" sge_u32 "\n", lGetUlong(jep, JB_mail_options));
@@ -1821,7 +1821,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       if (chdir(execd_spool_dir))       /* go back */
          /* if this happens (dont know how) we have a real problem */
-         ERROR((SGE_EVENT, MSG_FILE_CHDIR_SS, execd_spool_dir, strerror(errno))); 
+         ERROR(MSG_FILE_CHDIR_SS, execd_spool_dir, strerror(errno));
       if (i == -1) {
          if (getenv("SGE_FAILURE_BEFORE_FORK")) {
             snprintf(err_str, err_length, "FAILURE_BEFORE_FORK");
@@ -1915,7 +1915,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
 FCLOSE_ERROR:
-   CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_NOSTARTSHEPHERD));
+   CRITICAL(SFNMAX, MSG_EXECD_NOSTARTSHEPHERD);
 
    exit(1);
 
@@ -2083,7 +2083,7 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
               /* generate pe_hostfile input */ 
               if (parse_job_accounting_and_create_logical_list(
                      sge_dstring_get_string(&tmp_result), rankfileinput) == false) {
-                 WARNING((SGE_EVENT, "Core binding: Couldn't create input for pe_hostfile"));
+                 WARNING("Core binding: Couldn't create input for pe_hostfile");
                  retval = false;
               }
            }
@@ -2091,11 +2091,11 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
            sge_dstring_append_dstring(result, &tmp_result);
         }
       } else {
-         INFO((SGE_EVENT, "Core binding: No CULL sublist for binding found!"));
+         INFO("Core binding: No CULL sublist for binding found!");
          retval = false;
       }
    } else {
-      INFO((SGE_EVENT, "Core binding: Couldn't get binding sublist"));
+      INFO("Core binding: Couldn't get binding sublist");
       retval = false;
    }
 
@@ -2397,7 +2397,7 @@ static bool explicit_linux(dstring* result, const lListElem* binding_elem)
    if (binding_explicit_extract_sockets_cores(request, &socket_list, 
       &socket_list_length, &core_list, &core_list_length) == false) {
       /* problems while parsing the binding request */ 
-      INFO((SGE_EVENT, "Couldn't extract socket and core lists out of string"));
+      INFO("Couldn't extract socket and core lists out of string");
       sge_dstring_append(result, "nullptr");
       retval = false;
    } else {  
@@ -2415,8 +2415,7 @@ static bool explicit_linux(dstring* result, const lListElem* binding_elem)
          
          /* couldn't find an appropriate binding because topology doesn't offer 
             it or some cores are already occupied */
-         INFO((SGE_EVENT, "ERROR: Couldn't determine appropriate core binding %s %d %d %d %d",
-            request, socket_list_length, socket_list[0], core_list_length, core_list[0]));
+         INFO("ERROR: Couldn't determine appropriate core binding %s %d %d %d %d", request, socket_list_length, socket_list[0], core_list_length, core_list[0]);
          sge_dstring_append(result, "nullptr");
          retval = false;
       }
@@ -2511,12 +2510,12 @@ static bool create_binding_strategy_string_solaris(dstring* result,
 
       } else {
          /* no valid binding strategy selected */
-         INFO((SGE_EVENT, "ERROR: No valid binding strategy in CULL BN_strategy"));
+         INFO("ERROR: No valid binding strategy in CULL BN_strategy");
          retval = false;
       }
 
    } else {
-      INFO((SGE_EVENT, "No CULL JB_binding sublist found"));
+      INFO("No CULL JB_binding sublist found");
       retval = false;
    }
 
@@ -2833,13 +2832,13 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
    type   = (binding_type_t) lGetUlong(binding_elem, BN_type);
    
 
-   INFO((SGE_EVENT, "request: %s", request));
+   INFO("request: %s", request);
 
    if (binding_explicit_extract_sockets_cores(request, &socket_list, 
             &socket_list_length, &core_list, &core_list_length) == false) {
       /* problems while parsing the binding request */ 
       snprintf(err_str, err_length, "binding: couldn't parse explicit parameter");
-      INFO((SGE_EVENT, "Couldn't parse binding explicit parameter")); 
+      INFO("Couldn't parse binding explicit parameter");
       retval = false;
    } else {
       /* the topology used by the job */
@@ -2866,7 +2865,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
             snprintf(err_str, err_length, "binding: couldn't create processor set");
             /* free the cores occupied by this job because we couldn't generate processor set */
             free_topology(topo_by_job, topo_by_job_length);
-            INFO((SGE_EVENT, "Could't create processor set in order to bind job to."));
+            INFO("Could't create processor set in order to bind job to.");
             retval = false;
          } else {
             
@@ -2888,7 +2887,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
       } else {
          /* "binding explicit" with the given cores is not possible */
          snprintf(err_str, err_length, "binding: strategy does not fit on execution host");
-         INFO((SGE_EVENT, "Binding strategy does not fit on execution host"));
+         INFO("Binding strategy does not fit on execution host");
          retval = false;
       }
 
@@ -2949,7 +2948,7 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
       a list as string */ 
    if (topology_string_to_socket_core_lists(pos, &sockets, &cores, 
                                                 &amount) == false) {
-      WARNING((SGE_EVENT, "Core binding: Couldn't parse job topology string! %s", pos));
+      WARNING("Core binding: Couldn't parse job topology string! %s", pos);
       retval = false;
    
    } else if (amount > 0) {
@@ -2972,10 +2971,10 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
       *rankfileinput = sge_strdup(nullptr, sge_dstring_get_string(&full));
      
       if (*rankfileinput == nullptr) {
-         WARNING((SGE_EVENT, "Core binding: Malloc error"));
+         WARNING("Core binding: Malloc error");
          retval = false;
       } else {
-         INFO((SGE_EVENT, "Core binding: PE rankfileinput is %s", *rankfileinput));
+         INFO("Core binding: PE rankfileinput is %s", *rankfileinput);
          retval = true;
       }   
 
@@ -2987,7 +2986,7 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
 
    } else {
       /* no cores used */
-      INFO((SGE_EVENT, "Core binding: Couldn't determine any allocated cores for the job"));
+      INFO("Core binding: Couldn't determine any allocated cores for the job");
       *rankfileinput = sge_strdup(nullptr, "<nullptr>");
       retval = true;
    }

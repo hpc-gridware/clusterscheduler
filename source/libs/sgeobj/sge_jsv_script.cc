@@ -2351,13 +2351,13 @@ jsv_handle_log_command(lListElem *jsv, lList **answer_list, dstring *c, dstring 
    }
    if (strcmp(lGetString(jsv, JSV_context), JSV_CONTEXT_CLIENT) != 0) {
       if (strcmp(sub_command, "INFO") == 0) {
-         INFO((SGE_EVENT, "%s", args));
+         INFO("%s", args);
       } else if (strcmp(sub_command, "WARNING") == 0) {
-         WARNING((SGE_EVENT, "%s", args));
+         WARNING("%s", args);
       } else if (strcmp(sub_command, "ERROR") == 0) {
-         ERROR((SGE_EVENT, "%s", args));
+         ERROR("%s", args);
       } else {
-         WARNING((SGE_EVENT, MSG_JSV_LOG_SS, command, sub_command));
+         WARNING(MSG_JSV_LOG_SS, command, sub_command);
       }
    } else {
       printf("%s\n", args);
@@ -2509,7 +2509,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
        * to JSV but the initialization code might also cause errors....
        */
       while (fscanf((FILE *)lGetRef(jsv, JSV_err), "%[^\n]\n", input) == 1) {
-         ERROR((SGE_EVENT, MSG_JSV_LOGMSG_S, input));
+         ERROR(MSG_JSV_LOGMSG_S, input);
          answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
          ret = false; 
       }
@@ -2558,7 +2558,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                if (ret) {
                   DPRINTF(("JSV process gets START command\n"));
                   while (fscanf((FILE *)lGetRef(jsv, JSV_err), "%[^\n]\n", input) == 1) {
-                     ERROR((SGE_EVENT, MSG_JSV_LOGMSG_S, input));  
+                     ERROR(MSG_JSV_LOGMSG_S, input);
                   }
                   ret &= jsv_send_command(jsv, answer_list, "START");
                }
@@ -2645,7 +2645,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
              * send as answer to the calling function.
              */
             while (fscanf(err_stream, "%[^\n]\n", input) == 1) {
-               ERROR((SGE_EVENT, MSG_JSV_LOGMSG_S, input));  
+               ERROR(MSG_JSV_LOGMSG_S, input);
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
                ret = false;
             }
@@ -2869,7 +2869,7 @@ jsv_is_modify_rejected(lList **answer_list, lListElem *job)
                   } 
                   sge_dstring_append(&switches, lGetString(not_allowed, ST_name));
                }
-               ERROR((SGE_EVENT, MSG_JSV_SWITCH_S, sge_dstring_get_string(&switches)));
+               ERROR(MSG_JSV_SWITCH_S, sge_dstring_get_string(&switches));
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                sge_dstring_free(&switches);
                ret = true;
@@ -2885,7 +2885,7 @@ jsv_is_modify_rejected(lList **answer_list, lListElem *job)
             /*
              * JSV is active but no modification allowed
              */
-            ERROR((SGE_EVENT, SFNMAX, MSG_JSV_ALLOWED));
+            ERROR(SFNMAX, MSG_JSV_ALLOWED);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = true;
          }

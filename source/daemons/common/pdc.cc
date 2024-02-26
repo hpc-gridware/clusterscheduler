@@ -240,14 +240,13 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
                 procs->kp_eproc.e_pcred.p_svuid != 0 &&
                 procs->kp_eproc.e_pcred.p_rgid != 0 && procs->kp_eproc.e_pcred.p_svgid != 0) {
                kill(procs->kp_proc.p_pid, sig);
-               sprintf(err_str, MSG_SGE_KILLINGPIDXY_UI ,
-                  sge_u32c(procs->kp_proc.p_pid), add_grp_id);
+               snprintf(err_str, sizeof(err_str), MSG_SGE_KILLINGPIDXY_UI, sge_u32c(procs->kp_proc.p_pid), add_grp_id);
             } else {
-               sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_UI ,
-                  sge_u32c(procs->kp_proc.p_pid), add_grp_id);
+               snprintf(err_str, sizeof(err_str), MSG_SGE_DONOTKILLROOTPROCESSXY_UI, sge_u32c(procs->kp_proc.p_pid), add_grp_id);
             }
-            if (shepherd_trace)
+            if (shepherd_trace) {
                shepherd_trace(err_str);
+            }
          }
       }
    }
@@ -620,8 +619,7 @@ static int psRetrieveOSJobData(void) {
               
                /* remove process entry from list */
 #ifdef MONITOR_PDC
-               INFO((SGE_EVENT, "lost process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n",
-                     proc->pd_pid, job->jd_jid, proc->pd_utime, proc->pd_stime));
+               INFO("lost process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n", proc->pd_pid, job->jd_jid, proc->pd_utime, proc->pd_stime);
 #endif
                LNK_DELETE(currp);
                sge_free(&proc_elem);

@@ -75,7 +75,7 @@ host_list_locate(const lList *host_list, const char *hostname)
             ret = lGetElemHostRW(host_list, nm, hostname);
          }
       } else {
-         CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+         CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       }
    } else {
       /*

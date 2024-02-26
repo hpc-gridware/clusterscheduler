@@ -66,7 +66,7 @@ sge_listener_initialize() {
 
    DENTER(TOP_LAYER);
 
-   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_listener_threads), threadnames[LISTENER_THREAD]));
+   INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_listener_threads), threadnames[LISTENER_THREAD]);
    cl_thread_list_setup(&(Main_Control.listener_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_listener_threads; i++) {
       cl_thread_list_create_thread(Main_Control.listener_thread_pool, &dummy_thread_p,

@@ -473,7 +473,7 @@ sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_next_run) 
 
    DENTER(TOP_LAYER);
 
-   INFO((SGE_EVENT, "the job category filter is enabled"));
+   INFO("the job category filter is enabled");
 
    for_each_ep(queue, queue_list) {
       u_long32 state = lGetUlong(queue, QU_state);

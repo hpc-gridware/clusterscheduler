@@ -106,8 +106,7 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
                                        (char *) hostname, (char *) commproc, id,
                                        &last_heard_from);
       if (!last_heard_from) {
-         ERROR((SGE_EVENT, MSG_NOXKNOWNONHOSTYTOSENDCONFNOTIFICATION_SS,
-                 commproc, hostname));
+         ERROR(MSG_NOXKNOWNONHOSTYTOSENDCONFNOTIFICATION_SS, commproc, hostname);
          DRETURN(-2);
       }
    }

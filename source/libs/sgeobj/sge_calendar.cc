@@ -466,7 +466,7 @@ static u_long32 is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
             state = is_week_entry_active(new_tm, week_entry, limit, next_state, rec_count++); 
          }
          else {
-            ERROR((SGE_EVENT, SFNMAX, MSG_CALENDAR_CALCTERMINATED));
+            ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
          }
 
          lFreeElem(&new_tm);
@@ -2278,7 +2278,7 @@ static int scan(const char *s, token_set_t token_set[]) {
                      for (j=0; t[j] && isdigit((int) t[j]); j++) {
                         number =  old_number * 10 + (t[j]-'0');
                         if (number<old_number) {
-                           ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_OVERFLOWERRORWHILEPARSING));
+                           ERROR(SFNMAX, MSG_PARSE_OVERFLOWERRORWHILEPARSING);
                            token = ERR_TOKEN;
                            token_is_valid = 1;
                            DRETURN(token);

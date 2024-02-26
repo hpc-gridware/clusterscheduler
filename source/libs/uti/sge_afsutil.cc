@@ -128,7 +128,7 @@ char *sge_read_token(const char *file) {
 *        -1 - Error 
 ******************************************************************************/
 int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
-                         int token_extend_time, char *err_str) {
+                         int token_extend_time, char *err_str, size_t err_str_size) {
    pid_t command_pid;
    FILE *fp_in, *fp_out, *fp_err;
    int ret;
@@ -136,29 +136,28 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
 
    DENTER(TOP_LAYER);
 
-   sprintf(cmdbuf, "%s %s %d", command, user, token_extend_time);
+   snprintf(cmdbuf, sizeof(cmdbuf), "%s %s %d", command, user, token_extend_time);
    if (err_str) {
       strcpy(err_str, cmdbuf);
    }
 
-   command_pid = sge_peopen("/bin/sh", 0, cmdbuf, nullptr, nullptr,
-                            &fp_in, &fp_out, &fp_err, false);
+   command_pid = sge_peopen("/bin/sh", 0, cmdbuf, nullptr, nullptr, &fp_in, &fp_out, &fp_err, false);
    if (command_pid == -1) {
       if (err_str) {
-         sprintf(err_str, MSG_TOKEN_NOSTART_S, cmdbuf);
+         snprintf(err_str, err_str_size, MSG_TOKEN_NOSTART_S, cmdbuf);
       }
       DRETURN(-1);
    }
    if (sge_string2bin(fp_in, tokenbuf) == -1) {
       if (err_str) {
-         sprintf(err_str, MSG_TOKEN_NOWRITEAFS_S, cmdbuf);
+         snprintf(err_str, err_str_size, MSG_TOKEN_NOWRITEAFS_S, cmdbuf);
       }
       DRETURN(-1);
    }
 
    if ((ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr)) != 0) {
       if (err_str) {
-         sprintf(err_str, MSG_TOKEN_NOSETAFS_SI, cmdbuf, ret);
+         snprintf(err_str, err_str_size, MSG_TOKEN_NOSETAFS_SI, cmdbuf, ret);
       }
       DRETURN(-1);
    }
@@ -190,8 +189,8 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
 *         0 - OK
 *         1 - Error
 ******************************************************************************/
-int sge_get_token_cmd(const char *tokencmdname, char *buf) {
-   SGE_STRUCT_STAT sb;
+int sge_get_token_cmd(const char *tokencmdname, char *buf, size_t buf_size) {
+   SGE_STRUCT_STAT sb{};
 
    if (!tokencmdname || !strlen(tokencmdname)) {
       if (!buf) {
@@ -207,7 +206,7 @@ int sge_get_token_cmd(const char *tokencmdname, char *buf) {
          fprintf(stderr, MSG_COMMAND_NOFILESTATUS_S, tokencmdname);
          fprintf(stderr, "\n");
       } else {
-         sprintf(buf, MSG_COMMAND_NOFILESTATUS_S, tokencmdname);
+         snprintf(buf, buf_size, MSG_COMMAND_NOFILESTATUS_S, tokencmdname);
       }
       return 1;
    }
@@ -217,7 +216,7 @@ int sge_get_token_cmd(const char *tokencmdname, char *buf) {
          fprintf(stderr, MSG_COMMAND_NOTEXECUTABLE_S, tokencmdname);
          fprintf(stderr, "\n");
       } else {
-         sprintf(buf, MSG_COMMAND_NOTEXECUTABLE_S, tokencmdname);
+         snprintf(buf, buf_size, MSG_COMMAND_NOTEXECUTABLE_S, tokencmdname);
       }
       return 1;
    }

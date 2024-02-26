@@ -2644,7 +2644,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
                sep = lCreateElem (ST_Type);
                lAppendElem (slp, sep);
 
-               sprintf (buffer, "%s=%.4f", lGetString (uep, UA_name), lGetDouble (uep, UA_value));
+               snprintf(buffer, sizeof(buffer), "%s=%.4f", lGetString (uep, UA_name), lGetDouble (uep, UA_value));
                lSetString (sep, ST_name, buffer);
             }
 

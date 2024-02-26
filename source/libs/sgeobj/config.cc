@@ -127,7 +127,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
 
       if(!value || !(*value)) {
          if (force_value) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGNOARGUMENTGIVEN_S , name));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CONFIGNOARGUMENTGIVEN_S , name);
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             goto Error;
          }
@@ -152,7 +152,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
          }
          ep = lAddElemStr(lpp, nm1, name, dp);
          if (!ep) { 
-            ERROR((SGE_EVENT, MSG_GDI_CONFIGADDLISTFAILED_S , name));
+            ERROR(MSG_GDI_CONFIGADDLISTFAILED_S , name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             goto Error;
          } 
@@ -160,7 +160,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
       } else {
          ep = lAddElemStr(lpp, nm1, name, dp);
          if (!ep) { 
-            ERROR((SGE_EVENT, MSG_GDI_CONFIGADDLISTFAILED_S , name));
+            ERROR(MSG_GDI_CONFIGADDLISTFAILED_S , name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             goto Error;
          } 
@@ -206,7 +206,7 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
    if (ep == nullptr) {
       if (alpp) {
          char error[1000];
-         sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
+         snprintf(error, sizeof(error), MSG_GDI_CONFIGMISSINGARGUMENT_S, key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
       DRETURN(nullptr);
@@ -242,7 +242,7 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
    if (ep == nullptr) {
       if (alpp) {
          char error[1000];
-         sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
+         snprintf(error, sizeof(error), MSG_GDI_CONFIGMISSINGARGUMENT_S, key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
       DRETURN(nullptr);
@@ -532,8 +532,7 @@ int operation_nm
    }
 
    if ( (sscanf(str, "%lf", &dval)!=1) || ( strncasecmp(str,"inf",3) == 0 ) ) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOTDOUBLE_SS , 
-               key, str));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CONFIGARGUMENTNOTDOUBLE_SS , key, str);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
@@ -626,7 +625,7 @@ int name_nm
       DRETURN(fields?true:false);
    }
    if(!parse_ulong_val(nullptr, nullptr, TYPE_TIM, str, nullptr, 0)) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOTTIME_SS , key, str));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CONFIGARGUMENTNOTTIME_SS , key, str);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
@@ -667,7 +666,7 @@ int name_nm
       DRETURN(fields?true:false);
    }
    if(!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOMEMORY_SS , key, str));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CONFIGARGUMENTNOMEMORY_SS , key, str);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
@@ -708,7 +707,7 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
    }
    
    if(!uval) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_CONFIGINVALIDQUEUESPECIFIED ));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_CONFIGINVALIDQUEUESPECIFIED);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }

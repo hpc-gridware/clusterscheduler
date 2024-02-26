@@ -2588,7 +2588,7 @@ void sconf_print_config(void){
    DENTER(TOP_LAYER);
 
    if (!sconf_is()){
-      ERROR((SGE_EVENT, SFNMAX, MSG_SCONF_NO_CONFIG));
+      ERROR(SFNMAX, MSG_SCONF_NO_CONFIG);
       DRETURN_VOID;
    }
 
@@ -2598,140 +2598,140 @@ void sconf_print_config(void){
 
    /* --- SC_algorithm */
    s = get_algorithm();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXASY_SS , s, "algorithm"));
+   INFO(MSG_ATTRIB_USINGXASY_SS , s, "algorithm");
      
    /* --- SC_schedule_interval */
    s = get_schedule_interval_str();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS , s, "schedule_interval"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS , s, "schedule_interval");
 
    /* --- SC_load_adjustment_decay_time */
    s = get_load_adjustment_decay_time_str();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, s, "load_adjustment_decay_time"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, s, "load_adjustment_decay_time");
 
    /* --- SC_load_formula */
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, get_load_formula(), "load_formula"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, get_load_formula(), "load_formula");
 
    /* --- SC_schedd_job_info */
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info), "schedd_job_info"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info), "schedd_job_info");
    
    /* --- SC_params */
    s=lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
-   INFO((SGE_EVENT, MSG_READ_PARAM_S, s)); 
+   INFO(MSG_READ_PARAM_S, s);
 
    /* --- SC_reprioritize_interval */
    s = reprioritize_interval_str();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, s, "reprioritize_interval"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, s, "reprioritize_interval");
 
    /* --- SC_usage_weight_list */
    uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), get_usage_weight_list(), usage_fields, delis, 0);
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "usage_weight_list"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "usage_weight_list");
 
    /* --- SC_halflife_decay_list_str */
    s = get_halflife_decay_list_str();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, s, "halflife_decay_list"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, s, "halflife_decay_list");
   
    /* --- SC_policy_hierarchy */
    s = lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy);
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, s, "policy_hierarchy"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, s, "policy_hierarchy");
 
    /* --- SC_job_load_adjustments */
    lval = get_job_load_adjustments();
    uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0);
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "job_load_adjustments"));
+   INFO(MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "job_load_adjustments");
    
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    /* --- SC_maxujobs */
    uval = sconf_get_maxujobs();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US, sge_u32c( uval), "maxujobs"));
+   INFO(MSG_ATTRIB_USINGXFORY_US, sge_u32c( uval), "maxujobs");
 
    /* --- SC_queue_sort_method (was: SC_sort_seq_no) */
    uval = sconf_get_queue_sort_method();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "queue_sort_method"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "queue_sort_method");
 
    /* --- SC_flush_submit_sec */
    uval = sconf_get_flush_submit_sec();
-   INFO((SGE_EVENT,MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval) , "flush_submit_sec"));
+   INFO(MSG_ATTRIB_USINGXFORY_US, sge_u32c (uval), "flush_submit_sec");
 
    /* --- SC_flush_finish_sec */
    uval = sconf_get_flush_finish_sec();
-   INFO((SGE_EVENT,MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval) , "flush_finish_sec"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval) , "flush_finish_sec");
    
    /* --- SC_halftime */
    uval = sconf_get_halftime();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US ,  sge_u32c (uval), "halftime"));
+   INFO(MSG_ATTRIB_USINGXFORY_US ,  sge_u32c (uval), "halftime");
 
    /* --- SC_compensation_factor */
    dval = sconf_get_compensation_factor();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS, dval, "compensation_factor"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS, dval, "compensation_factor");
 
    /* --- SC_weight_user */
    dval = sconf_get_weight_user();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_user"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_user");
 
    /* --- SC_weight_project */
    dval = sconf_get_weight_project();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_project"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_project");
 
    /* --- SC_weight_department */
    dval = sconf_get_weight_department();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_department"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_department");
 
    /* --- SC_weight_job */
    dval = sconf_get_weight_job();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_job"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS, dval, "weight_job");
 
    /* --- SC_weight_tickets_functional */
    uval = sconf_get_weight_tickets_functional();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "weight_tickets_functional"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "weight_tickets_functional");
 
    /* --- SC_weight_tickets_share */
    uval = sconf_get_weight_tickets_share();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "weight_tickets_share"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "weight_tickets_share");
 
    /* --- SC_share_override_tickets */
    uval = sconf_get_share_override_tickets();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "share_override_tickets"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "share_override_tickets");
 
    /* --- SC_share_functional_shares */
    uval = sconf_get_share_functional_shares();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "share_functional_shares"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "share_functional_shares");
 
    /* --- SC_max_functional_jobs_to_schedule */
    uval = sconf_get_max_functional_jobs_to_schedule();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "max_functional_jobs_to_schedule"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "max_functional_jobs_to_schedule");
    
    /* --- SC_report_job_tickets */
    uval = sconf_get_report_pjob_tickets();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "report_pjob_tickets"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "report_pjob_tickets");
    
    /* --- SC_max_pending_tasks_per_job */
    uval = sconf_get_max_pending_tasks_per_job();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "max_pending_tasks_per_job"));
+   INFO(MSG_ATTRIB_USINGXFORY_US,  sge_u32c (uval), "max_pending_tasks_per_job");
 
    /* --- SC_weight_ticket */
    dval = sconf_get_weight_ticket();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_ticket"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_ticket");
 
    /* --- SC_weight_waiting_time */
    dval = sconf_get_weight_waiting_time();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_waiting_time"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_waiting_time");
 
    /* --- SC_weight_deadline */
    dval = sconf_get_weight_deadline();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_deadline"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_deadline");
 
    /* --- SC_weight_urgency */
    dval = sconf_get_weight_urgency();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_urgency"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_urgency");
 
    /* --- SC_weight_priority */
    dval = sconf_get_weight_priority();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_priority"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "weight_priority");
 
    /* --- SC_max_reservation */
    dval = sconf_get_max_reservations();
-   INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_6FS,  dval, "max_reservation"));
+   INFO(MSG_ATTRIB_USINGXFORY_6FS,  dval, "max_reservation");
 
    DRETURN_VOID;
 }

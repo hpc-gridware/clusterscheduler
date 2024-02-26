@@ -168,7 +168,7 @@ rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *r
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule,
                                  sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
             } else {
-               ERROR((SGE_EVENT, SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED));
+               ERROR(SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED);
                answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                                ANSWER_QUALITY_ERROR);
                goto ERROR;
@@ -315,29 +315,28 @@ rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost)
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no rqs element, if ep has no RQS_name */
    if ((pos = lGetPosViaElem(ep, RQS_name, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(RQS_name), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(RQS_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    rqs_name = lGetPosString(ep, pos);
    if (!rqs_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* search for rqs with this name and remove it from the list */
    if (!(found = rqs_list_locate(*rqs_list, rqs_name))) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_RQS, rqs_name));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_RQS, rqs_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -350,8 +349,7 @@ rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost)
                    0, 0, rqs_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-           ruser, rhost, rqs_name, MSG_OBJ_RQS));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, rqs_name, MSG_OBJ_RQS);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    lFreeElem(&found);

@@ -112,7 +112,7 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
    template_task = lFirstRW(lGetList(job, JB_ja_template));
 
    if (!template_task) {
-      ERROR((SGE_EVENT, "unable to retrieve template task\n"));
+      ERROR("unable to retrieve template task\n");
    } else { 
       lSetUlong(template_task, JAT_state, JQUEUED | JWAITING);
       lSetUlong(template_task, JAT_task_number, ja_task_id);  
@@ -1153,11 +1153,11 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
    DENTER(TOP_LAYER);
 
    if (!job_list) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_JLPPNULL));
+      ERROR(SFNMAX, MSG_JOB_JLPPNULL);
       DRETURN(1);
    }
    if (!job) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_JEPNULL));
+      ERROR(SFNMAX, MSG_JOB_JEPNULL);
       DRETURN(1);
    }
 
@@ -1167,8 +1167,7 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
 
    if (check && *job_list && lGetElemUlong(*job_list, JB_job_number, lGetUlong(job, JB_job_number))) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR((SGE_EVENT, MSG_JOB_JOBALREADYEXISTS_S, 
-             job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
+      ERROR(MSG_JOB_JOBALREADYEXISTS_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       sge_dstring_free(&id_dstring);
       DRETURN(-1);
    }
@@ -1891,7 +1890,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
             if (field[i] != JB_ja_structure)
                range_correct_end(range);
             if (range_is_id_within(range, 0)) {
-               ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NULLNOTALLOWEDT));
+               ERROR(SFNMAX, MSG_JOB_NULLNOTALLOWEDT);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN_VOID;
             }
@@ -1925,7 +1924,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
       }
       has_structure = !range_list_is_empty(lGetList(job, JB_ja_structure));
       if (!has_structure) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NOIDNOTALLOWED));
+         ERROR(SFNMAX, MSG_JOB_NOIDNOTALLOWED);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          DRETURN_VOID;
@@ -2212,7 +2211,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    if(display_ep == nullptr) {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
+         WARNING(MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
          sprintf(SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
@@ -2228,7 +2227,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    if(display == nullptr || strlen(display) == 0) {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
+         WARNING(MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
          sprintf(SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
@@ -2243,7 +2242,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    if(*display == ':') {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
+         WARNING(MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
          sprintf(SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
@@ -2558,11 +2557,11 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
       if (res != CL_RETVAL_OK) { 
          const char *hostname = lGetHost(ep, PN_host);
          if (hostname != nullptr) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, hostname));
+            ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, hostname);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret_error=true;
          } else if (res != CL_RETVAL_PARAMS) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_NULLPOINTERRECEIVED));
+            ERROR(SFNMAX, MSG_PARSE_NULLPOINTERRECEIVED);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret_error=true;
          }
@@ -2579,13 +2578,13 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 
             if(hostname == nullptr){
                if(temp_hostname == nullptr){
-                  ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_DUPLICATEHOSTINFILESPEC));
+                  ERROR(SFNMAX, MSG_PARSE_DUPLICATEHOSTINFILESPEC);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret_error=true;
                }
             } 
             else if( temp_hostname && strcmp(hostname, temp_hostname)==0){
-               ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_DUPLICATEHOSTINFILESPEC));
+               ERROR(SFNMAX, MSG_PARSE_DUPLICATEHOSTINFILESPEC);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret_error=true;
             }
@@ -3487,7 +3486,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
 
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_H_RT))) {
       if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
-         ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
+         ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
       d_ret = d_tmp;
@@ -3496,7 +3495,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
    
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_S_RT))) {
       if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
-         ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
+         ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
 

@@ -151,7 +151,7 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
    DENTER(PACK_LAYER);
 
    if (pb == nullptr) {
-      ERROR((SGE_EVENT, MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT));
+      ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT);
       DRETURN(PACK_FORMAT);
    }
 
@@ -166,7 +166,7 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
 
       pb->head_ptr = sge_malloc(initial_size);
       if (pb->head_ptr == nullptr) {
-         ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORY_D, (int)initial_size));
+         ERROR(MSG_CULL_NOTENOUGHMEMORY_D, (int)initial_size);
          DRETURN(PACK_ENOMEM);
       }
       pb->cur_ptr = pb->head_ptr;
@@ -226,7 +226,7 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
       }
 
       if (pad != 0 || version != CULL_VERSION) {
-         ERROR((SGE_EVENT, MSG_CULL_PACK_WRONG_VERSION_XX, (unsigned int) version, CULL_VERSION));
+         ERROR(MSG_CULL_PACK_WRONG_VERSION_XX, (unsigned int) version, CULL_VERSION);
          DRETURN(PACK_VERSION);
       }
 

@@ -230,6 +230,11 @@ component_get_log_buffer() {
    return tl->log_buffer;
 }
 
+size_t
+component_get_log_buffer_size() {
+   return MAX_LOG_BUFFER;
+}
+
 const char *
 component_get_qualified_hostname() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);

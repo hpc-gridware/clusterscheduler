@@ -100,9 +100,9 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
    if (lGetNumberOfElem(report_list) == 0) {
       DPRINTF(("received empty report\n"));
       if (rhost != nullptr) {
-         WARNING((SGE_EVENT, MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, rhost));
+         WARNING(MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, rhost);
       } else {
-         WARNING((SGE_EVENT, MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, "unknown"));
+         WARNING(MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, "unknown");
       }
       DRETURN_VOID;
    }
@@ -133,13 +133,13 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
          break;
       }
    }
-   INFO((SGE_EVENT, "REPORT %s (%s)", sge_dstring_get_string(&rep_str), rhost));
+   INFO("REPORT %s (%s)", sge_dstring_get_string(&rep_str), rhost);
    sge_dstring_free(&rep_str);
 #endif
 
    /* accept reports only from execd's */
    if (strcmp(prognames[EXECD], commproc)) {
-      ERROR((SGE_EVENT, MSG_GOTSTATUSREPORTOFUNKNOWNCOMMPROC_S, commproc));
+      ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNCOMMPROC_S, commproc);
       DRETURN_VOID;
    }
 
@@ -153,7 +153,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
 
    /* need exec host for all types of reports */
    if (!(hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), rhost))) {
-      ERROR((SGE_EVENT, MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S, rhost));
+      ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S, rhost);
       DRETURN_VOID;
    }
 
@@ -165,8 +165,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
    if ((this_seqno < last_seqno && (last_seqno - this_seqno) <= 9000) &&
        !(last_seqno > 9990 && this_seqno < 10)) {
       /* this must be an old report, log and then ignore it */
-      INFO((SGE_EVENT, MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS,
-              sge_u32c(this_seqno), sge_u32c(last_seqno), rhost));
+      INFO(MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS, sge_u32c(this_seqno), sge_u32c(last_seqno), rhost);
       DRETURN_VOID;
    }
 
@@ -244,7 +243,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
             MONITOR_EPROC(monitor);
             ret = update_license_data(hep, lGetListRW(report, REP_list));
             if (ret) {
-               ERROR((SGE_EVENT, MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret));
+               ERROR(MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret);
             }
             break;
 
@@ -279,7 +278,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
 
    if (send_tag_new_conf == true) {
       if (host_notify_about_new_conf(hep) != 0) {
-         ERROR((SGE_EVENT, MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, rhost));
+         ERROR(MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, rhost);
       }
    }
 

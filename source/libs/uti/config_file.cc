@@ -242,16 +242,16 @@ static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
 
 /***************************************************/
 char *get_conf_val(const char *name) {
-   config_entry *ptr = config_list;
-   char err_str[MAX_STRING_SIZE];
-
-   ptr = find_conf_entry(name, config_list);
-   if (ptr)
+   config_entry *ptr = find_conf_entry(name, config_list);
+   if (ptr) {
       return ptr->value;
+   }
 
-   sprintf(err_str, MSG_CONF_NOCONFVALUE_S, name);
-   if (config_errfunc)
+   char err_str[MAX_STRING_SIZE];
+   snprintf(err_str, sizeof(err_str), MSG_CONF_NOCONFVALUE_S, name);
+   if (config_errfunc) {
       config_errfunc(err_str);
+   }
    return nullptr;
 }
 
@@ -430,14 +430,14 @@ int replace_params(
             }
 
             if (name_len == 0) {
-               sprintf(err_str, SFNMAX, MSG_CONF_ATLEASTONECHAR);
+               snprintf(err_str, sizeof(err_str), SFNMAX, MSG_CONF_ATLEASTONECHAR);
                if (config_errfunc)
                   config_errfunc(err_str);
                return 1;
             }
 
             if (name_len > (sizeof(name) - 1)) {
-               sprintf(err_str, MSG_CONF_REFVAR_S, sp);
+               snprintf(err_str, sizeof(err_str), MSG_CONF_REFVAR_S, sp);
                if (config_errfunc)
                   config_errfunc(err_str);
                return 1;
@@ -456,9 +456,10 @@ int replace_params(
 
                if (!*spp) {
                   /* this variable may be known by us but not by the user */
-                  sprintf(err_str, MSG_CONF_UNKNOWNVAR_S, name);
-                  if (config_errfunc)
+                  snprintf(err_str, sizeof(err_str), MSG_CONF_UNKNOWNVAR_S, name);
+                  if (config_errfunc) {
                      config_errfunc(err_str);
+                  }
                   return 1;
                }
             }

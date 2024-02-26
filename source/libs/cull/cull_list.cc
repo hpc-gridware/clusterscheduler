@@ -1783,7 +1783,7 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
    ep = *ep1;
 
    if (lp->descr != ep->descr) {
-      CRITICAL((SGE_EVENT, "Removing element from other list !!!\n"));
+      CRITICAL("Removing element from other list !!!\n");
       abort();
    }
 
@@ -1850,7 +1850,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
    }
 
    if (source->descr != ep->descr) {
-      CRITICAL((SGE_EVENT, "Dechaining element from other list !!!\n"));
+      CRITICAL("Dechaining element from other list !!!\n");
       abort();
    }
 
@@ -1858,7 +1858,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       *target = lCreateList(lGetListName(source), source->descr);
    } else {
       if (lCompListDescr(source->descr, (*target)->descr) != 0) {
-         CRITICAL((SGE_EVENT, "Dechaining element into a different list !!!\n"));
+         CRITICAL("Dechaining element into a different list !!!\n");
          abort();
       }
    }
@@ -1941,7 +1941,7 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
       DRETURN(nullptr);
    }
    if (lp->descr != ep->descr) {
-      CRITICAL((SGE_EVENT, "Dechaining element from other list !!!"));
+      CRITICAL("Dechaining element from other list !!!");
       abort();
    }
 
@@ -2580,7 +2580,7 @@ int lUniqHost(lList *lp, int keyfield) {
 *     if(mt_is_unique(descr[i].mt)) {
 *        // check for uniqueness before inserting new elemente into a list
 *        if(lGetElemUlong(....) != nullptr) {
-*           WARNING((SGE_EVENT, MSG_DUPLICATERECORD....));
+*           WARNING(MSG_DUPLICATERECORD....);
 *           DRETURN(nullptr);
 *        }
 *     }

@@ -148,14 +148,14 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 
    if (check_act_qmaster_file == 1) {
       strcpy(err_str,"");
-      if (get_qm_name(act_qmaster_name, act_qmaster_file, err_str) == 0) {
+      if (get_qm_name(act_qmaster_name, act_qmaster_file, err_str, sizeof(err_str)) == 0) {
          /* got qmaster name */
          if ( getuniquehostname(act_qmaster_name, act_resolved_qmaster_name, 0) == CL_RETVAL_OK &&
               sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0      ) {
             /* act_qmaster file has been changed */
-            WARNING((SGE_EVENT, SFNMAX, MSG_HEART_ACT_QMASTER_FILE_CHANGED));
+            WARNING(SFNMAX, MSG_HEART_ACT_QMASTER_FILE_CHANGED);
             if (sge_qmaster_shutdown_via_signal_thread(100) != 0) {
-               ERROR((SGE_EVENT, SFNMAX, MSG_HEART_CANT_SIGNAL));
+               ERROR(SFNMAX, MSG_HEART_CANT_SIGNAL);
                /* TODO: here the ctx reference is not transported back
                **       event_handler functions should use &ctx instead
                */
@@ -165,7 +165,7 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
             DPRINTF(("(heartbeat) - act_qmaster file contains hostname " SFQ "\n", act_qmaster_name));
          }
       } else {
-         WARNING((SGE_EVENT, MSG_HEART_CANNOT_READ_FILE_S, err_str ));
+         WARNING(MSG_HEART_CANNOT_READ_FILE_S, err_str );
       }
    }
 

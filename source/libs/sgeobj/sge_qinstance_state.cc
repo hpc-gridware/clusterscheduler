@@ -424,7 +424,7 @@ qinstance_state_from_string(const char* sstate,
       }
 
       if ((!found) || ((ustate & ~filter) != 0)){
-         ERROR((SGE_EVENT, MSG_QSTATE_UNKNOWNCHAR_CS, sstate[i], sstate));
+         ERROR(MSG_QSTATE_UNKNOWNCHAR_CS, sstate[i], sstate);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
          DRETURN(U_LONG32_MAX);
       }

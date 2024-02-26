@@ -121,7 +121,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
       }
       else {
          sge_dstring_free(&mod_value);
-         CRITICAL((SGE_EVENT, "xml_addAttribute() called on wrong cull structure"));
+         CRITICAL("xml_addAttribute() called on wrong cull structure");
          abort();
       }
       lAppendElem(attr_list, attr_elem);
@@ -504,16 +504,16 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
 
 lListElem *xml_append_Attr_D(lList *attributeList, const char *name, double value) {
    char buffer[20];
-   sprintf(buffer,"%.5f",value); 
+   snprintf(buffer, sizeof(buffer), "%.5f", value);
    return append_Attr_S(attributeList, name, buffer);
 }
 
 lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double value) {
    char buffer[20];
    if (value > 99999999)
-      sprintf(buffer,"%.3g", value);
+      snprintf(buffer, sizeof(buffer), "%.3g", value);
    else
-      sprintf(buffer,"%.0f", value);
+      snprintf(buffer, sizeof(buffer), "%.0f", value);
    return append_Attr_S(attributeList, name, buffer);
 }
 
@@ -533,7 +533,7 @@ lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char 
 
 lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) {
    char buffer[20];
-   sprintf(buffer,"%d", value);
+   snprintf(buffer, sizeof(buffer), "%d", value);
    return append_Attr_S(attributeList, name, buffer);
 }
 

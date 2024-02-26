@@ -396,7 +396,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
    }
 
    if (ignored + excluded == 0) {
-      CRITICAL((SGE_EVENT, "not a single queue excluded in rqs_excluded_cqueues()\n"));
+      CRITICAL("not a single queue excluded in rqs_excluded_cqueues()\n");
    }
 
    DRETURN_VOID;
@@ -457,7 +457,7 @@ static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
    }
 
    if (ignored + excluded == 0) {
-      CRITICAL((SGE_EVENT, "not a single host excluded in rqs_excluded_hosts()\n"));
+      CRITICAL("not a single host excluded in rqs_excluded_hosts()\n");
    }
 
    DRETURN_VOID;

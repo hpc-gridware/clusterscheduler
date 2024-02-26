@@ -190,7 +190,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          if (ckpt_name != nullptr) {
             lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
-               ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
+               ERROR(MSG_JOB_CKPTUNKNOWN_S, ckpt_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                goto ERROR;
             }
@@ -233,7 +233,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          if (pe_name) {
             const lListElem *pep = pe_list_find_matching(master_pe_list, pe_name);
             if (!pep) {
-               ERROR((SGE_EVENT, MSG_JOB_PEUNKNOWN_S, pe_name));
+               ERROR(MSG_JOB_PEUNKNOWN_S, pe_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                goto ERROR;
             }

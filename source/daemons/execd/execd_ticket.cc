@@ -65,7 +65,7 @@ int do_ticket(struct_msg_t *aMsg)
 
       if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid)
           || unpackdouble(&(aMsg->buf), &ticket)) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_JOB_TICKETFORMAT));
+         ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
       }
       DPRINTF(("got %lf new tickets for job " sge_u32"." sge_u32"\n", ticket, jobid, jataskid));
@@ -86,9 +86,7 @@ int do_ticket(struct_msg_t *aMsg)
       int ptf_error;
       /* forward new tickets to ptf */
       if ((ptf_error=ptf_process_job_ticket_list(ticket_modifier))) {
-         ERROR((SGE_EVENT, MSG_JOB_TICKETPASS2PTF_IS, 
-            lGetNumberOfElem(ticket_modifier), 
-            ptf_errstr(ptf_error)));
+         ERROR(MSG_JOB_TICKETPASS2PTF_IS, lGetNumberOfElem(ticket_modifier), ptf_errstr(ptf_error));
       }
 
       sge_switch2start_user();
