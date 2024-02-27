@@ -355,7 +355,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             }
 
             if (!strncmp(tmp_str2, tmp_str, strlen(tmp_str2))) {
-               sprintf(tmp_str3, "%s%s", sge_o_home, (char *) tmp_str + strlen(tmp_str2));
+               snprintf(tmp_str3, sizeof(tmp_str3), "%s%s", sge_o_home, (char *) tmp_str + strlen(tmp_str2));
                strcpy(tmp_str, tmp_str3);
             }
          }
@@ -680,7 +680,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       const char *cp;
       char str[1024];
  
-      sprintf(str, MSG_ANSWER_UNKOWNOPTIONX_S,
+      snprintf(str, sizeof(str), MSG_ANSWER_UNKOWNOPTIONX_S,
          lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {

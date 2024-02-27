@@ -2632,7 +2632,7 @@ static int test(int *argc, char **argv[], int parse_args)
          for (i=0; i<255; i++) {
   
             /* parametrize exit job with job argument */
-            sprintf(buffer, "%d", i);
+            snprintf(buffer, sizeof(buffer), "%d", i);
             job_argv[0] = buffer; 
             job_argv[1] = nullptr;
             drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);
@@ -3827,7 +3827,7 @@ static int test(int *argc, char **argv[], int parse_args)
                timenow.tm_hour++;
             }
             
-            sprintf (timestr, "%.4d/%.2d/%.2d %.2d:%.2d:%.2d", timenow.tm_year + 1900,
+            snprintf(timestr, sizeof(timestr), "%.4d/%.2d/%.2d %.2d:%.2d:%.2d", timenow.tm_year + 1900,
                      timenow.tm_mon + 1, timenow.tm_mday, timenow.tm_hour,
                      timenow.tm_min, timenow.tm_sec);
             printf ("%s\n", timestr);
@@ -4509,7 +4509,7 @@ static int test(int *argc, char **argv[], int parse_args)
          printf ("Last job id is %s.  Using %d.\n", jobid, new_id);
 
          /* Build job id list. */
-         sprintf(jobid, "%d", new_id);
+         snprintf(jobid, sizeof(jobid), "%d", new_id);
          all_jobids[0] = jobid;
          all_jobids[1] = nullptr;
 
@@ -4871,7 +4871,7 @@ static drmaa_job_template_t *create_sleeper_job_template(int seconds, int as_bul
    }
    
    if (ret == DRMAA_ERRNO_SUCCESS) {
-      sprintf(buffer, "%d", seconds);
+      snprintf(buffer, sizeof(buffer), "%d", seconds);
       job_argv[0] = buffer; 
       job_argv[1] = nullptr;
       ret = drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);

@@ -174,14 +174,14 @@ an_status_t verify_str_key(
    }
 
    if (str == nullptr) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_NULL_S, name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_NULL_S, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       return STATUS_EUNKNOWN;
    }
 
    /* check string length first, if too long -> error */
    if (strlen(str) > str_length) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_LENGTH_U, sge_u32c(str_length)));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_LENGTH_U, sge_u32c(str_length));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       return STATUS_EUNKNOWN;
    }
@@ -191,11 +191,9 @@ an_status_t verify_str_key(
    while ((forbidden_char = begin_chars[table][++i])) {
       if (str[0] == forbidden_char) {
          if (isprint((int) forbidden_char)) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_FIRSTCHAR_SC,
-                           begin_strings[table][i], begin_chars[table][i]));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_FIRSTCHAR_SC, begin_strings[table][i], begin_chars[table][i]);
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_FIRSTCHAR_S, 
-                           begin_strings[table][i]));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_FIRSTCHAR_S, begin_strings[table][i]);
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          return STATUS_EUNKNOWN;
@@ -207,11 +205,9 @@ an_status_t verify_str_key(
    while ((forbidden_char = mid_characters[table][++i])) {
       if (strchr(str, forbidden_char)) {
          if (isprint((int) forbidden_char)) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_MIDCHAR_SC,
-                           mid_strings[table][i], mid_characters[table][i]));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_MIDCHAR_SC, mid_strings[table][i], mid_characters[table][i]);
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_MIDCHAR_S, 
-                           mid_strings[table][i]));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_MIDCHAR_S, mid_strings[table][i]);
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          return STATUS_EUNKNOWN;
@@ -222,9 +218,7 @@ an_status_t verify_str_key(
    i = -1;
    while ((forbidden_string = keyword[++i])) {
       if (!strcasecmp(str, forbidden_string)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_KEYWORD_SS, 
-                        keyword_strings[i],
-            forbidden_string));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_KEYWORD_SS, keyword_strings[i], forbidden_string);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          return STATUS_EUNKNOWN;
       }

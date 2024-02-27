@@ -2077,7 +2077,7 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
             case CMPLXGE_OP:
             case CMPLXGT_OP:
                load += load_correction;
-               sprintf(lc_diagnosis2, MSG_SCHEDD_LCDIAGPOSITIVE_SS, load_value, lc_diagnosis1);
+               snprintf(lc_diagnosis2, sizeof(lc_diagnosis2), MSG_SCHEDD_LCDIAGPOSITIVE_SS, load_value, lc_diagnosis1);
                break;
 
             case CMPLXNE_OP:
@@ -2086,7 +2086,7 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
             case CMPLXLE_OP:
             default:
                load -= load_correction;
-               sprintf(lc_diagnosis2, MSG_SCHEDD_LCDIAGNEGATIVE_SS, load_value, lc_diagnosis1);
+               snprintf(lc_diagnosis2, sizeof(lc_diagnosis2), MSG_SCHEDD_LCDIAGNEGATIVE_SS, load_value, lc_diagnosis1);
                break;
             }
          } else  {
@@ -2097,12 +2097,12 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
          if (resource_cmp(relop, load, limit)) {
             if (reason) {
                if (type == TYPE_BOO){
-                  sprintf(reason, MSG_SCHEDD_WHYEXCEEDBOOLVALUE_SSSSS,
-                        name, load?MSG_TRUE:MSG_FALSE, lc_diagnosis2, map_op2str(relop), limit_value);
+                  snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDBOOLVALUE_SSSSS, name,
+                           load ? MSG_TRUE : MSG_FALSE, lc_diagnosis2, map_op2str(relop), limit_value);
                }
                else {
-                  sprintf(reason, MSG_SCHEDD_WHYEXCEEDFLOATVALUE_SFSSS,
-                        name, load, lc_diagnosis2, map_op2str(relop), limit_value);
+                  snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDFLOATVALUE_SFSSS,
+                           name, load, lc_diagnosis2, map_op2str(relop), limit_value);
                }
             }
             DRETURN(1);
@@ -2116,13 +2116,13 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
          match = string_base_cmp(type, limit_value, load_value);
          if (!match) {
             if (reason)
-               sprintf(reason, MSG_SCHEDD_WHYEXCEEDSTRINGVALUE_SSSS, name, load_value, map_op2str(relop), limit_value);
+               snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDSTRINGVALUE_SSSS, name, load_value, map_op2str(relop), limit_value);
             DRETURN(1);
          }
          break;
       default:
          if (reason)
-            sprintf(reason, MSG_SCHEDD_WHYEXCEEDCOMPLEXTYPE_S, name);
+            snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDCOMPLEXTYPE_S, name);
          DRETURN(1);
    }
 
@@ -2244,7 +2244,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
 
    if(!hep) {
       if (reason)
-         sprintf(reason, MSG_SCHEDD_WHYEXCEEDNOHOST_S, lGetHost(qep, QU_qhostname));
+         snprintf(reason, sizeof(reason_size), MSG_SCHEDD_WHYEXCEEDNOHOST_S, lGetHost(qep, QU_qhostname));
       /* no host for queue -> ERROR */
       DRETURN(1);
    }
@@ -2270,8 +2270,9 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
       /* complex attriute definition */
 
       if (!(cep = centry_list_locate(centry_list, name))) {
-         if (reason)
-            sprintf(reason, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
+         if (reason) {
+            snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
+         }
          DRETURN(1);
       }
       if (!is_check_consumable && lGetUlong(cep, CE_consumable) != CONSUMABLE_NO) {
@@ -2297,7 +2298,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
                load_is_value = 1;
             } else {
                if (reason) {
-                  sprintf(reason, MSG_SCHEDD_NOVALUEFORATTR_S, name);
+                  snprintf(reason, reason_size, MSG_SCHEDD_NOVALUEFORATTR_S, name);
                }
                DRETURN(1);
             }
@@ -2306,7 +2307,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
          /* load thesholds... */
          if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, DISPATCH_TIME_NOW, 0)) == nullptr ) {
             if (reason)
-               sprintf(reason, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
+               snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
             DRETURN(1);
          }
          need_free_cep = true;

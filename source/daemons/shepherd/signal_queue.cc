@@ -110,7 +110,7 @@ int add_signal(int signal)
       sig_queue[free_sig] = signal;
       free_sig = NEXT_INDEX(free_sig);
 
-      sprintf(err_str, "queued signal %s", sge_sys_sig2str(signal));
+      snprintf(err_str, sizeof(err_str), "queued signal %s", sge_sys_sig2str(signal));
       shepherd_trace(err_str);
    } 
    return ret;

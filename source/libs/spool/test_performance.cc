@@ -195,7 +195,7 @@ static bool delete_spooled_data()
 
    /* jobs */
    for_each_rw(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
-      sprintf(key, sge_U32CFormat".0", sge_u32c(lGetUlong(job, JB_job_number)));
+      snprintf(key, sizeof(key),  sge_U32CFormat".0", sge_u32c(lGetUlong(job, JB_job_number)));
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key, true);
       answer_list_output(&answer_list);
       num_total++;

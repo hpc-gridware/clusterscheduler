@@ -135,7 +135,7 @@ static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
 {
    char pid_buffer[256];
 
-   sprintf(pid_buffer, pid_t_fmt, pid);
+   snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
    lSetString(this_ls, LS_pid, pid_buffer);
 }
 
@@ -231,7 +231,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 
    DENTER(TOP_LAYER);
 
-   sprintf(buffer, "%s=%s", "HOST", qualified_hostname);
+   snprintf(buffer, sizeof(buffer), "%s=%s", "HOST", qualified_hostname);
    if (has_to_use_qidle
        && !strcmp(lGetString(this_ls, LS_name), IDLE_LOADSENSOR_NAME)) {
       envp = (char **) sge_malloc(sizeof(char *) * 3);
@@ -245,8 +245,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    }
 
    /* we need fds for select() .. */
-   pid = sge_peopen("/bin/sh", 0, lGetString(this_ls, LS_command), nullptr, envp,
-                &fp_in, &fp_out, &fp_err, true);
+   pid = sge_peopen("/bin/sh", 0, lGetString(this_ls, LS_command), nullptr, envp, &fp_in, &fp_out, &fp_err, true);
 
    if (envp) {
       sge_free(&envp);
@@ -262,8 +261,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    lSetRef(this_ls, LS_out, fp_out);
    lSetRef(this_ls, LS_err, fp_err);
 
-   DPRINTF(("%s: successfully started load sensor \"%s\"\n",
-            __func__, lGetString(this_ls, LS_command)));
+   DPRINTF(("%s: successfully started load sensor \"%s\"\n", __func__, lGetString(this_ls, LS_command)));
 
    /* request first load report after starting */
    ls_send_command(this_ls, "\n");

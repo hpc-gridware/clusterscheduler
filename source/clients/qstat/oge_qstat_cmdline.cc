@@ -206,7 +206,7 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
       }
 
       /* oops */
-      sprintf(str, MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
+      snprintf(str, sizeof(str), MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
       qstat_usage(qselect_mode, stderr, nullptr);
       answer_list_add(answer_list, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(ret);

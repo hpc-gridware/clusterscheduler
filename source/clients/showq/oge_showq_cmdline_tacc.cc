@@ -70,7 +70,7 @@ bool switch_list_showq_parse_from_cmdline_tacc(lList **ppcmdline,
          continue;
 
       /* oops */
-      sprintf(str, MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
+      snprintf(str, sizeof(str), MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
       showq_usage(stderr);
       answer_list_add(answer_list, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(true);

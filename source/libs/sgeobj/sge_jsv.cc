@@ -111,12 +111,12 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
       new_jsv = lCreateElem(JSV_Type);
 
       if (new_jsv != nullptr) {
-         SGE_STRUCT_STAT st;
+         SGE_STRUCT_STAT st{};
 
          if (SGE_STAT(scriptfile, &st) == 0) {
             char pid_buffer[256];
 
-            sprintf(pid_buffer, pid_t_fmt, (pid_t)-1);
+            snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, (pid_t)-1);
             lSetString(new_jsv, JSV_name, name);
             lSetString(new_jsv, JSV_context, context);
             lSetString(new_jsv, JSV_url, jsv_url);
@@ -178,7 +178,7 @@ jsv_set_pid(lListElem *jsv, pid_t pid)
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
 
    DENTER(TOP_LAYER);
-   sprintf(pid_buffer, pid_t_fmt, pid);
+   snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
    lSetString(jsv, JSV_pid, pid_buffer);
    DRETURN_VOID;
 }

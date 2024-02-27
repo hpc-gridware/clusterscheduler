@@ -330,7 +330,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       task_number = lGetUlong(this_jatep, JAT_task_number);
 
       if (job_is_array(jep)) {
-         sprintf(mail_ids, sge_U32CFormat"." sge_U32CFormat, sge_u32c(job_number), sge_u32c(task_number));
+         snprintf(mail_ids, sizeof(mail_ids), sge_U32CFormat"." sge_U32CFormat, sge_u32c(job_number), sge_u32c(task_number));
          sge_strlcpy(mail_type, MSG_RU_TYPEJOBARRAY, sizeof(mail_type));
       } else {
          snprintf(mail_ids, sizeof(mail_ids), sge_U32CFormat, sge_u32c(job_number));
@@ -531,12 +531,12 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             char mail_body[1024];
 
             mail_users = lGetList(jep, JB_mail_list);
-            sprintf(mail_subject, MSG_RU_MAILSUB_SS, mail_type, mail_ids);
-            sprintf(mail_body, MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
+            snprintf(mail_subject, sizeof(mail_subject), MSG_RU_MAILSUB_SS, mail_type, mail_ids);
+            snprintf(mail_body, sizeof(mail_body), MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
             cull_mail(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
          }
 
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_RU_MSGFILEINFO, mail_action, mail_type, mail_ids, hostname));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_RU_MSGFILEINFO, mail_action, mail_type, mail_ids, hostname);
 
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
       }

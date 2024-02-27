@@ -907,7 +907,7 @@ unsigned long flags
             }
             else {
                cb = strlen(cp);
-               sprintf(buff, "%s", cp);
+               snprintf(buff, buff_size, "%s", cp);
             }
             if (cb <= 0) {
                DPRINTF(("uni_print_list: error writing to file\n"));
@@ -931,7 +931,7 @@ unsigned long flags
       }
       else {
          cb = strlen(pdelis[2]);
-         sprintf(buff, "%s", pdelis[2]);
+         snprintf(buff, buff_size, "%s", pdelis[2]);
       }
       if (cb <= 0) {
          DPRINTF(("uni_print_list: error writing delimiter 1\n"));
@@ -1127,7 +1127,7 @@ int nm_doubleval
          }
 
          if (nm_strval == -1 || !(s=lGetString(lep, nm_strval))) {
-            sprintf(buffer, "%f", lGetDouble(lep, nm_doubleval));
+            snprintf(buffer, sizeof(buffer), "%f", lGetDouble(lep, nm_doubleval));
             s = buffer;
          }
 

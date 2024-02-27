@@ -3835,8 +3835,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
 
    /* Build the SGE date string from the parsed components. sprintf adds the
     * terminating character for us. */
-   sprintf(sge_time, "%.4d%.2d%.2d%.2d%.2d.%.2d", year, month, day, hour,
-                                                   minute, second);
+   snprintf(sge_time, sizeof(sge_time), "%.4d%.2d%.2d%.2d%.2d.%.2d", year, month, day, hour, minute, second);
 
    sge_free(&start);
 

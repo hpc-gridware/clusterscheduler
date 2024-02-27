@@ -827,7 +827,7 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -862,7 +862,7 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -897,7 +897,7 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -932,7 +932,7 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -967,7 +967,7 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1002,7 +1002,7 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1037,7 +1037,7 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1071,7 +1071,7 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1105,7 +1105,7 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1139,7 +1139,7 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1173,7 +1173,7 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1208,7 +1208,7 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
-      sprintf(SGE_EVENT, "%s - %s", key, text); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
@@ -1273,7 +1273,7 @@ int subval_nm
          continue;
       lSetUlong(tmpep, subval_nm, strtol(s, &endptr, 10));
       if (*endptr) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGREADFILEERRORNEAR_SS , key, endptr));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CONFIGREADFILEERRORNEAR_SS , key, endptr);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }

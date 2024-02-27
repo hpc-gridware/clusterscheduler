@@ -45,7 +45,8 @@
 #include "msg_execd.h"
 
 /*******************************************************/
-char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t uid, gid_t gid, char *tmpdir)
+char *
+sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size)
 {
    const char *t;
 
@@ -58,7 +59,7 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
 
    /* Note could have multiple instantiations of same job, */
    /* on same machine, under same queue */
-   sprintf(tmpdir, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF(("making TMPDIR=%s\n", tmpdir));
 
@@ -100,7 +101,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
       DRETURN(0);
    }
 
-   sprintf(tmpstr, "%s/" sge_u32"." sge_u32".%s", dir, jobid, jataskid, queue_name);
+   snprintf(tmpstr, sizeof(tmpstr), "%s/" sge_u32"." sge_u32".%s", dir, jobid, jataskid, queue_name);
    DPRINTF(("recursively unlinking \"%s\"\n", tmpstr));
    sge_switch2start_user();
    if (sge_rmdir(tmpstr, &err_str)) {
@@ -113,7 +114,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
    DRETURN(0);
 }
 
-char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tmpdir)
+char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tmpdir, size_t tmpdir_size)
 {
    const char *t;
 
@@ -123,7 +124,7 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tm
       DRETURN(nullptr);
    }
 
-   sprintf(tmpdir, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF(("TMPDIR=%s\n", tmpdir));
 

@@ -399,22 +399,21 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          in this queue instance. QU_job_slots_used holds actual number of used 
          slots for this job in the queue */
       if (!(used_slots=qinstance_slots_used(master_q))) {
-         if (!(sge_make_tmpdir(master_q, job_id, ja_task_id, 
-             pw->pw_uid, pw->pw_gid, tmpdir))) {
+         if (!(sge_make_tmpdir(master_q, job_id, ja_task_id, pw->pw_uid, pw->pw_gid, tmpdir, sizeof(tmpdir)))) {
             snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTMAKETMPDIR);
             sge_free(&pw_buffer);
             DRETURN(-2);
          }
       } else {
          SGE_STRUCT_STAT statbuf;
-         if(!(sge_get_tmpdir(master_q, job_id, ja_task_id, tmpdir))) {
+         if(!(sge_get_tmpdir(master_q, job_id, ja_task_id, tmpdir, sizeof(tmpdir)))) {
             snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTGETTMPDIR);
             sge_free(&pw_buffer);
             DRETURN(-2);
          }
 
          if (SGE_STAT(tmpdir, &statbuf)) {
-            sprintf(err_str, MSG_SYSTEM_CANTOPENTMPDIR_S, tmpdir);
+            snprintf(err_str, err_length, MSG_SYSTEM_CANTOPENTMPDIR_S, tmpdir);
             sge_free(&pw_buffer);
             DRETURN(-2);
          }
@@ -744,7 +743,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                int is_first_token = 1;
                dstring new_qrsh_command = DSTRING_INIT;
 
-               sprintf(delim, "%c", 0xff);
+               snprintf(delim, sizeof(delim), "%c", 0xff);
                sge_dstring_copy_string(&old_qrsh_command, old_qrsh_command_s);
                buffer = sge_dstring_get_string(&old_qrsh_command);
                token = sge_strtok(buffer, delim);
@@ -1016,7 +1015,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          }
 
          /* write add_grp_id to job-structure and file */
-         sprintf(str_id, "%ld", (long) last_addgrpid);
+         snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
          fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
          if(petep == nullptr) {
             lSetString(jatep, JAT_osjobid, str_id);
@@ -1492,7 +1491,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fprintf(fp, "use_afs=1\n");
       
       shepherd_name = SGE_COSHEPHERD;
-      sprintf(coshepherd_path, "%s/%s/%s", binary_path, sge_get_arch(), shepherd_name);
+      snprintf(coshepherd_path, sizeof(coshepherd_path), "%s/%s/%s", binary_path, sge_get_arch(), shepherd_name);
       fprintf(fp, "coshepherd=%s\n", coshepherd_path);
       set_token_cmd = mconf_get_set_token_cmd();
       fprintf(fp, "set_token_cmd=%s\n", set_token_cmd ? set_token_cmd : "none");
@@ -1552,7 +1551,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "qrsh_control_port=%s\n", lGetString(elem, VA_value));
          }
         
-         sprintf(daemon, "%s/utilbin/%s/", sge_root, arch);
+         snprintf(daemon, sizeof(daemon), "%s/utilbin/%s/", sge_root, arch);
         
          if(JOB_TYPE_IS_QLOGIN(jb_now)) {
             char* qlogin_daemon = mconf_get_qlogin_daemon();
@@ -1644,11 +1643,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    shepherd_name = SGE_SHEPHERD;
-   sprintf(shepherd_path, "%s/%s/%s", binary_path, arch, shepherd_name);
+   snprintf(shepherd_path, sizeof(shepherd_path), "%s/%s/%s", binary_path, arch, shepherd_name);
 
    if (SGE_STAT(shepherd_path, &buf)) {
       /* second chance: without architecture */
-      sprintf(shepherd_path, "%s/%s", binary_path, shepherd_name);
+      snprintf(shepherd_path, sizeof(shepherd_path), "%s/%s", binary_path, shepherd_name);
       if (SGE_STAT(shepherd_path, &buf)) {
          snprintf(err_str, err_length, MSG_EXECD_NOSHEPHERD_SSS, arch, shepherd_path, strerror(errno));
          DRETURN(-2);
@@ -1667,8 +1666,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
    }
    else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
-      sprintf(dce_wrapper_cmd, "/%s/utilbin/%s/starter_cred",
-              sge_root, arch);
+      snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
       if (SGE_STAT(dce_wrapper_cmd, &buf)) {
          snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
          sge_free(&pag_cmd);
@@ -1683,7 +1681,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       if (SGE_STAT(coshepherd_path, &buf)) {
          shepherd_name = SGE_COSHEPHERD;
-         sprintf(coshepherd_path, "%s/%s", binary_path, shepherd_name);
+         snprintf(coshepherd_path, sizeof(coshepherd_path), "%s/%s", binary_path, shepherd_name);
          if (SGE_STAT(coshepherd_path, &buf)) {
             snprintf(err_str, err_length, MSG_EXECD_NOCOSHEPHERD_SSS, arch, coshepherd_path, strerror(errno));
             sge_free(&pag_cmd);
@@ -1851,14 +1849,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
        lGetString(jep, JB_cred)) {
 
       char ccname[1024];
-      sprintf(ccname, "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge",
-	      job_id);
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
       putenv(ccname);
    }
 
    DPRINTF(("**********************CHILD*********************\n"));
    shepherd_name = SGE_SHEPHERD;
-   sprintf(ps_name, "%s-" sge_u32, shepherd_name, job_id);
+   snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
 
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();
@@ -1888,10 +1885,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       DPRINTF(("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name)));
-      if (ISTRACE)
-         sprintf(commandline, "exec %s", shepherd_path);
-      else
-        sprintf(commandline, "exec %s -bg", shepherd_path);
+      if (ISTRACE) {
+         snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
+      } else {
+         snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
+      }
 
       execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
    }

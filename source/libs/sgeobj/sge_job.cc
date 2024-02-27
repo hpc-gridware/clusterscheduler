@@ -2213,7 +2213,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
       if(output_warning) {
          WARNING(MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);
@@ -2229,7 +2229,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
       if(output_warning) {
          WARNING(MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);
@@ -2244,7 +2244,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
       if(output_warning) {
          WARNING(MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);

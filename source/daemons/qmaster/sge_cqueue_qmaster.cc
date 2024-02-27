@@ -472,9 +472,8 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
                    * Add a message which explains the reason for
                    * ambiguous state
                    */
-                  sprintf(SGE_EVENT, MSG_ATTR_HASAMBVAL_SSS,
-                          cqueue_attribute_array[index].name,
-                          matching_host_or_group, matching_group);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_HASAMBVAL_SSS, cqueue_attribute_array[index].name,
+                           matching_host_or_group, matching_group);
                   qinstance_message_add(qinstance, QI_AMBIGUOUS, SGE_EVENT);
                }
 

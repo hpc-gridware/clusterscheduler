@@ -549,14 +549,12 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
 *******************************************************************************/
 static char *qquota_get_next_filter(stringT filter, const char *cp)
 {
-   char *ret = nullptr;
-
-   ret = (char *)strchr(cp, '/');
+   char *ret = (char *)strchr(cp, '/');
    ret++;
    if (ret - cp < MAX_STRING_SIZE && ret - cp > 1) { 
       snprintf(filter, ret - cp, "%s", cp);
    } else {
-      sprintf(filter, "-");
+      snprintf(filter, ret - cp, "-");
    }
 
    return ret;

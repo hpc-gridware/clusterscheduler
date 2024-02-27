@@ -2155,7 +2155,7 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
       lSetUlong(ep_opt,SPA_argval_lUlongT, FALSE);
     }
    else {
-       sprintf(SGE_EVENT, MSG_PARSE_INVALIDOPTIONARGUMENT_SS, arg, value);
+       snprintf(SGE_EVENT, SGE_EVENT_SIZE,  MSG_PARSE_INVALIDOPTIONARGUMENT_SS, arg, value);
        answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
        
        return STATUS_ERROR1;
@@ -2191,7 +2191,7 @@ char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
             /* If they are equal, build a new CWD using the value of the HOME
              * as the root instead of whatever that directory is called by
              * the -(c)wd path. */
-            sprintf(tmp_str3, "%s%s", home, (char *) tmp_str + strlen(tmp_str2));
+            snprintf(tmp_str3, sizeof(tmp_str3), "%s%s", home, (char *) tmp_str + strlen(tmp_str2));
             strcpy(tmp_str, tmp_str3);
          }
       }

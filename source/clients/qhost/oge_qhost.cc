@@ -600,7 +600,7 @@ static int sge_parse_qhost(lList **ppcmdline,
          for_each_rw(ep, *pphost) {
             if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
-               sprintf(buf, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(ep,ST_name) );
+               snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(ep,ST_name) );
                answer_list_add(alpp, buf, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                goto error;
             }

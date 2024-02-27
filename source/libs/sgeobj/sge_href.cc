@@ -93,9 +93,8 @@ href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
          }
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
-      answer_list_add(answer_list, SGE_EVENT, 
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
    DRETURN(ret);
@@ -616,9 +615,8 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
          } 
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
-      answer_list_add(answer_list, SGE_EVENT,
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
    DRETURN(ret);
@@ -687,9 +685,8 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
          } 
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
-      answer_list_add(answer_list, SGE_EVENT,
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
    DRETURN(ret);

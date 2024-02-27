@@ -1070,23 +1070,19 @@ spool_flatfile_open_file(lList **answer_list,
             /* get filename for temporary file, pass buffer to make it
              * thread safe.
              */
-            filepath_in = sge_tmpnam(buffer, &tmp_name_error);
+            filepath_in = sge_tmpnam(buffer, &fd, &tmp_name_error);
             if (filepath_in == nullptr) {
                if (sge_dstring_get_string(&tmp_name_error) != nullptr) {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                       ANSWER_QUALITY_ERROR, 
-                                       sge_dstring_get_string(&tmp_name_error));
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, sge_dstring_get_string(&tmp_name_error));
                } else {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                       ANSWER_QUALITY_ERROR, 
-                                       MSG_ERRORGETTINGTMPNAM_S, 
-                                       strerror(errno));
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORGETTINGTMPNAM_S, strerror(errno));
                }
                sge_dstring_free(&tmp_name_error);
                DRETURN(fd);
             }
             sge_dstring_free(&tmp_name_error);
-            
+
+#if 0 // EB: Remove
             /* open file */
 #ifdef USE_FOPEN
             fd = fopen(filepath_in, "w");
@@ -1101,6 +1097,7 @@ spool_flatfile_open_file(lList **answer_list,
                                        filepath_in, strerror(errno));
                DRETURN(fd);
             }
+#endif
             *filepath_out = strdup(filepath_in);
          }   
          break;

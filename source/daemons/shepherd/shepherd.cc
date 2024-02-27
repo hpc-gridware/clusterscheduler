@@ -2736,10 +2736,10 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
     * for Hibernator restart a part of the job is already done
     */
    if (ckpt_type & CKPT_REST_KERNEL) {
-      sprintf(pidbuf, "%s", get_conf_val("ckpt_pid"));
+      snprintf(pidbuf, sizeof(pidbuf), "%s", get_conf_val("ckpt_pid"));
       *ckpt_pid = atoi(get_conf_val("ckpt_pid"));
    } else {   
-      sprintf(pidbuf, "%d", pid);
+      snprintf(pidbuf, sizeof(pidbuf), "%d", pid);
       if (add_config_entry("job_pid", pidbuf))
          shepherd_error(1, "can't add \"job_pid\" entry");
       if (ckpt_type & CKPT_KERNEL)

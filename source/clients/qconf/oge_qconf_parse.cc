@@ -6751,10 +6751,8 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
 
    if (from_file) {
       if (sge_next_is_an_opt(*spp))  {
-         SGE_ADD_MSG_ID( sprintf(SGE_EVENT, 
-            MSG_ANSWER_MISSINGFILENAMEASOPTIONARG_S, "qconf"));
-         answer_list_add(alpp, SGE_EVENT, 
-                         STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ANSWER_MISSINGFILENAMEASOPTIONARG_S, "qconf");
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(1);
       }                
       DTRACE;
@@ -6767,7 +6765,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
          DRETURN(1);
       }
       if (*epp == nullptr){
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_FILE_ERRORREADINGINFILE));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_FILE_ERRORREADINGINFILE);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(1);
       }
@@ -6816,7 +6814,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
          for_each_rw(aep, *alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) &&
                 (answer_get_status(aep) == STATUS_ESYNTAX)) {
-               sprintf(SGE_EVENT, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
                lSetString(aep, AN_text, SGE_EVENT);
             }
          }
@@ -6836,15 +6834,14 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
    /* add object name to int vector and transform
       it into an lEnumeration */
    if (add_nm_to_set(fields, info_entry->nm_name) < 0) {
-      SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, "qconf", 
-         info_entry->attribute_name));
+       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, "qconf", info_entry->attribute_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       lFreeElem(epp);
       DRETURN(1);
    }
 
    if (!(what = lIntVector2What(info_entry->cull_descriptor, fields))) {
-      SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_QCONF_INTERNALFAILURE_S, "qconf"));
+       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_INTERNALFAILURE_S, "qconf");
       lFreeElem(epp);
       DRETURN(1);
    }     
@@ -6880,7 +6877,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
             lSetHost(add_qp, info_entry->nm_name, **spp);
             break;
          default:
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_QCONF_INTERNALFAILURE_S, "qconf"));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_INTERNALFAILURE_S, "qconf");
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(1);
       }
@@ -6888,8 +6885,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
    }
 
    if (!qlp) {
-      SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_QCONF_MQATTR_MISSINGOBJECTLIST_S, 
-         "qconf"));
+       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_MQATTR_MISSINGOBJECTLIST_S, "qconf");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       lFreeElem(epp);
       lFreeWhat(&what);
@@ -6905,7 +6901,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
       lList *lp = lGetListRW(*epp, fields[0]);
       
       if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          lFreeElem(epp);
          lFreeWhat(&what);
@@ -6923,7 +6919,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
          for (nm = ep->descr[0].nm; nm != NoName; nm = ep->descr[count++].nm) {            
             if (lGetType(ep->descr, nm) == lListT) {
                if (lGetList(ep, nm) == nullptr) {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE));
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE);
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   lFreeElem(epp);
                   lFreeWhat(&what);
@@ -6952,16 +6948,17 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
                                        const char *delimiter, dstring *error_message)
 {
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
+   int fd = -1;
    FILE *fp = nullptr;
    int my_errno;
    DENTER(TOP_LAYER);
 
-   if (sge_tmpnam(filename, error_message) == nullptr) {
+   if (sge_tmpnam(filename, &fd, error_message) == nullptr) {
       DRETURN(nullptr);
    }
 
    errno = 0;
-   fp = fopen(filename, "w");
+   fp = fdopen(fd, "w");
    my_errno = errno;
 
    if (fp == nullptr) {

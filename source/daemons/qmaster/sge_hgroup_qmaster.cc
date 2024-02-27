@@ -137,11 +137,8 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                       */
                      ;
                   } else {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_HGROUP_CYCLEINDEF_SS,
-                                            lGetHost(add_group, HR_name),
-                                            lGetHost(hgroup, HGRP_name)));
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
-                                     ANSWER_QUALITY_ERROR);
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HGROUP_CYCLEINDEF_SS, lGetHost(add_group, HR_name), lGetHost(hgroup, HGRP_name));
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
                }

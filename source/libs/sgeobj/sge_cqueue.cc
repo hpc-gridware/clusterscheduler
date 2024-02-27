@@ -341,10 +341,8 @@ cqueue_create(lList **answer_list, const char *name)
       if (ret != nullptr) {
          lSetString(ret, CQ_name, name);
       } else {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                                MSG_MEM_MEMORYALLOCFAILED_S, __func__));
-         answer_list_add(answer_list, SGE_EVENT,
-                         STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       }
    }
    DRETURN(ret);
@@ -1010,7 +1008,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                const lListElem *elem = lGetElemHost(list, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
 
                if (elem == nullptr) {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_CQUEUE_NODEFVALUE_S, cqueue_attribute_array[index].name));
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_NODEFVALUE_S, cqueue_attribute_array[index].name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret = false;
                } 
@@ -1033,7 +1031,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                   first_elem = lGetElemHostFirst(list, cqueue_attribute_array[index].href_attr, hostname, &iterator);
 
                   if (elem != first_elem) {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_CQUEUE_MULVALNOTALLOWED_S, hostname));
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_MULVALNOTALLOWED_S, hostname);
                      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                      ret = false;
                      break;
@@ -1245,7 +1243,7 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
                                        cqueue_attribute_array[index].href_attr);
 
                      if (strcmp(HOSTREF_DEFAULT, attr_hostname)) {
-                        SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_CQUEUE_NONDEFNOTALLOWED));
+                        snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_CQUEUE_NONDEFNOTALLOWED);
                         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                         ret = false;
                      } else {

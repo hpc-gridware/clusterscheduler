@@ -104,7 +104,7 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
 
          if (already) {
             status = STATUS_EEXIST;
-            SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_ACL_USERINACL_SS, user_name, acl_name));
+             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERINACL_SS, user_name, acl_name);
          }
          else {
             if ((status = lGetUlong(lFirst(answers), AN_status))!=STATUS_OK) {
@@ -112,13 +112,13 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
             
                cp = lGetString(lFirst(answers), AN_text);
                if (cp) {
-                  sprintf(SGE_EVENT, "%s", cp);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", cp);
                }
                else {
-                  SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_ACL_CANTADDTOACL_SS, user_name, acl_name));
+                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTADDTOACL_SS, user_name, acl_name);
                }
             } else {
-               sprintf(SGE_EVENT, MSG_ACL_ADDTOACL_SS, user_name, acl_name);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ADDTOACL_SS, user_name, acl_name);
             }
             lFreeList(&answers);
          }
@@ -186,22 +186,22 @@ sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args) {
 
          if (status != STATUS_OK) {
             if (status == STATUS_EEXIST) {
-               SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_ACL_ACLDOESNOTEXIST_S, acl_name));
+                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ACLDOESNOTEXIST_S, acl_name);
                breakit = 1;        
             }
 	    else if (status == STATUS_EEXIST + 1) {
-               SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_ACL_USERNOTINACL_SS, user_name, acl_name));
+                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERNOTINACL_SS, user_name, acl_name);
             }
             else if (cp) {
-               sprintf(SGE_EVENT, "%s", cp);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", cp);
             }
 	    else {
-               SGE_ADD_MSG_ID( sprintf(SGE_EVENT, MSG_ACL_CANTDELFROMACL_SS, user_name, acl_name));
+                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTDELFROMACL_SS, user_name, acl_name);
             }
 
          }
          else {
-            sprintf(SGE_EVENT, MSG_ACL_DELFROMACL_SS, user_name, acl_name);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_DELFROMACL_SS, user_name, acl_name);
          }
          answer_list_add(alpp, SGE_EVENT, status, 
                         ((status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR));

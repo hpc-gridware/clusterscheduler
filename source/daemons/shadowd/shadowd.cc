@@ -243,7 +243,7 @@ main(int argc, char **argv) {
       const char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
@@ -257,7 +257,7 @@ main(int argc, char **argv) {
       gdi_client_prepare_enroll(&alp);
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid)));
@@ -294,8 +294,8 @@ main(int argc, char **argv) {
       sge_exit(1);
    }
 
-   sprintf(shadow_err_file, "messages_shadowd.%s", component_get_unqualified_hostname());
-   sprintf(qmaster_out_file, "messages_qmaster.%s", component_get_unqualified_hostname());
+   snprintf(shadow_err_file, sizeof(shadow_err_file), "messages_shadowd.%s", component_get_unqualified_hostname());
+   snprintf(qmaster_out_file, sizeof(shadow_err_file), "messages_qmaster.%s", component_get_unqualified_hostname());
    sge_copy_append(TMP_ERR_FILE_SHADOWD, shadow_err_file, SGE_MODE_APPEND);
    unlink(TMP_ERR_FILE_SHADOWD);
    log_state_set_log_as_admin_user(1);

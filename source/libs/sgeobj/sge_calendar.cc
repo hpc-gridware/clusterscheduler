@@ -1240,7 +1240,7 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
 
    /* complain about still unused tokens */
    if (scan(nullptr, nullptr)!=NO_TOKEN) {
-      sprintf(parse_error, MSG_TOKEN_UNRECOGNIZEDSTRING_S , get_string());
+      snprintf(parse_error, sizeof(parse_error), MSG_TOKEN_UNRECOGNIZEDSTRING_S , get_string());
       goto ERROR;
    }
 
@@ -1248,8 +1248,7 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
 
 ERROR:
    lFreeList(cal);
-   SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ANSWER_ERRORINDISABLYEAROFCALENDARXY_SS, 
-         save_error(), cal_name));
+   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ANSWER_ERRORINDISABLYEAROFCALENDARXY_SS, save_error(), cal_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    DRETURN(-1);
 }
@@ -1285,7 +1284,7 @@ static int disabled_year_entry(lListElem **cal) {
          DRETURN(-1);
       }
    } else {
-      sprintf(parse_error, SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE );
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE );
       goto ERROR;
    }
 
@@ -1394,7 +1393,7 @@ static int year_day_range(lListElem **tmr) {
          DRETURN(-1);
       }   
       if (tm_yday_cmp(t1, t2)>0) {
-         sprintf(parse_error, SFNMAX, MSG_ANSWER_FIRSTYESTERDAYINRANGEMUSTBEBEFORESECONDYESTERDAY);
+         snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_FIRSTYESTERDAYINRANGEMUSTBEBEFORESECONDYESTERDAY);
          lFreeElem(&t1);
          DRETURN(-1);   
       }
@@ -1434,7 +1433,7 @@ static int year_day(lListElem **tm) {
    }
 
    if (scan(nullptr, nullptr)!=DOT) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_MISSINGPOINTAFTERDAY);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGPOINTAFTERDAY);
       DRETURN(-1);
    }
    eat_token();
@@ -1444,7 +1443,7 @@ static int year_day(lListElem **tm) {
    }
 
    if (scan(nullptr, nullptr)!=DOT) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_MISSINGPOINTAFTERMONTH );
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGPOINTAFTERMONTH );
       DRETURN(-1);
    }
    eat_token();
@@ -1472,8 +1471,7 @@ static int range_number(int min, int max, int *ip, const char *name) {
       eat_token();
 
       if (this_number > max || this_number < min) {
-         sprintf(parse_error, MSG_PARSE_WOUTSIDEOFRANGEXYZ_SIIS, 
-               get_string(),  min, max, name);
+         snprintf(parse_error, sizeof(parse_error), MSG_PARSE_WOUTSIDEOFRANGEXYZ_SIIS, get_string(),  min, max, name);
          DRETURN(-1);   
       } else {
          if (ip)
@@ -1482,7 +1480,7 @@ static int range_number(int min, int max, int *ip, const char *name) {
       }
    }
 
-   sprintf(parse_error, MSG_PARSE_XISNOTAY_SS , get_string(), name);
+   snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTAY_SS , get_string(), name);
    DRETURN(-1);
 }
 
@@ -1627,7 +1625,7 @@ static int daytime_range(lListElem **tmr) {
       goto ERROR;
    }
    if (scan(nullptr, nullptr)!=MINUS) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_MISSINGDASHINDAYTIMERANGE);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGDASHINDAYTIMERANGE);
       goto ERROR;
    }
    eat_token();
@@ -1635,7 +1633,7 @@ static int daytime_range(lListElem **tmr) {
       goto ERROR;
    }
    if (!tm_daytime_cmp(t1, t2)) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_RANGEBEGISEQUALTOEND);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_RANGEBEGISEQUALTOEND);
       goto ERROR;
    }
 
@@ -1696,7 +1694,7 @@ static int daytime(lListElem **tm) {
 SUCCESS:
    if (h==24) {
       if (m || s) {
-         sprintf(parse_error, SFNMAX, MSG_PARSE_DAYTIMESBEYOND24HNOTALLOWED);
+         snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_DAYTIMESBEYOND24HNOTALLOWED);
          DRETURN(-1);
       }
    }
@@ -1729,13 +1727,13 @@ static int action(int *sp) {
    DENTER(TOP_LAYER);
 
    if (scan(nullptr, nullptr)!=STRING) {
-      sprintf(parse_error, MSG_PARSE_XISNOTASTATESPECIFIER_S, get_string());
+      snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTASTATESPECIFIER_S, get_string());
       DRETURN(-1);
    } 
 
    s = get_string();
    if ((state = cheap_scan(s, statev, 3, "state specifier"))<0) {
-      sprintf(parse_error, MSG_PARSE_XISNOTASTATESPECIFIER_S, s);
+      snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTASTATESPECIFIER_S, s);
       DRETURN(-1);
    }
    eat_token();
@@ -1797,7 +1795,7 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
 
    /* complain about still unused tokens */
    if (scan(nullptr, nullptr)!=NO_TOKEN) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_UNRECOGNIZEDTOKENATEND);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_UNRECOGNIZEDTOKENATEND);
       goto ERROR;
    }
 
@@ -1805,8 +1803,7 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
 
 ERROR:
    lFreeList(cal);
-   SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_PARSE_ERRORINDISABLEDWEEKOFCALENDAR_SS, 
-        cal_name, save_error()));
+   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_ERRORINDISABLEDWEEKOFCALENDAR_SS, cal_name, save_error());
    answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    DRETURN(-1);
 }
@@ -1850,7 +1847,7 @@ static int disabled_week_entry(lListElem **cal) {
          goto ERROR;
       }   
    } else {
-      sprintf(parse_error, SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE);
       goto ERROR;
    }
 
@@ -2145,7 +2142,7 @@ static int week_day_range(lListElem **tmr) {
          goto ERROR;
 
       if (tm_wday_cmp(t1, t2)==0) {
-         sprintf(parse_error, SFNMAX, MSG_PARSE_FOUNDUSELESSWEEKDAYRANGE);
+         snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_FOUNDUSELESSWEEKDAYRANGE);
          goto ERROR;
       }
    }
@@ -2196,12 +2193,12 @@ static int week_day(lListElem **tm) {
    DENTER(TOP_LAYER);
 
    if (scan(nullptr, nullptr)!=STRING) {
-      sprintf(parse_error, SFNMAX, MSG_PARSE_EXPECTEDSTRINGFORWEEKDAY);
+      snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_EXPECTEDSTRINGFORWEEKDAY);
       DRETURN(-1);
    }
    s = get_string();
    if ((wday = cheap_scan(s, weekdayv, 3, "weekday"))<0) {
-      sprintf(parse_error, MSG_PARSE_XISNOTAWEEKDAY_S, s);
+      snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTAWEEKDAY_S, s);
       DRETURN(-1);
    }
    eat_token();

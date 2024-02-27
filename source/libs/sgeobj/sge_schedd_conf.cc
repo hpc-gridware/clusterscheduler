@@ -581,7 +581,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
       } else {
          *master_sconf_list = store;
          if (!*master_sconf_list) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_USE_DEFAULT_CONFIG)); 
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_USE_DEFAULT_CONFIG);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING);
  
             *master_sconf_list = lCreateList("schedd config list", SC_Type);
@@ -2824,7 +2824,7 @@ bool sconf_validate_config_(lList **answer_list)
    pos.new_config = true; 
    
    if (!calc_pos()){
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_INCOMPLETE_SCHEDD_CONFIG)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_INCOMPLETE_SCHEDD_CONFIG);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false; 
    }
@@ -2861,7 +2861,7 @@ bool sconf_validate_config_(lList **answer_list)
                }               
             }
             if (!added){
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_UNKNOWN_PARAM_S, s));
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_UNKNOWN_PARAM_S, s);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
             }
@@ -2883,7 +2883,7 @@ bool sconf_validate_config_(lList **answer_list)
    if ( !s || (strcmp(s, "default") && strcmp(s, "simple_sched") && strncmp(s, "ext_", 4))) {
       if (!s)
          s = "not defined";
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_ALGORITHMNOVALIDNAME_S, s)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_ALGORITHMNOVALIDNAME_S, s);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false; 
    }
@@ -2892,9 +2892,9 @@ bool sconf_validate_config_(lList **answer_list)
    s = get_schedule_interval_str();
    if (!s || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true) ) {
       if (!s)
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined"));   
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
       else
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", tmp_error));    
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", tmp_error);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret =  false;
    }
@@ -2903,10 +2903,10 @@ bool sconf_validate_config_(lList **answer_list)
    s = get_load_adjustment_decay_time_str();
    if (!s || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true)) {
       if (!s) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
       }   
       else {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS, "load_adjustment_decay_time", tmp_error));    
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS, "load_adjustment_decay_time", tmp_error);
       }   
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false; 
@@ -2921,7 +2921,7 @@ bool sconf_validate_config_(lList **answer_list)
       const char *schedd_info = lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info);
 
       if (schedd_info == nullptr){
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM ));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM );
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);  
          ret = false;
       }
@@ -2937,7 +2937,7 @@ bool sconf_validate_config_(lList **answer_list)
          else if (!strcmp("job_list", key)) 
             ikey = SCHEDD_JOB_INFO_JOB_LIST;
          else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM ));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM );
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false; 
          }
@@ -2948,7 +2948,7 @@ bool sconf_validate_config_(lList **answer_list)
                                          INF_NOT_ALLOWED);
             if (rlp == nullptr) {
                lFreeList(&alp);
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST));
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false; 
             }   
@@ -2969,12 +2969,10 @@ bool sconf_validate_config_(lList **answer_list)
    if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error,
                                               sizeof(tmp_error), 0, true)) {
       if (s == nullptr) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", 
-                        "not defined"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
       }   
       else {   
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", 
-                        tmp_error));    
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", tmp_error);
       }   
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false; 
@@ -3031,8 +3029,7 @@ bool sconf_validate_config_(lList **answer_list)
       else {
          if (!s)
          value_string = "not defined";
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "policy hierarchy", 
-                                value_string));    
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy hierarchy", value_string);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = false;          
       }
@@ -3045,12 +3042,10 @@ bool sconf_validate_config_(lList **answer_list)
       if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error,
                                                  sizeof(tmp_error), 1, true) ) {
          if (s == nullptr) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "default_duration", 
-                                   "not defined"));   
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", "not defined");
          }   
          else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "default_duration", 
-                                   tmp_error));    
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", tmp_error);
          }   
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret =  false;
@@ -3058,7 +3053,7 @@ bool sconf_validate_config_(lList **answer_list)
       else {
          /* ensure we get a non-zero/non-infinity duration default in reservation scheduling mode */
          if (max_reservation != 0 && uval == 0) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_RR_REQUIRES_DEFAULT_DURATION));    
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_RR_REQUIRES_DEFAULT_DURATION);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);      
             ret = false; 
          }
@@ -3071,7 +3066,7 @@ bool sconf_validate_config_(lList **answer_list)
    /* --- SC_usage_weight_list */
    if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer),
        get_usage_weight_list(), usage_fields, delis, 0) < 0) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SCHEDD_USAGE_WEIGHT_LIST_S, tmp_error));    
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_USAGE_WEIGHT_LIST_S, tmp_error);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);      
       ret = false; 
    }
@@ -3079,7 +3074,7 @@ bool sconf_validate_config_(lList **answer_list)
    /* --- SC_job_load_adjustments */
    lval = get_job_load_adjustments();
    if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0) < 0) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S, s)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S, s);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -3096,7 +3091,7 @@ bool sconf_validate_config_(lList **answer_list)
 
    /* --- max_pending_tasks_per_job */
    if (sconf_get_max_pending_tasks_per_job() == 0) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_WRONG_SETTING_SS, "max_pending_tasks_per_job", ">0"));    
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_WRONG_SETTING_SS, "max_pending_tasks_per_job", ">0");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -3452,7 +3447,7 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
       lSetString(elem, PARA_value, "false");
    }
    else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INVALID_PARAM_SETTING_S, param)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -3509,7 +3504,7 @@ static bool sconf_eval_set_job_category_filtering(lList *param_list, lList **ans
       lSetString(elem, PARA_value, "false");
    }
    else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INVALID_PARAM_SETTING_S, param)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -3568,7 +3563,7 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
       lSetString(elem, PARA_value, "false");
    }
    else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INVALID_PARAM_SETTING_S, param)); 
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }

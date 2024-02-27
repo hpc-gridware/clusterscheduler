@@ -235,14 +235,6 @@ lList **alpp
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
       ++rp;
       
-#if 0
-      string str;
-      if(!*() || (**rp == '-')) {
-         sprintf(str, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
-         answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-         DRETURN(rp);
-      }
-#endif
       ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */

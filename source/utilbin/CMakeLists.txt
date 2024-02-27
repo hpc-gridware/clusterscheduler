@@ -155,6 +155,9 @@ add_executable(testsuidroot testsuidroot.cc)
 target_include_directories(testsuidroot PRIVATE ${SGE_INCLUDES})
 target_link_libraries(testsuidroot PRIVATE uti commlists ${SGE_LIBS})
 
+# required to disable warning for deprecated rresvport() function
+set_source_files_properties(testsuidroot.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+
 # uidgid
 add_executable(uidgid uidgid.cc)
 target_include_directories(uidgid PRIVATE ${SGE_INCLUDES})

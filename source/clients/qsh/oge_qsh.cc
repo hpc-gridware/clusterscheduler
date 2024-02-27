@@ -531,14 +531,15 @@ static const char *quote_argument(const char *arg) {
       return arg;
    }   
 
-   new_arg = sge_malloc(strlen(arg) + 3);
+   size_t new_arg_size = strlen(arg) + 3;
+   new_arg = sge_malloc(new_arg_size);
 
    if (new_arg == nullptr) {
       ERROR(SFNMAX, MSG_QSH_MALLOCFAILED);
       DRETURN(nullptr);
    }
  
-   sprintf(new_arg, "'%s'", arg);
+   snprintf(new_arg, new_arg_size, "'%s'", arg);
    DRETURN(new_arg);
 }
 
@@ -748,7 +749,7 @@ static int start_client_program(const char *client_name,
          sge_sl_insert(sl_args, (void*)port, SGE_SL_BACKWARD);
          sge_sl_insert(sl_args, (void*)host, SGE_SL_BACKWARD);
          if (is_rsh) {
-            sprintf(shellpath, "%s/qrsh_starter", utilbin_dir);
+            snprintf(shellpath, sizeof(shellpath), "%s/qrsh_starter", utilbin_dir);
             sge_sl_insert(sl_args, (void *)"exec", SGE_SL_BACKWARD);
             sge_sl_insert(sl_args, (void*)quote_argument(shellpath), SGE_SL_BACKWARD);
             sge_sl_insert(sl_args, (void*)quote_argument(job_dir), SGE_SL_BACKWARD);
@@ -1135,7 +1136,7 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh)
       if (ep) {
          char delimiter[2];
          const char *help = nullptr;
-         sprintf(delimiter, "%c", 0xff);
+         snprintf(delimiter, sizeof(delimiter), "%c", 0xff);
          help = lGetString(ep, SPA_argval_lStringT);
          if (help != nullptr) {
             sge_dstring_copy_string(&buffer, help); 
@@ -1456,7 +1457,7 @@ int main(int argc, char **argv)
    job = lCreateElem(JB_Type);
    
    if (job == nullptr) {
-      sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       answer_list_add(&answer, SGE_EVENT, 
                       STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       do_exit = parse_result_list(alp, &alp_error);
@@ -1711,7 +1712,7 @@ int main(int argc, char **argv)
       lList *envlp = nullptr;
 
       sock = open_qrsh_socket(&my_port);
-      sprintf(buffer, "%s:%d", qualified_hostname, my_port);
+      snprintf(buffer, sizeof(buffer), "%s:%d", qualified_hostname, my_port);
 
       if ((envlp = lGetListRW(job, JB_env_list)) == nullptr) {
          envlp = lCreateList("environment list", VA_Type);
@@ -2261,7 +2262,7 @@ static void delete_job(u_long32 job_id, lList *jlp)
       return;
    }
 
-   sprintf(job_str, sge_u32, job_id);
+   snprintf(job_str, sizeof(job_str), sge_u32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
    alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);

@@ -461,7 +461,7 @@ cqueue_modify(lList **answer_list, const char *name)
       lListElem *cqueue = cqueue_get_via_gdi(answer_list, name);
 
       if (cqueue == nullptr) {
-         sprintf(SGE_EVENT, MSG_CQUEUE_DOESNOTEXIST_S, name);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_DOESNOTEXIST_S, name);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -508,7 +508,7 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
       }      
 
       if (cqueue == nullptr) {
-         sprintf(SGE_EVENT, MSG_CQUEUE_FILENOTCORRECT_S, filename);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_FILENOTCORRECT_S, filename);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -728,7 +728,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                }
             }
             if (!found_something) {
-               sprintf(SGE_EVENT, MSG_CQUEUE_NOQMATCHING_S, name);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_NOQMATCHING_S, name);
                answer_list_add(answer_list, SGE_EVENT,
                                STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                ret = false;

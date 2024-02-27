@@ -1395,7 +1395,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
 
    /* Check for keyword 'none' */
    if (!strcasecmp(load_formula, "none")) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_NONE_NOT_ALLOWED_S, name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NONE_NOT_ALLOWED_S, name);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, 
                       ANSWER_QUALITY_ERROR);
       ret = false;
@@ -1431,34 +1431,28 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
                int type = lGetUlong(cmplx_attr, CE_valtype);
 
                if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_WRONGTYPE_ATTRIBUTE_SS, name,
-                                         fact));
-                  answer_list_add(answer_list, SGE_EVENT, 
-                                  STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             } else if (!sge_str_is_number(fact)) {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_NOTEXISTING_ATTRIBUTE_SS, 
-                              name, fact));
-               answer_list_add(answer_list, SGE_EVENT, 
-                               STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, name, fact);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
          /* is weighting factor a number? */
          if (next_fact != nullptr) {
             if (!sge_str_is_number(next_fact)) {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_WEIGHTFACTNONUMB_SS, name,
-                              next_fact));
-               answer_list_add(answer_list, SGE_EVENT, 
-                               STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WEIGHTFACTNONUMB_SS, name, next_fact);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
 
          /* multiple weighting factors? */
          if (end != nullptr) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_MULTIPLEWEIGHTFACT_S, name));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MULTIPLEWEIGHTFACT_S, name);
             answer_list_add(answer_list, SGE_EVENT, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;

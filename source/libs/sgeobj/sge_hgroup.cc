@@ -160,16 +160,13 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
             lSetHost(ret, HGRP_name, name);
             lSetList(ret, HGRP_host_list, href_or_groupref);
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                                   MSG_MEM_MEMORYALLOCFAILED_S, __func__));
-            answer_list_add(answer_list, SGE_EVENT, 
-                            STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          }
      }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
-      answer_list_add(answer_list, SGE_EVENT,
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
    DRETURN(ret); 
 }
@@ -218,9 +215,8 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
       } 
       lXchgList(this_elem, HGRP_host_list, &href_list);
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
-      answer_list_add(answer_list, SGE_EVENT,
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
    DRETURN(ret);
@@ -497,10 +493,8 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
          
             if (hgroup == nullptr) {
                ret = false;
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                              MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                break;      
             }
          }

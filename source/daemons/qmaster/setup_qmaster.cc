@@ -456,7 +456,7 @@ parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
          continue;
 
       /* oops */
-      sprintf(str, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, *sp);
+      snprintf(str, sizeof(str), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, *sp);
       printf("%s\n", *sp);
       sge_usage(QMASTER, stderr);
       answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -704,7 +704,7 @@ is_qmaster_already_running(const char *qmaster_spool_dir) {
 
    DENTER(TOP_LAYER);
 
-   sprintf(pidfile, "%s/%s", qmaster_spool_dir, QMASTER_PID_FILE);
+   snprintf(pidfile, sizeof(pidfile), "%s/%s", qmaster_spool_dir, QMASTER_PID_FILE);
 
    if ((pid = sge_readpid(pidfile)) == 0) {
       DRETURN(false);

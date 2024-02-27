@@ -112,15 +112,13 @@ int main(int argc, char *argv[])
    lFreeList(&answer_list);
    printf("field widths for list output is as follows:\n");
    
-   sprintf(format, "%%%ds: %%d\n", width);
+   snprintf(format, sizeof(format), "%%%ds: %%d\n", width);
 
    for(i = 0; fields[i].nm != NoName; i++) {
       printf(format, lNm2Str(fields[i].nm), fields[i].width);
    }
 
-   filepath = spool_flatfile_write_object(&answer_list, (const lListElem *)cqueue, false,
-                                          CQ_fields,
-                                          &qconf_sfi,
+   filepath = spool_flatfile_write_object(&answer_list, (const lListElem *)cqueue, false, CQ_fields, &qconf_sfi,
                                           SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
    if(filepath != nullptr) {
       printf("\ndata successfully written to stdout\n");

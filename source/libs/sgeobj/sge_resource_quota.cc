@@ -430,7 +430,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
             lListElem *centry = centry_list_locate(master_centry_list, name);
 
             if (centry == nullptr) {
-               sprintf(SGE_EVENT, MSG_NOTEXISTING_ATTRIBUTE_SS, SGE_RQS_NAME, name);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, SGE_RQS_NAME, name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;

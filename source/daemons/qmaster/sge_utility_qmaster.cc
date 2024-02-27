@@ -375,7 +375,7 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
       DPRINTF(("got new %s\n", attr_name));
 
       if (!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)");
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -428,14 +428,14 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
          /* don't allow infinity for these parameters */
          if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
             DPRINTF(("ERROR! Infinity value for \"%s\"\n", attr_name));
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SIG_DIGIT_SS, attr_name, str));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SIG_DIGIT_SS, attr_name, str);
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ESYNTAX);
          }
       }
 
       if (!parse_ulong_val(nullptr, nullptr, TYPE_TIM, str, nullptr, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)");
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -836,8 +836,7 @@ multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, co
    for_each_ep(ep1, lp1) {
       s = lGetString(ep1, nm);
       if (lGetElemStr(lp2, nm, s)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS,
-                                (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_MULTIPLE_OCCUR_SSSS, (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
