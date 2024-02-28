@@ -64,7 +64,8 @@ if (INSTALL_SGE_COMMON)
    install(FILES drmaa.h DESTINATION include)
 
    install(
-         FILES example.c
+         FILES
+         howto/example.c
          howto/howto1_1.c
          howto/howto1.c
          howto/howto2_1.c
