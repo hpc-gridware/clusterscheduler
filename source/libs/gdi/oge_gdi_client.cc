@@ -121,6 +121,7 @@ sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p) {
             break;
       }
       cl_log_list_del_log(list_p);
+      elem = cl_log_list_get_first_elem(list_p);
    }
 
    if ((ret_val = cl_raw_list_unlock(list_p)) != CL_RETVAL_OK) {
