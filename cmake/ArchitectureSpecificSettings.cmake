@@ -37,8 +37,9 @@ function(architecture_specific_settings)
    if (SGE_ARCH MATCHES "lx-riscv64")
       # Linux RiscV
       message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
+      # -Wno-deprecated-declarations
+      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
 
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
@@ -54,8 +55,8 @@ function(architecture_specific_settings)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
 
       # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
