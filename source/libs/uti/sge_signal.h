@@ -74,6 +74,12 @@
 /* Not all systems have all signals. Fill this in if not known. */
 #define SIGUNKNOWN                         0
 
+#if defined(FREEBSD) || defined(LINUXRISCV64)
+#  define SIGIGNORE(x) signal(x,SIG_IGN)
+#else
+#  define SIGIGNORE(x) sigignore(x)
+#endif
+
 struct sig_mapT {
    u_long32 sge_sig;
    int sig;

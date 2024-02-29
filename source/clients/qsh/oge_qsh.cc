@@ -98,6 +98,7 @@
 #include "uti/sge_pty.h"
 #include "uti/sge_parse_args.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_signal.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_jsv.h"
@@ -1312,11 +1313,11 @@ void block_notification_signals(void)
    }
 
    if (sig1 > 0) {
-      sigignore(sig1);
+      SIGIGNORE(sig1);
       DPRINTF(("ignoring signal %d\n", (int)sig1));
    }
    if (sig2 > 0) {
-      sigignore(sig2);
+      SIGIGNORE(sig2);
       DPRINTF(("ignoring signal %d\n", (int)sig2));
    }
 

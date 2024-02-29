@@ -111,9 +111,7 @@
 pid_t wait3(int *, int, struct rusage *);
 #endif
 
-#if defined(FREEBSD)
-#   define sigignore(x) signal(x,SIG_IGN)
-#endif
+
 
 #define NO_CKPT          0x000
 #define CKPT             0x001     /* set for all ckpt jobs                  */
@@ -308,7 +306,7 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    memset(tmpbuf, 0, sizeof(tmpbuf));
 
    /* TODO: Why do we ingore SIGWINCH here? Why do we ignore only SIGWINCH here?*/
-   sigignore(SIGWINCH);
+   SIGIGNORE(SIGWINCH);
 
    /* close parents end of our copy of the pipe */
    shepherd_trace("child: closing parents end of the pipe");
