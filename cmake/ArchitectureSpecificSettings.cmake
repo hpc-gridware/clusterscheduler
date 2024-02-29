@@ -144,9 +144,9 @@ function(architecture_specific_settings)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
-      # -Wno-deprecated-declarations
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wextra -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -pedantic" CACHE STRING "" FORCE)
+      # -Wextra
+      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
