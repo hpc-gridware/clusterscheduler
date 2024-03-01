@@ -1305,7 +1305,7 @@ static int debit_all_jobs_from_qs() {
                /* debit in all layers */
                lListElem *rqs = nullptr;
                debit_host_consumable(jep, jatep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
-                                                                  "global"), master_centry_list, slots, master_task,
+                                                                  SGE_GLOBAL_NAME), master_centry_list, slots, master_task,
                                      nullptr);
                debit_host_consumable(jep, jatep, host_list_locate(
                                              *object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qep, QU_qhostname)),

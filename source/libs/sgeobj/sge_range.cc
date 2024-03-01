@@ -1691,10 +1691,11 @@ void range_parse_from_string(lListElem **range,
 /**
  * @brief parse range string and return counters
  *
- * @param[in] value     string containing range specification
- * @param[out] start    range start
- * @param[out] end      range end
- * @param[out] step     range step size
+ * @param[in] value        string containing range specification
+ * @param[in] step_allowed may the range specification contain a step?
+ * @param[out] start       range start
+ * @param[out] end         range end
+ * @param[out] step        range step size
  * @return true if the input string is a range, else false
  */
 bool

@@ -62,7 +62,6 @@
 *
 *    SGE_HOST(GRU_host) - Host
 *    Host on which the resource has been granted (required in case of parallel jobs).
-*    @todo shouldn't it be of type lHostT?
 *
 */
 

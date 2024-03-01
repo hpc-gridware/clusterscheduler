@@ -407,14 +407,14 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       slots for this job in the queue */
    if (!(used_slots = qinstance_slots_used(master_q))) {
       if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
-                            pw->pw_uid, pw->pw_gid, tmpdir))) {
+                            pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTMAKETMPDIR);
          sge_free(&pw_buffer);
          DRETURN(-2);
       }
    } else {
       SGE_STRUCT_STAT statbuf;
-      if (!(sge_get_tmpdir(master_q, job_id, ja_task_id, tmpdir))) {
+      if (!(sge_get_tmpdir(master_q, job_id, ja_task_id, tmpdir, SGE_PATH_MAX))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTGETTMPDIR);
          sge_free(&pw_buffer);
          DRETURN(-2);
