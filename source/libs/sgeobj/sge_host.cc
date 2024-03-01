@@ -202,7 +202,7 @@ bool host_is_referenced(const lListElem *host,
 *******************************************************************************/
 const char *host_get_load_value(lListElem *host, const char *name)
 {
-   lListElem *load;
+   const lListElem *load;
    const char *value = nullptr;
 
    if (host != nullptr) {

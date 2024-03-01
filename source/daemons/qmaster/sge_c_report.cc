@@ -201,7 +201,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
                   const lListElem *shep;
-                  lListElem *simhostElem = nullptr;
+                  const lListElem *simhostElem = nullptr;
 
                   for_each_ep(shep, master_exechost_list) {
                      simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);

@@ -242,7 +242,7 @@ sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args);
 
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
-                     u_long32 relop, u_long32 type, lListElem *hep, lListElem *hlep, double lc_host,
+                     u_long32 relop, u_long32 type, lListElem *hep, const lListElem *hlep, double lc_host,
                      double lc_global, const lList *load_adjustments, int load_is_value);
 
 static int
@@ -2013,7 +2013,7 @@ bool is_requested(const lList *req, const char *attr)
 
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
-                 u_long32 relop, u_long32 type, lListElem *hep, lListElem *hlep, double lc_host, double lc_global,
+                 u_long32 relop, u_long32 type, lListElem *hep, const lListElem *hlep, double lc_host, double lc_global,
                  const lList *load_adjustments, int load_is_value)
 {
    const lListElem *job_load;
@@ -2158,9 +2158,9 @@ static int load_np_value_adjustment(const char* name, lListElem *hep, double *lo
 
    int nproc = 1;
    if (!strncmp(name, "np_", 3)) {
-      lListElem *ep_nproc;
+      const lListElem *ep_nproc = lGetSubStr(hep, HL_name, LOAD_ATTR_NUM_PROC, EH_load_list);
 
-      if ((ep_nproc = lGetSubStr(hep, HL_name, LOAD_ATTR_NUM_PROC, EH_load_list))) {
+      if (ep_nproc != nullptr) {
          const char* cp = lGetString(ep_nproc, HL_value);
          if (cp) {
             nproc = atoi(cp);
@@ -2261,7 +2261,10 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
    }
 
    for_each_ep(tep, threshold) {
-      lListElem *hlep = nullptr, *glep = nullptr, *queue_ep = nullptr, *cep  = nullptr;
+      const lListElem *hlep = nullptr;
+      const lListElem *glep = nullptr;
+      const lListElem *queue_ep = nullptr;
+      lListElem *cep  = nullptr;
       bool need_free_cep = false;
       const char *name;
       u_long32 relop, type;
@@ -3326,11 +3329,9 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 
       /* ar matching */
       if (ar_ep != nullptr) {
-         lListElem *ar_queue;
+         lListElem *ar_queue = lGetSubStrRW(ar_ep, QU_full_name, qname, AR_reserved_queues);
          lListElem *rep;
          dstring reason = DSTRING_INIT;
-
-         ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
 
          /*
           * We are only interested in the static complexes on queue/host level.
@@ -4533,7 +4534,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
    int avail_h = 0, avail_q;
    int avail;
    lListElem *next_queue, *qep, *centry = nullptr;
-   lListElem *lv;
+   const lListElem *lv;
    const lListElem *lc;
    const lListElem *tr, *fv, *cep;
    const char *eh_name = lGetHost(host, EH_name);
@@ -5066,7 +5067,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          }
          sge_dstring_free(&reason);
 
-         ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
+         ar_queue = lGetSubStrRW(ar_ep, QU_full_name, qname, AR_reserved_queues);
          ar_queue_config_attr = lGetList(ar_queue, QU_consumable_config_list);
          ar_queue_actual_attr = lGetList(ar_queue, QU_resource_utilization);
 
@@ -5610,9 +5611,8 @@ const lList *centry_list
 *
 *******************************************************************************/
 dispatch_t
-ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr,
-                 const lList *config_attr, const lList *actual_attr,
-                 lListElem *queue, dstring *reason, bool allow_non_requestable,
+ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr, const lList *config_attr,
+                 const lList *actual_attr, const lListElem *queue, dstring *reason, bool allow_non_requestable,
                  int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name)
 {
    lListElem *cplx_el=nullptr;
@@ -6310,12 +6310,9 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
                goto error;
             }
 
-            global_consumable = lGetSubStr(global, RUE_name, load_threshold_name,
-                                           EH_resource_utilization);
-            host_consumable = lGetSubStr(host, RUE_name, load_threshold_name,
-                                         EH_resource_utilization);
-            queue_consumable = lGetSubStr(queue, RUE_name, load_threshold_name,
-                                          QU_resource_utilization);
+            global_consumable = lGetSubStrRW(global, RUE_name, load_threshold_name, EH_resource_utilization);
+            host_consumable = lGetSubStrRW(host, RUE_name, load_threshold_name, EH_resource_utilization);
+            queue_consumable = lGetSubStrRW(queue, RUE_name, load_threshold_name, QU_resource_utilization);
 
             if (*load_list == nullptr) {
                *load_list = lCreateList("load_ref_list", LDR_Type);

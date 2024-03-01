@@ -399,7 +399,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    int sge_urg, sge_pri, sge_ext, sge_time;
    const lList *ql = nullptr;
    const lListElem *qrep;
-   lListElem *gdil_ep = nullptr;
+   const lListElem *gdil_ep = nullptr;
    int running;
    const char *queue_name = nullptr;
    const char *cqname = nullptr;

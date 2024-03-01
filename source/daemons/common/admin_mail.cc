@@ -108,7 +108,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    char str_general[MAX_STRING_SIZE] = "";
    u_long32 jobid, jataskid, failed, general;
    const char *q;
-   lListElem *ep;
+   const lListElem *ep;
    lList *lp_mail = nullptr;
    u_long32 now;
    int ret;

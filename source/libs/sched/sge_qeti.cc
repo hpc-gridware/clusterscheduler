@@ -282,27 +282,19 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
             }
          } else {
             const char *qname = lGetString(qep, QU_full_name);
-            lListElem *ar_queue;
             const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
-
-            ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
-            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, 
-                     lGetList(ar_queue, QU_resource_utilization), 
-                     lGetList(ar_queue, QU_consumable_config_list), 
-                     a->centry_list, requests, false)!=0) {
+            const lListElem *ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
+            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, lGetList(ar_queue, QU_resource_utilization),
+                                  lGetList(ar_queue, QU_consumable_config_list), a->centry_list, requests, false)!=0) {
                sge_qeti_release(&iter);
                DRETURN(nullptr);
             }
          }
-         
-         is_relevant = true; 
-            
+         is_relevant = true;
       }
       if (is_relevant) {
-
-         if (sge_add_qeti_resource_container(&iter->cr_refs_host, 
-                  lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
-                        a->centry_list, requests, false)!=0) {
+         if (sge_add_qeti_resource_container(&iter->cr_refs_host, lGetList(hep, EH_resource_utilization),
+                                             lGetList(hep, EH_consumable_config_list), a->centry_list, requests, false)!=0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
          }

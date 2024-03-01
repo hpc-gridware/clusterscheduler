@@ -2784,7 +2784,7 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, u_long32 jobid,
                return_value = JAPI_WAIT_INVALID;
             }
             else {
-               task = lGetSubUlong(job, JJAT_task_id, taskid, JJ_finished_tasks);
+               task = lGetSubUlongRW(job, JJAT_task_id, taskid, JJ_finished_tasks);
                if (!task) {
                   if (range_list_is_id_within(lGetList(job, JJ_not_yet_finished_ids), taskid)) {
                      return_value = JAPI_WAIT_UNFINISHED;
@@ -2866,7 +2866,7 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, u_long32 jobid,
                   actual_event = JAPI_JOB_START;
                }
                else if (!range_list_is_id_within (lGetList (job, JJ_not_yet_finished_ids), taskid)) {
-                  task = lGetSubUlong(job, JJAT_task_id, taskid, JJ_finished_tasks);
+                  task = lGetSubUlongRW(job, JJAT_task_id, taskid, JJ_finished_tasks);
 
                   if (task == nullptr) {
                      return_value = JAPI_WAIT_ALLFINISHED;
@@ -3048,7 +3048,7 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
     */
    if (task_finished) {
       lListElem *japi_job = nullptr;
-      lListElem *japi_task = nullptr;
+      const lListElem *japi_task = nullptr;
 
       DPRINTF (("Job " sge_u32 "." sge_u32 " is finished.\n", jobid, taskid));
    

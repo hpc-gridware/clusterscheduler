@@ -6068,7 +6068,7 @@ static int show_processors(bool has_binding_param)
       }
       printf("\n");
       for_each_ep(ep, lp) {
-         lListElem *arch_elem = lGetSubStr(ep, HL_name, "arch", EH_load_list); 
+         const lListElem *arch_elem = lGetSubStr(ep, HL_name, "arch", EH_load_list);
          u_long32 sockets = 0;
          u_long32 cores = 0;
 
@@ -6076,8 +6076,8 @@ static int show_processors(bool has_binding_param)
          printf("%10" sge_fu32, lGetUlong(ep, EH_processors));
 
          if (has_binding_param) {
-            lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list); 
-            lListElem *core_elem = lGetSubStr(ep, HL_name, "m_core", EH_load_list); 
+            const lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list);
+            const lListElem *core_elem = lGetSubStr(ep, HL_name, "m_core", EH_load_list);
 
             if (socket_elem != nullptr) {
                printf("%6.5s", lGetString(socket_elem, HL_value));

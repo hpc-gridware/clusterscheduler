@@ -1014,7 +1014,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   }
                } else {
                   /* debit in advance reservation */
-                  lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
+                  lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
                   if (qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
                      dstring buffer = DSTRING_INIT;
                      /* this info is not spooled */
@@ -1578,7 +1578,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                }
             } else {
                /* undebit in advance reservation */
-               lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
+               lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
                if (qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
                   dstring buffer = DSTRING_INIT;
                   /* this info is not spooled */

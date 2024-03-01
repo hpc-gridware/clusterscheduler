@@ -202,8 +202,8 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,
                  bool allow_non_requestable, const char *object_name, bool isRQ);
 
 dispatch_t
-ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr, const lList *actual_attr, 
-                lListElem *queue, dstring *reason, bool allow_non_requestable, 
-                int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name); 
+ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
+                 const lList *actual_attr, const lListElem *queue, dstring *reason, bool allow_non_requestable,
+                 int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);

@@ -283,7 +283,7 @@ int select_by_pe_list(lList *queue_list, lList *peref_list, /* ST_Type */
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each_rw(qep, qinstance_list) {
-         lListElem *found = nullptr;
+         const lListElem *found = nullptr;
 
          if (!qinstance_is_parallel_queue(qep)) {
             lSetUlong(qep, QU_tag, 0);
@@ -692,16 +692,12 @@ bool is_cqueue_selected(lList *queue_list) {
  *     qinstance_slots_reserved()
  *******************************************************************************/
 int qinstance_slots_reserved_now(const lListElem *this_elem) {
-   int ret = 0;
-   lListElem *slots;
-   u_long32 now = sge_get_gmt();
-
    DENTER(TOP_LAYER);
-
-   slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
+   int ret = 0;
+   const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != nullptr) {
+      u_long32 now = sge_get_gmt();
       ret = utilization_max(slots, now, 0, false);
    }
-
    DRETURN(ret);
 }

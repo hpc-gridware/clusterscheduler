@@ -649,10 +649,8 @@ int pe_get_slots_used(const lListElem *pe)
 *******************************************************************************/
 int pe_set_slots_used(lListElem *pe, int slots)
 {
-   lListElem *actual = lGetSubStr(pe, RUE_name, SGE_ATTR_SLOTS, 
-                                  PE_resource_utilization);
-   if (!actual && (!(actual = 
-         lAddSubStr(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization, RUE_Type))))
+   lListElem *actual = lGetSubStrRW(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization);
+   if (!actual && (!(actual = lAddSubStr(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization, RUE_Type))))
       return -1;
    lSetDouble(actual, RUE_utilized_now, slots); 
    return 0;

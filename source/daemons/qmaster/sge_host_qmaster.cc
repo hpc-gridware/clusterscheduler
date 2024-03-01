@@ -765,12 +765,12 @@ sge_update_load_values(const char *rhost, lList *lp) {
 
       if (is_static == 2) {
          /* remove old load value */
-         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);
+         lep = lGetSubStrRW(*hepp, HL_name, name, EH_load_list);
 
          lRemoveElem(lGetListRW(*hepp, EH_load_list), &lep);
       } else {
          /* add a new load value */
-         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);
+         lep = lGetSubStrRW(*hepp, HL_name, name, EH_load_list);
          if (lep == nullptr) {
             lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
             DPRINTF(("%s: adding load value: " SFQ " = " SFQ "\n", host, name, value));

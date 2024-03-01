@@ -143,7 +143,7 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, u_long32 j
 
    jep = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    if (jep != nullptr) {
-      jatep = lGetSubUlong(jep, JAT_task_number, task_id, JB_ja_tasks);
+      jatep = lGetSubUlongRW(jep, JAT_task_number, task_id, JB_ja_tasks);
       if (jatep != nullptr) {
          sge_signal_queue(suspend ? SGE_SIGSTOP : SGE_SIGCONT,
                           qinstance_where_task_is_running, jep, jatep, monitor);
@@ -241,7 +241,7 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
             continue;
          }
 
-         sub = lGetSubStr(qinstance, SO_name, node_queue_name, QU_subordinate_list);
+         sub = lGetSubStrRW(qinstance, SO_name, node_queue_name, QU_subordinate_list);
          if (sub != nullptr && lGetUlong(sub, SO_slots_sum) != 0) {
             /* Our node queue is mentioned in the subordinate_list of
              * this queue. This queue is our superordinated queue,
@@ -298,7 +298,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
 
       if (qinstance != nullptr) {
          if (get_slotwise_sos_threshold(qinstance) > 0) {
-            so = lGetSubStr(qinstance, SO_name, queue_name, QU_subordinate_list);
+            so = lGetSubStrRW(qinstance, SO_name, queue_name, QU_subordinate_list);
             if (so != nullptr && lGetUlong(so, SO_slots_sum) != 0) {
                /* the queue_name is listed in the subordinate list of this
                 * queue instance, so it's our superordinated queue instance.

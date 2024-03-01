@@ -532,12 +532,12 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    } 
 
    {
-      lListElem *ep = lGetSubStr(*pjob, VA_variable, "DISPLAY", JB_env_list);
+      lListElem *ep = lGetSubStrRW(*pjob, VA_variable, "DISPLAY", JB_env_list);
 
       /* if DISPLAY not set from -display or -v option,
        * try to read it from the environment
        */
-      if(ep == nullptr) {
+      if (ep == nullptr) {
          const char *display;
          display = getenv("DISPLAY");
 

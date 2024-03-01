@@ -1317,7 +1317,7 @@ static int debit_all_jobs_from_qs() {
                                        *object_type_get_master_list(SGE_TYPE_HGROUP), slots, master_task);
                }
                if (ar != nullptr) {
-                  lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);
+                  lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);
                   if (queue != nullptr) {
                      qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, nullptr);
                   } else {

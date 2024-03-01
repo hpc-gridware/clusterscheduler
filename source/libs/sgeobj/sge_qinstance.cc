@@ -592,12 +592,10 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
 int
 qinstance_slots_used(const lListElem *this_elem) 
 {
-   int ret = 1000000; /* when slots is unknown */ 
-   lListElem *slots;
-
    DENTER(QINSTANCE_LAYER);
-   
-   slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
+   const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
+   int ret = 1000000; /* when slots is unknown */
+
    if (slots != nullptr) {
       ret = lGetDouble(slots, RUE_utilized_now);
    } else {
@@ -669,19 +667,15 @@ qinstance_slots_reserved(const lListElem *this_elem)
 *     MT-NOTE: qinstance_set_slots_used() is MT safe 
 *******************************************************************************/
 void
-qinstance_set_slots_used(lListElem *this_elem, int new_slots) 
-{
-   lListElem *slots;
-
+qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
    DENTER(QINSTANCE_LAYER);
-   slots = lGetSubStr(this_elem, RUE_name, "slots", QU_resource_utilization);
+   lListElem *slots = lGetSubStrRW(this_elem, RUE_name, "slots", QU_resource_utilization);
    if (slots != nullptr) {
       lSetDouble(slots, RUE_utilized_now, new_slots);
    } else {
       /* because this should never happen and an critical error */
       CRITICAL(MSG_QINSTANCE_MISSLOTS_S, lGetString(this_elem, QU_full_name));
    }
-
    DRETURN_VOID;
 }
 
@@ -1054,7 +1048,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
       }
 
       /* ensure attribute is in actual list */
-      cr = lGetSubStr(ep, RUE_name, name, actual_nm);
+      cr = lGetSubStrRW(ep, RUE_name, name, actual_nm);
       if (just_check == nullptr && cr == nullptr) {
          cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
@@ -1116,16 +1110,11 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
 }
 
 void 
-qinstance_set_conf_slots_used(lListElem *this_elem)
-{
-   lListElem *slots;
-
+qinstance_set_conf_slots_used(lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
-   slots = lGetSubStr(this_elem, CE_name, "slots", 
-                      QU_consumable_config_list);
+   lListElem *slots = lGetSubStrRW(this_elem, CE_name, "slots", QU_consumable_config_list);
    if (slots == nullptr) {
-      slots = lAddSubStr(this_elem, CE_name, "slots", 
-                         QU_consumable_config_list, CE_Type);
+      slots = lAddSubStr(this_elem, CE_name, "slots", QU_consumable_config_list, CE_Type);
    }
    if (slots != nullptr) {
       dstring buffer = DSTRING_INIT;
