@@ -292,17 +292,13 @@ static void client_check_window_change(COMM_HANDLE *handle)
                   "%d, %d, %d, %d to shepherd\n",
                   ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel));
 
-         sprintf(buf, "WS %d %d %d %d",
-                 ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
-         comm_write_message(handle, g_hostname, COMM_CLIENT, 1,
-                            (unsigned char*)buf, strlen(buf), 
+         snprintf(buf, sizeof(buf), "WS %d %d %d %d", ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
+         comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf),
                             WINDOW_SIZE_CTRL_MSG, &err_msg);
       } else {
-         DPRINTF(("client_check_windows_change: ioctl() failed! "
-            "sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n"));
-         sprintf(buf, "WS 60 80 480 640");
-         comm_write_message(handle, g_hostname, COMM_CLIENT, 1,
-            (unsigned char*)buf, strlen(buf), WINDOW_SIZE_CTRL_MSG, &err_msg);
+         DPRINTF(("client_check_windows_change: ioctl() failed! sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n"));
+         snprintf(buf, sizeof(buf), "WS 60 80 480 640");
+         comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf), WINDOW_SIZE_CTRL_MSG, &err_msg);
       }
    }
    sge_dstring_free(&err_msg);
@@ -572,7 +568,7 @@ void* commlib_to_tty(void *t_conf)
                 */
                DPRINTF(("commlib_to_tty: received register message!\n"));
                /* Send the settings in response */
-               sprintf(buf, "noshell = %d", g_noshell);
+               snprintf(buf, sizeof(buf), "noshell = %d", g_noshell);
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
                   (unsigned char*)buf, strlen(buf)+1, SETTINGS_CTRL_MSG, &err_msg);
                DPRINTF(("commlib_to_tty: sent SETTINGS_CTRL_MSG, ret = %d\n", ret));

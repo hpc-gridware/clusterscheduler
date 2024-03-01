@@ -1259,10 +1259,10 @@ lList **object_type_get_master_list_rw(const sge_object_type type)
 #endif
 
       } else {
-         ERROR((SGE_EVENT, MSG_OBJECT_NO_LIST_TO_MOD_TYPE_SI, __func__, type));
+         ERROR(MSG_OBJECT_NO_LIST_TO_MOD_TYPE_SI, __func__, type);
       }
    } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
    
    DRETURN(ret);
@@ -1296,7 +1296,7 @@ bool object_type_commit_master_list(const sge_object_type type, lList **answer_l
          ret = object_base[type].commitMasterList(answer_list);
       }
    } else {
-         ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+         ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
          ret = false;
    }
 
@@ -1340,7 +1340,7 @@ bool object_type_free_master_list(const sge_object_type type)
           ret = true;
       }
    } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
 
    DRETURN(ret);
@@ -1381,7 +1381,7 @@ const char *object_type_get_name(const sge_object_type type)
    } else if (type == SGE_TYPE_ALL) {
       ret = "default";
    } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
   
    DRETURN(ret);
@@ -1471,7 +1471,7 @@ const lDescr *object_type_get_descr(const sge_object_type type)
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].descr;
    } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
 
    DRETURN(ret);
@@ -1513,7 +1513,7 @@ int object_type_get_key_nm(const sge_object_type type)
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].key_nm;
    } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type));
+      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
    
    DRETURN(ret);
@@ -2739,7 +2739,7 @@ object_verify_name(const lListElem *object, lList **answer_list, int name)
    const char *object_name = lGetString(object, name);
    if (object_name != nullptr) {
       if (isdigit(object_name[0])) {
-         ERROR((SGE_EVENT, MSG_OBJECT_INVALID_NAME_S, object_name));
+         ERROR(MSG_OBJECT_INVALID_NAME_S, object_name);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       } else {
@@ -2795,7 +2795,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
       unsigned long pe_range_max = lGetUlong(range_elem, RN_max);
       DPRINTF(("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min));
       if ( pe_range_max == 0 || pe_range_min == 0  ) {
-         ERROR((SGE_EVENT, MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr ));
+         ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr );
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2813,7 +2813,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
          if (pe_is_matching(pe, pe_name) &&
              nslots != pe_urgency_slots(pe, lGetString(pe, PE_urgency_slots), pe_range))
          {
-            ERROR((SGE_EVENT, MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr));
+            ERROR(MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -2859,7 +2859,7 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
 
       /* ensure 'slots' is not requested explicitly */
       if (!strcmp(attr_name, "slots")) {
-         ERROR((SGE_EVENT, MSG_OBJECT_NODIRECTSLOTS_S, object_descr)); 
+         ERROR(MSG_OBJECT_NODIRECTSLOTS_S, object_descr);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }

@@ -741,15 +741,13 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
 
             if (ret) {
                if (force_transition) {
-                  INFO((SGE_EVENT, MSG_QINSTANCE_FORCEDSTATE_SSSS, user, host, qinstance_name, qinstance_state_as_string(
-                          transitions[i].state_mask)));
+                  INFO(MSG_QINSTANCE_FORCEDSTATE_SSSS, user, host, qinstance_name, qinstance_state_as_string( transitions[i].state_mask));
                } else {
-                  INFO((SGE_EVENT, MSG_QINSTANCE_CHANGEDST_SSSS, user, host, qinstance_name, qinstance_state_as_string(
-                          transitions[i].state_mask)));
+                  INFO(MSG_QINSTANCE_CHANGEDST_SSSS, user, host, qinstance_name, qinstance_state_as_string( transitions[i].state_mask));
                }
                answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
             } else {
-               ERROR((SGE_EVENT, MSG_QINSTANCE_STATENOTMOD_S, qinstance_name));
+               ERROR(MSG_QINSTANCE_STATENOTMOD_S, qinstance_name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
 
                /*
@@ -761,12 +759,11 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
             }
          }
       } else {
-         INFO((SGE_EVENT, MSG_QINSTANCE_HASSTATE_SS, qinstance_name,
-                 qinstance_state_as_string(transitions[i].state_mask)));
+         INFO(MSG_QINSTANCE_HASSTATE_SS, qinstance_name, qinstance_state_as_string(transitions[i].state_mask));
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
       }
    } else {
-      WARNING((SGE_EVENT, MSG_QINSTANCE_STATENOTMODPERM_S, qinstance_name));
+      WARNING(MSG_QINSTANCE_STATENOTMODPERM_S, qinstance_name);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
    }
    sge_dstring_free(&buffer);
@@ -910,17 +907,17 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, u_long32 c
       sge_qmaster_qinstance_state_set_cal_suspended(this_elem, new_cal_suspended);
       if (new_cal_suspended) {
          if (qinstance_state_is_susp_on_sub(this_elem)) {
-            INFO((SGE_EVENT, MSG_QINSTANCE_NOUSSOS_S, name));
+            INFO(MSG_QINSTANCE_NOUSSOS_S, name);
          } else if (qinstance_state_is_manual_suspended(this_elem)) {
-            INFO((SGE_EVENT, MSG_QINSTANCE_NOUSADM_S, name));
+            INFO(MSG_QINSTANCE_NOUSADM_S, name);
          } else {
             sge_signal_queue(SGE_SIGSTOP, this_elem, nullptr, nullptr, monitor);
          }
       } else {
          if (qinstance_state_is_susp_on_sub(this_elem)) {
-            INFO((SGE_EVENT, MSG_QINSTANCE_NOSSOS_S, name));
+            INFO(MSG_QINSTANCE_NOSSOS_S, name);
          } else if (qinstance_state_is_manual_suspended(this_elem)) {
-            INFO((SGE_EVENT, MSG_QINSTANCE_NOSADM_S, name));
+            INFO(MSG_QINSTANCE_NOSADM_S, name);
          } else {
             sge_signal_queue(SGE_SIGCONT, this_elem, nullptr, nullptr, monitor);
          }

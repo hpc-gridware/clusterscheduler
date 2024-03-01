@@ -1351,10 +1351,10 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info) {
          struct saved_vars_s *context = nullptr;
 
          const char *info_message = prof_get_info_string(level, with_sub, nullptr);
-         PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int) thread_num, info, ""));
+         PROFILING("PROF(%d): %s%s", (int) thread_num, info, "");
          for (const char *message = sge_strtok_r(info_message, "\n", &context); message != nullptr;
               message = sge_strtok_r(nullptr, "\n", &context)) {
-            PROFILING((SGE_EVENT, "PROF(%d): %s", (int) thread_num, message));
+            PROFILING("PROF(%d): %s", (int) thread_num, message);
          }
          prof_reset(level, nullptr);
 
@@ -1538,7 +1538,7 @@ static void init_array(pthread_t num) {
    DENTER(CULL_LAYER);
 
    if (sge_prof_array_initialized == 0) {
-      CRITICAL((SGE_EVENT, "Profiling array is not initialized!\n"));
+      CRITICAL("Profiling array is not initialized!\n");
       abort();
    }
 

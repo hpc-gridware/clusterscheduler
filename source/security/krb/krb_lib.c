@@ -183,13 +183,13 @@ int krb_init(const char *progname)
 
    /* initialize kerberos context */
    if ((rc = krb5_init_context(&gsd.context))) {
-       ERROR((SGE_EVENT, MSG_KRB_KRB5INITCONTEXTFAILEDX_S , error_message(rc)));
+       ERROR(MSG_KRB_KRB5INITCONTEXTFAILEDX_S , error_message(rc));
        exit(1);
    }
 
    /* register memory-based credentials cache */
    if ((rc = krb5_cc_register(gsd.context, &krb5_mcc_ops, 0))) {
-       ERROR((SGE_EVENT, MSG_KRB_KRB5CCREGISTERFAILEDX_S , error_message(rc)));
+       ERROR(MSG_KRB_KRB5CCREGISTERFAILEDX_S , error_message(rc));
        exit(1);
    }
 
@@ -221,8 +221,7 @@ int krb_init(const char *progname)
       /* get kerberos realm of master host */
       if ((rc = krb5_get_host_realm(gsd.context, krbhost, &realmlist))) {
 
-	 ERROR((SGE_EVENT, MSG_KRB_COULDNOTGETREALMFORQMASTERHOSTXY_SS ,
-		krbhost, error_message(rc)));
+	 ERROR(MSG_KRB_COULDNOTGETREALMFORQMASTERHOSTXY_SS, krbhost, error_message(rc));
 
       } else {
 
@@ -231,8 +230,7 @@ int krb_init(const char *progname)
 
 	 if (realmlist)
 	    if ((rc = krb5_free_host_realm(gsd.context, realmlist)))
-	       ERROR((SGE_EVENT, MSG_KRB_COULDNOTFREEREALMLISTX_S , 
-		     error_message(rc)));
+	       ERROR(MSG_KRB_COULDNOTFREEREALMLISTX_S , error_message(rc));
       }
 
    }
@@ -242,22 +240,21 @@ int krb_init(const char *progname)
 
    if (!krbhost || !krbrealm) {
       if ((rc = krb5_get_default_realm(gsd.context, &krbrealm))) {
-	 ERROR((SGE_EVENT, MSG_KRB_COULDNOTGETDEFAULTREALMX_S , 
-	       error_message(rc)));
+	 ERROR(MSG_KRB_COULDNOTGETDEFAULTREALMX_S , error_message(rc));
       } else {
 	 krbhost = krbrealm;
       }
    }
 
    if (!krbhost || !krbrealm) {
-      ERROR((SGE_EVENT, MSG_KRB_COULDNOTDETERMINEHOSTSORREALFORQMASTER ));
+      ERROR(MSG_KRB_COULDNOTDETERMINEHOSTSORREALFORQMASTER );
       exit(1);
    }
 
    sprintf(gsd.service, "%s/%s@%s", SGE_SERVICE, krbhost, krbrealm);
 
    if ((rc = krb5_parse_name(gsd.context, gsd.service, &gsd.clientp))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5PARSENAMEFAILEDX_S , error_message(rc)));
+      ERROR(MSG_KRB_KRB5PARSENAMEFAILEDX_S , error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_KRB5PARSENAMEFAILED );
       exit(1);
@@ -268,12 +265,12 @@ int krb_init(const char *progname)
    gsd.idle_client_interval = KRB_DEFAULT_IDLE_CLIENT_INTERVAL;
 
    if (gethostname(gsd.hostname, sizeof(gsd.hostname)) < 0) {
-      ERROR((SGE_EVENT, MSG_KRB_GETHOSTNAMEFAILED));
+      ERROR(MSG_KRB_GETHOSTNAMEFAILED);
       exit(1);
    }
 
    if ((he = gethostbyname(gsd.hostname)) == nullptr) {
-      ERROR((SGE_EVENT, MSG_KRB_GETHOSTNAMEFAILED));
+      ERROR(MSG_KRB_GETHOSTNAMEFAILED);
       exit(1);
    }
 
@@ -294,7 +291,7 @@ int krb_init(const char *progname)
       sprintf(keytab, "FILE:%s/%s", sge_get_root_dir(0, nullptr, 0, 1), KRB_KEYTAB);
       if ((rc = krb5_kt_resolve(gsd.context, keytab, &gsd.keytab))) {
 
-	 ERROR((SGE_EVENT, MSG_KRB_COULDNOTRESOLVEKEYTABX_S, error_message(rc)));
+	 ERROR(MSG_KRB_COULDNOTRESOLVEKEYTABX_S, error_message(rc));
 	 exit(1);
       }
 
@@ -302,8 +299,7 @@ int krb_init(const char *progname)
 
 	 if ((rc = krb5_sname_to_principal(gsd.context, nullptr, SGE_SERVICE,
 					   KRB5_NT_SRV_HST, &gsd.serverp))) {
-	    ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S , error_message(rc));
 	    com_err(gsd.progname, rc, MSG_KRB_KRB5SNAMETOPRINCIPAL );
 	    exit(1);
 	 }
@@ -312,7 +308,7 @@ int krb_init(const char *progname)
 
 	 if ((rc = krb5_sname_to_principal(gsd.context, gsd.hostname,
 					   gsd.progname, KRB5_NT_SRV_HST, &gsd.serverp))) {
-	    ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S, error_message(rc)));
+	    ERROR(MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S, error_message(rc));
 	    com_err(gsd.progname, rc, MSG_KRB_KRB5SNAMETOPRINCIPAL );
 	    exit(1);
 	 }
@@ -335,7 +331,7 @@ int krb_init(const char *progname)
                                           ENCTYPE_DES_CBC_CRC,
                                           &gsd.daemon_key)))))) {
 
-	 ERROR((SGE_EVENT, MSG_KRB_XCOULDNOTGETDAEMONKEYY_SS , gsd.progname, error_message(rc)));
+	 ERROR(MSG_KRB_XCOULDNOTGETDAEMONKEYY_SS , gsd.progname, error_message(rc));
 	 exit(1);
       }
 
@@ -358,8 +354,7 @@ int krb_init(const char *progname)
 
 #ifdef notdef
       if ((rc = krb_get_tkt_for_daemon(gsd.hostname))) {
-	 ERROR((SGE_EVENT, MSG_KRB_XCOULDNOTGETSGETICKETUSINGKEYTABY_SS ,
-		gsd.progname, error_message(rc)));
+	 ERROR(MSG_KRB_XCOULDNOTGETSGETICKETUSINGKEYTABY_SS , gsd.progname, error_message(rc));
 	 exit(1);
       }
 #endif
@@ -368,8 +363,7 @@ int krb_init(const char *progname)
  
       /* initialize client auth_context */
       if ((rc = krb_get_new_auth_con(&gsd.auth_context, nullptr))) {
-	 ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S ,
-		error_message(rc)));
+	 ERROR(MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S , error_message(rc));
 	 com_err(gsd.progname, rc, MSG_KRB_KRBGETNEWAUTHCONFAILED );
          exit(1);
       }
@@ -380,7 +374,7 @@ int krb_init(const char *progname)
          if (!strcmp(prognames[EXECD], progname)) {
             gsd.conn_list = lCreateList("krb_connections", KRB_Type);
             if (gsd.conn_list == nullptr) {
-               ERROR((SGE_EVENT, MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED));
+               ERROR(MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED);
                exit(1);
             }
             gsd.client = lCreateElem(KRB_Type);
@@ -395,16 +389,14 @@ int krb_init(const char *progname)
 	 /* get credentials cache name */
 
 	 if ((rc = krb5_cc_default(gsd.context, &gsd.ccdef))) {
-	    ERROR((SGE_EVENT, MSG_KRB_KRB5CCDEFAULTFAILEDX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_KRB5CCDEFAULTFAILEDX_S , error_message(rc));
 	    com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETCLIENTCREDENTIALS);
 	    exit(1);
 	 }
 
          if ((rc = krb5_cc_get_principal(gsd.context, gsd.ccdef,
                                          &gsd.clientp))) {
-            ERROR((SGE_EVENT, MSG_KRB_KRB5CCGETPRINCIPALFAILEDX_S ,
-                   error_message(rc)));
+            ERROR(MSG_KRB_KRB5CCGETPRINCIPALFAILEDX_S, error_message(rc));
 	    com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETCLIENTPRINCIPAL );
 	    exit(1);
          }
@@ -595,18 +587,17 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
    /* prepare packing buffer */
    if ((ret = init_packbuffer(&pb, 4096, 0))) {
-	  ERROR((SGE_EVENT, MSG_KRB_INITPACKBUFFERFAILED_S, cull_pack_strerror(ret)));
+	  ERROR(MSG_KRB_INITPACKBUFFERFAILED_S, cull_pack_strerror(ret));
 	  goto error;
    }
 
    if (!gsd.initialized) {
-      ERROR((SGE_EVENT,MSG_KRB_CALLERDIDNOTCALLKRBINIT ));
+      ERROR(MSG_KRB_CALLERDIDNOTCALLKRBINIT);
       goto error;
    }
 
    if ((rc = krb5_timeofday(gsd.context, &time_now))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5TIMEOFDAYFAILEDX_S,
-	     error_message(rc)));
+      ERROR(MSG_KRB_KRB5TIMEOFDAYFAILEDX_S, error_message(rc));
       goto error;
    }
 
@@ -630,8 +621,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
                    tohost, KRB_commproc, tocomproc);
       client = lFindFirst(gsd.conn_list, where);
       if (!client || !where) {
-	 ERROR((SGE_EVENT, MSG_KRB_NOCLIENTENTRYFOR_SSI ,
-                tohost, tocomproc, toid));
+	 ERROR(MSG_KRB_NOCLIENTENTRYFOR_SSI , tohost, tocomproc, toid);
 	 goto error;
       }
 
@@ -648,8 +638,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
       I_am_a_client = 1;
 
       if ((rc = krb_get_new_auth_con(&gsd.auth_context, nullptr))) {
-	 ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S,
-		error_message(rc)));
+	 ERROR(MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S, error_message(rc));
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETNEWAUTHCONTEXT);
 	 goto error;
       }
@@ -670,8 +659,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 	 strcpy(gsd.qmaster_host, tohost);
 
 	 if ((rc = krb_get_tkt_for_daemon(tohost))) {
-	    ERROR((SGE_EVENT, MSG_KRB_XCOULDNOTGETSGETICKETUSINGKEYTABY_SS,
-		   gsd.progname, error_message(rc)));
+	    ERROR(MSG_KRB_XCOULDNOTGETSGETICKETUSINGKEYTABY_SS, gsd.progname, error_message(rc));
 	    exit(1);
 	 }
       }
@@ -692,8 +680,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
       if ((rc = krb5_mk_req(gsd.context, &auth, 0, 
              (char *)service, (char *) tohost,
 			    &inbuf, gsd.ccdef, &ap_req))) {
-	 ERROR((SGE_EVENT, MSG_KRB_FAILEDCREATINGAP_REQFORWXZY_SSIS,
-		tohost, tocomproc, toid, error_message(rc)));
+	 ERROR(MSG_KRB_FAILEDCREATINGAP_REQFORWXZY_SSIS, tohost, tocomproc, toid, error_message(rc));
 	 if (!gsd.daemon)
 	    com_err(gsd.progname, rc, MSG_KRB_COULDNOTCREATEAUTHENTICATIONINFO);
 	 goto error;
@@ -708,8 +695,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    addr.contents = (krb5_octet *)&c_sock.sin_port;
    if ((rc = krb5_auth_con_setports(gsd.context, auth,
 				    &addr, nullptr))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS, tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTSETPORTSINAUTHCONTEXT);
       goto error;
@@ -721,8 +707,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    addr.length = sizeof(gsd.hostaddr);
    addr.contents = (krb5_octet *)&gsd.hostaddr;
    if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, &addr, nullptr))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS, tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTSETADDRESSESINAUTHCONTEXT);
       goto error;
@@ -733,8 +718,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    if ((rc = krb5_gen_portaddr(gsd.context, &addr,
 				 (krb5_pointer) &c_sock.sin_port,
 				 &portlocal_addr))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5GENPORTADDRFAILEDFORWXYZ_SSIS,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5GENPORTADDRFAILEDFORWXYZ_SSIS, tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTGENPORTADDR );
       goto error;
@@ -742,8 +726,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
    if ((rc = krb5_gen_replay_name(gsd.context, portlocal_addr,
 				      progname ? progname : "sge_client", &cp))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5GENREPLAYNAMEFAILEDFORWXYZ_SSIS ,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5GENREPLAYNAMEFAILEDFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTGENREPLAYNAME );
       goto error;
@@ -753,8 +736,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    rcache_name.data = cp;
 
    if ((rc = krb5_get_server_rcache(gsd.context, &rcache_name, &rcache))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5GETSERVERRCACHEFAILEDFORWXYZ_SSIS ,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5GETSERVERRCACHEFAILEDFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETREPLAYCACHE);
       goto error;
@@ -776,8 +758,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    inbuf.length = buflen;
 
    if ((rc = KRB_ENCRYPT(gsd.context, auth, &inbuf, &outbuf, nullptr))) {
-      ERROR((SGE_EVENT, MSG_KRB_FAILEDENCRYPTINGMSGFORWXYZ_SSIS ,
-	     tohost, tocomproc, toid, error_message(rc)));
+      ERROR(MSG_KRB_FAILEDENCRYPTINGMSGFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_FAILEDENCRYPTINGMESSAGE );
       goto error;
@@ -789,8 +770,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
       if ((rc = krb5_sname_to_principal(gsd.context, nullptr, SGE_SERVICE,
                                         KRB5_NT_SRV_HST, &server))) {
-         ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S,
-                error_message(rc)));
+         ERROR(MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S, error_message(rc));
          goto error;
       }
 
@@ -798,7 +778,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
                                    gsd.clientp, server,
                                    gsd.ccdef, 1,
                                    &tgtbuf))) {
-         ERROR((SGE_EVENT, MSG_KRB_COULDNOTGETFORWARDABLETGTFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc)));
+         ERROR(MSG_KRB_COULDNOTGETFORWARDABLETGTFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc));
          if (!gsd.daemon)
             com_err(gsd.progname, rc, MSG_KRB_UNABLETOFORWARDTGT );
       }
@@ -814,8 +794,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
       if ((rc = krb_get_forwardable_tgt((char*) tohost, auth, tgt_creds,
                                         &tgtbuf))) {
-         ERROR((SGE_EVENT, MSG_KRB_COULDNOTGETFORWARDABLETGTFORWXYZ_SSIS ,
-                tohost, tocomproc, toid, error_message(rc)));
+         ERROR(MSG_KRB_COULDNOTGETFORWARDABLETGTFORWXYZ_SSIS , tohost, tocomproc, toid, error_message(rc));
       }
 
    }
@@ -949,7 +928,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    tgtbuf.length = 0;
 
    if (!gsd.initialized) {
-      ERROR((SGE_EVENT,MSG_KRB_DIDNOTCALLKRBINIT ));
+      ERROR(MSG_KRB_DIDNOTCALLKRBINIT);
       ret = SEC_RECEIVE_FAILED;
       goto error;
    }
@@ -980,17 +959,16 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    if (tmptag == TAG_AUTH_FAILURE) {
       if (gsd.qmaster) {
-	 ERROR((SGE_EVENT, MSG_KRB_INVALIDTAGAUTHFAILUREMSGRECEIVEDWXYZ_SSI , 
-            tmphost, tmpcommproc, (int) tmpid));
+	 ERROR(MSG_KRB_INVALIDTAGAUTHFAILUREMSGRECEIVEDWXYZ_SSI , tmphost, tmpcommproc, (int) tmpid);
 	 ret = SEC_RECEIVE_FAILED;
 	 goto error;
       } else if (gsd.daemon) {
-	 ERROR((SGE_EVENT, MSG_KRB_AUTHENTICATIONTOQMASTERFAILED));
+	 ERROR(MSG_KRB_AUTHENTICATIONTOQMASTERFAILED);
 	 gsd.reconnect = 1;
 	 ret = SEC_RECEIVE_FAILED;
 	 goto error;
       } else {
-	 ERROR((SGE_EVENT, MSG_KRB_AUTHENTICATIONTOQMASTERFAILED));
+	 ERROR(MSG_KRB_AUTHENTICATIONTOQMASTERFAILED);
 	 com_err(gsd.progname, rc, MSG_KRB_AUTHENTICATIONFAILED );
 	 ret = SEC_RECEIVE_FAILED;
 	 goto error;
@@ -1002,7 +980,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    {
       int pack_ret = init_packbuffer_from_buffer(&pb, *buffer, tmplen);
       if(pack_ret != PACK_SUCCESS) {
-         ERROR((SGE_EVENT, MSG_KRB_INITPACKBUFFERFAILED_S, cull_pack_strerror(pack_ret)));
+         ERROR(MSG_KRB_INITPACKBUFFERFAILED_S, cull_pack_strerror(pack_ret));
          ret = SEC_RECEIVE_FAILED;
          goto error;
       }
@@ -1010,13 +988,12 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    if (krb_unpackmsg(&pb, &ap_req, &inbuf, &tgtbuf, &tgt_id)) {
 
-      ERROR((SGE_EVENT, MSG_KRB_INVALIDMESSAGEUNPACKFAILURE ));
+      ERROR(MSG_KRB_INVALIDMESSAGEUNPACKFAILURE );
 
       if (gsd.qmaster) {
 
 	 if ((rc = krb_send_auth_failure(tmpcommproc, tmpid, tmphost))) {
-	    ERROR((SGE_EVENT, MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S, error_message(rc));
 	 }
 
       } else {
@@ -1035,10 +1012,9 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       /* make sure we have an AP_REQ */
       if (ap_req.length == 0) {
 
-	 ERROR((SGE_EVENT, MSG_KRB_INVALIDMESSAGENOAP_REQ ));
+	 ERROR(MSG_KRB_INVALIDMESSAGENOAP_REQ );
 	 if ((rc = krb_send_auth_failure(tmpcommproc, tmpid, tmphost))) {
-	    ERROR((SGE_EVENT, MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S , error_message(rc));
 	 }
 	 ret = SEC_RECEIVE_FAILED;
 	 goto error;
@@ -1056,8 +1032,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
          if ((rc = krb5_get_server_rcache(gsd.context,         
                krb5_princ_component(gsd.context, gsd.serverp, 0),
                &gsd.rcache))) {
-            ERROR((SGE_EVENT, MSG_KRB_XCOULDNOTCREATEREPLAYCACHEY_SS ,
-                   gsd.progname, error_message(rc)));
+            ERROR(MSG_KRB_XCOULDNOTCREATEREPLAYCACHEY_SS , gsd.progname, error_message(rc));
             exit(1);
          }
       }
@@ -1067,7 +1042,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
 	 client = lCreateElem(KRB_Type);
 	 if (!client) {
-	    ERROR((SGE_EVENT,  MSG_KRB_FAILEDCREATEOFCLIENT ));
+	    ERROR( MSG_KRB_FAILEDCREATEOFCLIENT );
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
 	 }
@@ -1076,8 +1051,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 	 lSetUlong(client, KRB_id, tmpid);
 
 	 if ((rc = krb_get_new_auth_con(&auth, gsd.rcache))) {
-	    ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S , error_message(rc));
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
          } else {
@@ -1085,7 +1059,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 	 }
 
 	 if ((ret=lAppendElem(gsd.conn_list, client))) {
-	    ERROR((SGE_EVENT, MSG_KRB_APPENDELEMFAILUREX_I , ret));
+	    ERROR(MSG_KRB_APPENDELEMFAILUREX_I , ret);
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
 	 }
@@ -1096,8 +1070,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
 	 auth = (krb5_auth_context)str2ptr(lGetString(client,KRB_auth_context));
 	 if ((rc = krb_get_new_auth_con(&auth, gsd.rcache))) {
-	    ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S , error_message(rc));
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
 	 }
@@ -1113,11 +1086,9 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       /* authenticate the client using the AP_REQ */
       if ((rc = krb5_rd_req(gsd.context, &auth, &ap_req, gsd.serverp,
 			    gsd.keytab, nullptr, nullptr))) {
-	 ERROR((SGE_EVENT, MSG_KRB_CLIENTWXYFAILEDAUTHENTICATIONZ_SSIS ,
-		tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
+	 ERROR(MSG_KRB_CLIENTWXYFAILEDAUTHENTICATIONZ_SSIS , tmphost, tmpcommproc, (int) tmpid, error_message(rc));
 	 if ((rc = krb_send_auth_failure(tmpcommproc, tmpid, tmphost))) {
-	    ERROR((SGE_EVENT, MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S ,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGEX_S , error_message(rc));
 	 }
 
          /* remove this client from the connection list to force reauthentication */
@@ -1131,7 +1102,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
       /* make sure we do have no AP_REQ */
       if (ap_req.length) {
-	 ERROR((SGE_EVENT, MSG_KRB_INVALIDMESSAGEHASANAP_REQ ));
+	 ERROR(MSG_KRB_INVALIDMESSAGEHASANAP_REQ );
 	 if (!gsd.daemon)
 	    com_err(gsd.progname, rc, MSG_KRB_INVALIDMESSAGERECEIVED );
 	 ret = SEC_RECEIVE_FAILED;
@@ -1145,7 +1116,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    /* put client's host address in the client auth_context */
 
    if ((he = gethostbyname(tmphost)) == nullptr) {
-      ERROR((SGE_EVENT, MSG_KRB_GETHOSTBYNAMEFAILED));
+      ERROR(MSG_KRB_GETHOSTBYNAMEFAILED);
       ret = SEC_RECEIVE_FAILED;
       goto error;
    }
@@ -1156,8 +1127,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    addr.length = sizeof(hostaddr);
    addr.contents = (krb5_octet *)&hostaddr;
    if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, nullptr, &addr))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFAILEDFORWXYZ_SSIS ,
-	     tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
+      ERROR(MSG_KRB_KRB5AUTHCONSETADDRSFAILEDFORWXYZ_SSIS , tmphost, tmpcommproc, (int) tmpid, error_message(rc));
       ret = SEC_RECEIVE_FAILED;
       goto error;
    }
@@ -1167,9 +1137,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    if (tgtbuf.length) {
 
       if ((rc = krb5_rd_cred(gsd.context, auth, &tgtbuf, &tgt_creds, nullptr))) {
-	 ERROR((SGE_EVENT, MSG_KRB_UNABLETODECRYPTFORWARDEDTGTFORCLIENTWXYZ_SSIS 
-                , tmphost, tmpcommproc, (int)tmpid,
-                error_message(rc)));
+	 ERROR(MSG_KRB_UNABLETODECRYPTFORWARDEDTGTFORCLIENTWXYZ_SSIS , tmphost, tmpcommproc, (int)tmpid, error_message(rc));
       } else {
 
          if (tgt_creds) {
@@ -1197,8 +1165,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                   lSetString(tgt_ep, KTGT_tgt, ptr2str(tgt_creds, nullptr));
                   tgt_creds = nullptr;
                } else /* this shouldn't happen */
-                  ERROR((SGE_EVENT, MSG_KRB_FAILEDADDINGTGTWTOCLIENTSTGTLISTFORXYZ_ISSI, 
-                           (int)tgt_id, tmphost, tmpcommproc, (int)tmpid));
+                  ERROR(MSG_KRB_FAILEDADDINGTGTWTOCLIENTSTGTLISTFORXYZ_ISSI, (int)tgt_id, tmphost, tmpcommproc, (int)tmpid);
                
 #if 0
             if (gsd.qmaster && client) {
@@ -1228,8 +1195,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 #endif
             } else {
 
-               ERROR((SGE_EVENT, MSG_KRB_ILLOGICALFORWARDABLETGTRECEIVEDFROMXYZ_SSI, 
-                     tmphost, tmpcommproc, (int) tmpid));
+               ERROR(MSG_KRB_ILLOGICALFORWARDABLETGTRECEIVEDFROMXYZ_SSI, tmphost, tmpcommproc, (int) tmpid);
 
             }
 
@@ -1241,13 +1207,11 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    /* decrypt message using auth_context */
 
    if ((rc = KRB_DECRYPT(gsd.context, auth, &inbuf, &outbuf, nullptr))) {
-      ERROR((SGE_EVENT, MSG_KRB_FAILEDDECRYPTINGMSGFORWXYZ_SSIS ,
-	     tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
+      ERROR(MSG_KRB_FAILEDDECRYPTINGMSGFORWXYZ_SSIS , tmphost, tmpcommproc, (int) tmpid, error_message(rc));
       if (gsd.qmaster || (gsd.daemon &&
 			  strcmp(prognames[QMASTER], tmpcommproc))) {
 	 if ((rc = krb_send_auth_failure(tmpcommproc, tmpid, tmphost))) {
-	    ERROR((SGE_EVENT, MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGE_S,
-		   error_message(rc)));
+	    ERROR(MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGE_S, error_message(rc));
 	 }
       }
       ret = SEC_RECEIVE_FAILED;
@@ -1330,8 +1294,7 @@ const char *user
 
    if ((rc = krb5_auth_con_getauthenticator(gsd.context, auth,
             &authenticator))) {
-      ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONGETAUTHENTICATORFAILEDFORWXYZ_SSIS,
-	     host, commproc, id, error_message(rc)));
+      ERROR(MSG_KRB_KRB5AUTHCONGETAUTHENTICATORFAILEDFORWXYZ_SSIS, host, commproc, id, error_message(rc));
       goto error;
    }
    
@@ -1665,7 +1628,7 @@ krb5_creds ***tgt_creds
    DENTER(TOP_LAYER);
 
    if (tgt_creds == nullptr || host == nullptr || comproc == nullptr) {
-      ERROR((SGE_EVENT, MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL ));
+      ERROR(MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL );
       goto all_done;
    }
 
@@ -1694,14 +1657,14 @@ krb5_creds ***tgt_creds
                         KRB_host, host, KRB_commproc, comproc);
       client = lFindFirst(gsd.conn_list, where);
       if (!client || !where) {
-         ERROR((SGE_EVENT, MSG_KRB_NOCLIENTENTRYFORXYZ_SSI , host, comproc, id));
+         ERROR(MSG_KRB_NOCLIENTENTRYFORXYZ_SSI , host, comproc, id);
          goto all_done;
       }
    }
 
    tgt_ep = lGetElemUlong(lGetList(client, KRB_tgt_list), KTGT_id, tgt_id);
    if (!tgt_ep) {
-      ERROR((SGE_EVENT, MSG_KRB_NOTGTFOUNDFORWXYWITHIDZ_SSID , host, comproc, id, tgt_id));
+      ERROR(MSG_KRB_NOTGTFOUNDFORWXYWITHIDZ_SSID , host, comproc, id, tgt_id);
       goto all_done;
    }
 
@@ -1766,7 +1729,7 @@ krb5_creds **tgt_creds
                         KRB_host, host, KRB_commproc, comproc);
       client = lFindFirst(gsd.conn_list, where);
       if (!client || !where) {
-         ERROR((SGE_EVENT, MSG_KRB_NOTCLIENTENTRYFORXYZUNABLETOSTORETGT_SSI , host, comproc, id));
+         ERROR(MSG_KRB_NOTCLIENTENTRYFORXYZUNABLETOSTORETGT_SSI , host, comproc, id);
          goto all_done;
       }
    }
@@ -1849,8 +1812,7 @@ all_done:
       krb5_cc_close(gsd.context, ccache);
 
    if (rc) {
-      ERROR((SGE_EVENT, MSG_KRB_FAILEDSTORINGFORWARDEDTGTFORUIDXJOBYZ_IIS ,
-             (int)uid, (int)jobid, error_message(rc)));
+      ERROR(MSG_KRB_FAILEDSTORINGFORWARDEDTGTFORUIDXJOBYZ_IIS , (int)uid, (int)jobid, error_message(rc));
       ret = -1;
    }
 
@@ -1884,7 +1846,7 @@ int jobid
 all_done:
 
    if (rc && rc != KRB5_FCC_NOFILE) {
-      ERROR((SGE_EVENT,MSG_KRB_FAILEDDELETINGTGTFORJOBXY_IS , jobid, error_message(rc)));
+      ERROR(MSG_KRB_FAILEDDELETINGTGTFORJOBXY_IS, jobid, error_message(rc));
       ret = -1;
    }
 

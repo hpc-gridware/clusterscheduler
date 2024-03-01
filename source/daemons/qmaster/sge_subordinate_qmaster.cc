@@ -1089,8 +1089,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
                       * If this queue will be subordinated to "qinstance",
                       * there will be a loop in the tree -> error!
                       */
-                     ERROR((SGE_EVENT, MSG_PARSE_LOOP_IN_SSOS_TREE_SS,
-                             new_so_name, lGetString(qinstance, QU_qname)));
+                     ERROR(MSG_PARSE_LOOP_IN_SSOS_TREE_SS, new_so_name, lGetString(qinstance, QU_qname));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                                      ANSWER_QUALITY_ERROR);
                      success = false;
@@ -1355,8 +1354,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
                       */
                      do_slotwise_x_on_subordinate_check(so_queue, (bool) !suspend, false, monitor);
                   } else {
-                     ERROR((SGE_EVENT, MSG_QINSTANCE_NQIFOUND_SS,
-                             so_queue_name, __func__));
+                     ERROR(MSG_QINSTANCE_NQIFOUND_SS, so_queue_name, __func__);
                      ret = false;
                   }
                }
@@ -1365,7 +1363,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
          }
       } else {
          /* should never happen */
-         ERROR((SGE_EVENT, MSG_QINSTANCE_NQIFOUND_SS, full_name, __func__));
+         ERROR(MSG_QINSTANCE_NQIFOUND_SS, full_name, __func__);
          ret = false;
       }
    }

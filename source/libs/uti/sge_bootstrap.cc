@@ -268,13 +268,13 @@ bootstrap_init_from_file() {
    if (bootstrap_file != nullptr) {
       DPRINTF(("bootstrap file is %s\n", bootstrap_file));
    } else {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE));
+      CRITICAL(SFNMAX, MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE);
       sge_exit(1);
    }
 
    /* read bootstrapping information */
    if (sge_get_confval_array(bootstrap_file, NUM_BOOTSTRAP, NUM_REQ_BOOTSTRAP, name, value, &error_dstring)) {
-      CRITICAL((SGE_EVENT, SFNMAX, sge_dstring_get_string(&error_dstring)));
+      CRITICAL(SFNMAX, sge_dstring_get_string(&error_dstring));
       sge_exit(1);
    } else {
       u_long32 val;

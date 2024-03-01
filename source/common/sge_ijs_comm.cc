@@ -182,45 +182,33 @@ static void ijs_general_communication_error(
       switch (commlib_error->cl_err_type) {
          case CL_LOG_ERROR:
             if (commlib_error->cl_info != nullptr) {
-               ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                      cl_get_error_text(commlib_error->cl_error),
-                      commlib_error->cl_info));
+               ERROR(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
             } else {
-               ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                      cl_get_error_text(commlib_error->cl_error)));
+               ERROR(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
             }
             break;
 
          case CL_LOG_WARNING:
             if (commlib_error->cl_info != nullptr) {
-               WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                        cl_get_error_text(commlib_error->cl_error),
-                        commlib_error->cl_info));
+               WARNING(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
             } else {
-               WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                        cl_get_error_text(commlib_error->cl_error)));
+               WARNING(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
             }
             break;
 
          case CL_LOG_INFO:
             if (commlib_error->cl_info != nullptr) {
-               INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                     cl_get_error_text(commlib_error->cl_error),
-                     commlib_error->cl_info));
+               INFO(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
             } else {
-               INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                     cl_get_error_text(commlib_error->cl_error)));
+               INFO(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
             }
             break;
 
          case CL_LOG_DEBUG:
             if (commlib_error->cl_info != nullptr) {
-               DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                      cl_get_error_text(commlib_error->cl_error),
-                      commlib_error->cl_info));
+               DEBUG(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
             } else {
-               DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                      cl_get_error_text(commlib_error->cl_error)));
+               DEBUG(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
             }
             break;
 

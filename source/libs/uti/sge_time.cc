@@ -351,10 +351,7 @@ void sge_stopwatch_log(int i, const char *str) {
    sge_stopwatch_stop(i);
 
    if ((wdiff[i] * 1000) / clock_tick >= time_log_interval[i]) {
-      WARNING((SGE_EVENT, "%-30s: %d/%d/%d", str,
-              (int) ((wtot[i] * 1000) / clock_tick),
-              (int) ((end[i].tms_utime * 1000) / clock_tick),
-              (int) ((end[i].tms_stime * 1000) / clock_tick)));
+      WARNING("%-30s: %d/%d/%d", str, (int) ((wtot[i] * 1000) / clock_tick), (int) ((end[i].tms_utime * 1000) / clock_tick), (int) ((end[i].tms_stime * 1000) / clock_tick));
    }
 }
 
@@ -388,7 +385,7 @@ void sge_stopwatch_start(int i) {
       clock_tick = sysconf(_SC_CLK_TCK);
       for (j = 0; j < NESTLEVEL; j++) {
          wtot[j] = wbegin[j] = wprev[j] = wdiff[j] = 0;
-         sprintf(buf, "SGE_TIMELOG%d", j);
+         snprintf(buf, sizeof(buf), "SGE_TIMELOG%d", j);
          if ((cp = getenv(buf)) && (atoi(cp) >= 0)) {
             time_log_interval[j] = atoi(cp);
          } else {

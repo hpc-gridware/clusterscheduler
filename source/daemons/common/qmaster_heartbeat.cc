@@ -63,7 +63,7 @@ int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
    DENTER(TOP_LAYER);
 
    if (file == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_HEART_NO_FILENAME));
+      ERROR(SFNMAX, MSG_HEART_NO_FILENAME);
       DRETURN(-1);
    }
 
@@ -71,13 +71,13 @@ int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
 
    fp = fopen(file, "r");
    if (!fp) {
-      ERROR((SGE_EVENT, MSG_HEART_CANNOTOPEN_SS, file, strerror(errno))); 
+      ERROR(MSG_HEART_CANNOTOPEN_SS, file, strerror(errno));
       DRETURN(-1);
    }
 
    if (fscanf(fp, "%d", &hb) != 1) {
       FCLOSE(fp);
-      ERROR((SGE_EVENT, MSG_HEART_CANNOT_READ_FILE_S, strerror(errno)));
+      ERROR(MSG_HEART_CANNOT_READ_FILE_S, strerror(errno));
       DRETURN(-2);
    }
 
@@ -91,13 +91,13 @@ int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
    gettimeofday(&end_time,nullptr);
    read_time = end_time.tv_sec - start_time.tv_sec;
    if (read_time > read_timeout) {
-      ERROR((SGE_EVENT, MSG_HEART_READ_TIMEOUT_S, file));
+      ERROR(MSG_HEART_READ_TIMEOUT_S, file);
       DRETURN(-3);
    }
 
    DRETURN(hb);
 FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_HEART_CLOSE_ERROR_SS, file, strerror(errno)));
+   ERROR(MSG_HEART_CLOSE_ERROR_SS, file, strerror(errno));
    DRETURN(-4);
 }
 
@@ -130,7 +130,7 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    DENTER(TOP_LAYER);
 
    if (file == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_HEART_NO_FILENAME));
+      ERROR(SFNMAX, MSG_HEART_NO_FILENAME);
       DRETURN(-1);
    }
 
@@ -143,7 +143,7 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    if (!fp) {
       fp = fopen(file, "w+");
       if (!fp) {
-         ERROR((SGE_EVENT, MSG_HEART_CANNOTOPEN_SS, file, strerror(errno))); 
+         ERROR(MSG_HEART_CANNOTOPEN_SS, file, strerror(errno));
          DRETURN(-1);
       }
    }
@@ -164,14 +164,14 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
 
    /* seek to beginning of file */
    if ( fseek(fp, 0, 0) != 0 ) {
-      ERROR((SGE_EVENT, MSG_HEART_CANNOT_FSEEK_SS, file, strerror(errno))); 
+      ERROR(MSG_HEART_CANNOT_FSEEK_SS, file, strerror(errno));
       DRETURN(-2);   
    }
 
    /* write in curent data (always write 5 characters) */
    if (fprintf(fp, "%05d\n", hb) == EOF) {
       FCLOSE(fp);
-      ERROR((SGE_EVENT, MSG_HEART_WRITE_ERROR_SS, file, strerror(errno))); 
+      ERROR(MSG_HEART_WRITE_ERROR_SS, file, strerror(errno));
       DRETURN(-3);
    }
    FCLOSE(fp);
@@ -185,7 +185,7 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    gettimeofday(&end_time,nullptr);
    write_time = end_time.tv_sec - start_time.tv_sec;
    if (write_time > write_timeout) {
-      WARNING((SGE_EVENT, MSG_HEART_WRITE_TIMEOUT_S, file)); 
+      WARNING(MSG_HEART_WRITE_TIMEOUT_S, file);
       return -4;
    }
 
@@ -195,7 +195,7 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
 
    DRETURN(0);
 FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_HEART_CLOSE_ERROR_SS, file, strerror(errno))); 
+   ERROR(MSG_HEART_CLOSE_ERROR_SS, file, strerror(errno));
    DRETURN(-5);
 }
 

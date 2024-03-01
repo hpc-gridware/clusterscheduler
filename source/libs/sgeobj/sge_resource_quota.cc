@@ -104,7 +104,7 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
       /* We have a expanded list */
       lSetBool(tmp_filter, RQRF_expand, true);
       if (buffer[strlen(buffer)-1] != '}') {
-         ERROR((SGE_EVENT, SFNMAX, MSG_RESOURCEQUOTA_NOVALIDEXPANDEDLIST));
+         ERROR(SFNMAX, MSG_RESOURCEQUOTA_NOVALIDEXPANDEDLIST);
          answer_list_add(alp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
@@ -430,7 +430,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
             lListElem *centry = centry_list_locate(master_centry_list, name);
 
             if (centry == nullptr) {
-               sprintf(SGE_EVENT, MSG_NOTEXISTING_ATTRIBUTE_SS, SGE_RQS_NAME, name);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, SGE_RQS_NAME, name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;

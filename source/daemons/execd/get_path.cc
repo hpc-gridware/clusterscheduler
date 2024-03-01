@@ -64,12 +64,12 @@ getHomeDir(dstring *dstr_exp_path, const char *user)
 
    pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
    if (pwd == nullptr) {
-      ERROR((SGE_EVENT, MSG_EXECD_INVALIDUSERNAME_S, user));
+      ERROR(MSG_EXECD_INVALIDUSERNAME_S, user);
       sge_free(&buffer);
       DRETURN(0);
    }
    if (pwd->pw_dir == nullptr) {
-      ERROR((SGE_EVENT, MSG_EXECD_NOHOMEDIR_S, user));
+      ERROR(MSG_EXECD_NOHOMEDIR_S, user);
       sge_free(&buffer);
       DRETURN(0);
    }
@@ -338,10 +338,9 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 
             if (sge_rmdir(path, &error_string)) {
                if (err_str != nullptr) {
-                  SGE_ADD_MSG_ID(sge_dstring_sprintf(err_str, MSG_FILE_RMDIR_SS, path, 
-                        sge_dstring_get_string(&error_string)));
+                  sge_dstring_sprintf(err_str, MSG_FILE_RMDIR_SS, path, sge_dstring_get_string(&error_string));
                } else {
-                  ERROR((SGE_EVENT, MSG_FILE_RMDIR_SS, path, SGE_EVENT));
+                  ERROR(MSG_FILE_RMDIR_SS, path, SGE_EVENT);
                   DRETURN(nullptr);
                }
             }
@@ -358,7 +357,7 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
       if (err_str != nullptr) {
          sge_dstring_sprintf(err_str, MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       } else {
-         ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
+         ERROR(MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       }
       DRETURN(nullptr);
    }
@@ -422,7 +421,7 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
       if(err_str != nullptr) {
          sge_dstring_sprintf(err_str, MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       } else {
-         ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
+         ERROR(MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       }
       DRETURN(nullptr);
    }

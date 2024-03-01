@@ -107,7 +107,7 @@ int incompatibleType2(const char *fmt, ...) {
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
 
-   CRITICAL((SGE_EVENT, SFNMAX, buf));
+   CRITICAL(SFNMAX, buf);
    fprintf(stderr, SFNMAX, buf);
 
    abort();
@@ -151,8 +151,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 
    if (!element) {
       if (do_abort) {
-         CRITICAL((SGE_EVENT, MSG_CULL_POINTER_NULLELEMENTFORX_S,
-                 lNm2Str(name)));
+         CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, lNm2Str(name));
          abort();
       }
       DRETURN(-1);
@@ -161,8 +160,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 
    if (do_abort && (pos < 0)) {
       /* someone has called lGetPosViaElem() with invalid name */
-      CRITICAL((SGE_EVENT, MSG_CULL_XNOTFOUNDINELEMENT_S,
-              lNm2Str(name)));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
       abort();
    }
 
@@ -235,7 +233,7 @@ const char *lNm2Str(int nm) {
    }
 
    Error:
-   sprintf(stack_noinit, "Nameindex = %d", nm);
+   snprintf(stack_noinit, sizeof(stack_noinit), "Nameindex = %d", nm);
    cull_state_set_noinit(stack_noinit);
    LERROR(LENAMENOT);
    DRETURN(cull_state_get_noinit());
@@ -712,7 +710,7 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION));
+      CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION);
       abort();
    }
 
@@ -776,7 +774,7 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetPosUlong64() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION));
+      CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION);
       abort();
    }
 
@@ -999,7 +997,7 @@ lListElem *lGetPosObject(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS));
+      CRITICAL(SFNMAX, MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS);
       abort();
    }
 
@@ -1032,7 +1030,7 @@ lList *lGetPosList(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSLIST_GOTANINVALIDPOS));
+      CRITICAL(SFNMAX, MSG_CULL_GETPOSLIST_GOTANINVALIDPOS);
       abort();
    }
 
@@ -3600,7 +3598,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBSTRERRORXRUNTIMETYPE_S, lNm2Str(snm)));
+      CRITICAL(MSG_CULL_ADDSUBSTRERRORXRUNTIMETYPE_S, lNm2Str(snm));
       DRETURN(nullptr);
    }
 
@@ -3658,7 +3656,7 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBHOSTERRORXRUNTIMETYPE_S, lNm2Str(snm)));
+      CRITICAL(MSG_CULL_ADDSUBHOSTERRORXRUNTIMETYPE_S, lNm2Str(snm));
       DRETURN(nullptr);
    }
 
@@ -3711,13 +3709,13 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lAddElemStr called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -3771,13 +3769,13 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lHostT) {
       DPRINTF(("error: lAddElemHost called to field which is no lHostT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4004,14 +4002,14 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrFirst called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4094,7 +4092,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
@@ -4173,13 +4171,13 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrLike called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4244,7 +4242,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONGERRORXRUNTIMETYPE_S, lNm2Str(snm)));
+      CRITICAL(MSG_CULL_ADDSUBULONGERRORXRUNTIMETYPE_S, lNm2Str(snm));
       DRETURN(nullptr);
    }
 
@@ -4297,8 +4295,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S,
-              lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4509,7 +4506,7 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4579,7 +4576,7 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4650,7 +4647,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S, lNm2Str(snm)));
+      CRITICAL(MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S, lNm2Str(snm));
       DRETURN(nullptr);
    }
 
@@ -4703,8 +4700,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S,
-              lNm2Str(nm)));
+      CRITICAL(MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4915,7 +4911,7 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -4985,7 +4981,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -5188,14 +5184,14 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF((":::::::::::::::: lGetElemCaseStr - data type is not lStringT !!! :::::::"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -5284,7 +5280,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       if (data_type != lHostT) {
          DPRINTF((":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n"));
       }
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
@@ -5366,7 +5362,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    listDescriptor = lGetListDescr(lp);
    pos = lGetPosInDescr(listDescriptor, nm);
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
+      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 

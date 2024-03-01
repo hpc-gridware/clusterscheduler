@@ -229,12 +229,12 @@ attr_create(lList **answer_list, const char *href, void *value,
          }
          ret = new_attr;
       } else {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTR_NONEWATTRSETTING_S, href));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_NONEWATTRSETTING_S, href);
          answer_list_add(answer_list, SGE_EVENT, 
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
@@ -340,10 +340,8 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
                *attr = attr_elem;
                ret = true;
             } else {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                              MSG_ATTR_VALUEMULDEFINED_S, href));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, href);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
             }
          } else {
             lAppendElem(*this_list, *attr);
@@ -411,7 +409,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
          if (ambiguous_href_list != nullptr &&
                lGetNumberOfElem(*ambiguous_href_list) >= 1 &&
                !(flags & HOSTATTR_ALLOW_AMBIGUITY)) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTR_RESULTAMBIGUOUS));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_RESULTAMBIGUOUS);
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          } else {
@@ -578,7 +576,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                /*
                 * Should never happen.
                 */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTR_NOCONFVALUE));
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_NOCONFVALUE);
                answer_list_add(answer_list, SGE_EVENT,
                                STATUS_ERROR1, ANSWER_QUALITY_ERROR);            
             }
@@ -634,7 +632,7 @@ attr_list_find_value_href(const lList *this_list, lList **answer_list,
             /*
              * Should never happen.
              */
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTR_NOCONFVALUE));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_NOCONFVALUE);
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ERROR1, ANSWER_QUALITY_ERROR);            
          }
@@ -782,18 +780,14 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                   token[length - 1] = '\0';
                   length--;
                } else {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTR_MISSINGCOMMA_S,
-                                         string));
-                  answer_list_add(answer_list, SGE_EVENT,
-                                  STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_MISSINGCOMMA_S, string);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             }
             else if (ret && is_last_token && (token[length - 1] == ',')) {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTR_TRAILINGCOMMA_S,
-                                      string));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_TRAILINGCOMMA_S, string);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                ret = false;
             }
 
@@ -812,10 +806,8 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                   token[length - 1] = '\0';
                   length--;
                } else {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTR_MISSINGBRACKET_S,
-                                         string));
-                  answer_list_add(answer_list, SGE_EVENT,
-                                  STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_MISSINGBRACKET_S, string);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             }
@@ -846,10 +838,8 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                      value[0] = '\0';
                      value++;
                   } else {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX,
-                                            MSG_ATTR_EQUALSIGNEXPRECTED));
-                     answer_list_add(answer_list, SGE_EVENT,
-                                     STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_EQUALSIGNEXPRECTED);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
                } else {
@@ -876,10 +866,8 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                                           &attr_elem, flags, nullptr,
                                           descriptor, href_nm, value_nm, master_hgroup_list);
                   } else {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                                    MSG_ATTR_PARSINGERROR_S, value));
-                     answer_list_add(answer_list, SGE_EVENT,
-                                     STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_PARSINGERROR_S, value);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                   }
                   if (!ret) {
                      lFreeElem(&attr_elem);
@@ -889,7 +877,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                }
             }
          } else {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTR_NOVALUEGIVEN));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_NOVALUEGIVEN);
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ERROR1, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -899,7 +887,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
       sge_free_saved_vars(strtok_context);
       strtok_context = nullptr;
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;

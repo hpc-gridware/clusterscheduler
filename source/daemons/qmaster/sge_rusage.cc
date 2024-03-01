@@ -404,10 +404,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
       pe_task = lGetElemStrRW(lGetList(ja_task, JAT_task_list), PET_id, pe_task_id);
       if (pe_task == nullptr) {
          dstring err_buffer = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S,
-                 job_get_id_string(lGetUlong(job, JB_job_number),
-                                   lGetUlong(ja_task, JAT_task_number),
-                                   pe_task_id, &err_buffer)));
+         ERROR(MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S, job_get_id_string(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), pe_task_id, &err_buffer));
          sge_dstring_free(&err_buffer);
          DRETURN(ret);
       }

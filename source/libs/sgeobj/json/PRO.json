@@ -1,15 +1,15 @@
 {
 	"className":	"Process",
-	"summary":	"@todo add summary",
+	"summary":	"Process Element",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used in sge_execd to keep track of all processes on the machine."
 		}],
 	"cullPrefix":	"PRO",
 	"attributes":	[{
 			"name":	"pid",
-			"summary":	"@todo add summary",
+			"summary":	"Pid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The process id."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -21,59 +21,67 @@
 				}]
 		}, {
 			"name":	"utime",
-			"summary":	"@todo add summary",
+			"summary":	"User Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of jiffies that this process has been scheduled in user mode."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"stime",
-			"summary":	"@todo add summary",
+			"summary":	"System Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of jiffies that this process has been scheduled in kernel mode."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"vsize",
-			"summary":	"@todo add summary",
+			"summary":	"Virtual Memory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Virtual memory size in bytes."
+				}],
+			"type":	"lUlong64T",
+			"flags":	[]
+		}, {
+			"name":	"rss",
+			"summary":	"Resident Set Size",
+			"description":	[{
+					"line":	"Resident Set Size (physical memory) in bytes."
 				}],
 			"type":	"lUlong64T",
 			"flags":	[]
 		}, {
 			"name":	"groups",
-			"summary":	"@todo add summary",
+			"summary":	"Groups",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"GR_Type list with all groups associated with this process."
 				}],
 			"type":	"lListT",
-			"subClassName":	"GR",
+			"subClassName":	"Group",
 			"subCullPrefix":	"GR",
 			"flags":	[]
 		}, {
 			"name":	"rel",
-			"summary":	"@todo add summary",
+			"summary":	"Related to Grid Engine Job",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Flag if this process belongs to a GE job."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"run",
-			"summary":	"@todo add summary",
+			"summary":	"Running",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Flag if this process is still running."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"io",
-			"summary":	"@todo add summary",
+			"summary":	"IO",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"IO statistic for the running process."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

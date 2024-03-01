@@ -794,8 +794,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
             range_list_parse_from_string(&rlp, alp, value, 
                                          false, false, INF_NOT_ALLOWED);
             if (rlp == nullptr) {
-               WARNING((SGE_EVENT, MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, 
-                        name, value));
+               WARNING(MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, name, value);
    
                sge_free_saved_vars(context);
                sge_free(&buffer);
@@ -808,7 +807,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
 
                   min = lGetUlong(rep, RN_min);
                   if (min < GID_RANGE_NOT_ALLOWED_ID) {
-                     WARNING((SGE_EVENT, MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID));
+                     WARNING(MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID);
    
                      sge_free_saved_vars(context);
                      sge_free(&buffer);
@@ -828,7 +827,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       if (value) {
          lSetString(ep, CF_value, value);
       } else {
-         WARNING((SGE_EVENT, MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name));
+         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
    
          sge_free_saved_vars(context);
          sge_free(&buffer);
@@ -858,7 +857,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       !strcmp(name, "additional_jvm_args")) {
       if (!(value = sge_strtok_r(buffer, "\t\n", &context))) {
          /* return line if value is empty */
-         WARNING((SGE_EVENT, MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name));
+         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
    
          sge_free_saved_vars(context);
          sge_free(&buffer);
@@ -871,7 +870,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       lSetString(ep, CF_value, value);
    } else {
       if (!(value = sge_strtok_r(buffer, " \t\n", &context))) {
-         WARNING((SGE_EVENT, MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name));
+         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
    
          sge_free_saved_vars(context);
          sge_free(&buffer);
@@ -895,8 +894,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
 
       if (sge_strtok_r(nullptr, " \t\n", &context)) {
          /* Allow only one value per line */
-         WARNING((SGE_EVENT, MSG_CONFIG_CONF_ONLYSINGLEVALUEFORCONFIGATTRIB_S,
-                  name));
+         WARNING(MSG_CONFIG_CONF_ONLYSINGLEVALUEFORCONFIGATTRIB_S, name);
    
          sge_free_saved_vars(context);
          sge_free(&buffer);

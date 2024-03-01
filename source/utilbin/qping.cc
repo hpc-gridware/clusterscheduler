@@ -228,7 +228,7 @@ static void qping_set_output_option(char* option_string) {
    
 }
 
-static void qping_convert_time(char* buffer, char* dest, bool show_hour) {
+static void qping_convert_time(char* buffer, char* dest, size_t dest_size, bool show_hour) {
    time_t i;
    char* help;
    char* help2;
@@ -248,7 +248,7 @@ static void qping_convert_time(char* buffer, char* dest, bool show_hour) {
    }
 
    if (strcmp(help,"-") == 0) {
-      sprintf(dest, "N.A.");
+      snprintf(dest, dest_size, "N.A.");
    } else {
 
       i = atoi(help);
@@ -258,9 +258,9 @@ static void qping_convert_time(char* buffer, char* dest, bool show_hour) {
       tm = (struct tm *)localtime_r(&i, &tm_buffer);
 #endif
       if (show_hour == true) {
-         sprintf(dest, "%02d:%02d:%02d.%s", tm->tm_hour, tm->tm_min, tm->tm_sec, help2);
+         snprintf(dest, dest_size, "%02d:%02d:%02d.%s", tm->tm_hour, tm->tm_min, tm->tm_sec, help2);
       } else {
-         sprintf(dest, "%02d:%02d.%s", tm->tm_min, tm->tm_sec, help2);
+         snprintf(dest, dest_size, "%02d:%02d.%s", tm->tm_min, tm->tm_sec, help2);
       }
    }
    sge_free_saved_vars(context);
@@ -348,13 +348,13 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
 
    if (debug_tag == CL_DMT_MESSAGE && (dump_tag == 1 || dump_tag == 3)) {
 
-      qping_convert_time(cl_values[0], time, true);
+      qping_convert_time(cl_values[0], time, sizeof(time), true);
       cl_values[0] = time;
    
-      qping_convert_time(cl_values[10], msg_time, true);
+      qping_convert_time(cl_values[10], msg_time, sizeof(msg_time), true);
       cl_values[10] = msg_time;
  
-      qping_convert_time(cl_values[13], com_time, false);
+      qping_convert_time(cl_values[13], com_time, sizeof(com_time), false);
       cl_values[13] = com_time;
    
       if (cl_short_host_name_option != 0) {
@@ -863,7 +863,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    }  /* end of CL_DMT_MESSAGE tag */
 
    if (debug_tag == CL_DMT_APP_MESSAGE && (dump_tag == 1 || dump_tag == 2)) {
-      qping_convert_time(cl_values[0], time, true);
+      qping_convert_time(cl_values[0], time, sizeof(time), true);
       
       if (nonewline != 0) {
 #if 0

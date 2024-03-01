@@ -205,7 +205,7 @@ gdi3_get_act_master_host(bool reread) {
          DPRINTF(("re-read actual qmaster file\n"));
          gdi3_set_timestamp_qmaster_file(now);
 
-         if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str) == -1) {
+         if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str, sizeof(err_str)) == -1) {
             if (eh != nullptr && !error_already_logged) {
                eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_READMASTERNAMEFAILED_S, err_str);
                error_already_logged = true;
@@ -258,11 +258,11 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
                               "cl_commlib_get_endpoint_status failed: " SFQ, cl_get_error_text(cl_ret));
 #endif
    } else {
-      DEBUG((SGE_EVENT, SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING));
+      DEBUG(SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING);
    }
 
    if (status != nullptr) {
-      DEBUG((SGE_EVENT, MSG_GDI_ENDPOINT_UPTIME_UU, sge_u32c(status->runtime), sge_u32c(status->application_status)));
+      DEBUG(MSG_GDI_ENDPOINT_UPTIME_UU, sge_u32c(status->runtime), sge_u32c(status->application_status));
       cl_com_free_sirm_message(&status);
    }
 
@@ -324,15 +324,14 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lLis
    int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
 
    if (!mal || id < 0) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
 
    lListElem *map = lGetElemUlongRW(mal, MA_id, id);
    if (!map) {
-      sprintf(SGE_EVENT, MSG_GDI_SGEGDIFAILED_S, target2string(target));
-      SGE_ADD_MSG_ID(SGE_EVENT);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, target2string(target));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
@@ -340,7 +339,7 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lLis
    if ((operation == SGE_GDI_GET) || (operation == SGE_GDI_PERMCHECK) ||
        (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
       if (!olpp) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
@@ -484,15 +483,15 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *
 *           if (local_ret == false || answer_list_has_error(&answer_cqueue) || 
 *               answer_list_has_error(&answer_job) || answer_list_has_error(&local_answer_list)) {
-*              ERROR((SGE_EVENT, "GDI multi request failed"));
+*              ERROR("GDI multi request failed");
 *           } else {
-*              INFO((SGE_EVENT, "GDI multi request was successful"));
-*              INFO((SGE_EVENT, "got cqueue list with " sge_U32CFormat " and cqueue answer "
+*              INFO("GDI multi request was successful");
+*              INFO("got cqueue list with " sge_U32CFormat " and cqueue answer "
 *                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_cqueue)),
-*                    sge_u32c(lGetNumberOfElem(answer_cqueue))));
-*              INFO((SGE_EVENT, "got job list with " sge_U32CFormat " and job answer "
+*                    sge_u32c(lGetNumberOfElem(answer_cqueue)));
+*              INFO("got job list with " sge_U32CFormat " and job answer "
 *                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_job)),
-*                    sge_u32c(lGetNumberOfElem(answer_job))));
+*                    sge_u32c(lGetNumberOfElem(answer_job)));
 *           }
 *           lFreeList(&multi_answer_list);
 *           lFreeList(&answer_cqueue);
@@ -500,9 +499,8 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *           lFreeList(&list_cqueue);
 *           lFreeList(&list_job);
 *        } else {
-*           ERROR((SGE_EVENT, "QMASTER INTERNAL MULTI GDI TEST FAILED"));
-*           ERROR((SGE_EVENT, "unable to send intern gdi request (cqueue_request_id=%d, "
-*                  "job_request_id=%d", cqueue_request_id, job_request_id));
+*           ERROR("QMASTER INTERNAL MULTI GDI TEST FAILED");
+*           ERROR("unable to send intern gdi request (cqueue_request_id=%d, " "job_request_id=%d", cqueue_request_id, job_request_id);
 *        }
 *
 *        lFreeList(&local_answer_list);
@@ -586,8 +584,8 @@ sge_gdi2_send_any_request(int synchron, u_long32 *mid, const char *rhost, const 
    }
 
    if (i != CL_RETVAL_OK) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SENDMESSAGETOCOMMPROCFAILED_SSISS, (synchron ? "" : "a"),
-                             commproc, id, rhost, cl_get_error_text(i)));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SENDMESSAGETOCOMMPROCFAILED_SSISS, (synchron ? "" : "a"),
+               commproc, id, rhost, cl_get_error_text(i));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOCOMMD, ANSWER_QUALITY_ERROR);
    }
 
@@ -621,7 +619,7 @@ sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buff
    }
 
    if (!rhost) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_GDI_RHOSTISNULLFORGETANYREQUEST));
+      ERROR(SFNMAX, MSG_GDI_RHOSTISNULLFORGETANYREQUEST);
       PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
       DRETURN(-1);
    }
@@ -642,16 +640,15 @@ sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buff
       if (commproc[0] != '\0' && rhost[0] != '\0') {
          /* The connection was closed, reopen it */
          i = cl_commlib_open_connection(handle, (char *) rhost, (char *) commproc, usid);
-         INFO((SGE_EVENT, "reopen connection to %s,%s," sge_U32CFormat " (2)\n",
-                 rhost, commproc, sge_u32c(usid)));
+         INFO("reopen connection to %s,%s," sge_U32CFormat " (2)\n", rhost, commproc, sge_u32c(usid));
          if (i == CL_RETVAL_OK) {
-            INFO((SGE_EVENT, "reconnected successfully\n"));
+            INFO("reconnected successfully\n");
             i = cl_commlib_receive_message(handle, rhost, commproc, usid,
                                            (bool) synchron, for_request_mid,
                                            &message, &sender);
          }
       } else {
-         DEBUG((SGE_EVENT, "can't reopen a connection to unspecified host or commproc (2)\n"));
+         DEBUG("can't reopen a connection to unspecified host or commproc (2)\n");
       }
    }
 
@@ -694,14 +691,14 @@ sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buff
       message->message = nullptr;
 
       if (i != PACK_SUCCESS) {
-         ERROR((SGE_EVENT, MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(i)));
+         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(i));
          PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
          DRETURN(CL_RETVAL_READ_ERROR);
       }
 
       /* TODO: there are two cases for any and addressed communication partner, two functions are needed */
       if (sender != nullptr) {
-         DEBUG((SGE_EVENT, "received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id)));
+         DEBUG("received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id));
          if (rhost[0] == '\0') {
             strcpy(rhost, sender->comp_host); /* If we receive from anybody return the sender */
          }
@@ -725,14 +722,13 @@ static void dump_receive_info(cl_com_message_t **message, cl_com_endpoint_t **se
       dstring ds;
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-      DEBUG((SGE_EVENT, "<<<<<<<<<<<<<<<<<<<<"));
-      DEBUG((SGE_EVENT, "gdi_rcv: received message from %s/%s/" sge_U32CFormat ": ", (*sender)->comp_host, (*sender)->comp_name, sge_u32c(
-              (*sender)->comp_id)));
-      DEBUG((SGE_EVENT, "gdi_rcv: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string((*message)->message_mat)));
-      DEBUG((SGE_EVENT, "gdi_rcv: message tag:       %s", sge_dump_message_tag((*message)->message_tag)));
-      DEBUG((SGE_EVENT, "gdi_rcv: message id:        " sge_U32CFormat "", sge_u32c((*message)->message_id)));
-      DEBUG((SGE_EVENT, "gdi_rcv: receive time:      %s", sge_ctime((*message)->message_receive_time.tv_sec, &ds)));
-      DEBUG((SGE_EVENT, "<<<<<<<<<<<<<<<<<<<<"));
+      DEBUG("<<<<<<<<<<<<<<<<<<<<");
+      DEBUG("gdi_rcv: received message from %s/%s/" sge_U32CFormat ": ", (*sender)->comp_host, (*sender)->comp_name, sge_u32c( (*sender)->comp_id));
+      DEBUG("gdi_rcv: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string((*message)->message_mat));
+      DEBUG("gdi_rcv: message tag:       %s", sge_dump_message_tag((*message)->message_tag));
+      DEBUG("gdi_rcv: message id:        " sge_U32CFormat "", sge_u32c((*message)->message_id));
+      DEBUG("gdi_rcv: receive time:      %s", sge_ctime((*message)->message_receive_time.tv_sec, &ds));
+      DEBUG("<<<<<<<<<<<<<<<<<<<<");
    }
    DRETURN_VOID;
 }
@@ -747,22 +743,21 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    if (comp_host != nullptr && comp_name != nullptr) {
-      DEBUG((SGE_EVENT, ">>>>>>>>>>>>>>>>>>>>"));
-      DEBUG((SGE_EVENT, "gdi_snd: sending message to %s/%s/" sge_U32CFormat ": ",
-              (char *) comp_host, comp_name, sge_u32c(comp_id)));
-      DEBUG((SGE_EVENT, "gdi_snd: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string(ack_type)));
-      DEBUG((SGE_EVENT, "gdi_snd: message tag:       %s", sge_dump_message_tag(tag)));
+      DEBUG(">>>>>>>>>>>>>>>>>>>>");
+      DEBUG("gdi_snd: sending message to %s/%s/" sge_U32CFormat ": ", (char *) comp_host, comp_name, sge_u32c(comp_id));
+      DEBUG("gdi_snd: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string(ack_type));
+      DEBUG("gdi_snd: message tag:       %s", sge_dump_message_tag(tag));
       if (mid) {
-         DEBUG((SGE_EVENT, "gdi_snd: message id:        " sge_U32CFormat "", sge_u32c(*mid)));
+         DEBUG("gdi_snd: message id:        " sge_U32CFormat "", sge_u32c(*mid));
       } else {
-         DEBUG((SGE_EVENT, "gdi_snd: message id:        not handled by caller"));
+         DEBUG("gdi_snd: message id:        not handled by caller");
       }
-      DEBUG((SGE_EVENT, "gdi_snd: send time:         %s", sge_ctime(0, &ds)));
-      DEBUG((SGE_EVENT, ">>>>>>>>>>>>>>>>>>>>"));
+      DEBUG("gdi_snd: send time:         %s", sge_ctime(0, &ds));
+      DEBUG(">>>>>>>>>>>>>>>>>>>>");
    } else {
-      DEBUG((SGE_EVENT, ">>>>>>>>>>>>>>>>>>>>"));
-      DEBUG((SGE_EVENT, "gdi_snd: some parameters are not set"));
-      DEBUG((SGE_EVENT, ">>>>>>>>>>>>>>>>>>>>"));
+      DEBUG(">>>>>>>>>>>>>>>>>>>>");
+      DEBUG("gdi_snd: some parameters are not set");
+      DEBUG(">>>>>>>>>>>>>>>>>>>>");
    }
    DRETURN_VOID;
 }
@@ -819,7 +814,7 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
    if (action_flag & SCHEDD_KILL) {
       char buffer[10];
 
-      sprintf(buffer, "%d", EV_ID_SCHEDD);
+      snprintf(buffer, sizeof(buffer), "%d", EV_ID_SCHEDD);
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
@@ -835,7 +830,7 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
    if (action_flag & EVENTCLIENT_KILL) {
       if (id_list == nullptr) {
          char buffer[10];
-         sprintf(buffer, "%d", EV_ID_ANY);
+         snprintf(buffer, sizeof(buffer), "%d", EV_ID_ANY);
          id_list = lCreateList("kill all event clients", ID_Type);
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
@@ -1018,7 +1013,7 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *toh
     *       send/receive messages to the correct endpoint.
     */
    if (tocomproc[0] == '\0') {
-      DEBUG((SGE_EVENT, "tocomproc is empty string\n"));
+      DEBUG("tocomproc is empty string\n");
    }
    switch (progid) {
       case QMASTER:
@@ -1038,16 +1033,16 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *toh
 
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
-      DEBUG((SGE_EVENT, "standard gdi request to qmaster\n"));
+      DEBUG("standard gdi request to qmaster\n");
       handle = cl_com_get_handle(component_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
-      DEBUG((SGE_EVENT, "search handle to \"%s\"\n", tocomproc));
+      DEBUG("search handle to \"%s\"\n", tocomproc);
       handle = cl_com_get_handle("execd_handle", 0);
       if (handle == nullptr) {
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
-         DEBUG((SGE_EVENT, "creating handle to \"%s\"\n", tocomproc));
+         DEBUG("creating handle to \"%s\"\n", tocomproc);
          if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
             DPRINTF(("using communication lib with SSL framework (execd_handle)\n"));
             communication_framework = CL_CT_SSL;
@@ -1057,8 +1052,8 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *toh
                               "execd_handle", 0, 1, 0);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
-            ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc));
-            ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
+            ERROR(MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc);
+            ERROR(SFNMAX, cl_get_error_text(commlib_error));
          }
       }
    }
@@ -1113,7 +1108,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
 
    if (fromcommproc[0] == '\0') {
-      DEBUG((SGE_EVENT, "fromcommproc is empty string\n"));
+      DEBUG("fromcommproc is empty string\n");
    }
    switch (progid) {
       case QMASTER:
@@ -1133,16 +1128,16 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
-      DEBUG((SGE_EVENT, "standard gdi receive message\n"));
+      DEBUG("standard gdi receive message\n");
       handle = cl_com_get_handle(component_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
-      DEBUG((SGE_EVENT, "search handle to \"%s\"\n", fromcommproc));
+      DEBUG("search handle to \"%s\"\n", fromcommproc);
       handle = cl_com_get_handle("execd_handle", 0);
       if (handle == nullptr) {
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
-         DEBUG((SGE_EVENT, "creating handle to \"%s\"\n", fromcommproc));
+         DEBUG("creating handle to \"%s\"\n", fromcommproc);
          if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
             DPRINTF(("using communication lib with SSL framework (execd_handle)\n"));
             communication_framework = CL_CT_SSL;
@@ -1153,8 +1148,8 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                               "execd_handle", 0, 1, 0);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
-            ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc));
-            ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
+            ERROR(MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc);
+            ERROR(SFNMAX, cl_get_error_text(commlib_error));
          }
       }
    }
@@ -1165,15 +1160,14 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       if (fromcommproc[0] != '\0' && fromhost[0] != '\0') {
          /* The connection was closed, reopen it */
          ret = cl_commlib_open_connection(handle, fromhost, fromcommproc, *fromid);
-         INFO((SGE_EVENT, "reopen connection to %s,%s," sge_U32CFormat " (1)\n", fromhost, fromcommproc, sge_u32c(
-                 *fromid)));
+         INFO("reopen connection to %s,%s," sge_U32CFormat " (1)\n", fromhost, fromcommproc, sge_u32c( *fromid));
          if (ret == CL_RETVAL_OK) {
-            INFO((SGE_EVENT, "reconnected successfully\n"));
+            INFO("reconnected successfully\n");
             ret = cl_commlib_receive_message(handle, fromhost, fromcommproc, *fromid, (bool) synchron, 0, &message,
                                              &sender);
          }
       } else {
-         DEBUG((SGE_EVENT, "can't reopen a connection to unspecified host or commproc (1)\n"));
+         DEBUG("can't reopen a connection to unspecified host or commproc (1)\n");
       }
    }
 
@@ -1186,7 +1180,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       }
 
       if (sender != nullptr) {
-         DEBUG((SGE_EVENT, "received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id)));
+         DEBUG("received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id));
          if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
             strcpy(fromcommproc, sender->comp_name);
          }
@@ -1278,7 +1272,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
       if (ret != CL_RETVAL_OK) {
          DPRINTF(("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret)));
          lFreeElem(&hep);
-         ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, config_name));
+         ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, config_name);
          DRETURN(-2);
       }
       DPRINTF(("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name)));
@@ -1294,7 +1288,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
    }
 
    if (is_global_requested == 0 && !lepp) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_NULLPOINTER));
+      ERROR(SFNMAX, MSG_NULLPOINTER);
       lFreeElem(&hep);
       DRETURN(-3);
    }
@@ -1321,7 +1315,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
    success = ((status = lGetUlong(lFirst(alp), AN_status)) == STATUS_OK);
    if (!success) {
       if (!already_logged) {
-         ERROR((SGE_EVENT, MSG_CONF_GETCONF_S, lGetString(lFirst(alp), AN_text)));
+         ERROR(MSG_CONF_GETCONF_S, lGetString(lFirst(alp), AN_text));
          already_logged = 1;
       }
 
@@ -1334,12 +1328,12 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
 
    /* we didn't get the correct number of configurations? */
    if (lGetNumberOfElem(lp) > (2 - is_global_requested)) {
-      WARNING((SGE_EVENT, MSG_CONF_REQCONF_II, (int) (2 - is_global_requested), lGetNumberOfElem(lp)));
+      WARNING(MSG_CONF_REQCONF_II, (int) (2 - is_global_requested), lGetNumberOfElem(lp));
    }
 
    /* we did not get the global configuration? */
    if (!(*gepp = lGetElemHostRW(lp, CONF_name, SGE_GLOBAL_NAME))) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_CONF_NOGLOBAL));
+      ERROR(SFNMAX, MSG_CONF_NOGLOBAL);
       lFreeList(&lp);
       lFreeElem(&hep);
       DRETURN(-5);
@@ -1352,7 +1346,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
    if (is_global_requested == 0) {
       if (!(*lepp = lGetElemHostRW(lp, CONF_name, lGetHost(hep, EH_name)))) {
          if (*gepp) {
-            INFO((SGE_EVENT, MSG_CONF_NOLOCAL_S, lGetHost(hep, EH_name)));
+            INFO(MSG_CONF_NOLOCAL_S, lGetHost(hep, EH_name));
          }
          lFreeList(&lp);
          lFreeElem(&hep);
@@ -1461,7 +1455,7 @@ int gdi2_get_merged_configuration(lList **conf_list) {
    DPRINTF(("qualified hostname: %s\n", qualified_hostname));
    ret = gdi2_get_configuration(qualified_hostname, &global, &local);
    if (ret) {
-      ERROR((SGE_EVENT, MSG_CONF_NOREADCONF_IS, ret, qualified_hostname));
+      ERROR(MSG_CONF_NOREADCONF_IS, ret, qualified_hostname);
       lFreeElem(&global);
       lFreeElem(&local);
       DRETURN(-1);
@@ -1469,7 +1463,7 @@ int gdi2_get_merged_configuration(lList **conf_list) {
 
    ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
    if (ret) {
-      ERROR((SGE_EVENT, MSG_CONF_NOMERGECONF_IS, ret, qualified_hostname));
+      ERROR(MSG_CONF_NOMERGECONF_IS, ret, qualified_hostname);
       lFreeElem(&global);
       lFreeElem(&local);
       DRETURN(-2);
@@ -1544,17 +1538,17 @@ int report_list_send(const lList *rlp, const char *rhost, const char *commproc, 
          break;
 
       case PACK_ENOMEM:
-         ERROR((SGE_EVENT, MSG_GDI_REPORTNOMEMORY_I, 1024));
+         ERROR(MSG_GDI_REPORTNOMEMORY_I, 1024);
          clear_packbuffer(&pb);
          DRETURN(-2);
 
       case PACK_FORMAT:
-         ERROR((SGE_EVENT, SFNMAX, MSG_GDI_REPORTFORMATERROR));
+         ERROR(SFNMAX, MSG_GDI_REPORTFORMATERROR);
          clear_packbuffer(&pb);
          DRETURN(-3);
 
       default:
-         ERROR((SGE_EVENT, SFNMAX, MSG_GDI_REPORTUNKNOWERROR));
+         ERROR(SFNMAX, MSG_GDI_REPORTUNKNOWERROR);
          clear_packbuffer(&pb);
          DRETURN(-1);
    }
@@ -1784,45 +1778,33 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
          switch (commlib_error->cl_err_type) {
             case CL_LOG_ERROR: {
                if (commlib_error->cl_info != nullptr) {
-                  ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                          cl_get_error_text(commlib_error->cl_error),
-                          commlib_error->cl_info));
+                  ERROR(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
                } else {
-                  ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                          cl_get_error_text(commlib_error->cl_error)));
+                  ERROR(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
                }
                break;
             }
             case CL_LOG_WARNING: {
                if (commlib_error->cl_info != nullptr) {
-                  WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                          cl_get_error_text(commlib_error->cl_error),
-                          commlib_error->cl_info));
+                  WARNING(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
                } else {
-                  WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                          cl_get_error_text(commlib_error->cl_error)));
+                  WARNING(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
                }
                break;
             }
             case CL_LOG_INFO: {
                if (commlib_error->cl_info != nullptr) {
-                  INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                          cl_get_error_text(commlib_error->cl_error),
-                          commlib_error->cl_info));
+                  INFO(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
                } else {
-                  INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                          cl_get_error_text(commlib_error->cl_error)));
+                  INFO(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
                }
                break;
             }
             case CL_LOG_DEBUG: {
                if (commlib_error->cl_info != nullptr) {
-                  DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
-                          cl_get_error_text(commlib_error->cl_error),
-                          commlib_error->cl_info));
+                  DEBUG(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
                } else {
-                  DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_S,
-                          cl_get_error_text(commlib_error->cl_error)));
+                  DEBUG(MSG_GDI_GENERAL_COM_ERROR_S, cl_get_error_text(commlib_error->cl_error));
                }
                break;
             }

@@ -310,8 +310,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
       }
    }
    if (!pep) {
-      ERROR((SGE_EVENT, "no matching parallel environment "
-            "for job's PE request \"%s\"\n", pe_name));
+      ERROR("no matching parallel environment " "for job's PE request \"%s\"\n", pe_name);
       DRETURN(1);
    }
 

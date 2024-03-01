@@ -110,7 +110,7 @@ lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaski
       jr_list = lCreateList("job report list", JR_Type);
   
    if (jr_list == nullptr || (jr=lCreateElem(JR_Type)) == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_JOB_TYPEMALLOC));
+      ERROR(SFNMAX, MSG_JOB_TYPEMALLOC);
       DRETURN(nullptr);
    }
 
@@ -232,9 +232,7 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
 
       parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
-         ERROR((SGE_EVENT, MSG_PARSE_USAGEATTR_SSU, 
-                val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number)))); 
-         /* use default value */
+         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number))); /* use default value */
          lSetDouble(usage, UA_value, val); 
          DRETURN(-1);
       }
@@ -280,7 +278,7 @@ int do_ack(struct_msg_t *aMsg)
    while (pb_unused(&(aMsg->buf)) > 0) {
 
       if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKJOB));
+         ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
 
@@ -377,7 +375,7 @@ int do_ack(struct_msg_t *aMsg)
             break;
 
          default:
-            ERROR((SGE_EVENT, SFNMAX, MSG_COM_ACK_UNKNOWN1));
+            ERROR(SFNMAX, MSG_COM_ACK_UNKNOWN1);
             break;
       }
 

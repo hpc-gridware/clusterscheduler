@@ -276,7 +276,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
 
    /* Make sure to have at least a one byte logging string */
    if (!msg || msg[0] == '\0') {
-      sprintf(buf, MSG_LOG_CALLEDLOGGINGSTRING_S, msg ? MSG_LOG_ZEROLENGTH : MSG_POINTER_NULL);
+      snprintf(buf, sizeof(buf), MSG_LOG_CALLEDLOGGINGSTRING_S, msg ? MSG_LOG_ZEROLENGTH : MSG_POINTER_NULL);
       msg = buf;
    }
 

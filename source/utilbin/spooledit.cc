@@ -92,9 +92,9 @@ init_framework()
                                                    spooling_params);
    answer_list_output(&answer_list);
    if (!strcmp(bootstrap_get_spooling_method(),"classic")) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANTHANDLECLASSICSPOOLING));
+      CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANTHANDLECLASSICSPOOLING);
    } else if (spooling_context == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT));
+      CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT);
    } else {
       spool_set_default_context(spooling_context);
       spool_set_option(&answer_list, spooling_context, "recover=false");
@@ -102,7 +102,7 @@ init_framework()
 
       /* initialize spooling context */
       if (!spool_startup_context(&answer_list, spooling_context, true)) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTSTARTUPCONTEXT));
+         CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANNOTSTARTUPCONTEXT);
       } else {
          ret = EXIT_SUCCESS;
       }
@@ -151,7 +151,7 @@ get_descr_from_key(const char *key)
       sge_free_saved_vars(context);
 
       if (descr == nullptr) {
-         ERROR((SGE_EVENT, MSG_DBSTAT_INVALIDKEY_S, key));
+         ERROR(MSG_DBSTAT_INVALIDKEY_S, key);
       }
    }
 
@@ -294,13 +294,13 @@ load_object(const char *key, const char *fname)
       FILE *fd;
 
       if((fd = fopen(fname, "r")) == nullptr) {
-         ERROR((SGE_EVENT, MSG_ERROROPENINGFILEFORREADING_SS, fname, strerror(errno)));
+         ERROR(MSG_ERROROPENINGFILEFORREADING_SS, fname, strerror(errno));
          ret = EXIT_FAILURE;
       } else {
          object = lUndumpElemFp(fd, descr);
          FCLOSE(fd);
          if (object == nullptr) {
-            ERROR((SGE_EVENT, MSG_DBSTAT_ERRORUNDUMPING_S, fname));
+            ERROR(MSG_DBSTAT_ERRORUNDUMPING_S, fname);
             ret = EXIT_FAILURE;
          }
       }
@@ -338,7 +338,7 @@ load_object(const char *key, const char *fname)
    DRETURN(ret);
 
 FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_FILE_ERRORCLOSEINGXY_SS, fname, strerror(errno)));
+   ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, fname, strerror(errno));
    DRETURN(EXIT_FAILURE);
 }
 

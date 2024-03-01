@@ -205,44 +205,42 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
       case PATTERNCMP:
       case HOSTNAMECMP:
       case SUBSCOPE:
-
-         sprintf(&out[strlen(out)], "%s %s(%d) ", space,
-                 lNm2Str(cp->operand.cmp.nm), cp->operand.cmp.nm);
+         snprintf(&out[strlen(out)], sizeof(out) - strlen(out),"%s %s(%d) ", space, lNm2Str(cp->operand.cmp.nm), cp->operand.cmp.nm);
 
          switch (cp->op) {
             case EQUAL:
-               sprintf(&out[strlen(out)], "==");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "==");
                break;
             case NOT_EQUAL:
-               sprintf(&out[strlen(out)], "!=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "!=");
                break;
             case LOWER_EQUAL:
-               sprintf(&out[strlen(out)], "<=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "<=");
                break;
             case LOWER:
-               sprintf(&out[strlen(out)], "<");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "<");
                break;
             case GREATER_EQUAL:
-               sprintf(&out[strlen(out)], ">=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), ">=");
                break;
             case GREATER:
-               sprintf(&out[strlen(out)], ">");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), ">");
                break;
 
             case BITMASK:
-               sprintf(&out[strlen(out)], "m=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "m=");
                break;
 
             case STRCASECMP:
-               sprintf(&out[strlen(out)], "c=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "c=");
                break;
 
             case PATTERNCMP:
-               sprintf(&out[strlen(out)], "p=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "p=");
                break;
 
             case HOSTNAMECMP:
-               sprintf(&out[strlen(out)], "h=");
+               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "h=");
                break;
 
             case SUBSCOPE:

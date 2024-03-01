@@ -556,7 +556,7 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
                if (found != nullptr) {
                   lAppendElem(found_rqs_list, lCopyElem(found));
                } else {
-                  sprintf(SGE_EVENT, MSG_RQS_NOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_RQS_NOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                   lFreeList(&found_rqs_list);
                   break;

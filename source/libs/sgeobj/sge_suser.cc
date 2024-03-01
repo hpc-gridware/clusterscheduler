@@ -187,8 +187,7 @@ void suser_decrease_job_counter(lListElem *suser)
       u_long32 jobs = lGetUlong(suser, SU_jobs);
     
       if (jobs == 0) {
-         ERROR((SGE_EVENT, MSG_SUSERCNTISALREADYZERO_S, 
-                lGetString(suser, SU_name))); 
+         ERROR(MSG_SUSERCNTISALREADYZERO_S, lGetString(suser, SU_name));
       } else {
          lAddUlong(suser, SU_jobs, -1);
       }

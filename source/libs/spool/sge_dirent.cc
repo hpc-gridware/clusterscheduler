@@ -66,7 +66,7 @@ lList *sge_get_dirents(const char *path) {
    cwd = opendir(path);
 
    if (cwd == (DIR *) 0) {
-      ERROR((SGE_EVENT, MSG_FILE_CANTOPENDIRECTORYX_SS, path, strerror(errno)));
+      ERROR(MSG_FILE_CANTOPENDIRECTORYX_SS, path, strerror(errno));
       return (nullptr);
    }
 

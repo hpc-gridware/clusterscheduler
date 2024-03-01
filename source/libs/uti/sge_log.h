@@ -65,6 +65,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 
 /* extern stringTlong SGE_EVENT; */
 #define SGE_EVENT component_get_log_buffer()
+#define SGE_EVENT_SIZE component_get_log_buffer_size()
 
 #if defined(__INSURE__)
 #   define PROFILING(x)     (sprintf x,sge_log(LOG_PROF,   SGE_EVENT,__FILE__,__LINE__)) ? 1 : 0
@@ -93,12 +94,21 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
-#   define PROFILING(x) (sge_set_message_id_output(1), \
-                        sprintf x, \
-                        sge_set_message_id_output(0), \
-                        sge_log(LOG_PROF, SGE_EVENT,__FILE__,__LINE__))
+#   define PROFILING(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   sge_set_message_id_output(1); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
+   sge_set_message_id_output(0); \
+   sge_log(LOG_PROF, SGE_EVENT, __FILE__, __LINE__); \
+}
 #else
-#   define PROFILING(x) (sprintf x, sge_log(LOG_PROF, SGE_EVENT,__FILE__,__LINE__))
+#   define PROFILING(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_PROF, log_buffer, __FILE__, __LINE__); \
+}
 #endif
 
 /****** uti/log/CRITICAL() ****************************************************
@@ -118,10 +128,21 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
-#   define CRITICAL(x) (sge_set_message_id_output(1), sprintf x, sge_set_message_id_output(0), \
-                        sge_log(LOG_CRIT, SGE_EVENT,__FILE__,__LINE__))
+#   define CRITICAL(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   sge_set_message_id_output(1); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
+   sge_set_message_id_output(0); \
+   sge_log(LOG_CRIT, SGE_EVENT, __FILE__, __LINE__); \
+}
 #else
-#   define CRITICAL(x) (sprintf x, sge_log(LOG_CRIT, SGE_EVENT,__FILE__,__LINE__))
+#   define CRITICAL(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_CRIT, log_buffer, __FILE__, __LINE__); \
+}
 #endif
 
 /****** uti/log/ERROR() *******************************************************
@@ -141,12 +162,21 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
-#   define ERROR(x) ( sge_set_message_id_output(1),                          \
-                        sprintf x,                                             \
-                        sge_set_message_id_output(0),                          \
-                        sge_log(LOG_ERR,SGE_EVENT,__FILE__,__LINE__))
+#   define ERROR(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   sge_set_message_id_output(1); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
+   sge_set_message_id_output(0); \
+   sge_log(LOG_ERR, SGE_EVENT, __FILE__, __LINE__); \
+}
 #else
-#   define ERROR(x) (sprintf x, sge_log(LOG_ERR,SGE_EVENT,__FILE__,__LINE__))
+#   define ERROR(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_ERR, log_buffer, __FILE__, __LINE__); \
+}
 #endif
 
 /****** uti/log/WARNING() ******************************************************
@@ -166,12 +196,21 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
-#   define WARNING(x) ( sge_set_message_id_output(1), \
-                        sprintf x,       \
-                        sge_set_message_id_output(0), \
-                        sge_log(LOG_WARNING,SGE_EVENT,__FILE__,__LINE__))
+#   define WARNING(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   sge_set_message_id_output(1); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
+   sge_set_message_id_output(0); \
+   sge_log(LOG_WARNING, SGE_EVENT, __FILE__, __LINE__);     \
+}
 #else
-#   define WARNING(x) (sprintf x, sge_log(LOG_WARNING,SGE_EVENT,__FILE__,__LINE__))
+#   define WARNING(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_WARNING, log_buffer, __FILE__, __LINE__); \
+}
 #endif
 
 /****** uti/log/NOTICE() ******************************************************
@@ -190,7 +229,12 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     formatstring - printf formatstring
 *     ...
 ******************************************************************************/
-#   define NOTICE(x) (sprintf x, sge_log(LOG_NOTICE, SGE_EVENT,__FILE__,__func__,__LINE__))
+#   define NOTICE(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_NOTICE, log_buffer, __FILE__, __LINE__); \
+}
 
 /****** uti/log/INFO() ********************************************************
 *  NAME
@@ -208,7 +252,12 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     formatstring - printf formatstring
 *     ...
 ******************************************************************************/
-#   define INFO(x) (sprintf x, sge_log(LOG_INFO, SGE_EVENT,__FILE__,__LINE__))
+#   define INFO(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_INFO, log_buffer, __FILE__, __LINE__); \
+}
 
 /****** uti/log/DEBUG() ******************************************************
 *  NAME
@@ -227,11 +276,23 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
-#   define DEBUG(x)  ((LOG_DEBUG <= MAX(log_state_get_log_level(), LOG_WARNING)) ? \
-                      (sge_set_message_id_output(1), sprintf x, sge_set_message_id_output(0), \
-                      sge_log(LOG_DEBUG, SGE_EVENT,__FILE__,__LINE__), 0): 0)
+#   define DEBUG(...) { \
+   if (LOG_DEBUG <= MAX(log_state_get_log_level(), LOG_WARNING)) { \
+      char *log_buffer = component_get_log_buffer(); \
+      size_t log_buffer_size = component_get_log_buffer_size(); \
+      sge_set_message_id_output(1); \
+      snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
+      sge_set_message_id_output(0); \
+      sge_log(LOG_DEBUG, SGE_EVENT,__FILE__,__LINE__); \
+   } \
+}
 #else
-#   define DEBUG(x) (sprintf x, sge_log(LOG_DEBUG,  SGE_EVENT,__FILE__,__LINE__))
+#   define DEBUG(...) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_DEBUG, log_buffer, __FILE__, __LINE__); \
+}
 #endif
 #endif
 

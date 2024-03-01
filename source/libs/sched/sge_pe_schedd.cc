@@ -76,8 +76,7 @@ int slots
    if (isdigit((int)alloc_rule[0])) {
       ret = atoi(alloc_rule);
       if (ret==0) {
-         ERROR((SGE_EVENT, MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , 
-            lGetString(pep, PE_name), alloc_rule));
+         ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
       }
    
       /* can we divide */
@@ -103,8 +102,7 @@ int slots
       DRETURN(ALLOC_RULE_ROUNDROBIN);
    }
 
-   ERROR((SGE_EVENT, MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , 
-      lGetString(pep, PE_name), alloc_rule));
+   ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
 
    DRETURN(0);
 }

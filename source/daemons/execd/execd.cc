@@ -192,7 +192,7 @@ int main(int argc, char **argv)
       
    /* Initialize path for temporary logging until we chdir to spool */
    my_pid = getpid();
-   sprintf(tmp_err_file_name,"%s." sge_U32CFormat "", TMP_ERR_FILE_EXECD, sge_u32c(my_pid));
+   snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." sge_U32CFormat "", TMP_ERR_FILE_EXECD, sge_u32c(my_pid));
    log_state_set_log_file(tmp_err_file_name);
 
    /* exit func for sge_exit() */
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
    }
 
    if ((ret=sge_occupy_first_three())>=0) {
-      CRITICAL((SGE_EVENT, MSG_FILE_REDIRECTFD_I, ret));
+      CRITICAL(MSG_FILE_REDIRECTFD_I, ret);
       sge_exit(1);
    }
 
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
          if (printed_points != 0) {
             printf("\n");
          }
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_COM_ERROR));
+         CRITICAL(SFNMAX, MSG_COM_ERROR);
          sge_exit(1);
       }
       if (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
     */
    ret_val = cl_com_set_status_func(sge_execd_application_status);
    if (ret_val != CL_RETVAL_OK) {
-      ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(ret_val)));
+      ERROR(SFNMAX, cl_get_error_text(ret_val));
    }
 
    /* test connection */
@@ -275,8 +275,8 @@ int main(int argc, char **argv)
                                                (char *)gdi3_get_act_master_host(true),
                                                (char*)prognames[QMASTER], 1, &status);
       if (ret_val != CL_RETVAL_OK) {
-         ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(ret_val)));
-         ERROR((SGE_EVENT, SFNMAX, MSG_CONF_NOCONFBG));
+         ERROR(SFNMAX, cl_get_error_text(ret_val));
+         ERROR(SFNMAX, MSG_CONF_NOCONFBG);
       }
       cl_com_free_sirm_message(&status);
    }
@@ -342,15 +342,15 @@ int main(int argc, char **argv)
     * Log a warning message if execd hasn't been started by a superuser
     */
    if (!sge_is_start_user_superuser()) {
-      WARNING((SGE_EVENT, SFNMAX, MSG_SWITCH_USER_NOT_ROOT));
+      WARNING(SFNMAX, MSG_SWITCH_USER_NOT_ROOT);
    }   
 
 #ifdef COMPILE_DC
    if (ptf_init()) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_NOSTARTPTF));
+      CRITICAL(SFNMAX, MSG_EXECD_NOSTARTPTF);
       sge_exit(1);
    }
-   INFO((SGE_EVENT, SFNMAX, MSG_EXECD_STARTPDCANDPTF));
+   INFO(SFNMAX, MSG_EXECD_STARTPDCANDPTF);
 #endif
 
    master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
    /* log if we received SIGPIPE signal */
    if (sge_sig_handler_sigpipe_received) {
        sge_sig_handler_sigpipe_received = 0;
-       INFO((SGE_EVENT, "SIGPIPE received\n"));
+       INFO("SIGPIPE received\n");
    }
 
 #if defined(LINUX)
@@ -507,7 +507,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
 
    if (alp == nullptr) {
       if (sge_last_register_error_flag == 0) {
-         WARNING((SGE_EVENT, MSG_COM_CANTREGISTER_SS, master_host?master_host:"", MSG_COM_ERROR));
+         WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", MSG_COM_ERROR);
          sge_last_register_error_flag = 1;
       }
       return_value = 1;
@@ -515,7 +515,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       const lListElem *aep = lFirst(alp);
       if (lGetUlong(aep, AN_status) != STATUS_OK) {
          if (sge_last_register_error_flag == 0) {
-            WARNING((SGE_EVENT, MSG_COM_CANTREGISTER_SS, master_host?master_host:"", lGetString(aep, AN_text)));
+            WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", lGetString(aep, AN_text));
             sge_last_register_error_flag = 1;
          }
          return_value = 1;
@@ -524,7 +524,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
  
    if (return_value == 0) {
       sge_last_register_error_flag = 0;
-      INFO((SGE_EVENT, MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:""));
+      INFO(MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:"");
       last_qmaster_registration_time = sge_get_gmt();
    }
    lFreeList(&alp);
@@ -613,7 +613,7 @@ lList *alp = nullptr;
          continue;
 
       /* oops */
-      sprintf(str, MSG_PARSE_INVALIDARG_S, *sp);
+      snprintf(str, sizeof(str), MSG_PARSE_INVALIDARG_S, *sp);
       sge_usage(EXECD, stderr);
       answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(alp);
@@ -703,9 +703,9 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
    }
    
    if (*job == nullptr) {
-      ERROR((SGE_EVENT, MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id))); 
+      ERROR(MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id));
    } else if (*ja_task == nullptr) {
-      ERROR((SGE_EVENT, MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id)));
+      ERROR(MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
    }
 
    *job = nullptr;

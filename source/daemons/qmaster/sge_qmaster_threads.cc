@@ -99,7 +99,7 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
 
    if (sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username),
                                       &gid, groupname, sizeof(groupname)) == false) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO));
+      ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
@@ -107,16 +107,16 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
    DPRINTF(("uid/username = %d/%s, gid/groupname = %d/%s\n", (int) uid, username, (int) gid, groupname));
 
    if (!manop_is_manager(username, master_manager_list)) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES));
+      ERROR(SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
 
    if (sge_qmaster_shutdown_via_signal_thread(0) == 0) {
-      INFO((SGE_EVENT, MSG_SGETEXT_KILL_SSS, username, packet->host, prognames[QMASTER]));
+      INFO(MSG_SGETEXT_KILL_SSS, username, packet->host, prognames[QMASTER]);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
-      ERROR((SGE_EVENT, MSG_SGETEXT_KILL_FAILED_SSS, username, packet->host, prognames[QMASTER]));
+      ERROR(MSG_SGETEXT_KILL_FAILED_SSS, username, packet->host, prognames[QMASTER]);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
 
@@ -182,7 +182,7 @@ sge_daemonize_qmaster() {
 
    if ((pid = fork()) != 0) {
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
+         CRITICAL(MSG_PROC_FIRSTFORKFAILED_S, strerror(errno));
       }
       exit(0); /* parent terminates */
    }
@@ -193,7 +193,7 @@ sge_daemonize_qmaster() {
 
    if ((pid = fork()) != 0) {
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
+         CRITICAL(MSG_PROC_SECONDFORKFAILED_S, strerror(errno));
       }
       exit(0); /* child 1 terminates */
    }
@@ -202,7 +202,7 @@ sge_daemonize_qmaster() {
 
    failed_fd = sge_occupy_first_three();
    if (failed_fd != -1) {
-      CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
+      CRITICAL(MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd);
       sge_exit(0);
    }
 
@@ -238,13 +238,13 @@ sge_become_admin_user(const char *admin_user) {
 
    DENTER(TOP_LAYER);
 
-   if (sge_set_admin_username(admin_user, str) == -1) {
-      CRITICAL((SGE_EVENT, SFNMAX, str));
+   if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
+      CRITICAL(SFNMAX, str);
       sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
+      CRITICAL(SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER);
       sge_exit(1);
    }
 

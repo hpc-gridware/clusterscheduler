@@ -230,8 +230,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
                      continue;
                   }
                   if (lGetSubStr(order, OQ_dest_queue, sge_dstring_get_string(&queue_name), OR_queuelist)) {
-                     WARNING((SGE_EVENT, MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)),
-                             sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name)));
+                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name));
                   }
                }
 
@@ -240,8 +239,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
                      continue;
                   }
                   if (lGetSubStr(order, OQ_dest_queue, sge_dstring_get_string(&queue_name), OR_queuelist)) {
-                     WARNING((SGE_EVENT, MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)),
-                             sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name)));
+                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name));
                   }
                }
             }

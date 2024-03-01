@@ -35,33 +35,36 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Process Element
 *
-* @todo add description
+* Used in sge_execd to keep track of all processes on the machine.
 *
-*    SGE_ULONG(PRO_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PRO_pid) - Pid
+*    The process id.
 *
-*    SGE_ULONG(PRO_utime) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PRO_utime) - User Time
+*    Number of jiffies that this process has been scheduled in user mode.
 *
-*    SGE_ULONG(PRO_stime) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PRO_stime) - System Time
+*    Number of jiffies that this process has been scheduled in kernel mode.
 *
-*    SGE_ULONG64(PRO_vsize) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(PRO_vsize) - Virtual Memory
+*    Virtual memory size in bytes.
 *
-*    SGE_LIST(PRO_groups) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(PRO_rss) - Resident Set Size
+*    Resident Set Size (physical memory) in bytes.
 *
-*    SGE_BOOL(PRO_rel) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PRO_groups) - Groups
+*    GR_Type list with all groups associated with this process.
 *
-*    SGE_BOOL(PRO_run) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PRO_rel) - Related to Grid Engine Job
+*    Flag if this process belongs to a GE job.
 *
-*    SGE_ULONG(PRO_io) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PRO_run) - Running
+*    Flag if this process is still running.
+*
+*    SGE_ULONG(PRO_io) - IO
+*    IO statistic for the running process.
 *
 */
 
@@ -70,6 +73,7 @@ enum {
    PRO_utime,
    PRO_stime,
    PRO_vsize,
+   PRO_rss,
    PRO_groups,
    PRO_rel,
    PRO_run,
@@ -81,6 +85,7 @@ LISTDEF(PRO_Type)
    SGE_ULONG(PRO_utime, CULL_DEFAULT)
    SGE_ULONG(PRO_stime, CULL_DEFAULT)
    SGE_ULONG64(PRO_vsize, CULL_DEFAULT)
+   SGE_ULONG64(PRO_rss, CULL_DEFAULT)
    SGE_LIST(PRO_groups, GR_Type, CULL_DEFAULT)
    SGE_BOOL(PRO_rel, CULL_DEFAULT)
    SGE_BOOL(PRO_run, CULL_DEFAULT)
@@ -92,6 +97,7 @@ NAMEDEF(PRON)
    NAME("PRO_utime")
    NAME("PRO_stime")
    NAME("PRO_vsize")
+   NAME("PRO_rss")
    NAME("PRO_groups")
    NAME("PRO_rel")
    NAME("PRO_run")

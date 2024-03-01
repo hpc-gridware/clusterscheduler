@@ -251,7 +251,7 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
    int i=0;
    DENTER(TOP_LAYER);
    if (option_struct->trigger_option_count > 0) {
-      INFO((SGE_EVENT, "trigger for event " SFN "\n", qevent_get_event_name(qevent_event) ));
+      INFO("trigger for event " SFN "\n", qevent_get_event_name(qevent_event) );
       for (i=0;i<option_struct->trigger_option_count;i++) {
          if ( (option_struct->trigger_option_events)[i] == qevent_event ) {
             qevent_start_trigger_script(qevent_event ,(option_struct->trigger_option_scripts)[i], event);
@@ -277,19 +277,19 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
 
    /* test if script is executable and valid file */
    if (!sge_is_file(script_file)) {
-      ERROR((SGE_EVENT, "no script file: " SFQ "\n", script_file));
+      ERROR("no script file: " SFQ "\n", script_file);
       DRETURN_VOID;
    }
 
    /* is file executable ? */
    if (!sge_is_executable(script_file)) {  
-      ERROR((SGE_EVENT, "file not executable: " SFQ "\n", script_file));
+      ERROR("file not executable: " SFQ "\n", script_file);
       DRETURN_VOID;
    } 
 
    pid = fork();
    if (pid < 0) {
-      ERROR((SGE_EVENT, "fork() error\n"));
+      ERROR("fork() error\n");
       DRETURN_VOID;
    }
 
@@ -301,17 +301,17 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
          exit_status = status;
 
       if ( WEXITSTATUS(exit_status) == 0 ) {
-         INFO((SGE_EVENT,"exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status))));
+         INFO("exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status)));
       } else {
-         ERROR((SGE_EVENT,"exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status))));
+         ERROR("exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status)));
       }
       DRETURN_VOID;
    } else {
       const char *basename = sge_basename( script_file, '/' );
       /*      SETPGRP;  */
       /*      sge_close_all_fds(nullptr); */
-      sprintf(buffer  ,sge_U32CFormat,sge_u32c(jobid));
-      sprintf(buffer2 ,sge_U32CFormat,sge_u32c(taskid)); 
+      snprintf(buffer, sizeof(buffer), sge_U32CFormat,sge_u32c(jobid));
+      snprintf(buffer2, sizeof(buffer2), sge_U32CFormat,sge_u32c(taskid));
       execlp(script_file, basename, event_name, buffer, buffer2, (char *)0);
    }
    exit(1);
@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
 
    /* are there command line parsing errors ? */
    if (sge_dstring_get_string(enabled_options.error_message)) {
-      ERROR((SGE_EVENT, "%s", sge_dstring_get_string(enabled_options.error_message) ));
+      ERROR("%s", sge_dstring_get_string(enabled_options.error_message) );
       qevent_show_usage();
       sge_dstring_free(enabled_options.error_message);
       sge_exit(1);
@@ -523,9 +523,7 @@ int main(int argc, char *argv[])
 
       /* put out information about -trigger option */
       for (i=0;i<enabled_options.trigger_option_count;i++) {
-         INFO((SGE_EVENT, "trigger script for %s events: %s\n",
-                         qevent_get_event_name((enabled_options.trigger_option_events)[i]), 
-                         (enabled_options.trigger_option_scripts)[i]));
+         INFO("trigger script for %s events: %s\n", qevent_get_event_name((enabled_options.trigger_option_events)[i]), (enabled_options.trigger_option_scripts)[i]);
          switch((enabled_options.trigger_option_events)[i]) {
             case QEVENT_JB_END:
                   
@@ -589,7 +587,7 @@ int main(int argc, char *argv[])
    }
 
 
-   ERROR((SGE_EVENT, "no option selected\n" ));
+   ERROR("no option selected\n" );
    qevent_show_usage();
    sge_dstring_free(enabled_options.error_message);
    sge_prof_cleanup();

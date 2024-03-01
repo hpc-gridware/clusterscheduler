@@ -209,8 +209,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
 
       ret = mailrec_parse(&lp_mail, administrator_mail);
       if (ret) {
-         ERROR((SGE_EVENT, MSG_MAIL_PARSE_S,
-            (administrator_mail ? administrator_mail : MSG_NULL)));
+         ERROR(MSG_MAIL_PARSE_S, (administrator_mail ? administrator_mail : MSG_NULL));
          sge_free(&administrator_mail);
          DRETURN_VOID;
       }

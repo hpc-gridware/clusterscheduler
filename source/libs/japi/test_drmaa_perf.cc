@@ -390,54 +390,54 @@ static drmaa_job_template_t *create_job_template(const char *job_path,
 
       if (!strcmp(scenario, "queue")) {
          if (!strcmp(site_b, "none"))
-            sprintf(buffer, "-P %s -l APP%d=1 -q all.q", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -q all.q", project, i);
          else if (!strcmp(site_b, "hostgroup"))
-            sprintf(buffer, "-P %s -l APP%d=1 -q all.q@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -q all.q@@site_b", project, i);
          else if (!strcmp(site_b, "resource"))
-            sprintf(buffer, "-P %s -l APP%d=1,site=b -q all.q", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,site=b -q all.q", project, i);
          else if (!strcmp(site_b, "softresource"))
-            sprintf(buffer, "-P %s -l APP%d=1 -q all.q -soft -l site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -q all.q -soft -l site=b", project, i);
          else /* "softhostgroup" */
-            sprintf(buffer, "-P %s -l APP%d=1 -q all.q -soft -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -q all.q -soft -q *@@site_b", project, i);
 
       } else if (!strcmp(scenario, "type")) {
          if (!strcmp(site_b, "none"))
-            sprintf(buffer, "-P %s -l APP%d=1,type=all", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,type=all", project, i);
          else if (!strcmp(site_b, "hostgroup"))
-            sprintf(buffer, "-P %s -l APP%d=1,type=all -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,type=all -q *@@site_b", project, i);
          else if (!strcmp(site_b, "resource"))
-            sprintf(buffer, "-P %s -l APP%d=1,type=all,site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,type=all,site=b", project, i);
          else if (!strcmp(site_b, "softresource"))
-            sprintf(buffer, "-P %s -l APP%d=1,type=all -soft -l site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,type=all -soft -l site=b", project, i);
          else /* "softhostgroup" */
-            sprintf(buffer, "-P %s -l APP%d=1,type=all -soft -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,type=all -soft -q *@@site_b", project, i);
 
       } else if (!strcmp(scenario, "number")) {
          if (!strcmp(site_b, "none"))
-            sprintf(buffer, "-P %s -l APP%d=1,number=24", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,number=24", project, i);
          else if (!strcmp(site_b, "hostgroup"))
-            sprintf(buffer, "-P %s -l APP%d=1,number=24 -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,number=24 -q *@@site_b", project, i);
          else if (!strcmp(site_b, "resource"))
-            sprintf(buffer, "-P %s -l APP%d=1,number=24,site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,number=24,site=b", project, i);
          else if (!strcmp(site_b, "softresource"))
-            sprintf(buffer, "-P %s -l APP%d=1,number=24 -soft -l site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,number=24 -soft -l site=b", project, i);
          else /* "softhostgroup" */
-            sprintf(buffer, "-P %s -l APP%d=1,number=24 -soft -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,number=24 -soft -q *@@site_b", project, i);
          
       } else if (!strcmp(scenario, "pe")) {
          if (!strcmp(site_b, "none"))
-            sprintf(buffer, "-P %s -l APP%d=1 -pe pe1 1", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -pe pe1 1", project, i);
          else if (!strcmp(site_b, "hostgroup"))
-            sprintf(buffer, "-P %s -l APP%d=1 -q *@@site_b -pe pe1 1", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -q *@@site_b -pe pe1 1", project, i);
          else if (!strcmp(site_b, "resource"))
-            sprintf(buffer, "-P %s -l APP%d=1,site=b -pe pe1 1", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1,site=b -pe pe1 1", project, i);
          else if (!strcmp(site_b, "softresource"))
-            sprintf(buffer, "-P %s -l APP%d=1 -pe pe1 1 -soft -l site=b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -pe pe1 1 -soft -l site=b", project, i);
          else /* "softhostgroup" */
-            sprintf(buffer, "-P %s -l APP%d=1 -pe pe1 1 -soft -q *@@site_b", project, i);
+            snprintf(buffer, sizeof(buffer), "-P %s -l APP%d=1 -pe pe1 1 -soft -q *@@site_b", project, i);
          
       } else { /* "none" */ 
-         sprintf(buffer, "-l APP%d=1", i);
+         snprintf(buffer, sizeof(buffer), "-l APP%d=1", i);
       }
 
       if (native_spec) {

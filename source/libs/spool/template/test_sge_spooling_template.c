@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
    spool_flatfile_align_list(&answer_list, queue_list, fields);
    printf("field widths for list output is as follows:\n");
    
-   sprintf(format, "%%%ds: %%d\n", width);
+   snprintf(format, sizeof(format), "%%%ds: %%d\n", width);
 
    for(i = 0; fields[i].nm != NoName; i++) {
       printf(format, lNm2Str(fields[i].nm), fields[i].width);

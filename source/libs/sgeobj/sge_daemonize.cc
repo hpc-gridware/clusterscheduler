@@ -117,12 +117,12 @@ bool sge_daemonize_prepare() {
 
    /* create pipe */
    if (pipe(fd_pipe) < 0) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_CANT_PIPE));
+      CRITICAL(SFNMAX, MSG_UTI_DAEMONIZE_CANT_PIPE);
       DRETURN(false);
    }
 
    if (fcntl(fd_pipe[0], F_SETFL, O_NONBLOCK) != 0) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_CANT_FCNTL_PIPE));
+      CRITICAL(SFNMAX, MSG_UTI_DAEMONIZE_CANT_FCNTL_PIPE);
       DRETURN(false);
    }
 
@@ -140,7 +140,7 @@ bool sge_daemonize_prepare() {
    /* first fork */
    pid = fork();
    if (pid < 0) {
-      CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
+      CRITICAL(MSG_PROC_FIRSTFORKFAILED_S, strerror(errno));
       exit(1);
    }
 
@@ -180,13 +180,13 @@ bool sge_daemonize_prepare() {
 
       switch (exit_status) {
          case SGE_DEAMONIZE_OK:
-            INFO((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_OK));
+            INFO(SFNMAX, MSG_UTI_DAEMONIZE_OK);
             break;
          case SGE_DAEMONIZE_DEAD_CHILD:
-            WARNING((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_DEAD_CHILD));
+            WARNING(SFNMAX, MSG_UTI_DAEMONIZE_DEAD_CHILD);
             break;
          case SGE_DAEMONIZE_TIMEOUT:
-            WARNING((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_TIMEOUT));
+            WARNING(SFNMAX, MSG_UTI_DAEMONIZE_TIMEOUT);
             break;
          default:
             break;
@@ -209,7 +209,7 @@ bool sge_daemonize_prepare() {
    /* second fork */
    pid = fork();
    if (pid < 0) {
-      CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
+      CRITICAL(MSG_PROC_SECONDFORKFAILED_S, strerror(errno));
       exit(1);
    }
    if (pid > 0) {
@@ -270,7 +270,7 @@ sge_daemonize_finalize() {
    snprintf(tmp_buffer, 4, "%3d", SGE_DEAMONIZE_OK);
    if (write(fd_pipe[1], tmp_buffer, 4) != 4) {
       dstring ds = DSTRING_INIT;
-      CRITICAL((SGE_EVENT, MSG_FILE_CANNOT_WRITE_SS, "fd_pipe[1]", sge_strerror(errno, &ds)));
+      CRITICAL(MSG_FILE_CANNOT_WRITE_SS, "fd_pipe[1]", sge_strerror(errno, &ds));
       sge_dstring_free(&ds);
    }
 
@@ -288,7 +288,7 @@ sge_daemonize_finalize() {
    /* new descriptors acquired for stdin, stdout, stderr should be 0,1,2 */
    failed_fd = sge_occupy_first_three();
    if (failed_fd != -1) {
-      CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
+      CRITICAL(MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd);
       sge_exit(0);
    }
 #endif
@@ -344,7 +344,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
 
    if ((pid = fork()) != 0) {             /* 1st child not pgrp leader */
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
+         CRITICAL(MSG_PROC_FIRSTFORKFAILED_S, strerror(errno));
       }
       exit(0);
    }
@@ -359,7 +359,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
 
    if ((pid = fork()) != 0) {
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
+         CRITICAL(MSG_PROC_SECONDFORKFAILED_S, strerror(errno));
       }
       exit(0);
    }
@@ -370,7 +370,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
    /* new descriptors acquired for stdin, stdout, stderr should be 0,1,2 */
    failed_fd = sge_occupy_first_three();
    if (failed_fd != -1) {
-      CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
+      CRITICAL(MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd);
       sge_exit(0);
    }
 

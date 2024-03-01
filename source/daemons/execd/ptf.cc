@@ -178,8 +178,6 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid);
 static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri);
 
-static lList *ptf_build_usage_list(const char *name, lList *old_usage_list);
-
 static lListElem *ptf_get_job(u_long job_id);
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -260,7 +258,7 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 *     ptf_build_usage_list() -- create a new usage list from an existing list 
 *
 *  SYNOPSIS
-*     static lList* ptf_build_usage_list(char *name, lList *old_usage_list) 
+*     static lList* ptf_build_usage_list(char *name)
 *
 *  FUNCTION
 *     This method creates a new usage list or makes a copy of a old
@@ -268,60 +266,64 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 *
 *  INPUTS
 *     char *name            - name of the new list 
-*     lList *old_usage_list - old usage list or nullptr
 *
 *  RESULT
 *     static lList* - copy of "old_usage_list" or a real new one 
 ******************************************************************************/
-static lList *ptf_build_usage_list(const char *name, lList *old_usage_list)
+static lList *ptf_build_usage_list(const char *name)
 {
    lList *usage_list;
    lListElem *usage;
 
    DENTER(TOP_LAYER);
 
-   if (old_usage_list) {
-      usage_list = lCopyList(name, old_usage_list);
-      for_each_rw(usage, usage_list) {
-         lSetDouble(usage, UA_value, 0);
-      }
-   } else {
-      usage_list = lCreateList(name, UA_Type);
+   usage_list = lCreateList(name, UA_Type);
 
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_IO);
-      lSetDouble(usage, UA_value, 0);
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_IO);
+   lSetDouble(usage, UA_value, 0);
+   lAppendElem(usage_list, usage);
 
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_IOW);
-      lSetDouble(usage, UA_value, 0);
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_IOW);
+   lSetDouble(usage, UA_value, 0);
+   lAppendElem(usage_list, usage);
 
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_MEM);
-      lSetDouble(usage, UA_value, 0);
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_MEM);
+   lSetDouble(usage, UA_value, 0);
+   lAppendElem(usage_list, usage);
 
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_CPU);
-      lSetDouble(usage, UA_value, 0);
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_CPU);
+   lSetDouble(usage, UA_value, 0);
+   lAppendElem(usage_list, usage);
 
 #if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_VMEM);
-      lSetDouble(usage, UA_value, 0);
-      DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_VMEM));
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_VMEM);
+   lSetDouble(usage, UA_value, 0);
+   DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_VMEM));
+   lAppendElem(usage_list, usage);
 
-      usage = lCreateElem(UA_Type);
-      lSetString(usage, UA_name, USAGE_ATTR_MAXVMEM);
-      lSetDouble(usage, UA_value, 0);
-      DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_MAXVMEM));
-      lAppendElem(usage_list, usage);
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_MAXVMEM);
+   lSetDouble(usage, UA_value, 0);
+   DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_MAXVMEM));
+   lAppendElem(usage_list, usage);
+
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_RSS);
+   lSetDouble(usage, UA_value, 0);
+   DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_RSS));
+   lAppendElem(usage_list, usage);
+
+   usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, USAGE_ATTR_MAXRSS);
+   lSetDouble(usage, UA_value, 0);
+   DPRINTF(("adding usage attribute %s\n", USAGE_ATTR_MAXRSS));
+   lAppendElem(usage_list, usage);
 #endif
-   }
 
    DRETURN(usage_list);
 }
@@ -472,9 +474,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    for_each_ep(pid, lGetList(osjob, JO_pid_list)) {
       if (setpriority(PRIO_PROCESS, lGetUlong(pid, JP_pid), pri) < 0 &&
           errno != ESRCH) {
-         ERROR((SGE_EVENT, MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS,
-                sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)),
-                strerror(errno)));
+         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)), strerror(errno));
       } else {
          DPRINTF(("Changing Priority of process " sge_u32 " to " sge_u32 "\n",
                   sge_u32c(lGetUlong(pid, JP_pid)), sge_u32c((u_long32) pri)));
@@ -558,7 +558,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
 #endif
 
    if (!where) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_WHERE_FAILEDTOBUILDWHERECONDITION));
+      CRITICAL(SFNMAX, MSG_WHERE_FAILEDTOBUILDWHERECONDITION);
       DRETURN(nullptr);
    }
 
@@ -640,7 +640,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
          lSetUlong(osjob, JO_ja_task_ID, jataskid);
          lAppendElem(osjoblist, osjob);
          lSetList(osjob, JO_usage_list,
-                  ptf_build_usage_list("usagelist", nullptr));
+                  ptf_build_usage_list("usagelist"));
          ptf_set_osjobid(osjob, os_job_id);
       }
       if (task_id_str) {
@@ -722,13 +722,12 @@ static void ptf_get_usage_from_data_collector(void)
 
             /* fill in job completion state */
             lSetUlong(osjob, JO_state, jobs->jd_refcnt ?
-                      (job_state & ~JL_JOB_COMPLETE) : (job_state |
-                                                        JL_JOB_COMPLETE));
+                      (job_state & ~JL_JOB_COMPLETE) : (job_state | JL_JOB_COMPLETE));
 
             /* fill in usage for job */
             usage_list = lGetListRW(osjob, JO_usage_list);
             if (!usage_list) {
-               usage_list = ptf_build_usage_list("usagelist", nullptr);
+               usage_list = ptf_build_usage_list("usagelist");
                lSetList(osjob, JO_usage_list, usage_list);
             }
 
@@ -757,14 +756,20 @@ static void ptf_get_usage_from_data_collector(void)
                           jobs->jd_rwtime_c + jobs->jd_rwtime_a);
             }
 
-            /* set vmem usage */
+            /* set vmem and maxvmem usage */
             if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_VMEM))) {
                lSetDouble(usage, UA_value, jobs->jd_vmem);
             }
-
-            /* set himem usage */
             if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXVMEM))) {
                lSetDouble(usage, UA_value, jobs->jd_himem);
+            }
+
+            /* set rss and maxrss usage */
+            if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS))) {
+               lSetDouble(usage, UA_value, jobs->jd_rss);
+            }
+            if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS))) {
+               lSetDouble(usage, UA_value, jobs->jd_maxrss);
             }
 
             /* build new pid list */
@@ -877,7 +882,7 @@ static void ptf_get_usage_from_data_collector(void)
 
       usage_list = lGetList(osjob, JO_usage_list);
       if (!usage_list) {
-         usage_list = ptf_build_usage_list("usagelist", nullptr);
+         usage_list = ptf_build_usage_list("usagelist");
          lSetList(osjob, JO_usage_list, usage_list);
       }
 
@@ -1119,7 +1124,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
       pri_range = pri_min - pri_max;
    
       log_state_set_log_level(LOG_INFO);   
-      INFO((SGE_EVENT, MSG_PRIO_PTFMINMAX_II, (int) pri_max, (int) pri_min));
+      INFO(MSG_PRIO_PTFMINMAX_II, (int) pri_max, (int) pri_min);
       log_state_set_log_level(old_ll);   
    }
 
@@ -1514,7 +1519,7 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
 int ptf_get_usage(lList **job_usage_list)
 {
    lList *job_list, *temp_usage_list;
-   lListElem *job, *osjob;
+   const lListElem *job, *osjob;
    lEnumeration *what;
 
    DENTER(TOP_LAYER);
@@ -1523,11 +1528,10 @@ int ptf_get_usage(lList **job_usage_list)
 
    temp_usage_list = lCreateList("PtfJobUsageList", JB_Type);
    job_list = ptf_jobs;
-   for_each_rw(job, job_list) {
+   for_each_ep(job, job_list) {
       lListElem *tmp_job = nullptr;
       u_long32 job_id = lGetUlong(job, JL_job_ID);
-
-      for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
+      for_each_ep(osjob, lGetList(job, JL_OS_job_list)) {
          lListElem *tmp_ja_task;
          lListElem *tmp_pe_task;
          u_long32 ja_task_id = lGetUlong(osjob, JO_ja_task_ID);
@@ -1592,7 +1596,7 @@ int ptf_init(void)
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    if (getuid() == 0) {
       if (setpriority(PRIO_PROCESS, getpid(), PTF_MAX_PRIORITY) < 0) {
-         ERROR((SGE_EVENT, MSG_PRIO_SETPRIOFAILED_S, strerror(errno)));
+         ERROR(MSG_PRIO_SETPRIOFAILED_S, strerror(errno));
       }
    }
 #endif

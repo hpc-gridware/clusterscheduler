@@ -567,7 +567,7 @@ static char *get_fmri(void)
 {
  DENTER(TOP_LAYER);
  if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
-     ERROR((SGE_EVENT, MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()"));
+     ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()");
  }
  DPRINTF(("get_fmri() -> useSMF=%d, FMRI=%s\n",
           useSMF, (FMRI==nullptr) ? "nullptr" : FMRI));
@@ -621,7 +621,7 @@ static void init_use_smf(void)
              /* File does not exist - no SMF */
              useSMF = 0;
          } else {
-             ERROR((SGE_EVENT, "Repository stat call failed: %s", strerror(errno)));
+             ERROR("Repository stat call failed: %s", strerror(errno));
              useSMF = 0;
              /* What now disable queues or just disable SMF ? */
          }
@@ -664,7 +664,7 @@ int sge_smf_used(void)
 {
  DENTER(TOP_LAYER);
  if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
-     ERROR((SGE_EVENT, MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()"));
+     ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()");
  }
  DPRINTF(("sge_smf_used() -> useSMF=%d\n", useSMF));
  DRETURN(useSMF);
@@ -959,7 +959,7 @@ void sge_smf_temporary_disable_instance(void)
  int change_user = 1;
  DENTER(TOP_LAYER);
  if (once_libscf_init() != 0) {
-     ERROR((SGE_EVENT, MSG_SMF_LOAD_LIBSCF_FAILED_S, "sge_smf_temporary_disable_instance()"));
+     ERROR(MSG_SMF_LOAD_LIBSCF_FAILED_S, "sge_smf_temporary_disable_instance()");
      DRETURN_VOID;
  }
  /* We need to be root */
@@ -974,8 +974,7 @@ void sge_smf_temporary_disable_instance(void)
     seteuid(old_euid);
  }
  if (ret != 0 ) {
-     ERROR((SGE_EVENT, MSG_SMF_DISABLE_FAILED_SSUU,
-            FMRI,shared_scf_func__scf_strerror(shared_scf_func__scf_error()), geteuid(), getuid()));
+     ERROR(MSG_SMF_DISABLE_FAILED_SSUU, FMRI,shared_scf_func__scf_strerror(shared_scf_func__scf_error()), geteuid(), getuid());
      DRETURN_VOID;
  }
  DPRINTF(("Service %s temporary disabled.\n", FMRI));
@@ -1050,7 +1049,7 @@ char *sge_smf_get_instance_next_state()
  }
 
  if ((ret = strdup(state_str)) == nullptr) {
-     ERROR((SGE_EVENT, "Out of memory"));
+     ERROR("Out of memory");
      DRETURN(nullptr);
  }
 

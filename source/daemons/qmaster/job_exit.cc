@@ -119,7 +119,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
    queueep = cqueue_list_locate_qinstance(master_cqueue_list, qname);
    if (queueep == nullptr) {
-      ERROR((SGE_EVENT, MSG_JOB_WRITEJFINISH_S, qname));
+      ERROR(MSG_JOB_WRITEJFINISH_S, qname);
    }
 
    sge_job_remove_enforce_limit_trigger(jobid, jataskid);
@@ -130,13 +130,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    }
 
    if (failed) {        /* a problem occured */
-      WARNING((SGE_EVENT, MSG_JOB_FAILEDONHOST_UUSSSS, sge_u32c(jobid),
-              sge_u32c(jataskid),
-              hostname,
-              general_failure ? MSG_GENERAL : "",
-              get_sstate_description(failed), err_str));
+      WARNING(MSG_JOB_FAILEDONHOST_UUSSSS, sge_u32c(jobid), sge_u32c(jataskid), hostname, general_failure ? MSG_GENERAL : "", get_sstate_description(failed), err_str);
    } else {
-      INFO((SGE_EVENT, MSG_JOB_JFINISH_UUS, sge_u32c(jobid), sge_u32c(jataskid), hostname));
+      INFO(MSG_JOB_JFINISH_UUS, sge_u32c(jobid), sge_u32c(jataskid), hostname);
    }
 
    /*-------------------------------------------------*/
@@ -144,7 +140,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    /* test if this job is in state JRUNNING or JTRANSFERING */
    if (lGetUlong(jatep, JAT_status) != JRUNNING &&
        lGetUlong(jatep, JAT_status) != JTRANSFERING) {
-      ERROR((SGE_EVENT, MSG_JOB_JEXITNOTRUN_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(jataskid)));
+      ERROR(MSG_JOB_JEXITNOTRUN_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(jataskid));
       DRETURN_VOID;
    }
 
@@ -305,10 +301,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
                   sge_qmaster_qinstance_state_set_error(qinstance, true);
 
-                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, lGetString(qinstance, QU_qname),
-                                      sge_u32c(jobid), host);
-                  qinstance_message_add(qinstance, QI_ERROR, sge_dstring_get_string(&error));
-                  ERROR((SGE_EVENT, SFNMAX, sge_dstring_get_string(&error)));
+                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, lGetString(qinstance, QU_qname), sge_u32c(jobid), host);
+                  qinstance_message_add(qinstance, QI_ERROR, sge_dstring_get_string(&error)); 
+                  ERROR(SFNMAX, sge_dstring_get_string(&error));
                   sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
                                   lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, true);
                }
@@ -329,7 +324,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          /* general error -> this queue cant run any job */
          sge_qmaster_qinstance_state_set_error(queueep, true);
          qinstance_message_add(queueep, QI_ERROR, sge_dstring_get_string(&error));
-         ERROR((SGE_EVENT, SFNMAX, sge_dstring_get_string(&error)));
+         ERROR(SFNMAX, sge_dstring_get_string(&error));
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(queueep, QU_qname),
                          lGetHost(queueep, QU_qhostname), nullptr, queueep, nullptr, nullptr, true, true);
          sge_dstring_free(&error);

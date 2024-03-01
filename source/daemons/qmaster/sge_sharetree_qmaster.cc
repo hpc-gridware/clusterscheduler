@@ -86,7 +86,7 @@ sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
 
    /* do some checks */
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -134,11 +134,9 @@ sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
    }
 
    if (adding) {
-      INFO((SGE_EVENT, MSG_STREE_ADDSTREE_SSII,
-              ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children)));
+      INFO(MSG_STREE_ADDSTREE_SSII, ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children));
    } else {
-      INFO((SGE_EVENT, MSG_STREE_MODSTREE_SSII,
-              ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children)));
+      INFO(MSG_STREE_MODSTREE_SSII, ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children));
    }
 
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -156,7 +154,7 @@ sge_del_sharetree(lList **lpp, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!*lpp || !lFirst(*lpp)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_S, MSG_OBJ_SHARETREE));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_S, MSG_OBJ_SHARETREE);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -167,7 +165,7 @@ sge_del_sharetree(lList **lpp, lList **alpp, char *ruser, char *rhost) {
 
    lFreeList(lpp);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDLIST_SSS, ruser, rhost, MSG_OBJ_SHARETREE));
+   INFO(MSG_SGETEXT_REMOVEDLIST_SSS, ruser, rhost, MSG_OBJ_SHARETREE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
@@ -205,8 +203,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {
-      ERROR((SGE_EVENT, MSG_STREE_NOVALIDNODEREF_U,
-              sge_u32c(lGetUlong(node, STN_id))));
+      ERROR(MSG_STREE_NOVALIDNODEREF_U, sge_u32c(lGetUlong(node, STN_id)));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
@@ -220,14 +217,14 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* check for sub-projects (not allowed) */
          if (project) {
-            ERROR((SGE_EVENT, MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name)));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* check for projects appearing more than once */
          if (lGetElemStr(*found, STN_name, name)) {
-            ERROR((SGE_EVENT, MSG_STREE_PRJTWICE_S, name));
+            ERROR(MSG_STREE_PRJTWICE_S, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -242,7 +239,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* check for user appearing as non-leaf node */
       } else if (user_list_locate(user_list, name)) {
-         ERROR((SGE_EVENT, MSG_STREE_USERNONLEAF_S, name));
+         ERROR(MSG_STREE_USERNONLEAF_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
@@ -253,7 +250,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
             const char *cn = lGetString(child, STN_name);
             const char *rn = lGetString(remaining, STN_name);
             if (cn == nullptr || rn == nullptr) {
-               ERROR((SGE_EVENT, MSG_GDI_KEYSTR_NULL_S, "STN_name"));
+               ERROR(MSG_GDI_KEYSTR_NULL_S, "STN_name");
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
@@ -263,8 +260,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
                DRETURN(-1);
             }
             if (!strcmp(cn, rn)) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_FOUND_UP_TWICE_SS,
-                       cn, lGetString(node, STN_name)));
+               ERROR(MSG_SGETEXT_FOUND_UP_TWICE_SS, cn, lGetString(node, STN_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
@@ -305,7 +301,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* check for sub-projects */
          if (prj_list_locate(project_list, name)) {
-            ERROR((SGE_EVENT, MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name)));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -313,14 +309,14 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          /* leaf nodes of project sub-trees must be users */
          if (!user_list_locate(user_list, name) &&
              strcmp(name, "default")) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USER, name));
+            ERROR(MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USER, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* make sure this user is in the project sub-tree once */
          if (lGetElemStr(*found, STN_name, name)) {
-            ERROR((SGE_EVENT, MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, lGetString(project, PR_name)));
+            ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, lGetString(project, PR_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -334,8 +330,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
             objname = MSG_JOB_PROJECT;
 
             if (prj_list_locate(project_list, name) == nullptr) {
-               ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS,
-                       MSG_OBJ_USERPRJ, name));
+               ERROR(MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USERPRJ, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(-1);
             }
@@ -344,7 +339,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          /* make sure this user or project is in the non�project sub-tree 
             portion of the share tree only once */
          if (lGetElemStr(*found, STN_name, name)) {
-            ERROR((SGE_EVENT, MSG_STREE_USERPRJTWICE_SS, objname, name));
+            ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -386,8 +381,7 @@ update_sharetree(lList *dst, const lList *src) {
    dnode = lFirstRW(dst);
    snode = lFirst(src);
    if ((dnode != nullptr) != (snode != nullptr)) {
-      ERROR((SGE_EVENT, MSG_STREE_QMASTERSORCETREE_SS,
-              snode ? "" : MSG_STREE_NOPLUSSPACE, dnode ? "" : MSG_STREE_NOPLUSSPACE));
+      ERROR(MSG_STREE_QMASTERSORCETREE_SS, snode ? "" : MSG_STREE_NOPLUSSPACE, dnode ? "" : MSG_STREE_NOPLUSSPACE);
       depth = 0;
       DRETURN(-1);
    }
@@ -399,7 +393,7 @@ update_sharetree(lList *dst, const lList *src) {
       /* ensure STN_version of both root nodes are identically */
 
       if (dnode && (dv = lGetUlong(dnode, STN_version)) != (sv = lGetUlong(snode, STN_version))) {
-         ERROR((SGE_EVENT, MSG_STREE_VERSIONMISMATCH_II, dv, sv));
+         ERROR(MSG_STREE_VERSIONMISMATCH_II, dv, sv);
          depth = 0;
          DRETURN(-1);
       }
@@ -414,7 +408,7 @@ update_sharetree(lList *dst, const lList *src) {
    for_each_ep(snode, src) {
       s_name = lGetString(snode, STN_name);
       if (!(dnode = lGetElemStrRW(dst, STN_name, s_name))) {
-         ERROR((SGE_EVENT, MSG_STREE_MISSINGNODE_S, s_name));
+         ERROR(MSG_STREE_MISSINGNODE_S, s_name);
          depth = 0;
          DRETURN(-1);
       }

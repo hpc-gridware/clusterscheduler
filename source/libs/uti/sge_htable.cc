@@ -155,8 +155,7 @@ static void sge_htable_resize(htable ht, int grow) {
 #ifdef SGE_USE_PROFILING
    if(prof_is_active(SGE_PROF_HT_RESIZE) && log_state_get_log_level() >= LOG_DEBUG) {
       struct tms t_buf;
-      DEBUG((SGE_EVENT, "hash stats before resizing: %s\n", 
-               sge_htable_statistics(ht, &buffer_wrapper)));
+      DEBUG("hash stats before resizing: %s\n", sge_htable_statistics(ht, &buffer_wrapper));
       start = times(&t_buf);
    }
 #endif
@@ -188,8 +187,8 @@ static void sge_htable_resize(htable ht, int grow) {
 #ifdef SGE_USE_PROFILING
    if(prof_is_active(SGE_PROF_HT_RESIZE) && log_state_get_log_level() >= LOG_DEBUG) {
       struct tms t_buf;
-      DEBUG((SGE_EVENT, "resizing of hash table took %.3fs\n", (times(&t_buf) - start) * 1.0 / sysconf(_SC_CLK_TCK)));
-      DEBUG((SGE_EVENT, "hash stats after resizing: %s\n", sge_htable_statistics(ht, &buffer_wrapper)));
+      DEBUG("resizing of hash table took %.3fs\n", (times(&t_buf) - start) * 1.0 / sysconf(_SC_CLK_TCK));
+      DEBUG("hash stats after resizing: %s\n", sge_htable_statistics(ht, &buffer_wrapper));
    }
 #endif
 

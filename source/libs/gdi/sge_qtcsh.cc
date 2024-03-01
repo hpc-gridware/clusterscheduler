@@ -72,10 +72,10 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    const char* cell_root = bootstrap_get_cell_root();
 
    /* cell global settings */
-   sprintf(fname, "%s/common/qtask", cell_root);
+   snprintf(fname, sizeof(fname), "%s/common/qtask", cell_root);
 
    if (!(fp = fopen(fname, "r")) && errno != ENOENT) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SGETEXT_CANT_OPEN_SS, fname, strerror(errno)));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANT_OPEN_SS, fname, strerror(errno));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       (*ostream)("%s", SGE_EVENT);
       goto Error;
@@ -105,21 +105,21 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    
    /* user settings */
    if (pwd == nullptr) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_USER_INVALIDNAMEX_S , user_name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_USER_INVALIDNAMEX_S , user_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       (*ostream)("%s", SGE_EVENT);
       goto Error;
    }
    if (!pwd->pw_dir) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_USER_NOHOMEDIRFORUSERX_S , user_name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_USER_NOHOMEDIRFORUSERX_S , user_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       (*ostream)("%s", SGE_EVENT);
       goto Error;
    }
-   sprintf(fname, "%s/.qtask", pwd->pw_dir);
+   snprintf(fname, sizeof(fname), "%s/.qtask", pwd->pw_dir);
    
    if (!(fp = fopen(fname, "r")) && errno != ENOENT) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SGETEXT_CANT_OPEN_SS, fname, strerror(errno)));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANT_OPEN_SS, fname, strerror(errno));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       (*ostream)("%s", SGE_EVENT);
       goto Error;

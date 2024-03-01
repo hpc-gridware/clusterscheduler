@@ -532,7 +532,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
          map[num_allocated_queues].procs = 0;
          map[num_allocated_queues].host_name = nullptr;
 
-         sprintf(id, sge_U32CFormat"." sge_U32CFormat, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));
+         snprintf(id, sizeof(id), sge_U32CFormat"." sge_U32CFormat, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));
 
          sge_ssi_job_start(evc_context, id, pe_name, map);
 

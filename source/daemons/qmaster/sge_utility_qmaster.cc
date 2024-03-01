@@ -105,14 +105,14 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, cons
 
          /* force use of absolut pathes */
          if (script[0] != '/') {
-            ERROR((SGE_EVENT, MSG_GDI_APATH_S, attr_name));
+            ERROR(MSG_GDI_APATH_S, attr_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
 
          /* ensure that variables are valid */
          if (replace_params(script, nullptr, 0, variables)) {
-            ERROR((SGE_EVENT, MSG_GDI_VARS_SS, attr_name, err_msg));
+            ERROR(MSG_GDI_VARS_SS, attr_name, err_msg);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -204,7 +204,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char
       switch (dataType) {
          case lStringT:
             if (!(s = lGetString(qep, nm))) {
-               ERROR((SGE_EVENT, MSG_GDI_VALUE_S, lNm2Str(nm)));
+               ERROR(MSG_GDI_VALUE_S, lNm2Str(nm));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EUNKNOWN);
             }
@@ -212,7 +212,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char
             break;
          case lHostT:
             if (!(s = lGetHost(qep, nm))) {
-               ERROR((SGE_EVENT, MSG_GDI_VALUE_S, attr_name));
+               ERROR(MSG_GDI_VALUE_S, attr_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EUNKNOWN);
             }
@@ -375,7 +375,7 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
       DPRINTF(("got new %s\n", attr_name));
 
       if (!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)");
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -428,14 +428,14 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
          /* don't allow infinity for these parameters */
          if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
             DPRINTF(("ERROR! Infinity value for \"%s\"\n", attr_name));
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SIG_DIGIT_SS, attr_name, str));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SIG_DIGIT_SS, attr_name, str);
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ESYNTAX);
          }
       }
 
       if (!parse_ulong_val(nullptr, nullptr, TYPE_TIM, str, nullptr, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)"));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)");
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -528,7 +528,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                }
 
                if (rstring == nullptr || fstring == nullptr) {
-                  ERROR((SGE_EVENT, SFNMAX, MSG_OBJECT_VALUEMISSING));
+                  ERROR(SFNMAX, MSG_OBJECT_VALUEMISSING);
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
@@ -559,7 +559,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                      break;
                   } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND)) {
                      if (!no_info) {
-                        INFO((SGE_EVENT, MSG_OBJECT_ALREADYEXIN_SSS, rstring, sub_list_name, object_name));
+                        INFO(MSG_OBJECT_ALREADYEXIN_SSS, rstring, sub_list_name, object_name);
                         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         ret = false;
                      }
@@ -611,7 +611,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                }
 
                if (rstring == nullptr) {
-                  ERROR((SGE_EVENT, SFNMAX, MSG_OBJECT_VALUEMISSING));
+                  ERROR(SFNMAX, MSG_OBJECT_VALUEMISSING);
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                                   ANSWER_QUALITY_ERROR);
                   ret = false;
@@ -619,14 +619,12 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                if (ret) {
                   if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
-                     INFO((SGE_EVENT, SFQ " does not exist in " SFQ " of " SFQ "\n",
-                             rstring, sub_list_name, object_name));
+                     INFO(SFQ " does not exist in " SFQ " of " SFQ "\n", rstring, sub_list_name, object_name);
                      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      if (!full_sublist) {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                           INFO((SGE_EVENT, SFQ " of " SFQ " is empty - Adding new element(s).\n",
-                                   sub_list_name, object_name));
+                           INFO(SFQ " of " SFQ " is empty - Adding new element(s).\n", sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
@@ -636,8 +634,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                         break;
                      } else {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                           INFO((SGE_EVENT, "Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.\n",
-                                   rstring, sub_list_name, object_name));
+                           INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.\n", rstring, sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
@@ -768,7 +765,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
          lListElem *org_elem = nullptr;
 
          if (name == nullptr) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_INVALIDHOST_S, ""));
+            ERROR(MSG_SGETEXT_INVALIDHOST_S, "");
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -839,8 +836,7 @@ multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, co
    for_each_ep(ep1, lp1) {
       s = lGetString(ep1, nm);
       if (lGetElemStr(lp2, nm, s)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS,
-                                (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_MULTIPLE_OCCUR_SSSS, (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }

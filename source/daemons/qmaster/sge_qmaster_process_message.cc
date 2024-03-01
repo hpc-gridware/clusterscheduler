@@ -207,10 +207,8 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
 
       if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
-         CRITICAL((SGE_EVENT, MSG_SEC_CRED_SSSI, packet->user, packet->host,
-                 packet->commproc, (int) packet->commproc_id));
-         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT,
-                         STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+         CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
+         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
 
@@ -264,7 +262,7 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
    }
 
    if (cull_unpack_list(&(aMsg->buf), &rep)) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT));
+      ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
       DRETURN_VOID;
    }
 
@@ -324,7 +322,7 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
-      ERROR((SGE_EVENT, MSG_COM_UNPACKINT_I, 1));
+      ERROR(MSG_COM_UNPACKINT_I, 1);
       DPRINTF(("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name));
       DRETURN_VOID;
    }
@@ -378,7 +376,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
    /* Do some validity tests */
    while (pb_unused(&(aMsg->buf)) > 0) {
       if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
-         ERROR((SGE_EVENT, "failed unpacking ACK"));
+         ERROR("failed unpacking ACK");
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
          DRETURN_VOID;
       }
@@ -413,7 +411,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
             break;
 
          default:
-            WARNING((SGE_EVENT, MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag)));
+            WARNING(MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag));
             break;
       }
       lFreeElem(&ack);
@@ -432,7 +430,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
    DENTER(TOP_LAYER);
 
    if (strcmp(prognames[EXECD], commproc)) {
-      ERROR((SGE_EVENT, MSG_COM_ACK_S, commproc));
+      ERROR(MSG_COM_ACK_S, commproc);
       DRETURN_VOID;
    }
 
@@ -445,12 +443,12 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          DPRINTF(("TAG_SIGJOB\n"));
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
-            ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong)));
+            ERROR(MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong));
             DRETURN_VOID;
          }
          jatep = job_search_task(jep, nullptr, ack_ulong2);
          if (jatep == nullptr) {
-            ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU, sge_u32c(ack_ulong2), sge_u32c(ack_ulong)));
+            ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU, sge_u32c(ack_ulong2), sge_u32c(ack_ulong));
             DRETURN_VOID;
          }
 
@@ -490,7 +488,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          sge_dstring_free(&host_domain);
 
          if (qinstance == nullptr) {
-            ERROR((SGE_EVENT, MSG_COM_ACK_QUEUE_S, ack_str));
+            ERROR(MSG_COM_ACK_QUEUE_S, ack_str);
             DRETURN_VOID;
          }
 
@@ -505,7 +503,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
       }
 
       default:
-         ERROR((SGE_EVENT, SFNMAX, MSG_COM_ACK_UNKNOWN));
+         ERROR(SFNMAX, MSG_COM_ACK_UNKNOWN);
    }
    DRETURN_VOID;
 }

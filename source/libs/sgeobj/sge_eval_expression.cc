@@ -136,13 +136,13 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
    if (strlen(value) >= MAX_STRING_SIZE) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_EVAL_EXPRESSION_LONG_VALUE, MAX_STRING_SIZE);
-      ERROR((SGE_EVENT, MSG_EVAL_EXPRESSION_LONG_VALUE, MAX_STRING_SIZE));
+      ERROR(MSG_EVAL_EXPRESSION_LONG_VALUE, MAX_STRING_SIZE);
       DRETURN(-1);
    }
    if (strlen(expr) >= MAX_STRING_SIZE) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_EVAL_EXPRESSION_LONG_EXPRESSION, MAX_STRING_SIZE);
-      ERROR((SGE_EVENT, MSG_EVAL_EXPRESSION_LONG_EXPRESSION, MAX_STRING_SIZE));
+      ERROR(MSG_EVAL_EXPRESSION_LONG_EXPRESSION, MAX_STRING_SIZE);
       DRETURN(-1);
    }   
   
@@ -299,7 +299,7 @@ static int Error(s_token *token_p, int expected)
       answer_list_add_sprintf(token_p->answer_list, STATUS_ESYNTAX,
                               ANSWER_QUALITY_ERROR, MSG_EVAL_EXPRESSION_PARSE_ERROR,
                               token_p->s - token_p->expr , token_p->expr);
-      ERROR((SGE_EVENT, MSG_EVAL_EXPRESSION_PARSE_ERROR, (int)(token_p->s - token_p->expr) , token_p->expr));
+      ERROR(MSG_EVAL_EXPRESSION_PARSE_ERROR, (int)(token_p->s - token_p->expr) , token_p->expr);
       token_p->et=expected;
       token_p->tt=T_ERROR;
    }

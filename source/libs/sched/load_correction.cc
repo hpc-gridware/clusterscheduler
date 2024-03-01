@@ -205,7 +205,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
             char sval[20];
             sc_factor = lGetDouble(scaling, HS_value);
             dval *= sc_factor;
-            sprintf(sval, "%8.3f", dval);
+            snprintf(sval, sizeof(sval), "%8.3f", dval);
             lSetString(ep, HL_value, sval);
          }
 

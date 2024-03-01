@@ -33,4 +33,4 @@
 
 #include "sge_dstring.h"
 
-char *sge_tmpnam(char *aBuffer, dstring *error_message);
+char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message);

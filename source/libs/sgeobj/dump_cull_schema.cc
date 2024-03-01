@@ -148,7 +148,7 @@ dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
          const char *json_str = cJSON_Print(json);
          char filename[SGE_PATH_MAX];
          FILE *fp;
-         sprintf(filename, "%s/%s.json", target_dir, obj_type);
+         snprintf(filename, sizeof(filename), "%s/%s.json", target_dir, obj_type);
          fp = fopen(filename, "w");
          fwrite(json_str, strlen(json_str), 1, fp);
          fclose(fp);
@@ -202,7 +202,7 @@ walk_nmv(const char *target_dir)
       char filename[SGE_PATH_MAX];
       FILE *fp;
 
-      sprintf(filename, "%s/all_types.json", target_dir);
+      snprintf(filename, sizeof(filename), "%s/all_types.json", target_dir);
       fp = fopen(filename, "w");
       fwrite(json_str, strlen(json_str), 1, fp);
       fclose(fp);

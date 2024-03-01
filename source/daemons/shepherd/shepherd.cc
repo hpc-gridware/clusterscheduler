@@ -111,9 +111,7 @@
 pid_t wait3(int *, int, struct rusage *);
 #endif
 
-#if defined(FREEBSD)
-#   define sigignore(x) signal(x,SIG_IGN)
-#endif
+
 
 #define NO_CKPT          0x000
 #define CKPT             0x001     /* set for all ckpt jobs                  */
@@ -308,7 +306,7 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    memset(tmpbuf, 0, sizeof(tmpbuf));
 
    /* TODO: Why do we ingore SIGWINCH here? Why do we ignore only SIGWINCH here?*/
-   sigignore(SIGWINCH);
+   SIGIGNORE(SIGWINCH);
 
    /* close parents end of our copy of the pipe */
    shepherd_trace("child: closing parents end of the pipe");
@@ -740,7 +738,7 @@ int main(int argc, char **argv)
           geteuid() != SGE_SUPERUSER_UID) { 
           char name[128];
           if (!sge_uid2user(geteuid(), name, sizeof(name), MAX_NIS_RETRIES)) {
-             sge_set_admin_username(name, nullptr);
+             sge_set_admin_username(name, nullptr, 0);
              sge_switch2admin_user();
           }
       }
@@ -797,7 +795,7 @@ int main(int argc, char **argv)
    
    /* init admin user stuff */
    admin_user = get_conf_val("admin_user");
-   if (sge_set_admin_username(admin_user, err_str)) {
+   if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
       shepherd_error(1, err_str);
    }
 
@@ -890,7 +888,7 @@ int main(int argc, char **argv)
       }   
 
       if (sge_afs_extend_token(set_token_cmd, tokenbuf, job_owner,
-                           atoi(token_extend_time), err_str)) {
+                           atoi(token_extend_time), err_str, sizeof(err_str))) {
          shepherd_state = SSTATE_AFS_PROBLEM;                  
          shepherd_error(1, err_str);
       }
@@ -2736,10 +2734,10 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
     * for Hibernator restart a part of the job is already done
     */
    if (ckpt_type & CKPT_REST_KERNEL) {
-      sprintf(pidbuf, "%s", get_conf_val("ckpt_pid"));
+      snprintf(pidbuf, sizeof(pidbuf), "%s", get_conf_val("ckpt_pid"));
       *ckpt_pid = atoi(get_conf_val("ckpt_pid"));
    } else {   
-      sprintf(pidbuf, "%d", pid);
+      snprintf(pidbuf, sizeof(pidbuf), "%d", pid);
       if (add_config_entry("job_pid", pidbuf))
          shepherd_error(1, "can't add \"job_pid\" entry");
       if (ckpt_type & CKPT_KERNEL)
@@ -2808,7 +2806,7 @@ static int start_async_command(const char *descr, char *cmd)
          skip_silently = true;
       }
       if (sge_set_uid_gid_addgrp(get_conf_val("job_owner"), nullptr, 0, 0, 0,
-                                 err_str, use_qsub_gid, gid, skip_silently) > 0) {
+                                 err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently) > 0) {
          shepherd_trace(err_str);
          exit(1);
       }   

@@ -1490,16 +1490,16 @@ void range_to_dstring(u_long32 start, u_long32 end, int step,
    }
 
    if (start == end && !print_always_as_range) {
-      sprintf(tail, sge_u32, start);
+      snprintf(tail, sizeof(tail), sge_u32, start);
    } else if (start == end && print_always_as_range) {
-      sprintf(tail, sge_u32 "%c" sge_u32, start, to_char, end);
+      snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32, start, to_char, end);
    } else if (start + step == end) {
-      sprintf(tail, sge_u32 "," sge_u32, start, end);
+      snprintf(tail, sizeof(tail), sge_u32 "," sge_u32, start, end);
    } else {
       if (ignore_step) {
-         sprintf(tail, sge_u32 "%c" sge_u32, start, to_char, end);
+         snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32, start, to_char, end);
       } else {
-         sprintf(tail, sge_u32 "%c" sge_u32 "%c%d", start, to_char, end, step_char, step);
+         snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32 "%c%d", start, to_char, end, step_char, step);
       }
    }
    sge_dstring_append(dyn_taskrange_str, tail);
@@ -1548,7 +1548,7 @@ void range_parse_from_string(lListElem **range,
    /* rstr should point to a decimal now */
    ldummy = strtol(rstr, &dptr, 10);
    if ((ldummy == 0) && (rstr == dptr)) {
-      sprintf(msg, MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
+      snprintf(msg, sizeof(msg), MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
       answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       lFreeElem(&r);
       *range = nullptr;
@@ -1560,8 +1560,7 @@ void range_parse_from_string(lListElem **range,
        * dptr poits right after <n>.
        */
       if (*dptr != '\0' || (step_allowed && *dptr != ':')) {
-         sprintf(msg, MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS,
-                 old_str, rstr);
+         snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, old_str, rstr);
          answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          lFreeElem(&r);
          *range = nullptr;
@@ -1585,8 +1584,7 @@ void range_parse_from_string(lListElem **range,
                  (*dptr == '-' || isdigit((int) *(dptr + 1)) || *(dptr + 1) == '\0'
                   || (step_allowed && *dptr == ':'))) {
             /* ... but isn't */
-            sprintf(msg, MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS,
-                    old_str, dptr);
+            snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, old_str, dptr);
             answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             lFreeElem(&r);
             *range = nullptr;
@@ -1607,19 +1605,16 @@ void range_parse_from_string(lListElem **range,
                /* the trailer should contain a decimal - go for it */
                ldummy = strtol(rstr, &dptr, 10);
                if ((ldummy == 0) && (rstr == dptr)) {
-                  sprintf(msg, MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
-                  answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                  ANSWER_QUALITY_ERROR);
+                  snprintf(msg, sizeof(msg), MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
+                  answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   lFreeElem(&r);
                   *range = nullptr;
                   DRETURN_VOID;
                }
 
                if (!(*dptr == '\0' || (step_allowed && *dptr == ':'))) {
-                  sprintf(msg, MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS,
-                          rstr, dptr);
-                  answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                  ANSWER_QUALITY_ERROR);
+                  snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, rstr, dptr);
+                  answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   lFreeElem(&r);
                   *range = nullptr;
                   DRETURN_VOID;
@@ -1636,38 +1631,33 @@ void range_parse_from_string(lListElem **range,
                   ldummy = dbldummy;
 
                   if (dbldummy > 0) {
-                     if ((dbldummy - ldummy > epsilon) ||
-                         ((ldummy == 0) && (rstr == dptr))) {
-                        sprintf(msg, MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S,
-                                rstr);
-                        answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                        ANSWER_QUALITY_ERROR);
+                     if (( dbldummy - ldummy > epsilon) ||
+                        ((ldummy == 0) && (rstr == dptr))) {
+                        snprintf(msg, sizeof(msg), MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
+                        answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                         lFreeElem(&r);
                         *range = nullptr;
                         DRETURN_VOID;
                      }
-                  } else if (dptr == rstr) {
-                     sprintf(msg, MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S,
-                             rstr);
-                     answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                     ANSWER_QUALITY_ERROR);
+                  }
+                  else if (dptr == rstr) {
+                     snprintf(msg, sizeof(msg), MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
+                     answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
                      *range = nullptr;
                      DRETURN_VOID;
-                  } else {
-                     sprintf(msg, SFNMAX, MSG_GDI_NEGATIVSTEP);
-                     answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                     ANSWER_QUALITY_ERROR);
+                  }
+                  else {
+                     snprintf(msg, sizeof(msg), SFNMAX, MSG_GDI_NEGATIVSTEP );
+                     answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
                      *range = nullptr;
                      DRETURN_VOID;
                   }
 
                   if (*dptr != '\0') {
-                     sprintf(msg, MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS,
-                             rstr, dptr);
-                     answer_list_add(answer_list, msg, STATUS_ESYNTAX,
-                                     ANSWER_QUALITY_ERROR);
+                     snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, rstr, dptr);
+                     answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
                      *range = nullptr;
                      DRETURN_VOID;
@@ -1757,7 +1747,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
         s; s = sge_strtok_r(nullptr, RANGE_SEPARATOR_CHARS, &context)) {
       if (!first && undefined) {
          /* first was undefined - no more ranges allowed */
-         ERROR((SGE_EVENT, SFNMAX, MSG_GDI_UNEXPECTEDRANGEFOLLOWINGUNDEFINED));
+         ERROR(SFNMAX, MSG_GDI_UNEXPECTEDRANGEFOLLOWINGUNDEFINED);
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
@@ -1773,7 +1763,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             undefined = true;
          } else {
             /* second range may not be undefined ! */
-            ERROR((SGE_EVENT, SFNMAX, MSG_GDI_UNEXPECTEDUNDEFINEDFOLLOWINGRANGE));
+            ERROR(SFNMAX, MSG_GDI_UNEXPECTEDUNDEFINEDFOLLOWINGRANGE);
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);

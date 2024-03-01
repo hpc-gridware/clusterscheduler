@@ -266,23 +266,13 @@ static void force_job_rlimit(const char* qualified_hostname)
 
          if (h_cpu < cpu_val || h_vmem < vmem_val) {
             cpu_exceeded = (h_cpu < cpu_val);
-            WARNING((SGE_EVENT, MSG_JOB_EXCEEDHLIM_USSFF, 
-                     sge_u32c(jobid), cpu_exceeded ? "h_cpu" : "h_vmem",
-                     q?lGetString(q, QU_full_name) : "-",
-                     cpu_exceeded ? cpu_val : vmem_val,
-                     cpu_exceeded ? h_cpu : h_vmem));
-            signal_job(jobid, jataskid, SGE_SIGKILL);
+            WARNING(MSG_JOB_EXCEEDHLIM_USSFF, sge_u32c(jobid), cpu_exceeded ? "h_cpu" : "h_vmem", q?lGetString(q, QU_full_name) : "-", cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? h_cpu : h_vmem); signal_job(jobid, jataskid, SGE_SIGKILL);
             continue;
          }
 
          if (s_cpu < cpu_val || s_vmem < vmem_val) {
             cpu_exceeded = (s_cpu < cpu_val);
-            WARNING((SGE_EVENT, MSG_JOB_EXCEEDSLIM_USSFF,
-                     sge_u32c(jobid),
-                     cpu_exceeded ? "s_cpu" : "s_vmem",
-                     q?lGetString(q, QU_full_name) : "-",
-                     cpu_exceeded ? cpu_val : vmem_val,
-                     cpu_exceeded ? s_cpu : s_vmem));
+            WARNING(MSG_JOB_EXCEEDSLIM_USSFF, sge_u32c(jobid), cpu_exceeded ? "s_cpu" : "s_vmem", q?lGetString(q, QU_full_name) : "-", cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? s_cpu : s_vmem);
             signal_job(jobid, jataskid, SGE_SIGXCPU);
             continue;
          }
@@ -327,6 +317,34 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    }
 
    return ret;
+}
+
+static void
+update_wallclock_usage(u_long32 now, const lListElem *job, const lListElem *ja_task)
+{
+   u_long32 job_id = lGetUlong(job, JB_job_number);
+   u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
+   u_long32 wallclock = now - lGetUlong(ja_task, JAT_start_time);
+
+   lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
+   if (jr != nullptr) {
+      add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
+   }
+
+   const lListElem *pe_task;
+   for_each_ep (pe_task, lGetList(ja_task, JAT_task_list)) {
+      // don't update wallclock before job actually started or after it ended */
+      u_long32 status = lGetUlong(pe_task, PET_status);
+      if (status == JWAITING4OSJID || status == JEXITING) {
+         continue;
+      }
+      wallclock = now - lGetUlong(pe_task, PET_start_time);
+      const char *pe_task_id = lGetString(pe_task, PET_id);
+      jr = get_job_report(job_id, ja_task_id, pe_task_id);
+      if (jr == nullptr) {
+         add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
+      }
+   }
 }
 
 /******************************************************
@@ -420,10 +438,16 @@ int do_ck_to_do(bool is_qmaster_down) {
       for_each_rw (jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
-            /* don't start wallclock before job acutally started */
-            if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID ||
-                  lGetUlong(jatep, JAT_status) == JEXITING)
+            // don't update wallclock before job actually started or after it ended */
+            u_long32 status = lGetUlong(jatep, JAT_status);
+            if (status == JWAITING4OSJID || status == JEXITING) {
                continue;
+            }
+
+            // update wallclock usage
+            // @todo is this the right place? Currently we come here once a second, which is OK as long as
+            //       the time resolution is 1s
+            update_wallclock_usage(now, jep, jatep);
 
             if (!lGetUlong(jep, JB_hard_wallclock_gmt)) {
                u_long32 task_wallclock_limit = lGetUlong(jatep, JAT_wallclock_limit);
@@ -447,8 +471,7 @@ int do_ck_to_do(bool is_qmaster_down) {
             if (now >= lGetUlong(jep, JB_hard_wallclock_gmt) ) {
                if (!(lGetUlong(jatep, JAT_pending_signal_delivery_time)) ||
                    (now > lGetUlong(jatep, JAT_pending_signal_delivery_time))) {
-                  WARNING((SGE_EVENT, MSG_EXECD_EXCEEDHWALLCLOCK_UU,
-                       sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)))); 
+                  WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
@@ -466,8 +489,7 @@ int do_ck_to_do(bool is_qmaster_down) {
             if (now >= lGetUlong(jep, JB_soft_wallclock_gmt)) {
                if (!(lGetUlong(jatep, JAT_pending_signal_delivery_time)) ||
                    (now > lGetUlong(jatep, JAT_pending_signal_delivery_time))) {
-                  WARNING((SGE_EVENT, MSG_EXECD_EXCEEDSWALLCLOCK_UU,
-                       sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number))));  
+                  WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
@@ -505,8 +527,7 @@ int do_ck_to_do(bool is_qmaster_down) {
                DPRINTF(("Simulated job " sge_u32"." sge_u32" is exiting\n", jobid, jataskid));
 
                if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
-                  ERROR((SGE_EVENT, MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, 
-                         sge_u32c(jobid), sge_u32c(jataskid)));
+                  ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, sge_u32c(jobid), sge_u32c(jataskid));
                   jr = add_job_report(jobid, jataskid, nullptr, jep);
                }
 
@@ -861,8 +882,7 @@ const lListElem *pe_task
    }  
 
    if (!(fp = fopen(sge_dstring_get_string(&addgrpid_path), "r"))) {
-      ERROR((SGE_EVENT, MSG_EXECD_NOADDGIDOPEN_SSS, sge_dstring_get_string(&addgrpid_path), 
-             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno)));
+      ERROR(MSG_EXECD_NOADDGIDOPEN_SSS, sge_dstring_get_string(&addgrpid_path), job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno));
       sge_dstring_free(&addgrpid_path);
       DRETURN(-1);
    }
@@ -881,9 +901,7 @@ const lListElem *pe_task
 
       DPRINTF(("Register job with AddGrpId at " pid_t_fmt " PTF\n", addgrpid));
       if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id))) {
-         ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS, 
-                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
-                ptf_errstr(ptf_error)));
+         ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
          DRETURN((1));
       }
    }
@@ -893,11 +911,11 @@ const lListElem *pe_task
       char addgrpid_str[64];
       lListElem *jr;
 
-      sprintf(addgrpid_str, pid_t_fmt, addgrpid);
-      if ((jr=get_job_report(job_id, ja_task_id, pe_task_id)))
-         lSetString(jr, JR_osjobid, addgrpid_str); 
-      DPRINTF(("job %s: addgrpid = %s\n", 
-               job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), addgrpid_str));
+      snprintf(addgrpid_str, sizeof(addgrpid_str), pid_t_fmt, addgrpid);
+      if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
+         lSetString(jr, JR_osjobid, addgrpid_str);
+      }
+      DPRINTF(("job %s: addgrpid = %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), addgrpid_str));
    }
 #else
    /* read osjobid if possible */
@@ -915,9 +933,7 @@ const lListElem *pe_task
    } 
 
    if (!(fp=fopen(sge_dstring_get_string(&osjobid_path), "r"))) {
-      ERROR((SGE_EVENT, MSG_EXECD_NOOSJOBIDOPEN_SSS, sge_dstring_get_string(&osjobid_path), 
-             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
-             strerror(errno)));
+      ERROR(MSG_EXECD_NOOSJOBIDOPEN_SSS, sge_dstring_get_string(&osjobid_path), job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno));
       sge_dstring_free(&osjobid_path);      
       DRETURN(-1);
    }
@@ -934,9 +950,7 @@ const lListElem *pe_task
    {
       int ptf_error;
       if ((ptf_error = ptf_job_started(osjobid, pe_task_id, job, ja_task_id))) {
-         ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS,  
-                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
-                ptf_errstr(ptf_error)));
+         ERROR(MSG_JOB_NOREGISTERPTF_SS,  job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
          DRETURN(-1);
       }
    }

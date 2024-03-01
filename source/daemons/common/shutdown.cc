@@ -62,9 +62,7 @@ void starting_up(void)
                           feature_get_featureset_name(
                                        feature_get_active_featureset_id())); 
    }
-   INFO((SGE_EVENT, MSG_STARTUP_STARTINGUP_SSS, 
-         feature_get_product_name(FS_SHORT, &ds3), 
-         sge_dstring_get_string(&ds2), sge_get_arch()));
+   INFO(MSG_STARTUP_STARTINGUP_SSS, feature_get_product_name(FS_SHORT, &ds3), sge_dstring_get_string(&ds2), sge_get_arch());
 
    sge_dstring_free(&ds2);
    sge_dstring_free(&ds3);
@@ -94,9 +92,9 @@ void sge_shutdown(int i)
                                        feature_get_active_featureset_id())); 
    }
    if (i != 0) {
-      INFO((SGE_EVENT, MSG_SHADOWD_CONTROLLEDSHUTDOWN_SU, sge_dstring_get_string(&ds2), sge_u32c(i)));
+      INFO(MSG_SHADOWD_CONTROLLEDSHUTDOWN_SU, sge_dstring_get_string(&ds2), sge_u32c(i));
    } else {
-      INFO((SGE_EVENT, MSG_SHADOWD_CONTROLLEDSHUTDOWN_S, sge_dstring_get_string(&ds2)));
+      INFO(MSG_SHADOWD_CONTROLLEDSHUTDOWN_S, sge_dstring_get_string(&ds2));
    }
 
    sge_dstring_free(&ds2);

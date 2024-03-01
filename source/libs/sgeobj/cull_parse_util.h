@@ -64,7 +64,7 @@ int cull_parse_simple_list(char *str, lList **lpp, char *name, lDescr *descr, in
 
 int cull_parse_string_list(char **pstrlist, const char *listname, lDescr *descr, int *interpretation_rule, lList **pplist);
 
-int uni_print_list(FILE *fp, char *buff, u_long32 max_len, const lList *lp, int *which_elements_rule, const char *pdelis[], unsigned long flags);
+int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, int *which_elements_rule, const char *pdelis[], unsigned long flags);
 
 int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi); 
 

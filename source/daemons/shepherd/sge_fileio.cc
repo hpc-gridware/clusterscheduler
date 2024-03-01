@@ -86,7 +86,7 @@ shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
          char buffer[50];
 
          /* set pid from qrsh_starter as job_pid */
-         sprintf(buffer, pid_t_fmt, *qrsh_pid);
+         snprintf(buffer, sizeof(buffer), pid_t_fmt, *qrsh_pid);
          /* TODO: should better be add_or_replace */
          add_config_entry("job_pid", buffer);
          *replace_qrsh_pid = 0;

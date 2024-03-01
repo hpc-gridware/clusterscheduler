@@ -442,7 +442,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
 
    if (str != nullptr) {
       if (*context != nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL));
+         ERROR(SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL);
       }
       *context = (struct saved_vars_s *) sge_malloc(sizeof(struct saved_vars_s));
       memset(*context, 0, sizeof(struct saved_vars_s));
@@ -454,7 +454,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
       saved_cp = saved->static_str;
    } else {
       if (*context == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL1));
+         ERROR(SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL1);
          DRETURN(nullptr);
       }
       saved = *context;

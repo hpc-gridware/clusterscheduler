@@ -69,7 +69,7 @@ char *sge_malloc(size_t size) {
 
    char *cp = (char *) malloc(size);
    if (!cp) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILED));
+      CRITICAL(SFNMAX, MSG_MEMORY_MALLOCFAILED);
       abort();
    }
 
@@ -108,7 +108,7 @@ void *sge_realloc(void *ptr, size_t size, int do_abort) {
 
    void *cp = realloc(ptr, size);
    if (cp == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_REALLOCFAILED));
+      CRITICAL(SFNMAX, MSG_MEMORY_REALLOCFAILED);
       if (do_abort) {
          abort();
       } else {

@@ -152,7 +152,7 @@ static void *work(void *args)
 
    work_num = *((int *)args);
   
-   WARNING((SGE_EVENT, "work %d starting %d loops\n", work_num, loops));
+   WARNING("work %d starting %d loops\n", work_num, loops);
   
    for (i = 0; i < loops; i++) {
 #if SGE_LOCKING
@@ -168,8 +168,7 @@ static void *work(void *args)
 #endif
    }
 
-   WARNING((SGE_EVENT, "work %d finished adding %d jobs, %d failed\n", 
-            work_num, loops, failed));
+   WARNING("work %d finished adding %d jobs, %d failed\n", work_num, loops, failed);
 
    failed = 0;
    for (i = 0; i < loops; i++) {
@@ -186,8 +185,7 @@ static void *work(void *args)
 #endif
    }
 
-   WARNING((SGE_EVENT, "work %d finished deleting %d jobs, %d failed\n", 
-            work_num, loops, failed));
+   WARNING("work %d finished deleting %d jobs, %d failed\n", work_num, loops, failed);
 
    
    DRETURN((void *)nullptr);
@@ -207,10 +205,10 @@ int main(int argc, char *argv[])
 
    /* parse commandline parameters */
    if (argc < 3) {
-      ERROR((SGE_EVENT, "usage: test_berkeleydb_mt <url> <threads> [<delay>]\n"));
-      ERROR((SGE_EVENT, "       <url>     = path or host:database\n"));
-      ERROR((SGE_EVENT, "       <threads> = number of threads\n"));
-      ERROR((SGE_EVENT, "       <delay>   = delay after writing [ms]\n"));
+      ERROR("usage: test_berkeleydb_mt <url> <threads> [<delay>]\n");
+      ERROR("       <url>     = path or host:database\n");
+      ERROR("       <threads> = number of threads\n");
+      ERROR("       <delay>   = delay after writing [ms]\n");
       sge_exit(1);
    }
 

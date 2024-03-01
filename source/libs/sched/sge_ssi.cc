@@ -67,7 +67,7 @@ static bool parse_job_identifier(const char *id, u_long32 *job_id, u_long32 *ja_
       DRETURN(true);
    }
 
-   WARNING((SGE_EVENT, MSG_SSI_ERRORPARSINGJOBIDENTIFIER_S, id));
+   WARNING(MSG_SSI_ERRORPARSINGJOBIDENTIFIER_S, id);
 
    DRETURN(false);
 }
@@ -120,7 +120,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    }
 
    /* create id structure */
-   sprintf(job_id_str, sge_U32CFormat, sge_u32c(job_id));
+   snprintf(job_id_str, sizeof(job_id_str), sge_U32CFormat, sge_u32c(job_id));
    ref_ep = lAddElemStr(&ref_list, ID_str, job_id_str, ID_Type);
    ref_ep = lAddSubUlong(ref_ep, RN_min, ja_task_id, ID_ja_structure, RN_Type);
    lSetUlong(ref_ep, RN_max, ja_task_id);
@@ -199,7 +199,7 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
       lListElem *granted_queue;
 
       if(tasks[i].host_name == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_SSI_MISSINGHOSTNAMEINTASKLIST));
+         ERROR(SFNMAX, MSG_SSI_MISSINGHOSTNAMEINTASKLIST);
          DRETURN(false);
       }
 
@@ -207,7 +207,7 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
   
       queue = lGetElemHost(*object_type_get_master_list(SGE_TYPE_CQUEUE), QU_qhostname, tasks[i].host_name);
       if (queue == nullptr) {
-         ERROR((SGE_EVENT, MSG_SSI_COULDNOTFINDQUEUEFORHOST_S, tasks[i].host_name));
+         ERROR(MSG_SSI_COULDNOTFINDQUEUEFORHOST_S, tasks[i].host_name);
          DRETURN(false);
       }
 

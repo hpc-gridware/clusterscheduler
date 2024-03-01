@@ -293,8 +293,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)) {
       prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
-      PROFILING((SGE_EVENT, "PROF: create pending job orders: %.3f s",
-              prof_get_measurement_utime(SGE_PROF_SCHEDLIB4, false, nullptr)));
+      PROFILING("PROF: create pending job orders: %.3f s", prof_get_measurement_utime(SGE_PROF_SCHEDLIB4, false, nullptr));
    }
 
    sge_schedd_send_orders(&orders, &(orders.configOrderList), answer_list, "D: config orders");
@@ -310,8 +309,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
    if (prof_is_active(SGE_PROF_CUSTOM0)) {
       prof_stop_measurement(SGE_PROF_CUSTOM0, nullptr);
 
-      PROFILING(
-              (SGE_EVENT, "PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_uu32 " orders, " sge_uu32 " H, " sge_uu32 " Q, " sge_uu32 " QA, " sge_uu32 " J(qw), " sge_uu32 " J(r), " sge_uu32 " J(s), " sge_uu32 " J(h), " sge_uu32 " J(e), " sge_uu32 " J(x), %d J(all), " sge_uu32 " C, " sge_uu32 " ACL, " sge_uu32 " PE, " sge_uu32 " U, " sge_uu32 " D, " sge_uu32 " PRJ, " sge_uu32 " ST, " sge_uu32 " CKPT, " sge_uu32 " RU, %d gMes, %d jMes, " sge_uu32 "/" sge_uu32 " pre-send, %d/%d/%d pe-alg\n",
+      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_uu32 " orders, " sge_uu32 " H, " sge_uu32 " Q, " sge_uu32 " QA, " sge_uu32 " J(qw), " sge_uu32 " J(r), " sge_uu32 " J(s), " sge_uu32 " J(h), " sge_uu32 " J(e), " sge_uu32 " J(x), %d J(all), " sge_uu32 " C, " sge_uu32 " ACL, " sge_uu32 " PE, " sge_uu32 " U, " sge_uu32 " D, " sge_uu32 " PRJ, " sge_uu32 " ST, " sge_uu32 " CKPT, " sge_uu32 " RU, %d gMes, %d jMes, " sge_uu32 "/" sge_uu32 " pre-send, %d/%d/%d pe-alg\n",
                       prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
@@ -347,7 +345,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
                       sconf_get_pe_alg_value(SCHEDD_PE_LOW_FIRST),
                       sconf_get_pe_alg_value(SCHEDD_PE_BINARY),
                       sconf_get_pe_alg_value(SCHEDD_PE_HIGH_FIRST)
-              ));
+              );
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM5);
@@ -363,10 +361,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
    if (prof_is_active(SGE_PROF_CUSTOM5)) {
       prof_stop_measurement(SGE_PROF_CUSTOM5, nullptr);
 
-      PROFILING((SGE_EVENT, "PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s",
-              prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr),
-              prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr),
-              prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr)));
+      PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
    }
 
    DRETURN(0);
@@ -594,8 +589,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       if (prof_is_active(SGE_PROF_CUSTOM1)) {
          prof_stop_measurement(SGE_PROF_CUSTOM1, nullptr);
 
-         PROFILING((SGE_EVENT, "PROF: job-order calculation took %.3f s",
-                 prof_get_measurement_wallclock(SGE_PROF_CUSTOM1, true, nullptr)));
+         PROFILING("PROF: job-order calculation took %.3f s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM1, true, nullptr));
       }
 
       if (ret != 0) {
@@ -644,8 +638,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    if (prof_is_active(SGE_PROF_CUSTOM3)) {
       prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);
 
-      PROFILING((SGE_EVENT, "PROF: job sorting took %.3f s",
-              prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, nullptr)));
+      PROFILING("PROF: job sorting took %.3f s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, nullptr));
    }
 
    /*---------------------------------------------------------------------
@@ -960,29 +953,29 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    if (prof_is_active(SGE_PROF_CUSTOM4)) {
       static bool first_time = true;
       prof_stop_measurement(SGE_PROF_CUSTOM4, nullptr);
-      PROFILING((SGE_EVENT, "PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, %d res)",
+      PROFILING("PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, %d res)",
               prof_get_measurement_wallclock(SGE_PROF_CUSTOM4, false, nullptr),
               fast_runs,
               fast_soft_runs,
               pe_runs,
               pe_soft_runs,
-              nreservation));
+              nreservation);
 
       if (first_time) {
-         PROFILING((SGE_EVENT, "PROF: parallel matching   %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
+         PROFILING("PROF: parallel matching   %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
                  "global", "rqs", "cqstatic", "hstatic",
-                 "qstatic", "hdynamic", "qdyn"));
-         PROFILING((SGE_EVENT, "PROF: sequential matching %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
+                 "qstatic", "hdynamic", "qdyn");
+         PROFILING("PROF: sequential matching %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
                  "global", "rqs", "cqstatic", "hstatic",
-                 "qstatic", "hdynamic", "qdyn"));
+                 "qstatic", "hdynamic", "qdyn");
          first_time = false;
       }
-      PROFILING((SGE_EVENT, "PROF: parallel matching   %12d %12d %12d %12d %12d %12d %12d",
+      PROFILING("PROF: parallel matching   %12d %12d %12d %12d %12d %12d %12d",
               pi.par_global, pi.par_rqs, pi.par_cqstat, pi.par_hstat,
-              pi.par_qstat, pi.par_hdyn, pi.par_qdyn));
-      PROFILING((SGE_EVENT, "PROF: sequential matching %12d %12d %12d %12d %12d %12d %12d",
+              pi.par_qstat, pi.par_hdyn, pi.par_qdyn);
+      PROFILING("PROF: sequential matching %12d %12d %12d %12d %12d %12d %12d",
               pi.seq_global, pi.seq_rqs, pi.seq_cqstat, pi.seq_hstat,
-              pi.seq_qstat, pi.seq_hdyn, pi.seq_qdyn));
+              pi.seq_qstat, pi.seq_hdyn, pi.seq_qdyn);
    }
 
    lFreeList(&user_list);

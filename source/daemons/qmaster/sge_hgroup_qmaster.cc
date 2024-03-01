@@ -137,11 +137,8 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                       */
                      ;
                   } else {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_HGROUP_CYCLEINDEF_SS,
-                                            lGetHost(add_group, HR_name),
-                                            lGetHost(hgroup, HGRP_name)));
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
-                                     ANSWER_QUALITY_ERROR);
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HGROUP_CYCLEINDEF_SS, lGetHost(add_group, HR_name), lGetHost(hgroup, HGRP_name));
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
                }
@@ -239,7 +236,7 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
          } else {
             const lListElem *aep;
             for_each_ep(aep, *answer_list) {
-               ERROR((SGE_EVENT, SFNMAX, lGetString(aep, AN_text)));
+               ERROR(SFNMAX, lGetString(aep, AN_text));
             }
             ret = false;
          }
@@ -249,17 +246,15 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
 
          /* Reject modify requests which try to change the groupname */
          if (sge_hostcmp(old_name, name)) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_HGRP_NONAMECHANGE));
+            ERROR(SFNMAX, MSG_HGRP_NONAMECHANGE);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
          }
       }
    } else {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(HGRP_name), __func__));
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                      ANSWER_QUALITY_ERROR);
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }
 
@@ -455,7 +450,7 @@ hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
                   dstring string = DSTRING_INIT;
 
                   href_list_append_to_dstring(href_list, &string);
-                  ERROR((SGE_EVENT, MSG_HGROUP_REFINHGOUP_SS, name, sge_dstring_get_string(&string)));
+                  ERROR(MSG_HGROUP_REFINHGOUP_SS, name, sge_dstring_get_string(&string));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   sge_dstring_free(&string);
                   ret = false;
@@ -464,7 +459,7 @@ hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
                   dstring string = DSTRING_INIT;
 
                   str_list_append_to_dstring(qref_list, &string, ' ');
-                  ERROR((SGE_EVENT, MSG_CQUEUE_REFINHGOUP_SS, name, sge_dstring_get_string(&string)));
+                  ERROR(MSG_CQUEUE_REFINHGOUP_SS, name, sge_dstring_get_string(&string));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   sge_dstring_free(&string);
                   ret = false;
@@ -485,26 +480,26 @@ hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
 
                   lRemoveElem(master_hgroup_list, &hgroup);
 
-                  INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "host group entry"));
+                  INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "host group entry");
                   answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                } else {
-                  ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, "host group entry", name));
+                  ERROR(MSG_CANTSPOOL_SS, "host group entry", name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             }
          } else {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name));
+            ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             ret = false;
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), __func__));
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }

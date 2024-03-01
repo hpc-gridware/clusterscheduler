@@ -109,7 +109,8 @@ int main(int argc, char *argv[]) {
       return 2;
    }
 
-   if((sock = rresvport(&res_port)) == -1) {
+   sock = rresvport(&res_port);
+   if(sock == -1) {
       if(!quiet) {
          fprintf(stderr, MSG_SUIDROOT_BIND_PRIV_SOCK_FAILED, argv[0]);
          fprintf(stderr, "\n");

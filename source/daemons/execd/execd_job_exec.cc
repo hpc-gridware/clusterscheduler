@@ -89,7 +89,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
 
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKFEATURESET));
+      ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
       DRETURN(0);
    }
 
@@ -107,7 +107,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
        
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
          answer_list_output(&answer_list);
-         ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKJOB));
+         ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
 
@@ -120,7 +120,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
 
          /* error output to messages file, cleanup */
          answer_list_output(&answer_list);
-         ERROR((SGE_EVENT, MSG_EXECD_INVALIDJOBREQUEST_SS, aMsg->snd_name, aMsg->snd_host));
+         ERROR(MSG_EXECD_INVALIDJOBREQUEST_SS, aMsg->snd_name, aMsg->snd_host);
          lFreeElem(&job);
          DRETURN(0);
       }
@@ -143,13 +143,13 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
 
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep, PETR_Type)) {
          answer_list_output(&answer_list);
-         ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKJOB));
+         ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
 
       if (!pe_task_verify_request(petrep, &answer_list)) {
          answer_list_output(&answer_list);
-         ERROR((SGE_EVENT, MSG_EXECD_INVALIDTASKREQUEST_SS, aMsg->snd_name, aMsg->snd_host));
+         ERROR(MSG_EXECD_INVALIDTASKREQUEST_SS, aMsg->snd_name, aMsg->snd_host);
          DRETURN(0);
       }
 
@@ -180,7 +180,7 @@ int do_job_slave(struct_msg_t *aMsg)
 
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKFEATURESET));
+      ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
       DRETURN(0);
    }
 
@@ -193,7 +193,7 @@ int do_job_slave(struct_msg_t *aMsg)
    /* ------- job */
    if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &jelem, JB_Type)) {
       answer_list_output(&answer_list);
-      ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKJOB));
+      ERROR(SFNMAX, MSG_COM_UNPACKJOB);
       DRETURN(0);
    }
    lFreeList(&answer_list);
@@ -611,7 +611,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 #ifdef KERBEROS
    if (krb_verify_user(de->host, de->commproc, de->id,
                        lGetString(petrep, PETR_owner)) < 0) {
-      ERROR((SGE_EVENT, MSG_SEC_KRB_CRED_SSSI, lGetString(petrep, PETR_owner), de->host, de->commproc, de->id));
+      ERROR(MSG_SEC_KRB_CRED_SSSI, lGetString(petrep, PETR_owner), de->host, de->commproc, de->id);
       goto Error;
    }
 #endif /* KERBEROS */
@@ -635,14 +635,13 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       goto Error;
    }
    if (strcmp(lGetString(jep, JB_owner), lGetString(petrep, PETR_owner)) != 0) {
-      WARNING((SGE_EVENT, MSG_DENIED_PETASKREQUEST_WRONG_USER_SS,
-              lGetString(petrep, PETR_owner), lGetString(jep, JB_owner)));
+      WARNING(MSG_DENIED_PETASKREQUEST_WRONG_USER_SS, lGetString(petrep, PETR_owner), lGetString(jep, JB_owner));
       goto Error;
    }
 
    /* do not accept the task if job is not parallel or 'control_slaves' is not active */
    if (!(pe=lGetObject(jatep, JAT_pe_object)) || !lGetBool(pe, PE_control_slaves)) {
-      ERROR((SGE_EVENT, MSG_JOB_TASKNOSUITABLEJOB_U, sge_u32c(jobid)));
+      ERROR(MSG_JOB_TASKNOSUITABLEJOB_U, sge_u32c(jobid));
       goto Error;
    }
 
@@ -664,7 +663,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    /* generate unique task id by combining consecutive number 1-max(u_long32) */
    tid = MAX(1, lGetUlong(jatep, JAT_next_pe_task_id));
-   sprintf(new_task_id, "%d.%s", tid, unqualified_hostname);
+   snprintf(new_task_id, sizeof(new_task_id), "%d.%s", tid, unqualified_hostname);
    DPRINTF(("using pe_task_id_str %s for job " sge_u32"." sge_u32"\n", new_task_id, jobid, jataskid));
    petep = lCreateElem(PET_Type);
    lSetString(petep, PET_id, new_task_id);
@@ -693,8 +692,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       gdil = job_get_queue_with_task_about_to_exit(jep, jatep, petep, qualified_hostname, requested_queue);
 
       if (gdil == nullptr) {  /* also no already exited task found -> no way to start new task */
-         ERROR((SGE_EVENT, MSG_JOB_NOFREEQ_USSS, sge_u32c(jobid), 
-                lGetString(petrep, PETR_owner), host, qualified_hostname));
+         ERROR(MSG_JOB_NOFREEQ_USSS, sge_u32c(jobid), lGetString(petrep, PETR_owner), host, qualified_hostname);
          lFreeElem(&petep);
          goto Error;
       }

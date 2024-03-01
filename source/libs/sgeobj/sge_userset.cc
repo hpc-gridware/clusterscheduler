@@ -170,7 +170,7 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 
    for_each_ep(usp, acl_list) {
       if (!lGetElemStr(master_userset_list, US_name, lGetString(usp, US_name))) {
-         ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<nullptr>"));
+         ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<nullptr>");
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -215,7 +215,7 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
       if (is_hgroup_name(user) == true){
          user++;  /* jump ower the @ sign */
          if (!lGetElemStr(master_userset_list, US_name, user)) {
-            ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>"));
+            ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -261,7 +261,7 @@ int userset_validate_entries(lListElem *userset, lList **alpp, int start_up)
 
    for_each_ep(ep, lGetList(userset, US_entries)) {
       if (!lGetPosString(ep, name_pos)) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_US_INVALIDUSERNAME));
+         ERROR(SFNMAX, MSG_US_INVALIDUSERNAME);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, 
                          ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
@@ -368,7 +368,7 @@ userset_set_type_string(lListElem *userset, lList **answer_list,
       }
    }
    else { /* value == nullptr || *value == 0 */
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEEMPTYSPEC_S , "userset type"));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEEMPTYSPEC_S , "userset type");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }

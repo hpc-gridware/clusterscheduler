@@ -695,9 +695,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
          } 
 #ifdef JOB_SPLIT_DEBUG
          if (target == nullptr) {
-            ERROR((SGE_EVENT, "Task " sge_u32" has no known state: "
-                   "status=" sge_u32" state=" sge_u32"\n",
-                   ja_task_id, ja_task_status, ja_task_state));  
+            ERROR("Task " sge_u32" has no known state: " "status=" sge_u32" state=" sge_u32"\n", ja_task_id, ja_task_status, ja_task_state);
          }
 #endif
 

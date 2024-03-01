@@ -208,7 +208,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          lSetString(this_elem, CE_stringval, "TRUE");
          s = lGetString(this_elem, CE_stringval);
       } else {
-/*          ERROR((SGE_EVENT, MSG_CPLX_VALUEMISSING_S, name)); */
+/*          ERROR(MSG_CPLX_VALUEMISSING_S, name); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_VALUEMISSING_S, name);
          DRETURN(-1);
       }
@@ -221,10 +221,9 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
       case TYPE_MEM:
       case TYPE_BOO:
       case TYPE_DOUBLE:
-         if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp) - 1, allow_infinity, false)) {
-/*             ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp)); */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name,
-                                    tmp);
+         if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
+/*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
          }
          lSetDouble(this_elem, CE_doubleval, dval);
@@ -241,18 +240,17 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          }
 
          /* also the CE_defaultval must be parsable for numeric types */
-         if ((s = lGetString(this_elem, CE_defaultval))
-             && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp) - 1)) {
-/*             ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp)); */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s,
-                                    tmp);
+         if ((s=lGetString(this_elem, CE_defaultval))
+            && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
+/*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
             DRETURN(-1);
          }
 
          /* negative values are not allowed for consumable attributes */
          if (!allow_neg_consumable && (lGetUlong(this_elem, CE_consumable) != CONSUMABLE_NO)
-             && lGetDouble(this_elem, CE_doubleval) < (double) 0.0) {
-/*             ERROR((SGE_EVENT, MSG_CPLX_ATTRIBISNEG_S, name)); */
+             && lGetDouble(this_elem, CE_doubleval) < (double)0.0) {
+/*             ERROR(MSG_CPLX_ATTRIBISNEG_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_ATTRIBISNEG_S, name);
 
             DRETURN(-1);
@@ -263,13 +261,11 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          ret = sge_resolve_host(this_elem, CE_stringval);
          if (ret != CL_RETVAL_OK) {
             if (ret == CL_RETVAL_GETHOSTNAME_ERROR) {
-/*                ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, s)); */
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_CANTRESOLVEHOST_S, s);
+/*                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, s); */
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, s);
             } else {
-/*                ERROR((SGE_EVENT, MSG_SGETEXT_INVALIDHOST_S, s)); */
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_INVALIDHOST_S,
-                                       s);
+/*                ERROR(MSG_SGETEXT_INVALIDHOST_S, s); */
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_INVALIDHOST_S, s);
             }
             DRETURN(-1);
          }
@@ -281,7 +277,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          break;
 
       default:
-/*          ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type))); */
+/*          ERROR(MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type)); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
          DRETURN(-1);
@@ -733,9 +729,8 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
       if (cep != nullptr) {
          requestable = lGetUlong(cep, CE_requestable);
          if (!allow_non_requestable && requestable == REQU_NO) {
-/*             ERROR((SGE_EVENT, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name)); */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
+/*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
             DRETURN(-1);
          }
 
@@ -766,9 +761,8 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
       } else {
          /* CLEANUP: message should be put into answer_list and
             returned via argument. */
-/*          ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name)); */
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S,
-                                 name);
+/*          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, name); */
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
          DRETURN(-1);
       }
    }
@@ -856,7 +850,7 @@ centry_list_parse_from_string(lList *complex_attributes,
    /* allocate space for attribute list if no list is passed */
    if (complex_attributes == nullptr) {
       if ((complex_attributes = lCreateList("qstat_l_requests", CE_Type)) == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_NOALLOCATTRLIST));
+         ERROR(SFNMAX, MSG_PARSE_NOALLOCATTRLIST);
          DRETURN(nullptr);
       }
    }
@@ -878,7 +872,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       }
 
       if (attr == nullptr || *attr == '\0') {
-         ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_RESOURCE_S, ""));
+         ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, "");
          lFreeList(&complex_attributes);
          sge_free_saved_vars(context);
          DRETURN(nullptr);
@@ -890,7 +884,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       if (check_value == false && value == nullptr) {
          value = (char*)TRUE_STR;
       } else if (check_value == true && (value == nullptr || *value == '\0')) {
-         ERROR((SGE_EVENT, MSG_CPLX_VALUEMISSING_S, attr));
+         ERROR(MSG_CPLX_VALUEMISSING_S, attr);
          lFreeList(&complex_attributes);
          sge_free_saved_vars(context);
          DRETURN(nullptr);
@@ -1275,10 +1269,10 @@ centry_urgency_contribution(int slots, const char *name, double value,
          DPRINTF(("   %s: using weight as contrib ---> %7f\n", name, weight));
          break;
 
-      default:
-         ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(complex_type)));
-         contribution = 0;
-         break;
+   default:
+      ERROR(MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(complex_type));
+      contribution = 0;
+      break;
    }
 
    DRETURN(contribution);
@@ -1349,9 +1343,8 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
          lListElem *centry = centry_list_locate(master_centry_list, name);
 
          if (centry == nullptr) {
-            ERROR((SGE_EVENT, MSG_GDI_NO_ATTRIBUTE_S,
-                    name != nullptr ? name : "<noname>"));
-            answer_list_add(alpp, SGE_EVENT,
+            ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
+            answer_list_add(alpp, SGE_EVENT, 
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
             break;
@@ -1401,8 +1394,8 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
 
    /* Check for keyword 'none' */
    if (!strcasecmp(load_formula, "none")) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_NONE_NOT_ALLOWED_S, name));
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NONE_NOT_ALLOWED_S, name);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, 
                       ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -1437,35 +1430,29 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
                int type = lGetUlong(cmplx_attr, CE_valtype);
 
                if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_WRONGTYPE_ATTRIBUTE_SS, name,
-                                         fact));
-                  answer_list_add(answer_list, SGE_EVENT,
-                                  STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             } else if (!sge_str_is_number(fact)) {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_NOTEXISTING_ATTRIBUTE_SS,
-                                      name, fact));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, name, fact);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
          /* is weighting factor a number? */
          if (next_fact != nullptr) {
             if (!sge_str_is_number(next_fact)) {
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_WEIGHTFACTNONUMB_SS, name,
-                                      next_fact));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WEIGHTFACTNONUMB_SS, name, next_fact);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
 
          /* multiple weighting factors? */
          if (end != nullptr) {
-            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_MULTIPLEWEIGHTFACT_S, name));
-            answer_list_add(answer_list, SGE_EVENT,
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MULTIPLEWEIGHTFACT_S, name);
+            answer_list_add(answer_list, SGE_EVENT, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;
          }

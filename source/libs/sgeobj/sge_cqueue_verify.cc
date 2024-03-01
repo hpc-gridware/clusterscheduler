@@ -75,7 +75,7 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
       if (name != nullptr && strcasecmp("none", name)) {
          const lListElem *calendar = lGetElemStr(master_calendar_list, CAL_name, name);
          if (calendar == nullptr) {
-            sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
          }
@@ -139,7 +139,7 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
          i++;
       }
       if (!found) {
-         sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNINITSTATE_S, name);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNINITSTATE_S, name);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -251,7 +251,7 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
          i++;
       }
       if (!found) {
-         sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNSTARTMODE_S, name);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNSTARTMODE_S, name);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -273,7 +273,7 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
        path_found = path_verify(name, answer_list, "shell", true);
 
            if (!path_found) {
-               sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNSHELL_S, name);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNSHELL_S, name);
                answer_list_add(answer_list, SGE_EVENT,
                                STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -312,14 +312,13 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
                 */
                ;
             } else {
-               ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNSUB_SS,
-                      so_name, cqueue_name));
+               ERROR(MSG_CQUEUE_UNKNOWNSUB_SS, so_name, cqueue_name);
                answer_list_add(answer_list, SGE_EVENT,
                                STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          } else {
-            ERROR((SGE_EVENT, MSG_CQUEUE_SUBITSELF_S, cqueue_name));
+            ERROR(MSG_CQUEUE_SUBITSELF_S, cqueue_name);
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;

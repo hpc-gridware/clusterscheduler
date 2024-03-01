@@ -102,16 +102,13 @@ void cull_mail(u_long32 progid, const lList *user_list, const char *subj, const 
          user = lGetString(ep, MR_user);
          host = lGetHost(ep, MR_host);
          if (!user && !host) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_MAIL_EMPTYUSERHOST));
+            ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);
             sge_free(&mailer);
             DRETURN_VOID;
          } else if (!host) {
-            INFO((SGE_EVENT, MSG_MAIL_MAILUSER_SSSS, 
-                  mail_type, user, mailer, subj ? subj : MSG_MAIL_NOSUBJ));
+            INFO(MSG_MAIL_MAILUSER_SSSS, mail_type, user, mailer, subj ? subj : MSG_MAIL_NOSUBJ);
          } else {
-            INFO((SGE_EVENT, MSG_MAIL_MAILUSERHOST_SSSSS, 
-                  mail_type, user, host, mailer, 
-                  subj ? subj : MSG_MAIL_NOSUBJ));
+            INFO(MSG_MAIL_MAILUSERHOST_SSSSS, mail_type, user, host, mailer, subj ? subj : MSG_MAIL_NOSUBJ);
          }
          sge_send_mail(progid, mailer, mailer_has_subj_line, user, host, subj, buf);
       }
@@ -159,7 +156,7 @@ const char *buf
     * -1 is fork() failure and will be handled later 
     */
    if (i < -1){
-      ERROR((SGE_EVENT, MSG_SMF_MAIL_FORK_FAILED_S, err_str));
+      ERROR(MSG_SMF_MAIL_FORK_FAILED_S, err_str);
    }
 #else
    i = fork();
@@ -170,7 +167,7 @@ const char *buf
    }
    /* log fork() failure */
    else if (i == -1) { /* still in parent */
-      ERROR((SGE_EVENT, MSG_MAIL_NOFORK_S, strerror(errno)));
+      ERROR(MSG_MAIL_NOFORK_S, strerror(errno));
       DRETURN_VOID;
    } /* else in child */
 
@@ -185,22 +182,22 @@ const char *buf
       and leave_commd() unregisters the commproc
    */
    if (pipe(pipefds) < 0) {
-      ERROR((SGE_EVENT, MSG_MAIL_NOPIPE_S, strerror(errno)));
+      ERROR(MSG_MAIL_NOPIPE_S, strerror(errno));
       exit(1);
    }
    /* Don't need to start in new contract on Solaris - already in new one */
    if ((pid = fork()) < 0) {
-      ERROR((SGE_EVENT, MSG_MAIL_NOFORK_S, strerror(errno)));
+      ERROR(MSG_MAIL_NOFORK_S, strerror(errno));
       exit(1);
    }
    if (!pid) {
       if (host)
-         sprintf(user_str, "%s@%s", user, host);
+         snprintf(user_str, sizeof(user_str), "%s@%s", user, host);
       else
-         sprintf(user_str, "%s", user);
+         snprintf(user_str, sizeof(user_str), "%s", user);
 
       if (dup2(pipefds[0], 0) < 0) {
-         CRITICAL((SGE_EVENT, MSG_MAIL_NODUP_S, strerror(errno)));
+         CRITICAL(MSG_MAIL_NODUP_S, strerror(errno));
          exit(1);
       }
 
@@ -214,7 +211,7 @@ const char *buf
          DPRINTF(("%s mail %s", mailer, user_str));  
          execl(mailer, "mail", user_str, nullptr);
       }
-      CRITICAL((SGE_EVENT, MSG_MAIL_NOEXEC_SS, mailer, strerror(errno)));
+      CRITICAL(MSG_MAIL_NOEXEC_SS, mailer, strerror(errno));
       exit(1);
    }
 
@@ -236,19 +233,19 @@ const char *buf
       alarm(0);
       if (pid2 == 0) {          /* how could this happen? */
          kill(pid, SIGKILL);
-         ERROR((SGE_EVENT, SFNMAX, MSG_MAIL_NOMAIL1));
+         ERROR(SFNMAX, MSG_MAIL_NOMAIL1);
          exit(1);
       }
 
       if (pid2 == -1) {         /* alarm must have went off */
          kill(pid, SIGKILL);
-         ERROR((SGE_EVENT, SFNMAX, MSG_MAIL_NOMAIL2));
+         ERROR(SFNMAX, MSG_MAIL_NOMAIL2);
          exit(1);
       }
 
       if (WIFSTOPPED(status)) { /* how could this happen? */
          kill(pid, SIGKILL);
-         ERROR((SGE_EVENT, MSG_MAIL_NOMAIL3_I, WSTOPSIG(status)));
+         ERROR(MSG_MAIL_NOMAIL3_I, WSTOPSIG(status));
          exit(1);
       }
 
@@ -257,6 +254,6 @@ const char *buf
       exit(exit_status);
    }
 FCLOSE_ERROR:
-   CRITICAL((SGE_EVENT, MSG_FILE_ERRORCLOSEINGXY_SS, "<pipefds>", strerror(errno)));
+   CRITICAL(MSG_FILE_ERRORCLOSEINGXY_SS, "<pipefds>", strerror(errno));
    exit(1);
 }

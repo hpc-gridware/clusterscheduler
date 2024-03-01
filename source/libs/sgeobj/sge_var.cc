@@ -225,7 +225,7 @@ void var_list_set_int(lList **varl, const char *name, int value)
    char buffer[2048];
 
    DENTER(TOP_LAYER);
-   sprintf(buffer, "%d", value);
+   snprintf(buffer, sizeof(buffer), "%d", value);
    var_list_set_string(varl, name, buffer);
    DRETURN_VOID;
 }
@@ -259,7 +259,7 @@ void var_list_set_sge_u32(lList **varl, const char *name, u_long32 value)
    char buffer[2048];
 
    DENTER(TOP_LAYER);
-   sprintf(buffer, sge_u32, value);
+   snprintf(buffer, sizeof(buffer), sge_u32, value);
    var_list_set_string(varl, name, buffer);
    DRETURN_VOID;
 }
@@ -290,6 +290,7 @@ void var_list_set_sharedlib_path(lList **varl)
 {
    char *sharedlib_path;
    char *sge_sharedlib_path;
+   size_t sge_sharedlib_path_size;
    const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
    lListElem *sharedlib_elem = nullptr;
@@ -297,9 +298,9 @@ void var_list_set_sharedlib_path(lList **varl)
    DENTER(TOP_LAYER);
 
    /* this is the SGE sharedlib path */
-   sge_sharedlib_path = sge_malloc(strlen(sge_root) + 
-                        strlen("/lib/") + strlen(sge_get_arch()) + 1);
-   sprintf(sge_sharedlib_path, "%s/lib/%s", sge_root, sge_get_arch());
+   sge_sharedlib_path_size = strlen(sge_root) + strlen("/lib/") + strlen(sge_get_arch()) + 1;
+   sge_sharedlib_path = sge_malloc(sge_sharedlib_path_size);
+   snprintf(sge_sharedlib_path, sge_sharedlib_path_size, "%s/lib/%s", sge_root, sge_get_arch());
 
    /* if already in environment: extend by SGE sharedlib path, else set */
    sharedlib_elem = lGetElemStrRW(*varl, VA_variable, sharedlib_path_name);
@@ -457,7 +458,7 @@ void var_list_copy_prefix_vars(lList **varl,
          const char *name_without_prefix = &prefix_name[prefix_len];
          const char *value = lGetString(var_elem, VA_value);
 
-         sprintf(name, "%s%s", new_prefix, name_without_prefix);
+         snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
          var_list_set_string(&var_list2, name, value);
       }
    }
@@ -516,7 +517,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
          const char *name_without_prefix = &prefix_name[prefix_len];
          const lListElem *existing_variable;
 
-         sprintf(name, "%s%s", new_prefix, name_without_prefix);
+         snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
          existing_variable = lGetElemStr(*varl, VA_variable, name);
          if (existing_variable == nullptr) {
             var_list_set_string(&var_list2, name, value);

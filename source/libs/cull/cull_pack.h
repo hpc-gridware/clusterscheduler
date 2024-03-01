@@ -89,5 +89,3 @@ int cull_pack_enum(sge_pack_buffer *pb, const lEnumeration *ep);
 int cull_unpack_cond(sge_pack_buffer *pb, lCondition **cpp);
 
 int cull_pack_cond(sge_pack_buffer *pb, const lCondition *cp);
-
-void cull_dump_pack_buffer(sge_pack_buffer *pb, FILE *fp);

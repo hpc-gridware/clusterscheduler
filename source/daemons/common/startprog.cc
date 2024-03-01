@@ -107,8 +107,7 @@ int startprog(int out, int err,
        *ptr = '\0';
        strcat(prog_path, name);
        if (SGE_STAT(prog_path, &sb)) {
-          ERROR((SGE_EVENT, MSG_FILE_STATFAILED_SS, 
-               prog_path, strerror(errno)));
+          ERROR(MSG_FILE_STATFAILED_SS, prog_path, strerror(errno));
           DRETURN(-2);
        }
    } else {
@@ -118,11 +117,11 @@ int startprog(int out, int err,
     if (!path) {
        DRETURN(-2);
     }
-    sprintf(prog_path, "%s/%s/%s", path, sge_get_arch(), name);
+    snprintf(prog_path, sizeof(prog_path), "%s/%s/%s", path, sge_get_arch(), name);
     if (SGE_STAT(prog_path, &sb)) {
-       sprintf(prog_path, "%s/%s", path, name);
+       snprintf(prog_path, sizeof(prog_path), "%s/%s", path, name);
        if (SGE_STAT(prog_path, &sb)) {
-          ERROR((SGE_EVENT, MSG_FILE_STATFAILED_SS, prog_path, strerror(errno)));
+          ERROR(MSG_FILE_STATFAILED_SS, prog_path, strerror(errno));
           DRETURN(-2);
        }
     }
@@ -130,19 +129,19 @@ int startprog(int out, int err,
 
  argv[0] = prog_path;
 
- WARNING((SGE_EVENT, MSG_STARTUP_STARTINGPROGRAMMX_S, prog_path));
+ WARNING(MSG_STARTUP_STARTINGPROGRAMMX_S, prog_path);
 
 #if defined(SOLARIS)
  pid = sge_smf_contract_fork(err_str, err_length);
  if (pid < -1 && strlen(err_str) > 0) {
 	 /* Print additional SMF related error message */
-	 ERROR((SGE_EVENT, MSG_SMF_STARTPROG_FORK_FAILED_S, err_str));
+	 ERROR(MSG_SMF_STARTPROG_FORK_FAILED_S, err_str);
  }
 #else
  pid = fork();
 #endif
  if (pid < 0) {
-   ERROR((SGE_EVENT, MSG_PROC_CANTFORKPROCESSTOSTARTX_S, prog_path));
+   ERROR(MSG_PROC_CANTFORKPROCESSTOSTARTX_S, prog_path);
    DRETURN(-1);
  } else if (pid == 0) {
    /* child */
@@ -172,9 +171,9 @@ int startprog(int out, int err,
     /* parent */
     ret = do_wait(pid);
     if (ret == -1) {
-       CRITICAL((SGE_EVENT, MSG_PROC_CANTEXECPROCESSORPROCESSDIEDTHROUGHSIGNALX_S, prog_path));
+       CRITICAL(MSG_PROC_CANTEXECPROCESSORPROCESSDIEDTHROUGHSIGNALX_S, prog_path);
     } else if (ret > 0) {
-       CRITICAL((SGE_EVENT, MSG_PROC_CANTSTARTPROCESSX_S, prog_path));     
+       CRITICAL(MSG_PROC_CANTSTARTPROCESSX_S, prog_path);
     }
     DRETURN(ret);
  }
@@ -210,7 +209,7 @@ pid_t pid
    else if (WIFSIGNALED(status))
       exit_status = 8;
    else {
-      ERROR((SGE_EVENT, SFNMAX, MSG_PROC_WAITPIDRETURNEDUNKNOWNSTATUS));
+      ERROR(SFNMAX, MSG_PROC_WAITPIDRETURNEDUNKNOWNSTATUS);
       exit_status = 8;
    }
  

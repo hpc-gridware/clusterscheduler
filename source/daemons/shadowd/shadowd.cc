@@ -130,7 +130,7 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
    handle = cl_com_create_handle(&commlib_error, CL_CT_TCP, CL_CM_CT_MESSAGE, false, sge_qmaster_port, CL_TCP_DEFAULT,
                                  (char *) prognames[SHADOWD], 0, 1, 0);
    if (handle == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
+      CRITICAL(SFNMAX, cl_get_error_text(commlib_error));
       DRETURN(is_up_and_running);
    }
 
@@ -243,13 +243,13 @@ main(int argc, char **argv) {
       const char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid)));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
-            CRITICAL((SGE_EVENT, MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid));
+            CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
          }
       }
@@ -257,12 +257,12 @@ main(int argc, char **argv) {
       gdi_client_prepare_enroll(&alp);
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid)));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
-            CRITICAL((SGE_EVENT, MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid));
+            CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
          }
       }
@@ -275,27 +275,27 @@ main(int argc, char **argv) {
    }
 
    if (bootstrap_get_qmaster_spool_dir() == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file()));
+      CRITICAL(MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file());
       sge_exit(1);
    }
 
    if (chdir(bootstrap_get_qmaster_spool_dir())) {
-      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, bootstrap_get_qmaster_spool_dir()));
+      CRITICAL(MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, bootstrap_get_qmaster_spool_dir());
       sge_exit(1);
    }
 
-   if (sge_set_admin_username(bootstrap_get_admin_user(), err_str)) {
-      CRITICAL((SGE_EVENT, SFNMAX, err_str));
+   if (sge_set_admin_username(bootstrap_get_admin_user(), err_str, sizeof(err_str))) {
+      CRITICAL(SFNMAX, err_str);
       sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SHADOWD_CANTSWITCHTOADMIN_USER));
+      CRITICAL(SFNMAX, MSG_SHADOWD_CANTSWITCHTOADMIN_USER);
       sge_exit(1);
    }
 
-   sprintf(shadow_err_file, "messages_shadowd.%s", component_get_unqualified_hostname());
-   sprintf(qmaster_out_file, "messages_qmaster.%s", component_get_unqualified_hostname());
+   snprintf(shadow_err_file, sizeof(shadow_err_file), "messages_shadowd.%s", component_get_unqualified_hostname());
+   snprintf(qmaster_out_file, sizeof(shadow_err_file), "messages_qmaster.%s", component_get_unqualified_hostname());
    sge_copy_append(TMP_ERR_FILE_SHADOWD, shadow_err_file, SGE_MODE_APPEND);
    unlink(TMP_ERR_FILE_SHADOWD);
    log_state_set_log_as_admin_user(1);
@@ -366,7 +366,7 @@ main(int argc, char **argv) {
                if (ret == 0) {
                   /* we can start a qmaster on this host */
                   if (qmaster_lock(QMASTER_LOCK_FILE)) {
-                     ERROR((SGE_EVENT, SFNMAX, MSG_SHADOWD_FAILEDTOLOCKQMASTERSOMBODYWASFASTER));
+                     ERROR(SFNMAX, MSG_SHADOWD_FAILEDTOLOCKQMASTERSOMBODYWASFASTER);
                   } else {
                      int out, err;
 
@@ -403,7 +403,7 @@ main(int argc, char **argv) {
                         ret = startprog(out, err, nullptr, binpath, qmaster_name, nullptr);
                         sge_switch2admin_user();
                         if (ret) {
-                           ERROR((SGE_EVENT, SFNMAX, MSG_SHADOWD_CANTSTARTQMASTER));
+                           ERROR(SFNMAX, MSG_SHADOWD_CANTSTARTQMASTER);
                         }
                         close(out);
                      } else {
@@ -413,7 +413,7 @@ main(int argc, char **argv) {
                } else {
                   if (ret == -1) {
                      /* just log the more important failures */
-                     WARNING((SGE_EVENT, MSG_SHADOWD_DELAYINGSHADOWFUNCFORXSECONDS_U, sge_u32c(delay)));
+                     WARNING(MSG_SHADOWD_DELAYINGSHADOWFUNCFORXSECONDS_U, sge_u32c(delay));
                   }
                }
             }
@@ -466,8 +466,8 @@ compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
 
    DENTER(TOP_LAYER);
 
-   if (get_qm_name(newqmaster, act_qmaster_file, nullptr)) {
-      WARNING((SGE_EVENT, MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file));
+   if (get_qm_name(newqmaster, act_qmaster_file, nullptr, 0)) {
+      WARNING(MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file);
       DRETURN(-1);
    }
 
@@ -497,16 +497,15 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    }
 
    /* we can't read act_qmaster file */
-   if (get_qm_name(oldqmaster, act_qmaster_file, nullptr)) {
-      WARNING((SGE_EVENT, MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file));
+   if (get_qm_name(oldqmaster, act_qmaster_file, nullptr, 0)) {
+      WARNING(MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file);
       DRETURN(-1);
    }
 
    /* we can't resolve hostname of old qmaster */
    hp = sge_gethostbyname_retry(oldqmaster);
    if (hp == (struct hostent *) nullptr) {
-      WARNING((SGE_EVENT, MSG_SHADOWD_CANTRESOLVEHOSTNAMEFROMACTQMASTERFILE_SS,
-              act_qmaster_file, oldqmaster));
+      WARNING(MSG_SHADOWD_CANTRESOLVEHOSTNAMEFROMACTQMASTERFILE_SS, act_qmaster_file, oldqmaster);
       DRETURN(-1);
    }
 
@@ -522,7 +521,7 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
 
    /* we are not in the shadow master file */
    if (host_in_file(qualified_hostname, shadow_master_file)) {
-      WARNING((SGE_EVENT, MSG_SHADOWD_NOTASHADOWMASTERFILE_S, shadow_master_file));
+      WARNING(MSG_SHADOWD_NOTASHADOWMASTERFILE_S, shadow_master_file);
       DRETURN(-1);
    }
 

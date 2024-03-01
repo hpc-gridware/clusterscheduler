@@ -96,7 +96,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 #endif  
   
    if (( res = pthread_mutex_lock(mutex)) != 0) {
-      CRITICAL((SGE_EVENT, MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res)));
+      CRITICAL(MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res));
       abort();
    }
  
@@ -119,7 +119,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 
    int res = pthread_mutex_lock(mutex);
    if (res != 0) {
-      CRITICAL((SGE_EVENT, MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res)));
+      CRITICAL(MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res));
       abort();
    }
 
@@ -168,7 +168,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
 
    if (( res = pthread_mutex_unlock(mutex)) != 0)
    {
-      CRITICAL((SGE_EVENT, MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res)));
+      CRITICAL(MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res));
       abort();
    }
 
@@ -192,7 +192,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
    DENTER(BASIS_LAYER);
 
    if ((res = pthread_mutex_unlock(mutex)) != 0) {
-      CRITICAL((SGE_EVENT, MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res)));
+      CRITICAL(MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res));
       abort();
    }
 

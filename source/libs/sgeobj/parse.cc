@@ -193,7 +193,7 @@ lListElem *ep; /* SPA_Type */
         || (longopt && (longopt[strlen(longopt)-1] == '*')
            && !strncmp(longopt, *sp, strlen(longopt)-1)) ) {
       if(!*(++rp) || (**rp == '-') || (!**rp)) {
-         sprintf(str, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
+         snprintf(str, sizeof(str), MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(rp);
       }
@@ -235,14 +235,6 @@ lList **alpp
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
       ++rp;
       
-#if 0
-      string str;
-      if(!*() || (**rp == '-')) {
-         sprintf(str, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
-         answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-         DRETURN(rp);
-      }
-#endif
       ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
@@ -510,9 +502,8 @@ parse_group_options(lList *string_list, lList **answer_list)
          } else if (letter == 't') {
             group_opt |= GROUP_NO_PETASK_GROUPS;
          } else {
-            sprintf(SGE_EVENT, MSG_QSTAT_WRONGGCHAR_C, letter);
-            answer_list_add(answer_list, SGE_EVENT, 
-                            STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QSTAT_WRONGGCHAR_C, letter);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          }
       }
    }
@@ -557,7 +548,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
 
             if ( *value & bitmask ) {
                /* whops! same specifier, already supplied! */
-               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILESPECGIVENTWICE_SS, *cpp, name)); 
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILESPECGIVENTWICE_SS, *cpp, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                DRETURN(false);
             }
@@ -571,7 +562,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
 
       if ( *cpp == nullptr ) {
          /* whops! unknown specifier */
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS, s, name)); 
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS, s, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
@@ -580,7 +571,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
 
    if (*value == 0) {
       /* empty or no specifier for userset type */
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEEMPTYSPEC_S, name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEEMPTYSPEC_S, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
 

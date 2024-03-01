@@ -77,7 +77,7 @@ host_list_locate(const lList *host_list, const char *hostname) {
             ret = lGetElemHostRW(host_list, nm, hostname);
          }
       } else {
-         CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+         CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       }
    } else {
       /*
@@ -145,9 +145,8 @@ bool host_is_referenced(const lListElem *host,
          if (queue != nullptr) {
             const char *queuename = lGetString(cqueue, CQ_name);
 
-            sprintf(SGE_EVENT, MSG_HOSTREFINQUEUE_SS, hostname, queuename);
-            answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                            ANSWER_QUALITY_ERROR);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINQUEUE_SS, hostname, queuename);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = true;
             break;
          }
@@ -165,9 +164,8 @@ bool host_is_referenced(const lListElem *host,
                if (lGetElemHost(host_list, HR_name, hostname) != nullptr) {
                   const char *hgrp_name = lGetHost(hgrp_elem, HGRP_name);
 
-                  sprintf(SGE_EVENT, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                                  ANSWER_QUALITY_ERROR);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
                   ret = true;
                   break;

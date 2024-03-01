@@ -322,7 +322,7 @@ drmaa_job_template_t *create_job_template(const char *job_path, const char *job_
    }
 
    /* control job sleep time */
-   sprintf(buf, "%d", seconds);
+   snprintf(buf, sizeof(buf), "%d", seconds);
    job_argv[0] = buf; 
    job_argv[1] = nullptr;
    drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);

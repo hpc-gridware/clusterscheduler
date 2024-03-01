@@ -818,7 +818,7 @@ void te_check_time(time_t aTime) {
    if (Event_Control.last > aTime) {
       time_t delta = Event_Control.last - aTime;
 
-      WARNING((SGE_EVENT, MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) delta));
+      WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) delta);
 
       for_each_rw (le, Event_Control.list) {
          lSetUlong(le, TE_when, (lGetUlong(le, TE_when) - delta));
@@ -926,7 +926,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    if (handler != nullptr) {
       handler(anEvent, monitor);
    } else {
-      WARNING((SGE_EVENT, MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I, anEvent->type));
+      WARNING(MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I, anEvent->type);
    }
 
    if (RECURRING_EVENT == anEvent->mode) {

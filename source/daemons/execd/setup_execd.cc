@@ -80,21 +80,21 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    /*
    ** switch to admin user
    */
-   if (sge_set_admin_username(admin_user, err_str)) {
-      CRITICAL((SGE_EVENT, SFNMAX, err_str));
+   if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
+      CRITICAL(SFNMAX, err_str);
       /* TODO: remove */
       sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
+      CRITICAL(SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER);
       /* TODO: remove */
       sge_exit(1);
    }
 
    while (gdi2_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT));
+         CRITICAL(SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT);
          /* TODO: remove */
          sge_exit(1);
       }
@@ -130,12 +130,9 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    }
    sge_switch2admin_user();
    log_state_set_log_as_admin_user(1);
-   sprintf(execd_messages_file, "%s/%s/%s", spool_dir, 
-           unqualified_hostname, ERR_FILE);
+   snprintf(execd_messages_file, sizeof(execd_messages_file), "%s/%s/%s", spool_dir, unqualified_hostname, ERR_FILE);
    log_state_set_log_file(execd_messages_file);
-
-   sprintf(execd_spool_dir, "%s/%s", spool_dir, 
-           unqualified_hostname);
+   snprintf(execd_spool_dir, sizeof(execd_spool_dir), "%s/%s", spool_dir, unqualified_hostname);
    
    DPRINTF(("Making directories----------------------------\n"));
    sge_mkdir(EXEC_DIR, 0775, true, false);
@@ -183,8 +180,7 @@ int job_initialize_job(lListElem *job)
          SGE_STRUCT_STAT stat_buffer;
          stringT active_dir = "";
 
-         sge_get_file_path(active_dir, JOB_ACTIVE_DIR, FORMAT_DEFAULT,
-                           SPOOL_WITHIN_EXECD, job_id, ja_task_id, nullptr);
+         sge_get_file_path(active_dir, sizeof(active_dir), JOB_ACTIVE_DIR, FORMAT_DEFAULT, SPOOL_WITHIN_EXECD, job_id, ja_task_id, nullptr);
          if (SGE_STAT(active_dir, &stat_buffer)) {
             /* lost active directory - initiate cleanup for job */
             execd_job_run_failure(job, ja_task, nullptr, "lost active dir of running "
@@ -200,17 +196,14 @@ int job_initialize_job(lListElem *job)
          if (lGetUlong(ja_task, JAT_status) == JRUNNING) {
             ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
-               ERROR((SGE_EVENT, MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU,
-                     (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id)));
+               ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id));
             }
          }
          for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             if (lGetUlong(pe_task, PET_status) == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {
-                  ERROR((SGE_EVENT, MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS,
-                     (ret == 1 ? MSG_DELAYED : MSG_FAILED),
-                     sge_u32c(job_id), lGetString(pe_task, PET_id)));
+                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id), lGetString(pe_task, PET_id));
                }
             }
          }

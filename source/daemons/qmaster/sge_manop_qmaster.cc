@@ -74,7 +74,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -101,21 +101,20 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
 
    /* ep is no acl element, if ep has no UM_name/UO_name */
    if ((pos = lGetPosViaElem(ep, key, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(key), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(key), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    manop_name = lGetPosString(ep, pos);
    if (!manop_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if (lGetElemStr(*lpp, key, manop_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_ALREADYEXISTS_SS, object_name, manop_name));
+      ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -127,7 +126,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    if (!sge_event_spool(alpp, 0, eve,
                         0, 0, manop_name, nullptr, nullptr,
                         added, nullptr, nullptr, true, true)) {
-      ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
+      ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
       /* remove element from list */
@@ -136,8 +135,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
       DRETURN(STATUS_EDISK);
    }
 
-   INFO((SGE_EVENT, MSG_SGETEXT_ADDEDTOLIST_SSSS,
-           ruser, rhost, manop_name, object_name));
+   INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, ruser, rhost, manop_name, object_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
@@ -181,7 +179,7 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    DENTER(TOP_LAYER);
 
    if (ep == nullptr || ruser == nullptr || rhost == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -206,36 +204,35 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
 
    /* ep is no manop element, if ep has no UM_name/UO_name */
    if ((pos = lGetPosViaElem(ep, key, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(key), __func__));
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(key), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    manop_name = lGetPosString(ep, pos);
    if (manop_name == nullptr) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* prevent removing of root from man/op-list */
    if (strcmp(manop_name, "root") == 0) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", object_name));
+      ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", object_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
    /* prevent removing the admin user from man/op-list */
    if (strcmp(manop_name, bootstrap_get_admin_user()) == 0) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS,
-              bootstrap_get_admin_user(), object_name));
+      ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, bootstrap_get_admin_user(), object_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
    found = lGetElemStrRW(*lpp, key, manop_name);
    if (!found) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, object_name, manop_name));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -246,7 +243,7 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    if (!sge_event_spool(alpp, 0, eve,
                         0, 0, manop_name, nullptr, nullptr,
                         nullptr, nullptr, nullptr, true, true)) {
-      ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
+      ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
       /* chain in again */
@@ -256,7 +253,7 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    }
    lFreeElem(&found);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, manop_name, object_name));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, manop_name, object_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }

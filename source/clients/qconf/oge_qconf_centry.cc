@@ -381,7 +381,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
 
    DENTER(TOP_LAYER);
    if (!this_list || !old_list) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }

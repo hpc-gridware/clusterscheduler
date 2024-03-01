@@ -704,14 +704,14 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
       now = sge_get_gmt();
       if (now >= next_log) {
-         WARNING((SGE_EVENT, SFNMAX, MSG_SGETEXT_NO_LOAD));
+         WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
          next_log = now + 7200;
       }
    } else if (loads == -2) {
       static bool logged_at_startup = false;
       if (!logged_at_startup) {
          logged_at_startup = true;
-         WARNING((SGE_EVENT, MSG_LS_USE_EXTERNAL_LS_S, sge_get_arch()));
+         WARNING(MSG_LS_USE_EXTERNAL_LS_S, sge_get_arch());
    }
    }
 
@@ -735,7 +735,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    if (sge_loadmem(&mem_info)) {
       static int mem_fail = 0;
       if (!mem_fail) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_LOAD_NOMEMINDICES));
+         ERROR(SFNMAX, MSG_LOAD_NOMEMINDICES);
          mem_fail =1;
       }
       DRETURN(1);
@@ -787,7 +787,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
          u_long32 now = sge_get_gmt();
          if (now >= next_log2) {
-            WARNING((SGE_EVENT, SFNMAX, MSG_SGETEXT_NO_LOAD));
+            WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
             next_log2 = now + 7200;
          }
       }
@@ -799,10 +799,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
 void update_job_usage(const char* qualified_hostname)
 {
-   lList *usage_list = nullptr;
-   lListElem *jr;
-   const lListElem *usage;
-
    DENTER(TOP_LAYER);
 
    if (mconf_get_simulate_jobs()) {
@@ -815,16 +811,19 @@ void update_job_usage(const char* qualified_hostname)
          add_usage(jr, USAGE_ATTR_IOW, nullptr, 0.0);
          add_usage(jr, USAGE_ATTR_VMEM, nullptr, 256);
          add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, 256);
+         add_usage(jr, USAGE_ATTR_RSS, nullptr, 234);
+         add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, 234);
       }
       DRETURN_VOID;
    }
 
+   lList *usage_list = nullptr;
 #ifdef COMPILE_DC
    if (!mconf_get_sharetree_reserved_usage()) {
       int ptf_error;
 
       if ((ptf_error=ptf_get_usage(&usage_list))) {
-         ERROR((SGE_EVENT, MSG_LOAD_NOPTFUSAGE_S, ptf_errstr(ptf_error)));
+         ERROR(MSG_LOAD_NOPTFUSAGE_S, ptf_errstr(ptf_error));
          /*
             use the old usage values in job report or none
             in case this is the first call to ptf_get_usage()
@@ -856,6 +855,7 @@ void update_job_usage(const char* qualified_hostname)
 #endif
 
    /* replace existing usage in the job report with the new one */
+   const lListElem *usage;
    for_each_ep(usage, usage_list) {
       u_long32 job_id;
       const lListElem *ja_task;
@@ -869,9 +869,10 @@ void update_job_usage(const char* qualified_hostname)
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
          /* search matching job report */
+         lListElem *jr;
          if (!(jr = get_job_report(job_id, ja_task_id, nullptr))) {
             /* should not happen in theory */
-            ERROR((SGE_EVENT, "removing unreferenced job " sge_u32"." sge_u32" without job report from ptf",job_id ,ja_task_id ));
+            ERROR("removing unreferenced job " sge_u32"." sge_u32" without job report from ptf",job_id ,ja_task_id );
 #ifdef COMPILE_DC
             ptf_unregister_registered_job(job_id ,ja_task_id);
 #endif
@@ -904,6 +905,14 @@ void update_job_usage(const char* qualified_hostname)
             DPRINTF(("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value)));
             add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, lGetDouble(uep, UA_value));
          }
+         if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_RSS, JAT_usage_list))) {
+            DPRINTF(("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value)));
+            add_usage(jr, USAGE_ATTR_RSS, nullptr, lGetDouble(uep, UA_value));
+         }
+         if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_MAXRSS, JAT_usage_list))) {
+            DPRINTF(("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value)));
+            add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
+         }
 
          DPRINTF(("---> updating job report usage for job " sge_u32"." sge_u32"\n",
              job_id, ja_task_id));
@@ -914,8 +923,7 @@ void update_job_usage(const char* qualified_hostname)
             /* search matching job report */
             if (!(jr = get_job_report(job_id, ja_task_id, pe_task_id))) {
                /* should not happen in theory */
-               ERROR((SGE_EVENT, "could not find job report for job " sge_u32"." sge_u32" "
-                  "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id));
+               ERROR("could not find job report for job " sge_u32"." sge_u32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
 #ifdef COMPILE_DC
 #ifdef DEBUG_DC
                ptf_show_registered_jobs();
@@ -948,6 +956,14 @@ void update_job_usage(const char* qualified_hostname)
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_MAXVMEM, PET_usage))) {
                DPRINTF(("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value)));
                add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, lGetDouble(uep, UA_value));
+            }
+            if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_RSS, PET_usage))) {
+               DPRINTF(("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value)));
+               add_usage(jr, USAGE_ATTR_RSS, nullptr, lGetDouble(uep, UA_value));
+            }
+            if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_MAXRSS, PET_usage))) {
+               DPRINTF(("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value)));
+               add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
             }
 
             DPRINTF(("---> updating job report usage for job " sge_u32"." sge_u32" task \"%s\"\n",

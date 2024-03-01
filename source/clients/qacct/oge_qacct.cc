@@ -669,7 +669,7 @@ int main(int argc, char **argv)
 
    fp = fopen(acct_file, "r");
    if (fp == nullptr) {
-      ERROR((SGE_EVENT, MSG_HISTORY_ERRORUNABLETOOPENX_S ,acct_file));
+      ERROR(MSG_HISTORY_ERRORUNABLETOOPENX_S ,acct_file);
       printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
       goto QACCT_EXIT;
    }
@@ -697,7 +697,7 @@ int main(int argc, char **argv)
                                          QAJ_arid);
       summary_view = true;
       if (sorted_list == nullptr || sort_order == nullptr) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_HISTORY_NOTENOUGTHMEMORYTOCREATELIST));
+         ERROR(SFNMAX, MSG_HISTORY_NOTENOUGTHMEMORYTOCREATELIST);
          goto QACCT_EXIT;
       }
    }
@@ -716,7 +716,7 @@ int main(int argc, char **argv)
       } else if (i_ret > 0) {
 	      break;
       } else if (i_ret < 0) {
-	      ERROR((SGE_EVENT, MSG_HISTORY_IGNORINGINVALIDENTRYINLINEX_U , sge_u32c(line)));
+	      ERROR(MSG_HISTORY_IGNORINGINVALIDENTRYINLINEX_U , sge_u32c(line));
 	      continue;
       }
 
@@ -854,8 +854,7 @@ int main(int argc, char **argv)
    * print the warning about the count of ignored jobs for accounting 
    */
    if (ignored_jobs > 0) {
-      WARNING((SGE_EVENT, MSG_HISTORY_IGNORINGJOBXFORACCOUNTINGMASTERQUEUEYNOTEXISTS_IS,
-                      ignored_jobs));
+      WARNING(MSG_HISTORY_IGNORINGJOBXFORACCOUNTINGMASTERQUEUEYNOTEXISTS_IS, ignored_jobs);
       printf("\n");
    }
 
@@ -873,17 +872,15 @@ int main(int argc, char **argv)
       if (!options.jobfound) {
          if (options.job_number) {
             if (options.taskstart && options.taskend && options.taskstep) {
-               ERROR((SGE_EVENT, MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_DDDD , 
-                  sge_u32c(options.job_number), sge_u32c(options.taskstart), sge_u32c(options.taskend), sge_u32c(options.taskstep)));
+               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_DDDD, sge_u32c(options.job_number), sge_u32c(options.taskstart), sge_u32c(options.taskend), sge_u32c(options.taskstep));
             } else {
-               ERROR((SGE_EVENT, MSG_HISTORY_JOBIDXNOTFOUND_D, sge_u32c(options.job_number)));
+               ERROR(MSG_HISTORY_JOBIDXNOTFOUND_D, sge_u32c(options.job_number));
             }
          } else {
             if (options.taskstart && options.taskend && options.taskstep) {
-               ERROR((SGE_EVENT, MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_SDDD , 
-                  options.job_name, sge_u32c(options.taskstart),sge_u32c(options.taskend),sge_u32c(options.taskstep)));
+               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_SDDD, options.job_name, sge_u32c(options.taskstart),sge_u32c(options.taskend),sge_u32c(options.taskstep));
             } else {
-               ERROR((SGE_EVENT, MSG_HISTORY_JOBNAMEXNOTFOUND_S, options.job_name));
+               ERROR(MSG_HISTORY_JOBNAMEXNOTFOUND_S, options.job_name);
             }
          }
          goto QACCT_EXIT;
@@ -892,7 +889,7 @@ int main(int argc, char **argv)
          sge_exit(0);
       }
    } else if (options.taskstart && options.taskend && options.taskstep) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_HISTORY_TOPTIONREQUIRESJOPTION));
+      ERROR(SFNMAX, MSG_HISTORY_TOPTIONREQUIRESJOPTION);
       qacct_usage(stderr);
       free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
       sge_exit(0);
@@ -967,14 +964,8 @@ int main(int argc, char **argv)
          printf("%s\n", MSG_HISTORY_TOTSYSTEMUSAGE);
       }
 
-      sprintf(title_array, "%13.13s %13.13s %13.13s %13.13s %18.18s %18.18s %18.18s",
-                     "WALLCLOCK", 
-                     "UTIME", 
-                     "STIME", 
-                     "CPU", 
-                     "MEMORY", 
-                     "IO",
-                     "IOW");
+      snprintf(title_array, sizeof(title_array), "%13.13s %13.13s %13.13s %13.13s %18.18s %18.18s %18.18s",
+               "WALLCLOCK", "UTIME", "STIME", "CPU", "MEMORY", "IO", "IOW");
                         
       printf("%s\n", title_array);
 
@@ -1113,7 +1104,7 @@ int main(int argc, char **argv)
    DRETURN(0);
 
 FCLOSE_ERROR:
-   ERROR((SGE_EVENT, MSG_FILE_ERRORCLOSEINGXY_SS, acct_file, strerror(errno)));
+   ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, acct_file, strerror(errno));
 QACCT_EXIT:
    sge_prof_cleanup();
    lFreeList(&sorted_list);
@@ -1129,7 +1120,7 @@ static void print_full_ulong(int full_length, u_long32 value) {
    char tmp_buf[100];
 
    DENTER(TOP_LAYER);
-   sprintf(tmp_buf, "%5" sge_fu32, value);
+   snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, value);
    print_full(full_length, tmp_buf); 
    DRETURN_VOID;
 }
@@ -1261,14 +1252,14 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
          } 
 
          /* slots */
-         sprintf(tmp_buf,"%5" sge_fu32, lGetUlong(lep, QAJ_slots));
+         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, lGetUlong(lep, QAJ_slots));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->slots <= tmp_length) {
             column_size_data->slots  = tmp_length + 1;
          }
 
          /* advance reservations */
-         sprintf(tmp_buf,"%5" sge_fu32, lGetUlong(lep, QAJ_arid));
+         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, lGetUlong(lep, QAJ_arid));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->arid <= tmp_length) {
             column_size_data->arid = tmp_length + 1;

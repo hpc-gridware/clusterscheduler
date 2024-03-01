@@ -129,8 +129,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
                   qinstance_state_set_susp_on_sub(qinstance, false);
                }
             } else {
-               ERROR((SGE_EVENT, MSG_QINSTANCE_CANTFINDFORUPDATEIN_SS, key,
-                      __func__));
+               ERROR(MSG_QINSTANCE_CANTFINDFORUPDATEIN_SS, key, __func__);
                ret = SGE_EMA_FAILURE;
             }
             sge_dstring_free(&key_buffer);
@@ -147,7 +146,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
          lSetList(cqueue, CQ_qinstances, list);
       }
    } else {
-      ERROR((SGE_EVENT, MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__));
+      ERROR(MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__);
       ret = SGE_EMA_FAILURE;
    }
 

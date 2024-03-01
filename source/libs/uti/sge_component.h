@@ -91,6 +91,9 @@ component_get_component_name();
 char *
 component_get_log_buffer();
 
+size_t
+component_get_log_buffer_size();
+
 void
 component_set_thread_id(int thread_id);
 

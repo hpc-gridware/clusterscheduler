@@ -237,7 +237,7 @@ void write_exit_code_to_qrsh(int exit_code)
    shepherd_trace("write_exit_code_to_qrsh(%d)", exit_code);
 
    /* write exit code as string number to qrsh */
-   sprintf(buffer, "%d", exit_code);
+   snprintf(buffer, sizeof(buffer), "%d", exit_code);
    if (write_to_qrsh(buffer) != 0) {
       shepherd_trace("writing exit code to qrsh failed");
    }
@@ -285,9 +285,9 @@ int get_exit_code_of_qrsh_starter(int* exit_code)
                      tmpdir ? tmpdir : "0", taskid ? taskid : "0");
       if (tmpdir != nullptr) {
          if (taskid != nullptr) {
-            sprintf(buffer, "%s/qrsh_exit_code.%s", tmpdir, taskid);
+            snprintf(buffer, sizeof(buffer), "%s/qrsh_exit_code.%s", tmpdir, taskid);
          } else {
-            sprintf(buffer, "%s/qrsh_exit_code", tmpdir);
+            snprintf(buffer, sizeof(buffer), "%s/qrsh_exit_code", tmpdir);
          }
 
          errorfile = fopen(buffer, "r");
@@ -356,9 +356,9 @@ const char *get_error_of_qrsh_starter(void)
                      tmpdir ? tmpdir : "0", taskid ? taskid : "0");
       if (tmpdir != nullptr) {
          if (taskid != nullptr) {
-            sprintf(buffer, "%s/qrsh_error.%s", tmpdir, taskid);
+            snprintf(buffer, sizeof(buffer), "%s/qrsh_error.%s", tmpdir, taskid);
          } else {
-            sprintf(buffer, "%s/qrsh_error", tmpdir);
+            snprintf(buffer, sizeof(buffer), "%s/qrsh_error", tmpdir);
          }
 
          errorfile = fopen(buffer, "r");

@@ -526,8 +526,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                key = lGetString(event, ET_strkey);
                ep = lGetElemHost(*master_list, key_nm, lGetString(event, ET_strkey));
                if(ep == nullptr) {
-                  ERROR((SGE_EVENT, "%s element with id " SFQ " not found\n",
-                         object_type_get_name(type), key));
+                  ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
                }
                if (ret == SGE_EMA_OK) {
@@ -549,8 +548,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                key = lGetString(event, ET_strkey);
                ep = lGetElemStr(*master_list, key_nm, lGetString(event, ET_strkey));
                if(ep == nullptr) {
-                  ERROR((SGE_EVENT, "%s element with id " SFQ " not found\n",
-                         object_type_get_name(type), key));
+                  ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
                }
                
@@ -563,8 +561,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
             case SGE_TYPE_SCHEDD_CONF:
                ep = lFirst(*master_list);
                if(ep == nullptr) {
-                  ERROR((SGE_EVENT, "%s element not found\n",
-                         object_type_get_name(type)));
+                  ERROR("%s element not found\n", object_type_get_name(type));
                   ret = SGE_EMA_FAILURE;
                }
                if (ret == SGE_EMA_OK) {
@@ -616,7 +613,7 @@ int main(int argc, char *argv[])
 
    /* parse commandline parameters */
    if(argc != 4) {
-      ERROR((SGE_EVENT, "usage: test_sge_spooling <method> <shared lib> <arguments>\n"));
+      ERROR("usage: test_sge_spooling <method> <shared lib> <arguments>\n");
       sge_exit(1);
    }
 
@@ -669,7 +666,7 @@ int main(int argc, char *argv[])
       now = time(nullptr);
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "test_sge_info:\n");
-/*          INFO((SGE_EVENT, "\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr))); */
+/*          INFO("\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr)); */
          next_prof_output = now + 60;
       }
    }

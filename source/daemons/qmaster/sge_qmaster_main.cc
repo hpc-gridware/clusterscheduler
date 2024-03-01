@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */
-         CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS));
+         CRITICAL(SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS);
          sge_exit(1);
       }
       if (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     */
    ret_val = cl_com_set_status_func(sge_qmaster_application_status);
    if (ret_val != CL_RETVAL_OK) {
-      ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(ret_val)));
+      ERROR(SFNMAX, cl_get_error_text(ret_val));
    }
 
    /* 
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
    sge_listener_initialize();
    sge_scheduler_initialize(nullptr);
 
-   INFO((SGE_EVENT, "qmaster startup took " sge_u32" seconds", sge_get_gmt() - start_time));
+   INFO("qmaster startup took " sge_u32" seconds", sge_get_gmt() - start_time);
 
    /*
     * Block till signal from signal thread arrives us

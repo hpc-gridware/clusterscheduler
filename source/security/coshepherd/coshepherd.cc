@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 
       if (last_token_set + token_extend_time - renew_before < now) {
          DPRINTF(("renewing AFS token : %s %s %d\n", command, user, token_extend_time));
-         if (sge_afs_extend_token(command, tokenbuf, user, token_extend_time, err_str)) {
+         if (sge_afs_extend_token(command, tokenbuf, user, token_extend_time, err_str, sizeof(err_str))) {
             DPRINTF(("AFS token renewal failed\n"));
          } else {
             last_token_set = sge_get_gmt();

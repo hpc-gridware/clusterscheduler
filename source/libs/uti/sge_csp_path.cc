@@ -173,7 +173,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
    if (value == nullptr) {
       /* This should never happen */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_SEC_CERT_VERIFY_FUNC_NO_VAL));
+      CRITICAL(SFNMAX, MSG_SEC_CERT_VERIFY_FUNC_NO_VAL);
       DRETURN(false);
    }
 

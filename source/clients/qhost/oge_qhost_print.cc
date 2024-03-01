@@ -91,7 +91,7 @@ static int sge_print_queues(lList *ql, lListElem *hrl, lList *jl, lList *ul, lLi
 static int sge_print_resources(lList *ehl, lList *cl, lList *resl, lListElem *host, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp);
 static int sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show);
 
-static int reformatDoubleValue(char *result, const char *format, const char *oldmem);
+static int reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem);
 static bool get_all_lists(lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList *hl, lList *ul, u_long32 show);
 static void free_all_lists(lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel);
 
@@ -379,7 +379,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    */
    lep=get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(load_avg, "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformatDoubleValue(load_avg, sizeof(load_avg), "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -391,7 +391,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    */
    lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(mem_total, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformatDoubleValue(mem_total, sizeof(mem_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -403,7 +403,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    */
    lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(mem_used, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformatDoubleValue(mem_used, sizeof(mem_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -415,7 +415,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    */
    lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(swap_total, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformatDoubleValue(swap_total, sizeof(swap_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -427,7 +427,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    */
    lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(swap_used, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformatDoubleValue(swap_used, sizeof(swap_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -572,10 +572,8 @@ lList **alpp
             ** number of used/free slots 
             */
             if (report_handler == nullptr) {
-               sprintf(buf, sge_uu32"/%d/" sge_uu32 " ",
-                       qinstance_slots_reserved(qep),
-                       qinstance_slots_used(qep),
-                       lGetUlong(qep, QU_job_slots));
+               snprintf(buf, sizeof(buf), sge_uu32"/%d/" sge_uu32 " ", qinstance_slots_reserved(qep),
+                        qinstance_slots_used(qep), lGetUlong(qep, QU_job_slots));
                printf("%-14.14s", buf);
             } else {
                ret = report_handler->report_queue_ulong_value(report_handler,
@@ -608,11 +606,12 @@ lList **alpp
             */
             load_thresholds = lGetList(qep, QU_load_thresholds);
             suspend_thresholds = lGetList(qep, QU_suspend_thresholds);
-            if (sge_load_alarm(nullptr, qep, load_thresholds, ehl, cl, nullptr, true)) {
+            if (sge_load_alarm(nullptr, 0, qep, load_thresholds, ehl, cl, nullptr, true)) {
                qinstance_state_set_alarm(qep, true);
             }
             parse_ulong_val(nullptr, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), nullptr, 0);
-            if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 && sge_load_alarm(nullptr, qep, suspend_thresholds, ehl, cl, nullptr, false)) {
+            if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0
+                && sge_load_alarm(nullptr, 0, qep, suspend_thresholds, ehl, cl, nullptr, false)) {
                qinstance_state_set_suspend_alarm(qep, true);
             }
             {
@@ -808,7 +807,8 @@ lList **alpp
 
 /*-------------------------------------------------------------------------*/
 
-static int reformatDoubleValue(char *result, const char *format, const char *oldmem)
+static int
+reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem)
 {
    double dval;
    int ret = 1;
@@ -831,10 +831,9 @@ static int reformatDoubleValue(char *result, const char *format, const char *old
             dval /= 1024;
             c = 'K';
          }
-         sprintf(result, format, dval, c);
+         snprintf(result, result_size, format, dval, c);
       }
-   }
-   else {
+   } else {
       strcpy(result, "?E"); 
       ret = 0;
    }

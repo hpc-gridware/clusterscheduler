@@ -612,7 +612,7 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
       }
 
       bdb_set_txn(info, txn);
-      DEBUG((SGE_EVENT, "BEGIN transaction"));
+      DEBUG("BEGIN transaction");
    }
 
    DRETURN(ret);
@@ -652,12 +652,12 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
          ret = false;
       } else {
          if (commit) {
-            DEBUG((SGE_EVENT, "COMMIT transaction"));
+            DEBUG("COMMIT transaction");
             PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
             dbret = txn->commit(txn, 0);
             PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          } else {
-            DEBUG((SGE_EVENT, "ABORT transaction"));
+            DEBUG("ABORT transaction");
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_WARNING, 
                                     MSG_BERKELEY_ABORTINGTRANSACTION);
@@ -740,7 +740,7 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
       spool_berkeleydb_error_close(info);
       ret = false;
    } else {
-      DEBUG((SGE_EVENT, "querying objects with keys %s*", key));
+      DEBUG("querying objects with keys %s*", key);
 
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
       dbret = db->cursor(db, txn, &dbc, 0);
@@ -922,7 +922,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
                                           key, dbret, db_strerror(dbret));
                   ret = false;
                } else {
-                  DEBUG((SGE_EVENT, "stored object with key " SFQ ", size %d", key, data_dbt.size));
+                  DEBUG("stored object with key " SFQ ", size %d", key, data_dbt.size);
                }
             }
          }
@@ -987,7 +987,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
                                     key, dbret, db_strerror(dbret));
             ret = false;
          } else {
-            DEBUG((SGE_EVENT, "stored object with key " SFQ ", size %d", key, data_dbt.size));
+            DEBUG("stored object with key " SFQ ", size %d", key, data_dbt.size);
          }
       }
    }
@@ -1237,7 +1237,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
                      done = true;
                      break;
                   } else {
-                     DEBUG((SGE_EVENT, "deleted record with key " SFQ, (char *)delete_dbt.data));
+                     DEBUG("deleted record with key " SFQ, (char *)delete_dbt.data);
                   }
                   sge_free(&(delete_dbt.data));
                }
@@ -1262,7 +1262,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
                                     key, dbret, db_strerror(dbret));
             ret = false;
          } else {
-            DEBUG((SGE_EVENT, "deleted record with key " SFQ, key));
+            DEBUG("deleted record with key " SFQ, key);
          }
       }
    }

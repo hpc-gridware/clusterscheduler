@@ -264,7 +264,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
 
                   s = lGetString(job_load, CE_stringval);
                   if (!parse_ulong_val(&load_correction, nullptr, type, s, err_str, 255)) {
-                     ERROR((SGE_EVENT, MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname));
+                     ERROR(MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname);
                   } else if (lc_factor) {
                      double old_dval;
                      u_long32 relop;
@@ -285,7 +285,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                         dval -= load_correction;
                      }
 
-                     sprintf(sval, "%8.3f", dval);
+                     snprintf(sval, sizeof(sval), "%8.3f", dval);
                      DPRINTF(("%s: uc: %f c(%f): %f\n", attrname, old_dval, lc_factor, dval));
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }
@@ -982,8 +982,8 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
          switch (type) {
          case TYPE_BOO:
             sge_dstring_copy_string(&resource_string, (src_dl > 0)?"true":"false");
-/*            sprintf(availability_text1, "%s:%s=%s", dom_str, name, src_dl?"true":"false");*/
 #if 0
+            snprintf(availability_text1, sizeof(availability_text1), "%s:%s=%s", dom_str, name, src_dl?"true":"false");
             DPRINTF(("-l %s=%f, Q: %s:%s:%f, Comparison(1): %s\n",
                      name, req_all_slots, dom_str, map_op2str(used_relop),
                      src_dl, m1?"ok":"no match"));

@@ -48,7 +48,7 @@
 
 static int elect_path(dstring *aBuffer);
 
-static int spawn_file(dstring *aBuffer, dstring *error_message);
+static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message);
 
 
 /****** uti/sge_tmpnam/sge_tmpnam() *******************************************
@@ -90,7 +90,7 @@ static int spawn_file(dstring *aBuffer, dstring *error_message);
 *  NOTE
 *     MT-NOTE: sge_tmpnam() is MT safe.
 ******************************************************************************/
-char *sge_tmpnam(char *aBuffer, dstring *error_message) {
+char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message) {
    dstring s = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
@@ -110,7 +110,7 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message) {
       sge_dstring_append_char(&s, '/');
    }
 
-   if (spawn_file(&s, error_message) < 0) {
+   if (spawn_file(&s, fd, error_message) < 0) {
       sge_dstring_free(&s);
       DRETURN(nullptr);
    }
@@ -141,19 +141,15 @@ static int elect_path(dstring *aBuffer) {
 }
 
 
-static int spawn_file(dstring *aBuffer, dstring *error_message) {
+static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message) {
    int my_errno;
    char tmp_file_string[256];
    char tmp_string[SGE_PATH_MAX];
 
-   /*
-    * generate template filename for mktemp()
-    */
+   // generate template filename for mktemp()
    snprintf(tmp_file_string, 256, "pid-%u-XXXXXX", (unsigned int) getpid());
 
-   /*
-    * check final length of path
-    */
+   // check final length of path
    if (sge_dstring_strlen(aBuffer) + strlen(tmp_file_string) >= SGE_PATH_MAX) {
       sge_dstring_append(aBuffer, tmp_file_string);
       sge_dstring_sprintf(error_message, MSG_TMPNAM_SGE_MAX_PATH_LENGTH_US,
@@ -161,26 +157,19 @@ static int spawn_file(dstring *aBuffer, dstring *error_message) {
       return -1;
    }
 
-   /*
-    * now build full path string for mktemp()
-    */
-   snprintf(tmp_string, SGE_PATH_MAX, "%s%s", sge_dstring_get_string(aBuffer), tmp_file_string);
+   // now build full path string for mkstemp()
+   snprintf(tmp_string, sizeof(tmp_string), "%s%s", sge_dstring_get_string(aBuffer), tmp_file_string);
 
-   /*
-    * generate temp file by call to mktemp()
-    */
+   // generate temp file by call to mkstemp()
    errno = 0;
-   char *mktemp_return = mktemp(tmp_string);
+   *fd = mkstemp(tmp_string);
    my_errno = errno;
-   if (mktemp_return[0] == '\0') {
-      sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_SYSTEM_ERROR_SS,
-                          strerror(my_errno), sge_dstring_get_string(aBuffer));
+   if (*fd == -1) {
+      sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_SYSTEM_ERROR_SS, strerror(my_errno), sge_dstring_get_string(aBuffer));
       return -1;
    }
 
-   /*
-    * finally copy the resulting path to aBuffer
-    */
+   // finally copy the resulting path to aBuffer
    sge_dstring_sprintf(aBuffer, tmp_string);
    return 0;
 }

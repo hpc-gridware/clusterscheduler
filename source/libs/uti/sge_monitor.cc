@@ -235,7 +235,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    monitor->output_line2 = (dstring *) sge_malloc(sizeof(dstring));
 
    if (monitor->output_line1 == nullptr || monitor->output_line2 == nullptr) {
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROR));
+      CRITICAL(SFNMAX, MSG_UTI_MONITOR_MEMERROR);
       exit(1);
    }
 
@@ -256,7 +256,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             monitor->ext_output = &ext_sch_output;
          } else {
             monitor->ext_type = NONE_EXT;
-            ERROR((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROREXT));
+            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
          }
          break;
 
@@ -268,7 +268,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             monitor->ext_output = &ext_gdi_output;
          } else {
             monitor->ext_type = NONE_EXT;
-            ERROR((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROREXT));
+            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
          }
          break;
 
@@ -280,7 +280,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             monitor->ext_output = &ext_lis_output;
          } else {
             monitor->ext_type = NONE_EXT;
-            ERROR((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROREXT));
+            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
          }
          break;
 
@@ -292,7 +292,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             monitor->ext_output = &ext_edt_output;
          } else {
             monitor->ext_type = NONE_EXT;
-            ERROR((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROREXT));
+            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
          }
          break;
 
@@ -304,7 +304,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             monitor->ext_output = &ext_tet_output;
          } else {
             monitor->ext_type = NONE_EXT;
-            ERROR((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROREXT));
+            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
          }
          break;
 
@@ -314,7 +314,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       default :
          monitor->ext_type = NONE_EXT;
-         ERROR((SGE_EVENT, MSG_UTI_MONITOR_UNSUPPORTEDEXT_D, ext));
+         ERROR(MSG_UTI_MONITOR_UNSUPPORTEDEXT_D, ext);
    }
 
    if (monitor->ext_type == NONE_EXT) {
@@ -351,7 +351,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    }
 
    if (monitor->pos == -1) {
-      ERROR((SGE_EVENT, MSG_UTI_MONITOR_NOLINES_S, monitor->thread_name));
+      ERROR(MSG_UTI_MONITOR_NOLINES_S, monitor->thread_name);
    }
 
    DRETURN_VOID;

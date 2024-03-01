@@ -346,7 +346,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        * kill subprocesses.
        */
       ret = sge_set_uid_gid_addgrp(target_user, intermediate_user,
-               0, 0, 0, err_str, use_qsub_gid, gid, skip_silently);
+               0, 0, 0, err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently);
    } else { /* if (!is_qlogin_starter || g_new_interactive_job_support == true) */
       /*
        * In not-interactive jobs and in the new IJS we must set the 
@@ -354,7 +354,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        * do this for us.
        */
       ret = sge_set_uid_gid_addgrp(target_user, intermediate_user,
-               min_gid, min_uid, add_grp_id, err_str, use_qsub_gid, gid, skip_silently);
+               min_gid, min_uid, add_grp_id, err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently);
    }
 
    if (ret < 0) {
@@ -486,7 +486,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       if (stdin_path_for_fs && strlen(stdin_path_for_fs) > 0) {
          /* Generate fs_input_tmp_path (etc.) from tmpdir+stdin_path */
          fs_stdin_file = strrchr(stdin_path_for_fs, '/') + 1;
-         sprintf(fs_stdin_tmp_path, "%s/%s", tmpdir, fs_stdin_file);
+         snprintf(fs_stdin_tmp_path, sizeof(fs_stdin_tmp_path), "%s/%s", tmpdir, fs_stdin_file);
 
          /* Set fs_input_path to old stdin_path and then
             stdin_path to just generated fs_input_tmp_path */
@@ -509,7 +509,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    if (fs_stdout) {
       if (stdout_path && strlen(stdout_path) > 0) {
          fs_stdout_file = strrchr(stdout_path, '/') + 1;
-         sprintf(fs_stdout_tmp_path, "%s/%s", tmpdir, fs_stdout_file);
+         snprintf(fs_stdout_tmp_path, sizeof(fs_stdout_tmp_path), "%s/%s", tmpdir, fs_stdout_file);
       }
 
       if (stdout_path && strlen(stdout_path) > 0) {
@@ -525,7 +525,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    if (fs_stderr) {
       if (stderr_path && strlen(stderr_path) > 0) {
          fs_stderr_file = strrchr( stderr_path, '/') + 1;
-         sprintf(fs_stderr_tmp_path, "%s/%s", tmpdir, fs_stderr_file);
+         snprintf(fs_stderr_tmp_path, sizeof(fs_stderr_tmp_path), "%s/%s", tmpdir, fs_stderr_file);
       }
 
       if (stderr_path && strlen(stderr_path) > 0) {
@@ -751,19 +751,17 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       queue = get_conf_val("queue");
       host = get_conf_val("host");
       job_id = get_conf_val("job_id");
-      sprintf(str_title,
-              "SGE Interactive Job %s on %s in Queue %s",
-              job_id, host, queue);
+      snprintf(str_title, sizeof(str_title), "SGE Interactive Job %s on %s in Queue %s", job_id, host, queue);
    }
 
 /* ---- switch to target user */
    if (intermediate_user) {
       if (is_qlogin_starter) {
          ret = sge_set_uid_gid_addgrp(target_user, nullptr, 0, 0, 0,
-                                      err_str, use_qsub_gid, gid, skip_silently);
+                                      err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently);
       } else {
          ret = sge_set_uid_gid_addgrp(target_user, nullptr, min_gid, min_uid,
-                                      add_grp_id, err_str, use_qsub_gid, gid, skip_silently);
+                                      add_grp_id, err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently);
       }
       if (ret < 0) {
          shepherd_trace(err_str);
@@ -888,7 +886,7 @@ int sge_set_environment()
    FCLOSE(fp);
    return 0;
 FCLOSE_ERROR:
-   sprintf(err_str, MSG_FILE_ERRORCLOSEINGXY_SS, filename, strerror(errno));
+   snprintf(err_str, sizeof(err_str), MSG_FILE_ERRORCLOSEINGXY_SS, filename, strerror(errno));
    return 1;
 }
 
@@ -1136,7 +1134,7 @@ static char **read_job_args(char **preargs, int extra_args)
    args[i] = nullptr;
 
    for (i = 0; i < n_job_args; i++) {
-      sprintf(conf_val, "job_arg%d", i + 1);
+      snprintf(conf_val, sizeof(conf_val), "job_arg%d", i + 1);
       cp = get_conf_val(conf_val);
      
       if(cp != nullptr) {
@@ -1215,7 +1213,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       for (i=0; i<n_job_args; i++) {
          char conf_val[256];
 
-         sprintf(conf_val, "job_arg%d", i + 1);
+         snprintf(conf_val, sizeof(conf_val), "job_arg%d", i + 1);
          cp = get_conf_val(conf_val);
 
          if(cp != nullptr) {
@@ -1310,7 +1308,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       }
       pre_args_ptr[1] = get_conf_val(conf_name);
 
-      if (check_configured_method(pre_args_ptr[1], conf_name, err_str) != 0
+      if (check_configured_method(pre_args_ptr[1], conf_name, err_str, sizeof(err_str)) != 0
           && g_new_interactive_job_support == false) {
          shepherd_state = SSTATE_CHECK_DAEMON_CONFIG;
          shepherd_error(1, err_str);
@@ -1397,7 +1395,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 
       /* build trace string */
       pc = err_str;
-      sprintf(pc, "execvp(%s,", filename);
+      snprintf(pc, sizeof(err_str), "execvp(%s,", filename);
       pc += strlen(pc);
       for (pstr = args; pstr && *pstr; pstr++) {
       
@@ -1405,17 +1403,17 @@ int use_starter_method /* If this flag is set the shellpath contains the
           * "..." string, etc.
           */
          if (strlen(*pstr) < ((sizeof(err_str)  - (pc - err_str) - 15))) {
-            sprintf(pc, " \"%s\"", *pstr);
+            snprintf(pc, sizeof(err_str) - (pc - err_str)," \"%s\"", *pstr);
             pc += strlen(pc);
          }
          else {
-            sprintf(pc, " ...");
+            snprintf(pc, sizeof(err_str) - (pc - err_str), " ...");
             pc += strlen(pc);
             break;
          }      
       }
 
-      sprintf(pc, ")");
+      snprintf(pc, sizeof(err_str) - (pc - err_str), ")");
       shepherd_trace(err_str);
 
       /* Bugfix: Issuezilla 1300
@@ -1441,7 +1439,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          /* Aaaah - execvp() failed */
          {
             char failed_str[2048+128];
-            sprintf(failed_str, "%s failed: %s", err_str, strerror(errno));
+            snprintf(failed_str, sizeof(failed_str), "%s failed: %s", err_str, strerror(errno));
 
             /* most of the problems here are related to the shell
                i.e. -S /etc/passwd */
@@ -1453,11 +1451,8 @@ int use_starter_method /* If this flag is set the shellpath contains the
    }
 }
 
-int check_configured_method(
-const char *method,
-const char *name,
-char *err_str
-) {
+int
+check_configured_method(const char *method, const char *name, char *err_str, size_t err_str_size) {
    SGE_STRUCT_STAT     statbuf;
    unsigned int        file_perm = S_IXOTH;
    int                 ret = 0;
@@ -1473,12 +1468,11 @@ char *err_str
    command = sge_strtok_r(method, " ", &context);
 
    if (strncmp(command, "/", 1) != 0) {
-      sprintf(err_str, "%s \"%s\" is not an absolute path", name, command);
+      snprintf(err_str, err_str_size, "%s \"%s\" is not an absolute path", name, command);
       ret = -1;
    } else {
       if (SGE_STAT(command, &statbuf) != 0) {
-         sprintf(err_str, "%s \"%s\" can't be read: %s (%d)",
-            name, command, strerror(errno), errno);
+         snprintf(err_str, err_str_size, "%s \"%s\" can't be read: %s (%d)", name, command, strerror(errno), errno);
          ret = -1;
       } else {
          if (getuid() == statbuf.st_uid) {
@@ -1488,7 +1482,7 @@ char *err_str
             file_perm = file_perm | S_IXGRP;
          }
          if ((statbuf.st_mode & file_perm) == 0) {
-            sprintf(err_str, "%s \"%s\" is not executable", name, command);
+            snprintf(err_str, err_str_size, "%s \"%s\" is not executable", name, command);
             ret = -1;
          }
       }
@@ -1498,10 +1492,9 @@ char *err_str
    return ret;
 }
 
-char *build_path(
-int type 
-) {
-   SGE_STRUCT_STAT statbuf;
+char *
+build_path(int type) {
+   SGE_STRUCT_STAT statbuf{};
    char *path, *base;
    char *job_id, *job_name, *ja_task_id;
    const char *name;
@@ -1541,16 +1534,17 @@ int type
       /* An error occured */
       if (errno != ENOENT) {
          char *t;
-         sprintf(err_str, "can't stat() \"%s\" as %s: %s",
-            base, name, strerror(errno));
-         sprintf(err_str+strlen(err_str), " KRB5CCNAME=%s uid=" uid_t_fmt " gid=" uid_t_fmt " ",
+         snprintf(err_str, sizeof(err_str), "can't stat() \"%s\" as %s: %s", base, name, strerror(errno));
+         snprintf(err_str + strlen(err_str), sizeof(err_str) - strlen(err_str), " KRB5CCNAME=%s uid=" uid_t_fmt " gid=" uid_t_fmt " ",
                  (t=getenv("KRB5CCNAME"))?t:"none", getuid(), getgid());
          {
             gid_t groups[10];
             int i, ngid;
             ngid = getgroups(10, groups);
-            for(i=0; i<ngid; i++)
-               sprintf(err_str+strlen(err_str), uid_t_fmt " ", groups[i]);
+            for(i=0; i<ngid; i++) {
+               size_t fill_size = strlen(err_str);
+               snprintf(err_str + fill_size, sizeof(err_str) - fill_size, uid_t_fmt " ", groups[i]);
+            }
          }
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
          shepherd_error(1, err_str);
@@ -1571,16 +1565,16 @@ int type
          job_id = get_conf_val("job_id");
          ja_task_id = get_conf_val("ja_task_id");
 
-         if (!(path = sge_malloc(pathlen=(strlen(base) + strlen(job_name) 
-                       + strlen(job_id) + strlen(ja_task_id) + 25)))) {
+         pathlen = strlen(base) + strlen(job_name) + strlen(job_id) + strlen(ja_task_id) + 25;
+         path = sge_malloc(pathlen);
+         if (path == nullptr) {
             shepherd_error(1, "malloc(%d) failed for %s@", pathlen, name);
          }
 
          if (atoi(ja_task_id)) {
-            sprintf(path, "%s/%s.%s%s.%s", base, job_name, postfix, job_id,
-               ja_task_id);
+            snprintf(path, pathlen, "%s/%s.%s%s.%s", base, job_name, postfix, job_id, ja_task_id);
          } else {
-            sprintf(path, "%s/%s.%s%s", base, job_name, postfix, job_id);
+            snprintf(path, pathlen, "%s/%s.%s%s", base, job_name, postfix, job_id);
          }
       }
    }

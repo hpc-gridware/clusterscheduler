@@ -451,20 +451,20 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 
    /* check event client object structure */
    if (lCompListDescr(lGetElemDescr(clio), EV_Type) != 0) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_EVE_INCOMPLETEEVENTCLIENT));
+      ERROR(SFNMAX, MSG_EVE_INCOMPLETEEVENTCLIENT);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_DENIED);
    }
 
    /* EV_ID_ANY is 0, therefore the compare is always true (Irix complained) */
    if (id >= EV_ID_FIRST_DYNAMIC) { /* invalid request */
-      ERROR((SGE_EVENT, MSG_EVE_ILLEGALIDREGISTERED_U, sge_u32c(id)));
+      ERROR(MSG_EVE_ILLEGALIDREGISTERED_U, sge_u32c(id));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
    }
 
    if (lGetBool(clio, EV_changed) && lGetList(clio, EV_subscribed) == nullptr) {
-      ERROR((SGE_EVENT, SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION));
+      ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -474,7 +474,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 
    if (Event_Master_Control.is_prepare_shutdown) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-      ERROR((SGE_EVENT, SFNMAX, MSG_EVE_QMASTERISGOINGDOWN));
+      ERROR(SFNMAX, MSG_EVE_QMASTERISGOINGDOWN);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);      
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -487,8 +487,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
       ep = eventclient_list_locate_by_adress(host, commproc, commproc_id);
 
       if (ep != nullptr) {
-         ERROR((SGE_EVENT, MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, 
-                commproc, sge_u32c(commproc_id)));
+         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
 
          /* delete old event client entry, and we already hold the lock! */
          remove_event_client(&ep, id, false);
@@ -502,7 +501,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
          DRETURN(STATUS_ESEMANTIC);
       }
 
-      INFO((SGE_EVENT, MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time)));
+      INFO(MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time));
 
       /* Set the new id for this client. */
       lSetUlong(clio, EV_id, id);
@@ -518,20 +517,19 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
       */
       if (update_func == nullptr && !manop_is_manager(ruser, master_manager_list)) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-         ERROR((SGE_EVENT, SFNMAX, MSG_WRONG_USER_FORFIXEDID));
+         ERROR(SFNMAX, MSG_WRONG_USER_FORFIXEDID);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
       }
 
       if ((ep = get_event_client(id)) != nullptr) {
          /* we already have this special client */
-         ERROR((SGE_EVENT, MSG_EVE_CLIENTREREGISTERED_SSSU, name, host,
-                commproc, sge_u32c(commproc_id)));
+         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
 
          /* delete old event client entry, and we already have the mutex! */
          remove_event_client(&ep, id, false);
       } else {
-         INFO((SGE_EVENT, MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time)));
+         INFO(MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time));
       }
    }
 
@@ -574,8 +572,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_ADDEDTOLIST_SSSS,
-         ruser, rhost, name, MSG_EVE_EVENTCLIENT));
+   INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, ruser, rhost, name, MSG_EVE_EVENTCLIENT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
@@ -623,7 +620,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
    DENTER(TOP_LAYER);
 
    if (clio == nullptr) {
-      ERROR((SGE_EVENT, "nullptr element passed to sge_mod_event_client"));
+      ERROR("nullptr element passed to sge_mod_event_client");
       abort();
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -637,8 +634,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
    lAppendElem(Event_Master_Control.requests, evr);
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
-   DEBUG((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS,
-         ruser, rhost, lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT));
+   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    set_flush();
@@ -704,7 +700,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    if (event_client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-      ERROR((SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(id), "modify"));
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(id), "modify");
       DRETURN_VOID;
    }
 
@@ -717,14 +713,14 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    if (ev_d_time < 1) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-      ERROR((SGE_EVENT, MSG_EVE_INVALIDINTERVAL_U, sge_u32c(ev_d_time)));
+      ERROR(MSG_EVE_INVALIDINTERVAL_U, sge_u32c(ev_d_time));
       DRETURN_VOID;
    }
 
    if (lGetBool(clio, EV_changed) && lGetList(clio, EV_subscribed) == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-      ERROR((SGE_EVENT, SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION));
+      ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
       DRETURN_VOID;
    }
 
@@ -811,8 +807,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    MONITOR_EDT_MOD(monitor);
 
    thread_config = cl_thread_get_thread_config();
-   DEBUG((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS, thread_config ? thread_config->thread_name : "-NA-",
-          "master host", lGetString(event_client, EV_name), MSG_EVE_EVENTCLIENT));
+   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, thread_config ? thread_config->thread_name : "-NA-", "master host", lGetString(event_client, EV_name), MSG_EVE_EVENTCLIENT);
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
@@ -859,7 +854,7 @@ void sge_remove_event_client(u_long32 event_client_id)
 
    if (client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-      ERROR((SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "remove"));
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "remove");
       DRETURN_VOID;
    }
    lSetUlong(client, EV_state, EV_terminated);
@@ -917,7 +912,7 @@ u_long32 sge_set_max_dynamic_event_clients(u_long32 new_value)
 
          if (max > max_allowed_value) {
             max = max_allowed_value;
-            WARNING((SGE_EVENT, MSG_CONF_NR_DYNAMIC_EVENT_CLIENT_EXCEEDS_MAX_FILEDESCR_U, sge_u32c(max)));
+            WARNING(MSG_CONF_NR_DYNAMIC_EVENT_CLIENT_EXCEEDS_MAX_FILEDESCR_U, sge_u32c(max));
          }
       }
    }
@@ -932,7 +927,7 @@ u_long32 sge_set_max_dynamic_event_clients(u_long32 new_value)
        * prevents new event clients, but allows the old ones there to drain off naturally.
        */
       Event_Master_Control.max_event_clients = max;
-      INFO((SGE_EVENT, MSG_SET_MAXDYNEVENTCLIENT_U, sge_u32c(max)));
+      INFO(MSG_SET_MAXDYNEVENTCLIENT_U, sge_u32c(max));
 
       /* we have to rebuild the event client id range list */
       lFreeList(&Event_Master_Control.client_ids);
@@ -1115,7 +1110,7 @@ int sge_shutdown_event_client(u_long32 event_client_id, const char* anUser,
    DENTER(TOP_LAYER);
 
    if (event_client_id <= EV_ID_ANY) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown"));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(EINVAL);
    }
@@ -1135,17 +1130,14 @@ int sge_shutdown_event_client(u_long32 event_client_id, const char* anUser,
 
       /* Print out a message about the event. */
       if (event_client_id == EV_ID_SCHEDD) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_COM_KILLED_SCHEDULER));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
       } else {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_COM_SHUTDOWNNOTIFICATION_SUS,
-                        lGetString(client, EV_name),
-                        sge_u32c(lGetUlong(client, EV_id)),
-                        lGetHost(client, EV_host)));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
+                  sge_u32c(lGetUlong(client, EV_id)), lGetHost(client, EV_host));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT,
-                        MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown"));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = EINVAL;
    }
@@ -1209,9 +1201,8 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 
       sge_add_event_for_client(id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
 
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_COM_SHUTDOWNNOTIFICATION_SUS,
-                     lGetString(client, EV_name),
-                     sge_u32c(id), lGetHost(client, EV_host)));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
+               sge_u32c(id), lGetHost(client, EV_host));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } /* for_each */
 
@@ -1725,7 +1716,7 @@ static void sge_event_master_process_ack(const lListElem *request, monitoring_t 
    client = get_event_client(event_client_id);
    
    if (client == nullptr) {
-      ERROR((SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "process acknowledgements"));
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "process acknowledgements");
    } else {
       u_long32 event_number = lGetUlong(request, EVR_event_number);
       u_long32 timestamp = lGetUlong(request, EVR_timestamp);
@@ -1782,7 +1773,7 @@ void sge_deliver_events_immediately(u_long32 event_client_id)
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if ((client = get_event_client(event_client_id)) == nullptr) {
-      ERROR((SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "deliver events immediately"));
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "deliver events immediately");
    } else {
       flush_events(client, 0);
 
@@ -1827,14 +1818,13 @@ int sge_resync_schedd(monitoring_t *monitor)
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if ((client = get_event_client(EV_ID_SCHEDD)) != nullptr) {
-      ERROR((SGE_EVENT, MSG_EVE_REINITEVENTCLIENT_S,
-             lGetString(client, EV_name)));
+      ERROR(MSG_EVE_REINITEVENTCLIENT_S, lGetString(client, EV_name));
 
       total_update(client, monitor);
 
       ret = 0;
    } else {
-      ERROR((SGE_EVENT, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(EV_ID_SCHEDD), "resynchronize"));
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(EV_ID_SCHEDD), "resynchronize");
       ret = -1;
    }
  
@@ -1994,8 +1984,7 @@ static void remove_event_client(lListElem **client, int event_client_id, bool lo
 
    DENTER(TOP_LAYER);
 
-   INFO((SGE_EVENT, MSG_EVE_UNREG_SU, lGetString(*client, EV_name),
-         sge_u32c(lGetUlong(*client, EV_id))));
+   INFO(MSG_EVE_UNREG_SU, lGetString(*client, EV_name), sge_u32c(lGetUlong(*client, EV_id)));
 
    old_sub = (subscription_t *)lGetRef(*client, EV_sub_array);
    if (old_sub) {
@@ -2115,7 +2104,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 
       /* someone turned the clock back */
       if (lGetUlong(event_client, EV_last_heard_from) > now) {
-         WARNING((SGE_EVENT, MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)(now - lGetUlong(event_client, EV_last_heard_from))));
+         WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)(now - lGetUlong(event_client, EV_last_heard_from)));
          lSetUlong(event_client, EV_last_heard_from, now);
          lSetUlong(event_client, EV_next_send_time, now + deliver_interval);
       } else if (lGetUlong(event_client, EV_last_send_time)  > now) {
@@ -2149,7 +2138,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          char buffer[256];
 
          DPRINTF(("EVC timeout (%d s) (part 1/2)\n", timeout));
-         WARNING((SGE_EVENT, MSG_COM_ACKTIMEOUT4EV_ISIS, (int) timeout, commproc, (int) commid, host));
+         WARNING(MSG_COM_ACKTIMEOUT4EV_ISIS, (int) timeout, commproc, (int) commid, host);
 
          /* yes, we have to remove this client after sending the sgeE_ACK_TIMEOUT event */
          do_remove = true;
@@ -2232,7 +2221,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
        */
       if (do_remove == true) {
          DPRINTF(("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout));
-         ERROR((SGE_EVENT, MSG_COM_ACKTIMEOUT4EV_SIS, commproc, (int) commid, host));
+         ERROR(MSG_COM_ACKTIMEOUT4EV_SIS, commproc, (int) commid, host);
          remove_event_client(&event_client, ec_id, false);
       }
 
@@ -2856,7 +2845,7 @@ static void total_update_event(lListElem *event_client, ev_event type,
             lp = *object_type_get_master_list(SGE_TYPE_AR);
             break;
          default:
-            WARNING((SGE_EVENT, MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type));
+            WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);
             DRETURN_VOID;
       } /* switch */
 
@@ -3213,7 +3202,7 @@ allocate_new_dynamic_id(lList **answer_list)
    DENTER(TOP_LAYER);
 
    if (range_list_is_empty(Event_Master_Control.client_ids)) {
-      ERROR((SGE_EVENT, MSG_TO_MANY_DYNAMIC_EC_U, sge_u32c(Event_Master_Control.max_event_clients)));
+      ERROR(MSG_TO_MANY_DYNAMIC_EC_U, sge_u32c(Event_Master_Control.max_event_clients));
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
    } else {
       id = range_list_get_first_id(Event_Master_Control.client_ids, answer_list);
@@ -3277,7 +3266,7 @@ bool sge_commit(void)
             set_flush();
          }
       } else {
-         WARNING((SGE_EVENT, "attempting to commit an event master transaction, but no transaction is open"));
+         WARNING("attempting to commit an event master transaction, but no transaction is open");
          ret = false;
       }
    }
@@ -3386,7 +3375,7 @@ void sge_set_commit_required(void)
    {
       GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
       if (t_store->is_transaction) {
-         WARNING((SGE_EVENT, "attempting to open a new event master transaction, but we already have a transaction open"));
+         WARNING("attempting to open a new event master transaction, but we already have a transaction open");
       } else {
          t_store->is_transaction = true;
       }

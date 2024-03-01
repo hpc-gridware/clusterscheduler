@@ -151,13 +151,13 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
    if (lGetPosViaElem(pe, PE_allocation_rule, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_allocation_rule);
       if (s == nullptr) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe"));
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
 
       if (replace_params(s, nullptr, 0, pe_alloc_rule_variables)) {
-         ERROR((SGE_EVENT, MSG_PE_ALLOCRULE_SS, pe_name, err_msg));
+         ERROR(MSG_PE_ALLOCRULE_SS, pe_name, err_msg);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -168,7 +168,7 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
    if (lGetPosViaElem(pe, PE_urgency_slots, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_urgency_slots);
       if (s == nullptr) {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe"));
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -200,7 +200,7 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
    /* -------- PE_resource_utilization */
    if (add) {
       if (pe_set_slots_used(new_pe, 0)) {
-         ERROR((SGE_EVENT, SFNMAX, MSG_MEM_MALLOC));
+         ERROR(SFNMAX, MSG_MEM_MALLOC);
          answer_list_add(alpp, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EMALLOC);
       }
@@ -260,27 +260,26 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!pep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((pos = lGetPosViaElem(pep, PE_name, SGE_NO_ABORT)) < 0) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-              lNm2Str(PE_name), __func__));
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    pe = lGetPosString(pep, pos);
    if (!pe) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
+      ERROR(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((ep = pe_list_locate(master_pe_list, pe)) == nullptr) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -294,7 +293,7 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
+         ERROR("denied: %s", lGetString(answer, AN_text));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
@@ -305,7 +304,7 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    /* remove host file */
    if (!sge_event_spool(alpp, 0, sgeE_PE_DEL,
                         0, 0, pe, nullptr, nullptr, nullptr, nullptr, nullptr, true, true)) {
-      ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, pe));
+      ERROR(MSG_CANTSPOOL_SS, object_name, pe);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -315,8 +314,7 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    /* delete found pe element */
    lRemoveElem(master_pe_list, &ep);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-           ruser, rhost, pe, object_name));
+   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, pe, object_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }

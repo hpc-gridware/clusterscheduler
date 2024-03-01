@@ -76,7 +76,7 @@ sge_signaler_initiate_termination() {
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
    if (thread != nullptr) {
       pthread_kill(*(thread->thread_pointer), SIGINT);
-      INFO((SGE_EVENT, "send SIGINT to " SFN "\n", thread->thread_name));
+      INFO("send SIGINT to " SFN "\n", thread->thread_name);
    }
    DRETURN_VOID;
 }
@@ -180,7 +180,7 @@ sge_signaler_main(void *arg) {
             is_continue = false;
             break;
          default:
-            ERROR((SGE_EVENT, MSG_QMASTER_UNEXPECTED_SIGNAL_I, sig_num));
+            ERROR(MSG_QMASTER_UNEXPECTED_SIGNAL_I, sig_num);
       }
 
       sge_monitor_output(&monitor);

@@ -68,13 +68,14 @@ static void get_spool_dir_range(u_long32 ja_task_id, u_long32 *start,
    *end = (row + 1) * sge_get_ja_tasks_per_directory();
 }
 
-static void get_spool_dir_parts(u_long32 job_id, char *first, char *second,
-                                char *third) {
-   sprintf(third, "%04d", (int) (job_id % 10000l));
+static void get_spool_dir_parts(u_long32 job_id, char *first, size_t first_size,
+                                char *second, size_t second_size,
+                                char *third, size_t third_size) {
+   snprintf(third, first_size, "%04d", (int) (job_id % 10000l));
    job_id /= 10000l;
-   sprintf(second, "%04d", (int) (job_id % 10000l));
+   snprintf(second, second_size, "%04d", (int) (job_id % 10000l));
    job_id /= 10000l;
-   sprintf(first, "%02d", (int) (job_id % 10000l));
+   snprintf(first, third_size, "%02d", (int) (job_id % 10000l));
 }
 
 /****** uti/spool/sge_get_ja_tasks_per_directory() *****************************
@@ -178,7 +179,7 @@ u_long32 sge_get_ja_tasks_per_file() {
 *     uti/spool/sge_file_path_format_t
 *     uti/spool/sge_spool_flags_t 
 ******************************************************************************/
-char *sge_get_file_path(char *buffer, sge_file_path_id_t id,
+char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
                         sge_file_path_format_t format_flags,
                         sge_spool_flags_t spool_flags,
                         u_long32 ulong_val1, u_long32 ulong_val2,
@@ -192,7 +193,7 @@ char *sge_get_file_path(char *buffer, sge_file_path_id_t id,
    const char *spool_dir = (handle_as_zombie ? ZOMBIE_DIR : JOB_DIR);
 
    if (id == JOBS_SPOOL_DIR) {
-      sprintf(buffer, SFN, spool_dir);
+      snprintf(buffer, buffer_size, SFN, spool_dir);
    } else if (id == JOB_SPOOL_DIR || id == JOB_SPOOL_FILE ||
               id == TASKS_SPOOL_DIR || id == TASK_SPOOL_DIR_AS_FILE ||
               id == TASK_SPOOL_DIR || id == JOB_SPOOL_DIR_AS_FILE ||
@@ -205,8 +206,8 @@ char *sge_get_file_path(char *buffer, sge_file_path_id_t id,
       char job_dir_second[SGE_PATH_MAX] = "";
       char job_dir_third[SGE_PATH_MAX] = "";
 
-      get_spool_dir_parts(ulong_val1, job_dir_first, job_dir_second,
-                          job_dir_third);
+      get_spool_dir_parts(ulong_val1, job_dir_first, SGE_PATH_MAX, job_dir_second, SGE_PATH_MAX,
+                          job_dir_third, SGE_PATH_MAX);
 
       if (first_part) {
          // @todo: can this be correct?
@@ -243,31 +244,27 @@ char *sge_get_file_path(char *buffer, sge_file_path_id_t id,
           id == PE_TASK_SPOOL_FILE) {
          u_long32 start, end;
          get_spool_dir_range(ulong_val2, &start, &end);
-         sprintf(id_range, sge_u32"-" sge_u32, start, end);
+         snprintf(id_range, sizeof(id_range), sge_u32"-" sge_u32, start, end);
       }
       if (id == JOB_SPOOL_DIR || id == JOB_SPOOL_DIR_AS_FILE) {
-         sprintf(buffer, "%s/%s", spool_dir, job_dir);
+         snprintf(buffer, buffer_size, "%s/%s", spool_dir, job_dir);
       } else if (id == JOB_SPOOL_FILE) {
-         sprintf(buffer, "%s/%s/%s%s", spool_dir, job_dir,
-                 file_prefix, "common");
+         snprintf(buffer, buffer_size, "%s/%s/%s%s", spool_dir, job_dir, file_prefix, "common");
       } else if (id == TASKS_SPOOL_DIR) {
-         sprintf(buffer, "%s/%s/%s", spool_dir, job_dir, id_range);
+         snprintf(buffer, buffer_size, "%s/%s/%s", spool_dir, job_dir, id_range);
       } else if (id == TASK_SPOOL_DIR_AS_FILE || id == TASK_SPOOL_DIR) {
-         sprintf(buffer, "%s/%s/%s/%s" sge_u32, spool_dir, job_dir,
-                 id_range, file_prefix, ulong_val2);
+         snprintf(buffer, buffer_size, "%s/%s/%s/%s" sge_u32, spool_dir, job_dir, id_range, file_prefix, ulong_val2);
       } else if (id == TASK_SPOOL_FILE) {
-         sprintf(buffer, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir,
-                 id_range, ulong_val2, file_prefix, "common");
+         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, "common");
       } else if (id == PE_TASK_SPOOL_FILE) {
-         sprintf(buffer, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir,
-                 id_range, ulong_val2, file_prefix, string_val1);
+         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, string_val1);
       }
    } else if (id == JOB_SCRIPT_DIR) {
-      sprintf(buffer, "%s", EXEC_DIR);
+      snprintf(buffer, buffer_size, "%s", EXEC_DIR);
    } else if (id == JOB_SCRIPT_FILE) {
-      sprintf(buffer, "%s/" sge_u32, EXEC_DIR, ulong_val1);
+      snprintf(buffer, buffer_size, "%s/" sge_u32, EXEC_DIR, ulong_val1);
    } else if (id == JOB_ACTIVE_DIR && in_execd) {
-      sprintf(buffer, ACTIVE_DIR"/" sge_u32"." sge_u32, ulong_val1, ulong_val2);
+      snprintf(buffer, buffer_size, ACTIVE_DIR"/" sge_u32"." sge_u32, ulong_val1, ulong_val2);
    } else {
       buffer[0] = '\0';
    }
@@ -573,7 +570,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {
-         CRITICAL((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
+         CRITICAL(MSG_FILE_FOPENFAILED_SS, fname, strerror(errno));
       } else {
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS,
                              fname, strerror(errno));
@@ -616,7 +613,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
       for (i = 0; i < n; i++) {
          if (!is_found[i] && name[i].is_required) {
             if (error_dstring == nullptr) {
-               CRITICAL((SGE_EVENT, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS, name[i].name, fname));
+               CRITICAL(MSG_UTI_CANNOTLOCATEATTRIBUTE_SS, name[i].name, fname);
             } else {
                sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS,
                                    name[i].name, fname);
@@ -819,7 +816,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {
-         CRITICAL((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
+         CRITICAL(MSG_FILE_FOPENFAILED_SS, fname, strerror(errno));
       } else {
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS,
                              fname, strerror(errno));
@@ -868,7 +865,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
       for (i = 0; i < n; i++) {
          if (!is_found[i] && name[i].is_required) {
             if (error_dstring == nullptr) {
-               CRITICAL((SGE_EVENT, MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS, name[i].name, fname));
+               CRITICAL(MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS, name[i].name, fname);
             } else {
                sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS,
                                    name[i].name, fname);
