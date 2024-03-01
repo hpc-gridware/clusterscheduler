@@ -102,10 +102,6 @@ int main(int argc,char *argv[])
       static FILE *df = nullptr;
 #  endif
 
-#ifdef SOLARIS
-int getpagesize(void);
-#endif
-
 #include <cerrno>
 
 #include "uti/sge_language.h"
@@ -626,8 +622,12 @@ static int psRetrieveOSJobData(void) {
             }
          }
          /* estimate high water memory mark */
-         if (job->jd_vmem > job->jd_himem)
+         if (job->jd_vmem > job->jd_himem) {
             job->jd_himem = job->jd_vmem;
+         }
+         if (job->jd_rss > job->jd_maxrss) {
+            job->jd_maxrss = job->jd_rss;
+         }
       } 
 
 #endif
@@ -670,7 +670,7 @@ int psStartCollector(void)
 #endif
 
    /* page size */
-   pagesize = getpagesize();
+   pagesize = sysconf(_SC_PAGESIZE);
 
    /* retrieve static parameters */
 #if defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)

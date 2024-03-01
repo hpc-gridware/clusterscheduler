@@ -319,6 +319,34 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    return ret;
 }
 
+static void
+update_wallclock_usage(u_long32 now, const lListElem *job, const lListElem *ja_task)
+{
+   u_long32 job_id = lGetUlong(job, JB_job_number);
+   u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
+   u_long32 wallclock = now - lGetUlong(ja_task, JAT_start_time);
+
+   lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
+   if (jr != nullptr) {
+      add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
+   }
+
+   const lListElem *pe_task;
+   for_each_ep (pe_task, lGetList(ja_task, JAT_task_list)) {
+      // don't update wallclock before job actually started or after it ended */
+      u_long32 status = lGetUlong(pe_task, PET_status);
+      if (status == JWAITING4OSJID || status == JEXITING) {
+         continue;
+      }
+      wallclock = now - lGetUlong(pe_task, PET_start_time);
+      const char *pe_task_id = lGetString(pe_task, PET_id);
+      jr = get_job_report(job_id, ja_task_id, pe_task_id);
+      if (jr == nullptr) {
+         add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
+      }
+   }
+}
+
 /******************************************************
  EXECD function
 
@@ -410,10 +438,16 @@ int do_ck_to_do(bool is_qmaster_down) {
       for_each_rw (jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
-            /* don't start wallclock before job acutally started */
-            if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID ||
-                  lGetUlong(jatep, JAT_status) == JEXITING)
+            // don't update wallclock before job actually started or after it ended */
+            u_long32 status = lGetUlong(jatep, JAT_status);
+            if (status == JWAITING4OSJID || status == JEXITING) {
                continue;
+            }
+
+            // update wallclock usage
+            // @todo is this the right place? Currently we come here once a second, which is OK as long as
+            //       the time resolution is 1s
+            update_wallclock_usage(now, jep, jatep);
 
             if (!lGetUlong(jep, JB_hard_wallclock_gmt)) {
                u_long32 task_wallclock_limit = lGetUlong(jatep, JAT_wallclock_limit);

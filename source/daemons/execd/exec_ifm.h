@@ -109,6 +109,7 @@ struct psJob_s
 	uint64	jd_vmem;		   /* virtual memory size in bytes */
 	uint64	jd_rss;		   /* resident set size in bytes */
 	uint64	jd_himem;		/* high-water memory size in bytes */
+   uint64   jd_maxrss;     /* maximum rss in bytes */
 	uint64	jd_fsblks;		/* file system blocks consumed */
 	};
 /*

@@ -46,6 +46,7 @@ enum {
  * use these defined names for refering special usage values
  */
 
+#define USAGE_ATTR_WALLCLOCK "wallclock"
 #define USAGE_ATTR_CPU "cpu"
 
 /* integral memory usage */
@@ -61,11 +62,13 @@ enum {
 #define USAGE_ATTR_IOW_ACCT "acct_iow"
 #define USAGE_ATTR_MAXVMEM_ACCT "acct_maxvmem"
 
-/* current amount of used memory */
+/* current amount and maximum of used memory */
 #define USAGE_ATTR_VMEM "vmem"
-
-/* max. vmem */
 #define USAGE_ATTR_MAXVMEM "maxvmem"
+
+/* current amount and maximum of resident set size */
+#define USAGE_ATTR_RSS "rss"
+#define USAGE_ATTR_MAXRSS "maxrss"
 
 u_long32
 usage_list_get_ulong_usage(const lList *usage_list, const char *name, u_long32 def);

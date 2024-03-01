@@ -390,10 +390,12 @@ time_t last_time
    lListElem *pr = nullptr;
    SGE_STRUCT_STAT fst;
    unsigned long utime, stime, vsize, pid;
+   long rss;
    int pos_pid = lGetPosInDescr(PRO_Type, PRO_pid);
    int pos_utime = lGetPosInDescr(PRO_Type, PRO_utime);
    int pos_stime = lGetPosInDescr(PRO_Type, PRO_stime);
    int pos_vsize = lGetPosInDescr(PRO_Type, PRO_vsize);
+   int pos_rss = lGetPosInDescr(PRO_Type, PRO_rss);
    int pos_groups = lGetPosInDescr(PRO_Type, PRO_groups);
    int pos_rel = lGetPosInDescr(PRO_Type, PRO_rel);
    int pos_run = lGetPosInDescr(PRO_Type, PRO_run);
@@ -465,8 +467,8 @@ time_t last_time
             continue;
          }
       }
-      sprintf(procnam, PROC_DIR "/%s/stat", dent->d_name);
 
+      sprintf(procnam, PROC_DIR "/%s/stat", dent->d_name);
       if (SGE_STAT(procnam, &fst)) {
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
@@ -478,8 +480,9 @@ time_t last_time
       }
       /* TODO (SH): This does not work with Linux 2.6. I'm looking for a workaround.
        * If the stat file was not changed since our last parsing there is no need to do it again
+       * It also doesn't work with newer kernel versions, e.g. 5.x
        */
-      /*if (pr == nullptr || fst.st_mtime > last_time) {*/
+      /*if (pr == nullptr || fst.st_mtime > last_time)*/
       {
 #else
          sprintf(procnam, "%s/%s", PROC_DIR, dent->d_name);
@@ -522,14 +525,16 @@ time_t last_time
 
          /* 
           * get prstatus
+          * see https://www.man7.org/linux/man-pages/man5/proc.5.html
           */
-         ret = sscanf(buffer, "%lu %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %*u %lu",
+         ret = sscanf(buffer, "%lu %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %*u %lu %ld",
                       &pid,
                       &utime,
                       &stime,
-                      &vsize);
+                      &vsize,
+                      &rss);
 
-         if (ret != 4) {
+         if (ret != 5) {
             close(fd);
             continue;
          }
@@ -540,11 +545,12 @@ time_t last_time
             lSetPosBool(pr, pos_rel, false);
             append_pr(pr);
          }
-         
+
          lSetPosUlong(pr, pos_utime, utime);
          lSetPosUlong(pr, pos_stime, stime);
          lSetPosUlong64(pr, pos_vsize, vsize);
-         
+         lSetPosUlong64(pr, pos_rss, rss * pagesize);
+
          close(fd);
       }
       /* mark this proc as running */
@@ -754,6 +760,7 @@ time_t last_time
    proc_elem->proc.pd_stime  = ((double)lGetPosUlong(pr, pos_stime))/HZ;
    /* could retrieve uid/gid using stat() on stat file */
    proc_elem->vmem           = lGetPosUlong64(pr, pos_vsize);
+   proc_elem->rss            = lGetPosUlong64(pr, pos_rss);
 
    /*
     * I/O accounting

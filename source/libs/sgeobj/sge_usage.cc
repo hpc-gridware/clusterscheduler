@@ -220,7 +220,8 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
           strcmp(name, USAGE_ATTR_IO) == 0 ||
           strcmp(name, USAGE_ATTR_IOW) == 0 ||
           strcmp(name, USAGE_ATTR_VMEM) == 0 ||
-          strcmp(name, USAGE_ATTR_MEM) == 0 || 
+          strcmp(name, USAGE_ATTR_RSS) == 0 ||
+          strcmp(name, USAGE_ATTR_MEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
          lListElem *sum = lGetElemStrRW(usage_list, UA_name, name);
@@ -287,6 +288,20 @@ lList *scaled_usage /* UA_Type */
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXVMEM)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXVMEM))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_RSS)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_RSS))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXRSS)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXRSS))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));

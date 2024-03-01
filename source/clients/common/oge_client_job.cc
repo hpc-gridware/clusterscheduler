@@ -522,7 +522,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
-         double cpu, mem, io, vmem, maxvmem;
+         double wallclock, cpu, mem, io, vmem, maxvmem, rss, maxrss;
 
          /* jobs whose job start orders were not processed to the end
             due to a qmaster/schedd collision appear in the JB_ja_tasks
@@ -536,37 +536,51 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          } else
             printf("      %4d:                 ", (int)lGetUlong(jatep, JAT_task_number));
 
-         cpu = mem = io = vmem = maxvmem = 0.0;
+         wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
 
          /* master task */
+         SUM_UP_JATASK_USAGE(jatep, wallclock, USAGE_ATTR_WALLCLOCK);
          SUM_UP_JATASK_USAGE(jatep, cpu, USAGE_ATTR_CPU);
-         SUM_UP_JATASK_USAGE(jatep, vmem, USAGE_ATTR_VMEM);
          SUM_UP_JATASK_USAGE(jatep, mem, USAGE_ATTR_MEM);
          SUM_UP_JATASK_USAGE(jatep, io, USAGE_ATTR_IO);
+         SUM_UP_JATASK_USAGE(jatep, vmem, USAGE_ATTR_VMEM);
          SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
+         SUM_UP_JATASK_USAGE(jatep, rss, USAGE_ATTR_RSS);
+         SUM_UP_JATASK_USAGE(jatep, maxrss, USAGE_ATTR_MAXRSS);
 
          /* slave tasks */
          for_each_ep(pe_task_ep, lGetList(jatep, JAT_task_list)) {
+            // we do not sum up wallclock usage per pe task
             SUM_UP_PETASK_USAGE(pe_task_ep, cpu, USAGE_ATTR_CPU);
-            SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
             SUM_UP_PETASK_USAGE(pe_task_ep, mem, USAGE_ATTR_MEM);
             SUM_UP_PETASK_USAGE(pe_task_ep, io, USAGE_ATTR_IO);
-
-            /*            SUM_UP_PETASK_USAGE(pe_task_ep, io, USAGE_ATTR_MAXVMEM); */
+            SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
             SUM_UP_PETASK_USAGE(pe_task_ep, maxvmem, USAGE_ATTR_MAXVMEM);
+            SUM_UP_PETASK_USAGE(pe_task_ep, rss, USAGE_ATTR_RSS);
+            SUM_UP_PETASK_USAGE(pe_task_ep, maxrss, USAGE_ATTR_MAXRSS);
          }
 
          {
+            dstring wallclock_string = DSTRING_INIT;
             dstring cpu_string = DSTRING_INIT;
             dstring vmem_string = DSTRING_INIT;
             dstring maxvmem_string = DSTRING_INIT;
+            dstring rss_string = DSTRING_INIT;
+            dstring maxrss_string = DSTRING_INIT;
 
+            double_print_time_to_dstring(wallclock, &wallclock_string);
             double_print_time_to_dstring(cpu, &cpu_string);
             double_print_memory_to_dstring(vmem, &vmem_string);
             double_print_memory_to_dstring(maxvmem, &maxvmem_string);
-            printf("cpu=%s, mem=%-5.5f GBs, io=%-5.5f, vmem=%s, maxvmem=%s\n", sge_dstring_get_string(&cpu_string), mem,
-                   io, (vmem == 0.0) ? "N/A" : sge_dstring_get_string(&vmem_string),
-                   (maxvmem == 0.0) ? "N/A" : sge_dstring_get_string(&maxvmem_string));
+            double_print_memory_to_dstring(rss, &rss_string);
+            double_print_memory_to_dstring(maxrss, &maxrss_string);
+            printf("wallclock=%s, cpu=%s, mem=%-5.5f GBs, io=%-5.5f, vmem=%s, maxvmem=%s, rss=%s, maxrss=%s\n",
+                   sge_dstring_get_string(&wallclock_string), sge_dstring_get_string(&cpu_string),
+                   mem, io,
+                   (vmem == 0.0) ? "N/A" : sge_dstring_get_string(&vmem_string),
+                   (maxvmem == 0.0) ? "N/A" : sge_dstring_get_string(&maxvmem_string),
+                   (rss == 0.0) ? "N/A" : sge_dstring_get_string(&rss_string),
+                   (maxrss == 0.0) ? "N/A" : sge_dstring_get_string(&maxrss_string));
 
             sge_dstring_free(&cpu_string);
             sge_dstring_free(&vmem_string);
