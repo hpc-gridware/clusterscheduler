@@ -42,7 +42,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "basis_types.h"
@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
     * stage 3: fetch data from master 
     */
    {
-      answer_list = sge_gdi2(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
+      answer_list = sge_gdi(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
                      qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
       if (answer_list_has_error(&answer_list)) {

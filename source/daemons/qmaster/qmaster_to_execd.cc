@@ -39,7 +39,7 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
@@ -115,7 +115,7 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
       u_long32 dummy = 0;
 
       packint(&pb, x);
-      if (gdi2_send_message_pb(0, prognames[progname_id], 1, hostname,
+      if (gdi_send_message_pb(0, prognames[progname_id], 1, hostname,
                                tag, &pb, &dummy) == CL_RETVAL_OK) {
          ret = 0;
       }

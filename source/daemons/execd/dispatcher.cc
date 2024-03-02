@@ -39,7 +39,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
 
@@ -103,7 +103,7 @@ int sge_execd_process_messages()
 
       memset((void*)&msg, 0, sizeof(struct_msg_t));
 
-      ret = gdi2_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
+      ret = gdi_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
                               &msg.tag, &buffer, &buflen, 0);
       init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
 
@@ -171,7 +171,7 @@ int sge_execd_process_messages()
          clear_packbuffer(&(msg.buf));
          if (is_apb_used) {
             if (pb_filled(&apb)) {
-               gdi2_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
+               gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
                                 atag, &apb, nullptr);
             }
             clear_packbuffer(&apb);
@@ -288,7 +288,7 @@ int sge_execd_process_messages()
                 */
                if (now - last_heard > alive_check_interval) {
                   int ret_val = CL_RETVAL_OK;
-                  const char* master_host = gdi3_get_act_master_host(false);
+                  const char* master_host = gdi_get_act_master_host(false);
                   cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
                   cl_com_SIRM_t* ep_status = nullptr;
 

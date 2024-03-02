@@ -46,7 +46,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/msg_gdilib.h"

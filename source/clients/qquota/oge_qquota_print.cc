@@ -58,7 +58,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "sgeobj/sge_daemonize.h"
 
 #include "basis_types.h"
@@ -408,7 +408,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** resource quota sets
    */
    what = lWhat("%T(ALL)", RQS_Type);
-   rqs_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET,
+   rqs_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -420,7 +420,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** complexes
    */
    what = lWhat("%T(ALL)", CE_Type);
-   ce_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
+   ce_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -431,7 +431,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** usersets 
    */
    what = lWhat("%T(ALL)", US_Type);
-   userset_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET,
+   userset_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
@@ -442,7 +442,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** host groups 
    */
    what = lWhat("%T(ALL)", HGRP_Type);
-   hgroup_id = sge_gdi2_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
+   hgroup_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
    /*
@@ -468,9 +468,9 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
       where = nw;
 
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
-   eh_id = sge_gdi2_multi(alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
+   eh_id = sge_gdi_multi(alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
                           nullptr, where, what, &state, true);
-   sge_gdi2_wait(&mal, &state);
+   sge_gdi_wait(&mal, &state);
    lFreeWhat(&what);
    lFreeWhere(&where);
 
@@ -480,7 +480,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
 
    /* --- resource quota sets */
    lFreeList(alpp);
-   sge_gdi_extract_answer(alpp, SGE_GDI_GET, SGE_RQS_LIST, rqs_id,
+   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_RQS_LIST, rqs_id,
                                  mal, rqs_l);
    if (answer_list_has_error(alpp)) {
       lFreeList(&mal);
@@ -489,7 +489,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
 
    /* --- complex attribute */
    lFreeList(alpp);
-   sge_gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CE_LIST, ce_id,
+   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CE_LIST, ce_id,
                                  mal, centry_l);
    if (answer_list_has_error(alpp)) {
       lFreeList(&mal);
@@ -497,7 +497,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    }
    /* --- usersets */
    lFreeList(alpp);
-   sge_gdi_extract_answer(alpp, SGE_GDI_GET, SGE_US_LIST, userset_id,
+   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_US_LIST, userset_id,
                                  mal, userset_l);
    if (answer_list_has_error(alpp)) {
       lFreeList(&mal);
@@ -505,7 +505,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    }
    /* --- hostgroups */
    lFreeList(alpp);
-   sge_gdi_extract_answer(alpp, SGE_GDI_GET, SGE_HGRP_LIST, hgroup_id,
+   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_HGRP_LIST, hgroup_id,
                                  mal, hgroup_l);
    if (answer_list_has_error(alpp)) {
       lFreeList(&mal);
@@ -513,7 +513,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    }
    /* --- exec hosts*/
    lFreeList(alpp);
-   sge_gdi_extract_answer(alpp, SGE_GDI_GET, SGE_EH_LIST, eh_id,
+   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_EH_LIST, eh_id,
                                  mal, exechost_l);
 
    lFreeList(&mal);

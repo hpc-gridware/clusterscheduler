@@ -71,7 +71,7 @@
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/qm_name.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "sched/debit.h"

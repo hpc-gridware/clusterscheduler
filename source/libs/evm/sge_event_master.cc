@@ -56,7 +56,7 @@
 #include "comm/cl_commlib.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_host.h"

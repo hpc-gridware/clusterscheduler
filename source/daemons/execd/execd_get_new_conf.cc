@@ -75,7 +75,7 @@ int do_get_new_conf(struct_msg_t *aMsg)
 
    old_spool = mconf_get_execd_spool_dir();  
 
-   ret = gdi2_get_merged_configuration(&Execd_Config_List);
+   ret = gdi_get_merged_configuration(&Execd_Config_List);
   
    spool_dir = mconf_get_execd_spool_dir(); 
    if (strcmp(old_spool, spool_dir)) {

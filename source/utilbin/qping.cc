@@ -54,7 +54,7 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
-#include "gdi/sge_gdi3.h"
+#include "gdi/sge_gdi_data.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"

@@ -1,11 +1,11 @@
 # source/libs/gdi
 set(LIBRARY_NAME gdi)
 set(LIBRARY_SOURCES
-      pack_job_delivery.cc
+      oge_gdi_execd_delivery.cc
       qm_name.cc
       oge_gdi_client.cc
-      sge_gdi2.cc
-      sge_gdi3.cc
+      sge_gdi.cc
+      sge_gdi_data.cc
       sge_gdi_packet.cc
       sge_gdi_packet_internal.cc
       sge_gdi_packet_pb_cull.cc

@@ -31,6 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 int do_ticket(struct_msg_t *aMsg);

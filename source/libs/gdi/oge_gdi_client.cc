@@ -54,10 +54,9 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
-#include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi3.h"
+#include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi_data.h"
 #include "gdi/msg_gdilib.h"
-#include "sgeobj/sge_daemonize.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_feature.h"
@@ -183,7 +182,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
 
    /* set the alias file */
    cl_ret = cl_com_set_alias_file(bootstrap_get_alias_file());
-   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_com_set_alias_file failed: %s", cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
@@ -202,7 +201,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
    }
 
    cl_ret = cl_com_set_resolve_method(resolve_method, (char *) default_domain);
-   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_com_set_resolve_method failed: %s", cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
@@ -213,21 +212,21 @@ int gdi_client_prepare_enroll(lList **answer_list) {
    ** (corresponds to reresolve_me_qualified_hostname)
    */
    cl_ret = reresolve_qualified_hostname();
-   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING,
                               "reresolve hostname failed: %s", cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
    cl_ret = cl_com_set_error_func(general_communication_error);
-   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_com_set_error_func failed: %s", cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
    cl_ret = cl_com_set_tag_name_func(sge_dump_message_tag);
-   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "cl_com_set_tag_name_func failed: %s", cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
@@ -239,7 +238,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
 
       int me_who = component_get_component_id();
       const char *progname = component_get_component_name();
-      const char *master = gdi3_get_act_master_host(true);
+      const char *master = gdi_get_act_master_host(true);
       const char *qualified_hostname = component_get_qualified_hostname();
       u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
       u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
@@ -255,12 +254,12 @@ int gdi_client_prepare_enroll(lList **answer_list) {
       if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
          cl_ssl_cert_mode_t ssl_cert_mode = CL_SSL_PEM_FILE;
-         sge_csp_path_class_t *sge_csp = gdi3_get_csp_path_obj();
+         sge_csp_path_class_t *sge_csp = gdi_data_get_csp_path_obj();
 
-         if (gdi3_get_ssl_certificate() != nullptr) {
+         if (gdi_data_get_ssl_certificate() != nullptr) {
             ssl_cert_mode = CL_SSL_PEM_BYTE;
-            sge_csp->set_cert_file(sge_csp, gdi3_get_ssl_certificate());
-            sge_csp->set_key_file(sge_csp, gdi3_get_ssl_private_key());
+            sge_csp->set_cert_file(sge_csp, gdi_data_get_ssl_certificate());
+            sge_csp->set_key_file(sge_csp, gdi_data_get_ssl_private_key());
          }
          sge_csp->dprintf(sge_csp);
 
@@ -279,7 +278,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           (char *) sge_csp->get_password(sge_csp),        /* ssl_password         */
                                           sge_csp->get_verify_func(
                                                   sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
-         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
             DPRINTF(("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret)));
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, qualified_hostname, progname,
@@ -291,7 +290,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
          ** set the CSP credential info into commlib
          */
          cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
-         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
             DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret)));
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, component_get_component_name(),
@@ -328,7 +327,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           0);
             cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED);
             if (handle == nullptr) {
-               if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+               if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
                   ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_execd_port), cl_get_error_text(cl_ret));
                }
             }
@@ -361,13 +360,13 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           1,
                                           0); /* select timeout is set to 1 second 0 usec */
             if (handle == nullptr) {
-               if (cl_ret != CL_RETVAL_OK && cl_ret != gdi3_get_last_commlib_error()) {
+               if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
                   ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
                }
             } else {
                char act_resolved_qmaster_name[CL_MAXHOSTLEN];
                cl_com_set_synchron_receive_timeout(handle, 5);
-               master = gdi3_get_act_master_host(true);
+               master = gdi_get_act_master_host(true);
 
                if (master != nullptr) {
                   /* check a running qmaster on different host */
@@ -379,7 +378,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
 
                      cl_com_set_error_func(nullptr);
 
-                     int alive_back = sge_gdi_ctx_class_is_alive(answer_list);
+                     int alive_back = gdi_is_alive(answer_list);
 
                      cl_ret = cl_com_set_error_func(general_communication_error);
                      if (cl_ret != CL_RETVAL_OK) {
@@ -416,7 +415,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
             }
             break;
       }
-      gdi3_set_last_commlib_error(cl_ret);
+      gdi_data_set_last_commlib_error(cl_ret);
    }
 
    if ((component_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
@@ -472,15 +471,15 @@ gdi_client_setup(int component_id, u_long32 thread_id, lList **answer_list, bool
       DRETURN(AE_ERROR);
    }
 
-   gdi3_set_csp_path_obj(sge_csp_path_class_create(gdi3_get_error_handle()));
-   if (!gdi3_get_csp_path_obj()) {
+   gdi_data_set_csp_path_obj(sge_csp_path_class_create(gdi_data_get_error_handle()));
+   if (!gdi_data_get_csp_path_obj()) {
       // EB: TODO: I18N + replace by an end user error message
       CRITICAL("sge_csp_path_class_create() failed");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
       DRETURN(AE_ERROR);
    }
 
-   component_set_exit_func(gdi2_default_exit_func);
+   component_set_exit_func(gdi_default_exit_func);
 
    DRETURN(AE_OK);
 }
@@ -489,7 +488,7 @@ int
 gdi_client_setup_and_enroll(int component_id, u_long32 thread_id, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   if (gdi3_is_setup()) {
+   if (gdi_data_is_setup()) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_WARNING, MSG_GDI_GDI_ALREADY_SETUP);
       DRETURN(AE_ALREADY_SETUP);
    }
@@ -503,7 +502,7 @@ gdi_client_setup_and_enroll(int component_id, u_long32 thread_id, lList **answer
       DRETURN(AE_QMASTER_DOWN);
    }
 
-   gdi3_set_setup(true);
+   gdi_data_set_setup(true);
 
    DRETURN(AE_OK);
 }
@@ -524,6 +523,6 @@ gdi_client_setup_and_enroll(int component_id, u_long32 thread_id, lList **answer
 ******************************************************************************/
 int gdi_client_shutdown() {
    DENTER(GDI_LAYER);
-   gdi2_default_exit_func(0);
+   gdi_default_exit_func(0);
    DRETURN(0);
 }

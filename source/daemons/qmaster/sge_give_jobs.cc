@@ -69,9 +69,9 @@
 #include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
-#include "gdi/pack_job_delivery.h"
+#include "gdi/oge_gdi_execd_delivery.h"
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "spool/sge_spooling.h"
 
@@ -445,7 +445,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
 
          pack_job_delivery(&send_pb, jep);
          if (!simulate_execd) {
-            failed = gdi2_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
+            failed = gdi_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          } else {
             failed = CL_RETVAL_OK;
          }
@@ -611,7 +611,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
       failed = CL_RETVAL_OK;
    } else {
       u_long32 dummymid = 0;
-      failed = gdi2_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
+      failed = gdi_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
                                     &pb, &dummymid);
    }
 

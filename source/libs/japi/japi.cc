@@ -88,7 +88,7 @@
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "evm/sge_event_master.h"
@@ -532,7 +532,7 @@ int japi_init(const char *contact, const char *session_key_in,
          /* check if master is alive */
          commlib_error = gdi_client_prepare_enroll(&answer_list);
          if (commlib_error == CL_RETVAL_OK) {
-            commlib_error = sge_gdi_ctx_class_is_alive(&answer_list);
+            commlib_error = gdi_is_alive(&answer_list);
          }
          handle = cl_com_get_handle(component_get_component_name(), 0);
       }
@@ -1257,7 +1257,7 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
                            component_get_username(), component_get_groupname());
 
    /* use GDI to submit job for this session */
-   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
+   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
 
    /* reinitialize 'job' with pointer to new version from qmaster */
    lFreeElem(sge_job_template);
@@ -1779,7 +1779,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
                id_list_build_from_str_list(&id_list, &alp, ref_list,
                                            QI_DO_UNSUSPEND, 0);
             }
-            alp = sge_gdi2(SGE_CQ_LIST, SGE_GDI_TRIGGER,
+            alp = sge_gdi(SGE_CQ_LIST, SGE_GDI_TRIGGER,
                           &id_list, nullptr, nullptr);
             lFreeList(&id_list);
             lFreeList(&ref_list);
@@ -1883,7 +1883,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
          }
 
          if (request_list) {
-            alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_MOD, &request_list, nullptr, nullptr);
+            alp = sge_gdi(SGE_JB_LIST, SGE_GDI_MOD, &request_list, nullptr, nullptr);
             lFreeList(&request_list);
 
             for_each_rw (aep, alp) {
@@ -3268,13 +3268,13 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
    
-   jb_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_JB_LIST, SGE_GDI_GET, nullptr,
+   jb_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_JB_LIST, SGE_GDI_GET, nullptr,
                           job_selection, job_fields, &state, true);
-   sge_gdi2_wait(&mal, &state);
+   sge_gdi_wait(&mal, &state);
    lFreeWhere(&job_selection);
    lFreeWhat(&job_fields);
 
-   sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_JB_LIST, jb_id, mal, retrieved_job_list);
+   gdi_extract_answer(&alp, SGE_GDI_GET, SGE_JB_LIST, jb_id, mal, retrieved_job_list);
    lFreeList(&mal);
    aep = lFirst(alp);
    
@@ -4826,7 +4826,7 @@ static int japi_read_dynamic_attributes(dstring *diag)
 
    DENTER(TOP_LAYER);   
 
-   ret = gdi2_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
+   ret = gdi_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
 
    if (ret<0) {
       switch( ret ) {
@@ -4908,7 +4908,7 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all,
 
    DENTER(TOP_LAYER);
 
-   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, id_list, nullptr, nullptr);
+   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_DEL, id_list, nullptr, nullptr);
    lFreeList(id_list);
 
    for_each_rw (aep, alp) {
@@ -4961,7 +4961,7 @@ static int japi_stop_event_client (const char *default_cell)
    DPRINTF (("Requesting that GDI kill our event client.\n"));
    snprintf(id_string, sizeof(id_string)-1, sge_u32, japi_ec_id);
    lAddElemStr(&id_list, ID_str, id_string, ID_Type);
-   alp = gdi2_kill(id_list, EVENTCLIENT_KILL);
+   alp = gdi_kill(id_list, EVENTCLIENT_KILL);
    lFreeList(&id_list);
    lFreeList(&alp);
    

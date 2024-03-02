@@ -47,7 +47,7 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 volatile int should_stop = 0;
 

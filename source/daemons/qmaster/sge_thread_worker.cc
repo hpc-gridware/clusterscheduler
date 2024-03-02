@@ -50,7 +50,7 @@
 
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_internal.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/cl_commlib.h"
 
@@ -294,7 +294,7 @@ sge_worker_main(void *arg) {
              */
             if (packet->is_intern_request == false) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi2_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+               sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                          &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
                sge_gdi_packet_free(&packet);

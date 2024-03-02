@@ -50,7 +50,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ack.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet_internal.h"
@@ -134,7 +134,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
 
    MONITOR_IDLE_TIME((
 
-                             res = sge_gdi2_get_any_request(msg.snd_host, msg.snd_name,
+                             res = sge_gdi_get_any_request(msg.snd_host, msg.snd_name,
                                                             &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
 
                      ), monitor, mconf_get_monitor_time(), mconf_is_monitor_message());

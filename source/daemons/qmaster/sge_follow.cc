@@ -65,7 +65,7 @@
 #include "sched/valid_queue_user.h"
 #include "sched/debit.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sge.h"
 #include "sge_userprj_qmaster.h"
@@ -1544,7 +1544,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));
             }
-            cl_err = gdi2_send_message_pb(0, prognames[EXECD], 1, host_name,
+            cl_err = gdi_send_message_pb(0, prognames[EXECD], 1, host_name,
                                           TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
             clear_packbuffer(&pb);

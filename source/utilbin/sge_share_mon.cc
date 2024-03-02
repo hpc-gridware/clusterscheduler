@@ -43,7 +43,7 @@
 
 #include "gdi/oge_gdi_client.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
@@ -83,7 +83,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
    /* get share tree */
    what = lWhat("%T(ALL)", STN_Type);
-   sharetree_id = sge_gdi2_multi(&alp, SGE_GDI_RECORD, SGE_STN_LIST,
+   sharetree_id = sge_gdi_multi(&alp, SGE_GDI_RECORD, SGE_STN_LIST,
                                  SGE_GDI_GET, nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
    error = answer_list_output(&alp);
@@ -91,7 +91,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    /* get config list */
    if (!error) {
       what = lWhat("%T(ALL)", SC_Type);
-      sched_conf_id = sge_gdi2_multi(&alp, SGE_GDI_RECORD, SGE_SC_LIST, SGE_GDI_GET,
+      sched_conf_id = sge_gdi_multi(&alp, SGE_GDI_RECORD, SGE_SC_LIST, SGE_GDI_GET,
                                     nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
@@ -100,7 +100,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    /* get user list */
    if (!error) {
       what = lWhat("%T(ALL)", UU_Type);
-      user_id = sge_gdi2_multi(&alp, SGE_GDI_RECORD, SGE_UU_LIST, SGE_GDI_GET,
+      user_id = sge_gdi_multi(&alp, SGE_GDI_RECORD, SGE_UU_LIST, SGE_GDI_GET,
                               nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
@@ -109,7 +109,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    /* get project list */
    if (!error) {
       what = lWhat("%T(ALL)", PR_Type);
-      project_id = sge_gdi2_multi(&alp, SGE_GDI_RECORD, SGE_PR_LIST,
+      project_id = sge_gdi_multi(&alp, SGE_GDI_RECORD, SGE_PR_LIST,
                                   SGE_GDI_GET, nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
@@ -121,9 +121,9 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
     */
    if (!error) {
       what = lWhat("%T(ALL)", US_Type);
-      userset_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_US_LIST, SGE_GDI_GET,
+      userset_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_US_LIST, SGE_GDI_GET,
                                  nullptr, nullptr, what, &state, true);
-      sge_gdi2_wait(&malp, &state);
+      sge_gdi_wait(&malp, &state);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -135,7 +135,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    }
 
    /* extract the sharetree lists */
-   sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_STN_LIST, sharetree_id, malp, sharetree);
+   gdi_extract_answer(&alp, SGE_GDI_GET, SGE_STN_LIST, sharetree_id, malp, sharetree);
    error = answer_list_output(&alp);
 
    /* if we have no sharetree, output message and exit */
@@ -150,19 +150,19 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
    /* extract sched_conf, users, projects, usersets */
    if (!error) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_SC_LIST, sched_conf_id, malp, config);
+      gdi_extract_answer(&alp, SGE_GDI_GET, SGE_SC_LIST, sched_conf_id, malp, config);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_UU_LIST, user_id, malp, users);
+      gdi_extract_answer(&alp, SGE_GDI_GET, SGE_UU_LIST, user_id, malp, users);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_PR_LIST, project_id, malp, projects);
+      gdi_extract_answer(&alp, SGE_GDI_GET, SGE_PR_LIST, project_id, malp, projects);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_GET, SGE_US_LIST, userset_id, malp, usersets);
+      gdi_extract_answer(&alp, SGE_GDI_GET, SGE_US_LIST, userset_id, malp, usersets);
       error = answer_list_output(&alp);
    }
 

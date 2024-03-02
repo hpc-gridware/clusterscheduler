@@ -44,7 +44,7 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_report.h"
@@ -970,7 +970,7 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
 {
    cl_com_handle_t* handle = nullptr;
    sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-   const char *mastername = gdi3_get_act_master_host(true);
+   const char *mastername = gdi_get_act_master_host(true);
 
    DENTER(EVC_LAYER);
 
@@ -1381,7 +1381,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
          const char *rhost = nullptr;
 
          ruser = bootstrap_get_admin_user();
-         rhost = gdi3_get_act_master_host(false);
+         rhost = gdi_get_act_master_host(false);
          /*
          ** set busy handling, sets EV_changed to true if it is really changed
          */
@@ -1513,7 +1513,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi2(SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
+      alp = sge_gdi(SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
     
       aep = lFirst(alp);
     
@@ -1619,13 +1619,13 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
          lList *alp = nullptr;
          /* TODO: to master only !!!!! */
          const char* commproc = prognames[QMASTER];
-         const char* rhost = gdi3_get_act_master_host(false);
+         const char* rhost = gdi_get_act_master_host(false);
          int         commid   = 1;
 
 
          packint(&pb, lGetUlong(sge_evc->ec, EV_id));
 
-         send_ret = sge_gdi2_send_any_request(0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
+         send_ret = sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
          
          clear_packbuffer(&pb);
          answer_list_output (&alp);
@@ -2480,7 +2480,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
       const char *rhost = nullptr;
       local_t *evc_local = &(thiz->ec_local);
       ruser = bootstrap_get_admin_user();
-      rhost = gdi3_get_act_master_host(false);
+      rhost = gdi_get_act_master_host(false);
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
 
       /*
@@ -2577,7 +2577,7 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi2(SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
+      alp = sge_gdi(SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
       lFreeList(&lp); 
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
@@ -2664,9 +2664,9 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      commit_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_EV_LIST, SGE_GDI_MOD,
+      commit_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_EV_LIST, SGE_GDI_MOD,
                                 &lp, nullptr, nullptr, state, false);
-      sge_gdi2_wait(malpp, state);
+      sge_gdi_wait(malpp, state);
       if (lp != nullptr) {
          lFreeList(&lp);
       }
@@ -2674,7 +2674,7 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
       if (alp != nullptr) {
          answer_list_handle_request_answer_list(&alp, stderr);
       } else {
-         sge_gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, commit_id, 
+         gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, commit_id,
                                       *malpp, nullptr);
 
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
@@ -3091,7 +3091,7 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
    id = 1;
 
    DPRINTF(("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id ));
-   if ( (help=sge_gdi2_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
+   if ( (help=sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          DEBUG("commlib returns %s\n", cl_get_error_text(help));
       } else {
