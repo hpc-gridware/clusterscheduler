@@ -20,7 +20,7 @@
 
 static void
 store_resl(lListElem *centry, const char *id) {
-   lListElem *resl = lGetSubStr(centry, RESL_value, id, CE_resource_map_list);
+   lListElem *resl = lGetSubStrRW(centry, RESL_value, id, CE_resource_map_list);
    if (resl == nullptr) {
       resl = lAddSubStr(centry, RESL_value, id, CE_resource_map_list, RESL_Type);
    }

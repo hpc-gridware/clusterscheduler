@@ -502,7 +502,7 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
    const char *id = lGetString(resl, RESL_value);
    u_long32 amount = lGetUlong(resl, RESL_amount);
 
-   lListElem *utilized_id = lGetSubStr(resource, RESL_value, id, RUE_utilized_now_resource_map_list);
+   lListElem *utilized_id = lGetSubStrRW(resource, RESL_value, id, RUE_utilized_now_resource_map_list);
    if (utilized_id == nullptr) {
       utilized_id = lAddSubStr(resource, RESL_value, id, RUE_utilized_now_resource_map_list, RESL_Type);
    }
