@@ -61,6 +61,7 @@ set(LIBRARY_SOURCES
       sge_utility.cc
       sge_var.cc
       str2nm_converter.cc
+      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/RequestLimits.cc
       cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
@@ -103,6 +104,15 @@ add_executable(test_sge_utility test_sge_utility.cc)
 target_include_directories(test_sge_utility PRIVATE "./")
 target_link_libraries(test_sge_utility PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
+if (PROJECT_FEATURES MATCHES "oge-extensions")
+   add_executable(test_RequestLimits
+      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/test_RequestLimits.cc)
+   target_include_directories(test_RequestLimits PRIVATE
+         "./../../../../${PROJECT_FEATURES}/source/libs"
+         "./")
+   target_link_libraries(test_RequestLimits PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+endif()
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_eval_expression DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_obj_performance DESTINATION testbin/${SGE_ARCH})
@@ -113,6 +123,9 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sge_resource_quota DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sge_schedd_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sge_utility DESTINATION testbin/${SGE_ARCH})
+   if (PROJECT_FEATURES MATCHES "oge-extensions")
+      install(TARGETS test_RequestLimits DESTINATION testbin/${SGE_ARCH})
+   endif()
 endif ()
 
 #add_subdirectory(cpp)

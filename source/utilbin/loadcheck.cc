@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
                                           (mem_info.mem_free  + mem_info.swap_free), m); 
 #endif /* SGE_LOADMEM */
 
-#ifdef SGE_LOADCPU
+#if defined(SGE_LOADCPU)
    loads = sge_getcpuload(&total);
    sleep(1);
    loads = sge_getcpuload(&total);
@@ -240,6 +240,12 @@ int main(int argc, char *argv[])
       print_mem_load("cpu", name,  1, total, "%");
    }
 #endif /* SGE_LOADCPU */
+
+#if defined(OGE_WITH_EXTENSIONS)
+   printf("with_extensions %d\n", 1);
+#else
+   printf("with_extensions %d\n", 0);
+#endif
 
 #if defined(OGE_HWLOC)
    sge_dstring_free(&mcore);

@@ -60,8 +60,8 @@
 typedef struct {
    const char *name;           /* thread name */
    struct timeval last_wait_time;  /* last wait time, last time when one thread loop finished */
-   thread_warning_t warning_timeout; /* how long can the thread be blocked before a warning is shown */
-   thread_error_t error_timeout;   /* how long can the thread be blocked before an error is shown */
+   int warning_timeout; /* how long can the thread be blocked before a warning is shown */
+   int error_timeout;   /* how long can the thread be blocked before an error is shown */
    time_t update_time;     /* last update time */
    dstring *output;          /* thread specific info line */
    pthread_mutex_t Output_Mutex;    /* gards one line */
@@ -201,7 +201,7 @@ void sge_monitor_free(monitoring_t *monitor) {
 *******************************************************************************/
 void
 sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                 thread_warning_t warning_timeout, thread_error_t error_timeout) {
+                 int warning_timeout, int error_timeout) {
    DENTER(GDI_LAYER);
 
    /*

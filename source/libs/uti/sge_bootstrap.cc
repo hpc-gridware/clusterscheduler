@@ -82,7 +82,8 @@ const char *prognames[] = {
         "drmaa",         /* 29 */
         "qping",         /* 30 */
         "qquota",        /* 31 */
-        "sge_share_mon"  /* 32 */
+        "sge_share_mon", /* 32 */
+        nullptr,
 };
 
 const char *threadnames[] = {
@@ -93,7 +94,8 @@ const char *threadnames[] = {
         "worker",        /* 5 */
         "signal",        /* 6 */
         "scheduler",     /* 7 */
-        "event_mirror"   /* 8 */
+        "event_mirror",  /* 8 */
+        nullptr
 };
 
 

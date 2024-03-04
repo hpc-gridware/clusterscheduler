@@ -96,28 +96,24 @@
 /**
  * qping thread warning times in seconds
  */
-typedef enum {
-   NO_WARNING = 0,
-   EVENT_MASTER_THREAD_WARNING = 10,
-   TET_WARNING = 30,
-   MT_WARNING = 10,
-   ST_WARNING = 0,  /* no timeout for this thread */
-   EXECD_WARNING = 10,
-   SCT_WARNING = 20
-} thread_warning_t;
+const int NO_WARNING = 0;
+const int EVENT_MASTER_THREAD_WARNING = 10;
+const int TET_WARNING = 30;
+const int MT_WARNING = 10;
+const int ST_WARNING = 0;  /* no timeout for this thread */
+const int EXECD_WARNING = 10;
+const int SCT_WARNING = 20;
 
 /**
  * qping thread error times in seconds
  **/
-typedef enum {
-   NO_ERROR = 0,
-   EVENT_MASTER_THREAD_ERROR = 600,
-   TET_ERROR = 600,
-   MT_ERROR = 600,
-   ST_ERROR = 0,   /* no timeout for this thread */
-   EXECD_ERROR = 600,
-   SCT_ERROR = 600
-} thread_error_t;
+const int NO_ERROR = 0;
+const int EVENT_MASTER_THREAD_ERROR = 600;
+const int TET_ERROR = 600;
+const int MT_ERROR = 600;
+const int ST_ERROR = 0;   /* no timeout for this thread */
+const int EXECD_ERROR = 600;
+const int SCT_ERROR = 600;
 
 /**
  * This function definition is the prototyp for the output function of a data
@@ -169,7 +165,7 @@ typedef struct {
 } monitoring_t;
 
 void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                      thread_warning_t warning_timeout, thread_error_t error_timeout);
+                      int warning_timeout, int error_timeout);
 
 void sge_monitor_free(monitoring_t *monitor);
 

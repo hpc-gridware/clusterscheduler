@@ -97,20 +97,19 @@
    
 */
 enum {
+   MINUS_H_TGT_USER     = 1, /* remove needs at least job owner */
+   MINUS_H_TGT_OPERATOR = 2, /* remove needs at least operator  */
+   MINUS_H_TGT_SYSTEM   = 4, /* remove needs at least manager   */
+   MINUS_H_TGT_JA_AD    = 8, /* removed automatically */
+
+   MINUS_H_TGT_ALL      = 15,
+   MINUS_H_TGT_NONE     = 31,
+
    /* need place for tree bits */
    MINUS_H_CMD_ADD = (0<<4), /* adds targetted flags */
    MINUS_H_CMD_SUB = (1<<4), /* remove targetted flags */
    MINUS_H_CMD_SET = (2<<4)  /* overwrites using targetted flags */
 }; 
-
-enum {
-   MINUS_H_TGT_USER     = 1, /* remove needs at least job owner */
-   MINUS_H_TGT_OPERATOR = 2, /* remove needs at least operator  */
-   MINUS_H_TGT_SYSTEM   = 4, /* remove needs at least manager   */
-   MINUS_H_TGT_JA_AD    = 8, /* removed automatically */
-   MINUS_H_TGT_ALL      = 15,
-   MINUS_H_TGT_NONE     = 31
-};
 
 /* values for JB_verify_suitable_queues */
 #define OPTION_VERIFY_STR "nwevp"

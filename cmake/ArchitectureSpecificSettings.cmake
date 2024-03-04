@@ -23,16 +23,21 @@ function(architecture_specific_settings)
    # directory for installing 3rdparty tools once
    # this allows us to delete the build directory without having to re-build all 3rdparty tools
    set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
+
    # spaces in file/directory names break the build
    string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
    message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
    set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
    set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
-   # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
-   # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7
-   # only LINUX: HAS_IN_PORT_T
+   # defines for all architectures
    add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
+
+   # defines if extensions are enabled
+   if (PROJECT_FEATURES MATCHES "oge-extensions")
+      add_compile_definitions(OGE_WITH_EXTENSIONS=1)
+      message("Build with extensions is enabled")
+   endif()
 
    if (SGE_ARCH MATCHES "lx-riscv64")
       # Linux RiscV

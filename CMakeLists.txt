@@ -21,12 +21,9 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-#set (CMAKE_C_FLAGS "-arch arm64 -rdynamic -g")
-#set (CMAKE_EXE_LINKER_FLAGS "-arch arm64 -flat_namespace -g")
 
 # if build type has not been specified then do a Debug build by default
 if (NOT CMAKE_BUILD_TYPE)
@@ -80,16 +77,36 @@ build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 # in libs/sgeobj/sge_binding.h - daemons/execd, required for get_path.h in
 # clients/common/show_job.c - daemons/qmaster, required for sge_sched_thread.h
 # in libs/sched/sge_urgency.h
-set(SGE_INCLUDES
-      ${PROJECT_SOURCE_DIR}/source/common
-      ${PROJECT_SOURCE_DIR}/source/clients/common
-      ${PROJECT_SOURCE_DIR}/source/daemons/common
-      ${PROJECT_SOURCE_DIR}/source/daemons/execd
-      ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
-      ${PROJECT_SOURCE_DIR}/source/libs
-      ${TIRPC_INCLUDES}
-      ${PROJECT_3RDPARTY_DIR}/include
-      ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+
+if (PROJECT_FEATURES MATCHES "oge-extensions")
+   set(SGE_INCLUDES
+         "../../../../${PROJECT_FEATURES}/source/common"
+         "../../../../${PROJECT_FEATURES}/source/clients/common"
+         "../../../../${PROJECT_FEATURES}/source/daemons/common"
+         "../../../../${PROJECT_FEATURES}/source/daemons/execd"
+         "../../../../${PROJECT_FEATURES}/source/daemons/qmaster"
+         "../../../../${PROJECT_FEATURES}/source/libs"
+         ${PROJECT_SOURCE_DIR}/source/common
+         ${PROJECT_SOURCE_DIR}/source/clients/common
+         ${PROJECT_SOURCE_DIR}/source/daemons/common
+         ${PROJECT_SOURCE_DIR}/source/daemons/execd
+         ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
+         ${PROJECT_SOURCE_DIR}/source/libs
+         ${TIRPC_INCLUDES}
+         ${PROJECT_3RDPARTY_DIR}/include
+         ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+else()
+   set(SGE_INCLUDES
+         ${PROJECT_SOURCE_DIR}/source/common
+         ${PROJECT_SOURCE_DIR}/source/clients/common
+         ${PROJECT_SOURCE_DIR}/source/daemons/common
+         ${PROJECT_SOURCE_DIR}/source/daemons/execd
+         ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
+         ${PROJECT_SOURCE_DIR}/source/libs
+         ${TIRPC_INCLUDES}
+         ${PROJECT_3RDPARTY_DIR}/include
+         ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+endif()
 
 if (WITH_JEMALLOC)
    set(SGE_JEMALLOC_LIB "jemalloc")
