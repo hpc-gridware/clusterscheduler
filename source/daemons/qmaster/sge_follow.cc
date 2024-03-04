@@ -68,7 +68,7 @@
 #include "sched/valid_queue_user.h"
 #include "sched/debit.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sge.h"
 #include "sge_userprj_qmaster.h"
@@ -910,11 +910,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                      lList *host_tickets_cache = lCreateList("", UA_Type); /* cashed temporary hash list */
                      /* set granted slot tickets */
                      for_each_ep(oep, lGetList(ep, OR_queuelist)) {
-                        lListElem *gdil_ep;
                         lListElem *chost_ep;
-
-                        gdil_ep = lGetSubStr(jatp, JG_qname, lGetString(oep, OQ_dest_queue),
-                                             JAT_granted_destin_identifier_list);
+                        lListElem *gdil_ep = lGetSubStrRW(jatp, JG_qname, lGetString(oep, OQ_dest_queue),
+                                                          JAT_granted_destin_identifier_list);
                         if (gdil_ep != nullptr) {
                            double tickets = lGetDouble(oep, OQ_ticket);
                            const char *hostname = lGetHost(gdil_ep, JG_qhostname);
@@ -1170,7 +1168,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   job_number = lGetUlong(ju, UPU_job_number);
 
                   /* seek for existing debited usage of this job */
-                  if ((up_ju = lGetSubUlong(up, UPU_job_number, job_number, PR_debited_job_usage))) {
+                  if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, PR_debited_job_usage))) {
 
                      /* if passed old usage list is nullptr, delete existing usage */
                      if (lGetList(ju, UPU_old_usage_list) == nullptr) {
@@ -1305,8 +1303,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   job_number = lGetUlong(ju, UPU_job_number);
 
                   /* seek for existing debited usage of this job */
-                  if ((up_ju = lGetSubUlong(up, UPU_job_number, job_number,
-                                            UU_debited_job_usage))) {
+                  if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, UU_debited_job_usage))) {
 
                      /* if passed old usage list is nullptr, delete existing usage */
                      if (lGetList(ju, UPU_old_usage_list) == nullptr) {
@@ -1559,7 +1556,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));
             }
-            cl_err = gdi2_send_message_pb(0, prognames[EXECD], 1, host_name,
+            cl_err = gdi_send_message_pb(0, prognames[EXECD], 1, host_name,
                                           TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
             clear_packbuffer(&pb);

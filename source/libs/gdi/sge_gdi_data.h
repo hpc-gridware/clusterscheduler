@@ -37,55 +37,55 @@
 #include "uti/sge_csp_path.h"
 
 void
-gdi3_mt_done();
+gdi_data_mt_done();
 
 const char *
-gdi3_get_master_host();
+gdi_data_get_master_host();
 
 bool
-gdi3_is_setup();
+gdi_data_is_setup();
 
 void
-gdi3_set_setup(bool is_setup);
+gdi_data_set_setup(bool is_setup);
 
 u_long32
-gdi3_get_timestamp_qmaster_file();
+gdi_data_get_timestamp_qmaster_file();
 
 void
-gdi3_set_timestamp_qmaster_file(u_long32 timestamp_qmaster_file);
+gdi_data_set_timestamp_qmaster_file(u_long32 timestamp_qmaster_file);
 
 sge_error_class_t *
-gdi3_get_error_handle();
+gdi_data_get_error_handle();
 
 void
-gdi3_set_error_handle(sge_error_class_t *error_handle);
+gdi_data_set_error_handle(sge_error_class_t *error_handle);
 
 int
-gdi3_get_last_commlib_error();
+gdi_data_get_last_commlib_error();
 
 void
-gdi3_set_last_commlib_error(int last_commlib_error);
+gdi_data_set_last_commlib_error(int last_commlib_error);
 
 const char *
-gdi3_get_ssl_private_key();
+gdi_data_get_ssl_private_key();
 
 void
-gdi3_set_ssl_private_key(const char *ssl_private_key);
+gdi_data_set_ssl_private_key(const char *ssl_private_key);
 
 const char *
-gdi3_get_ssl_certificate();
+gdi_data_get_ssl_certificate();
 
 void
-gdi3_set_ssl_certificate(const char *ssl_certificate);
+gdi_data_set_ssl_certificate(const char *ssl_certificate);
 
 sge_csp_path_class_t *
-gdi3_get_csp_path_obj();
+gdi_data_get_csp_path_obj();
 
 void
-gdi3_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
+gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
 
 u_long32
-gdi3_get_next_request_id();
+gdi_data_get_next_request_id();
 
 void
 gdi_set_master_host(const char *master_host);

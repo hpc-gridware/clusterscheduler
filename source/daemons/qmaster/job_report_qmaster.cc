@@ -216,7 +216,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
             status = lGetUlong(jatep, JAT_status);
 
             if (pe_task_id_str != nullptr) {
-               petask = lGetSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list);
+               petask = lGetSubStrRW(jatep, PET_id, pe_task_id_str, JAT_task_list);
             }
          }
       }
@@ -642,8 +642,8 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
                            /* add tasks (scaled) usage to past usage container */
                            {
-                              lListElem *container = lGetSubStr(jatep, PET_id, PE_TASK_PAST_USAGE_CONTAINER,
-                                                                JAT_task_list);
+                              lListElem *container = lGetSubStrRW(jatep, PET_id, PE_TASK_PAST_USAGE_CONTAINER,
+                                                                  JAT_task_list);
                               if (container == nullptr) {
                                  lList *answer_list = nullptr;
                                  container = pe_task_sum_past_usage_list(lGetListRW(jatep, JAT_task_list), petask);

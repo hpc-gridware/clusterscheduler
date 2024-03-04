@@ -1795,7 +1795,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
             if (job_is_enrolled(jep, task_number)) {
                /* delete all enrolled pending tasks */
                DPRINTF(("removing enrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number));
-               tmp_task = lGetSubUlong(jep, JAT_task_number, task_number, JB_ja_tasks);
+               tmp_task = lGetSubUlongRW(jep, JAT_task_number, task_number, JB_ja_tasks);
 
                /* 
                 * if task is already in status deleted and was signaled
@@ -2254,8 +2254,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
             if (!is_consumable) {
                char text[2048];
                u_long32 slots = lGetUlong(gs, JG_slots);
-               lListElem *current = lGetSubStr(qinstance, CE_name,
-                                               ce_name, QU_consumable_config_list);
+               lListElem *current = lGetSubStrRW(qinstance, CE_name, ce_name, QU_consumable_config_list);
                if (current != nullptr) {
                   current = lCopyElem(current);
                   lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
@@ -2286,7 +2285,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
             if (is_consumable) {
                const lListElem *rde = nullptr;
                const lList *rde_list = lGetList(rue, RUE_utilized);
-               lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
+               const lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
 
                if (cv == nullptr) {
                   ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
@@ -2370,10 +2369,9 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                if (!is_consumable) {
                   char text[2048];
                   u_long32 slots = lGetUlong(gs, JG_slots);
-                  lListElem *current = lGetSubStr(host, CE_name,
-                                                  ce_name, EH_consumable_config_list);
-                  if (current != nullptr) {
-                     current = lCopyElem(current);
+                  const lListElem *old_current = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
+                  if (old_current != nullptr) {
+                     lListElem *current = lCopyElem(old_current);
                      lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
                      lSetDouble(current, CE_pj_doubleval, lGetDouble(current, CE_doubleval));
                      lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
@@ -2396,7 +2394,7 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                if (is_consumable) {
                   const lListElem *rde = nullptr;
                   const lList *rde_list = lGetList(rue, RUE_utilized);
-                  lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
+                  const lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
 
                   if (cv == nullptr) {
                      ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);

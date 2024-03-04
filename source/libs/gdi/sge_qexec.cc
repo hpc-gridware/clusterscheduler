@@ -45,9 +45,9 @@
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
-#include "gdi/pack_job_delivery.h"
+#include "gdi/oge_gdi_execd_delivery.h"
 #include "gdi/sge_qexec.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_pe_task.h"
@@ -183,7 +183,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
 
    pack_job_delivery(&pb, petrep);
 
-   ret = gdi2_send_message_pb(1, prognames[EXECD], 1, hostname,
+   ret = gdi_send_message_pb(1, prognames[EXECD], 1, hostname,
                               TAG_JOB_EXECUTION, &pb, &dummymid);
 
    clear_packbuffer(&pb);
@@ -281,7 +281,7 @@ static int rcv_from_execd(int options, int tag) {
    from_id = 1;
    do {
       /* FIX_CONST */
-      ret = gdi2_receive_message((char *) prognames[EXECD], &from_id, host, &tag, &msg, &msg_len,
+      ret = gdi_receive_message((char *) prognames[EXECD], &from_id, host, &tag, &msg, &msg_len,
                                  (options & OPT_SYNCHRON) ? 1 : 0);
 
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {

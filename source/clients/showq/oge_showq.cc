@@ -41,7 +41,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
@@ -226,7 +226,7 @@ static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
 
    /* get job data */
    what = lWhat("%T(ALL)", JB_Type);
-   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
    if (alp != nullptr) {
       answer_list_output(&alp);
    }

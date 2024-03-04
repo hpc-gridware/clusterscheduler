@@ -31,21 +31,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull_list.h"
+#include "sgeobj/sge_conf.h"
+
 /* may be this should be included by the gdi user */
 #include "cull/cull.h"
 #include "uti/sge_hostname.h"
-
 #include "gdi/sge_gdi_packet_type.h"
 
-/* 
- * allowed values for command field of a gdi request 
+/*
+ * allowed values for command field of a gdi request
  * (see sge_gdi_packet_class_t and sge_gdi_task_class_t
  */
-enum { 
+enum {
    /* OPERATION -------------- */
-   SGE_GDI_GET = 1, 
-   SGE_GDI_ADD, 
-   SGE_GDI_DEL, 
+   SGE_GDI_GET = 1,
+   SGE_GDI_ADD,
+   SGE_GDI_DEL,
    SGE_GDI_MOD,
    SGE_GDI_TRIGGER,
    SGE_GDI_PERMCHECK,
@@ -67,7 +69,7 @@ enum {
    SGE_GDI_CHANGE  = (1<<11),  /* change the given elements */
    SGE_GDI_APPEND  = (1<<12),  /* add some elements into a sublist */
    SGE_GDI_REMOVE  = (1<<13),  /* remove some elements from a sublist */
-   SGE_GDI_SET_ALL = (1<<14),  /* 
+   SGE_GDI_SET_ALL = (1<<14),  /*
                                 * overwrite the sublist with given values
                                 * and erase all domain/host specific values
                                 * not given with the current request
@@ -82,8 +84,8 @@ enum {
 #define SGE_GDI_GET_SUBCOMMAND(x) ((x)&SGE_GDI_SUBCOMMAND)
 #define SGE_GDI_IS_SUBCOMMAND_SET(x,y) ((x)&(y))
 
-/* 
- * allowed values for target field of GDI request 
+/*
+ * allowed values for target field of GDI request
  * (see sge_gdi_packet_class_t and sge_gdi_task_class_t
  */
 enum {
@@ -147,7 +149,7 @@ struct _state_gdi_multi {
 /* to be used for initializing state_gdi_multi */
 #define STATE_GDI_MULTI_INIT { nullptr, nullptr, nullptr}
 
-bool sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
+bool gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 
 /* from gdi_checkpermissions.h */
 #define MANAGER_CHECK     (1<<0)
@@ -174,3 +176,109 @@ enum {
 #define JOB_KILL          (1<<3)
 #define EVENTCLIENT_KILL  (1<<4)
 #define THREAD_START      (1<<5)
+
+enum {
+   TAG_NONE = 0,     /* usable e.g. as delimiter in a tag array */
+   TAG_OLD_REQUEST,
+   TAG_GDI_REQUEST,
+   TAG_ACK_REQUEST,
+   TAG_REPORT_REQUEST,
+   TAG_FINISH_REQUEST,
+   TAG_JOB_EXECUTION,
+   TAG_SLAVE_ALLOW,
+   TAG_CHANGE_TICKET,
+   TAG_SIGJOB,
+   TAG_SIGQUEUE,
+   TAG_KILL_EXECD,
+   TAG_NEW_FEATURES,     /*12*/
+   TAG_GET_NEW_CONF,
+   TAG_JOB_REPORT,              /* cull based job reports */
+   TAG_TASK_EXIT,
+   TAG_TASK_TID,
+   TAG_EVENT_CLIENT_EXIT,
+   TAG_FULL_LOAD_REPORT
+
+#ifdef KERBEROS
+   ,TAG_AUTH_FAILURE
+#endif
+
+};
+
+typedef struct {
+   char snd_host[CL_MAXHOSTLEN]; /* sender hostname; nullptr -> all              */
+   char snd_name[CL_MAXHOSTLEN]; /* sender name (aka 'commproc'); nullptr -> all */
+   u_short snd_id;            /* sender identifier; 0 -> all               */
+   int tag;                   /* message tag; TAG_NONE -> all              */
+   u_long32 request_mid;      /* message id of request                     */
+   sge_pack_buffer buf;       /* message buffer                            */
+} struct_msg_t;
+
+lList
+*sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp);
+
+int
+sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
+               state_gdi_multi *state, bool do_copy);
+
+void
+sge_gdi_wait(lList **malpp, state_gdi_multi *state);
+
+int sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, int *tag, int synchron,
+                             u_long32 for_request_mid, u_long32 *mid);
+
+int sge_gdi_send_any_request(int synchron, u_long32 *mid, const char *rhost, const char *commproc, int id,
+                              sge_pack_buffer *pb, int tag, u_long32 response_id, lList **alpp);
+
+lList *gdi_kill(lList *id_list, u_long32 action_flag);
+
+lList *gdi_tsm();
+
+bool sge_gdi_check_permission(lList **alpp, int option);
+
+int
+gdi_send_message_pb(int synchron, const char *tocomproc, int toid, const char *tohost, int tag, sge_pack_buffer *pb,
+                     u_long32 *mid);
+
+int gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost, int *tag, char **buffer, u_long32 *buflen,
+                         int synchron);
+
+int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp);
+
+int gdi_get_merged_configuration(lList **conf_list);
+
+int gdi_wait_for_conf(lList **conf_list);
+
+int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron);
+
+
+
+/* 
+** commlib handler functions 
+*/
+#include "comm/lists/cl_list_types.h"
+
+const char *sge_dump_message_tag(unsigned long tag);
+
+typedef enum sge_gdi_stored_com_error_type {
+   SGE_COM_ACCESS_DENIED = 101,
+   SGE_COM_ENDPOINT_NOT_UNIQUE,
+   SGE_COM_WAS_COMMUNICATION_ERROR
+} sge_gdi_stored_com_error_t;
+
+bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_type, bool reset_error_flag);
+
+void general_communication_error(const cl_application_error_list_elem_t *commlib_error);
+
+int gdi_log_flush_func(cl_raw_list_t *list_p);
+
+bool
+gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
+
+
+void gdi_default_exit_func(int i);
+
+const char *
+gdi_get_act_master_host(bool reread);
+
+int
+gdi_is_alive(lList **answer_list);

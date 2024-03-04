@@ -46,7 +46,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "msg_qmaster.h"
 #include "sge_c_gdi.h"
@@ -201,7 +201,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
                   const lListElem *shep;
-                  lListElem *simhostElem = nullptr;
+                  const lListElem *simhostElem = nullptr;
 
                   for_each_ep(shep, master_exechost_list) {
                      simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);
@@ -269,7 +269,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
       if (pb_filled(&pb)) {
          lList *alp = nullptr;
          /* send all stuff packed during processing to execd */
-         sge_gdi2_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
+         sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }

@@ -329,7 +329,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const char *default_cell = bootstrap_get_sge_cell();
    const char *binary_path = bootstrap_get_binary_path();
    const char *admin_user = bootstrap_get_admin_user();
-   const char *masterhost = gdi3_get_act_master_host(false);
+   const char *masterhost = gdi_get_act_master_host(false);
    bool csp_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;

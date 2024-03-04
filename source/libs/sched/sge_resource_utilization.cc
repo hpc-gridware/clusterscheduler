@@ -783,7 +783,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          const char *qname = lGetString(gel, JG_qname);
          
          if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != nullptr) {
-            if ((qep = lGetSubStr(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
+            if ((qep = lGetSubStrRW(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
                rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
                      QU_consumable_config_list, QU_resource_utilization, qname, a->start, 
                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task);
@@ -848,7 +848,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
       }
 
       /* ensure attribute is in actual list */
-      if (!(cr = lGetSubStr(ep, RUE_name, name, actual_nm))) {
+      if (!(cr = lGetSubStrRW(ep, RUE_name, name, actual_nm))) {
          cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
          /* CE_double is implicitly set to zero */
       }
@@ -955,7 +955,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
             }
          }
 
-         rue_elem = lGetSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage);
+         rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage);
          if(rue_elem == nullptr) {
             rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage, RUE_Type);
             /* RUE_utilized_now is implicitly set to zero */

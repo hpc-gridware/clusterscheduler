@@ -3903,7 +3903,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
 *     nullptr if element was not found or in case of an error
 *     otherwise pointer to an element
 ******************************************************************************/
-lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
+lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
    lListElem *ret = nullptr;
 
@@ -3917,6 +3917,11 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
    }
 
    DRETURN(ret);
+}
+
+const lListElem *
+lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
+   return lGetSubStrRW(ep, nm, str, snm);
 }
 
 /****** cull/multitype/lGetElemStr() ******************************************
@@ -4422,7 +4427,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
 *     nullptr if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
-lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
+lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -4434,6 +4439,10 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
    ret = lGetElemUlongRW(ep->cont[sublist_pos].glp, nm, val);
 
    DRETURN(ret);
+}
+
+const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
+   return lGetSubUlongRW(ep, nm, val, snm);
 }
 
 /****** cull/multitype/lGetElemUlong() ****************************************
@@ -4827,7 +4836,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
 *     nullptr if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
-lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
+lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -4839,6 +4848,10 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
    ret = lGetElemUlong64RW(ep->cont[sublist_pos].glp, nm, val);
 
    DRETURN(ret);
+}
+
+const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
+   return lGetSubUlong64RW(ep, nm, val, snm);
 }
 
 /****** cull/multitype/lGetElemUlong64() **************************************
@@ -5008,96 +5021,6 @@ const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, cons
    return lGetElemUlong64NextRW(lp, nm, val, iterator);
 }
 
-/****** cull/multitype/lDelSubCaseStr() ***************************************
-*  NAME
-*     lDelSubCaseStr() -- removes elem specified by a string field nm 
-*
-*  SYNOPSIS
-*     int lDelSubCaseStr(lListElem* ep, int nm, const char* str, 
-*                        int snm) 
-*
-*  FUNCTION
-*     removes an element specified by a string field nm an a string 
-*     str which is contained in the sublist snm of ep 
-*
-*  INPUTS
-*     lListElem* ep       - element 
-*     int nm              - field id 
-*     const char* str     - string 
-*     int snm             - filed id of the element within element 
-*
-*  RESULT
-*     1 if the element was found an removed 
-*     0 in case of error
-******************************************************************************/
-int lDelSubCaseStr(lListElem *ep, int nm, const char *str, int snm) {
-   int ret, sublist_pos;
-
-   DENTER(CULL_LAYER);
-
-   /* get position of sublist in ep */
-   sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
-
-   ret = lDelElemCaseStr(&(ep->cont[sublist_pos].glp), nm, str);
-
-   /* remember that field changed */
-   if (ret == 1) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
-
-   DRETURN(ret);
-}
-
-/****** cull/multitype/lDelElemCaseStr() **************************************
-*  NAME
-*     lDelElemCaseStr() -- removes elem specified by a string field nm 
-*
-*  SYNOPSIS
-*     int lDelElemCaseStr(lList** lpp, int nm, const char* str) 
-*
-*  FUNCTION
-*     This function removes an element specified by nm and str from 
-*     the list lpp. 
-*     If the list does not contain elements after this operation, it 
-*     will be deleted too.
-*
-*  INPUTS
-*     lList** lpp       - list 
-*     int nm            - field id of the element which 
-*                         should be removed 
-*     const char* str   - value of the attribute identified by nm 
-*
-*  RESULT
-*     1 if the element was found and removed
-*     0 in case of error 
-******************************************************************************/
-int lDelElemCaseStr(lList **lpp, int nm, const char *str) {
-   lListElem *ep;
-
-   DENTER(CULL_LAYER);
-
-   if (!lpp || !str) {
-      DPRINTF(("error: nullptr ptr passed to lDelElemCaseStr\n"));
-      DRETURN(0);
-   }
-
-   /* empty list ? */
-   if (!*lpp) {
-      DRETURN(1);
-   }
-
-   /* seek elemtent */
-   ep = lGetElemCaseStr(*lpp, nm, str);
-   if (ep) {
-      lRemoveElem(*lpp, &ep);
-      if (lGetNumberOfElem(*lpp) == 0) {
-         lFreeList(lpp);
-      }
-   }
-
-   DRETURN(1);
-}
-
 /****** cull/multitype/lGetSubCaseStr() ***************************************
 *  NAME
 *     lGetSubCaseStr() -- returns elem specified by a string field nm 
@@ -5131,7 +5054,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemCaseStr(ep->cont[sublist_pos].glp, nm, str);
+   ret = lGetElemCaseStrRW(ep->cont[sublist_pos].glp, nm, str);
 
    DRETURN(ret);
 }
@@ -5159,7 +5082,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
 *     otherwise the pointer to an element 
 *
 ******************************************************************************/
-lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
+lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
    lListElem *ep;
    int pos;
    const char *s;
@@ -5204,6 +5127,10 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
    }
 
    DRETURN(nullptr);
+}
+
+const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
+   return lGetElemCaseStrRW(lp, nm, str);
 }
 
 /****** cull/multitype/lGetElemHost() *****************************************

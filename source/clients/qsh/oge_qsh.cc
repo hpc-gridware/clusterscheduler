@@ -65,7 +65,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_qexec.h"
 #include "gdi/oge_gdi_client.h"
@@ -977,7 +977,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
    }
   
    /* get configuration from qmaster */
-   if (gdi2_get_configuration(qualified_hostname, &global, &local) ||
+   if (gdi_get_configuration(qualified_hostname, &global, &local) ||
       merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
       lFreeList(&conf_list);
@@ -1411,7 +1411,7 @@ int main(int argc, char **argv)
    cell_root = bootstrap_get_cell_root();
    myuid = component_get_uid();
    username = component_get_username();
-   mastername = gdi3_get_act_master_host(false);
+   mastername = gdi_get_act_master_host(false);
 
    if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
       csp_mode = true;
@@ -1901,7 +1901,7 @@ int main(int argc, char **argv)
       DPRINTF(("=====================================================\n"));
 
       /* submit the job to the QMaster */
-      alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
+      alp = sge_gdi(SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
                      &lp_jobs, nullptr, nullptr);
 
       /* reinitialize 'job' with pointer to new version from qmaster */
@@ -2126,7 +2126,7 @@ int main(int argc, char **argv)
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          what = lWhat("%T(%I)", JB_Type, JB_ja_tasks); 
          where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id); 
-         alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
+         alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
 
          do_exit = parse_result_list(alp, &alp_error);
    
@@ -2266,7 +2266,7 @@ static void delete_job(u_long32 job_id, lList *jlp)
    snprintf(job_str, sizeof(job_str), sge_u32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
-   alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
+   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
 
    /* no error handling here, we try to delete the job if we can */
    lFreeList(&idlp);

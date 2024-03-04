@@ -606,7 +606,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    if (global) {
       cl = lGetList(global, CONF_entries); 
       for_each_ep(elem, cl) {
-         ep2 = lGetElemCaseStr(*lpp, CF_name, lGetString(elem, CF_name));
+         ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2) {
             lSetString(ep2, CF_value, lGetString(elem, CF_value));
          }
@@ -618,7 +618,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    if (local) {
       cl = lGetList(local, CONF_entries); 
       for_each_ep(elem, cl) {
-         ep2 = lGetElemCaseStr(*lpp, CF_name, lGetString(elem, CF_name));
+         ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2 && lGetUlong(ep2, CF_local)) {
             lSetString(ep2, CF_value, lGetString(elem, CF_value));
          }

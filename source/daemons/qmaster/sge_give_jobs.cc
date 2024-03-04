@@ -71,9 +71,9 @@
 #include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
-#include "gdi/pack_job_delivery.h"
+#include "gdi/oge_gdi_execd_delivery.h"
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "spool/sge_spooling.h"
 
@@ -447,7 +447,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
 
          pack_job_delivery(&send_pb, jep);
          if (!simulate_execd) {
-            failed = gdi2_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
+            failed = gdi_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          } else {
             failed = CL_RETVAL_OK;
          }
@@ -619,7 +619,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
       failed = CL_RETVAL_OK;
    } else {
       u_long32 dummymid = 0;
-      failed = gdi2_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
+      failed = gdi_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
                                     &pb, &dummymid);
    }
 
@@ -1023,7 +1023,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   }
                } else {
                   /* debit in advance reservation */
-                  lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
+                  lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
                   if (qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
                      dstring buffer = DSTRING_INIT;
                      /* this info is not spooled */
@@ -1588,7 +1588,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                }
             } else {
                /* undebit in advance reservation */
-               lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
+               lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(ep, JG_qname), AR_reserved_queues);
                if (qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
                   dstring buffer = DSTRING_INIT;
                   /* this info is not spooled */

@@ -47,7 +47,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "comm/commlib.h"
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
    /* Has the user the permission to use the the '-f' (forced) flag */
    have_master_privileges = false;
    if (force == 1) {
-      have_master_privileges = sge_gdi2_check_permission(&alp, MANAGER_CHECK);
+      have_master_privileges = sge_gdi_check_permission(&alp, MANAGER_CHECK);
       lFreeList(&alp);
    }
    /* delete the job */
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
                   }   
                }
             }
-            alp = sge_gdi2(SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, nullptr, nullptr);
+            alp = sge_gdi(SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, nullptr, nullptr);
 
             for_each_ep(aep, alp) {
                status = lGetUlong(aep, AN_status);

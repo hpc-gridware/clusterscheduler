@@ -169,7 +169,9 @@ correct_capacities(lList *host_list, const lList *centry_list)
 {
    lListElem *hep, *ep, *cep; 
    const lListElem *job_load;
-   lListElem *scaling, *total, *inuse_rms;
+   const lListElem *scaling;
+   lListElem *total;
+   const lListElem *inuse_rms;
    u_long32 type, relop;
    double dval, inuse_ext, full_capacity, sc_factor;
    double load_correction;
@@ -211,7 +213,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
 
          if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO)
             continue;
-         if (!(total=lGetSubStr(hep, CE_name, attr_name, EH_consumable_config_list)))
+         if (!(total=lGetSubStrRW(hep, CE_name, attr_name, EH_consumable_config_list)))
             continue;
          if (!(inuse_rms=lGetSubStr(hep, RUE_name, attr_name, EH_resource_utilization)))
             continue;

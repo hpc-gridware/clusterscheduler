@@ -262,7 +262,9 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm, const lDe
 
 int lDelSubStr(lListElem *ep, int nm, const char *str, int snm);
 
-lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm);
+lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm);
+
+const lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - 
 
@@ -294,7 +296,9 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm, const lDescr
 
 int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm);
 
-lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm);
+lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm);
+
+const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - 
 
@@ -326,7 +330,9 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm, const lD
 
 int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm);
 
-lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm);
+lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm);
+
+const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 
@@ -335,17 +341,9 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm);
 */
 int lDelElemCaseStr(lList **lpp, int nm, const char *str);
 
-lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str);
+lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str);
 
-
-/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - 
-
-   functions for sublists with a char * as key
-
-*/
-int lDelSubCaseStr(lListElem *ep, int nm, const char *str, int snm);
-
-lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str, int snm);
+const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 

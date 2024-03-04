@@ -43,7 +43,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
    {
       cl_com_SIRM_t* status = nullptr;
       ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(component_get_component_name(), 0),
-                                               (char *)gdi3_get_act_master_host(true),
+                                               (char *)gdi_get_act_master_host(true),
                                                (char*)prognames[QMASTER], 1, &status);
       if (ret_val != CL_RETVAL_OK) {
          ERROR(SFNMAX, cl_get_error_text(ret_val));
@@ -471,7 +471,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * If it is a reconnect (is_restart == true) the act_qmaster file must be
     * re-read in order to update ctx qmaster cache when master migrates. 
     */
-   const char *master_host = gdi3_get_act_master_host(is_restart);
+   const char *master_host = gdi_get_act_master_host(is_restart);
 
    DENTER(TOP_LAYER);
 
@@ -479,7 +479,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && sge_gdi_ctx_class_is_alive(&alp) == CL_RETVAL_OK) {
+   if (master_host != nullptr && gdi_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
@@ -491,13 +491,13 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = sge_gdi2(SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
+         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = sge_gdi2(SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
+         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
                         &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);

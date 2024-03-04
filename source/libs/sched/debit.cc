@@ -422,7 +422,7 @@ debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *c
       int slots = lGetUlong(gel, JG_slots);
 
       if ((ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar))) != nullptr) {
-         lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(gel, JG_qname), AR_reserved_queues);
+         lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gel, JG_qname), AR_reserved_queues);
          qinstance_debit_consumable(queue, job, centry_list, slots, master_task, nullptr);
       }
       master_task = false;

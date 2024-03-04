@@ -52,7 +52,7 @@
 
 #include "gdi/sge_security.h"
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
@@ -134,7 +134,7 @@ main(int argc, char **argv)
    username = component_get_username();
    qualified_hostname = component_get_qualified_hostname();
    unqualified_hostname = component_get_unqualified_hostname();
-   mastername = gdi3_get_act_master_host(false);
+   mastername = gdi_get_act_master_host(false);
 
    /*
     * read switches from the various defaults files

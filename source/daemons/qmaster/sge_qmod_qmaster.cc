@@ -62,7 +62,7 @@
 #include "sgeobj/sge_qref.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
 
@@ -1109,7 +1109,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
          } else {
             if (pb_filled(&pb)) {
                u_long32 dummy = 0;
-               i = gdi2_send_message_pb(0, pnm, 1, hnm, jep ? TAG_SIGJOB : TAG_SIGQUEUE,
+               i = gdi_send_message_pb(0, pnm, 1, hnm, jep ? TAG_SIGJOB : TAG_SIGQUEUE,
                                         &pb, &dummy);
             }
          }

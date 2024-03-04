@@ -62,8 +62,8 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
 #include "gdi/qm_name.h"
-#include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi3.h"
+#include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi_data.h"
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
@@ -90,7 +90,7 @@ static const char *
 target2string(u_long32 target);
 
 static int
-gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *tohost, int tag, char **buffer,
+gdi_send_message(int synchron, const char *tocomproc, int toid, const char *tohost, int tag, char **buffer,
                   int buflen, u_long32 *mid);
 
 
@@ -184,26 +184,26 @@ target2string(u_long32 target) {
 }
 
 const char *
-gdi3_get_act_master_host(bool reread) {
-   sge_error_class_t *eh = gdi3_get_error_handle();
+gdi_get_act_master_host(bool reread) {
+   sge_error_class_t *eh = gdi_data_get_error_handle();
    static bool error_already_logged = false;
 
    DENTER(BASIS_LAYER);
 
-   if (gdi3_get_master_host() == nullptr || reread) {
+   if (gdi_data_get_master_host() == nullptr || reread) {
       char err_str[SGE_PATH_MAX + 128];
       char master_name[CL_MAXHOSTLEN];
       u_long32 now = sge_get_gmt();
 
       /* fix system clock moved back situation */
-      if (gdi3_get_timestamp_qmaster_file() > now) {
-         gdi3_set_timestamp_qmaster_file(0);
+      if (gdi_data_get_timestamp_qmaster_file() > now) {
+         gdi_data_set_timestamp_qmaster_file(0);
       }
 
-      if (gdi3_get_master_host() == nullptr || now - gdi3_get_timestamp_qmaster_file() >= 30) {
+      if (gdi_data_get_master_host() == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= 30) {
          /* re-read act qmaster file (max. every 30 seconds) */
          DPRINTF(("re-read actual qmaster file\n"));
-         gdi3_set_timestamp_qmaster_file(now);
+         gdi_data_set_timestamp_qmaster_file(now);
 
          if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str, sizeof(err_str)) == -1) {
             if (eh != nullptr && !error_already_logged) {
@@ -220,17 +220,17 @@ gdi3_get_act_master_host(bool reread) {
          gdi_set_master_host(master_name);
       }
    }
-   DRETURN(gdi3_get_master_host());
+   DRETURN(gdi_data_get_master_host());
 }
 
 int
-sge_gdi_ctx_class_is_alive(lList **answer_list) {
+gdi_is_alive(lList **answer_list) {
    DENTER(TOP_LAYER);
    cl_com_SIRM_t *status = nullptr;
    int cl_ret = CL_RETVAL_OK;
    cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
    const char *comp_name = prognames[QMASTER];
-   const char *comp_host = gdi3_get_act_master_host(false);
+   const char *comp_host = gdi_get_act_master_host(false);
    int comp_id = 1;
    u_long32 comp_port = bootstrap_get_sge_qmaster_port();
 
@@ -269,12 +269,12 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
    DRETURN(cl_ret);
 }
 
-/****** gdi/request/sge_gdi_extract_answer() **********************************
+/****** gdi/request/gdi_extract_answer() **********************************
 *  NAME
-*     sge_gdi_extract_answer() -- exctact answers of a multi request.
+*     gdi_extract_answer() -- exctact answers of a multi request.
 *
 *  SYNOPSIS
-*     lList* sge_gdi_extract_answer(u_long32 cmd, u_long32 target, 
+*     lList* gdi_extract_answer(u_long32 cmd, u_long32 target,
 *                                   int id, lList* mal, lList** olpp) 
 *
 *  FUNCTION
@@ -283,7 +283,7 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
 *
 *  INPUTS
 *     lList** alpp    - 
-*        List for answers if an error occurs in sge_gdi_extract_answer
+*        List for answers if an error occurs in gdi_extract_answer
 *        This list gets allocated by GDI. The caller is responsible for 
 *        freeing. A response is a list element containing a field with a 
 *        status value (AN_status). The value STATUS_OK is used in case of 
@@ -315,10 +315,10 @@ sge_gdi_ctx_class_is_alive(lList **answer_list) {
 *     false  in case of error
 *
 *  NOTES
-*     MT-NOTE: sge_gdi_extract_answer() is MT safe
+*     MT-NOTE: gdi_extract_answer() is MT safe
 ******************************************************************************/
 bool
-sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp) {
+gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp) {
    DENTER(GDI_LAYER);
    int operation = SGE_GDI_GET_OPERATION(cmd);
    int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
@@ -350,24 +350,24 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lLis
    DRETURN(true);
 }
 
-lList *sge_gdi2(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp) {
+lList *sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp) {
    DENTER(GDI_LAYER);
    lList *alp = nullptr;
    lList *mal = nullptr;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
-   int id = sge_gdi2_multi(&alp, SGE_GDI_SEND, target, cmd, lpp, cp, enp, &state, true);
+   int id = sge_gdi_multi(&alp, SGE_GDI_SEND, target, cmd, lpp, cp, enp, &state, true);
    if (id != -1) {
-      sge_gdi2_wait(&mal, &state);
-      sge_gdi_extract_answer(&alp, cmd, target, id, mal, lpp);
+      sge_gdi_wait(&mal, &state);
+      gdi_extract_answer(&alp, cmd, target, id, mal, lpp);
       lFreeList(&mal);
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
    DRETURN(alp);
 }
 
-int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
+int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
                    state_gdi_multi *state, bool do_copy) {
    DENTER(GDI_LAYER);
    int ret;
@@ -411,13 +411,13 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
    DRETURN(ret);
 }
 
-/****** gdi/request/sge_gdi2_wait() *******************************************
+/****** gdi/request/sge_gdi_wait() *******************************************
 *  NAME
-*     sge_gdi2_wait() -- wait till a GDI request is finished 
+*     sge_gdi_wait() -- wait till a GDI request is finished
 *
 *  SYNOPSIS
 *     bool 
-*     sge_gdi2_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp, 
+*     sge_gdi_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp,
 *                   state_gdi_multi *state) 
 *
 *  FUNCTION
@@ -429,13 +429,13 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *
 *     Input parameters for this function are the GDI context "ctx" 
 *     and the "state" structure which has to be initialized by calling 
-*     sge_gdi2_multi(... mode=SGE_GDI_RECORED...) zero or multiple times
-*     and sge_gdi2_multi(... mode=SGE_GDI_SEND...) once.
+*     sge_gdi_multi(... mode=SGE_GDI_RECORED...) zero or multiple times
+*     and sge_gdi_multi(... mode=SGE_GDI_SEND...) once.
 *
 *     If the function itself fails it will append answer list messages
 *     to "alpp" and return this "false" as return value". Otherwise
 *     the multi answer list "malpp" will be initialized, which can later 
-*     on be evaluated with sge_gdi_extract_answer(), and the function
+*     on be evaluated with gdi_extract_answer(), and the function
 *     will return with "true".
 *
 *  INPUTS
@@ -460,10 +460,10 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *        int cqueue_request_id;
 *        int job_request_id;
 *
-*        cqueue_request_id = sge_gdi2_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
+*        cqueue_request_id = sge_gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
 *                                          SGE_CQ_LIST, SGE_GDI_GET, nullptr,
 *                                          where_cqueue, what_cqueue, &state, true);
-*        job_request_id = sge_gdi2_multi(ctx, &local_answer_list, SGE_GDI_SEND,
+*        job_request_id = sge_gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
 *                                        SGE_JB_LIST, SGE_GDI_GET, nullptr,
 *                                        where_job, what_job, &state, true);
 *        if (cqueue_request_id != -1 && job_request_id != -1 &&
@@ -475,10 +475,10 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *           lList *answer_job = nullptr;
 *           bool local_ret;
 *
-*           local_ret = sge_gdi2_wait(ctx, &local_answer_list, &multi_answer_list, &state);
-*           sge_gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST,
+*           local_ret = sge_gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
+*           gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST,
 *                                  cqueue_request_id, multi_answer_list, &list_cqueue);
-*           sge_gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
+*           gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
 *                                  job_request_id, multi_answer_list, &list_job);
 *
 *           if (local_ret == false || answer_list_has_error(&answer_cqueue) || 
@@ -507,15 +507,15 @@ int sge_gdi2_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList 
 *     }
 *
 *  NOTES
-*     MT-NOTE: sge_gdi2_wait() is MT safe 
+*     MT-NOTE: sge_gdi_wait() is MT safe
 *
 *  SEE ALSO
-*     gdi/request/sge_gdi2() 
-*     gdi/request/sge_gdi2_multi() 
-*     gdi/request/sge_gdi_extract_answer() 
+*     gdi/request/sge_gdi()
+*     gdi/request/sge_gdi_multi()
+*     gdi/request/gdi_extract_answer()
 *******************************************************************************/
 void
-sge_gdi2_wait(lList **malpp, state_gdi_multi *state) {
+sge_gdi_wait(lList **malpp, state_gdi_multi *state) {
    DENTER(GDI_LAYER);
    sge_gdi_packet_class_t *packet = state->packet;
    state->packet = nullptr;
@@ -541,7 +541,7 @@ sge_gdi2_wait(lList **malpp, state_gdi_multi *state) {
  *     The function does *not* wait until the message is actually sent!
  *---------------------------------------------------------*/
 int
-sge_gdi2_send_any_request(int synchron, u_long32 *mid, const char *rhost, const char *commproc, int id,
+sge_gdi_send_any_request(int synchron, u_long32 *mid, const char *rhost, const char *commproc, int id,
                           sge_pack_buffer *pb, int tag, u_long32 response_id, lList **alpp) {
    DENTER(TOP_LAYER);
    int i;
@@ -604,7 +604,7 @@ sge_gdi2_send_any_request(int synchron, u_long32 *mid, const char *rhost, const 
  *    MT-NOTE: sge_get_any_request() is MT safe (assumptions)
  *----------------------------------------------------------*/
 int
-sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
+sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
                          int *tag, int synchron, u_long32 for_request_mid, u_long32 *mid) {
    DENTER(GDI_LAYER);
    int i;
@@ -777,9 +777,9 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
 ** NOTES
 **    MT-NOTE: gdi_tsm() is MT safe (assumptions)
 */
-lList *gdi2_tsm() {
+lList *gdi_tsm() {
    DENTER(GDI_LAYER);
-   lList *alp = sge_gdi2(SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+   lList *alp = sge_gdi(SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
    DRETURN(alp);
 }
 
@@ -801,13 +801,13 @@ lList *gdi2_tsm() {
 ** NOTES
 **    MT-NOTE: gdi_kill() is MT safe (assumptions)
 */
-lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
+lList *gdi_kill(lList *id_list, u_long32 action_flag) {
    DENTER(GDI_LAYER);
    bool id_list_created = false;
    lList *alp = lCreateList("answer", AN_Type);
 
    if (action_flag & MASTER_KILL) {
-      lList *tmpalp = sge_gdi2(SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -818,12 +818,12 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
-      lList *tmpalp = sge_gdi2(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
    if (action_flag & THREAD_START) {
-      lList *tmpalp = sge_gdi2(SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -835,7 +835,7 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
       }
-      lList *tmpalp = sge_gdi2(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -859,7 +859,7 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
          lSetUlong(hlep, ID_force, (action_flag & JOB_KILL) ? 1 : 0);
          lAppendElem(hlp, hlep);
       }
-      lList *tmpalp = sge_gdi2(SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);
       lFreeList(&hlp);
    }
@@ -896,14 +896,14 @@ lList *gdi2_kill(lList *id_list, u_long32 action_flag) {
 *     gdilib/sge_gdi_get_mapping_name()
 *     gdilib/PERM_LOWERBOUND
 ******************************************************************************/
-bool sge_gdi2_check_permission(lList **alpp, int option) {
+bool sge_gdi_check_permission(lList **alpp, int option) {
    bool access_status = false;
    int failed_checks = 0;
 
    DENTER(GDI_LAYER);
 
    lList *permList = nullptr;
-   lList *alp = sge_gdi2(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
+   lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
    if (permList == nullptr) {
       DPRINTF(("Permlist is nullptr\n"));
       if (alpp != nullptr) {
@@ -967,16 +967,16 @@ bool sge_gdi2_check_permission(lList **alpp, int option) {
        MT-NOTE: gdi_send_message_pb() is MT safe (assumptions)
 **********************************************************************/
 int
-gdi2_send_message_pb(int synchron, const char *tocomproc, int toid, const char *tohost,
+gdi_send_message_pb(int synchron, const char *tocomproc, int toid, const char *tohost,
                      int tag, sge_pack_buffer *pb, u_long32 *mid) {
    DENTER(GDI_LAYER);
    int ret;
    if (!pb) {
       DPRINTF(("no pointer for sge_pack_buffer\n"));
-      ret = gdi2_send_message(synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
+      ret = gdi_send_message(synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
       DRETURN(ret);
    }
-   ret = gdi2_send_message(synchron, tocomproc, toid, tohost, tag, &pb->head_ptr, pb->bytes_used, mid);
+   ret = gdi_send_message(synchron, tocomproc, toid, tohost, tag, &pb->head_ptr, pb->bytes_used, mid);
    DRETURN(ret);
 }
 
@@ -992,7 +992,7 @@ gdi2_send_message_pb(int synchron, const char *tocomproc, int toid, const char *
       MT-NOTE: gdi_send_message() is MT safe (assumptions)
 *************************************************************/
 static int
-gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *tohost, int tag,
+gdi_send_message(int synchron, const char *tocomproc, int toid, const char *tohost, int tag,
                   char **buffer, int buflen, u_long32 *mid) {
    DENTER(GDI_LAYER);
    int ret;
@@ -1083,7 +1083,7 @@ gdi2_send_message(int synchron, const char *tocomproc, int toid, const char *toh
  *
  */
 int
-gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
+gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                      int *tag, char **buffer, u_long32 *buflen, int synchron) {
 
    int ret;
@@ -1234,7 +1234,7 @@ gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
  *   of being able to mount the local_conf directory.
  *-------------------------------------------------------------------------*/
 int
-gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
+gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
    DENTER(GDI_LAYER);
    lCondition *where;
    lEnumeration *what;
@@ -1306,7 +1306,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
       DPRINTF(("requesting global and %s\n", lGetHost(hep, EH_name)));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = sge_gdi2(SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
+   alp = sge_gdi(SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -1363,7 +1363,7 @@ gdi2_get_configuration(const char *config_name, lListElem **gepp, lListElem **le
 }
 
 
-int gdi2_wait_for_conf(lList **conf_list) {
+int gdi_wait_for_conf(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    int ret_val;
@@ -1381,7 +1381,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
     */
    DPRINTF(("qualified hostname: %s\n", qualified_hostname));
 
-   while ((ret = gdi2_get_configuration(qualified_hostname, &global, &local))) {
+   while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
       if (ret == -6 || ret == -7) {
          /* confict: endpoint not unique or no permission to get config */
          DRETURN(-1);
@@ -1409,7 +1409,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
 
       u_long32 now = sge_get_gmt();
       if (now - last_qmaster_file_read >= 30) {
-         gdi3_get_act_master_host(true);
+         gdi_get_act_master_host(true);
          DPRINTF(("re-read actual qmaster file\n"));
          last_qmaster_file_read = now;
       }
@@ -1442,7 +1442,7 @@ int gdi2_wait_for_conf(lList **conf_list) {
  * EXTERNAL
  *
  *-------------------------------------------------------------------------*/
-int gdi2_get_merged_configuration(lList **conf_list) {
+int gdi_get_merged_configuration(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -1453,7 +1453,7 @@ int gdi2_get_merged_configuration(lList **conf_list) {
    DENTER(GDI_LAYER);
 
    DPRINTF(("qualified hostname: %s\n", qualified_hostname));
-   ret = gdi2_get_configuration(qualified_hostname, &global, &local);
+   ret = gdi_get_configuration(qualified_hostname, &global, &local);
    if (ret) {
       ERROR(MSG_CONF_NOREADCONF_IS, ret, qualified_hostname);
       lFreeElem(&global);
@@ -1484,7 +1484,7 @@ int gdi2_get_merged_configuration(lList **conf_list) {
 }
 
 
-void gdi2_default_exit_func(int i) {
+void gdi_default_exit_func(int i) {
    sge_security_exit(i);
    cl_com_cleanup_commlib();
 }
@@ -1553,7 +1553,7 @@ int report_list_send(const lList *rlp, const char *rhost, const char *commproc, 
          DRETURN(-1);
    }
 
-   ret = sge_gdi2_send_any_request(synchron, nullptr, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
+   ret = sge_gdi_send_any_request(synchron, nullptr, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
 
    clear_packbuffer(&pb);
    answer_list_output(&alp);

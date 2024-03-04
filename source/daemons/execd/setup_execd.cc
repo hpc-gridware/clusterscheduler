@@ -92,14 +92,14 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
       sge_exit(1);
    }
 
-   while (gdi2_wait_for_conf(&Execd_Config_List)) {
+   while (gdi_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL(SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT);
          /* TODO: remove */
          sge_exit(1);
       }
       sleep(1);
-      gdi3_get_act_master_host(true);
+      gdi_get_act_master_host(true);
    }
    sge_show_conf();         
 

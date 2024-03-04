@@ -35,7 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 #include "sgeobj/sge_daemonize.h"
 
 #include "sgeobj/sge_answer.h"
@@ -107,7 +107,7 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
       /*
        * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
        */
-      order_id = sge_gdi2_multi(answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
+      order_id = sge_gdi_multi(answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
                                 order_list, nullptr, nullptr, state, false);
 
       if (order_id != -1) {
@@ -153,13 +153,13 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
        * wait for answer. this call might block if the request
        * has not been handled by any worker until now
        */
-      sge_gdi2_wait(&multi_answer_list, current_state);
+      sge_gdi_wait(&multi_answer_list, current_state);
 
       /*
        * now we have an answer. is it positive? 
        */
       order_id = 1;
-      sge_gdi_extract_answer(&request_answer_list, SGE_GDI_ADD, SGE_ORDER_LIST,
+      gdi_extract_answer(&request_answer_list, SGE_GDI_ADD, SGE_ORDER_LIST,
                              order_id, multi_answer_list, nullptr);
       if (request_answer_list != nullptr) {
          answer_list_log(&request_answer_list, false, false);

@@ -88,7 +88,7 @@
 #include "sched/sge_complex_schedd.h"
 #include "sched/valid_queue_user.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "cull/cull_list.h"
 
@@ -683,7 +683,7 @@ ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
           * down, we don't want to see tons of error messages in the messages
           * file. The caller of this functions has to handle this situation.
           */
-         gdi2_send_message_pb(0, prognames[EXECD], 1, host, TAG_ACK_REQUEST, &pb, &dummymid);
+         gdi_send_message_pb(0, prognames[EXECD], 1, host, TAG_ACK_REQUEST, &pb, &dummymid);
          clear_packbuffer(&pb);
       }
    }

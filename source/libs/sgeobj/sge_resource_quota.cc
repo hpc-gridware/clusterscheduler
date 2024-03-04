@@ -963,7 +963,7 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
          }
       }
 
-      rue_elem = lGetSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
+      rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
       if (rue_elem == nullptr) {
          rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */

@@ -201,8 +201,9 @@ bool host_is_referenced(const lListElem *host,
 *     printf("The load on host myhost is %s\n", value);
 *
 *******************************************************************************/
-const char *host_get_load_value(lListElem *host, const char *name) {
-   lListElem *load;
+const char *host_get_load_value(lListElem *host, const char *name)
+{
+   const lListElem *load;
    const char *value = nullptr;
 
    if (host != nullptr) {

@@ -864,7 +864,7 @@ void update_job_usage(const char* qualified_hostname)
 
       for_each_ep(ja_task, lGetList(usage, JB_ja_tasks)) {
          u_long32 ja_task_id;
-         lListElem *uep;
+         const lListElem *uep;
          const lListElem *pe_task;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);

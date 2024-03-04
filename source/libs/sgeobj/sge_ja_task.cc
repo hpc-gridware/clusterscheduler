@@ -201,19 +201,17 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
 *  SEE ALSO
 *     sgeobj/ja_task/ja_task_clear_finished_pe_tasks()
 *******************************************************************************/
-bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
-   lListElem *pe_task;
-
+bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
+{
    DENTER(TOP_LAYER);
 
-   pe_task = lGetSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list);
+   const lListElem *pe_task = lGetSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list);
    if (pe_task != nullptr) {
       INFO("already handled exit of pe task " SFQ " in ja_task " sge_U32CFormat"\n", pe_task_id, sge_u32c(lGetUlong(ja_task, JAT_task_number)));
       DRETURN(false);
    }
 
-   pe_task = lAddSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list,
-                        FPET_Type);
+   pe_task = lAddSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list, FPET_Type);
 
    DRETURN(true);
 }

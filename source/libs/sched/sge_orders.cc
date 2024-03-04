@@ -39,7 +39,7 @@
 
 #include "evc/sge_event_client.h"
 
-#include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi.h"
 
 #include "sge_orders.h"
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -342,9 +342,9 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    if (*orders != nullptr) {
       DPRINTF(("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders)));
-      order_id = sge_gdi2_multi(&alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
+      order_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
                                orders, nullptr, nullptr, &state, false);
-      sge_gdi2_wait(&malp, &state);
+      sge_gdi_wait(&malp, &state);
 
       if (alp != nullptr) {
          ret = answer_list_handle_request_answer_list(&alp, stderr);
@@ -354,7 +354,7 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    /* check result of orders */
    if(order_id > 0) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, nullptr);
+      gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, nullptr);
 
       ret = answer_list_handle_request_answer_list(&alp, stderr);
    }

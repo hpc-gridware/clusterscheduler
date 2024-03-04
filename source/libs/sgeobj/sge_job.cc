@@ -695,7 +695,7 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
 
    object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
 
-   ja_task = lGetSubUlong(job, JAT_task_number, ja_task_number, JB_ja_tasks);
+   ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_number, JB_ja_tasks);
    if (ja_task == nullptr) {
       lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
       lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number); 
@@ -1036,7 +1036,7 @@ lListElem *job_search_task(const lListElem *job, lList **answer_list,
 
    DENTER(TOP_LAYER);
    if (job != nullptr) {
-      ja_task = lGetSubUlong(job, JAT_task_number, ja_task_id, JB_ja_tasks);
+      ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_id, JB_ja_tasks);
    }
    DRETURN(ja_task);
 }
@@ -2152,14 +2152,10 @@ void job_get_state_string(char *str, u_long32 op)
 ******************************************************************************/
 void job_add_parent_id_to_context(lListElem *job) 
 {
-   lListElem *context_parent = nullptr;   /* VA_Type */
-   const char *job_id_string = nullptr;
-   
-   job_id_string = sge_getenv("JOB_ID");
-   context_parent = lGetSubStr(job, VA_variable, CONTEXT_PARENT, JB_context); 
+   const char *job_id_string = sge_getenv("JOB_ID");
+   lListElem *context_parent = lGetSubStrRW(job, VA_variable, CONTEXT_PARENT, JB_context);
    if (job_id_string != nullptr && context_parent == nullptr) {
-      context_parent = lAddSubStr(job, VA_variable, CONTEXT_PARENT, 
-                                  JB_context, VA_Type);
+      context_parent = lAddSubStr(job, VA_variable, CONTEXT_PARENT, JB_context, VA_Type);
       lSetString(context_parent, VA_value, job_id_string);
    }
 }

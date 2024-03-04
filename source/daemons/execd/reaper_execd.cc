@@ -600,7 +600,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    
 
    /* map system signals into sge signals to make signo's exchangable */
-   du=lGetSubStr(jr, UA_name, "signal", JR_usage);
+   du=lGetSubStrRW(jr, UA_name, "signal", JR_usage);
    if (du) {
       int signo = (int)lGetDouble(du, UA_value);
 
@@ -1661,7 +1661,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
-   lListElem *pe_task = nullptr;
+   const lListElem *pe_task = nullptr;
 
    bool accounting_summary = false;
 
@@ -1822,7 +1822,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    double ru_cpu = 0.0, ru_maxvmem = 0.0;
    int exit_status = -1, signo = -1;
    const char *q, *h, *u;
-   lListElem *ep;
+   const lListElem *ep;
    const char *pe_task_id_str;
    dstring ds;
    char buffer[128];
