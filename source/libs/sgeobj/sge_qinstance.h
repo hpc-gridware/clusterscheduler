@@ -53,10 +53,12 @@ enum {
 #define QU_tag_qend QU_available_at
 
 bool
-qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list, const lList *centry_master_list);
+qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
+                   const lList *centry_master_list);
 
 bool
-qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list, const lList *centry_master_list);
+qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
+                        const lList *centry_master_list);
 
 void
 qinstance_set_full_name(lListElem *this_elem);
@@ -77,18 +79,19 @@ qinstance_list_set_tag(lList *this_list, u_long32 tag_value);
 void
 qinstance_increase_qversion(lListElem *this_elem);
 
-bool 
-qinstance_check_owner(const lListElem *queue, const char *user_name, const lList *master_manager_list, const lList *master_operator_list);
+bool
+qinstance_check_owner(const lListElem *queue, const char *user_name, const lList *master_manager_list,
+                      const lList *master_operator_list);
 
 bool
-qinstance_is_pe_referenced(const lListElem *this_elem, 
+qinstance_is_pe_referenced(const lListElem *this_elem,
                            const lListElem *pe);
 
 bool
 qinstance_is_a_pe_referenced(const lListElem *this_elem);
 
 bool
-qinstance_is_ckpt_referenced(const lListElem *this_elem, 
+qinstance_is_ckpt_referenced(const lListElem *this_elem,
                              const lListElem *ckpt);
 
 bool
@@ -111,11 +114,11 @@ void
 qinstance_set_conf_slots_used(lListElem *this_elem);
 
 bool
-qinstance_is_calendar_referenced(const lListElem *this_elem, 
+qinstance_is_calendar_referenced(const lListElem *this_elem,
                                  const lListElem *calendar);
 
 int
-qinstance_debit_consumable(lListElem *this_elem, lListElem *job, 
+qinstance_debit_consumable(lListElem *this_elem, const lListElem *job,
                            const lList *centry_list, int slots, bool is_master_task, bool *just_check);
 
 bool
@@ -131,8 +134,8 @@ int queue_reference_list_validate(lList **alpp, lList *qr_list,
                                   const char *obj_name);
 
 int
-rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list, int slots,
-                 int config_nm, int actual_nm, const char *obj_name, bool is_master_task, bool *just_check);
+rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list, int slots,
+                    int config_nm, int actual_nm, const char *obj_name, bool is_master_task, bool *just_check);
 
 //lListElem *
 //explicit_job_request(lListElem *jep, const char *name);

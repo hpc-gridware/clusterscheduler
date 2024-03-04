@@ -74,6 +74,8 @@
 #include "sgeobj/cull/sge_usage_UA_L.h"
 #include "sgeobj/cull/sge_userprj_PR_L.h"
 #include "sgeobj/cull/sge_userprj_UU_L.h"
+#include "sgeobj/cull/sge_grantedres_GRU_L.h"
+#include "sgeobj/cull/sge_host_RESL_L.h"
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
 #include "sgeobj/cull/sge_pe_task_PET_L.h"
@@ -215,6 +217,8 @@ lNameSpace nmv[] = {
    {UA_LOWERBOUND, UA_SIZE, UAN, UA_Type},
    {PR_LOWERBOUND, PR_SIZE, PRN, PR_Type},
    {UU_LOWERBOUND, UU_SIZE, UUN, UU_Type},
+   {GRU_LOWERBOUND, GRU_SIZE, GRUN, GRU_Type},
+   {RESL_LOWERBOUND, RESL_SIZE, RESLN, RESL_Type},
    {STN_LOWERBOUND, STN_SIZE, STNN, STN_Type},
    {SC_LOWERBOUND, SC_SIZE, SCN, SC_Type},
    {PET_LOWERBOUND, PET_SIZE, PETN, PET_Type},

@@ -213,7 +213,7 @@ sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monito
          lSetHost(ep, object->key_nm, hostname);
          break;
       default:
-         DPRINTF(("sge_add_host_of_type: unexpected datatype\n"));
+      DPRINTF(("sge_add_host_of_type: unexpected datatype\n"));
    }
    ret = sge_gdi_add_mod_generic(nullptr, ep, 1, object, username,
                                  qualified_hostname, 0, &ppList, monitor);
@@ -1163,7 +1163,8 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
                      dstring buffer = DSTRING_INIT;
                      spool_write_object(&answer_list,
                                         spool_get_default_context(), jep,
-                                        job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), nullptr, &buffer),
+                                        job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
+                                                    nullptr, &buffer),
                                         SGE_TYPE_JOB, true);
                      lListElem_clear_changed_info(jatep);
                      /* JG: TODO: don't we have to send an event? */
@@ -1502,7 +1503,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, tmp_elem, master_centry_list, 0, true, nullptr);
+         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, nullptr);
          for_each_rw (jep, master_job_list) {
             const lListElem *jatep = nullptr;
 
@@ -1520,7 +1521,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                                       global_host ? nullptr : host);
 
                if (slots > 0) {
-                  debit_host_consumable(jep, tmp_elem, master_centry_list, slots, is_master_task, nullptr);
+                  debit_host_consumable(jep, jatep, tmp_elem, master_centry_list, slots, is_master_task, nullptr);
                }
             }
          }

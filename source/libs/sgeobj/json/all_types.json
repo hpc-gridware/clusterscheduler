@@ -241,6 +241,18 @@
 			"size_in_basic_units":	2,
 			"add_to_sge_all_lists":	true
 		}, {
+			"className":	"GrantedResource",
+			"cullPrefix":	"GRU",
+			"cullNameSpec":	"grantedres",
+			"size_in_basic_units":	2,
+			"add_to_sge_all_lists":	true
+		}, {
+			"className":	"ResourceList",
+			"cullPrefix":	"RESL",
+			"cullNameSpec":	"host",
+			"size_in_basic_units":	2,
+			"add_to_sge_all_lists":	true
+		}, {
 			"className":	"ShareTreeNode",
 			"cullPrefix":	"STN",
 			"cullNameSpec":	"sharetree",

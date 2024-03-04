@@ -67,6 +67,7 @@
 #include "sgeobj/sge_mailrec.h"
 
 #include "spool/flatfile/sge_flatfile.h"
+#include "spool/flatfile/sge_flatfile_obj_rsmap.h"
 #include "spool/flatfile/msg_spoollib_flatfile.h"
 
 #include "msg_common.h"
@@ -213,6 +214,13 @@ static spooling_field AINTER_sub_fields[] = {
 static spooling_field CE_sub_fields[] = {
    {  CE_name,            11, "name",    nullptr, nullptr, nullptr, nullptr},
    {  CE_stringval,       11, "value",   nullptr, nullptr, nullptr, write_CE_stringval},
+   {  NoName,             11, nullptr,      nullptr, nullptr, nullptr, nullptr}
+};
+
+/* in order to distinguish between host level and queue level consumables */
+static spooling_field CE_host_sub_fields[] = {
+   {  CE_name,            11, "name",    nullptr, nullptr, nullptr, nullptr},
+   {  CE_stringval,       11, "value",   nullptr, nullptr, read_CE_stringval_host, write_CE_stringval_host},
    {  NoName,             11, nullptr,      nullptr, nullptr, nullptr, nullptr}
 };
 
@@ -698,7 +706,7 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                           HS_sub_fields, &qconf_sub_name_value_comma_sfi, nullptr,
                           nullptr);
    create_spooling_field(&fields[count++], EH_consumable_config_list, 21,
-                          "complex_values", CE_sub_fields,
+                          "complex_values", CE_host_sub_fields,
                           &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    
    if (getenv("MORE_INFO")) {

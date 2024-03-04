@@ -55,6 +55,7 @@
 #include "oge_qconf_centry.h"
 
 static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_list);
+
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list);
 
 bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 gdi_command) {
@@ -111,7 +112,7 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != nullptr && *this_elem) {
+   if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
 
       filename = spool_flatfile_write_object(&alp, *this_elem, false, CE_fields, &qconf_ce_sfi, SP_DEST_TMP,
@@ -338,7 +339,7 @@ bool centry_list_show(lList **answer_list) {
    if (centry_list != nullptr) {
       const char *filename;
 
-      spool_flatfile_align_list(answer_list, (const lList *)centry_list, CE_fields, 3);
+      spool_flatfile_align_list(answer_list, (const lList *) centry_list, CE_fields, 3);
       filename = spool_flatfile_write_list(answer_list, centry_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_STDOUT,
                                            SP_FORM_ASCII, nullptr, false);
 
@@ -676,7 +677,7 @@ static bool centry_list_provide_modify_context(lList **this_list, lList **answer
    if (this_list != nullptr) {
       const char *filename;
 
-      spool_flatfile_align_list(answer_list, (const lList *)*this_list, CE_fields, 3);
+      spool_flatfile_align_list(answer_list, (const lList *) *this_list, CE_fields, 3);
       filename = spool_flatfile_write_list(answer_list, *this_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_TMP,
                                            SP_FORM_ASCII, nullptr, false);
 

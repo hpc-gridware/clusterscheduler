@@ -44,7 +44,7 @@
 
 #define RANGE_INFINITY (9999999)
 
-typedef void (*range_remove_insert_t) (lList **, lList **, u_long32);
+typedef void (*range_remove_insert_t)(lList **, lList **, u_long32);
 
 /*
  * range element
@@ -70,17 +70,20 @@ void
 range_parse_from_string(lListElem **this_elem, lList **answer_list,
                         const char *string, int step_allowed, int inf_allowed);
 
+bool
+range_parse_get_ids(const char *value, int step_allowed, u_long32 &start, u_long32 &end, u_long32 &step);
+
 /*
  * range list
  */
 
 void
 range_list_print_to_string(const lList *this_list,
-                           dstring * string, bool ignore_step,
+                           dstring *string, bool ignore_step,
                            bool comma_as_separator, bool print_always_as_range);
 
 void range_to_dstring(u_long32 start, u_long32 end, int step,
-                      dstring * dyn_taskrange_str, int ignore_step,
+                      dstring *dyn_taskrange_str, int ignore_step,
                       bool use_comma_as_separator, bool print_always_as_range);
 
 void range_list_insert_id(lList **this_list, lList **answer_list, u_long32 id);

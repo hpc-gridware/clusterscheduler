@@ -62,6 +62,8 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_order.h"
+#include "sgeobj/sge_ulong.h"
+#include "sgeobj/sge_grantedres.h"
 
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
@@ -96,6 +98,7 @@
 #include "sge_sched_process_events.h"
 #include "sge_sched_thread.h"
 #include "sge_sched_order.h"
+#include "sge_sched_thread_rsmap.h"
 
 scheduler_control_t Scheduler_Control = {
         PTHREAD_MUTEX_INITIALIZER,
@@ -1160,6 +1163,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    }
 
    if (result == DISPATCH_OK) {
+      add_granted_resource_list(ja_task, job, a.gdil, host_list);
+
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {
          double job_tickets_per_slot;

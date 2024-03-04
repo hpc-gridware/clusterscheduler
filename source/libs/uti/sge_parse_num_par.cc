@@ -140,6 +140,7 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
          }
          break;
 
+      case TYPE_RSMAP:
       case TYPE_INT:
       case TYPE_TIM:
       case TYPE_MEM:
@@ -148,9 +149,11 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
          /* dirty but isolated .. */
          if (error_str != nullptr) {
             *uvalp = sge_parse_num_val(nullptr, dvalp, s, s, error_str, error_len);
-            if (!error_str[0]) /* err msg written ? */
+            if (!error_str[0]) {/* err msg written ? */
                retval = 1; /* no error */
-            else {
+            } else {
+               if (type == TYPE_RSMAP)
+                  sge_strlcpy(error_str, "rsmap value", error_len);
                if (type == TYPE_INT)
                   sge_strlcpy(error_str, "integer value", error_len);
                else if (type == TYPE_TIM)

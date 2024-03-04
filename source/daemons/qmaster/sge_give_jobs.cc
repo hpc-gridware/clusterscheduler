@@ -40,6 +40,7 @@
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
@@ -64,6 +65,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_grantedres.h"
 
 #include "sched/sge_select_queue.h"
 #include "sched/sge_resource_quota_schedd.h"
@@ -204,7 +206,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
          sent_slaves = 0;
          break;
       default :
-         DPRINTF(("send_slave_jobs returned an unknown error code\n"));
+      DPRINTF(("send_slave_jobs returned an unknown error code\n"));
          ret = -1;
    }
 
@@ -465,7 +467,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          ret = -1;
          break;
       } else {
-         DPRINTF(("successfully sent slave job " sge_u32" to host \"%s\"\n",
+         DPRINTF(("successfully sent slave job " sge_u32 " to host \"%s\"\n",
                  lGetUlong(jep, JB_job_number), hostname));
       }
       lRemoveElem(gdil, &gdil_ep);
@@ -519,6 +521,12 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
          lFreeElem(&tmpjep);
          DRETURN(-1);
       }
+   }
+
+   /* if a granted resource list is defined int must be passed through, too */
+   if (lGetList(jatep, JAT_granted_resources_list)) {
+      const lList *grl = lGetList(jatep, JAT_granted_resources_list);
+      lSetList(tmpjatep, JAT_granted_resources_list, lCopyList(nullptr, grl));
    }
 
    /* insert ckpt object if required **now**. it is only
@@ -633,7 +641,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
       sge_mark_unheard(hep);
       DRETURN(-1);
    } else {
-      DPRINTF(("successfully sent %sjob " sge_u32" to host \"%s\"\n",
+      DPRINTF(("successfully sent %sjob " sge_u32 " to host \"%s\"\n",
               master ? "" : "SLAVE ",
               lGetUlong(jep, JB_job_number),
               rhost));
@@ -978,7 +986,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                }
 
                /* debit consumable resources */
-               if (debit_host_consumable(jep, global_host_ep, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
+               if (debit_host_consumable(jep, jatep, global_host_ep, master_centry_list, tmp_slot, master_task,
+                                         nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 "global", nullptr, nullptr, global_host_ep);
@@ -987,7 +996,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   lListElem_clear_changed_info(global_host_ep);
                }
                host = host_list_locate(master_exechost_list, queue_hostname);
-               if (debit_host_consumable(jep, host, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
+               if (debit_host_consumable(jep, jatep, host, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 queue_hostname, nullptr, nullptr, host);
@@ -1540,7 +1549,8 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             lListElem *host;
 
             /* undebit consumable resources */
-            if (debit_host_consumable(job, global_host_ep, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
+            if (debit_host_consumable(job, ja_task, global_host_ep, master_centry_list, -tmp_slot, master_task,
+                                      nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              "global", nullptr, nullptr, global_host_ep);
@@ -1549,7 +1559,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                lListElem_clear_changed_info(global_host_ep);
             }
             host = host_list_locate(master_exechost_list, queue_hostname);
-            if (debit_host_consumable(job, host, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
+            if (debit_host_consumable(job, ja_task, host, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              queue_hostname, nullptr, nullptr, host);

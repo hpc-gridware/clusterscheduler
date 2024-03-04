@@ -35,65 +35,36 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief Resource Diagram Entry
+* @brief Resource List
 *
-* A resource diagram lists future resource utilization (it starts at the current time).
-* An object of this type is related to the usage of a specific resource,
-* whose name is defined in the parent object (RUE_Type).
-* The list of resource diaram entries represents a diagram showing
-* resource progression over time.
-* 
-* E.g. the following resource diagram
-*    N ^
-*      |             +-------+
-*      |   +-----+   |  J3   |
-*      |   |     +---+-------+--+
-*      |   | J1  |      J2      |
-*      +---+-----+--------------+-----> t
-*      0   4     10  14      22 25
-* 
-* is respresented by the the following table
-*     t | N
-*    ---+---
-*     0 | 0
-*     4 | 3
-*    10 | 2
-*    14 | 4
-*    22 | 2
-*    25 | 2
-* 
-* 
-* 
+* Consumable Resource Map Resource List.
+* Holds all consumable resource map identifiers
+* of a particular job / array task.
 *
-*    SGE_ULONG(RDE_time) - Time
-*    Time stamp (seconds since epoch).
+*    SGE_STRING(RESL_value) - Value
+*    The ID value of the RSMAP consumable complex.
+*    @todo Is it the primary key? Would it be worth to have an index on it?
 *
-*    SGE_DOUBLE(RDE_amount) - Amount
-*    Amount of the resource which is used.
-*
-*    SGE_LIST(RDE_resource_map_list) - Resource Map List
-*    Amount of Resource Maps which are used.
+*    SGE_ULONG(RESL_amount) - Resource Amount
+*    The number of resources with this name.
 *
 */
 
 enum {
-   RDE_time = RDE_LOWERBOUND,
-   RDE_amount,
-   RDE_resource_map_list
+   RESL_value = RESL_LOWERBOUND,
+   RESL_amount
 };
 
-LISTDEF(RDE_Type)
-   SGE_ULONG(RDE_time, CULL_DEFAULT)
-   SGE_DOUBLE(RDE_amount, CULL_DEFAULT)
-   SGE_LIST(RDE_resource_map_list, RESL_Type, CULL_DEFAULT)
+LISTDEF(RESL_Type)
+   SGE_STRING(RESL_value, CULL_SPOOL)
+   SGE_ULONG(RESL_amount, CULL_SPOOL)
 LISTEND
 
-NAMEDEF(RDEN)
-   NAME("RDE_time")
-   NAME("RDE_amount")
-   NAME("RDE_resource_map_list")
+NAMEDEF(RESLN)
+   NAME("RESL_value")
+   NAME("RESL_amount")
 NAMEEND
 
-#define RDE_SIZE sizeof(RDEN)/sizeof(char *)
+#define RESL_SIZE sizeof(RESLN)/sizeof(char *)
 
 

@@ -1,15 +1,18 @@
 {
 	"className":	"ResourceUtilization",
-	"summary":	"@todo add summary",
+	"summary":	"Resource Utilization",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Utilization of a certain resource."
+			}, { "line":	"Both the current utilization can be stored, as well as"
+			}, { "line":	"future utilization (due to currently running jobs,"
+			}, { "line":	"advance reservations and resource reservations)."
 		}],
 	"cullPrefix":	"RUE",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Resource Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The name of the resource (= the name of the complex variable, e.g. slots)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,17 +28,27 @@
 				}]
 		}, {
 			"name":	"utilized_now",
-			"summary":	"@todo add summary",
+			"summary":	"Utilized Now",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Currently used amount."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
-			"name":	"utilized",
-			"summary":	"@todo add summary",
+			"name":	"utilized_now_resource_map_list",
+			"summary":	"Utilized Now Resource Map List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Currently used amount of Resource Maps"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RESL",
+			"subCullPrefix":	"RESL",
+			"flags":	[]
+		}, {
+			"name":	"utilized",
+			"summary":	"Utilized",
+			"description":	[{
+					"line":	"A resource diagram indicating future utilization."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RDE",
@@ -43,17 +56,17 @@
 			"flags":	[]
 		}, {
 			"name":	"utilized_now_nonexclusive",
-			"summary":	"@todo add summary",
+			"summary":	"Utilized Now Non-Exclusive",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Currently used amount of implicitly used exclusive resources."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"utilized_nonexclusive",
-			"summary":	"@todo add summary",
+			"summary":	"Utilized Non-Exclusive",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A resource diagram indicating future utilization of implicitly used exclusive resources."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RDE",

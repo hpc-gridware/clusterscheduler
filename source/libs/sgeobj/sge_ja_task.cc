@@ -40,20 +40,25 @@
 
 #include "cull/cull_list.h"
 
-#include "sgeobj/sge_range.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_mesobj.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_id.h"
-#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/sge_host.h"
+#include "sgeobj/sge_id.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_mesobj.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_qinstance.h"
+#include "sgeobj/sge_range.h"
+#include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"
+#include "sgeobj/msg_sgeobjlib.h"
+
+#include "sge_ja_task.h"
 
 /****** sgeobj/ja_task/ja_task_search_pe_task()*********************************
 *  NAME
@@ -73,10 +78,9 @@
 *  RESULT
 *     lListElem* - PET_Type
 *******************************************************************************/
-lListElem *ja_task_search_pe_task(const lListElem *ja_task, 
-                                  const char *pe_task_id)
-{
-   if(ja_task != nullptr) {
+lListElem *ja_task_search_pe_task(const lListElem *ja_task,
+                                  const char *pe_task_id) {
+   if (ja_task != nullptr) {
       const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
       if (pe_tasks != nullptr) {
@@ -103,9 +107,8 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
 *     const lList *ja_task_list - JAT_Type list 
 *     dstring *range_string     - dynamic string 
 ******************************************************************************/
-void ja_task_list_print_to_string(const lList *ja_task_list, 
-                                  dstring *range_string)
-{
+void ja_task_list_print_to_string(const lList *ja_task_list,
+                                  dstring *range_string) {
    const lListElem *ja_task = nullptr;    /* JAT_Type */
    lList *range_list = nullptr;     /* RN_Type */
 
@@ -114,9 +117,9 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
       u_long32 tid = lGetUlong(ja_task, JAT_task_number);
 
       range_list_insert_id(&range_list, nullptr, tid);
-   } 
+   }
    range_list_sort_uniq_compress(range_list, nullptr, true);
-   range_list_print_to_string(range_list, range_string, false, false, false); 
+   range_list_print_to_string(range_list, range_string, false, false, false);
    lFreeList(&range_list);
    DRETURN_VOID;
 }
@@ -142,16 +145,15 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
 *  SEE ALSO
 *     sgeobj/range/RN_Type
 ******************************************************************************/
-lList* ja_task_list_split_group(lList **ja_task_list)
-{
+lList *ja_task_list_split_group(lList **ja_task_list) {
    lList *ret_list = nullptr;
 
    if (ja_task_list && *ja_task_list) {
       lListElem *first_task = lFirstRW(*ja_task_list);
 
       if (first_task) {
-         u_long32 status = lGetUlong(first_task, JAT_status); 
-         u_long32 state = lGetUlong(first_task, JAT_state); 
+         u_long32 status = lGetUlong(first_task, JAT_status);
+         u_long32 state = lGetUlong(first_task, JAT_state);
          u_long32 hold = lGetUlong(first_task, JAT_hold);
          const lDescr *descr = lGetElemDescr(first_task);
          lCondition *where = nullptr;
@@ -164,7 +166,7 @@ lList* ja_task_list_split_group(lList **ja_task_list)
       }
    }
    return ret_list;
-}                     
+}
 
 /****** sgeobj/ja_task/ja_task_add_finished_pe_task() **************************
 *  NAME
@@ -242,8 +244,7 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
 *  SEE ALSO
 *     sgeobj/ja_task/ja_task_add_finished_pe_task()
 *******************************************************************************/
-bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
-{
+bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    const lList *pe_task_list;
 
    DENTER(TOP_LAYER);
@@ -298,7 +299,7 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
 *     MT-NOTE: sge_parse_jobtasks() is MT safe 
 *
 *******************************************************************************/
-int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,   
+int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
                        lList **alpp, bool include_names, const lList *arrayDefList) {
    char *token;
    char *job_str;
@@ -309,19 +310,19 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    job_str = strdup(str_jobtask);
 
    /* An empty job id string is a bad job id string! */
-   if (strcmp (job_str, "") == 0) {
+   if (strcmp(job_str, "") == 0) {
       ret = -1;
    }
-   /*
-   ** dup the input string for tokenizing
-   */
-   else if(isdigit(job_str[0])) {
+      /*
+      ** dup the input string for tokenizing
+      */
+   else if (isdigit(job_str[0])) {
       const double epsilon = 1.0E-12;
       char *end_ptr = nullptr;
       double dbl_value;
       u_long32 ulng_value;
 
-      if ((token = strchr(job_str, '.')) != nullptr){
+      if ((token = strchr(job_str, '.')) != nullptr) {
          token[0] = '\0';
          token++;
          if (!range_list_parse_from_string(&task_id_range_list, alpp, token,
@@ -343,8 +344,7 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    if (arrayDefList != nullptr) {
       if (task_id_range_list == nullptr) {
          task_id_range_list = lCopyList(lGetListName(arrayDefList), arrayDefList);
-      }
-      else {
+      } else {
          lList *copy = lCopyList("", arrayDefList);
          lAddList(task_id_range_list, &copy);
       }
@@ -355,7 +355,7 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
          ret = -1;
       } else {
          *idp = lAddElemStr(ipp, ID_str, job_str, ID_Type);
-         
+
          if (*idp) {
             range_list_sort_uniq_compress(task_id_range_list, alpp, true);
             lSetList(*idp, ID_ja_structure, task_id_range_list);
@@ -365,7 +365,7 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    /*
    ** free the dupped string
    */
-   sge_free(&job_str); 
+   sge_free(&job_str);
    DRETURN(ret);
 }
 
@@ -399,9 +399,8 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
 *  SEE ALSO
 *     sgeobj/ja_task/ja_task_message_trash_all_of_type_X()
 *******************************************************************************/
-bool 
-ja_task_message_add(lListElem *this_elem, u_long32 type, const char *message)
-{
+bool
+ja_task_message_add(lListElem *this_elem, u_long32 type, const char *message) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -436,8 +435,7 @@ ja_task_message_add(lListElem *this_elem, u_long32 type, const char *message)
 *     MT-NOTE: ja_task_message_trash_all_of_type_X() is MT safe 
 *******************************************************************************/
 bool
-ja_task_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
-{
+ja_task_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -469,9 +467,8 @@ ja_task_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
 *  SEE ALSO
 *     sge_ja_task/ja_task_verify_execd_job()
 *******************************************************************************/
-bool 
-ja_task_verify(const lListElem *ja_task, lList **answer_list)
-{
+bool
+ja_task_verify(const lListElem *ja_task, lList **answer_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -546,9 +543,8 @@ ja_task_verify(const lListElem *ja_task, lList **answer_list)
 *  SEE ALSO
 *     sge_ja_task/ja_task_verify()
 *******************************************************************************/
-bool 
-ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list)
-{
+bool
+ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -556,7 +552,8 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list)
    ret = ja_task_verify(ja_task, answer_list);
 
    if (ret) {
-      ret = ja_task_verify_granted_destin_identifier_list(lGetList(ja_task, JAT_granted_destin_identifier_list), answer_list);
+      ret = ja_task_verify_granted_destin_identifier_list(lGetList(ja_task, JAT_granted_destin_identifier_list),
+                                                          answer_list);
    }
 
    DRETURN(ret);
@@ -588,15 +585,14 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list)
 *  SEE ALSO
 *     sge_ja_task/ja_task_verify_granted_destin_identifier()
 *******************************************************************************/
-bool 
-ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_list)
-{
+bool
+ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
    if (gdil == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALID_GDIL);
       ret = false;
    }
@@ -641,15 +637,14 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
 *  SEE ALSO
 *     sge_ja_task/ja_task_verify_granted_destin_identifier_list()
 *******************************************************************************/
-bool 
-ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_list)
-{
+bool
+ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
    if (ep == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
    }
@@ -698,8 +693,7 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 *     MT-NOTE: ja_task_is_tightly_integrated() is MT safe, the caller must
 *              hold a read lock on the SGE_TYPE_PE list.
 *******************************************************************************/
-bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list)
-{
+bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list) {
    bool ret = false;
 
    if (ja_task != nullptr) {
@@ -717,3 +711,45 @@ bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master
    return ret;
 }
 
+static int
+ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
+   int mods = 0;
+   const char *ce_name = lGetString(granted_resource, GRU_name);
+   const lListElem *resl;
+   for_each_ep (resl, lGetList(granted_resource, GRU_resource_map_list)) {
+      mods += host_debit_rsmap(host, ce_name, resl, slots, just_check);
+      if (just_check != nullptr && !*just_check) {
+         break;
+      }
+   }
+
+   return mods;
+}
+
+/**
+ * @brief debit / undebit RSMAP ids of a newly scheduled ja_task
+ *
+ * @param ja_task debit this ja_task
+ * @param host  from this host
+ * @param slots this is the amount of slots to debit
+ * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and return the result here
+ * @return the number of modifications done
+ */
+int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slots, bool *just_check) {
+   int mods = 0;
+   const char *host_name = lGetHost(host, EH_name);
+   const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
+   const lListElem *granted_resource;
+   const void *iterator;
+
+   for (granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
+        granted_resource != nullptr;
+        granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
+      mods += ja_task_debit_host_rsmap(granted_resource, host, slots, just_check);
+      if (just_check != nullptr && !*just_check) {
+         break;
+      }
+   }
+
+   return mods;
+}

@@ -36,12 +36,14 @@
 #include <sys/types.h>
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
+
 #  include <libintl.h>
 #  include <locale.h>
 #  include "uti/sge_language.h"
+
 #  define SGE_ADD_MSG_ID(x) (sge_set_message_id_output(1),(x),sge_set_message_id_output(0))
 #  define _(x)               sge_gettext(x)
-#  define _MESSAGE(x,y)      sge_gettext_((x),(y))
+#  define _MESSAGE(x, y)      sge_gettext_((x),(y))
 #  define _SGE_GETTEXT__(x)  sge_gettext__(x)
 #else
 #  define SGE_ADD_MSG_ID(x) (x)
@@ -50,7 +52,7 @@
 #  define _SGE_GETTEXT__(x) (x)
 #endif
 
-#if !defined(__cplusplus) 
+#if !defined(__cplusplus)
 #include <stdbool.h>
 #endif
 
@@ -62,7 +64,7 @@
 #define NONE_STR  "NONE"
 
 #if defined(TARGET_64BIT)
-#  define sge_U32CFormat "%u"  
+#  define sge_U32CFormat "%u"
 #  define sge_U32CLetter "u"
 #  define sge_u32c(x)  (unsigned int)(x)
 
@@ -152,11 +154,12 @@ typedef char stringT[MAX_STRING_SIZE];
 #define TYPE_HOST         7
 #define TYPE_DOUBLE       8
 #define TYPE_RESTR        9
-#define TYPE_CE_LAST      TYPE_RESTR
+#define TYPE_RSMAP        10
+#define TYPE_CE_LAST      TYPE_RSMAP
 
 /* used in config */
-#define TYPE_ACC          10 
-#define TYPE_LOG          11
+#define TYPE_ACC          11
+#define TYPE_LOG          12
 #define TYPE_LAST         TYPE_LOG
 
 /* save string format quoted */
@@ -196,7 +199,12 @@ typedef char stringT[MAX_STRING_SIZE];
 #define HAS_CTIME_R
 
 typedef enum {
-   NO    = 0,
-   YES   = 1,
+   NO = 0,
+   YES = 1,
    UNSET = 2
 } ternary_t;
+
+/* For the resource map consumables */
+#define GRU_HARD_REQUEST_TYPE  0
+#define GRU_SOFT_REQUEST_TYPE  1
+#define GRU_RESOURCE_MAP_TYPE  2

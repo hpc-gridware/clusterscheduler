@@ -29,6 +29,8 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+#include <string>
 #include <cstring>
 #include <ctime>
 
@@ -41,6 +43,7 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_binding.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_range.h"
@@ -55,7 +58,9 @@
 #include "msg_clients_common.h"
 
 static void sge_show_checkpoint(int how, int op);
+
 static void sge_show_y_n(int op, int how);
+
 static void show_ce_type_list(const lList *cel, const char *indent, const char *separator,
                               bool display_resource_contribution, const lList *centry_list, int slots);
 
@@ -71,7 +76,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (!(flags & FLG_QALTER)) {
       if (lGetUlong(job, JB_job_number))
-         printf("job_number:                 %d\n", (int)lGetUlong(job, JB_job_number));
+         printf("job_number:                 %d\n", (int) lGetUlong(job, JB_job_number));
       else
          printf("job_number:                 %s\n", MSG_JOB_UNASSIGNED);
    }
@@ -81,13 +86,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("exec_file:                  %s\n", lGetString(job, JB_exec_file));
 
    if (lGetPosViaElem(job, JB_submission_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t)lGetUlong(job, JB_submission_time))) {
-         printf("submission_time:            %s", ctime((time_t *)&ultime));
+      if ((ultime = (time_t) lGetUlong(job, JB_submission_time))) {
+         printf("submission_time:            %s", ctime((time_t *) &ultime));
       }
 
    if (lGetPosViaElem(job, JB_deadline, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t)lGetUlong(job, JB_deadline))) {
-         printf("deadline:                   %s", ctime((time_t *)&ultime));
+      if ((ultime = (time_t) lGetUlong(job, JB_deadline))) {
+         printf("deadline:                   %s", ctime((time_t *) &ultime));
       }
 
    if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) >= 0) {
@@ -98,7 +103,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_uid, SGE_NO_ABORT) >= 0)
-      printf("uid:                        %d\n", (int)lGetUlong(job, JB_uid));
+      printf("uid:                        %d\n", (int) lGetUlong(job, JB_uid));
 
    if (lGetPosViaElem(job, JB_group, SGE_NO_ABORT) >= 0) {
       if (lGetString(job, JB_group))
@@ -108,7 +113,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_gid, SGE_NO_ABORT) >= 0)
-      printf("gid:                        %d\n", (int)lGetUlong(job, JB_gid));
+      printf("gid:                        %d\n", (int) lGetUlong(job, JB_gid));
 
    {
       const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", nullptr};
@@ -131,8 +136,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t)lGetUlong(job, JB_execution_time)))
-         printf("execution_time:             %s", ctime((time_t *)&ultime));
+      if ((ultime = (time_t) lGetUlong(job, JB_execution_time)))
+         printf("execution_time:             %s", ctime((time_t *) &ultime));
 
    if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_account))
@@ -152,7 +157,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_checkpoint_interval, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_checkpoint_interval)) {
          printf("checkpoint_interval:        ");
-         printf("%d seconds\n", (int)lGetUlong(job, JB_checkpoint_interval));
+         printf("%d seconds\n", (int) lGetUlong(job, JB_checkpoint_interval));
       }
 
    if (lGetPosViaElem(job, JB_cwd, SGE_NO_ABORT) >= 0) {
@@ -262,7 +267,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_priority) != BASE_PRIORITY) {
          printf("priority:                   ");
-         printf("%d\n", (int)lGetUlong(job, JB_priority) - BASE_PRIORITY);
+         printf("%d\n", (int) lGetUlong(job, JB_priority) - BASE_PRIORITY);
       }
 
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
@@ -354,7 +359,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          int fields[] = {QR_name, 0};
          delis[0] = " ";
          printf("master hard queue_list:     ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_master_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_master_hard_queue_list), fields, delis,
+                        FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0)
@@ -443,28 +449,28 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_verify_suitable_queues))
-         printf("verify_suitable_queues:     %d\n", (int)lGetUlong(job, JB_verify_suitable_queues));
+         printf("verify_suitable_queues:     %d\n", (int) lGetUlong(job, JB_verify_suitable_queues));
 
    if (lGetPosViaElem(job, JB_soft_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t)lGetUlong(job, JB_soft_wallclock_gmt))) {
-         printf("soft_wallclock_gmt:         %s", ctime((time_t *)&ultime));
+      if ((ultime = (time_t) lGetUlong(job, JB_soft_wallclock_gmt))) {
+         printf("soft_wallclock_gmt:         %s", ctime((time_t *) &ultime));
       }
 
    if (lGetPosViaElem(job, JB_hard_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t)lGetUlong(job, JB_hard_wallclock_gmt))) {
-         printf("hard_wallclock_gmt:         %s", ctime((time_t *)&ultime));
+      if ((ultime = (time_t) lGetUlong(job, JB_hard_wallclock_gmt))) {
+         printf("hard_wallclock_gmt:         %s", ctime((time_t *) &ultime));
       }
 
    if (lGetPosViaElem(job, JB_version, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_version))
-         printf("version:                    %d\n", (int)lGetUlong(job, JB_version));
+         printf("version:                    %d\n", (int) lGetUlong(job, JB_version));
    /*
     ** problem: found no format anywhere
     */
 
    if (lGetPosViaElem(job, JB_override_tickets, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_override_tickets))
-         printf("oticket:                    %d\n", (int)lGetUlong(job, JB_override_tickets));
+         printf("oticket:                    %d\n", (int) lGetUlong(job, JB_override_tickets));
 
    if (lGetPosViaElem(job, JB_project, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_project))
@@ -472,7 +478,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_ar, SGE_NO_ABORT) >= 0) {
       if (lGetUlong(job, JB_ar)) {
-         printf("ar_id:                      %d\n", (int)lGetUlong(job, JB_ar));
+         printf("ar_id:                      %d\n", (int) lGetUlong(job, JB_ar));
       }
    }
 
@@ -493,7 +499,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          uni_print_list(stdout, nullptr, 0, lGetList(job, JB_context), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
-      /* display online job usage separately for each array job but summarized over all pe_tasks */
+   /* display online job usage separately for each array job but summarized over all pe_tasks */
 #define SUM_UP_JATASK_USAGE(ja_task, dst, attr)                                                                        \
    if ((uep = lGetSubStr(ja_task, UA_name, attr, JAT_scaled_usage_list))) {                                            \
       dst += lGetDouble(uep, UA_value);                                                                                \
@@ -530,11 +536,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING)
             continue;
 
+         printf("%-12s %11d:   ", first_task ? "usage" : " ", (int) lGetUlong(jatep, JAT_task_number));
+
          if (first_task) {
-            printf("usage %4d:                 ", (int)lGetUlong(jatep, JAT_task_number));
             first_task = 0;
-         } else
-            printf("      %4d:                 ", (int)lGetUlong(jatep, JAT_task_number));
+         }
 
          wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
 
@@ -612,13 +618,62 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                break;
             }
          }
-         printf("%s %4d:               %s\n", first_task ? "binding" : "       ",
-                (int)lGetUlong(jatep, JAT_task_number), binding_inuse != nullptr ? binding_inuse : "NONE");
+         printf("%-12s %11d:   %s\n", first_task ? "binding" : " ",
+                (int) lGetUlong(jatep, JAT_task_number), binding_inuse != nullptr ? binding_inuse : "NONE");
          if (first_task) {
             first_task = 0;
          }
       }
    }
+
+   /* OUTPUT for RSMAP resources */
+   {
+      const lListElem *jatep = nullptr;
+
+      for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
+         const lListElem *resu = nullptr;
+         bool first_task = true;
+         bool is_first_remap = true;
+         dstring task_resources = DSTRING_INIT;
+         const char *resource_ids = nullptr;
+
+         /* go through all RSMAP resources for the particular task and create a string */
+         for_each_ep (resu, lGetList(jatep, JAT_granted_resources_list)) {
+            if (lGetUlong(resu, GRU_type) == GRU_RESOURCE_MAP_TYPE) {
+               const char *name = lGetString(resu, GRU_name);
+               const char *host = lGetHost(resu, GRU_host);
+               const lList *ids = lGetList(resu, GRU_resource_map_list);
+
+               if (name != nullptr && ids != nullptr && host != nullptr) {
+                  if (is_first_remap) {
+                     is_first_remap = false;
+                  } else {
+                     sge_dstring_append(&task_resources, ",");
+                  }
+                  sge_dstring_append(&task_resources, name);
+                  sge_dstring_append(&task_resources, "=");
+                  sge_dstring_append(&task_resources, host);
+                  sge_dstring_append(&task_resources, "=");
+                  sge_dstring_append(&task_resources, "(");
+                  std::string id_buffer;
+                  sge_dstring_append(&task_resources, granted_res_get_id_string(id_buffer, ids));
+                  sge_dstring_append(&task_resources, ")");
+               }
+            }
+         }
+         /* print out granted resources */
+         resource_ids = sge_dstring_get_string(&task_resources);
+
+         printf("%-12s %11d:   %s\n", first_task ? "resource map" : " ",
+                (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
+         if (first_task) {
+            first_task = false;
+         }
+
+         sge_dstring_free(&task_resources);
+      }
+   }
+
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
       const lListElem *jatep;
 
@@ -630,8 +685,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             const char *message = lGetString(mesobj, QIM_message);
 
             if (message != nullptr) {
-               printf(SFN " %4d:          " SFN "\n", first_task ? "error reason" : "            ",
-                      (int)lGetUlong(jatep, JAT_task_number), message);
+               printf(SFN " %11d:   " SFN "\n", first_task ? "error reason" : "            ",
+                      (int) lGetUlong(jatep, JAT_task_number), message);
             }
             first_task = false;
          }

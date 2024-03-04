@@ -55,6 +55,16 @@
 			"subCullPrefix":	"OQ",
 			"flags":	[]
 		}, {
+			"name":	"granted_resources_list",
+			"summary":	"Granted Resources List",
+			"description":	[{
+					"line":	"List of RSMAP (future: and resource) requests."
+				}],
+			"type":	"lListT",
+			"subClassName":	"GrantedResource",
+			"subCullPrefix":	"GRU",
+			"flags":	[]
+		}, {
 			"name":	"ticket",
 			"summary":	"Number of Tickets",
 			"description":	[{

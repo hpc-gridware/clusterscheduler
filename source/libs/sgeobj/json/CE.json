@@ -210,5 +210,20 @@
 				}, {
 					"name":	"SPOOL"
 				}]
+		}, {
+			"name":	"resource_map_list",
+			"summary":	"Resource Map List",
+			"description":	[
+				{
+					"line": "on host level only: RSMAP id list"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RESL",
+			"subCullPrefix":	"RESL",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
 		}]
 }

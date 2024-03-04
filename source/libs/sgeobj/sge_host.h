@@ -39,6 +39,7 @@
 #include "sgeobj/cull/sge_host_SH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
 #include "sgeobj/cull/sge_host_HS_L.h"
+#include "sgeobj/cull/sge_host_RESL_L.h"
 
 /* 
  * sge standard load value names
@@ -92,7 +93,7 @@ bool
 host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry);
 
 bool
-host_is_centry_a_complex_value(const lListElem *this_elem, 
+host_is_centry_a_complex_value(const lListElem *this_elem,
                                const lListElem *centry);
 
 lListElem *
@@ -101,5 +102,8 @@ host_list_locate(const lList *this_list, const char *hostname);
 bool
 host_list_merge(lList *this_list);
 
-bool 
+bool
 host_merge(lListElem *host, const lListElem *global_host);
+
+int
+host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);

@@ -56,8 +56,7 @@ static bool range_is_overlapping(const lListElem *range1,
 
 /* we keep a descending sorted list of non overlapping ranges */
 /* MT-NOTE: expand_range_list() is MT safe */
-static void expand_range_list(lListElem *r, lList **rl)
-{
+static void expand_range_list(lListElem *r, lList **rl) {
    u_long32 rmin, rmax, rstep;
    lListElem *ep;
    lListElem *rr;
@@ -197,8 +196,7 @@ static void expand_range_list(lListElem *r, lList **rl)
 *  SEE ALSO
 *     sgeobj/range/RN_Type 
 *******************************************************************************/
-void range_correct_end(lListElem *this_range)
-{
+void range_correct_end(lListElem *this_range) {
    DENTER(RANGE_LAYER);
    if (this_range != nullptr) {
       u_long32 start, end, step;
@@ -251,8 +249,7 @@ void range_correct_end(lListElem *this_range)
 *     MT-NOTE: range_is_overlapping() is MT safe
 *******************************************************************************/
 static bool range_is_overlapping(const lListElem *this_elem,
-                                 const lListElem *range)
-{
+                                 const lListElem *range) {
    bool ret = false;
 
    DENTER(RANGE_LAYER);
@@ -292,8 +289,7 @@ static bool range_is_overlapping(const lListElem *this_elem,
 *  SEE ALSO
 *     sgeobj/range/RN_Type 
 *******************************************************************************/
-void range_list_initialize(lList **this_list, lList **answer_list)
-{
+void range_list_initialize(lList **this_list, lList **answer_list) {
    DENTER(RANGE_LAYER);
    if (this_list != nullptr) {
       if (*this_list != nullptr) {
@@ -347,8 +343,7 @@ void range_list_initialize(lList **this_list, lList **answer_list)
 *  NOTE
 *     MT-NOTE: range_list_get_number_of_ids() is MT safe
 *******************************************************************************/
-u_long32 range_list_get_number_of_ids(const lList *this_list)
-{
+u_long32 range_list_get_number_of_ids(const lList *this_list) {
    u_long32 ret = 0;
    const lListElem *range;
 
@@ -382,8 +377,7 @@ u_long32 range_list_get_number_of_ids(const lList *this_list)
 *  SEE ALSO
 *     sgeobj/range/RN_Type 
 *******************************************************************************/
-u_long32 range_get_number_of_ids(const lListElem *this_elem)
-{
+u_long32 range_get_number_of_ids(const lListElem *this_elem) {
    u_long32 start, end, step, ret;
 
    DENTER(RANGE_LAYER);
@@ -423,8 +417,7 @@ u_long32 range_get_number_of_ids(const lListElem *this_elem)
 void
 range_list_print_to_string(const lList *this_list,
                            dstring *string, bool ignore_step,
-                           bool comma_as_separator, bool print_always_as_range)
-{
+                           bool comma_as_separator, bool print_always_as_range) {
    DENTER(RANGE_LAYER);
    if (string != nullptr) {
       if (this_list != nullptr) {
@@ -434,7 +427,7 @@ range_list_print_to_string(const lList *this_list,
             u_long32 start, end, step;
 
             range_get_all_ids(range, &start, &end, &step);
-            range_to_dstring(start, end, step, string, ignore_step, 
+            range_to_dstring(start, end, step, string, ignore_step,
                              comma_as_separator, print_always_as_range);
          }
       } else {
@@ -473,8 +466,7 @@ range_list_print_to_string(const lList *this_list,
 *     MT-NOTE: range_list_get_first_id() is MT safe
 
 ******************************************************************************/
-u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
-{
+u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list) {
    u_long32 start = 0;
    const lListElem *range = nullptr;
 
@@ -516,8 +508,7 @@ u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 *     sgeobj/range/RN_Type 
 *     sgeobj/range/range_list_get_first_id()
 ******************************************************************************/
-u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list)
-{
+u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list) {
    u_long32 end = 0;
    const lListElem *range = nullptr;
 
@@ -554,8 +545,7 @@ u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list)
 *  NOTES
 *     MT-NOTES: range_list_get_average() is MT safe
 *******************************************************************************/
-double range_list_get_average(const lList *this_list, u_long32 upperbound)
-{
+double range_list_get_average(const lList *this_list, u_long32 upperbound) {
    const lListElem *range;
    double sum = 0.0;
    u_long32 id, min, max, step;
@@ -565,13 +555,13 @@ double range_list_get_average(const lList *this_list, u_long32 upperbound)
       range_get_all_ids(range, &min, &max, &step);
       if (upperbound != 0) {
          max = MIN(max, upperbound);
-      }   
-      for (id=min; id<=max; id+= step) {
+      }
+      for (id = min; id <= max; id += step) {
          sum += id;
          n++;
       }
    }
-   return (n > 0) ? (sum/n) : 0;
+   return (n > 0) ? (sum / n) : 0;
 }
 
 /******asgeobj/range/range_list_sort_uniq_compress() **************************
@@ -606,8 +596,7 @@ double range_list_get_average(const lList *this_list, u_long32 upperbound)
 *  NOTES
 *     MT-NOTE: range_list_sort_uniq_compress() is MT safe
 ******************************************************************************/
-void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool correct_end)
-{
+void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool correct_end) {
    DENTER(RANGE_LAYER);
    if (range_list) {
       lListElem *range1, *next_range1;
@@ -697,8 +686,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
 *  NOTES
 *     MT-NOTE: range_list_compress() is MT safe
 ******************************************************************************/
-void range_list_compress(lList *range_list)
-{
+void range_list_compress(lList *range_list) {
    DENTER(RANGE_LAYER);
    if (range_list != nullptr) {
       lListElem *range1 = nullptr;
@@ -774,8 +762,7 @@ void range_list_compress(lList *range_list)
 *  NOTES
 *     MT-NOTE: range_list_is_id_within() is MT safe
 *******************************************************************************/
-bool range_list_is_id_within(const lList *range_list, u_long32 id)
-{
+bool range_list_is_id_within(const lList *range_list, u_long32 id) {
    const lListElem *range = nullptr;
    bool ret = false;
 
@@ -807,8 +794,7 @@ bool range_list_is_id_within(const lList *range_list, u_long32 id)
 *  RESULT
 *     bool - true or false
 *******************************************************************************/
-bool range_list_containes_id_less_than(const lList *range_list, u_long32 id)
-{
+bool range_list_containes_id_less_than(const lList *range_list, u_long32 id) {
    const lListElem *range = nullptr;
    bool ret = false;
 
@@ -841,8 +827,7 @@ bool range_list_containes_id_less_than(const lList *range_list, u_long32 id)
 *  SEE ALSO
 *     sgeobj/range/RN_Type
 ******************************************************************************/
-bool range_list_is_empty(const lList *range_list)
-{
+bool range_list_is_empty(const lList *range_list) {
    return (range_list_get_number_of_ids(range_list) == 0 ? true : false);
 }
 
@@ -865,8 +850,7 @@ bool range_list_is_empty(const lList *range_list)
 *  RESULT
 *     bool - true or false
 ******************************************************************************/
-bool range_containes_id_less_than(const lListElem *range, u_long32 id)
-{
+bool range_containes_id_less_than(const lListElem *range, u_long32 id) {
    bool ret = false;
 
    DENTER(RANGE_LAYER);
@@ -904,8 +888,7 @@ bool range_containes_id_less_than(const lListElem *range, u_long32 id)
 *  NOTES
 *     MT-NOTE: range_is_id_within() is MT safe
 ******************************************************************************/
-bool range_is_id_within(const lListElem *range, u_long32 id)
-{
+bool range_is_id_within(const lListElem *range, u_long32 id) {
    bool ret = false;
 
    DENTER(RANGE_LAYER);
@@ -943,8 +926,7 @@ bool range_is_id_within(const lListElem *range, u_long32 id)
 *  SEE ALSO
 *     sgeobj/range/RN_Type 
 ******************************************************************************/
-void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id)
-{
+void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id) {
    lListElem *range = nullptr;
 
    DENTER(RANGE_LAYER);
@@ -1017,8 +999,7 @@ void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id)
 *     sgeobj/range/RN_Type 
 ******************************************************************************/
 void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
-                                 lList **range_list2, u_long32 n)
-{
+                                 lList **range_list2, u_long32 n) {
    DENTER(RANGE_LAYER);
    if (range_list && *range_list && range_list2) {
       const lListElem *range = nullptr;
@@ -1079,8 +1060,7 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
 *  NOTES
 *     MT-NOTE: range_list_insert_id() is MT safe
 ******************************************************************************/
-void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
-{
+void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id) {
    lListElem *range, *prev_range, *next_range;
    int inserted = 0;
 
@@ -1208,8 +1188,7 @@ void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
 *     MT-NOTE: range_get_all_ids() is MT safe
 ******************************************************************************/
 void range_get_all_ids(const lListElem *range, u_long32 *min, u_long32 *max,
-                       u_long32 *step)
-{
+                       u_long32 *step) {
    DENTER(RANGE_LAYER);
    if (min != nullptr && max != nullptr && step != nullptr) {
       if (range != nullptr) {
@@ -1250,8 +1229,7 @@ void range_get_all_ids(const lListElem *range, u_long32 *min, u_long32 *max,
 *     MT-NOTE: range_set_all_ids() is MT safe
 ******************************************************************************/
 void range_set_all_ids(lListElem *range, u_long32 min, u_long32 max,
-                       u_long32 step)
-{
+                       u_long32 step) {
    DENTER(RANGE_LAYER);
    if (range != nullptr) {
       lSetUlong(range, RN_min, min);
@@ -1295,8 +1273,7 @@ void range_set_all_ids(lListElem *range, u_long32 min, u_long32 max,
 void range_list_calculate_union_set(lList **range_list,
                                     lList **answer_list,
                                     const lList *range_list1,
-                                    const lList *range_list2)
-{
+                                    const lList *range_list2) {
    DENTER(RANGE_LAYER);
    if (range_list != nullptr && (range_list1 != nullptr || range_list2 != nullptr)) {
       lFreeList(range_list);
@@ -1333,7 +1310,7 @@ void range_list_calculate_union_set(lList **range_list,
    }
    DRETURN_VOID;
 
- error:
+   error:
    lFreeList(range_list);
    answer_list_add(answer_list, "unable to calculate union set",
                    STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -1366,8 +1343,7 @@ void range_list_calculate_union_set(lList **range_list,
 void range_list_calculate_difference_set(lList **range_list,
                                          lList **answer_list,
                                          const lList *range_list1,
-                                         const lList *range_list2)
-{
+                                         const lList *range_list2) {
    DENTER(RANGE_LAYER);
    if (range_list != nullptr && range_list1 != nullptr) {
       lFreeList(range_list);
@@ -1400,7 +1376,7 @@ void range_list_calculate_difference_set(lList **range_list,
    }
    DRETURN_VOID;
 
- error:
+   error:
    lFreeList(range_list);
    answer_list_add(answer_list, "unable to calculate union set",
                    STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -1433,8 +1409,7 @@ void range_list_calculate_difference_set(lList **range_list,
 void range_list_calculate_intersection_set(lList **range_list,
                                            lList **answer_list,
                                            const lList *range_list1,
-                                           const lList *range_list2)
-{
+                                           const lList *range_list2) {
    DENTER(RANGE_LAYER);
    lFreeList(range_list);
    if (range_list1 && range_list2) {
@@ -1467,7 +1442,7 @@ void range_list_calculate_intersection_set(lList **range_list,
    }
    DRETURN_VOID;
 
- error:
+   error:
    lFreeList(range_list);
    answer_list_add(answer_list, "unable to calculate intersection set",
                    STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -1500,11 +1475,10 @@ void range_list_calculate_intersection_set(lList **range_list,
 *     sgeobj/range/RN_Type 
 ******************************************************************************/
 void range_to_dstring(u_long32 start, u_long32 end, int step,
-                      dstring * dyn_taskrange_str, int ignore_step,
-                      bool use_comma_as_separator, bool print_always_as_range)
-{
+                      dstring *dyn_taskrange_str, int ignore_step,
+                      bool use_comma_as_separator, bool print_always_as_range) {
    char tail[256] = "";
-   char to_char = '-'; 
+   char to_char = '-';
    char step_char = ':';
 
    if (use_comma_as_separator) {
@@ -1535,8 +1509,7 @@ void range_to_dstring(u_long32 start, u_long32 end, int step,
 void range_parse_from_string(lListElem **range,
                              lList **answer_list,
                              const char *rstr,
-                             int step_allowed, int inf_allowed)
-{
+                             int step_allowed, int inf_allowed) {
    const char *old_str;
    char *dptr;
    u_long32 rmin, rmax, ldummy, step = 1;
@@ -1608,8 +1581,8 @@ void range_parse_from_string(lListElem **range,
       } else {
          /* rstr should be "<n>-..." */
          if (!
-             (*dptr == '-' || isdigit((int) *(dptr + 1)) || *(dptr + 1) == '\0'
-              || (step_allowed && *dptr == ':'))) {
+                 (*dptr == '-' || isdigit((int) *(dptr + 1)) || *(dptr + 1) == '\0'
+                  || (step_allowed && *dptr == ':'))) {
             /* ... but isn't */
             snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, old_str, dptr);
             answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -1651,12 +1624,12 @@ void range_parse_from_string(lListElem **range,
 
                if (step_allowed && *dptr && *dptr == ':') {
                   const double epsilon = 1.0E-12;
-                  double       dbldummy;
- 
+                  double dbldummy;
+
                   rstr = dptr + 1;
                   dbldummy = strtod(rstr, &dptr);
                   ldummy = dbldummy;
-                  
+
                   if (dbldummy > 0) {
                      if (( dbldummy - ldummy > epsilon) ||
                         ((ldummy == 0) && (rstr == dptr))) {
@@ -1681,7 +1654,7 @@ void range_parse_from_string(lListElem **range,
                      *range = nullptr;
                      DRETURN_VOID;
                   }
-                   
+
                   if (*dptr != '\0') {
                      snprintf(msg, sizeof(msg), MSG_GDI_RANGESPECIFIERWITHUNKNOWNTRAILER_SS, rstr, dptr);
                      answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -1715,6 +1688,35 @@ void range_parse_from_string(lListElem **range,
    DRETURN_VOID;
 }
 
+/**
+ * @brief parse range string and return counters
+ *
+ * @param[in] value        string containing range specification
+ * @param[in] step_allowed may the range specification contain a step?
+ * @param[out] start       range start
+ * @param[out] end         range end
+ * @param[out] step        range step size
+ * @return true if the input string is a range, else false
+ */
+bool
+range_parse_get_ids(const char *value, int step_allowed, u_long32 &start, u_long32 &end, u_long32 &step) {
+   bool ret = true;
+   lListElem *range = nullptr;
+
+   range_parse_from_string(&range, nullptr, value, step_allowed, 0);
+   if (range == nullptr) {
+      // string didn't contain a valid range
+      ret = false;
+   } else {
+      start = lGetUlong(range, RN_min);
+      end = lGetUlong(range, RN_max);
+      step = lGetUlong(range, RN_step);
+   }
+
+   lFreeElem(&range);
+   return ret;
+}
+
 /* 
 
    converts a range string into a range cull list
@@ -1726,11 +1728,10 @@ void range_parse_from_string(lListElem **range,
 
    MT-NOTE: range_list_parse_from_string() is MT safe
 */
-bool 
-range_list_parse_from_string(lList **this_list, lList **answer_list, 
-                             const char *string, bool just_parse, 
-                             bool step_allowed, bool inf_allowed)
-{
+bool
+range_list_parse_from_string(lList **this_list, lList **answer_list,
+                             const char *string, bool just_parse,
+                             bool step_allowed, bool inf_allowed) {
    const char *s;
    lListElem *range = nullptr;
    lList *range_list = nullptr;
@@ -1755,7 +1756,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
          DRETURN(false);
       }
 
-      range_parse_from_string(&range, answer_list, s, 
+      range_parse_from_string(&range, answer_list, s,
                               step_allowed, inf_allowed);
 
       if (range == nullptr) {
@@ -1780,7 +1781,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
 
       first = false;
    }
-   
+
    sge_free_saved_vars(context);
 
    DRETURN(true);

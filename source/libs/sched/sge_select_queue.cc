@@ -2025,6 +2025,7 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
    DENTER(TOP_LAYER);
 
    switch (type) {
+      case TYPE_RSMAP:
       case TYPE_INT:
       case TYPE_TIM:
       case TYPE_MEM:
@@ -4598,6 +4599,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
 
          /* get the needed values. If the load value is not a number, ignore it */
          switch (type) {
+            case TYPE_RSMAP:
             case TYPE_INT:
             case TYPE_TIM:
             case TYPE_MEM:
@@ -5706,14 +5708,20 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          } else {
             *start_time = when;
          }
+
          ret = DISPATCH_OK;
 
+         /* DG TODO  RSMAP host consumable: when it is ok, check if specific ID
+          * is also available, if not then return DISPATCH_NOT_AT_TIME ...
+          */
       }
+
       DPRINTF(("\t\t%s: time_by_slots: %d of %s=%f can be served %s\n",
             object_name, slots, attrname, request,
                ret == DISPATCH_OK ? "at time" : "never"));
 
       lFreeElem(&cplx_el);
+
       DRETURN(ret);
    }
 

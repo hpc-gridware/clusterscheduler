@@ -40,6 +40,7 @@ add_executable(
       sge_sched_prepare_data.cc
       sge_sched_process_events.cc
       sge_sched_thread.cc
+      sge_sched_thread_rsmap.cc
       sge_sharetree_qmaster.cc
       sge_subordinate_qmaster.cc
       sge_task_depend.cc
@@ -99,7 +100,7 @@ add_executable(test_sge_calendar test_sge_calendar.cc
       configuration_qmaster.cc sge_userset_qmaster.cc sge_resource_quota_qmaster.cc sge_sharetree_qmaster.cc
       sge_c_gdi.cc sge_pe_qmaster.cc sge_ckpt_qmaster.cc sge_hgroup_qmaster.cc sge_thread_scheduler.cc
       sge_qmaster_threads.cc sge_sched_job_category.cc sge_sched_process_events.cc sge_sched_prepare_data.cc
-      sge_sched_thread.cc sge_sched_order.cc sge_thread_main.cc sched_conf_qmaster.cc sge_centry_qmaster.cc
+      sge_sched_thread.cc sge_sched_thread_rsmap.cc sge_sched_order.cc sge_thread_main.cc sched_conf_qmaster.cc sge_centry_qmaster.cc
       sge_follow.cc sge_job_verify.cc setup_qmaster.cc sge_manop_qmaster.cc sge_thread_signaler.cc
       ../../common/execution_states.cc ../../common/sge_options.cc ../../common/sig_handlers.cc ../../common/usage.cc)
 target_include_directories(test_sge_calendar PRIVATE "./")

@@ -61,6 +61,9 @@
 *    SGE_LIST(OR_queuelist) - Queue Instances
 *    List of queue instances a job has been scheduled to
 *
+*    SGE_LIST(OR_granted_resources_list) - Granted Resources List
+*    List of RSMAP (future: and resource) requests.
+*
 *    SGE_DOUBLE(OR_ticket) - Number of Tickets
 *    Number of tickets a job got during scheduling.
 *
@@ -92,6 +95,7 @@ enum {
    OR_ja_task_number,
    OR_job_version,
    OR_queuelist,
+   OR_granted_resources_list,
    OR_ticket,
    OR_joker,
    OR_pe,
@@ -105,6 +109,7 @@ LISTDEF(OR_Type)
    SGE_ULONG(OR_ja_task_number, CULL_DEFAULT)
    SGE_ULONG(OR_job_version, CULL_DEFAULT)
    SGE_LIST(OR_queuelist, OQ_Type, CULL_DEFAULT)
+   SGE_LIST(OR_granted_resources_list, GRU_Type, CULL_DEFAULT)
    SGE_DOUBLE(OR_ticket, CULL_DEFAULT)
    SGE_LIST(OR_joker, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_STRING(OR_pe, CULL_DEFAULT)
@@ -118,6 +123,7 @@ NAMEDEF(ORN)
    NAME("OR_ja_task_number")
    NAME("OR_job_version")
    NAME("OR_queuelist")
+   NAME("OR_granted_resources_list")
    NAME("OR_ticket")
    NAME("OR_joker")
    NAME("OR_pe")

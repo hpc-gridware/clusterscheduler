@@ -94,6 +94,18 @@
 					"name":	"SPOOL_SUBLIST"
 				}]
 		}, {
+			"name":	"granted_resources_list",
+			"summary":	"Granted Resources",
+			"description":	[{
+					"line":	"List of granted resources, currently these are granted RSMAPs only."
+				}],
+			"type":	"lListT",
+			"subClassName":	"GrantedResource",
+			"subCullPrefix":	"GRU",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
 			"name":	"master_queue",
 			"summary":	"@todo add summary",
 			"description":	[{

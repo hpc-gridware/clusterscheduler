@@ -38,18 +38,18 @@
 lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id);
 
-void ja_task_list_print_to_string(const lList *ja_task_list, 
+void ja_task_list_print_to_string(const lList *ja_task_list,
                                   dstring *range_string);
 
-lList* ja_task_list_split_group(lList **ja_task_list);
+lList *ja_task_list_split_group(lList **ja_task_list);
 
-bool 
+bool
 ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id);
 
-bool 
+bool
 ja_task_clear_finished_pe_tasks(lListElem *ja_task);
 
-int sge_parse_jobtasks(lList **lp, lListElem **idp, const char *str, 
+int sge_parse_jobtasks(lList **lp, lListElem **idp, const char *str,
                        lList **alpp, bool include_names, const lList *arrayDefList);
 
 bool
@@ -72,3 +72,6 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 
 bool
 ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list);
+
+int
+ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slots, bool *just_check);

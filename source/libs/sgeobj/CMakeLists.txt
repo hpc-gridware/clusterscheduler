@@ -12,6 +12,7 @@ set(LIBRARY_SOURCES
       sge_binding.cc
       sge_calendar.cc
       sge_centry.cc
+      sge_centry_rsmap.cc
       sge_ckpt.cc
       sge_conf.cc
       sge_cqueue.cc
@@ -21,6 +22,7 @@ set(LIBRARY_SOURCES
       sge_eval_expression.cc
       sge_event.cc
       sge_feature.cc
+      sge_grantedres.cc
       sge_hgroup.cc
       sge_host.cc
       sge_href.cc

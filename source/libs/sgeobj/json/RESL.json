@@ -1,0 +1,32 @@
+{
+	"className":	"ResourceList",
+	"summary":	"Resource List",
+	"description":	[{
+			"line":	"Consumable Resource Map Resource List."
+			}, { "line":	"Holds all consumable resource map identifiers"
+			}, { "line":	"of a particular job / array task."
+		}],
+	"cullPrefix":	"RESL",
+	"attributes":	[{
+			"name":	"value",
+			"summary":	"Value",
+			"description":	[{
+					"line":	"The ID value of the RSMAP consumable complex."
+               }, { "line": "@todo Is it the primary key? Would it be worth to have an index on it?"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"amount",
+			"summary":	"Resource Amount",
+			"description":	[{
+					"line":	"The number of resources with this name."
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}]
+}

@@ -37,8 +37,8 @@
 
 /* responsible for all debitations that have to be done */
 int debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist, order_t *orders,
-    bool now, const char *type, bool for_job_scheduling);
+                        bool now, const char *type, bool for_job_scheduling);
 
 int
-debit_host_consumable(lListElem *jep, lListElem *hep, const lList *complex_list, int slots,
-                      bool is_master_task, bool *just_check);
+debit_host_consumable(const lListElem *jep, const lListElem *jatep, lListElem *hep,
+                      const lList *complex_list, int slots, bool is_master_task, bool *just_check);

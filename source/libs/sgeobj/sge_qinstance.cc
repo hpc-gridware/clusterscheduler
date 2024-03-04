@@ -94,8 +94,7 @@
 *******************************************************************************/
 lListElem *
 qinstance_list_locate(const lList *this_list, const char *hostname,
-                      const char *cqueue_name) 
-{
+                      const char *cqueue_name) {
    lListElem *ret = nullptr;
 
    if (cqueue_name == nullptr) {
@@ -107,9 +106,9 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
 
          /* use qinstance expression */
          if (!sge_eval_expression(TYPE_CSTR, cqueue_name, qname, nullptr)) {
-           if (!sge_eval_expression(TYPE_HOST, hostname, hname, nullptr))  {
-             break;
-           }
+            if (!sge_eval_expression(TYPE_HOST, hostname, hname, nullptr)) {
+               break;
+            }
          }
       }
    }
@@ -139,8 +138,7 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
 *     MT-NOTE: qinstance_list_locate2() is MT safe 
 *******************************************************************************/
 lListElem *
-qinstance_list_locate2(const lList *queue_list, const char *full_name)
-{
+qinstance_list_locate2(const lList *queue_list, const char *full_name) {
    return lGetElemStrRW(queue_list, QU_full_name, full_name);
 }
 
@@ -167,15 +165,14 @@ qinstance_list_locate2(const lList *queue_list, const char *full_name)
 *     MT-NOTE: qinstance_get_name() is MT safe 
 *******************************************************************************/
 const char *
-qinstance_get_name(const lListElem *this_elem, dstring *string_buffer)
-{
+qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
    const char *ret = nullptr;
 
    if (this_elem != nullptr && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
                                 lGetString(this_elem, QU_qname),
                                 lGetHost(this_elem, QU_qhostname));
-   } 
+   }
    return ret;
 }
 
@@ -201,8 +198,7 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer)
 *     MT-NOTE: qinstance_list_set_tag() is MT safe 
 *******************************************************************************/
 void
-qinstance_list_set_tag(lList *this_list, u_long32 tag_value)
-{
+qinstance_list_set_tag(lList *this_list, u_long32 tag_value) {
    if (this_list != nullptr) {
       lListElem *qinstance = nullptr;
 
@@ -232,8 +228,7 @@ qinstance_list_set_tag(lList *this_list, u_long32 tag_value)
 *     MT-NOTE: qinstance_increase_qversion() is MT safe 
 *******************************************************************************/
 void
-qinstance_increase_qversion(lListElem *this_elem)
-{
+qinstance_increase_qversion(lListElem *this_elem) {
    DENTER(TOP_LAYER);
    lAddUlong(this_elem, QU_version, 1);
    DRETURN_VOID;
@@ -258,9 +253,9 @@ qinstance_increase_qversion(lListElem *this_elem)
 *  RESULT
 *     bool - true, if the user is owner, else false
 ******************************************************************************/
-bool 
-qinstance_check_owner(const lListElem *this_elem, const char *user_name, const lList *master_manager_list, const lList *master_operator_list)
-{
+bool
+qinstance_check_owner(const lListElem *this_elem, const char *user_name, const lList *master_manager_list,
+                      const lList *master_operator_list) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -304,8 +299,7 @@ qinstance_check_owner(const lListElem *this_elem, const char *user_name, const l
 *     MT-NOTE: qinstance_is_pe_referenced() is MT safe 
 *******************************************************************************/
 bool
-qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe)
-{
+qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
    bool ret = false;
    const lListElem *re_ref_elem;
 
@@ -344,9 +338,8 @@ qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe)
 *     MT-NOTE: qinstance_is_calendar_referenced() is MT safe 
 *******************************************************************************/
 bool
-qinstance_is_calendar_referenced(const lListElem *this_elem, 
-                                 const lListElem *calendar)
-{
+qinstance_is_calendar_referenced(const lListElem *this_elem,
+                                 const lListElem *calendar) {
    bool ret = false;
    const char *queue_calendar = nullptr;
 
@@ -384,8 +377,7 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
 *     MT-NOTE: qinstance_is_a_pe_referenced() is MT safe 
 *******************************************************************************/
 bool
-qinstance_is_a_pe_referenced(const lListElem *this_elem)
-{
+qinstance_is_a_pe_referenced(const lListElem *this_elem) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -421,8 +413,7 @@ qinstance_is_a_pe_referenced(const lListElem *this_elem)
 *     MT-NOTE: qinstance_is_ckpt_referenced() is MT safe 
 *******************************************************************************/
 bool
-qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt)
-{
+qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) {
    bool ret = false;
    const lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
 
@@ -455,8 +446,7 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt)
 *     MT-NOTE: qinstance_is_a_ckpt_referenced() is MT safe 
 *******************************************************************************/
 bool
-qinstance_is_a_ckpt_referenced(const lListElem *this_elem)
-{
+qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -464,7 +454,7 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem)
       ret = true;
    }
    DRETURN(ret);
-} 
+}
 
 /****** sgeobj/qinstance/qinstance_is_centry_a_complex_value() ****************
 *  NAME
@@ -491,8 +481,7 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem)
 *******************************************************************************/
 bool
 qinstance_is_centry_a_complex_value(const lListElem *this_elem,
-                                    const lListElem *centry)
-{
+                                    const lListElem *centry) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -501,7 +490,7 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
       const lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
       const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
 
-      if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr)==0) {
+      if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
          ret = true;
       }
    }
@@ -540,8 +529,7 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
 *******************************************************************************/
 bool
 qinstance_list_find_matching(const lList *this_list, lList **answer_list,
-                             const char *hostname_pattern, lList **qref_list)
-{
+                             const char *hostname_pattern, lList **qref_list) {
    bool ret = true;
 
    DENTER(QINSTANCE_LAYER);
@@ -561,7 +549,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
       for_each_ep(qinstance, this_list) {
          const char *hostname = lGetHost(qinstance, QU_qhostname);
          /* use qinstance expression */
-         if (!sge_eval_expression(TYPE_HOST, hostname_pattern, hostname, answer_list)) { 
+         if (!sge_eval_expression(TYPE_HOST, hostname_pattern, hostname, answer_list)) {
             lAddElemStr(qref_list, QR_name, lGetString(qinstance, QU_full_name), QR_Type);
          }
       }
@@ -627,8 +615,7 @@ qinstance_slots_used(const lListElem *this_elem)
 *     MT-NOTE: qinstance_slots_reserved() is MT safe 
 *******************************************************************************/
 u_long32
-qinstance_slots_reserved(const lListElem *this_elem)
-{
+qinstance_slots_reserved(const lListElem *this_elem) {
    u_long32 ret = 0;
    const lListElem *slots;
    const lListElem *utilized;
@@ -686,7 +673,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *  SYNOPSIS
 *     int
 *     qinstance_debit_consumable(lListElem *qep, 
-*                                lListElem *jep, 
+*                                const lListElem *jep,
 *                                lList *centry_list,
 *                                int slots)
 *
@@ -713,12 +700,11 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *  NOTES
 *     MT-NOTE: qinstance_debit_consumable() is MT safe 
 *******************************************************************************/
-int 
-qinstance_debit_consumable(lListElem *qep, lListElem *jep, const lList *centry_list, 
-                           int slots, bool is_master_task, bool *just_check)
-{
+int
+qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list,
+                           int slots, bool is_master_task, bool *just_check) {
    return rc_debit_consumable(jep, qep, centry_list, slots,
-                              QU_consumable_config_list, 
+                              QU_consumable_config_list,
                               QU_resource_utilization,
                               lGetString(qep, QU_qname), is_master_task, just_check);
 }
@@ -749,8 +735,7 @@ qinstance_debit_consumable(lListElem *qep, lListElem *jep, const lList *centry_l
 *     MT-NOTE: qinstance_message_add() is MT safe 
 *******************************************************************************/
 bool
-qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message)
-{
+qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -783,8 +768,7 @@ qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message)
 *     MT-NOTE: qinstance_message_trash_all_of_type_X() is MT safe 
 *******************************************************************************/
 bool
-qinstance_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
-{
+qinstance_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -815,14 +799,13 @@ qinstance_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
 *     MT-NOTE: qinstance_set_full_name() is MT safe 
 *******************************************************************************/
 void
-qinstance_set_full_name(lListElem *this_elem) 
-{
+qinstance_set_full_name(lListElem *this_elem) {
    dstring buffer = DSTRING_INIT;
    const char *cqueue_name = lGetString(this_elem, QU_qname);
    const char *hostname = lGetHost(this_elem, QU_qhostname);
 
    sge_dstring_sprintf(&buffer, "%s@%s", cqueue_name, hostname);
-   lSetString(this_elem, QU_full_name, 
+   lSetString(this_elem, QU_full_name,
               sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
 }
@@ -851,8 +834,8 @@ qinstance_set_full_name(lListElem *this_elem)
 *     MT-NOTE: qinstance_validate() is MT safe 
 *******************************************************************************/
 bool
-qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list, const lList *master_centry_list)
-{
+qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
+                   const lList *master_centry_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -861,20 +844,21 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    if (lGetString(this_elem, QU_full_name) == nullptr) {
       qinstance_set_full_name(this_elem);
    }
-   
+
    /* handle slots from now on as a consumble attribute of queue */
-   qinstance_set_conf_slots_used(this_elem); 
+   qinstance_set_conf_slots_used(this_elem);
 
    /* remove all queue message, which are regenerated during the unspooling
       the queue */
-   qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);   
+   qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);
 
    /* setup actual list of queue */
    qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, nullptr);
 
    /* init double values of consumable configuration */
-   if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true, false, true) != 0) {
-        ret = false; 
+   if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true,
+                                false, true) != 0) {
+      ret = false;
    }
 
    if (ret) {
@@ -883,7 +867,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
           ensure_attrib_available(nullptr, this_elem, QU_consumable_config_list, master_centry_list)) {
          ret = false;
       }
-   } 
+   }
 
    /* qinstance state */
    if (ret) {
@@ -891,18 +875,18 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
       qinstance_state_set_cal_disabled(this_elem, false);
       qinstance_state_set_cal_suspended(this_elem, false);
       qinstance_set_slots_used(this_elem, 0);
-      
-      if (host_list_locate(master_exechost_list, 
+
+      if (host_list_locate(master_exechost_list,
                            lGetHost(this_elem, QU_qhostname)) == nullptr) {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                 ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
                                  MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS,
-                                 lGetString(this_elem, QU_qname), 
+                                 lGetString(this_elem, QU_qname),
                                  lGetHost(this_elem, QU_qhostname));
          ret = false;
       }
    }
-   
+
    DRETURN(ret);
 }
 
@@ -930,8 +914,8 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
 *     MT-NOTE: qinstance_list_validate() is MT safe 
 *******************************************************************************/
 bool
-qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list, const lList *master_centry_list)
-{
+qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
+                        const lList *master_centry_list) {
    bool ret = true;
    lListElem *qinstance;
 
@@ -996,11 +980,10 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
 *     consumable resources of the 'ep' object has not changed.
 ******************************************************************************/
 int
-rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
+rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list,
                     int slots, int config_nm, int actual_nm,
                     const char *obj_name, bool is_master_task,
-                    bool *just_check)
-{
+                    bool *just_check) {
    lListElem *cr, *dcep;
    const lListElem *cr_config;
    double dval;
@@ -1054,13 +1037,13 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
          /* RUE_utilized_now is implicitly set to zero */
       }
 
-      if (jep) {
+      if (jep != nullptr) {
          bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);
          if (tmp_ret && dval != 0.0) {
             if (just_check == nullptr) {
                DPRINTF(("debiting %f of %s on %s %s for %d slots\n", dval, name,
-                        (config_nm==QU_consumable_config_list)?"queue":"host",
-                        obj_name, debit_slots));
+                       (config_nm == QU_consumable_config_list) ? "queue" : "host",
+                       obj_name, debit_slots));
                lAddDouble(cr, RUE_utilized_now, debit_slots * dval);
             } else {
                double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
@@ -1090,8 +1073,8 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
             dval = 1.0;
             if (just_check == nullptr) {
                DPRINTF(("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", dval, name,
-                        (config_nm==QU_consumable_config_list)?"queue":"host",
-                        obj_name, debit_slots));
+                       (config_nm == QU_consumable_config_list) ? "queue" : "host",
+                       obj_name, debit_slots));
                lAddDouble(cr, RUE_utilized_now_nonexclusive, debit_slots * dval);
             } else {
                double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
@@ -1153,14 +1136,13 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
 *  SEE ALSO
 *     sge_qinstance/qinstance_verify()
 *******************************************************************************/
-bool 
-qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list)
-{
+bool
+qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) {
 
    DENTER(TOP_LAYER);
 
    if (queue_list == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       DRETURN(false);
    } else {
@@ -1198,15 +1180,14 @@ qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list)
 *  NOTES
 *     MT-NOTE: qinstance_verify() is MT safe 
 *******************************************************************************/
-bool 
-qinstance_verify(const lListElem *qep, lList **answer_list)
-{
+bool
+qinstance_verify(const lListElem *qep, lList **answer_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
    if (qep == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
    }
@@ -1254,9 +1235,8 @@ qinstance_verify(const lListElem *qep, lList **answer_list)
 *  NOTES
 *     MT-NOTE: qinstance_verify_full_name() is MT safe 
 *******************************************************************************/
-bool 
-qinstance_verify_full_name(lList **answer_list, const char *full_name)
-{
+bool
+qinstance_verify_full_name(lList **answer_list, const char *full_name) {
    bool ret = true;
 
    dstring cqueue_name = DSTRING_INIT;
@@ -1264,25 +1244,25 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name)
    bool has_hostname, has_domain;
 
    if (full_name == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALID_QINSTANCE_NAME_S, "<null>");
       ret = false;
    }
 
    /* split the queue instance name and verify its components */
    if (ret) {
-      if (!cqueue_name_split(full_name, &cqueue_name, &host_domain, 
+      if (!cqueue_name_split(full_name, &cqueue_name, &host_domain,
                              &has_hostname, &has_domain)) {
-         /* report syntax error */                    
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                 MSG_INVALID_QINSTANCE_NAME_S, full_name);                    
+         /* report syntax error */
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_INVALID_QINSTANCE_NAME_S, full_name);
          ret = false;
       }
    }
 
    /* the cqueue name */
    if (ret) {
-      if (verify_str_key(answer_list, sge_dstring_get_string(&cqueue_name), 
+      if (verify_str_key(answer_list, sge_dstring_get_string(&cqueue_name),
                          MAX_VERIFY_STRING, "cluster queue", KEY_TABLE) != STATUS_OK) {
          ret = false;
       }
@@ -1293,12 +1273,12 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name)
       if (has_hostname) {
          ret = verify_host_name(answer_list, sge_dstring_get_string(&host_domain));
       } else if (has_domain) {
-         if (verify_str_key(answer_list, sge_dstring_get_string(&host_domain) + 1, 
+         if (verify_str_key(answer_list, sge_dstring_get_string(&host_domain) + 1,
                             MAX_VERIFY_STRING, "host domain", KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_INVALID_QINSTANCE_NAME_S, full_name);
          ret = false;
       }
@@ -1331,9 +1311,8 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name)
 *  NOTES
 *     MT-NOTE: qinstance_set_error() is MT safe 
 *******************************************************************************/
-void 
-qinstance_set_error(lListElem *qinstance, u_long32 type, const char *message, bool set_error)
-{
+void
+qinstance_set_error(lListElem *qinstance, u_long32 type, const char *message, bool set_error) {
    qinstance_set_state(qinstance, set_error, type);
    if (set_error) {
       qinstance_message_add(qinstance, type, message);
