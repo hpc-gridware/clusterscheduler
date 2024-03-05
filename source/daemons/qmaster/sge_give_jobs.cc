@@ -1326,7 +1326,7 @@ sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit
       /* JR_usage gets cleared in the process of cleaning up a finished job.
        * It's contents get put into JAT_usage_list and eventually added to
        * JAT_usage_list.  In the JAPI, however, it would be ugly to have
-       * to go picking through the Master_Job_List to find the accounting data.
+       * to go picking through the master job list to find the accounting data.
        * So instead we pick through it here and stick it back in JR_usage. */
 
       lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
@@ -1793,7 +1793,7 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
        * Create zombie job list if it does not exist
        */
       if (*master_zombie_list == nullptr) {
-         *master_zombie_list = lCreateList("Master_Zombie_List", JB_Type);
+         *master_zombie_list = lCreateList("master zombie job list", JB_Type);
       }
 
       /*

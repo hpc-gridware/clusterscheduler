@@ -103,8 +103,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, 
-                         nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
    
    while(!shut_me_down) {

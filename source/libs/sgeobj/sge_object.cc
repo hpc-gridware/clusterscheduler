@@ -96,48 +96,44 @@ static lList *Master_Config_List = nullptr;
 /* One entry per event type */
 static object_description object_base[SGE_TYPE_ALL] = {
    /* master list                  set function             name                 descr      key               */
-   { &Master_Adminhost_List,       nullptr,                 "ADMINHOST",         AH_Type,   AH_name           },
-   { &Master_Calendar_List,        nullptr,                 "CALENDAR",          CAL_Type,  CAL_name          },
-   { &Master_Ckpt_List,            nullptr,                 "CKPT",              CK_Type,   CK_name           },
-   { &Master_Config_List,          nullptr,                 "CONFIG",            CONF_Type, CONF_name         },
-   { nullptr,                      nullptr,                 "GLOBAL_CONFIG",     nullptr,   NoName            },
-   { &Master_Exechost_List,        nullptr,                 "EXECHOST",          EH_Type,   EH_name           },
-   { nullptr,                      nullptr,                 "JATASK",            JAT_Type,  JAT_task_number   },
-   { nullptr,                      nullptr,                 "PETASK",            PET_Type,  PET_id            },
-   { &Master_Job_List,             nullptr,                 "JOB",               JB_Type,   JB_job_number     },
-   { &Master_Job_Schedd_Info_List, nullptr,                 "JOB_SCHEDD_INFO",   SME_Type,  NoName            },
-   { &Master_Manager_List,         nullptr,                 "MANAGER",           UM_Type,   UM_name           },
-   { &Master_Operator_List,        nullptr,                 "OPERATOR",          UO_Type,   UO_name           },
-   { &Master_Sharetree_List,       nullptr,                 "SHARETREE",         STN_Type,  STN_name          },
-   { &Master_Pe_List,              nullptr,                 "PE",                PE_Type,   PE_name           },
-   { &Master_Project_List,         nullptr,                 "PROJECT",           PR_Type,   PR_name           },
-   { &Master_CQueue_List,          nullptr,                 "CQUEUE",            CQ_Type,   CQ_name           },
-   { nullptr,                      nullptr,                 "QINSTANCE",         QU_Type,   QU_qname          },
-   { &Master_SchedulerConfig_List, sconf_validate_config_,  "SCHEDD_CONF",       SC_Type,   NoName            },
-   { nullptr,                      nullptr,                 "SCHEDD_MONITOR",    nullptr,   NoName            },
-   { nullptr,                      nullptr,                 "SHUTDOWN",          nullptr,   NoName            },
-   { nullptr,                      nullptr,                 "QMASTER_GOES_DOWN", nullptr,   NoName            },
-   { &Master_Submithost_List,      nullptr,                 "SUBMITHOST",        SH_Type,   SH_name           },
-   { &Master_User_List,            nullptr,                 "USER",              UU_Type,   UU_name           },
-   { &Master_Userset_List,         nullptr,                 "USERSET",           US_Type,   US_name           },
-   { &Master_HGroup_List,          nullptr,                 "HOSTGROUP",         HGRP_Type, HGRP_name         },
-   { &Master_CEntry_List,          nullptr,                 "COMPLEX_ENTRY",     CE_Type,   CE_name           },
-   { &Master_Zombie_List,          nullptr,                 "ZOMBIE_JOBS",       JB_Type,   JB_job_number     },
-   { &Master_SUser_List,           nullptr,                 "SUBMIT_USER",       SU_Type,   SU_name           },
-   { &Master_RQS_List,             nullptr,                 "RQS",               RQS_Type,  RQS_name          },
-   { &Master_AR_List,              nullptr,                 "AR",                AR_Type,   AR_id             },
-   { nullptr,                      nullptr,                 "JOBSCRIPT",         STU_Type,  STU_name          },
+   { &Master_Adminhost_List,       "ADMINHOST",         AH_Type,   AH_name           },
+   { &Master_Calendar_List,        "CALENDAR",          CAL_Type,  CAL_name          },
+   { &Master_Ckpt_List,            "CKPT",              CK_Type,   CK_name           },
+   { &Master_Config_List,          "CONFIG",            CONF_Type, CONF_name         },
+   { nullptr,                      "GLOBAL_CONFIG",     nullptr,   NoName            },
+   { &Master_Exechost_List,        "EXECHOST",          EH_Type,   EH_name           },
+   { nullptr,                      "JATASK",            JAT_Type,  JAT_task_number   },
+   { nullptr,                      "PETASK",            PET_Type,  PET_id            },
+   { &Master_Job_List,             "JOB",               JB_Type,   JB_job_number     },
+   { &Master_Job_Schedd_Info_List, "JOB_SCHEDD_INFO",   SME_Type,  NoName            },
+   { &Master_Manager_List,         "MANAGER",           UM_Type,   UM_name           },
+   { &Master_Operator_List,        "OPERATOR",          UO_Type,   UO_name           },
+   { &Master_Sharetree_List,       "SHARETREE",         STN_Type,  STN_name          },
+   { &Master_Pe_List,              "PE",                PE_Type,   PE_name           },
+   { &Master_Project_List,         "PROJECT",           PR_Type,   PR_name           },
+   { &Master_CQueue_List,          "CQUEUE",            CQ_Type,   CQ_name           },
+   { nullptr,                      "QINSTANCE",         QU_Type,   QU_qname          },
+   { &Master_SchedulerConfig_List, "SCHEDD_CONF",       SC_Type,   NoName            },
+   { nullptr,                      "SCHEDD_MONITOR",    nullptr,   NoName            },
+   { nullptr,                      "SHUTDOWN",          nullptr,   NoName            },
+   { nullptr,                      "QMASTER_GOES_DOWN", nullptr,   NoName            },
+   { &Master_Submithost_List,      "SUBMITHOST",        SH_Type,   SH_name           },
+   { &Master_User_List,            "USER",              UU_Type,   UU_name           },
+   { &Master_Userset_List,         "USERSET",           US_Type,   US_name           },
+   { &Master_HGroup_List,          "HOSTGROUP",         HGRP_Type, HGRP_name         },
+   { &Master_CEntry_List,          "COMPLEX_ENTRY",     CE_Type,   CE_name           },
+   { &Master_Zombie_List,          "ZOMBIE_JOBS",       JB_Type,   JB_job_number     },
+   { &Master_SUser_List,           "SUBMIT_USER",       SU_Type,   SU_name           },
+   { &Master_RQS_List,             "RQS",               RQS_Type,  RQS_name          },
+   { &Master_AR_List,              "AR",                AR_Type,   AR_id             },
+   { nullptr,                      "JOBSCRIPT",         STU_Type,  STU_name          },
 };
-
-/*-------------------------*/
-/* multithreading support  */
-/*-------------------------*/
 
 /* contains the information for the thread local structure. */
 typedef struct {
-   bool global;                                  /* thrue means, that the global structure is referenced */
-   lList *lists[SGE_TYPE_ALL];                   /* stores the list information */
-   object_description object_base[SGE_TYPE_ALL]; /* subscription handlers */ 
+   obj_state_ds ds_id;                           // data store ID
+   lList *lists[SGE_TYPE_ALL];                   // master lists for the DS
+   object_description object_base[SGE_TYPE_ALL]; // DS description
 } obj_state_t;
 
 /* the key for the thread local memeory */
@@ -145,152 +141,21 @@ static pthread_key_t   obj_state_key;
 
 static pthread_once_t obj_once = PTHREAD_ONCE_INIT;
 
-static void 
-obj_state_destroy(void* st);
-
 static void
-obj_thread_local_once_init(void);
-
-static void
-obj_thread_local_once_init(void) 
-{
-   pthread_key_create(&obj_state_key, obj_state_destroy);
-}
-
-static const char *
-object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer,
-                                   int nm, char string_quotes);
-
-/****** sge_object/obj_state_init() ********************************************
-*  NAME
-*     obj_state_init() --  Inits the thread local memory none global
-*
-*  SYNOPSIS
-*     static void obj_state_init(obj_state_t *state) 
-*
-*  FUNCTION
-*     Inits the thread local memory, by coping the static information and 
-*     setting the list pointers to nullptr
-*
-*  INPUTS
-*     obj_state_t *state - the thread local memory
-*
-*  NOTES
-*     MT-NOTE: obj_state_init() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/obj_state_global_init
-*     sge_object/obj_state_destroy
-*     sge_object/obj_mt_init
-*******************************************************************************/
-static void obj_state_init(obj_state_t *state) 
-{
-   int i;
-
-   state->global = false;
-
-   memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
-  
-   /* initialize mirroring data structures - only changeable fields */
-   for (i = 0; i < SGE_TYPE_ALL; i++) {
-      state->lists[i] = nullptr;
-      state->object_base[i].list = &(state->lists[i]);                          /* master list                    */
- 
-   }
-}
-
-/****** sge_object/obj_state_global_init() ************************************
-*  NAME
-*     obj_state_global_init() --  Inits the thread local memory global
-*
-*  SYNOPSIS
-*     static void obj_state_global_init(obj_state_t *state) 
-*
-*  FUNCTION
-*     Inits the thread local memory, by coping the static information and 
-*     setting the list pointers to nullptr
-*
-*  INPUTS
-*     obj_state_t *state - the thread local memory
-*
-*  NOTES
-*     MT-NOTE: obj_state_global_init() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/obj_state_init
-*     sge_object/obj_state_destroy
-*     sge_object/obj_mt_init
-*******************************************************************************/
-static void obj_state_global_init(obj_state_t* state) 
-{
-   DENTER(TOP_LAYER);
-
-   if (state != nullptr) {
-      state->global=true;
-      memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
-
-      /* initialize mirroring data structures - only changeable fields */
-      for (int i = 0; i < SGE_TYPE_ALL; i++) {
-         state->lists[i] = nullptr;
-         state->object_base[i].list = object_base[i].list;
-      }
-   } else {
-      /* SG: we need a error message */
-      abort();
-   }
-   DRETURN_VOID;
-}
-
-
-/****** sge_object/obj_state_destroy() *****************************************
-*  NAME
-*     obj_state_destroy() -- frees the thread local memory
-*
-*  SYNOPSIS
-*     static void obj_state_destroy(void* st) 
-*
-*  INPUTS
-*     void* st - thread local memory
-*
-*  NOTES
-*     MT-NOTE: obj_state_destroy() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/obj_state_global_init
-*     sge_object/obj_state_init
-*     sge_object/obj_mt_init
-*******************************************************************************/
-static void obj_state_destroy(void* st) 
-{
+obj_state_destroy(void* st) {
    auto *state = (obj_state_t*) st;
 
    for (int i = 0; i < SGE_TYPE_ALL; i++) {
-      lFreeList(&(state->lists[i])); 
+      lFreeList(&(state->lists[i]));
    }
-      
    sge_free(&state);
 }
 
-/****** sge_object/obj_mt_init() ***********************************************
-*  NAME
-*     obj_mt_init() -- creats the pthread key
-*
-*  SYNOPSIS
-*     void obj_mt_init(void) 
-*
-*  FUNCTION
-*     Creates the pthread key. Needs to be called when the daemon, clients
-*     starts up
-*
-*  NOTES
-*     MT-NOTE: obj_mt_init() is not MT safe 
-*
-*
-*  SEE ALSO
-*     sge_object/obj_state_global_init
-*     sge_object/obj_state_init
-*     sge_object/obj_state_destroy
-*******************************************************************************/
+static void
+obj_thread_local_once_init() {
+   pthread_key_create(&obj_state_key, obj_state_destroy);
+}
+
 static void obj_mt_init()
 {
    pthread_once(&obj_once, obj_thread_local_once_init);
@@ -306,7 +171,44 @@ public:
 // although not used the constructor call has the side effect to initialize the pthread_key => do not delete
 static ObjectThreadInit object_obj{};
 
-void obj_init(bool is_global) 
+static void
+obj_state_init(obj_state_t *state) {
+   int i;
+
+   state->ds_id = OBJ_STATE_SCHEDULER;
+
+   memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
+  
+   /* initialize mirroring data structures - only changeable fields */
+   for (i = 0; i < SGE_TYPE_ALL; i++) {
+      state->lists[i] = nullptr;
+      state->object_base[i].list = &(state->lists[i]);                          /* master list                    */
+ 
+   }
+}
+
+static void
+obj_state_global_init(obj_state_t* state) {
+   DENTER(TOP_LAYER);
+
+   if (state != nullptr) {
+      state->ds_id = OBJ_STATE_GLOBAL;
+      memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
+
+      /* initialize mirroring data structures - only changeable fields */
+      for (int i = 0; i < SGE_TYPE_ALL; i++) {
+         state->lists[i] = nullptr;
+         state->object_base[i].list = object_base[i].list;
+      }
+   } else {
+      /* SG: we need a error message */
+      abort();
+   }
+   DRETURN_VOID;
+}
+
+
+void obj_init(obj_state_ds ds_id)
 {
    DENTER(TOP_LAYER);
    bool init = false;
@@ -323,8 +225,8 @@ void obj_init(bool is_global)
       }  
    }    
 
-   if (init || (state->global != is_global)) {
-      if (is_global) {
+   if (init || ((state->ds_id == OBJ_STATE_GLOBAL) && (state->ds_id != ds_id))) {
+      if (ds_id == OBJ_STATE_GLOBAL) {
          if (!init) {
             int i;
             for (i = 0; i < SGE_TYPE_ALL; i++) {
@@ -337,6 +239,129 @@ void obj_init(bool is_global)
       }
    }
    DRETURN_VOID;
+}
+
+/****** sgeobj/object/object_append_raw_field_to_dstring() *********************
+*  NAME
+*     object_append_raw_field_to_dstring() -- object field to string
+*
+*  SYNOPSIS
+*     const char *
+*     object_append_raw_field_to_dstring(const lListElem *object,
+*                                        lList **answer_list,
+*                                        dstring *buffer, const int nm,
+*                                        char string_quotes)
+*
+*  FUNCTION
+*     Returns a string representation of a given object attribute.
+*     If errors arrise they are returned in the given answer_list.
+*     Data will be created in the given dynamic string buffer.
+*     For some fields a special handling is implemented, e.g. mapping
+*     bitfields to string lists.
+*
+*  INPUTS
+*     const lListElem *object - object to use
+*     lList **answer_list     - used to return error messages
+*     dstring *buffer         - buffer used to format the result
+*     const int nm            - attribute to output
+*     char string_quotes      - character to be used for string quoting
+*                               '\0' means no quoting
+*
+*  RESULT
+*     const char * - string representation of the attribute value
+*                    (pointer to the string in the dynamic string
+*                    buffer, or nullptr if an error occured.
+*
+*  NOTES
+*     For sublists, subobjects and references nullptr is returned.
+*
+*  BUGS
+*     For the handled special cases, the dstring is cleared,
+*     the default handling appends to the dstring buffer.
+*
+*  SEE ALSO
+*     sgeobj/object/--GDI-object-Handling
+*     sgeobj/object/object_parse_field_from_string()
+*******************************************************************************/
+static const char *
+object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm, char string_quotes)
+{
+   const char *str;
+   const char *result = nullptr;
+   int pos;
+
+   DENTER(OBJECT_LAYER);
+
+   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
+
+   if (pos < 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
+                              lNm2Str(nm));
+   } else {
+      const lDescr *descr;
+      int type;
+
+      descr = lGetElemDescr(object);
+      type = lGetPosType(descr, pos);
+
+      /* no special case: read and copy data from object */
+      switch (type) {
+         case lFloatT:
+            result = sge_dstring_sprintf_append(buffer, "%f", lGetPosFloat(object, pos));
+            break;
+         case lDoubleT:
+            result = sge_dstring_sprintf_append(buffer, "%lf", lGetPosDouble(object, pos));
+            break;
+         case lUlongT:
+            result = sge_dstring_sprintf_append(buffer, sge_U32CFormat, lGetPosUlong(object, pos));
+            break;
+         case lLongT:
+            result = sge_dstring_sprintf_append(buffer, "%ld", lGetPosLong(object, pos));
+            break;
+         case lCharT:
+            result = sge_dstring_sprintf_append(buffer, "%c", lGetPosChar(object, pos));
+            break;
+         case lBoolT:
+            result = sge_dstring_append(buffer, lGetPosBool(object, pos) ? TRUE_STR : FALSE_STR);
+            break;
+         case lIntT:
+            result = sge_dstring_sprintf_append(buffer, "%d", lGetPosInt(object, pos));
+            break;
+         case lStringT:
+            str = lGetPosString(object, pos);
+            if (string_quotes != '\0') {
+               sge_dstring_append_char(buffer, string_quotes);
+               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
+               result = sge_dstring_append_char(buffer, string_quotes);
+            } else {
+               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
+            }
+            break;
+         case lHostT:
+            str = lGetPosHost(object, pos);
+            if (string_quotes != '\0') {
+               sge_dstring_append_char(buffer, string_quotes);
+               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
+               result = sge_dstring_append_char(buffer, string_quotes);
+            } else {
+               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
+            }
+            break;
+         case lListT:
+         case lObjectT:
+         case lRefT:
+            /* what do to here? */
+            break;
+         default:
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_ERROR,
+                                    MSG_INVALIDCULLDATATYPE_D, type);
+            break;
+      }
+   }
+
+   DRETURN(result);
 }
 
 /****** sgeobj/object/object_parse_raw_field_from_string() ************************
@@ -824,129 +849,6 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_append_raw_field_to_dstring() *********************
-*  NAME
-*     object_append_raw_field_to_dstring() -- object field to string
-*
-*  SYNOPSIS
-*     const char *
-*     object_append_raw_field_to_dstring(const lListElem *object, 
-*                                        lList **answer_list, 
-*                                        dstring *buffer, const int nm,
-*                                        char string_quotes) 
-*
-*  FUNCTION
-*     Returns a string representation of a given object attribute.
-*     If errors arrise they are returned in the given answer_list.
-*     Data will be created in the given dynamic string buffer.
-*     For some fields a special handling is implemented, e.g. mapping
-*     bitfields to string lists.
-*
-*  INPUTS
-*     const lListElem *object - object to use
-*     lList **answer_list     - used to return error messages
-*     dstring *buffer         - buffer used to format the result
-*     const int nm            - attribute to output
-*     char string_quotes      - character to be used for string quoting 
-*                               '\0' means no quoting
-*
-*  RESULT
-*     const char * - string representation of the attribute value 
-*                    (pointer to the string in the dynamic string 
-*                    buffer, or nullptr if an error occured.
-*
-*  NOTES
-*     For sublists, subobjects and references nullptr is returned.
-*
-*  BUGS
-*     For the handled special cases, the dstring is cleared,
-*     the default handling appends to the dstring buffer.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_parse_field_from_string()
-*******************************************************************************/
-static const char *
-object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm, char string_quotes)
-{
-   const char *str;
-   const char *result = nullptr;
-   int pos;
-
-   DENTER(OBJECT_LAYER);
-
-   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
-
-   if (pos < 0) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S, 
-                              lNm2Str(nm));
-   } else {
-      const lDescr *descr;
-      int type;
-
-      descr = lGetElemDescr(object);
-      type = lGetPosType(descr, pos);
-
-      /* no special case: read and copy data from object */
-      switch (type) {
-         case lFloatT:
-            result = sge_dstring_sprintf_append(buffer, "%f", lGetPosFloat(object, pos));
-            break;
-         case lDoubleT:
-            result = sge_dstring_sprintf_append(buffer, "%lf", lGetPosDouble(object, pos));
-            break;
-         case lUlongT:
-            result = sge_dstring_sprintf_append(buffer, sge_U32CFormat, lGetPosUlong(object, pos));
-            break;
-         case lLongT:
-            result = sge_dstring_sprintf_append(buffer, "%ld", lGetPosLong(object, pos));
-            break;
-         case lCharT:
-            result = sge_dstring_sprintf_append(buffer, "%c", lGetPosChar(object, pos));
-            break;
-         case lBoolT:
-            result = sge_dstring_append(buffer, lGetPosBool(object, pos) ? TRUE_STR : FALSE_STR);
-            break;
-         case lIntT:
-            result = sge_dstring_sprintf_append(buffer, "%d", lGetPosInt(object, pos));
-            break;
-         case lStringT:
-            str = lGetPosString(object, pos);
-            if (string_quotes != '\0') {
-               sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-               result = sge_dstring_append_char(buffer, string_quotes);
-            } else {
-               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-            }
-            break;
-         case lHostT:
-            str = lGetPosHost(object, pos);
-            if (string_quotes != '\0') {
-               sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-               result = sge_dstring_append_char(buffer, string_quotes);
-            } else {
-               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-            }
-            break;
-         case lListT:
-         case lObjectT:
-         case lRefT:
-            /* what do to here? */
-            break;
-         default:
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
-                                    MSG_INVALIDCULLDATATYPE_D, type);
-            break;
-      }
-   }
-
-   DRETURN(result);
-}
-
 /****** sgeobj/object/object_parse_field_from_string() ************************
 *  NAME
 *     object_parse_field_from_string() -- set object attr. from str
@@ -1283,26 +1185,6 @@ lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int ke
 const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key) {
    return object_type_get_master_str_elem_rw(type, key_nm, key);
 }
-
-bool object_type_commit_master_list(const sge_object_type type, lList **answer_list) 
-{
-   bool ret = true;
-   
-   DENTER(OBJECT_LAYER);
-   
-   if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
-      
-      if (object_base[type].commitMasterList) {
-         ret = object_base[type].commitMasterList(answer_list);
-      }
-   } else {
-         ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
-         ret = false;
-   }
-
-   DRETURN(ret);
-}
-
 
 /****** sgeobj/object/object_type_free_master_list() ***************************
 *  NAME

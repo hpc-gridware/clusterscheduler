@@ -40,25 +40,6 @@
 #include "basis_types.h"
 #include "msg_qmaster.h"
 
-/****** sgeobj/suser/Master_SUser_List ****************************************
-*  NAME
-*     Master_SUser_List -- list of submit users 
-*
-*  SYNOPSIS
-*     lList *Master_SUser_List; 
-*
-*  FUNCTION
-*     The global variable 'Master_SUser_List' is hold within the master
-*     daemon. It containes one CULL element of type 'SU_Type' for each
-*     user which submittet a job.
-*     Enties within this list have to be updated when a new job 
-*     enters/leaves the SGE/SGEEE system
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
-
-
 /****** sgeobj/suser/suser_list_add() *****************************************
 *  NAME
 *     suser_list_add() -- Add a new entry (uniq) entry into a list 
@@ -83,7 +64,6 @@
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 lListElem *suser_list_add(lList **suser_list, lList **answer_list,
                           const char *suser_name)
@@ -120,7 +100,6 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
 {
@@ -150,7 +129,6 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 void suser_increase_job_counter(lListElem *suser)
 {
@@ -177,7 +155,6 @@ void suser_increase_job_counter(lListElem *suser)
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 void suser_decrease_job_counter(lListElem *suser)
 {
@@ -213,7 +190,6 @@ void suser_decrease_job_counter(lListElem *suser)
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 u_long32 suser_get_job_counter(lListElem *suser)
 {
@@ -298,7 +274,6 @@ int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs, lList *master
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 *     qmaster/job/job_list_register_new_job()
 ******************************************************************************/
 int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
@@ -371,7 +346,6 @@ int suser_job_count(const lListElem *job, const lList *master_suser_list)
 *
 *  SEE ALSO
 *     sgeobj/suser/SU_Type
-*     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
 void suser_unregister_job(const lListElem *job, const lList *master_suser_list)
 {

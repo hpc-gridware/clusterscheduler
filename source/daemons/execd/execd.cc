@@ -354,8 +354,8 @@ int main(int argc, char **argv)
 #endif
 
    master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
-   *master_job_list = lCreateList("Master_Job_List", JB_Type);
-   job_list_read_from_disk(master_job_list, "Master_Job_List", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
+   *master_job_list = lCreateList("master job list", JB_Type);
+   job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
    clean_up_old_jobs(1);

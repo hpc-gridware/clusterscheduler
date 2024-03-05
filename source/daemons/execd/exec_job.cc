@@ -779,7 +779,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             int is_first_token = 1;
             dstring new_qrsh_command = DSTRING_INIT;
 
-            sprintf(delim, "%c", 0xff);
+            snprintf(delim, sizeof(delim), "%c", 0xff);
             sge_dstring_copy_string(&old_qrsh_command, old_qrsh_command_s);
             buffer = sge_dstring_get_string(&old_qrsh_command);
             token = sge_strtok(buffer, delim);
@@ -1078,7 +1078,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
 
       /* write add_grp_id to job-structure and file */
-      sprintf(str_id, "%ld", (long) last_addgrpid);
+      snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
       fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
       if (petep == nullptr) {
          lSetString(jatep, JAT_osjobid, str_id);

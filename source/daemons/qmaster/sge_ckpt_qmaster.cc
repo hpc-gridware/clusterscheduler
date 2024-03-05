@@ -56,7 +56,7 @@
 
 /****** qmaster/ckpt/ckpt_mod() ***********************************************
 *  NAME
-*     ckpt_mod -- add/modify ckpt object in Master_Ckpt_List 
+*     ckpt_mod -- add/modify ckpt object in master ckpt list
 *
 *  SYNOPSIS
 *     int ckpt_mod (lList **alpp, lListElem *new_ckpt, lListElem *ckpt, 
@@ -274,7 +274,7 @@ ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 /****** qmaster/ckpt/sge_del_ckpt() *******************************************
 *
 *  NAME
-*     sge_del_ckpt -- delete ckpt object in Master_Ckpt_List 
+*     sge_del_ckpt -- delete ckpt object in master ckpt list
 *
 *  SYNOPSIS
 *     int sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost);

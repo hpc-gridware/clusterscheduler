@@ -816,20 +816,8 @@ setup_qmaster() {
     * Initialize Master lists and hash tables, if necessary 
     */
 
-/** This is part is making the scheduler a
-  * lot slower that it was before. This was an enhancement introduced
-  * in cvs revision 1.35
-  * It might be added again, when hte hashing problem on large job lists
-  * with only a view owners is solved.
-  */
-#if 0
-   if (*object_type_get_master_list(SGE_TYPE_JOB) == nullptr) {
-      *object_type_get_master_list(SGE_TYPE_JOB) = lCreateList("Master_Job_List", JB_Type);
-   }
-   cull_hash_new(*object_type_get_master_list(SGE_TYPE_JOB), JB_owner, 0);
-#endif
    if (*object_type_get_master_list(SGE_TYPE_SUSER) == nullptr) {
-      *object_type_get_master_list_rw(SGE_TYPE_SUSER) = lCreateList("Master_SUser_List", SU_Type);
+      *object_type_get_master_list_rw(SGE_TYPE_SUSER) = lCreateList("master submit user list", SU_Type);
    }
 
    if (!sge_initialize_persistence(&answer_list)) {
@@ -920,14 +908,14 @@ setup_qmaster() {
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST);
    }
 
-   /* add host "global" to Master_Exechost_List as an exec host */
+   /* add host "global" to master exechost list as an exec host */
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
       if (sge_add_host_of_type(SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
 
-   /* add qmaster host to Master_Adminhost_List as an administrativ host */
+   /* add qmaster host to master admin host list as an administrative host */
    if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
       if (sge_add_host_of_type(qualified_hostname, SGE_AH_LIST, &monitor)) {
          DRETURN(-1);

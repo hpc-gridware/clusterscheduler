@@ -300,7 +300,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    }
 
    /* add into job list */
-   if (job_list_add_job(master_job_list, "Master_Job_List", lCopyElem(*jep), 0)) {
+   if (job_list_add_job(master_job_list, "master job list", lCopyElem(*jep), 0)) {
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

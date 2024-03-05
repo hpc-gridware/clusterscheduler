@@ -620,10 +620,8 @@ spool_classic_default_list_func(lList **answer_list,
              directory = CENTRY_DIR;
              break;
          case SGE_TYPE_JOB:
-            job_list_read_from_disk(list, "Master_Job_List", 0,
-                                    SPOOL_DEFAULT, nullptr);
-            job_list_read_from_disk(list, "Master_Zombie_List", 0,
-                                    SPOOL_HANDLE_AS_ZOMBIE, nullptr);
+            job_list_read_from_disk(list, "master job list", 0, SPOOL_DEFAULT, nullptr);
+            job_list_read_from_disk(list, "master zombie job list", 0, SPOOL_HANDLE_AS_ZOMBIE, nullptr);
             break;
          default:
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 

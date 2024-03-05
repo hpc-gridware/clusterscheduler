@@ -178,7 +178,6 @@ static bool read_spooled_data()
    /* jobs */
    spool_read_list(&answer_list, context, object_type_get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
    answer_list_output(&answer_list);
-/*    DPRINTF(("read %d entries to Master_Job_List\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)))); */
 
    return true;
 }

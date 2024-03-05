@@ -161,7 +161,7 @@ static bool read_spooled_data()
    /* cluster configuration */
    sge_read_configuration(context, answer_list);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Config_List\n", lGetNumberOfElem(*cluster_configuration)));
+   DPRINTF(("read %d entries to master config list\n", lGetNumberOfElem(*cluster_configuration)));
 
    /* cluster configuration */
    {
@@ -171,102 +171,101 @@ static bool read_spooled_data()
          if (sconf_set_config(&schedd_config, &answer_list))
             lFreeList(&schedd_config);
       answer_list_output(&answer_list);
-      DPRINTF(("read %d entries to Master_Sched_Config_List\n", lGetNumberOfElem(sconf_get_config_list())));
+      DPRINTF(("read %d entries to master scheduler configuration list\n", lGetNumberOfElem(sconf_get_config_list())));
    }
    /* complexes */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_CEntry_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master complex entry list\n", lGetNumberOfElem(master_list)));
 
    /* hosts */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Exechost_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master exechost list\n", lGetNumberOfElem(master_list)));
 
    master_list = *object_type_get_master_list_rw(SGE_TYPE_ADMINHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_ADMINHOST);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Adminhost_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master admin host list\n", lGetNumberOfElem(master_list)));
 
    master_list = *object_type_get_master_list_rw(SGE_TYPE_SUBMITHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SUBMITHOST);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Submithost_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master submit host list\n", lGetNumberOfElem(master_list)));
 
    /* managers */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_MANAGER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Manager_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master manager list\n", lGetNumberOfElem(master_list)));
 
    /* host groups */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_HGROUP);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Hostgroup_List\n", 
-            lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master host group list\n", lGetNumberOfElem(master_list)));
 
    /* operators */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Operator_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master operator list\n", lGetNumberOfElem(master_list)));
 
    /* usersets */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_USERSET);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Userset_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master user set list\n", lGetNumberOfElem(master_list)));
 
    /* calendars */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_CALENDAR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Calendar_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master calendar list\n", lGetNumberOfElem(master_list)));
 
    /* queues */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_CQueue_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master cluster queue list\n", lGetNumberOfElem(master_list)));
 
    /* pes */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_PE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PE);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Pe_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master parallel environment list\n", lGetNumberOfElem(master_list)));
 
    /* ckpt */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_CKPT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Ckpt_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master ckpt list\n", lGetNumberOfElem(master_list)));
 
    /* jobs */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_JOB);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Job_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master job list\n", lGetNumberOfElem(master_list)));
 
    /* user list */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_USER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USER);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_User_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master user list\n", lGetNumberOfElem(master_list)));
 
    /* project list */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_PROJECT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Project_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master project list\n", lGetNumberOfElem(master_list)));
 
    /* sharetree */
    master_list = *object_type_get_master_list_rw(SGE_TYPE_SHARETREE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Sharetree_List\n", lGetNumberOfElem(master_list)));
+   DPRINTF(("read %d entries to master sharetree list\n", lGetNumberOfElem(master_list)));
 
    DRETURN(true);
 }
@@ -654,7 +653,7 @@ int main(int argc, char *argv[])
    read_spooled_data();
    
    /* initialize mirroring */
-   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, spool_event_before, spool_event_after, nullptr, nullptr, nullptr);
    prof_start(SGE_PROF_ALL, nullptr);
 

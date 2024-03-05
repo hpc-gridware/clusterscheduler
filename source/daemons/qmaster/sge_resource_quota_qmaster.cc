@@ -281,7 +281,7 @@ rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLi
 
 /****** sge_resource_quota_qmaster/rqs_del() ************************
 *  NAME
-*     rqs_del() -- delete rqs object in Master_RQS_List
+*     rqs_del() -- delete rqs object in master resource quota set list
 *
 *  SYNOPSIS
 *     int rqs_del(lListElem *ep, lList **alpp, lList 

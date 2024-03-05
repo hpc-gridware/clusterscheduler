@@ -1195,8 +1195,8 @@ int clean_up_old_jobs(int startup)
    }
 
    /* 
-      If we get an empty Master_Job_List we know that 
-      it is no longer necessary to pass this code 
+      If we get an empty master job list we know that
+      it is no longer necessary to pass this code
      
       Getting job information by parsing ps-output 
       is very expensive. The aim is to get informed
@@ -1206,7 +1206,7 @@ int clean_up_old_jobs(int startup)
       get a cheap SIGCLD informing us about the
       jobs exit. 
        
-      So if we arrive here and an empty Master_Job_List
+      So if we arrive here and an empty master job list
       we know all jobs that were our "lost children" 
       exited and there is no need for ps-commands.
 

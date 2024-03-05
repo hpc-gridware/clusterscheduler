@@ -43,6 +43,7 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/sge_event.h"
+#include "sgeobj/sge_schedd_conf.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"
@@ -262,7 +263,7 @@ static mirror_description *mir_get_mirror_base(void)
 *******************************************************************************/
 sge_mirror_error
 sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *name,
-                      bool use_global_data, event_client_update_func_t update_func,
+                      obj_state_ds ds_id, event_client_update_func_t update_func,
                       evm_mod_func_t mod_func, evm_add_func_t add_func,
                       evm_remove_func_t remove_func, evm_ack_func_t ack_func)
 {
@@ -276,7 +277,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *n
    evc->ec_local.init = true;
 
    pthread_once(&mir_once_control, mir_mt_init);
-   obj_init(use_global_data);
+   obj_init(ds_id);
 
    /* subscribe some events with default handling */
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -1567,7 +1568,7 @@ generic_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   if (!object_type_commit_master_list(type, nullptr)) {
+   if (type == SGE_TYPE_SCHEDD_CONF && !sconf_validate_config_(nullptr)) {
       DRETURN(SGE_EMA_FAILURE);
    }
 

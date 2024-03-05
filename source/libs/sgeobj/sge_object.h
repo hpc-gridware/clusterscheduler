@@ -167,28 +167,30 @@ typedef enum {
    SGE_TYPE_NONE            /* this must the last entry */
 } sge_object_type;
 
-typedef bool (*commitMasterList_func_t)(lList **answer_list);
+enum obj_state_ds {
+   OBJ_STATE_NONE = 0,
+
+   OBJ_STATE_GLOBAL = 1,
+   OBJ_STATE_SCHEDULER,
+
+   OBJ_STATE_MAX = OBJ_STATE_SCHEDULER,
+};
 
 /* Datastructure for internal storage of object/message related information */
 typedef struct {
-   lList **list;                          /* master list                    */
-   commitMasterList_func_t commitMasterList;     /* commit master list set changes */
+   lList **list;
    const char *type_name;                 /* type name, e.g. "JOB"      */
    lDescr *descr;                         /* descriptor, e.g. JB_Type       */
    const int key_nm;                      /* nm of key attribute        */
 } object_description;
 
-
-void obj_init(bool is_global);
+void obj_init(obj_state_ds ds_id);
 
 lList **object_type_get_master_list_rw(const sge_object_type type);
 const lList **object_type_get_master_list(const sge_object_type type);
 
 lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key);
 const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key);
-
-bool 
-object_type_commit_master_list(const sge_object_type type, lList **answer_list); 
 
 bool
 object_type_free_master_list(const sge_object_type type);
