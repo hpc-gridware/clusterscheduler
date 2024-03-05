@@ -64,8 +64,7 @@
 ******************************************************************************/
 
 #define NULL_OUT_NONE(ep, nm) \
-   if (lGetString(ep, nm) != nullptr && \
-       strcasecmp(lGetString(ep, nm), "none") == 0) { \
+   if (lGetString(ep, nm) != nullptr && strcasecmp(lGetString(ep, nm), "none") == 0) { \
       lSetString(ep, nm, nullptr); \
    }
 
@@ -184,28 +183,35 @@ typedef struct {
    const int key_nm;                      /* nm of key attribute        */
 } object_description;
 
-void obj_init(obj_state_ds ds_id);
+void
+obj_init(obj_state_ds ds_id);
 
-lList **object_type_get_master_list_rw(const sge_object_type type);
-const lList **object_type_get_master_list(const sge_object_type type);
+lList **
+object_type_get_master_list_rw(sge_object_type type);
 
-lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key);
-const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key);
+const lList **
+object_type_get_master_list(sge_object_type type);
+
+lListElem *
+object_type_get_master_str_elem_rw(sge_object_type type, int key_nm, const char *key);
+
+const lListElem *
+object_type_get_master_str_elem(sge_object_type type, int key_nm, const char *key);
 
 bool
-object_type_free_master_list(const sge_object_type type);
+object_type_free_master_list(sge_object_type type);
 
 const char *
-object_type_get_name(const sge_object_type type);
+object_type_get_name(sge_object_type type);
 
 sge_object_type 
 object_name_get_type(const char *name);
 
 const lDescr *
-object_type_get_descr(const sge_object_type type);
+object_type_get_descr(sge_object_type type);
 
 int
-object_type_get_key_nm(const sge_object_type type);
+object_type_get_key_nm(sge_object_type type);
 
 /* JG: TODO: rename to object_has_descr, make function object_has_type 
              and call this function where possible */
@@ -229,77 +235,57 @@ const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer);
 
 const char *
-object_append_field_to_dstring(const lListElem *object, lList **answer_list, 
-                               dstring *buffer, const int nm,
-                               const char string_quotes);
+object_append_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm, char string_quotes);
 bool 
-object_parse_field_from_string(lListElem *object, lList **answer_list, 
-                               const int nm, const char *value);
+object_parse_field_from_string(lListElem *object, lList **answer_list, int nm, const char *value);
 
 void
-object_delete_range_id(lListElem *object, lList **answer_list, 
-                       const int rnm, const u_long32 id);
+object_delete_range_id(lListElem *object, lList **answer_list, int rnm, u_long32 id);
 
 int 
-object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
-                            u_long32 step);
+object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end, u_long32 step);
 
 bool
-object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
-                              int name, const char *string);
+object_parse_bool_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
-                                 int name, const char *string);
+object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_int_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string);
+object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_char_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string);
+object_parse_char_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_long_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string);
+object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_double_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string);
+object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_float_from_string(lListElem *this_elem, lList **answer_list,
-                               int name, const char *string);
+object_parse_float_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
-                                 int name, const char *string);
+object_parse_time_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_mem_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string);
+object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
-                               int name, const char *string);
+object_parse_inter_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
-                              int name, const char *string,
-                              const lDescr *descr, int nm);
+object_parse_list_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string, const lDescr *descr, int nm);
 
 bool
-object_parse_celist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string);
+object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string);
+object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
-object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string);
+object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
 object_set_any_type(lListElem *this_elem, int name, void *value);
@@ -311,23 +297,40 @@ void
 object_get_any_type(const lListElem *this_elem, int name, void *value);
 
 bool  
-object_has_differences(const lListElem *this_elem, lList **answer_list,
-                       const lListElem *old_elem, bool modify_changed_flag);
+object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem, bool modify_changed_flag);
 
 bool
-object_list_has_differences(const lList *this_elem, lList **answer_list,
-                            const lList *old_elem, bool modify_changed_flag);
+object_list_has_differences(const lList *this_elem, lList **answer_list, const lList *old_elem, bool modify_changed_flag);
 
-bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr);
-bool object_list_verify_cull(const lList *lp, const lDescr *descr);
-bool object_verify_cull(const lListElem *ep, const lDescr *descr);
+bool
+object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr);
 
-bool object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
-bool object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm);
-bool object_verify_double_null(const lListElem *ep, lList **answer_list, int nm);
-bool object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm);
-bool object_verify_expression_syntax(const lListElem *ep, lList **answer_list);
+bool
+object_list_verify_cull(const lList *lp, const lDescr *descr);
 
-int object_verify_name(const lListElem *object, lList **answer_list, int name);
-int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr);
-int compress_ressources(lList **alpp, lList *rl, const char *object_descr );
+bool
+object_verify_cull(const lListElem *ep, const lDescr *descr);
+
+bool
+object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
+
+bool
+object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm);
+
+bool
+object_verify_double_null(const lListElem *ep, lList **answer_list, int nm);
+
+bool
+object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm);
+
+bool
+object_verify_expression_syntax(const lListElem *ep, lList **answer_list);
+
+int
+object_verify_name(const lListElem *object, lList **answer_list, int name);
+
+int
+object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr);
+
+int
+compress_ressources(lList **alpp, lList *rl, const char *object_descr );

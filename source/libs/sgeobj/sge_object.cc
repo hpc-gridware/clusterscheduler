@@ -28,7 +28,7 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/                                   
+/*___INFO__MARK_END__*/
 
 #include <cstdlib>
 #include <pthread.h>
@@ -95,38 +95,38 @@ static lList *Master_Config_List = nullptr;
 
 /* One entry per event type */
 static object_description object_base[SGE_TYPE_ALL] = {
-   /* master list                  set function             name                 descr      key               */
-   { &Master_Adminhost_List,       "ADMINHOST",         AH_Type,   AH_name           },
-   { &Master_Calendar_List,        "CALENDAR",          CAL_Type,  CAL_name          },
-   { &Master_Ckpt_List,            "CKPT",              CK_Type,   CK_name           },
-   { &Master_Config_List,          "CONFIG",            CONF_Type, CONF_name         },
-   { nullptr,                      "GLOBAL_CONFIG",     nullptr,   NoName            },
-   { &Master_Exechost_List,        "EXECHOST",          EH_Type,   EH_name           },
-   { nullptr,                      "JATASK",            JAT_Type,  JAT_task_number   },
-   { nullptr,                      "PETASK",            PET_Type,  PET_id            },
-   { &Master_Job_List,             "JOB",               JB_Type,   JB_job_number     },
-   { &Master_Job_Schedd_Info_List, "JOB_SCHEDD_INFO",   SME_Type,  NoName            },
-   { &Master_Manager_List,         "MANAGER",           UM_Type,   UM_name           },
-   { &Master_Operator_List,        "OPERATOR",          UO_Type,   UO_name           },
-   { &Master_Sharetree_List,       "SHARETREE",         STN_Type,  STN_name          },
-   { &Master_Pe_List,              "PE",                PE_Type,   PE_name           },
-   { &Master_Project_List,         "PROJECT",           PR_Type,   PR_name           },
-   { &Master_CQueue_List,          "CQUEUE",            CQ_Type,   CQ_name           },
-   { nullptr,                      "QINSTANCE",         QU_Type,   QU_qname          },
-   { &Master_SchedulerConfig_List, "SCHEDD_CONF",       SC_Type,   NoName            },
-   { nullptr,                      "SCHEDD_MONITOR",    nullptr,   NoName            },
-   { nullptr,                      "SHUTDOWN",          nullptr,   NoName            },
-   { nullptr,                      "QMASTER_GOES_DOWN", nullptr,   NoName            },
-   { &Master_Submithost_List,      "SUBMITHOST",        SH_Type,   SH_name           },
-   { &Master_User_List,            "USER",              UU_Type,   UU_name           },
-   { &Master_Userset_List,         "USERSET",           US_Type,   US_name           },
-   { &Master_HGroup_List,          "HOSTGROUP",         HGRP_Type, HGRP_name         },
-   { &Master_CEntry_List,          "COMPLEX_ENTRY",     CE_Type,   CE_name           },
-   { &Master_Zombie_List,          "ZOMBIE_JOBS",       JB_Type,   JB_job_number     },
-   { &Master_SUser_List,           "SUBMIT_USER",       SU_Type,   SU_name           },
-   { &Master_RQS_List,             "RQS",               RQS_Type,  RQS_name          },
-   { &Master_AR_List,              "AR",                AR_Type,   AR_id             },
-   { nullptr,                      "JOBSCRIPT",         STU_Type,  STU_name          },
+        /* master list                 name                 descr      key */
+        {&Master_Adminhost_List,       "ADMINHOST",         AH_Type,   AH_name},
+        {&Master_Calendar_List,        "CALENDAR",          CAL_Type,  CAL_name},
+        {&Master_Ckpt_List,            "CKPT",              CK_Type,   CK_name},
+        {&Master_Config_List,          "CONFIG",            CONF_Type, CONF_name},
+        {nullptr,                      "GLOBAL_CONFIG",     nullptr,   NoName},
+        {&Master_Exechost_List,        "EXECHOST",          EH_Type,   EH_name},
+        {nullptr,                      "JATASK",            JAT_Type,  JAT_task_number},
+        {nullptr,                      "PETASK",            PET_Type,  PET_id},
+        {&Master_Job_List,             "JOB",               JB_Type,   JB_job_number},
+        {&Master_Job_Schedd_Info_List, "JOB_SCHEDD_INFO",   SME_Type,  NoName},
+        {&Master_Manager_List,         "MANAGER",           UM_Type,   UM_name},
+        {&Master_Operator_List,        "OPERATOR",          UO_Type,   UO_name},
+        {&Master_Sharetree_List,       "SHARETREE",         STN_Type,  STN_name},
+        {&Master_Pe_List,              "PE",                PE_Type,   PE_name},
+        {&Master_Project_List,         "PROJECT",           PR_Type,   PR_name},
+        {&Master_CQueue_List,          "CQUEUE",            CQ_Type,   CQ_name},
+        {nullptr,                      "QINSTANCE",         QU_Type,   QU_qname},
+        {&Master_SchedulerConfig_List, "SCHEDD_CONF",       SC_Type,   NoName},
+        {nullptr,                      "SCHEDD_MONITOR",    nullptr,   NoName},
+        {nullptr,                      "SHUTDOWN",          nullptr,   NoName},
+        {nullptr,                      "QMASTER_GOES_DOWN", nullptr,   NoName},
+        {&Master_Submithost_List,      "SUBMITHOST",        SH_Type,   SH_name},
+        {&Master_User_List,            "USER",              UU_Type,   UU_name},
+        {&Master_Userset_List,         "USERSET",           US_Type,   US_name},
+        {&Master_HGroup_List,          "HOSTGROUP",         HGRP_Type, HGRP_name},
+        {&Master_CEntry_List,          "COMPLEX_ENTRY",     CE_Type,   CE_name},
+        {&Master_Zombie_List,          "ZOMBIE_JOBS",       JB_Type,   JB_job_number},
+        {&Master_SUser_List,           "SUBMIT_USER",       SU_Type,   SU_name},
+        {&Master_RQS_List,             "RQS",               RQS_Type,  RQS_name},
+        {&Master_AR_List,              "AR",                AR_Type,   AR_id},
+        {nullptr,                      "JOBSCRIPT",         STU_Type,  STU_name},
 };
 
 /* contains the information for the thread local structure. */
@@ -137,13 +137,13 @@ typedef struct {
 } obj_state_t;
 
 /* the key for the thread local memeory */
-static pthread_key_t   obj_state_key;
+static pthread_key_t obj_state_key;
 
 static pthread_once_t obj_once = PTHREAD_ONCE_INIT;
 
 static void
-obj_state_destroy(void* st) {
-   auto *state = (obj_state_t*) st;
+obj_state_destroy(void *st) {
+   auto *state = (obj_state_t *) st;
 
    for (int i = 0; i < SGE_TYPE_ALL; i++) {
       lFreeList(&(state->lists[i]));
@@ -156,8 +156,7 @@ obj_thread_local_once_init() {
    pthread_key_create(&obj_state_key, obj_state_destroy);
 }
 
-static void obj_mt_init()
-{
+static void obj_mt_init() {
    pthread_once(&obj_once, obj_thread_local_once_init);
 }
 
@@ -177,23 +176,23 @@ obj_state_init(obj_state_t *state) {
 
    state->ds_id = OBJ_STATE_SCHEDULER;
 
-   memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
-  
+   memcpy((void *) state->object_base, (const void *) object_base, sizeof(object_description) * SGE_TYPE_ALL);
+
    /* initialize mirroring data structures - only changeable fields */
    for (i = 0; i < SGE_TYPE_ALL; i++) {
       state->lists[i] = nullptr;
       state->object_base[i].list = &(state->lists[i]);                          /* master list                    */
- 
+
    }
 }
 
 static void
-obj_state_global_init(obj_state_t* state) {
+obj_state_global_init(obj_state_t *state) {
    DENTER(TOP_LAYER);
 
    if (state != nullptr) {
       state->ds_id = OBJ_STATE_GLOBAL;
-      memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
+      memcpy((void *) state->object_base, (const void *) object_base, sizeof(object_description) * SGE_TYPE_ALL);
 
       /* initialize mirroring data structures - only changeable fields */
       for (int i = 0; i < SGE_TYPE_ALL; i++) {
@@ -208,29 +207,28 @@ obj_state_global_init(obj_state_t* state) {
 }
 
 
-void obj_init(obj_state_ds ds_id)
-{
+void obj_init(obj_state_ds ds_id) {
    DENTER(TOP_LAYER);
    bool init = false;
-   auto state = (obj_state_t *)pthread_getspecific(obj_state_key);
+   auto state = (obj_state_t *) pthread_getspecific(obj_state_key);
 
    if (state == nullptr) {
-      state = (obj_state_t*) sge_malloc(sizeof(obj_state_t));
-      memset((void *)state, 0 , sizeof(obj_state_t));
+      state = (obj_state_t *) sge_malloc(sizeof(obj_state_t));
+      memset((void *) state, 0, sizeof(obj_state_t));
       init = true;
 
-      int ret = pthread_setspecific(obj_state_key, (void*)state);
-      if (ret != 0) { 
+      int ret = pthread_setspecific(obj_state_key, (void *) state);
+      if (ret != 0) {
          abort();  /* find a better way for this, use a return code */
-      }  
-   }    
+      }
+   }
 
    if (init || ((state->ds_id == OBJ_STATE_GLOBAL) && (state->ds_id != ds_id))) {
       if (ds_id == OBJ_STATE_GLOBAL) {
          if (!init) {
             int i;
             for (i = 0; i < SGE_TYPE_ALL; i++) {
-               lFreeList(&(state->lists[i])); 
+               lFreeList(&(state->lists[i]));
             }
          }
          obj_state_global_init(state);
@@ -284,8 +282,8 @@ void obj_init(obj_state_ds ds_id)
 *     sgeobj/object/object_parse_field_from_string()
 *******************************************************************************/
 static const char *
-object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm, char string_quotes)
-{
+object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm,
+                                   char string_quotes) {
    const char *str;
    const char *result = nullptr;
    int pos;
@@ -398,8 +396,7 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
 ******************************************************************************/
 static bool
 object_parse_raw_field_from_string(lListElem *object, lList **answer_list,
-                                   const int nm, const char *value)
-{
+                                   const int nm, const char *value) {
    bool ret = true;
    int pos;
 
@@ -491,11 +488,10 @@ object_parse_raw_field_from_string(lListElem *object, lList **answer_list,
 *  SEE ALSO
 *     sgeobj/object/object_get_primary_key()
 *******************************************************************************/
-bool 
-object_has_type(const lListElem *object, const lDescr *descr) 
-{
+bool
+object_has_type(const lListElem *object, const lDescr *descr) {
    bool ret = false;
- 
+
    /*
     * we assume that "object" is of the given type when the 
     * primary key is contained in the element
@@ -508,7 +504,7 @@ object_has_type(const lListElem *object, const lDescr *descr)
    }
 
    return ret;
-} 
+}
 
 /****** sgeobj/object/object_get_type() ***************************************
 *  NAME
@@ -530,9 +526,8 @@ object_has_type(const lListElem *object, const lDescr *descr)
 *     const lDescr * - the object type / descriptor
 *
 *******************************************************************************/
-const lDescr * 
-object_get_type(const lListElem *object)
-{
+const lDescr *
+object_get_type(const lListElem *object) {
    const lDescr *ret = nullptr;
 
    if (object_has_type(object, AH_Type)) {
@@ -591,9 +586,8 @@ object_get_type(const lListElem *object)
 *     Function interface breaks style guide - either we would have to 
 *     pass an object, or call it descr_get_primary_key.
 *******************************************************************************/
-int 
-object_get_primary_key(const lDescr *descr)
-{
+int
+object_get_primary_key(const lDescr *descr) {
    int ret = NoName;
 
    if (descr != nullptr) {
@@ -608,13 +602,13 @@ object_get_primary_key(const lDescr *descr)
    }
 
 #if 0
-      ret = MR_user; /* JG: TODO: is this really the primary key? */
-      ret = PA_origin; /* JG: TODO: this is most probably no primary key! */
+   ret = MR_user; /* JG: TODO: is this really the primary key? */
+   ret = PA_origin; /* JG: TODO: this is most probably no primary key! */
 #endif
 
    return ret;
 }
- 
+
 /****** sgeobj/object/object_get_name_prefix() ********************************
 *  NAME
 *     object_get_name_prefix() -- get prefix of cull attribute name
@@ -648,9 +642,8 @@ object_get_primary_key(const lDescr *descr)
 *  SEE ALSO
 *     sgeobj/object/object_get_primary_key()
 *******************************************************************************/
-const char * 
-object_get_name_prefix(const lDescr *descr, dstring *buffer)
-{
+const char *
+object_get_name_prefix(const lDescr *descr, dstring *buffer) {
    int nm;
 
    if (descr == nullptr || buffer == nullptr) {
@@ -663,7 +656,7 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer)
       const char *name = lNm2Str(nm);
 
       if (name != nullptr) {
-         char *underscore = strchr((char *)name, '_');
+         char *underscore = strchr((char *) name, '_');
 
          if (underscore != nullptr) {
             sge_dstring_sprintf(buffer, "%.*s", underscore - name + 1, name);
@@ -701,8 +694,7 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer)
 *     MT-NOTE: object_get_name() is MT safe 
 *******************************************************************************/
 const char *
-object_get_name(const lDescr *descr)
-{
+object_get_name(const lDescr *descr) {
    const char *name = "unknown";
 
    if (descr != nullptr) {
@@ -761,11 +753,10 @@ object_get_name(const lDescr *descr)
 *     sgeobj/object/--GDI-object-Handling
 *     sgeobj/object/object_parse_field_from_string()
 *******************************************************************************/
-const char * 
-object_append_field_to_dstring(const lListElem *object, lList **answer_list, 
-                               dstring *buffer, const int nm, 
-                               const char string_quotes)
-{
+const char *
+object_append_field_to_dstring(const lListElem *object, lList **answer_list,
+                               dstring *buffer, int nm,
+                               char string_quotes) {
    const char *ret;
    dstring string = DSTRING_INIT;
    bool quote_special_case = false;
@@ -801,7 +792,7 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
          break;
       case QU_qtype:
          qinstance_print_qtype_to_dstring(object, &string, false);
-         ret = sge_dstring_get_string(&string); 
+         ret = sge_dstring_get_string(&string);
          quote_special_case = true;
          break;
       case US_type:
@@ -837,7 +828,7 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
          sge_dstring_append_char(buffer, string_quotes);
          sge_dstring_append(buffer, ret);
          ret = sge_dstring_append_char(buffer, string_quotes);
-      } else { 
+      } else {
          ret = sge_dstring_append(buffer, ret);
       }
    } else {
@@ -883,10 +874,9 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
 *     sgeobj/object/--GDI-object-Handling
 *     sgeobj/object/object_append_field_to_dstring()
 ******************************************************************************/
-bool 
-object_parse_field_from_string(lListElem *object, lList **answer_list, 
-                               const int nm, const char *value)
-{
+bool
+object_parse_field_from_string(lListElem *object, lList **answer_list,
+                               int nm, const char *value) {
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
@@ -895,82 +885,78 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
 
    /* handle special cases */
    switch (nm) {
-      case CE_valtype:
-         {
-            /* JG: TODO: we should better have a function map_str2type 
-             * and isn't there some sort of framework for mapping 
-             * strings to ints and vice versa? See QU_qtype implementation.
-             */
-            u_long32 type = 0;
-            int i;
+      case CE_valtype: {
+         /* JG: TODO: we should better have a function map_str2type
+          * and isn't there some sort of framework for mapping
+          * strings to ints and vice versa? See QU_qtype implementation.
+          */
+         u_long32 type = 0;
+         int i;
 
-            for (i=TYPE_FIRST; !type && i<=TYPE_CE_LAST; i++) {
-               if (strcasecmp(value, map_type2str(i)) == 0) {
-                  type = i;
-               }
-            }
-
-            if (type == 0) {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                       ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_UNKNOWN_ATTR_TYPE_S,
-                                       value);
-               ret = false;
-            } else {
-               lSetUlong(object, nm, type);
+         for (i = TYPE_FIRST; !type && i <= TYPE_CE_LAST; i++) {
+            if (strcasecmp(value, map_type2str(i)) == 0) {
+               type = i;
             }
          }
+
+         if (type == 0) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_ERROR,
+                                    MSG_SGETEXT_UNKNOWN_ATTR_TYPE_S,
+                                    value);
+            ret = false;
+         } else {
+            lSetUlong(object, nm, type);
+         }
+      }
          break;
-      case CE_relop:
-         {
-            u_long32 op = 0;
-            int i;
+      case CE_relop: {
+         u_long32 op = 0;
+         int i;
 
-            for (i=TYPE_FIRST; !op && i<=TYPE_DOUBLE; i++) {
-               if (!strcasecmp(value, map_op2str(i)))  
-                  op = i;
-            }
-
-            if (op == 0) {
-               /* error output necessary? Should be created by parsing function */
-               ret = false;
-            } else {
-               lSetUlong(object, nm, op);
-            }
+         for (i = TYPE_FIRST; !op && i <= TYPE_DOUBLE; i++) {
+            if (!strcasecmp(value, map_op2str(i)))
+               op = i;
          }
+
+         if (op == 0) {
+            /* error output necessary? Should be created by parsing function */
+            ret = false;
+         } else {
+            lSetUlong(object, nm, op);
+         }
+      }
          break;
-      case CE_requestable:
-         {
-            u_long32 req;
+      case CE_requestable: {
+         u_long32 req;
 
-            if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
-               req = REQU_YES;
-            } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
-               req = REQU_NO;
-            } else if (strcasecmp(value, "f") == 0 || strcasecmp(value, "forced") == 0) {
-               req = REQU_FORCED;
-            } else {
-               req = REQU_NO;
-               ret = false;
-            }
-            lSetUlong(object, nm, req);
+         if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
+            req = REQU_YES;
+         } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
+            req = REQU_NO;
+         } else if (strcasecmp(value, "f") == 0 || strcasecmp(value, "forced") == 0) {
+            req = REQU_FORCED;
+         } else {
+            req = REQU_NO;
+            ret = false;
          }
+         lSetUlong(object, nm, req);
+      }
          break;
-      case CE_consumable:
-         {
-            u_long32 cond;
-            if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
-               cond = CONSUMABLE_YES;
-            } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
-               cond = CONSUMABLE_NO;
-            } else if (strcasecmp(value, "j") == 0 || strcasecmp(value, "job") == 0) {
-               cond = CONSUMABLE_JOB;
-            } else {
-               cond = CONSUMABLE_NO;
-               ret = false;
-            }
-            lSetUlong(object, nm, cond);
+      case CE_consumable: {
+         u_long32 cond;
+         if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
+            cond = CONSUMABLE_YES;
+         } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
+            cond = CONSUMABLE_NO;
+         } else if (strcasecmp(value, "j") == 0 || strcasecmp(value, "job") == 0) {
+            cond = CONSUMABLE_JOB;
+         } else {
+            cond = CONSUMABLE_NO;
+            ret = false;
          }
+         lSetUlong(object, nm, cond);
+      }
          break;
       case QU_qtype:
          ret = qinstance_parse_qtype_from_string(object, answer_list, value);
@@ -1009,7 +995,7 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
          ret = object_parse_qtlist_from_string(object, answer_list, nm, value);
          break;
       default:
-         ret = object_parse_raw_field_from_string(object, answer_list, nm, 
+         ret = object_parse_raw_field_from_string(object, answer_list, nm,
                                                   value);
          break;
    }
@@ -1037,10 +1023,9 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
 *     const u_long32 id   - id to delete
 *
 *******************************************************************************/
-void 
-object_delete_range_id(lListElem *object, lList **answer_list, 
-                       const int rnm, const u_long32 id)
-{
+void
+object_delete_range_id(lListElem *object, lList **answer_list,
+                       int rnm, u_long32 id) {
    lList *range_list = nullptr;
 
    lXchgList(object, rnm, &range_list);
@@ -1076,17 +1061,16 @@ object_delete_range_id(lListElem *object, lList **answer_list,
 *  NOTES
 *     MT-NOTE: object_set_range_id() is MT safe
 ******************************************************************************/
-int 
+int
 object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
-                    u_long32 step)
-{
+                    u_long32 step) {
    lListElem *range_elem;  /* RN_Type */
    int ret = 0;
- 
+
    range_elem = lFirstRW(lGetList(object, rnm));
    if (range_elem == nullptr) {
       lList *range_list;
- 
+
       range_elem = lCreateElem(RN_Type);
       range_list = lCreateList("task_id_range", RN_Type);
       if (range_elem == nullptr || range_list == nullptr) {
@@ -1106,7 +1090,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
       lSetUlong(range_elem, RN_step, step);
    }
    return ret;
-}          
+}
 
 
 /****** sgeobj/object/object_type_get_master_list() **************************
@@ -1142,15 +1126,14 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
-lList **object_type_get_master_list_rw(const sge_object_type type)
-{
+lList **object_type_get_master_list_rw(sge_object_type type) {
    lList **ret = nullptr;
 
    DENTER(OBJECT_LAYER);
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
-      
+
       if (obj_state->object_base[type].list != nullptr) {
          ret = obj_state->object_base[type].list;
 
@@ -1166,15 +1149,15 @@ lList **object_type_get_master_list_rw(const sge_object_type type)
    } else {
       ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
-   
+
    DRETURN(ret);
 }
 
-const lList **object_type_get_master_list(const sge_object_type type) {
-   return (const lList **)object_type_get_master_list_rw(type);
+const lList **object_type_get_master_list(sge_object_type type) {
+   return (const lList **) object_type_get_master_list_rw(type);
 }
 
-lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key) {
+lListElem *object_type_get_master_str_elem_rw(sge_object_type type, int key_nm, const char *key) {
    lList **master_list = object_type_get_master_list_rw(type);
    if (master_list == nullptr) {
       return nullptr;
@@ -1182,7 +1165,7 @@ lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int ke
    return lGetElemStrRW(*master_list, key_nm, key);
 }
 
-const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key) {
+const lListElem *object_type_get_master_str_elem(sge_object_type type, int key_nm, const char *key) {
    return object_type_get_master_str_elem_rw(type, key_nm, key);
 }
 
@@ -1208,18 +1191,17 @@ const lListElem *object_type_get_master_str_elem(const sge_object_type type, int
 *  SEE ALSO
 *     sgeobj/object/--object-Typedefs
 *******************************************************************************/
-bool object_type_free_master_list(const sge_object_type type)
-{
+bool object_type_free_master_list(sge_object_type type) {
    bool ret = false;
 
    DENTER(OBJECT_LAYER);
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
-      
+
       if (obj_state->object_base[type].list) {
-          lFreeList(obj_state->object_base[type].list);
-          ret = true;
+         lFreeList(obj_state->object_base[type].list);
+         ret = true;
       }
    } else {
       ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
@@ -1252,8 +1234,7 @@ bool object_type_free_master_list(const sge_object_type type)
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
-const char *object_type_get_name(const sge_object_type type)
-{
+const char *object_type_get_name(sge_object_type type) {
    const char *ret = "unknown";
 
    DENTER(OBJECT_LAYER);
@@ -1265,7 +1246,7 @@ const char *object_type_get_name(const sge_object_type type)
    } else {
       ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
-  
+
    DRETURN(ret);
 }
 
@@ -1290,8 +1271,7 @@ const char *object_type_get_name(const sge_object_type type)
 *  NOTES
 *     MT-NOTE: object_name_get_type() is MT safe 
 *******************************************************************************/
-sge_object_type object_name_get_type(const char *name)
-{
+sge_object_type object_name_get_type(const char *name) {
    sge_object_type ret = SGE_TYPE_ALL;
    int i;
    char *type_name;
@@ -1305,9 +1285,9 @@ sge_object_type object_name_get_type(const char *name)
       *colon = '\0';
    }
 
-   for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
+   for (i = (int) SGE_TYPE_ADMINHOST; i < (int) SGE_TYPE_ALL; i++) {
       if (strcasecmp(object_base[i].type_name, type_name) == 0) {
-         ret = (sge_object_type)i;
+         ret = (sge_object_type) i;
          break;
       }
    }
@@ -1344,8 +1324,7 @@ sge_object_type object_name_get_type(const char *name)
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
-const lDescr *object_type_get_descr(const sge_object_type type)
-{
+const lDescr *object_type_get_descr(sge_object_type type) {
    const lDescr *ret = nullptr;
 
    DENTER(OBJECT_LAYER);
@@ -1386,8 +1365,7 @@ const lDescr *object_type_get_descr(const sge_object_type type)
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_descr()
 *******************************************************************************/
-int object_type_get_key_nm(const sge_object_type type)
-{
+int object_type_get_key_nm(sge_object_type type) {
    int ret = NoName;
 
    DENTER(OBJECT_LAYER);
@@ -1397,14 +1375,13 @@ int object_type_get_key_nm(const sge_object_type type)
    } else {
       ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
-   
+
    DRETURN(ret);
 }
 
 bool
 object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
-                              int name, const char *string)
-{
+                              int name, const char *string) {
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
@@ -1418,11 +1395,13 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
                  !strcasecmp(string, "no") || !strcasecmp(string, "n")) {
          lSetPosBool(this_elem, pos, false);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
@@ -1430,8 +1409,7 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
 
 bool
 object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
-                              int name, const char *string)
-{
+                              int name, const char *string) {
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
@@ -1441,11 +1419,13 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
       if (parse_ulong_val(nullptr, nullptr, TYPE_TIM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
@@ -1453,8 +1433,7 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
 
 bool
 object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
-                               int name, const char *string)
-{
+                               int name, const char *string) {
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
@@ -1464,11 +1443,13 @@ object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
       if (parse_ulong_val(nullptr, nullptr, TYPE_TIM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
@@ -1476,12 +1457,11 @@ object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
 
 bool
 object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
-                              int name, const char *string, 
-                              const lDescr *descr, int nm)
-{
+                              int name, const char *string,
+                              const lDescr *descr, int nm) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       lList *tmp_list = nullptr;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
@@ -1497,50 +1477,49 @@ object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
             lFreeList(&tmp_list);
          }
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_celist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string)
-{
+object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(TOP_LAYER);
    static int rule[] = {CE_name, CE_stringval, 0};
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    if (this_elem != nullptr && string != nullptr) {
       lList *tmp_list = nullptr;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
-      if (!cull_parse_definition_list((char *)string, &tmp_list, "", CE_Type, rule)) {
+      if (!cull_parse_definition_list((char *) string, &tmp_list, "", CE_Type, rule)) {
          lSetPosList(this_elem, pos, tmp_list);
       } else {
          lFreeList(&tmp_list);
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string)
-{
+object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       lList *tmp_list = nullptr;
       lListElem *tmp_elem = nullptr;
@@ -1565,9 +1544,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
          /*
           * slot-wise suspend on subordinate
           */
-         char *sub_queues_text = nullptr;
-         char *slots_sum_text = nullptr;
-         char *endptr = nullptr;
+         char *end_ptr = nullptr;
          lUlong slots_sum_value = 0;
 
          /*
@@ -1575,27 +1552,29 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
           */
          /* the "slots=" was already skipped in the first sge_strtok_r() */
          /* parse the "8" in our example above */
-         slots_sum_text = sge_strtok_r(nullptr, "(", &last);
+         char *slots_sum_text = sge_strtok_r(nullptr, "(", &last);
          if (slots_sum_text != nullptr) {
-            slots_sum_value = strtol(slots_sum_text, &endptr, 10);
+            slots_sum_value = strtol(slots_sum_text, &end_ptr, 10);
          } else {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                    string);
             ret = false;
          }
-         if (endptr != nullptr && *endptr != '\0') {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         if (end_ptr != nullptr && *end_ptr != '\0') {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                    string);
             ret = false;
          }
          if (ret) {
             /* point the "sub_queues_text" to the start of the sub queue list */
-            sub_queues_text = sge_strtok_r(nullptr, ")", &last);
+            char *sub_queues_text = sge_strtok_r(nullptr, ")", &last);
             /* split up the original string from the first subordinated queue on */
             lString2List(sub_queues_text, &tmp_list, SO_Type, SO_name, ",) \t");
             for_each_rw (tmp_elem, tmp_list) {
                const char *queue_value = lGetString(tmp_elem, SO_name);
-               char *queuename   = sge_strtok(queue_value, ":");
-               char *value_str   = sge_strtok(nullptr, ":");
-               char *action_str  = sge_strtok(nullptr, ":");
+               char *queuename = sge_strtok(queue_value, ":");
+               char *value_str = sge_strtok(nullptr, ":");
+               char *action_str = sge_strtok(nullptr, ":");
 
                sge_strip_blanks(queuename);
                sge_strip_blanks(value_str);
@@ -1604,7 +1583,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                if (queuename != nullptr) {
                   lSetString(tmp_elem, SO_name, queuename);
                } else {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
                   lFreeList(&tmp_list);
                   ret = false;
                   break;
@@ -1613,7 +1593,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                if (slots_sum_value > 0) {
                   lSetUlong(tmp_elem, SO_slots_sum, slots_sum_value);
                } else {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
                   lFreeList(&tmp_list);
                   ret = false;
                   break;
@@ -1621,12 +1602,13 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
 
                if (value_str != nullptr) {
                   char *value_end = nullptr;
-                  u_long32 value   = strtol(value_str, &value_end, 10);
+                  u_long32 value = strtol(value_str, &value_end, 10);
 
                   if (value_end != nullptr && *value_end == '\0') {
-                     lSetUlong(tmp_elem, SO_seq_no, value); 
+                     lSetUlong(tmp_elem, SO_seq_no, value);
                   } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
                      lFreeList(&tmp_list);
                      ret = false;
                      break;
@@ -1641,7 +1623,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                   } else if (strcmp(action_str, "sr") == 0) {
                      lSetUlong(tmp_elem, SO_action, SO_ACTION_SR);
                   } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
                      lFreeList(&tmp_list);
                      ret = false;
                      break;
@@ -1650,7 +1633,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                   /* default is "sr" */
                   lSetUlong(tmp_elem, SO_action, SO_ACTION_SR);
                }
-            } 
+            }
             lSetPosList(this_elem, pos, tmp_list);
          }
       } else {
@@ -1675,7 +1658,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                      if (endptr != nullptr && *endptr == '\0') {
                         lSetUlong(tmp_elem, SO_threshold, value);
                      } else {
-                        answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+                        answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                                MSG_ERRORPARSINGVALUEFORNM_S, string);
                         lFreeList(&tmp_list);
                         ret = false;
                         break;
@@ -1684,8 +1668,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                      /*
                       * No value is explicitely allowed
                       */
-                  } 
-               } 
+                  }
+               }
                if (ret) {
                   lSetPosList(this_elem, pos, tmp_list);
                }
@@ -1694,32 +1678,31 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
       }
       sge_free_saved_vars(last);
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string)
-{
+object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       u_long32 value;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
-      if (sge_parse_bitfield_str(string, queue_types, &value, "", 
-                                 answer_list, true)) {
+      if (sge_parse_bitfield_str(string, queue_types, &value, "", answer_list, true)) {
          lSetPosUlong(this_elem, pos, value);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_QTYPE_INCORRECTSTRING, string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
@@ -1727,9 +1710,7 @@ object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list,
 
 
 bool
-object_parse_mem_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string)
-{
+object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
@@ -1739,23 +1720,23 @@ object_parse_mem_from_string(lListElem *this_elem, lList **answer_list,
       if (parse_ulong_val(nullptr, nullptr, TYPE_MEM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
-                                 int name, const char *string)
-{
-   bool ret = true;
-   
+object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
+   bool ret = true;
+
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1763,7 +1744,7 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
          /*
           * Empty string will be parsed as '0'
           */
-         lSetPosUlong(this_elem, pos, (u_long32)0);
+         lSetPosUlong(this_elem, pos, (u_long32) 0);
       } else {
          const double epsilon = 1.0E-12;
          char *end_ptr = nullptr;
@@ -1774,7 +1755,8 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
             /*
              * value to big for u_long32 variable
              */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S, string);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
+                                    string);
             ret = false;
          } else if (end_ptr != nullptr && *end_ptr == '\0') {
             lSetPosUlong(this_elem, pos, ulong_value);
@@ -1783,24 +1765,24 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
              * Not a number or
              * garbage after number
              */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING, string);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
+                                    string);
             ret = false;
          }
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_int_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string)
-{
+object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       int value;
@@ -1812,19 +1794,18 @@ object_parse_int_from_string(lListElem *this_elem, lList **answer_list,
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_char_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string)
-{
+object_parse_char_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       char value;
@@ -1836,19 +1817,18 @@ object_parse_char_from_string(lListElem *this_elem, lList **answer_list,
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_long_from_string(lListElem *this_elem, lList **answer_list,
-                             int name, const char *string)
-{
+object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       long value;
@@ -1860,19 +1840,18 @@ object_parse_long_from_string(lListElem *this_elem, lList **answer_list,
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_double_from_string(lListElem *this_elem, lList **answer_list,
-                                int name, const char *string)
-{
+object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       double value;
@@ -1880,23 +1859,23 @@ object_parse_double_from_string(lListElem *this_elem, lList **answer_list,
       if (sscanf(string, "%lf", &value) == 1) {
          lSetPosDouble(this_elem, pos, value);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_DOUBLE_INCORRECTSTRING, string);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_DOUBLE_INCORRECTSTRING,
+                                 string);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_parse_float_from_string(lListElem *this_elem, lList **answer_list,
-                               int name, const char *string)
-{
+object_parse_float_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       float value;
@@ -1908,45 +1887,45 @@ object_parse_float_from_string(lListElem *this_elem, lList **answer_list,
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, "<null>");
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
       ret = false;
    }
    DRETURN(ret);
 }
 
 bool
-object_set_any_type(lListElem *this_elem, int name, void *value)
-{
+object_set_any_type(lListElem *this_elem, int name, void *value) {
+   DENTER(OBJECT_LAYER);
    int cull_ret = 0;
    int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
    int type = lGetPosType(lGetElemDescr(this_elem), pos);
 
-   DENTER(OBJECT_LAYER);
 
    if (type == lStringT) {
-      cull_ret = lSetPosString(this_elem, pos, *((const char **)value));
+      cull_ret = lSetPosString(this_elem, pos, *((const char **) value));
    } else if (type == lHostT) {
-      cull_ret = lSetPosHost(this_elem, pos, *((const char **)value));
+      cull_ret = lSetPosHost(this_elem, pos, *((const char **) value));
    } else if (type == lUlongT) {
-      cull_ret = lSetPosUlong(this_elem, pos, *((lUlong*)value));
+      cull_ret = lSetPosUlong(this_elem, pos, *((lUlong *) value));
    } else if (type == lDoubleT) {
-      cull_ret = lSetPosDouble(this_elem, pos, *((lDouble*)value));
+      cull_ret = lSetPosDouble(this_elem, pos, *((lDouble *) value));
    } else if (type == lFloatT) {
-      cull_ret = lSetPosFloat(this_elem, pos, *((lFloat*)value));
+      cull_ret = lSetPosFloat(this_elem, pos, *((lFloat *) value));
    } else if (type == lLongT) {
-      cull_ret = lSetPosLong(this_elem, pos, *((lLong*)value));
+      cull_ret = lSetPosLong(this_elem, pos, *((lLong *) value));
    } else if (type == lCharT) {
-      cull_ret = lSetPosChar(this_elem, pos, *((lChar*)value));
+      cull_ret = lSetPosChar(this_elem, pos, *((lChar *) value));
    } else if (type == lBoolT) {
-      cull_ret = lSetPosBool(this_elem, pos, *((bool*)value));
+      cull_ret = lSetPosBool(this_elem, pos, *((bool *) value));
    } else if (type == lIntT) {
-      cull_ret = lSetPosInt(this_elem, pos, *((int*)value));
+      cull_ret = lSetPosInt(this_elem, pos, *((int *) value));
    } else if (type == lObjectT) {
-      cull_ret = lSetPosObject(this_elem, pos, *((lListElem **)value));
+      cull_ret = lSetPosObject(this_elem, pos, *((lListElem **) value));
    } else if (type == lRefT) {
-      cull_ret = lSetPosRef(this_elem, pos, *((lRef*)value));
+      cull_ret = lSetPosRef(this_elem, pos, *((lRef *) value));
    } else if (type == lListT) {
-      cull_ret = lSetPosList(this_elem, pos, lCopyList("", *((lList **)value)));
+      cull_ret = lSetPosList(this_elem, pos, lCopyList("", *((lList **) value)));
    } else {
       /* not possible */
       cull_ret = -1;
@@ -1955,9 +1934,8 @@ object_set_any_type(lListElem *this_elem, int name, void *value)
 }
 
 bool
-object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem)
-{
-   int cull_ret = 0;
+object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem) {
+   int cull_ret;
    int out_pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
    int in_pos = lGetPosViaElem(org_elem, name, SGE_NO_ABORT);
    int type = lGetPosType(lGetElemDescr(this_elem), out_pos);
@@ -1969,15 +1947,15 @@ object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem)
       cull_ret = lSetPosString(this_elem, out_pos, value);
    } else if (type == lHostT) {
       const char *value = lGetPosHost(org_elem, in_pos);
-      
+
       cull_ret = lSetPosHost(this_elem, out_pos, value);
    } else if (type == lUlongT) {
       u_long32 value = lGetPosUlong(org_elem, in_pos);
-   
+
       cull_ret = lSetPosUlong(this_elem, out_pos, value);
    } else if (type == lDoubleT) {
       double value = lGetPosDouble(org_elem, in_pos);
-   
+
       cull_ret = lSetPosDouble(this_elem, out_pos, value);
    } else if (type == lFloatT) {
       float value = lGetPosFloat(org_elem, in_pos);
@@ -1993,15 +1971,15 @@ object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem)
       cull_ret = lSetPosChar(this_elem, out_pos, value);
    } else if (type == lBoolT) {
       bool value = lGetPosBool(org_elem, in_pos) ? true : false;
-   
+
       cull_ret = lSetPosBool(this_elem, out_pos, value);
    } else if (type == lIntT) {
       int value = lGetPosInt(org_elem, in_pos);
-      
+
       cull_ret = lSetPosInt(this_elem, out_pos, value);
    } else if (type == lObjectT) {
       lListElem *value = lGetPosObject(org_elem, in_pos);
-      
+
       cull_ret = lSetPosObject(this_elem, out_pos, value);
    } else if (type == lRefT) {
       void *value = lGetPosRef(org_elem, in_pos);
@@ -2014,38 +1992,37 @@ object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem)
    DRETURN(cull_ret == 0 ? true : false);
 }
 
-void 
-object_get_any_type(const lListElem *this_elem, int name, void *value)
-{
+void
+object_get_any_type(const lListElem *this_elem, int name, void *value) {
+   DENTER(OBJECT_LAYER);
    int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
    int type = lGetPosType(lGetElemDescr(this_elem), pos);
 
-   DENTER(OBJECT_LAYER);
    if (value != nullptr) {
       if (type == lStringT) {
-         *((const char **)value) = lGetPosString(this_elem, pos);
+         *((const char **) value) = lGetPosString(this_elem, pos);
       } else if (type == lHostT) {
-         *((const char **)value) = lGetPosHost(this_elem, pos);
+         *((const char **) value) = lGetPosHost(this_elem, pos);
       } else if (type == lUlongT) {
-         *((lUlong*)value) = lGetPosUlong(this_elem, pos);
+         *((lUlong *) value) = lGetPosUlong(this_elem, pos);
       } else if (type == lDoubleT) {
-         *((lDouble*)value) = lGetPosDouble(this_elem, pos);
+         *((lDouble *) value) = lGetPosDouble(this_elem, pos);
       } else if (type == lFloatT) {
-         *((lFloat*)value) = lGetPosFloat(this_elem, pos);
+         *((lFloat *) value) = lGetPosFloat(this_elem, pos);
       } else if (type == lLongT) {
-         *((lLong*)value) = lGetPosLong(this_elem, pos);
+         *((lLong *) value) = lGetPosLong(this_elem, pos);
       } else if (type == lCharT) {
-         *((lChar*)value) = lGetPosChar(this_elem, pos);
+         *((lChar *) value) = lGetPosChar(this_elem, pos);
       } else if (type == lBoolT) {
-         *((bool*)value) = lGetPosBool(this_elem, pos) ? true : false;
+         *((bool *) value) = lGetPosBool(this_elem, pos) ? true : false;
       } else if (type == lIntT) {
-         *((int*)value) = lGetPosInt(this_elem, pos);
+         *((int *) value) = lGetPosInt(this_elem, pos);
       } else if (type == lObjectT) {
-         *((lListElem **)value) = lGetPosObject(this_elem, pos);
+         *((lListElem **) value) = lGetPosObject(this_elem, pos);
       } else if (type == lRefT) {
-         *((lRef *)value) = lGetPosRef(this_elem, pos);
+         *((lRef *) value) = lGetPosRef(this_elem, pos);
       } else if (type == lListT) {
-         *((lList **)value) = lGetPosList(this_elem, pos);
+         *((lList **) value) = lGetPosList(this_elem, pos);
       } else {
          DTRACE;
          /* not possible */
@@ -2054,13 +2031,11 @@ object_get_any_type(const lListElem *this_elem, int name, void *value)
    DRETURN_VOID;
 }
 
-bool 
-object_has_differences(const lListElem *this_elem, lList **answer_list,
-                       const lListElem *old_elem, bool modify_changed_flag)
-{
-   bool ret = false;
-
+bool
+object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem,
+                       bool modify_changed_flag) {
    DENTER(TOP_LAYER);
+   bool ret = false;
 
    if (this_elem != nullptr && old_elem != nullptr) {
       lDescr *this_elem_descr = this_elem->descr;
@@ -2071,8 +2046,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
       /*
        * Compare each attribute of the given elements
        */
-      for (tmp_decr1 = this_elem_descr, tmp_decr2 = old_elem_descr; 
-           tmp_decr1->nm != NoName && tmp_decr2->nm != NoName; 
+      for (tmp_decr1 = this_elem_descr, tmp_decr2 = old_elem_descr;
+           tmp_decr1->nm != NoName && tmp_decr2->nm != NoName;
            tmp_decr1++, tmp_decr2++) {
          int pos = tmp_decr1 - this_elem_descr;
          int type1 = this_elem_descr[pos].mt;
@@ -2085,8 +2060,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
          if (tmp_decr1->nm != tmp_decr2->nm ||
              mt_get_type(type1) != mt_get_type(type2)) {
             DPRINTF(("Attribute " SFQ " of type " SFQ " cannot be compared with attribute " SFQ " of type " SFQ ".\n",
-                     lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)],
-                     lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]));
+                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)],
+                    lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]));
             ret = true;
             break;
          }
@@ -2116,66 +2091,62 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
             case lIntT:
                equiv = (lGetPosInt(this_elem, pos) == lGetPosInt(old_elem, pos)) ? true : false;
                break;
-            case lStringT:
-               {
-                  const char *new_str = lGetPosString(this_elem, pos);
-                  const char *old_str = lGetPosString(old_elem, pos);
+            case lStringT: {
+               const char *new_str = lGetPosString(this_elem, pos);
+               const char *old_str = lGetPosString(old_elem, pos);
 
-                  if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
-                     equiv = false;
-                  } else if (new_str == old_str) {
-                     equiv = true;
-                  } else {
-                     equiv = (strcmp(new_str, old_str) == 0) ? true : false;
-                  }
+               if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
+                  equiv = false;
+               } else if (new_str == old_str) {
+                  equiv = true;
+               } else {
+                  equiv = (strcmp(new_str, old_str) == 0) ? true : false;
                }
+            }
                break;
-            case lHostT:
-               {                                                                                  
-                  const char *new_str = lGetPosHost(this_elem, pos);
-                  const char *old_str = lGetPosHost(old_elem, pos);
+            case lHostT: {
+               const char *new_str = lGetPosHost(this_elem, pos);
+               const char *old_str = lGetPosHost(old_elem, pos);
 
-                  if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
-                     equiv = false;
-                  } else if (new_str == old_str) {
-                     equiv = true;
-                  } else {
-                     equiv = (sge_hostcmp(new_str, old_str) == 0) ? true : false;
-                  }
+               if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
+                  equiv = false;
+               } else if (new_str == old_str) {
+                  equiv = true;
+               } else {
+                  equiv = (sge_hostcmp(new_str, old_str) == 0) ? true : false;
                }
+            }
                break;
             case lRefT:
                equiv = (lGetPosRef(this_elem, pos) == lGetPosRef(old_elem, pos)) ? true : false;
                break;
-            case lObjectT:
-               {
-                  lListElem *new_obj = lGetPosObject(this_elem, pos);
-                  lListElem *old_obj = lGetPosObject(old_elem, pos);
+            case lObjectT: {
+               lListElem *new_obj = lGetPosObject(this_elem, pos);
+               lListElem *old_obj = lGetPosObject(old_elem, pos);
 
-                  equiv = object_has_differences(new_obj, answer_list, old_obj, modify_changed_flag)? false : true;
-               }
+               equiv = object_has_differences(new_obj, answer_list, old_obj, modify_changed_flag) ? false : true;
+            }
                break;
-            case lListT:
-               {
-                  lList *new_list = lGetPosList(this_elem, pos);
-                  lList *old_list = lGetPosList(old_elem, pos);
+            case lListT: {
+               lList *new_list = lGetPosList(this_elem, pos);
+               lList *old_list = lGetPosList(old_elem, pos);
 
-                  if (object_list_has_differences(new_list, answer_list, old_list, modify_changed_flag)) {
-                     equiv = false;
-                  } else {
-                     equiv = true;
-                  }
+               if (object_list_has_differences(new_list, answer_list, old_list, modify_changed_flag)) {
+                  equiv = false;
+               } else {
+                  equiv = true;
                }
+            }
                break;
             default:
-               DTRACE;
+            DTRACE;
                equiv = false;
                break;
          }
 
          if (!equiv) {
             DPRINTF(("Attributes " SFQ " of type " SFQ " are not equivalent.\n",
-                     lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]));
+                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]));
             DTRACE;
             ret = true;
          }
@@ -2187,7 +2158,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
       if (tmp_decr1->nm != tmp_decr2->nm) {
          DPRINTF(("Descriptor size is not equivalent\n"));
          ret = true;
-      } 
+      }
    } else if (this_elem != nullptr || old_elem != nullptr) {
       /* One of both elems is not nullptr */
       ret = true;
@@ -2197,11 +2168,10 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
 }
 
 bool
-object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list, bool modify_changed_flag)
-{
-   bool ret = false;
-
+object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list,
+                            bool modify_changed_flag) {
    DENTER(BASIS_LAYER);
+   bool ret = false;
 
    if (this_list == nullptr && old_list == nullptr) {
       ret = false;
@@ -2209,9 +2179,9 @@ object_list_has_differences(const lList *this_list, lList **answer_list, const l
       const lListElem *new_elem;
       const lListElem *old_elem;
 
-      for(new_elem = lFirst(this_list), old_elem = lFirst(old_list);
-          new_elem != nullptr && old_elem != nullptr;
-          new_elem = lNext(new_elem), old_elem = lNext(old_elem)) {
+      for (new_elem = lFirst(this_list), old_elem = lFirst(old_list);
+           new_elem != nullptr && old_elem != nullptr;
+           new_elem = lNext(new_elem), old_elem = lNext(old_elem)) {
 
          ret = object_has_differences(new_elem, answer_list, old_elem, modify_changed_flag);
          if (ret) {
@@ -2219,7 +2189,6 @@ object_list_has_differences(const lList *this_list, lList **answer_list, const l
          }
       }
    } else {
-      DTRACE;
       ret = true;
    }
 
@@ -2257,9 +2226,8 @@ object_list_has_differences(const lList *this_list, lList **answer_list, const l
 *     sge_object/object_verify_cull()
 *     cull/list/lCompListDescr()
 *******************************************************************************/
-bool 
-object_list_verify_cull(const lList *lp, const lDescr *descr)
-{
+bool
+object_list_verify_cull(const lList *lp, const lDescr *descr) {
    bool ret = true;
 
    /* 
@@ -2325,9 +2293,8 @@ object_list_verify_cull(const lList *lp, const lDescr *descr)
 *     sge_object/object_verify_cull()
 *     cull/list/lCompListDescr()
 *******************************************************************************/
-bool 
-object_verify_cull(const lListElem *ep, const lDescr *descr)
-{
+bool
+object_verify_cull(const lListElem *ep, const lDescr *descr) {
    bool ret = true;
 
    /* 
@@ -2370,7 +2337,7 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
                   break;
                }
             }
-         } 
+         }
          i++;
       }
    }
@@ -2405,14 +2372,13 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
 *  SEE ALSO
 *     sge_object/object_verify_string_not_null()
 *******************************************************************************/
-bool 
-object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm)
-{
+bool
+object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) == 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_OBJECT_ULONG_NOT_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL,
+                              lNm2Str(nm));
       ret = false;
    }
 
@@ -2446,14 +2412,12 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm)
 *  SEE ALSO
 *     sge_object/object_verify_string_not_null()
 *******************************************************************************/
-bool 
-object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm)
-{
+bool
+object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) != 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
       ret = false;
    }
 
@@ -2487,14 +2451,12 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm)
 *  SEE ALSO
 *     sge_object/object_verify_string_not_null()
 *******************************************************************************/
-bool 
-object_verify_double_null(const lListElem *ep, lList **answer_list, int nm)
-{
+bool
+object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetDouble(ep, nm) != 0.0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_OBJECT_DOUBLE_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL, lNm2Str(nm));
       ret = false;
    }
 
@@ -2528,14 +2490,13 @@ object_verify_double_null(const lListElem *ep, lList **answer_list, int nm)
 *  SEE ALSO
 *     sge_object/object_verify_ulong_not_null()
 *******************************************************************************/
-bool 
-object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm)
-{
+bool
+object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetString(ep, nm) == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_OBJECT_STRING_NOT_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL,
+                              lNm2Str(nm));
       ret = false;
    }
 
@@ -2566,24 +2527,24 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm)
 *
 *  SEE ALSO
 *******************************************************************************/
-bool 
-object_verify_expression_syntax(const lListElem *elem, lList **answer_list)
-{
+bool
+object_verify_expression_syntax(const lListElem *elem, lList **answer_list) {
    bool ret = true;
    const char *expr;
    lUlong type;
-   type = lGetUlong(elem, CE_valtype); 
-   switch(type){
-      case TYPE_STR:  
-      case TYPE_CSTR: 
-      case TYPE_RESTR: 
-      case TYPE_HOST:  
-         expr = lGetString(elem, CE_stringval);         
-         if (sge_eval_expression(type,expr,"*",answer_list)==-1) {
+   type = lGetUlong(elem, CE_valtype);
+   switch (type) {
+      case TYPE_STR:
+      case TYPE_CSTR:
+      case TYPE_RESTR:
+      case TYPE_HOST:
+         expr = lGetString(elem, CE_stringval);
+         if (sge_eval_expression(type, expr, "*", answer_list) == -1) {
             ret = false;
          }
          break;
-   }    
+      default:;
+   }
    return ret;
 }
 
@@ -2613,8 +2574,7 @@ object_verify_expression_syntax(const lListElem *elem, lList **answer_list)
 *
 ******************************************************************************/
 int
-object_verify_name(const lListElem *object, lList **answer_list, int name)
-{
+object_verify_name(const lListElem *object, lList **answer_list, int name) {
    DENTER(TOP_LAYER);
    int ret = 0;
 
@@ -2663,45 +2623,42 @@ object_verify_name(const lListElem *object, lList **answer_list, int name)
 *
 *******************************************************************************/
 int
-object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr)
-{
+object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr) {
+   DENTER(TOP_LAYER);
    const lListElem *range_elem;
 
-   DENTER(TOP_LAYER);
-   
    /* ensure jobs PE range list request is normalized and ascending */
    range_list_sort_uniq_compress(pe_range, nullptr, true);
-   
+
    for_each_ep(range_elem, pe_range) {
       unsigned long pe_range_min = lGetUlong(range_elem, RN_min);
       unsigned long pe_range_max = lGetUlong(range_elem, RN_max);
       DPRINTF(("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min));
-      if ( pe_range_max == 0 || pe_range_min == 0  ) {
-         ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr );
+      if (pe_range_max == 0 || pe_range_min == 0) {
+         ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
    }
-   
+
    /* PE slot ranges used in conjunction with wildcards can cause number of slots
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
-   if (range_list_get_number_of_ids(pe_range)>1) {
+   if (range_list_get_number_of_ids(pe_range) > 1) {
       const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);
       for_each_ep(pe, master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
-             nslots != pe_urgency_slots(pe, lGetString(pe, PE_urgency_slots), pe_range))
-         {
+             nslots != pe_urgency_slots(pe, lGetString(pe, PE_urgency_slots), pe_range)) {
             ERROR(MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
       }
    }
-   
+
    DRETURN(STATUS_OK);
 }
 
@@ -2729,14 +2686,13 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
 *
 *******************************************************************************/
 int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
+   DENTER(TOP_LAYER);
    const lListElem *ep;
    lListElem *prev;
    lListElem *rm_ep;
    const char *attr_name;
 
-   DENTER(TOP_LAYER);
-
-   for_each_rev (ep, rl) { 
+   for_each_rev (ep, rl) {
       attr_name = lGetString(ep, CE_name);
 
       /* ensure 'slots' is not requested explicitly */
@@ -2747,13 +2703,13 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
       }
 
       /* remove all previous requests with the same name */
-      prev =  lPrevRW(ep);
-      while ((rm_ep=prev)) {
+      prev = lPrevRW(ep);
+      while ((rm_ep = prev)) {
          prev = lPrevRW(rm_ep);
          if (!strcmp(lGetString(rm_ep, CE_name), attr_name)) {
             DPRINTF(("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
-               attr_name, lGetString(ep, CE_stringval), 
-               attr_name, lGetString(rm_ep, CE_stringval)));
+                    attr_name, lGetString(ep, CE_stringval),
+                    attr_name, lGetString(rm_ep, CE_stringval)));
             lRemoveElem(rl, &rm_ep);
          }
       }
@@ -2791,22 +2747,20 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
 *  SEE ALSO
 *     sge_object/object_verify_cull()
 *******************************************************************************/
-bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr)
-{
+bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
-   DENTER(TOP_LAYER);
-
    if (pb == nullptr || epp == nullptr || descr == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                              MSG_NULLELEMENTPASSEDTO_S, "object_unpack_elem_verify");
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S,
+                              "object_unpack_elem_verify");
       ret = false;
    }
 
    if (ret) {
       if (cull_unpack_elem(pb, epp, nullptr) != 0) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                 MSG_COM_UNPACKOBJ_S, object_get_name(descr));
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_COM_UNPACKOBJ_S,
+                                 object_get_name(descr));
          ret = false;
       }
    }
@@ -2814,12 +2768,10 @@ bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListEl
    if (ret) {
       if (!object_verify_cull(*epp, descr)) {
          lFreeElem(epp);
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                 MSG_OBJECT_STRUCTURE_ERROR);
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);
          ret = false;
       }
    }
 
    DRETURN(ret);
 }
-
