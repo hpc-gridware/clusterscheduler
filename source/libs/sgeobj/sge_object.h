@@ -167,17 +167,13 @@ typedef enum {
 } sge_object_type;
 
 enum obj_state_ds {
-   OBJ_STATE_NONE = 0,
-
-   OBJ_STATE_GLOBAL = 1,
-   OBJ_STATE_SCHEDULER,
-
+   OBJ_STATE_GLOBAL = 0,      // array index in ds array
+   OBJ_STATE_SCHEDULER = 1,   // array index in ds array
    OBJ_STATE_MAX = OBJ_STATE_SCHEDULER,
 };
 
 /* Datastructure for internal storage of object/message related information */
 typedef struct {
-   lList **list;
    const char *type_name;                 /* type name, e.g. "JOB"      */
    lDescr *descr;                         /* descriptor, e.g. JB_Type       */
    const int key_nm;                      /* nm of key attribute        */

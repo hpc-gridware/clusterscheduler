@@ -815,8 +815,8 @@ setup_qmaster() {
    /*
     * Initialize Master lists and hash tables, if necessary 
     */
-
-   if (*object_type_get_master_list(SGE_TYPE_SUSER) == nullptr) {
+   const lList **suser_list = object_type_get_master_list(SGE_TYPE_SUSER);
+   if (*suser_list == nullptr) {
       *object_type_get_master_list_rw(SGE_TYPE_SUSER) = lCreateList("master submit user list", SU_Type);
    }
 
@@ -828,8 +828,7 @@ setup_qmaster() {
       spooling_context = spool_get_default_context();
    }
 
-   if (sge_read_configuration(spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), answer_list) !=
-       0) {
+   if (sge_read_configuration(spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), answer_list) != 0) {
       DRETURN(-1);
    }
 

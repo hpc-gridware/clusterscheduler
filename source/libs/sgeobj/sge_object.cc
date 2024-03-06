@@ -68,92 +68,80 @@
 
 #define OBJECT_LAYER BASIS_LAYER
 
-static lList *Master_Job_List = nullptr;
-static lList *Master_Zombie_List = nullptr;
-static lList *Master_Job_Schedd_Info_List = nullptr;
-static lList *Master_CEntry_List = nullptr;
-static lList *Master_HGroup_List = nullptr;
-static lList *Master_Userset_List = nullptr;
-static lList *Master_Project_List = nullptr;
-static lList *Master_User_List = nullptr;
-static lList *Master_CQueue_List = nullptr;
-static lList *Master_Exechost_List = nullptr;
-static lList *Master_Adminhost_List = nullptr;
-static lList *Master_Submithost_List = nullptr;
-static lList *Master_Calendar_List = nullptr;
-static lList *Master_Ckpt_List = nullptr;
-static lList *Master_Manager_List = nullptr;
-static lList *Master_Operator_List = nullptr;
-static lList *Master_Sharetree_List = nullptr;
-static lList *Master_Pe_List = nullptr;
-static lList *Master_SUser_List = nullptr;
-static lList *Master_RQS_List = nullptr;
-static lList *Master_AR_List = nullptr;
-static lList *Master_SchedulerConfig_List = nullptr;
-
-static lList *Master_Config_List = nullptr;
-
 /* One entry per event type */
 static object_description object_base[SGE_TYPE_ALL] = {
-        /* master list                 name                 descr      key */
-        {&Master_Adminhost_List,       "ADMINHOST",         AH_Type,   AH_name},
-        {&Master_Calendar_List,        "CALENDAR",          CAL_Type,  CAL_name},
-        {&Master_Ckpt_List,            "CKPT",              CK_Type,   CK_name},
-        {&Master_Config_List,          "CONFIG",            CONF_Type, CONF_name},
-        {nullptr,                      "GLOBAL_CONFIG",     nullptr,   NoName},
-        {&Master_Exechost_List,        "EXECHOST",          EH_Type,   EH_name},
-        {nullptr,                      "JATASK",            JAT_Type,  JAT_task_number},
-        {nullptr,                      "PETASK",            PET_Type,  PET_id},
-        {&Master_Job_List,             "JOB",               JB_Type,   JB_job_number},
-        {&Master_Job_Schedd_Info_List, "JOB_SCHEDD_INFO",   SME_Type,  NoName},
-        {&Master_Manager_List,         "MANAGER",           UM_Type,   UM_name},
-        {&Master_Operator_List,        "OPERATOR",          UO_Type,   UO_name},
-        {&Master_Sharetree_List,       "SHARETREE",         STN_Type,  STN_name},
-        {&Master_Pe_List,              "PE",                PE_Type,   PE_name},
-        {&Master_Project_List,         "PROJECT",           PR_Type,   PR_name},
-        {&Master_CQueue_List,          "CQUEUE",            CQ_Type,   CQ_name},
-        {nullptr,                      "QINSTANCE",         QU_Type,   QU_qname},
-        {&Master_SchedulerConfig_List, "SCHEDD_CONF",       SC_Type,   NoName},
-        {nullptr,                      "SCHEDD_MONITOR",    nullptr,   NoName},
-        {nullptr,                      "SHUTDOWN",          nullptr,   NoName},
-        {nullptr,                      "QMASTER_GOES_DOWN", nullptr,   NoName},
-        {&Master_Submithost_List,      "SUBMITHOST",        SH_Type,   SH_name},
-        {&Master_User_List,            "USER",              UU_Type,   UU_name},
-        {&Master_Userset_List,         "USERSET",           US_Type,   US_name},
-        {&Master_HGroup_List,          "HOSTGROUP",         HGRP_Type, HGRP_name},
-        {&Master_CEntry_List,          "COMPLEX_ENTRY",     CE_Type,   CE_name},
-        {&Master_Zombie_List,          "ZOMBIE_JOBS",       JB_Type,   JB_job_number},
-        {&Master_SUser_List,           "SUBMIT_USER",       SU_Type,   SU_name},
-        {&Master_RQS_List,             "RQS",               RQS_Type,  RQS_name},
-        {&Master_AR_List,              "AR",                AR_Type,   AR_id},
-        {nullptr,                      "JOBSCRIPT",         STU_Type,  STU_name},
+        /* list               name                 descr      key */
+        {"ADMINHOST",         AH_Type,   AH_name},
+        {"CALENDAR",          CAL_Type,  CAL_name},
+        {"CKPT",              CK_Type,   CK_name},
+        {"CONFIG",            CONF_Type, CONF_name},
+        {"GLOBAL_CONFIG",     nullptr,   NoName},
+        {"EXECHOST",          EH_Type,   EH_name},
+        {"JATASK",            JAT_Type,  JAT_task_number},
+        {"PETASK",            PET_Type,  PET_id},
+        {"JOB",               JB_Type,   JB_job_number},
+        {"JOB_SCHEDD_INFO",   SME_Type,  NoName},
+        {"MANAGER",           UM_Type,   UM_name},
+        {"OPERATOR",          UO_Type,   UO_name},
+        {"SHARETREE",         STN_Type,  STN_name},
+        {"PE",                PE_Type,   PE_name},
+        {"PROJECT",           PR_Type,   PR_name},
+        {"CQUEUE",            CQ_Type,   CQ_name},
+        {"QINSTANCE",         QU_Type,   QU_qname},
+        {"SCHEDD_CONF",       SC_Type,   NoName},
+        {"SCHEDD_MONITOR",    nullptr,   NoName},
+        {"SHUTDOWN",          nullptr,   NoName},
+        {"QMASTER_GOES_DOWN", nullptr,   NoName},
+        {"SUBMITHOST",        SH_Type,   SH_name},
+        {"USER",              UU_Type,   UU_name},
+        {"USERSET",           US_Type,   US_name},
+        {"HOSTGROUP",         HGRP_Type, HGRP_name},
+        {"COMPLEX_ENTRY",     CE_Type,   CE_name},
+        {"ZOMBIE_JOBS",       JB_Type,   JB_job_number},
+        {"SUBMIT_USER",       SU_Type,   SU_name},
+        {"RQS",               RQS_Type,  RQS_name},
+        {"AR",                AR_Type,   AR_id},
+        {"JOBSCRIPT",         STU_Type,  STU_name},
 };
 
-/* contains the information for the thread local structure. */
-typedef struct {
-   obj_state_ds ds_id;                           // data store ID
-   lList *lists[SGE_TYPE_ALL];                   // master lists for the DS
-   object_description object_base[SGE_TYPE_ALL]; // DS description
-} obj_state_t;
-
-/* the key for the thread local memeory */
+// the key to get thread local memory
 static pthread_key_t obj_state_key;
-
 static pthread_once_t obj_once = PTHREAD_ONCE_INIT;
+
+// thread local storage
+struct obj_thread_local_t {
+   obj_state_ds ds_id; // default data store ID that should be used
+};
+
+// data store
+struct obj_data_store_t {
+   lList *master_list[SGE_TYPE_ALL]; // master list
+};
+
+// thread shared storage data type
+struct obj_thread_shared_t {
+   obj_data_store_t data_store[OBJ_STATE_MAX+1]; // all data stores that are available
+};
+
+// thread shared storage
+obj_thread_shared_t obj_thread_shared{};
 
 static void
 obj_state_destroy(void *st) {
-   auto *state = (obj_state_t *) st;
-
-   for (int i = 0; i < SGE_TYPE_ALL; i++) {
-      lFreeList(&(state->lists[i]));
-   }
-   sge_free(&state);
+   auto *tlocal = (obj_thread_local_t *) st;
+   sge_free(&tlocal);
 }
 
 static void
 obj_thread_local_once_init() {
    pthread_key_create(&obj_state_key, obj_state_destroy);
+
+   // initialize thread shared storage
+   for (int ds_id = OBJ_STATE_GLOBAL; ds_id <= OBJ_STATE_MAX; ds_id++) {
+      for (int list_id = 0; list_id < SGE_TYPE_ALL; list_id++) {
+         obj_thread_shared.data_store[ds_id].master_list[list_id] = nullptr;
+      }
+   }
 }
 
 static void obj_mt_init() {
@@ -171,71 +159,18 @@ public:
 static ObjectThreadInit object_obj{};
 
 static void
-obj_state_init(obj_state_t *state) {
-   int i;
-
-   state->ds_id = OBJ_STATE_SCHEDULER;
-
-   memcpy((void *) state->object_base, (const void *) object_base, sizeof(object_description) * SGE_TYPE_ALL);
-
-   /* initialize mirroring data structures - only changeable fields */
-   for (i = 0; i < SGE_TYPE_ALL; i++) {
-      state->lists[i] = nullptr;
-      state->object_base[i].list = &(state->lists[i]);                          /* master list                    */
-
-   }
-}
-
-static void
-obj_state_global_init(obj_state_t *state) {
+obj_state_init(obj_thread_local_t *state) {
    DENTER(TOP_LAYER);
-
-   if (state != nullptr) {
-      state->ds_id = OBJ_STATE_GLOBAL;
-      memcpy((void *) state->object_base, (const void *) object_base, sizeof(object_description) * SGE_TYPE_ALL);
-
-      /* initialize mirroring data structures - only changeable fields */
-      for (int i = 0; i < SGE_TYPE_ALL; i++) {
-         state->lists[i] = nullptr;
-         state->object_base[i].list = object_base[i].list;
-      }
-   } else {
-      /* SG: we need a error message */
-      abort();
-   }
+   state->ds_id = OBJ_STATE_GLOBAL;
    DRETURN_VOID;
 }
 
-
-void obj_init(obj_state_ds ds_id) {
+void
+obj_init(obj_state_ds ds_id) {
    DENTER(TOP_LAYER);
-   bool init = false;
-   auto state = (obj_state_t *) pthread_getspecific(obj_state_key);
-
-   if (state == nullptr) {
-      state = (obj_state_t *) sge_malloc(sizeof(obj_state_t));
-      memset((void *) state, 0, sizeof(obj_state_t));
-      init = true;
-
-      int ret = pthread_setspecific(obj_state_key, (void *) state);
-      if (ret != 0) {
-         abort();  /* find a better way for this, use a return code */
-      }
-   }
-
-   if (init || ((state->ds_id == OBJ_STATE_GLOBAL) && (state->ds_id != ds_id))) {
-      if (ds_id == OBJ_STATE_GLOBAL) {
-         if (!init) {
-            int i;
-            for (i = 0; i < SGE_TYPE_ALL; i++) {
-               lFreeList(&(state->lists[i]));
-            }
-         }
-         obj_state_global_init(state);
-      } else {
-         obj_state_init(state);
-      }
-   }
+   GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
+   DPRINTF(("thread will use data store %d\n", ds_id));
+   obj_state->ds_id = ds_id;
    DRETURN_VOID;
 }
 
@@ -284,12 +219,10 @@ void obj_init(obj_state_ds ds_id) {
 static const char *
 object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm,
                                    char string_quotes) {
+   DENTER(OBJECT_LAYER);
    const char *str;
    const char *result = nullptr;
    int pos;
-
-   DENTER(OBJECT_LAYER);
-
    pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
 
    if (pos < 0) {
@@ -395,12 +328,10 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
 *     sgeobj/object/object_append_field_to_dstring()
 ******************************************************************************/
 static bool
-object_parse_raw_field_from_string(lListElem *object, lList **answer_list,
-                                   const int nm, const char *value) {
+object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const int nm, const char *value) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
    int pos;
-
-   DENTER(OBJECT_LAYER);
 
    pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
    if (pos < 0) {
@@ -1129,13 +1060,16 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 lList **object_type_get_master_list_rw(sge_object_type type) {
    lList **ret = nullptr;
 
-   DENTER(OBJECT_LAYER);
+   DENTER(TOP_LAYER);
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
+      GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
 
-      if (obj_state->object_base[type].list != nullptr) {
-         ret = obj_state->object_base[type].list;
+      DPRINTF(("data store ID is %d\n", obj_state->ds_id));
+      DPRINTF(("master list type is %d\n", type));
+      DPRINTF(("master list is %p\n", obj_thread_shared.data_store[obj_state->ds_id].master_list[type]));
+
+      ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
 
 #ifdef OBSERVE
          if (*obj_state->object_base[type].list) {
@@ -1143,9 +1077,6 @@ lList **object_type_get_master_list_rw(sge_object_type type) {
          }
 #endif
 
-      } else {
-         ERROR(MSG_OBJECT_NO_LIST_TO_MOD_TYPE_SI, __func__, type);
-      }
    } else {
       ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
    }
@@ -1197,10 +1128,10 @@ bool object_type_free_master_list(sge_object_type type) {
    DENTER(OBJECT_LAYER);
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
+      GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
 
-      if (obj_state->object_base[type].list) {
-         lFreeList(obj_state->object_base[type].list);
+      if (obj_thread_shared.data_store[obj_state->ds_id].master_list[type]) {
+         lFreeList(&obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
          ret = true;
       }
    } else {
