@@ -270,7 +270,8 @@ static bool read_spooled_data()
    DRETURN(true);
 }
 
-sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
+sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                                       sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata)
 {
    lList *answer_list = nullptr;
    const lListElem *context, *ep;
@@ -439,8 +440,9 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
    DRETURN(SGE_EMA_OK);
 }
 
-sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, 
-                      lListElem *event, void *clientdata)
+sge_callback_result
+spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                  lListElem *event, [[maybe_unused]] void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
    lList *answer_list = nullptr;
@@ -653,7 +655,7 @@ int main(int argc, char *argv[])
    read_spooled_data();
    
    /* initialize mirroring */
-   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, spool_event_before, spool_event_after, nullptr, nullptr, nullptr);
    prof_start(SGE_PROF_ALL, nullptr);
 

@@ -69,7 +69,6 @@
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/qm_name.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/oge_gdi_client.h"
 
 #include "sched/debit.h"
@@ -117,7 +116,7 @@ static lList *
 parse_qmaster(lList **, u_long32 *);
 
 static void
-qmaster_init(char **);
+qmaster_init();
 
 static void
 communication_setup();
@@ -134,11 +133,11 @@ setup_qmaster();
 static int
 remove_invalid_job_references(int user);
 
-static int
-debit_all_jobs_from_qs(void);
+static void
+debit_all_jobs_from_qs();
 
 static void
-init_categories(void);
+init_categories();
 
 
 /****** qmaster/setup_qmaster/sge_setup_qmaster() ******************************
@@ -198,12 +197,10 @@ sge_setup_qmaster(char *anArgv[]) {
       sge_exit(1);
    }
 
-   qmaster_init(anArgv);
-
+   qmaster_init();
    sge_write_pid(QMASTER_PID_FILE);
-
    DRETURN(0);
-} /* sge_setup_qmaster() */
+}
 
 /****** qmaster/setup_qmaster/sge_qmaster_thread_init() ************************
 *  NAME
@@ -285,7 +282,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 *
 *******************************************************************************/
 void
-sge_setup_job_resend(void) {
+sge_setup_job_resend() {
    DENTER(TOP_LAYER);
    const lListElem *job = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
 
@@ -535,8 +532,7 @@ parse_qmaster(lList **ppcmdline, u_long32 *help) {
 *
 *******************************************************************************/
 static void
-qmaster_init(char **anArgv) {
-
+qmaster_init() {
    DENTER(TOP_LAYER);
 
    if (setup_qmaster()) {
@@ -545,13 +541,11 @@ qmaster_init(char **anArgv) {
    }
 
    component_set_exit_func(qmaster_lock_and_shutdown);
-
    communication_setup();
-
    starting_up(); /* write startup info message to message file */
 
    DRETURN_VOID;
-} /* qmaster_init() */
+}
 
 /****** qmaster/setup_qmaster/communication_setup() ****************************
 *  NAME
@@ -616,7 +610,6 @@ communication_setup() {
 
    if (com_handle) {
       unsigned long max_connections = 0;
-      u_long32 old_ll = 0;
 
       /* 
        * re-check file descriptor limits for qmaster 
@@ -624,7 +617,7 @@ communication_setup() {
       getrlimit(RLIMIT_NOFILE, &qmaster_rlimits);
 
       /* save old debug log level and set log level to INFO */
-      old_ll = log_state_get_log_level();
+      u_long32 old_ll = log_state_get_log_level();
 
       /* enable max connection close mode */
       cl_com_set_max_connection_close_mode(com_handle, CL_ON_MAX_COUNT_CLOSE_AUTOCLOSE_CLIENTS);
@@ -646,8 +639,8 @@ communication_setup() {
       log_state_set_log_level(old_ll);
    }
 
-   cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1), HEARD_FROM_TIMEOUT,
-                                   mconf_get_max_unheard());
+   cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1),
+                                   HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
 
    /* fetching qmaster_params and begin to parse */
    qmaster_params = mconf_get_qmaster_params();
@@ -693,23 +686,20 @@ communication_setup() {
 *******************************************************************************/
 static bool
 is_qmaster_already_running(const char *qmaster_spool_dir) {
+   DENTER(TOP_LAYER);
    enum {
       NULL_SIGNAL = 0
    };
-
    char pidfile[SGE_PATH_MAX] = {'\0'};
-   pid_t pid = 0;
-
-   DENTER(TOP_LAYER);
 
    snprintf(pidfile, sizeof(pidfile), "%s/%s", qmaster_spool_dir, QMASTER_PID_FILE);
 
-   if ((pid = sge_readpid(pidfile)) == 0) {
+   pid_t pid = sge_readpid(pidfile);
+   if (pid == 0) {
       DRETURN(false);
    }
 
    bool res = (kill(pid, NULL_SIGNAL) == 0) ? true : false;
-
    DRETURN(res);
 } /* is_qmaster_already_running() */
 
@@ -792,15 +782,13 @@ qmaster_lock_and_shutdown(int anExitValue) {
 
 static int
 setup_qmaster() {
+   DENTER(TOP_LAYER);
    lListElem *jep, *ep, *tmpqep;
    static bool first = true;
-   const lListElem *spooling_context = nullptr;
+   const lListElem *spooling_context;
    lList *answer_list = nullptr;
    time_t time_start, time_end;
    monitoring_t monitor;
-   const char *qualified_hostname = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (first) {
       first = false;
@@ -828,7 +816,7 @@ setup_qmaster() {
       spooling_context = spool_get_default_context();
    }
 
-   if (sge_read_configuration(spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), answer_list) != 0) {
+   if (sge_read_configuration(spooling_context, object_type_get_master_list_rw(SGE_TYPE_CONFIG), &answer_list) != 0) {
       DRETURN(-1);
    }
 
@@ -836,7 +824,7 @@ setup_qmaster() {
 
    /* get aliased hostname from commd */
    reresolve_qualified_hostname();
-   qualified_hostname = component_get_qualified_hostname();
+   const char *qualified_hostname = component_get_qualified_hostname();
    DEBUG("component_get_qualified_hostname() returned \"%s\"\n", qualified_hostname);
 
    /*
@@ -986,17 +974,16 @@ setup_qmaster() {
     */
    for_each_rw(tmpqep, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
       const lList *qinstance_list = lGetList(tmpqep, CQ_qinstances);
-      lListElem *qinstance = nullptr;
-      const lList *aso_list = nullptr;
-      lListElem *aso = nullptr;
 
       /*
        * Update cluster queue configuration from pre-6.2u5 to 6.2u5, i.e. from
        * cluster queues without slotwise suspend on subordinate to such with 
        * slotwise ssos.
        */
-      aso_list = lGetList(tmpqep, CQ_subordinate_list);
+      const lList *aso_list = lGetList(tmpqep, CQ_subordinate_list);
       if (aso_list != nullptr) {
+         lListElem *aso;
+
          /* This cluster queue has a list of subordinate lists (possibly one
           * for each host).*/
          for_each_rw (aso, aso_list) {
@@ -1039,6 +1026,7 @@ setup_qmaster() {
             }
          }
       }
+      lListElem *qinstance;
       for_each_rw(qinstance, qinstance_list) {
          qinstance_set_full_name(qinstance);
          sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false);
@@ -1067,9 +1055,9 @@ setup_qmaster() {
 
    DPRINTF(("job_list-----------------------------------\n"));
    /* measure time needed to read job database */
-   time_start = time(0);
+   time_start = time(nullptr);
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
-   time_end = time(0);
+   time_end = time(nullptr);
    answer_list_output(&answer_list);
 
    {
@@ -1245,20 +1233,15 @@ remove_invalid_job_references(int user) {
    DRETURN(0);
 }
 
-static int debit_all_jobs_from_qs() {
-   const lListElem *gdi;
-   u_long32 slots;
-   const char *queue_name;
-   lListElem *qep = nullptr;
-   lListElem *next_jatep = nullptr;
-   lListElem *jatep = nullptr;
-   int ret = 0;
+static void debit_all_jobs_from_qs() {
+   DENTER(TOP_LAYER);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
-
-   DENTER(TOP_LAYER);
+   const lListElem *gdi;
+   const char *queue_name;
+   int slots;
 
    lListElem *jep;
    lListElem *next_jep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
@@ -1267,7 +1250,8 @@ static int debit_all_jobs_from_qs() {
       /* may be we have to delete this job */
       next_jep = lNextRW(jep);
 
-      next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
+      lListElem *jatep = nullptr;
+      lListElem *next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       while ((jatep = next_jatep)) {
          bool master_task = true;
          next_jatep = lNextRW(jatep);
@@ -1280,9 +1264,10 @@ static int debit_all_jobs_from_qs() {
             const lListElem *ar = nullptr;
 
             queue_name = lGetString(gdi, JG_qname);
-            slots = lGetUlong(gdi, JG_slots);
+            slots = (int)lGetUlong(gdi, JG_slots);
 
-            if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name))) {
+            lListElem *qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
+            if (qep == nullptr) {
                ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(lGetUlong(jep, JB_job_number)));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else if (ar_id != 0 && (ar = lGetElemUlong(master_ar_list, AR_id, ar_id)) == nullptr) {
@@ -1292,11 +1277,11 @@ static int debit_all_jobs_from_qs() {
                /* debit in all layers */
                lListElem *rqs = nullptr;
                debit_host_consumable(jep, jatep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
-                                                                  SGE_GLOBAL_NAME), master_centry_list, slots, master_task,
-                                     nullptr);
-               debit_host_consumable(jep, jatep, host_list_locate(
-                                             *object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qep, QU_qhostname)),
-                                     master_centry_list, slots, master_task, nullptr);
+                                                                  SGE_GLOBAL_NAME), master_centry_list, slots,
+                                                                  master_task, nullptr);
+               debit_host_consumable(jep, jatep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
+                                                                  lGetHost(qep, QU_qhostname)), master_centry_list,
+                                                                  slots, master_task, nullptr);
                qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, nullptr);
                for_each_rw (rqs, master_rqs_list) {
                   rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list,
@@ -1308,7 +1293,8 @@ static int debit_all_jobs_from_qs() {
                   if (queue != nullptr) {
                      qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, nullptr);
                   } else {
-                     ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat, sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
+                     ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
+                           sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
                   }
                }
             }
@@ -1316,8 +1302,7 @@ static int debit_all_jobs_from_qs() {
          }
       }
    }
-
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** setup_qmaster/init_categories() ****************************************
@@ -1333,7 +1318,7 @@ static int debit_all_jobs_from_qs() {
 *  NOTES
 *     MT-NOTE: init_categories() is not MT safe
 *******************************************************************************/
-static void init_categories(void) {
+static void init_categories() {
    const lListElem *cq, *pe, *hep, *ep;
    lListElem *acl, *prj;
    const lListElem *rqs;

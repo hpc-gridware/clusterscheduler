@@ -44,8 +44,6 @@
 
 #include "mir/sge_mirror.h"
 
-#include "sgeobj/sge_daemonize.h"
-
 #include "gdi/oge_gdi_client.h"
 
 #include "sig_handlers.h"
@@ -55,8 +53,7 @@ int events;
 u_long32 events_size;
 
 static sge_callback_result
-print_event(sge_evc_class_t *evc, sge_object_type type, 
-            sge_event_action action, lListElem *event, void *clientdata)
+print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
 {
    char buffer[1024];
    sge_pack_buffer pb;
@@ -81,18 +78,16 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
    DRETURN(SGE_EMA_OK);
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-   int cl_err = 0;
+   DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
    lList *alp = nullptr;
    sge_evc_class_t *evc = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
 
    sge_setup_sig_handlers(QEVENT);
 
    /* setup event client */
-   cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
+   int cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
    if (cl_err != AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
@@ -103,11 +98,12 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
    
    while(!shut_me_down) {
-      events=events_size=0;
+      events = 0;
+      events_size = 0;
       printf("---------------------\n");
       sge_mirror_process_events(evc);
       printf("received " sge_u32" kbytes in with %d events\n", events_size/1024, events);

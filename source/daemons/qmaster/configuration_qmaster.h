@@ -35,7 +35,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList *anAnswer);
+sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list);
 
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);

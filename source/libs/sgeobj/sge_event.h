@@ -118,7 +118,7 @@ typedef void (*evm_remove_func_t) (
 #define EV_FLUSHED true
 #define EV_NOT_FLUSHED false
 #define EV_MAX_FLUSH 0x3f
-#define EV_NO_FLUSH -1 
+#define EV_NO_FLUSH (-1)
 
 /* documentation see libs/evc/sge_event_client.c */
 

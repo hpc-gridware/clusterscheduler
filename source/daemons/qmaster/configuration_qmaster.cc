@@ -117,7 +117,7 @@ sge_get_config_version_for_host(const char *aName);
  * the list with the cluster configuration.
  */
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList *anAnswer) {
+sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list) {
    lListElem *local = nullptr;
    lListElem *global = nullptr;
    int ret = -1;
@@ -129,7 +129,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   spool_read_list(&anAnswer, aSpoolContext, config_list, SGE_TYPE_CONFIG);
+   spool_read_list(answer_list, aSpoolContext, config_list, SGE_TYPE_CONFIG);
 
    /*
     * For Urubu (6.2u2) we won't have and update script. Therefore the master
@@ -177,7 +177,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   answer_list_output(&anAnswer);
+   answer_list_output(answer_list);
 
    DPRINTF(("qualified_hostname: '%s'\n", qualified_hostname));
    if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
@@ -190,8 +190,8 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
       DRETURN(-1);
    }
 
-   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, nullptr);
-   answer_list_output(&anAnswer);
+   ret = merge_configuration(answer_list, progid, cell_root, global, local, nullptr);
+   answer_list_output(answer_list);
 
    lFreeElem(&local);
    lFreeElem(&global);

@@ -157,8 +157,8 @@ typedef enum {
     *    'object_base' in libs/sgeobj/sge_object.c
     *    'table_base' in libs/spool/sge_spooling_database.c
     *
-    *    '_sge_mirror_unsubscribe' libs/mir/sge_mirror.c
-    *    '_sge_mirror_subscribe' libs/mir/sge_mirror.c
+    *    'sge_mirror_unsubscribe_internal' libs/mir/sge_mirror.c
+    *    'sge_mirror_subscribe_internal' libs/mir/sge_mirror.c
     * if something is changed here!
     */
 

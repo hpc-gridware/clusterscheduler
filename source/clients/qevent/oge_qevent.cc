@@ -60,7 +60,6 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
@@ -69,23 +68,21 @@
 #include "gdi/oge_gdi_client.h"
 
 #include "oge_qevent.h"
-#include "usage.h"
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
-#include "msg_common.h"
 
 u_long Global_jobs_running = 0;
 u_long Global_jobs_registered = 0;
 qevent_options *Global_qevent_options;
 
 
-static void qevent_show_usage(void);
+static void qevent_show_usage();
 static void qevent_testsuite_mode(sge_evc_class_t *evc);
 static void qevent_subscribe_mode(sge_evc_class_t *evc);
 static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
-static qevent_options* qevent_get_option_struct(void);
+static qevent_options* qevent_get_option_struct();
 static void qevent_set_option_struct(qevent_options *option_struct);
 
 
@@ -94,17 +91,17 @@ static void  qevent_set_option_struct(qevent_options *option_struct) {
 }
 
 
-static qevent_options* qevent_get_option_struct(void) {
+static qevent_options* qevent_get_option_struct() {
    return Global_qevent_options;
 }
 
-static void qevent_dump_pid_file(void) {
+static void qevent_dump_pid_file() {
    sge_write_pid("qevent.pid");
 }
 
 static sge_callback_result 
-print_event(sge_evc_class_t *evc, sge_object_type type, 
-            sge_event_action action, lListElem *event, void *clientdata)
+print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+            [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata)
 {
    char buffer[1024];
    dstring buffer_wrapper;
@@ -125,8 +122,8 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
 
 #ifndef QEVENT_SHOW_ALL
 static sge_callback_result
-print_jatask_event(sge_evc_class_t *evc, sge_object_type type, 
-                   sge_event_action action, lListElem *event, void *clientdata)
+print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                   [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
    char buffer[1024];
    dstring buffer_wrapper;
@@ -137,10 +134,10 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
    
    DPRINTF(("%s\n", event_text(event, &buffer_wrapper)));
    if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
-      u_long32 type = lGetUlong(event, ET_type);
+      u_long32 event_type = lGetUlong(event, ET_type);
       u_long32 timestamp = lGetUlong(event, ET_timestamp);
       
-      if (type == sgeE_JATASK_MOD) { 
+      if (event_type == sgeE_JATASK_MOD) {
          lList *jat = lGetListRW(event,ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
@@ -155,7 +152,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          }
       }
    
-      if (type == sgeE_JOB_FINAL_USAGE) { 
+      if (event_type == sgeE_JOB_FINAL_USAGE) {
          /* lList *jat = lGetList(event,ET_new_version); */
          u_long job_id = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
@@ -164,7 +161,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          Global_jobs_running--;
          fflush(stdout);  
       }
-      if (type == sgeE_JOB_ADD) { 
+      if (event_type == sgeE_JOB_ADD) {
          const lList *jat = lGetListRW(event,ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
@@ -177,7 +174,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          Global_jobs_registered++;
          fflush(stdout);  
       }
-      if (type == sgeE_JOB_DEL) { 
+      if (event_type == sgeE_JOB_DEL) {
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id, task_id,sge_u32c(timestamp));
@@ -187,7 +184,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
 
    }
    /* create a callback error to test error handling */
-   if(type == SGE_TYPE_GLOBAL_CONFIG) {
+   if (type == SGE_TYPE_GLOBAL_CONFIG) {
       DRETURN(SGE_EMA_FAILURE);
    }
    
@@ -196,8 +193,8 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
 #endif
 
 static sge_callback_result
-analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type, 
-                     sge_event_action action, lListElem *event, void *clientdata)
+analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                     [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
    char buffer[1024];
    dstring buffer_wrapper;
@@ -205,9 +202,9 @@ analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type,
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
    
    if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
-      u_long32 type = lGetUlong(event, ET_type);
+      u_long32 event_type = lGetUlong(event, ET_type);
 
-      if (type == sgeE_JATASK_MOD) { 
+      if (event_type == sgeE_JATASK_MOD) {
          const lList *jat = lGetList(event,ET_new_version);
          const lListElem *ep = lFirst(jat);
          u_long job_status = lGetUlong(ep, JAT_status);
@@ -216,21 +213,21 @@ analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          }
       }
 
-      if (type == sgeE_JOB_FINAL_USAGE) { 
+      if (event_type == sgeE_JOB_FINAL_USAGE) {
       }
 
-      if (type == sgeE_JOB_ADD) { 
+      if (event_type == sgeE_JOB_ADD) {
          /* lList *jat = lGetList(event,ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          lListElem *ep = lFirst(jat); */
       }
 
-      if (type == sgeE_JOB_DEL) { 
+      if (event_type == sgeE_JOB_DEL) {
          qevent_trigger_scripts(QEVENT_JB_END, qevent_get_option_struct(), event);
       }
 
-      if (type == sgeE_JATASK_DEL) { 
+      if (event_type == sgeE_JATASK_DEL) {
          qevent_trigger_scripts(QEVENT_JB_TASK_END,qevent_get_option_struct() , event);
       }
 
@@ -248,11 +245,10 @@ analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type,
 
 static void qevent_trigger_scripts( int qevent_event, qevent_options *option_struct, lListElem *event) {
 
-   int i=0;
    DENTER(TOP_LAYER);
    if (option_struct->trigger_option_count > 0) {
       INFO("trigger for event " SFN "\n", qevent_get_event_name(qevent_event) );
-      for (i=0;i<option_struct->trigger_option_count;i++) {
+      for (int i = 0; i < option_struct->trigger_option_count; i++) {
          if ( (option_struct->trigger_option_events)[i] == qevent_event ) {
             qevent_start_trigger_script(qevent_event ,(option_struct->trigger_option_scripts)[i], event);
          }
@@ -295,7 +291,7 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
 
    if (pid > 0) {
       int exit_status;
-         struct rusage rusage;
+         struct rusage rusage{};
          int status;
          wait3(&status, 0, &rusage);
          exit_status = status;
@@ -312,12 +308,12 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
       /*      sge_close_all_fds(nullptr); */
       snprintf(buffer, sizeof(buffer), sge_U32CFormat,sge_u32c(jobid));
       snprintf(buffer2, sizeof(buffer2), sge_U32CFormat,sge_u32c(taskid));
-      execlp(script_file, basename, event_name, buffer, buffer2, (char *)0);
+      execlp(script_file, basename, event_name, buffer, buffer2, (char *) nullptr);
    }
    exit(1);
 }
 
-static void qevent_show_usage(void) {
+static void qevent_show_usage() {
    dstring ds;
    char buffer[256];
    
@@ -345,7 +341,7 @@ static void qevent_show_usage(void) {
 }
 
 
-static void qevent_parse_command_line(int argc, char **argv, qevent_options *option_struct) {
+static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qevent_options *option_struct) {
 
    
    DENTER(TOP_LAYER);
@@ -488,7 +484,6 @@ int main(int argc, char *argv[])
       sge_dstring_free(enabled_options.error_message);
       sge_exit(1);
    }
-   /* TODO: how is the memory we allocate here released ???, SGE_EXIT doesn't */
    if (false == sge_gdi2_evc_setup(&evc, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);
@@ -517,7 +512,7 @@ int main(int argc, char *argv[])
       lCondition *where =nullptr;
       lEnumeration *what = nullptr;
 
-      sge_mirror_initialize(evc, EV_ID_ANY, "sge_mirror -trigger", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_ACK);
 
       /* put out information about -trigger option */
@@ -637,7 +632,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    
    DENTER(TOP_LAYER);
 
-   sge_mirror_initialize(evc, EV_ID_ANY, "qevent", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
 
 #ifdef QEVENT_SHOW_ALL
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
@@ -718,7 +713,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
    
    DENTER(TOP_LAYER);
 
-   sge_mirror_initialize(evc, EV_ID_ANY, "qevent", OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, print_event, nullptr, nullptr, nullptr, nullptr);
 

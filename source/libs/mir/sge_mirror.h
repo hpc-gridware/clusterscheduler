@@ -166,10 +166,9 @@ typedef enum {
 
 /* Initialization - Shutdown */
 sge_mirror_error 
-sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *name,
-                      obj_state_ds ds_id, event_client_update_func_t update_func,
-                      evm_mod_func_t mod_func, evm_add_func_t add_func,
-                      evm_remove_func_t remove_func, evm_ack_func_t ack_func);
+sge_mirror_initialize(sge_evc_class_t *evc, obj_state_ds ds_id, event_client_update_func_t update_func,
+                      evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
+                      evm_ack_func_t ack_func);
 
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
 
@@ -177,7 +176,7 @@ sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
 sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type,
                                       sge_mirror_callback callback_before, 
                                       sge_mirror_callback callback_after, 
-                                      void *clientdata,
+                                      void *client_data,
                                       const lCondition *where, const lEnumeration *what);
 
 sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc,

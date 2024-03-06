@@ -224,7 +224,7 @@ oge_event_mirror_main(void *arg) {
 
    // register as event mirror and subscribe events
    if (local_ret) {
-      sge_mirror_initialize(evc, EV_ID_EVENT_MIRROR, thread_name, OBJ_STATE_SCHEDULER, &oge_event_mirror_event_update_func,
+      sge_mirror_initialize(evc, OBJ_STATE_SCHEDULER, &oge_event_mirror_event_update_func,
                             &sge_mod_event_client, &sge_add_event_client, &sge_remove_event_client,
                             &sge_handle_event_ack);
       evc->ec_register(evc, false, nullptr, &monitor);
