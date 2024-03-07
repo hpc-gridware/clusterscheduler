@@ -508,7 +508,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
                           account, REPORTING_DELIMITER,
                           message);
       /* write record to reporting buffer */
-      DPRINTF((sge_dstring_get_string(&job_dstring)));
+      DPRINTF(sge_dstring_get_string(&job_dstring));
       ret = reporting_create_record(answer_list, "job_log",
                                     sge_dstring_get_string(&job_dstring));
       sge_dstring_free(&job_dstring);

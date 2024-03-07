@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
          last = now;
 
       if (now - last < SLEEP) {
-         DPRINTF(("sleep(%d)\n", SLEEP - (now - last)));
+         DPRINTF("sleep(%d)\n", SLEEP - (now - last));
          sleep(SLEEP - (now - last));
          continue;
       }
@@ -129,15 +129,15 @@ int main(int argc, char *argv[])
       }
 
       if (last_token_set + token_extend_time - renew_before < now) {
-         DPRINTF(("renewing AFS token : %s %s %d\n", command, user, token_extend_time));
+         DPRINTF("renewing AFS token : %s %s %d\n", command, user, token_extend_time);
          if (sge_afs_extend_token(command, tokenbuf, user, token_extend_time, err_str, sizeof(err_str))) {
-            DPRINTF(("AFS token renewal failed\n"));
+            DPRINTF("AFS token renewal failed\n");
          } else {
             last_token_set = sge_get_gmt();
          }   
       }
    }
    
-   DPRINTF(("token file was deleted\n"));
+   DPRINTF("token file was deleted\n");
    return 0;
 }

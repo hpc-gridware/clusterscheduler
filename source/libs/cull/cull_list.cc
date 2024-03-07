@@ -1127,7 +1127,7 @@ void lFreeElem(lListElem **ep1) {
 
    if (ep->descr == nullptr) {
       LERROR(LEDESCRNULL);
-      DPRINTF(("nullptr descriptor not allowed !!!\n"));
+      DPRINTF("nullptr descriptor not allowed !!!\n");
       abort();
    }
 
@@ -1639,7 +1639,7 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
 
    /* is the element new_ep still chained in an other list, this is not allowed ? */
    if (new_ep->status == BOUND_ELEM || new_ep->status == OBJECT_ELEM) {
-      DPRINTF(("WARNING: tried to insert chained element\n"));
+      DPRINTF("WARNING: tried to insert chained element\n");
       lWriteElem(new_ep);
       abort();
    }
@@ -1717,7 +1717,7 @@ int lAppendElem(lList *lp, lListElem *ep) {
 
    /* is the element ep still chained in an other list, this is not allowed ? */
    if (ep->status == BOUND_ELEM || ep->status == OBJECT_ELEM) {
-      DPRINTF(("WARNING: tried to append chained element\n"));
+      DPRINTF("WARNING: tried to append chained element\n");
       abort();
    }
 

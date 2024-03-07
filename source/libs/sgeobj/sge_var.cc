@@ -308,7 +308,7 @@ void var_list_set_sharedlib_path(lList **varl)
       const char *old_value = lGetString(sharedlib_elem, VA_value);
 
       if(old_value && strlen(old_value) > 0) {
-         DPRINTF(("sharedlib path %s already set:\n", sharedlib_path_name));
+         DPRINTF("sharedlib path %s already set:\n", sharedlib_path_name);
          
          sharedlib_path = sge_malloc(strlen(old_value) + 1 + 
                           strlen(sge_sharedlib_path) + 1);
@@ -318,14 +318,12 @@ void var_list_set_sharedlib_path(lList **varl)
          lSetString(sharedlib_elem, VA_value, sharedlib_path);
          sge_free(&sharedlib_path);
       } else {
-         DPRINTF(("overwriting empty sharedlib path %s\n", 
-                  sharedlib_path_name));
+         DPRINTF("overwriting empty sharedlib path %s\n", sharedlib_path_name);
          lSetString(sharedlib_elem, VA_value, sge_sharedlib_path);
       }
    } else {
-      DPRINTF(("creating new sharedlib path %s\n", sharedlib_path_name));
-      sharedlib_elem = lAddElemStr(varl, VA_variable, 
-                                   sharedlib_path_name, VA_Type);
+      DPRINTF("creating new sharedlib path %s\n", sharedlib_path_name);
+      sharedlib_elem = lAddElemStr(varl, VA_variable, sharedlib_path_name, VA_Type);
       lSetString(sharedlib_elem, VA_value, sge_sharedlib_path);
    }
 

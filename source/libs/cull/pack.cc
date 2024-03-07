@@ -294,7 +294,7 @@ int packint(sge_pack_buffer *pb, u_long32 i) {
 
    if (!pb->just_count) {
       if (pb->bytes_used + INTSIZE > pb->mem_size) {
-         DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
          pb->mem_size += CHUNK;
          pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
@@ -334,7 +334,7 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
 
    if (!pb->just_count) {
       if (pb->bytes_used + (INTSIZE * 2) > pb->mem_size) {
-         DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
          pb->mem_size += CHUNK;
          pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
@@ -370,7 +370,7 @@ int packdouble(sge_pack_buffer *pb, double d) {
 
    if (!pb->just_count) {
       if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
-         DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
          pb->mem_size += CHUNK;
          pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
@@ -383,13 +383,13 @@ int packdouble(sge_pack_buffer *pb, double d) {
       xdrmem_create(&xdrs, (caddr_t) buf, sizeof(buf), XDR_ENCODE);
 
       if (!(xdr_double(&xdrs, &d))) {
-         DPRINTF(("error - XDR of double failed\n"));
+         DPRINTF("error - XDR of double failed\n");
          xdr_destroy(&xdrs);
          DRETURN(PACK_FORMAT);
       }
 
       if (xdr_getpos(&xdrs) != DOUBLESIZE) {
-         DPRINTF(("error - size of XDRed double is %d\n", xdr_getpos(&xdrs)));
+         DPRINTF("error - size of XDRed double is %d\n", xdr_getpos(&xdrs));
          xdr_destroy(&xdrs);
          DRETURN(PACK_FORMAT);
       }
@@ -422,7 +422,7 @@ int packstr(sge_pack_buffer *pb, const char *str) {
          if ((pb->bytes_used + 1) > pb->mem_size) {
 
             /* realloc */
-            DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+            DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
             pb->mem_size += CHUNK;
             pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
             if (!pb->head_ptr) {
@@ -444,7 +444,7 @@ int packstr(sge_pack_buffer *pb, const char *str) {
          /* is realloc necessary */
          if ((pb->bytes_used + n) > pb->mem_size) {
             /* realloc */
-            DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+            DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
             while ((pb->bytes_used + n) > pb->mem_size)
                pb->mem_size += CHUNK;
             pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
@@ -533,7 +533,7 @@ int packbuf(
       /* is realloc necessary */
       if (buf_size + (u_long32) pb->bytes_used > (u_long32) pb->mem_size) {
          /* realloc */
-         DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
          pb->mem_size += CHUNK;
          pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!(pb->head_ptr)) {
@@ -647,7 +647,7 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
    xdrmem_create(&xdrs, buf, DOUBLESIZE, XDR_DECODE);
    if (!(xdr_double(&xdrs, dp))) {
       *dp = 0;
-      DPRINTF(("error unpacking XDRed double\n"));
+      DPRINTF("error unpacking XDRed double\n");
       xdr_destroy(&xdrs);
       DRETURN(PACK_FORMAT);
    }

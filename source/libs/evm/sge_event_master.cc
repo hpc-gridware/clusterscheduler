@@ -799,8 +799,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    }
    /* busy_handling changed */
    if (busy_handling != lGetUlong(event_client, EV_busy_handling)) {
-      DPRINTF(("EVM: event client %s changes to " sge_U32CFormat "\n",
-         lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling)));
+      DPRINTF("EVM: event client %s changes to " sge_U32CFormat "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
       lSetUlong(event_client, EV_busy_handling, busy_handling);
    }
 
@@ -848,7 +847,7 @@ void sge_remove_event_client(u_long32 event_client_id)
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   DPRINTF(("sge_remove_event_client id = %d\n", (int) event_client_id));
+   DPRINTF("sge_remove_event_client id = %d\n", (int) event_client_id);
 
    client = get_event_client(event_client_id);
 
@@ -1590,7 +1589,7 @@ static void sge_event_master_process_send(const lListElem *request, monitoring_t
    MONITOR_EDT_NEW(monitor);
 
    if (ec_id == EV_ID_ANY) {
-      DPRINTF(("Processing event for all clients\n"));
+      DPRINTF("Processing event for all clients\n");
 
       event = lFirstRW(event_list);
       while (event != nullptr) {
@@ -1602,7 +1601,7 @@ static void sge_event_master_process_send(const lListElem *request, monitoring_t
          for_each_rw (event_client, Event_Master_Control.clients) {
             ec_id = lGetUlong(event_client, EV_id);
 
-            DPRINTF(("Preparing event for client %ld\n", ec_id));
+            DPRINTF("Preparing event for client %ld\n", ec_id);
 
             if (eventclient_subscribed(event_client, type, session)) {
                added = true;
@@ -1619,7 +1618,7 @@ static void sge_event_master_process_send(const lListElem *request, monitoring_t
          event = lFirstRW(event_list);
       } /* while */
    } else {
-      DPRINTF(("Processing event for client %d.\n", ec_id));
+      DPRINTF("Processing event for client %d.\n", ec_id);
 
       sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
@@ -1725,7 +1724,7 @@ static void sge_event_master_process_ack(const lListElem *request, monitoring_t 
 
       MONITOR_EDT_ACK(monitor);
       if (res > 0) {
-         DPRINTF(("%s: purged %d acknowledged events\n", __func__, res));
+         DPRINTF("%s: purged %d acknowledged events\n", __func__, res);
       }
 
       lSetUlong(client, EV_last_heard_from, timestamp); /* note time of ack */
@@ -2137,7 +2136,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          dstring buffer_wrapper;
          char buffer[256];
 
-         DPRINTF(("EVC timeout (%d s) (part 1/2)\n", timeout));
+         DPRINTF("EVC timeout (%d s) (part 1/2)\n", timeout);
          WARNING(MSG_COM_ACKTIMEOUT4EV_ISIS, (int) timeout, commproc, (int) commid, host);
 
          /* yes, we have to remove this client after sending the sgeE_ACK_TIMEOUT event */
@@ -2150,12 +2149,12 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 
          if (tmp_event_list != nullptr) {
             lAppendElem(tmp_event_list, new_event);
-            DPRINTF(("Added sgeE_ACK_TIMEOUT to already existing event report list\n"));
+            DPRINTF("Added sgeE_ACK_TIMEOUT to already existing event report list\n");
          } else {
             tmp_event_list = lCreateListHash("Events", ET_Type, false);
             lAppendElem(tmp_event_list, new_event);
             lSetList(event_client, EV_events, tmp_event_list);
-            DPRINTF(("Created new Events list with sgeE_ACK_TIMEOUT event\n"));
+            DPRINTF("Created new Events list with sgeE_ACK_TIMEOUT event\n");
          }
 
          /* We have to set the correct next event number */
@@ -2163,7 +2162,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 
          /* We log the new added sgeE_ACK_TIMEOUT event */
          sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
-         DPRINTF(("%d %s\n", ec_id, event_text(new_event, &buffer_wrapper)));
+         DPRINTF("%d %s\n", ec_id, event_text(new_event, &buffer_wrapper));
 
          /* Set next send time to now, we want to deliver it */
          lSetUlong(event_client, EV_next_send_time, (lUlong) now);
@@ -2220,7 +2219,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
        * sgeE_ACK_TIMEOUT event was delivered.
        */
       if (do_remove == true) {
-         DPRINTF(("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout));
+         DPRINTF("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout);
          ERROR(MSG_COM_ACKTIMEOUT4EV_SIS, commproc, (int) commid, host);
          remove_event_client(&event_client, ec_id, false);
       }
@@ -2250,15 +2249,15 @@ static void flush_events(lListElem *event_client, int interval)
       set_flush();
    }
 
-   DPRINTF(("%s: %s %d\tNOW: %d NEXT FLUSH: %d (%s,%s,%d)\n",
-            __func__,
-            ((lGetString(event_client, EV_name) != nullptr) ? lGetString(event_client, EV_name) : "<null>"),
-            lGetUlong(event_client, EV_id),
-            now,
-            next_send,
-            ((lGetHost(event_client, EV_host) != nullptr) ? lGetHost(event_client, EV_host) : "<null>"),
-            ((lGetString(event_client, EV_commproc) != nullptr) ? lGetString(event_client, EV_commproc) : "<null>"),
-            lGetUlong(event_client, EV_commid)));
+   DPRINTF("%s: %s %d\tNOW: %d NEXT FLUSH: %d (%s,%s,%d)\n",
+           __func__,
+           ((lGetString(event_client, EV_name) != nullptr) ? lGetString(event_client, EV_name) : "<null>"),
+           lGetUlong(event_client, EV_id),
+           now,
+           next_send,
+           ((lGetHost(event_client, EV_host) != nullptr) ? lGetHost(event_client, EV_host) : "<null>"),
+           ((lGetString(event_client, EV_commproc) != nullptr) ? lGetString(event_client, EV_commproc) : "<null>"),
+           lGetUlong(event_client, EV_commid));
 
    DRETURN_VOID;
 } /* flush_events() */
@@ -2361,7 +2360,7 @@ static void build_subscription(lListElem *event_el)
       DRETURN_VOID;
    }
 
-   DPRINTF(("rebuild event mask for client(id): %s(" sge_u32")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id)));
+   DPRINTF("rebuild event mask for client(id): %s(" sge_u32")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id));
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
    memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE); 
@@ -2489,7 +2488,7 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
    ec_session = lGetString(event_client, EV_session);
 
    if (subscription == nullptr) {
-      DPRINTF(("No subscription!\n"));
+      DPRINTF("No subscription!\n");
       DRETURN(0);
    }
 
@@ -2498,7 +2497,7 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
          /* events that belong to a specific session are not subscribed
             in case the event client is not interested in that session */
          if (strcmp(session, ec_session)) {
-            DPRINTF(("Event session does not match client session\n"));
+            DPRINTF("Event session does not match client session\n");
             DRETURN(0);
          }
       } else {
@@ -2630,14 +2629,14 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
       fields = subscription[type].what;
 
 #if 1
-      DPRINTF(("deliver event: %d with where filter=%s and what filter=%s\n",
-               type, selection?"true":"false", fields?"true":"false"));
+      DPRINTF("deliver event: %d with where filter=%s and what filter=%s\n",
+              type, selection?"true":"false", fields?"true":"false");
 #endif
 
       if (fields) {
          descr = getDescriptorL(subscription, lp, type);
 
-         DPRINTF(("Reducing event data\n"));
+         DPRINTF("Reducing event data\n");
          
          if (!list_select(subscription, type, &clp, lp, selection, fields,
                           descr, internal_client)) {
@@ -2658,7 +2657,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
                lFreeElem(&event);
             }
 
-            DPRINTF(("Skipping event because it has no content for this client.\n"));
+            DPRINTF("Skipping event because it has no content for this client.\n");
             DRETURN_VOID;
          }
 
@@ -2670,7 +2669,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
          }
       } else if (copy_event) {
          /* If there's no what clause, and we want a copy, we copy the list */
-         DPRINTF(("Copying event data\n"));
+         DPRINTF("Copying event data\n");
          clp = lCopyListHash(lGetListName(lp), lp, internal_client);
       } else {
          /* If there's no what clause, and we don't want to copy, we just reuse
@@ -2687,7 +2686,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    /* If we're making a copy, copy the event and swap the orignial list
     * back into the original event */
    if (copy_event) {
-      DPRINTF(("Copying event\n"));
+      DPRINTF("Copying event\n");
       ep = lCopyElemHash(event, false);
 
       lXchgList(event, ET_new_version, &lp);
@@ -2716,8 +2715,8 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    /* chain in new event */
    lAppendElem(lp, ep);
 
-   DPRINTF(("%d %s\n", lGetUlong(event_client, EV_id),
-            event_text(ep, &buffer_wrapper)));
+   DPRINTF("%d %s\n", lGetUlong(event_client, EV_id),
+           event_text(ep, &buffer_wrapper));
 
    /* check if event clients wants flushing */
    subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
@@ -2732,7 +2731,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
          the shutdown event */
       lSetUlong(event_client, EV_state, EV_closing); 
    } else if (subscription[type].flush) {
-      DPRINTF(("flushing event client\n"));
+      DPRINTF("flushing event client\n");
       flush_events(event_client, subscription[type].flush_time);
    }
 
@@ -2930,7 +2929,7 @@ static bool list_select(subscription_t *subscription, int type,
                   lAppendElem(*reduced_lp, reduced_el);
                }
             } else {
-               DPRINTF(("no sub type filter specified\n"));
+               DPRINTF("no sub type filter specified\n");
             }
             goto end;
          } /* end if */
@@ -2992,7 +2991,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
  
    if (sub_type <= sgeE_ALL_EVENTS || sub_type >= sgeE_EVENTSIZE) {
       /* TODO: SG: add error message */
-      DPRINTF(("wrong event sub type\n"));
+      DPRINTF("wrong event sub type\n");
       DRETURN(nullptr);
    }
 
@@ -3057,7 +3056,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
 
       sge_free(&sub_list);
    } else {
-      DPRINTF(("no sub filter specified\n"));
+      DPRINTF("no sub filter specified\n");
       el = lSelectElemDPack(element, selection, dp, fields, false, nullptr, nullptr);
    }
 
@@ -3408,7 +3407,7 @@ void sge_event_master_process_requests(monitoring_t *monitor)
       lListElem *request = nullptr;
 
       while ((request = lFirstRW(requests)) != nullptr) {
-         DPRINTF(("processing event master request: %d\n", lGetUlong(request, EVR_operation)));
+         DPRINTF("processing event master request: %d\n", lGetUlong(request, EVR_operation));
          switch (lGetUlong(request, EVR_operation)) {
             case EVR_ADD_EVC:
                sge_event_master_process_add_event_client(request, monitor);

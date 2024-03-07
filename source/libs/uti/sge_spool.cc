@@ -846,9 +846,9 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
          char *nam = strtok_r(cp, "=", &pos);
          char *val = strtok_r(nullptr, "\n", &pos);
          if (nam != nullptr && strcasecmp(name[i].name, nam) == 0) {
-            DPRINTF(("nam = %s\n", nam));
+            DPRINTF("nam = %s\n", nam);
             if (val != nullptr) {
-               DPRINTF(("val = %s\n", val));
+               DPRINTF("val = %s\n", val);
                sge_strlcpy(value[i], val, SGE_PATH_MAX);
             } else {
                sge_strlcpy(value[i], "", SGE_PATH_MAX);

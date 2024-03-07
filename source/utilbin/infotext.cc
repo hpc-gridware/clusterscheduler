@@ -111,7 +111,7 @@ static char* sge_infotext_make_line_break(dstring* buffer, const char* text) {
 
    sge_dstring_append(buffer,"\"");
 
-   DPRINTF(("text = <%s>\n", text));
+   DPRINTF("text = <%s>\n", text);
 
    line = 0;
    for (h=0; h < strlen(text) ; h++) {
@@ -130,8 +130,8 @@ static char* sge_infotext_make_line_break(dstring* buffer, const char* text) {
 
       hbuf[0] = text[h];
       sge_dstring_append(buffer, hbuf);
-      DPRINTF(("<%s>\n", (char*) sge_dstring_get_string(buffer)));      
-      DPRINTF(("text[%d] = %c\n", h, text[h]));      
+      DPRINTF("<%s>\n", (char*) sge_dstring_get_string(buffer));
+      DPRINTF("text[%d] = %c\n", h, text[h]);
       line++;
    }
    sge_dstring_append(buffer,"\"");
@@ -262,7 +262,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
    DENTER(TOP_LAYER);
 
 
-   DPRINTF(("format 1\n"));
+   DPRINTF("format 1\n");
    options->n = 0;
 
    column_var = getenv("SGE_INFOTEXT_MAX_COLUMN");
@@ -271,19 +271,19 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
    } 
 
    tp = text;
-   DPRINTF(("do strcpy"));
+   DPRINTF("do strcpy");
    if (sge_dstring_get_string(dash_buf) == nullptr) {
-      DPRINTF(("dash_buf is null"));
+      DPRINTF("dash_buf is null");
    }
    sge_dstring_copy_dstring(&line,dash_buf);
-   DPRINTF(("strcpy done"));
+   DPRINTF("strcpy done");
    sge_dstring_copy_string(&dash,"");
-   DPRINTF(("copy done"));
+   DPRINTF("copy done");
    for (i=0;i< sge_dstring_strlen(&line);i++) {
       sge_dstring_append(&dash," ");
    }
    nr_word = 0;
-   DPRINTF(("while\n"));
+   DPRINTF("while\n");
 
    done = false;
    while (!done) {
@@ -377,7 +377,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
       }
    }
 
-   DPRINTF(("free strings\n"));
+   DPRINTF("free strings\n");
    options->n = new_line_opt;
    sge_dstring_free(&dash);
    sge_dstring_free(&tmp_buf);
@@ -888,7 +888,7 @@ int main( int argc, char* argv[] ) {
       args_ok = 0;
    } 
 
-   DPRINTF(("pass 1\n"));
+   DPRINTF("pass 1\n");
    /* first pass - get number of %s arguments */
    sge_dstring_copy_string(&buffer,"");
    max_args = argc - arg_start;
@@ -904,7 +904,7 @@ int main( int argc, char* argv[] ) {
       exit(10);
    }
 
-   DPRINTF(("pass 2\n"));
+   DPRINTF("pass 2\n");
 
    /* second pass - get format string */
    sge_dstring_copy_string(&buffer,"");
@@ -948,21 +948,21 @@ int main( int argc, char* argv[] ) {
       real_args--;
    }
 
-   DPRINTF(("pass 3\n"));
+   DPRINTF("pass 3\n");
    /* 3rd pass - localize format string */
    if (do_message == 1) {
       dstring help_buf = DSTRING_INIT;
       dstring help_buf2 = DSTRING_INIT;
 
       if (strlen(options.D) > 0) {
-         DPRINTF(("strlen(options.D) > 0\n"));
+         DPRINTF("strlen(options.D) > 0\n");
          printf("#\n# This is a (dash) sign, used for enumerations\n");
          printf("msgid \"\"\n%s\n", sge_infotext_make_line_break(&help_buf2,options.D));
          if (do_message_space == 0) {
-            DPRINTF(("do_message_space == 0\n"));
+            DPRINTF("do_message_space == 0\n");
             printf("msgstr \"\"\n\n");
          } else {
-            DPRINTF(("do_message_space == 1\n"));
+            DPRINTF("do_message_space == 1\n");
             sge_infotext_build_test_msgstr(&help_buf, options.D);
             printf("msgstr %s\n\n",
                    sge_infotext_make_line_break(&help_buf2,
@@ -971,14 +971,14 @@ int main( int argc, char* argv[] ) {
       }
 
       if (strlen(options.yes) > 0) {
-        DPRINTF(("strlen(options.yes) > 0\n"));
+        DPRINTF("strlen(options.yes) > 0\n");
          printf("# This is used as shortcut for yes\n");
          printf("msgid \"\"\n%s\n", sge_infotext_make_line_break(&help_buf2,options.yes));
          if(do_message_space == 0) {
-            DPRINTF(("do_message_space == 0\n"));
+            DPRINTF("do_message_space == 0\n");
             printf("msgstr \"\"\n\n");
          } else {
-            DPRINTF(("do_message_space == 1\n"));
+            DPRINTF("do_message_space == 1\n");
             sge_infotext_build_test_msgstr(&help_buf, options.yes);
             printf("msgstr %s\n\n",
                    sge_infotext_make_line_break(&help_buf2,
@@ -986,14 +986,14 @@ int main( int argc, char* argv[] ) {
          }
       }
       if (strlen(options.no) > 0) {
-         DPRINTF(("strlen(options.no) > 0\n"));
+         DPRINTF("strlen(options.no) > 0\n");
          printf("# This is used as shortcut for no\n");
          printf("msgid \"\"\n%s\n", sge_infotext_make_line_break(&help_buf2,options.no));
          if(do_message_space == 0) {
-            DPRINTF(("do_message_space == 0\n"));
+            DPRINTF("do_message_space == 0\n");
             printf("msgstr \"\"\n\n");
          } else {
-            DPRINTF(("do_message_space == 1\n"));
+            DPRINTF("do_message_space == 1\n");
             sge_infotext_build_test_msgstr(&help_buf, options.no);
             printf("msgstr %s\n\n",
                    sge_infotext_make_line_break(&help_buf2,
@@ -1001,14 +1001,14 @@ int main( int argc, char* argv[] ) {
          }
       }
       if (strlen(options.def) > 0) {
-         DPRINTF(("strlen(options.def) > 0\n"));
+         DPRINTF("strlen(options.def) > 0\n");
          printf("# This is shortcut default value\n");
          printf("msgid \"\"\n%s\n", sge_infotext_make_line_break(&help_buf2,options.def));
          if(do_message_space == 0) {
-            DPRINTF(("do_message_space == 0\n"));
+            DPRINTF("do_message_space == 0\n");
             printf("msgstr \"\"\n\n");
          } else {
-            DPRINTF(("do_message_space == 1\n"));
+            DPRINTF("do_message_space == 1\n");
             sge_infotext_build_test_msgstr(&help_buf, options.def);
             printf("msgstr %s\n\n",
                sge_infotext_make_line_break(&help_buf2,
@@ -1016,7 +1016,7 @@ int main( int argc, char* argv[] ) {
          }
       }
 
-      DPRINTF(("Here we are\n"));
+      DPRINTF("Here we are\n");
 
       printf("msgid \"\"\n%s\n", 
          sge_infotext_make_line_break(&help_buf2, 
@@ -1042,14 +1042,14 @@ int main( int argc, char* argv[] ) {
    }
    help_str = (char*) sge_dstring_get_string(&buffer);
    sge_dstring_copy_string(&buffer2, (char*)_SGE_GETTEXT__(help_str));
-   DPRINTF(("format string is: \"%s\"\n",help_str));
-   DPRINTF(("l10n string is: \"%s\"\n", (char*) sge_dstring_get_string(&buffer2)));
+   DPRINTF("format string is: \"%s\"\n",help_str);
+   DPRINTF("l10n string is: \"%s\"\n", (char*) sge_dstring_get_string(&buffer2));
    /* format output */
 /*   printf("options: %d %d %d \"%s\" %d \"%s\" \"%s\" \"%s\"\n", options.e, options.n, options.u, options.D, options.S, options.yes , options.no ,options.def);
 */
   
    /* 4th pass - insert parameters */ 
-   DPRINTF(("pass 4\n"));
+   DPRINTF("pass 4\n");
    {
       if (real_args > 0) {
 #if defined(SOLARISAMD64) || __GNUC__ >= 3 || defined(NETBSD)
@@ -1080,13 +1080,13 @@ int main( int argc, char* argv[] ) {
    }
 
    /* output */
-   DPRINTF(("build_dash\n"));
+   DPRINTF("build_dash\n");
    sge_dstring_append(&sge_infotext_dash_buffer,"");
    sge_infotext_build_dash(&sge_infotext_dash_buffer,&options);
    if (sge_dstring_get_string(&sge_infotext_dash_buffer) == nullptr) {
-      DPRINTF(("sge_infotext_dash_buffer is nullptr"));
+      DPRINTF("sge_infotext_dash_buffer is nullptr");
    }
-   DPRINTF(("output\n"));
+   DPRINTF("output\n");
    if (do_ask != 1) {
       sge_infotext_format_output(&sge_infotext_dash_buffer,&options,(char*)sge_dstring_get_string(&buffer));
    }
@@ -1149,7 +1149,7 @@ int main( int argc, char* argv[] ) {
       printf("\n");
    }
 
-   DPRINTF(("free strings\n"));
+   DPRINTF("free strings\n");
    sge_dstring_free(&sge_infotext_dash_buffer);
    sge_dstring_free(&tmp_buf);
    sge_dstring_free(&buffer);

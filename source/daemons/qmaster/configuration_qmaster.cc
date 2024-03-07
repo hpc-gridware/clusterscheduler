@@ -179,7 +179,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
 
    answer_list_output(answer_list);
 
-   DPRINTF(("qualified_hostname: '%s'\n", qualified_hostname));
+   DPRINTF("qualified_hostname: '%s'\n", qualified_hostname);
    if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
       /* write a warning into messages file, if no local config exists*/
       WARNING(MSG_CONFIG_NOLOCAL_S, qualified_hostname);
@@ -243,12 +243,11 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
    if (ret != CL_RETVAL_OK) {
       lListElem *conf_obj = nullptr;
 
-      DPRINTF(("%s: error %s resolving host %s\n", __func__,
-              cl_get_error_text(ret), tmp_name));
+      DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), tmp_name);
 
       conf_obj = sge_get_configuration_for_host(tmp_name);
       if (conf_obj != nullptr) {
-         DPRINTF(("using hostname stored in configuration object\n"));
+         DPRINTF("using hostname stored in configuration object\n");
          strcpy(unique_name, lGetHost(conf_obj, CONF_name));
          lFreeElem(&conf_obj);
       } else {
@@ -334,7 +333,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    }
 
    if ((ret = sge_resolve_hostname(tmp_name, unique_name, EH_name)) != CL_RETVAL_OK) {
-      DPRINTF(("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), tmp_name));
+      DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), tmp_name);
       ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, tmp_name);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -654,7 +653,7 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
    DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(aConf) == 0) {
-      DPRINTF(("%s: configuration for %s is empty\n", __func__, lGetHost(aHost, EH_name)));
+      DPRINTF("%s: configuration for %s is empty\n", __func__, lGetHost(aHost, EH_name));
       DRETURN(1);
    }
 
@@ -669,7 +668,7 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
       conf_version = lGetUlong(conf_entry, CONF_version);
 
       if (master_version != conf_version) {
-         DPRINTF(("%s: configuration for %s changed from version %ld to %ld\n", __func__, host_name, master_version, conf_version));
+         DPRINTF("%s: configuration for %s changed from version %ld to %ld\n", __func__, host_name, master_version, conf_version);
          DRETURN(1);
       }
    }
@@ -755,14 +754,13 @@ sge_get_config_version_for_host(const char *aName) {
        */
       ret = sge_resolve_hostname(aName, unique_name, EH_name);
       if (CL_RETVAL_OK != ret) {
-         DPRINTF(("%s: error %s resolving host %s\n", __func__,
-                 cl_get_error_text(ret), aName));
+         DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
       }
       conf = lGetElemHost(config_list, CONF_name, unique_name);
    }
 
    if (conf == nullptr) {
-      DPRINTF(("%s: no master configuration for %s found\n", __func__, aName));
+      DPRINTF("%s: no master configuration for %s found\n", __func__, aName);
    } else {
       version = lGetUlong(conf, CONF_version);
    }
@@ -796,8 +794,7 @@ sge_get_configuration_for_host(const char *aName) {
     */
    ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
-      DPRINTF(("%s: error %s resolving host %s\n", __func__,
-              cl_get_error_text(ret), aName));
+      DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
       strcpy(unique_name, aName);
    }
 
@@ -996,7 +993,7 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
    }
 
    if (true == res) {
-      DPRINTF(("%s: reschedule_unknown did change!\n", __func__));
+      DPRINTF("%s: reschedule_unknown did change!\n", __func__);
    }
 
    DRETURN(res);

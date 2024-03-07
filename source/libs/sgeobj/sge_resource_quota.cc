@@ -761,7 +761,7 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
    }
    sge_dstring_append(name, "/");
 
-   DPRINTF(("rue_name: %s\n", sge_dstring_get_string(name)));
+   DPRINTF("rue_name: %s\n", sge_dstring_get_string(name));
 
    DRETURN(true);
 }
@@ -882,10 +882,10 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
          continue;
       }
       if (lGetString(rule, RQR_name)) {
-         DPRINTF(("Using resource quota %s\n", lGetString(rule, RQR_name)));
+         DPRINTF("Using resource quota %s\n", lGetString(rule, RQR_name));
          sge_dstring_sprintf(rule_name, "%s/%s", lGetString(rqs, RQS_name), lGetString(rule, RQR_name));
       } else {
-         DPRINTF(("Using resource quota %d\n", i));
+         DPRINTF("Using resource quota %d\n", i);
          sge_dstring_sprintf(rule_name, "%s/%d", lGetString(rqs, RQS_name), i);
       }
       /* if all filter object matches this is our rule */
@@ -972,14 +972,14 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
       if (job) {
          bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry);
          if (tmp_ret && dval != 0.0) {
-            DPRINTF(("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
-                     obj_name, sge_dstring_get_string(rue_name), debit_slots));
+            DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
+                    obj_name, sge_dstring_get_string(rue_name), debit_slots);
             lAddDouble(rue_elem, RUE_utilized_now, debit_slots * dval);
             mods++;
          } else if (lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
             dval = 1.0;
-            DPRINTF(("debiting (non-exclusive) %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
-                     obj_name, sge_dstring_get_string(rue_name), debit_slots));
+            DPRINTF("debiting (non-exclusive) %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
+                    obj_name, sge_dstring_get_string(rue_name), debit_slots);
             lAddDouble(rue_elem, RUE_utilized_now_nonexclusive, debit_slots * dval);
             mods++;
          }
@@ -1058,7 +1058,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
             }
 
             if (group_name != nullptr && query != nullptr) {
-               DPRINTF(("group_name=%s, query=%s\n", group_name, query));
+               DPRINTF("group_name=%s, query=%s\n", group_name, query);
                if (filter_type == FILTER_USERS) {
                   /* the userset name does not contain the preattached \@ sign */
                   group_name++; 
@@ -1174,7 +1174,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 
          if (group_name != nullptr && query != nullptr) {
             const lListElem *group_ep;
-            DPRINTF(("group_name=%s, query=%s\n", group_name, query));
+            DPRINTF("group_name=%s, query=%s\n", group_name, query);
             if (filter_type == FILTER_USERS) {
                /* the userset name does not contain the preattached \@ sign */
                group_name++;
@@ -1255,23 +1255,23 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
       DENTER(TOP_LAYER);
 
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group)) {
-         DPRINTF(("user doesn't match\n"));
+         DPRINTF("user doesn't match\n");
          DRETURN(false);
       }
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr)) {
-         DPRINTF(("project doesn't match\n"));
+         DPRINTF("project doesn't match\n");
          DRETURN(false);
       }
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr)) {
-         DPRINTF(("pe doesn't match\n"));
+         DPRINTF("pe doesn't match\n");
          DRETURN(false);
       }
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr)) {
-         DPRINTF(("queue doesn't match\n"));
+         DPRINTF("queue doesn't match\n");
          DRETURN(false);
       }
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr)) {
-         DPRINTF(("host doesn't match\n"));
+         DPRINTF("host doesn't match\n");
          DRETURN(false);
       }
 
@@ -1372,7 +1372,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
 
       switch (filter_type) {
          case FILTER_HOSTS:
-            DPRINTF(("matching hosts with %s\n", value));
+            DPRINTF("matching hosts with %s\n", value);
             /* inverse logic because of xscope */
             ret = rqs_match_host_scope(xscope, value, master_hgroup_list, true) ? false: true;
             if (ret == true && scope != nullptr) {
@@ -1384,7 +1384,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
 
          case FILTER_USERS:
          {  
-            DPRINTF(("matching users or hosts with %s\n", value));
+            DPRINTF("matching users or hosts with %s\n", value);
             /* inverse logic because of xscope */
             ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, nullptr, group, true) ? false: true;
             if (ret == true && scope != nullptr) {
@@ -1397,7 +1397,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
          case FILTER_PROJECTS:
          case FILTER_PES:
          case FILTER_QUEUES:
-            DPRINTF(("matching projects, pes or queues with %s\n", value? value: "nullptr"));
+            DPRINTF("matching projects, pes or queues with %s\n", value? value: "nullptr");
             if (lGetElemStr(xscope, ST_name, value) != nullptr) {
                ret = false;
             } else {
@@ -1406,13 +1406,13 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
                   if (value == nullptr || (strcmp(value, "*") == 0)) {
                      break;
                   }
-                  DPRINTF(("xscope: strcmp(%s,%s)\n", cp, value));
+                  DPRINTF("xscope: strcmp(%s,%s)\n", cp, value);
                   if ((strcmp(cp, "*") == 0) || (fnmatch(cp, value, 0) == 0) || (fnmatch(value,cp, 0) == 0)) {
-                     DPRINTF(("match\n"));
+                     DPRINTF("match\n");
                      ret = false;
                      break;
                   }
-                  DPRINTF(("no match\n"));
+                  DPRINTF("no match\n");
                }
             }
             if (ret != false) { 
@@ -1426,7 +1426,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
                      if (value == nullptr) {
                         break;
                      }
-                     DPRINTF(("scope: strcmp(%s,%s)\n", cp, value));
+                     DPRINTF("scope: strcmp(%s,%s)\n", cp, value);
                      if ((strcmp(cp, "*") == 0) || (fnmatch(cp, value, 0) == 0) || (fnmatch(value,cp, 0) == 0)) {
                         found = true;
                         break;
@@ -1480,7 +1480,7 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
       const lListElem *limit;
       for_each_ep(limit, lGetList(rule, RQR_limit)) {
          const char *limit_name = lGetString(limit, RQRL_name);
-         DPRINTF(("limit name %s\n", limit_name));
+         DPRINTF("limit name %s\n", limit_name);
          if (strchr(limit_name, '$') != nullptr) {
             /* dynamical limit */
             if (load_formula_is_centry_referenced(limit_name, centry)) {

@@ -364,7 +364,7 @@ int main(int argc, char **argv)
                qacct_usage(stderr);
             }
             options.begin_time = (time_t)tmp_begin_time;
-            DPRINTF(("begin is: %ld\n", options.begin_time));
+            DPRINTF("begin is: %ld\n", options.begin_time);
             beginflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -384,7 +384,7 @@ int main(int argc, char **argv)
                qacct_usage(stderr);
             }
             options.end_time = (time_t)tmp_end_time;
-            DPRINTF(("end is: %ld\n", options.end_time));
+            DPRINTF("end is: %ld\n", options.end_time);
             endflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
                */
                qacct_usage(stderr);
             }
-            DPRINTF(("days is: %d\n", days));
+            DPRINTF("days is: %d\n", days);
             daysflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -523,7 +523,7 @@ int main(int argc, char **argv)
    */
    if (acct_file == nullptr) {
       acct_file = bootstrap_get_acct_file();
-      DPRINTF(("acct_file: %s\n", (acct_file ? acct_file : "(nullptr)")));
+      DPRINTF("acct_file: %s\n", (acct_file ? acct_file : "(nullptr)"));
      
       sge_setup_sig_handlers(QACCT);
       is_path_setup = 1;
@@ -565,8 +565,8 @@ int main(int argc, char **argv)
          options.begin_time = -1; /* minus infty */
       }
    }
-   DPRINTF((" begin_time: %s", ctime(&options.begin_time)));
-   DPRINTF((" end_time:   %s", ctime(&options.end_time)));
+   DPRINTF(" begin_time: %s", ctime(&options.begin_time));
+   DPRINTF(" end_time:   %s", ctime(&options.end_time));
 
    {
       dstring cqueue_name = DSTRING_INIT;
@@ -794,16 +794,16 @@ int main(int argc, char **argv)
          */
          if (ep != nullptr) {
 
-            DPRINTF(("found element h:%s - q:%s - g:%s - o:%s - p:%s - d:%s - pe:%s - slots:%d - ar:%d\n", \
-                     (dusage.hostname ? dusage.hostname : "(nullptr)"), \
-                     (dusage.qname ? dusage.qname : "(nullptr)"), \
-                     (dusage.group ? dusage.group : "(nullptr)"), \
-                     (dusage.owner ? dusage.owner : "(nullptr)"), \
-                     (dusage.project ? dusage.project : "(nullptr)"), \
-                     (dusage.department ? dusage.department : "(nullptr)"), \
-                     (dusage.granted_pe ? dusage.granted_pe : "(nullptr)"), \
-                     (int) dusage.slots, \
-                     (int) dusage.ar));
+            DPRINTF("found element h:%s - q:%s - g:%s - o:%s - p:%s - d:%s - pe:%s - slots:%d - ar:%d\n", \
+                    (dusage.hostname ? dusage.hostname : "(nullptr)"), \
+                    (dusage.qname ? dusage.qname : "(nullptr)"), \
+                    (dusage.group ? dusage.group : "(nullptr)"), \
+                    (dusage.owner ? dusage.owner : "(nullptr)"), \
+                    (dusage.project ? dusage.project : "(nullptr)"), \
+                    (dusage.department ? dusage.department : "(nullptr)"), \
+                    (dusage.granted_pe ? dusage.granted_pe : "(nullptr)"), \
+                    (int) dusage.slots, \
+                    (int) dusage.ar);
 
             lAddDouble(ep, QAJ_ru_wallclock, dusage.ru_wallclock);
 
@@ -1146,7 +1146,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
    DENTER(TOP_LAYER);
    
    if (column_size_data == nullptr) {
-      DPRINTF(("no column size data!\n"));
+      DPRINTF("no column size data!\n");
       DRETURN_VOID;
    }
 
@@ -1268,7 +1268,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
          lep = lNext(lep);
       }
    } else {
-     DPRINTF(("got nullptr list\n"));
+     DPRINTF("got nullptr list\n");
    }
    
    DRETURN_VOID;
@@ -1731,7 +1731,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
    ** skipping jobs that never ran
    */
    if ((d->start_time == 0) && options->complexflag)  {
-      DPRINTF(("skipping job that never ran\n"));
+      DPRINTF("skipping job that never ran\n");
       DRETURN(-2);
    }
    if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) { 

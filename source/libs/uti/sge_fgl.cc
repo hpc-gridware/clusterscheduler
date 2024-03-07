@@ -383,14 +383,14 @@ void fgl_lock(void) {
          counter = 1;
          fgl_lck->counter = counter;
 
-         DPRINTF(("lock create \"%s\" %d\n", sge_dstring_get_string(&key), fgl_lck->counter));
+         DPRINTF("lock create \"%s\" %d\n", sge_dstring_get_string(&key), fgl_lck->counter);
 
          // make the data lock available for others
          sge_htable_store(fgl_lcks, sge_dstring_get_string(&key), fgl_lck);
       } else {
          counter = fgl_lck->counter + 1;
          fgl_lck->counter = counter;
-         DPRINTF(("lock reuse \"%s\" %d\n", sge_dstring_get_string(&key), fgl_lck->counter));
+         DPRINTF("lock reuse \"%s\" %d\n", sge_dstring_get_string(&key), fgl_lck->counter);
       }
 
       // unlock the locktable
@@ -402,7 +402,7 @@ void fgl_lock(void) {
       suseconds_t start_us = start_time.tv_sec * 10e6 + start_time.tv_usec;
 #endif
 
-      DPRINTF(("lock \"%s\"\n", sge_dstring_get_string(&key)));
+      DPRINTF("lock \"%s\"\n", sge_dstring_get_string(&key));
 
       // lock data with RO or RW
 #if USE_FIFO_LOCK
@@ -468,7 +468,7 @@ void fgl_unlock(void) {
       int found = sge_htable_lookup(fgl_lcks, sge_dstring_get_string(&key), (const void **) &fgl_lck);
       if (found == True) {
          // unlock data 
-         DPRINTF(("unlock \"%s\"\n", sge_dstring_get_string(&key)));
+         DPRINTF("unlock \"%s\"\n", sge_dstring_get_string(&key));
 #if USE_FIFO_LOCK
          sge_fifo_ulock(&fgl_lck->lck, !requests[i].is_rw),
 #else
@@ -480,7 +480,7 @@ void fgl_unlock(void) {
 
          // remove lock if ref counter is 0
          if (fgl_lck->counter == 0) {
-            DPRINTF(("unlock delete \"%s\"\n", sge_dstring_get_string(&key)));
+            DPRINTF("unlock delete \"%s\"\n", sge_dstring_get_string(&key));
             sge_htable_delete(fgl_lcks, sge_dstring_get_string(&key));
             sge_free(&fgl_lck);
          }

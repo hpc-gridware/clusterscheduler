@@ -548,10 +548,10 @@ u_long32 job_get_ja_tasks(const lListElem *job)
    DENTER(TOP_LAYER);
    n = job_get_not_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Not enrolled ja_tasks: " sge_u32"\n", n));
+   DPRINTF("Not enrolled ja_tasks: " sge_u32"\n", n);
    n = job_get_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF(("Enrolled ja_tasks: " sge_u32"\n", n));
+   DPRINTF("Enrolled ja_tasks: " sge_u32"\n", n);
    DRETURN(ret);
 }
 
@@ -2549,7 +2549,7 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 
    for_each_rw(ep, lGetList(job, name)){
       int res = sge_resolve_host(ep, PN_host);
-      DPRINTF(("after sge_resolve_host() which returned %s\n", cl_get_error_text(res)));
+      DPRINTF("after sge_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) { 
          const char *hostname = lGetHost(ep, PN_host);
          if (hostname != nullptr) {
@@ -2562,7 +2562,7 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
             ret_error=true;
          }
       } 
-      DPRINTF(("after sge_resolve_host() - II\n"));
+      DPRINTF("after sge_resolve_host() - II\n");
 
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
@@ -2875,7 +2875,7 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 
    if (lGetPosString(job_elem, pe_pos) != nullptr) {
       if ((range_list = lGetPosList(job_elem, range_pos)) == nullptr) {
-         DPRINTF(("Job has parallel environment with no ranges\n"));
+         DPRINTF("Job has parallel environment with no ranges\n");
          DRETURN(false);
       }
       else {

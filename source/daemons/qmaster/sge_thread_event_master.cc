@@ -73,7 +73,7 @@ sge_event_master_initialize() {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("event master functionality has been initialized\n"));
+   DPRINTF("event master functionality has been initialized\n");
 
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
    cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
@@ -88,11 +88,11 @@ sge_event_master_terminate() {
 
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    while (thread != nullptr) {
-      DPRINTF((SFN " gets canceled\n", thread->thread_name));
+      DPRINTF(SFN " gets canceled\n", thread->thread_name);
       cl_thread_list_delete_thread(Main_Control.event_master_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    }
-   DPRINTF(("all " SFN " threads terminated\n", threadnames[EVENT_MASTER_THREAD]));
+   DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MASTER_THREAD]);
 
    DRETURN_VOID;
 }
@@ -106,7 +106,7 @@ sge_event_master_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started\n"));
+   DPRINTF("started\n");
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, EMAT_EXT, EVENT_MASTER_THREAD_WARNING, EVENT_MASTER_THREAD_ERROR);
    sge_qmaster_thread_init(QMASTER, EVENT_MASTER_THREAD, true);
@@ -145,7 +145,7 @@ sge_event_master_main(void *arg) {
       pthread_cleanup_pop(execute);
 
       if (sge_thread_has_shutdown_started()) {
-         DPRINTF(("waiting for termination\n"));
+         DPRINTF("waiting for termination\n");
          usleep(500);
       }
    }

@@ -134,8 +134,8 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    /* pe_list */
    for_each_ep(ep, pe_list) {
       name = lGetString(ep, PE_name);
-      DPRINTF(("-------------------------------------------\n"));
-      DPRINTF(("PARALLEL ENVIRONMENT \"%s\"\n", name));
+      DPRINTF("-------------------------------------------\n");
+      DPRINTF("PARALLEL ENVIRONMENT \"%s\"\n", name);
       for_each_ep(cr, lGetList(ep, PE_resource_utilization)) {
          utilization_print(cr, name);
       }
@@ -143,8 +143,8 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
 
    /* global */
    if ((ep=host_list_locate(host_list, SGE_GLOBAL_NAME))) {
-      DPRINTF(("-------------------------------------------\n"));
-      DPRINTF(("GLOBL HOST RESOURCES\n"));
+      DPRINTF("-------------------------------------------\n");
+      DPRINTF("GLOBL HOST RESOURCES\n");
       for_each_ep(cr, lGetList(ep, EH_resource_utilization)) {
          utilization_print(cr, SGE_GLOBAL_NAME);
       }
@@ -154,8 +154,8 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    for_each_ep(ep, host_list) {
       name = lGetHost(ep, EH_name);
       if (sge_hostcmp(name, SGE_GLOBAL_NAME)) {
-         DPRINTF(("-------------------------------------------\n"));
-         DPRINTF(("EXEC HOST \"%s\"\n", name));
+         DPRINTF("-------------------------------------------\n");
+         DPRINTF("EXEC HOST \"%s\"\n", name);
          for_each_ep(cr, lGetList(ep, EH_resource_utilization)) {
             utilization_print(cr, name);
          }
@@ -166,14 +166,14 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    for_each_ep(ep, queue_list) {
       name = lGetString(ep, QU_full_name);
       if (strcmp(name, SGE_TEMPLATE_NAME)) {
-         DPRINTF(("-------------------------------------------\n"));
-         DPRINTF(("QUEUE \"%s\"\n", name));
+         DPRINTF("-------------------------------------------\n");
+         DPRINTF("QUEUE \"%s\"\n", name);
          for_each_ep(cr, lGetList(ep, QU_resource_utilization)) {
             utilization_print(cr, name);
          }
       }
    }
-   DPRINTF(("-------------------------------------------\n"));
+   DPRINTF("-------------------------------------------\n");
 
    /* advance reservations */
    for_each_ep(ep, ar_list) {
@@ -183,15 +183,15 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
       for_each_ep(queue, lGetList(ep, AR_reserved_queues)) {
          name = lGetString(queue, QU_full_name);
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
-            DPRINTF(("-------------------------------------------\n"));
-            DPRINTF(("AR " sge_U32CFormat " QUEUE \"%s\"\n", ar_id, name));
+            DPRINTF("-------------------------------------------\n");
+            DPRINTF("AR " sge_U32CFormat " QUEUE \"%s\"\n", ar_id, name);
             for_each_ep(cr, lGetList(queue, QU_resource_utilization)) {
                utilization_print(cr, name);
             }
          }
       }
    }
-   DPRINTF(("-------------------------------------------\n"));
+   DPRINTF("-------------------------------------------\n");
    
    DRETURN_VOID;
 }
@@ -202,17 +202,17 @@ void utilization_print(const lListElem *cr, const char *object_name)
    const lListElem *rde;
    DENTER(TOP_LAYER);
 
-   DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
-         object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
-            lGetDouble(cr, RUE_utilized_now)));
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
+           object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
+           lGetDouble(cr, RUE_utilized_now));
    for_each_ep(rde, lGetList(cr, RUE_utilized)) {
-      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
+      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
-   DPRINTF(("resource utilization: %s \"%s\" %f utilized now non-exclusive\n", 
-         object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
-            lGetDouble(cr, RUE_utilized_now_nonexclusive)));
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
+           object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
+           lGetDouble(cr, RUE_utilized_now_nonexclusive));
    for_each_ep(rde, lGetList(cr, RUE_utilized_nonexclusive)) {
-      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
+      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
 
    DRETURN_VOID;
@@ -295,7 +295,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    if (for_job && (sconf_get_max_reservations() == 0 || duration == 0)
       && resource_diagram == nullptr) /* AR queues have a resource diagram and we must reflect changes for this queues */
    { 
-      DPRINTF(("max reservations reached or duration is 0\n"));
+      DPRINTF("max reservations reached or duration is 0\n");
 
       DRETURN(0);
    }
@@ -487,7 +487,7 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request)
       }
    }
 
-   DPRINTF(("returning %f\n", max));
+   DPRINTF("returning %f\n", max);
    DRETURN(max);
 }
 
@@ -532,7 +532,7 @@ double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 durati
          max = MAX(lGetDouble(cr, RUE_utilized_now_nonexclusive), max);
       }
 
-      DPRINTF(("returning(1) %f\n", max));
+      DPRINTF("returning(1) %f\n", max);
       DRETURN(max);
    }
 
@@ -590,7 +590,7 @@ double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 durati
       max = MAX(max, max_nonexclusive);
    }
 
-   DPRINTF(("returning(2) %f\n", max));
+   DPRINTF("returning(2) %f\n", max);
    DRETURN(max); 
 }
 
@@ -657,9 +657,9 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
    }
 
    if (when == DISPATCH_TIME_NOW) {
-      DPRINTF(("no utilization\n"));
+      DPRINTF("no utilization\n");
    } else {
-      DPRINTF(("utilization below %f (%f) starting at " sge_U32CFormat "\n", max_util, util, when));
+      DPRINTF("utilization below %f (%f) starting at " sge_U32CFormat "\n", max_util, util, when);
    }
 
    DRETURN(when); 
@@ -1045,9 +1045,9 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
          a.ar_list = ar_list;
          a.gep     = gep;
 
-         DPRINTF(("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
-                  sge_U32CFormat" duration " sge_U32CFormat "\n", lGetUlong(jep, JB_job_number),
-                  lGetUlong(ja_task, JAT_task_number), a.start, a.duration));
+         DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
+                 sge_U32CFormat" duration " sge_U32CFormat "\n", lGetUlong(jep, JB_job_number),
+                 lGetUlong(ja_task, JAT_task_number), a.start, a.duration);
 
          /* only update resource utilization schedule  
             RUE_utililized_now is already set through events */
@@ -1158,7 +1158,7 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
          
          const lListElem *queue_state = nullptr;
 
-         DPRINTF(("queue: %s time %d\n", lGetString(queue, QU_full_name), from));
+         DPRINTF("queue: %s time %d\n", lGetString(queue, QU_full_name), from);
 
          if (slot_uti_list == nullptr) {
             slot_uti_list = lCreateList("slot_uti", RDE_Type);
@@ -1226,7 +1226,7 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
          till = DISPATCH_TIME_QUEUE_END;
       }
 
-      DPRINTF(("queue cal. schedule entry time %d till %d util: %f\n", from, till, uti));
+      DPRINTF("queue cal. schedule entry time %d till %d util: %f\n", from, till, uti);
 
       uti_elem_next = lFirstRW(uti_list);
      

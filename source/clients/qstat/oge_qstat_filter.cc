@@ -197,17 +197,17 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
    DENTER(TOP_LAYER);
    
    if ((ret = qstat_env_prepare(qstat_env, true, alpp)) != 0 ) {
-      DPRINTF(("qstat_env_prepare failed\n"));
+      DPRINTF("qstat_env_prepare failed\n");
       DRETURN(ret);
    }
    
    if ((ret = qstat_env_filter_queues(qstat_env, nullptr, alpp)) < 0) {
-      DPRINTF(("qstat_env_filter_queues failed\n"));
+      DPRINTF("qstat_env_filter_queues failed\n");
       DRETURN(ret);
    }
    
    if ((ret = filter_jobs(qstat_env, alpp)) != 0) {
-      DPRINTF(("filter_jobs failed\n"));
+      DPRINTF("filter_jobs failed\n");
       DRETURN(ret);
    }
 
@@ -304,12 +304,12 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
    
    
    if (handler->report_started && (ret = handler->report_started(handler, alpp))) {
-      DPRINTF(("report_started failed\n"));
+      DPRINTF("report_started failed\n");
       DRETURN(ret);
    }
    
    if ((ret = qstat_handle_running_jobs(qstat_env, handler, alpp))) {
-      DPRINTF(("qstat_handle_running_jobs failed\n"));
+      DPRINTF("qstat_handle_running_jobs failed\n");
       DRETURN(ret);
    }
    remove_tagged_jobs(qstat_env->job_list);
@@ -328,7 +328,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
     *
     */
     if ((ret = handle_pending_jobs(qstat_env, handler, alpp))) {
-       DPRINTF(("handle_pending_jobs failed\n"));
+       DPRINTF("handle_pending_jobs failed\n");
        DRETURN(ret);
     }
     
@@ -339,7 +339,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
     *
     */
     if ((ret=handle_finished_jobs(qstat_env, handler, alpp))) {
-       DPRINTF(("handle_finished_jobs failed\n"));
+       DPRINTF("handle_finished_jobs failed\n");
        DRETURN(ret);
     }
     
@@ -352,7 +352,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
     *
     */
     if ((ret=handle_error_jobs(qstat_env, handler, alpp))) {
-       DPRINTF(("handle_error_jobs failed\n"));
+       DPRINTF("handle_error_jobs failed\n");
        DRETURN(ret);
     }
 
@@ -362,12 +362,12 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
     *
     */
     if ((ret=handle_zombie_jobs(qstat_env, handler, alpp))) {
-       DPRINTF(("handle_zombie_jobs failed\n"));
+       DPRINTF("handle_zombie_jobs failed\n");
        DRETURN(ret);
     }
 
    if (handler->report_finished && (ret = handler->report_finished(handler, alpp))) {
-         DPRINTF(("report_finished failed\n"));
+         DPRINTF("report_finished failed\n");
          DRETURN(ret);
    }
    handler->qstat_env = nullptr;
@@ -424,7 +424,7 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
 
    ret = sconf_set_config(&(qstat_env->schedd_config), alpp);
    if (!ret){
-      DPRINTF(("sconf_set_config failed\n"));
+      DPRINTF("sconf_set_config failed\n");
       DRETURN(ret);
    }
    
@@ -483,7 +483,7 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
    /* no need to iterate through queues if queues are not printed */
    if (!qstat_env->need_queues) {
       if ((ret = handle_jobs_queue(nullptr, qstat_env, 1, handler, alpp))) {
-         DPRINTF(("handle_jobs_queue failed\n"));
+         DPRINTF("handle_jobs_queue failed\n");
       }
       DRETURN(ret);
    }
@@ -503,27 +503,27 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
          }
          
          if (handler->report_queue_started && (ret=handler->report_queue_started(handler, queue_name, alpp))) {
-            DPRINTF(("report_queue_started failed\n"));
+            DPRINTF("report_queue_started failed\n");
             break;
          }
          
          if ((ret=handle_queue(qep, qstat_env, handler, alpp))) {
-            DPRINTF(("handle_queue failed\n"));
+            DPRINTF("handle_queue failed\n");
             break;
          }
 
          if (qstat_env->shut_me_down != nullptr && qstat_env->shut_me_down()) {
-            DPRINTF(("shut_me_down\n"));
+            DPRINTF("shut_me_down\n");
             ret = 1;
             break;
          }
 
          if ((ret = handle_jobs_queue(qep, qstat_env, 1, handler, alpp))) {
-            DPRINTF(("handle_jobs_queue failed\n"));
+            DPRINTF("handle_jobs_queue failed\n");
             break;
          }
          if (handler->report_queue_finished && (ret=handler->report_queue_finished(handler, queue_name, alpp))) {
-            DPRINTF(("report_queue_finished failed\n"));
+            DPRINTF("report_queue_finished failed\n");
             break;
          }
          
@@ -548,7 +548,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
    DENTER(TOP_LAYER);
 
    if (handler->report_queue_jobs_started && (ret=handler->report_queue_jobs_started(handler, qnm, alpp)) ) {
-      DPRINTF(("report_queue_jobs_started failed\n"));
+      DPRINTF("report_queue_jobs_started failed\n");
       goto error;
    }
    
@@ -559,7 +559,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
          u_long32 jstate = lGetUlong(jatep, JAT_state);
 
          if (qstat_env->shut_me_down && qstat_env->shut_me_down()) {
-            DPRINTF(("shut_me_down\n"));
+            DPRINTF("shut_me_down\n");
             ret = 1;
             goto error;
          }
@@ -691,7 +691,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
    }
    
    if (handler->report_queue_jobs_finished && (ret=handler->report_queue_jobs_finished(handler, qnm, alpp)) ) {
-      DPRINTF(("report_queue_jobs_finished failed\n"));
+      DPRINTF("report_queue_jobs_finished failed\n");
       goto error;
    }
    
@@ -724,7 +724,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    ** tag only jobs which satisfy the user list
    */
    if (lGetNumberOfElem(qstat_env->user_list)) {
-      DPRINTF(("------- selecting jobs -----------\n"));
+      DPRINTF("------- selecting jobs -----------\n");
 
       /* ok, now we untag the jobs if the user_list was specified */ 
       for_each_rw(up, qstat_env->user_list)
@@ -787,9 +787,9 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
 
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
-               DPRINTF(("show task " sge_u32"." sge_u32"\n",
+               DPRINTF("show task " sge_u32"." sge_u32"\n",
                        lGetUlong(jep, JB_job_number),
-                       lGetUlong(jatep, JAT_task_number)));
+                       lGetUlong(jatep, JAT_task_number));
                lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
             }
          }
@@ -878,7 +878,7 @@ int filter_queues(lList **filtered_queue_list,
 
    centry_list_init_double(centry_list);
 
-   DPRINTF(("------- selecting queues -----------\n"));
+   DPRINTF("------- selecting queues -----------\n");
    /* all queues are selected */
    cqueue_list_set_tag(queue_list, TAG_SHOW_IT, true);
 
@@ -950,9 +950,9 @@ int filter_queues(lList **filtered_queue_list,
 
          for_each_ep(qep, qinstance_list) {
             if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
-               DPRINTF(("++ %s\n", lGetString(qep, QU_full_name)));
+               DPRINTF("++ %s\n", lGetString(qep, QU_full_name));
             } else {
-               DPRINTF(("-- %s\n", lGetString(qep, QU_full_name)));
+               DPRINTF("-- %s\n", lGetString(qep, QU_full_name));
             }
          }
       }
@@ -1014,7 +1014,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    DENTER(TOP_LAYER);
 
    if (queue_l) {
-      DPRINTF(("need queues\n"));
+      DPRINTF("need queues\n");
       q_all = lWhat("%T(ALL)", CQ_Type);
       
       q_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET, nullptr, nullptr, q_all, &state, true);
@@ -1024,7 +1024,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
          DRETURN(1);
       }
    } else {
-      DPRINTF(("queues not needed\n"));
+      DPRINTF("queues not needed\n");
    }
 
    /* 
@@ -1406,7 +1406,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    summary.state = sge_dstring_get_string(&state_string);
    
    if (handler->report_queue_summary && (ret=handler->report_queue_summary(handler, queue_name, &summary, alpp))) {
-      DPRINTF(("report_queue_summary failed\n"));
+      DPRINTF("report_queue_summary failed\n");
       goto error;
    }
    
@@ -1415,7 +1415,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       if (*load_alarm_reason) {
          if (handler->report_queue_load_alarm) {
             if ((ret=handler->report_queue_load_alarm(handler, queue_name, load_alarm_reason, alpp))) {
-               DPRINTF(("report_queue_load_alarm failed\n"));
+               DPRINTF("report_queue_load_alarm failed\n");
                goto error;
             }
          }
@@ -1423,7 +1423,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       if (*suspend_alarm_reason) {
          if (handler->report_queue_suspend_alarm) {
             if ((ret=handler->report_queue_suspend_alarm(handler, queue_name, suspend_alarm_reason, alpp))) {
-               DPRINTF(("report_queue_suspend_alarm failed\n"));
+               DPRINTF("report_queue_suspend_alarm failed\n");
                goto error;
             }
          }
@@ -1434,7 +1434,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       if (*load_alarm_reason) {
          if (handler->report_queue_load_alarm) {
             if ((ret=handler->report_queue_load_alarm(handler, queue_name, load_alarm_reason, alpp))) {
-               DPRINTF(("report_queue_load_alarm failed\n"));
+               DPRINTF("report_queue_load_alarm failed\n");
                goto error;
             }
          }
@@ -1444,7 +1444,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       if (*suspend_alarm_reason) {
          if (handler->report_queue_suspend_alarm) {
             if ((ret=handler->report_queue_suspend_alarm(handler, queue_name, suspend_alarm_reason, alpp))) {
-               DPRINTF(("report_queue_suspend_alarm failed\n"));
+               DPRINTF("report_queue_suspend_alarm failed\n");
                goto error;
             }
          }
@@ -1462,7 +1462,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
             const char *message = lGetString(qim, QIM_message);
 
             if ((ret=handler->report_queue_message(handler, queue_name, message, alpp))) {
-               DPRINTF(("report_queue_message failed\n"));
+               DPRINTF("report_queue_message failed\n");
                goto error;
             }
          }
@@ -1506,7 +1506,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
          monitor_dominance(dom, dominant); 
          
          if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, alpp))) {
-            DPRINTF(("report_queue_resource failed\n"));
+            DPRINTF("report_queue_resource failed\n");
             break;
          }
       }
@@ -1544,7 +1544,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
 
       while ((jatep = nxt_jatep)) { 
          if (qstat_env->shut_me_down && qstat_env->shut_me_down() ) {
-            DPRINTF(("shut_me_down\n"));
+            DPRINTF("shut_me_down\n");
             break;
          }   
          nxt_jatep = lNextRW(jatep);
@@ -1584,7 +1584,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                                     lGetUlong(jatep, JAT_task_number));
 
                   if (count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
-                     DPRINTF(("report_pending_jobs_started failed\n"));
+                     DPRINTF("report_pending_jobs_started failed\n");
                      goto error;
                   }
                   ret = sge_handle_job(jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str,
@@ -1592,7 +1592,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                                        qstat_env, &(handler->job_handler), alpp);
 
                   if (ret) {
-                     DPRINTF(("sge_handle_job failed\n"));
+                     DPRINTF("sge_handle_job failed\n");
                      goto error;
                   }
                   count++;
@@ -1617,7 +1617,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
             ja_task_list_print_to_string(task_group, &dyn_task_str);
 
             if (count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
-               DPRINTF(("report_pending_jobs_started failed\n"));
+               DPRINTF("report_pending_jobs_started failed\n");
                goto error;
             }
             ret = sge_handle_job(jep, lFirstRW(task_group), nullptr, nullptr, true, nullptr, &dyn_task_str,
@@ -1627,7 +1627,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
             lFreeList(&task_group);
             
             if (ret) {
-               DPRINTF(("sge_handle_job failed\n"));
+               DPRINTF("sge_handle_job failed\n");
                goto error;
             }
             count++;
@@ -1640,7 +1640,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
    }
    
    if (count > 0 && handler->report_pending_jobs_finished && (ret=handler->report_pending_jobs_finished(handler, alpp))) {
-      DPRINTF(("report_pending_jobs_finished failed\n"));
+      DPRINTF("report_pending_jobs_finished failed\n");
       goto error;
    }
    
@@ -1663,7 +1663,7 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
    for_each_rw (jep, qstat_env->job_list) {
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          if (qstat_env->shut_me_down && qstat_env->shut_me_down()) {
-            DPRINTF(("shut_me_down\n"));
+            DPRINTF("shut_me_down\n");
             ret = -1;
             break;
          }   
@@ -1678,7 +1678,7 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
                      
                if (count == 0) {
                   if (handler->report_finished_jobs_started && (ret=handler->report_finished_jobs_started(handler, alpp))) {
-                     DPRINTF(("report_finished_jobs_started failed\n"));
+                     DPRINTF("report_finished_jobs_started failed\n");
                      break;
                   }
                }
@@ -1700,7 +1700,7 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
 
    if (ret == 0 && count > 0) {
       if (handler->report_finished_jobs_finished && (ret=handler->report_finished_jobs_finished(handler, alpp))) {
-         DPRINTF(("report_finished_jobs_finished failed\n"));
+         DPRINTF("report_finished_jobs_finished failed\n");
       }
    }
 
@@ -1729,7 +1729,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
                
                if (count == 0) {
                    if (handler->report_error_jobs_started && (ret=handler->report_error_jobs_started(handler, alpp))) {
-                      DPRINTF(("report_error_jobs_started failed\n"));
+                      DPRINTF("report_error_jobs_started failed\n");
                       goto error;
                    }
                }
@@ -1747,7 +1747,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
    }
    if (ret == 0 && count > 0 ) {
        if (handler->report_error_jobs_finished && (ret=handler->report_error_jobs_finished(handler, alpp))) {
-          DPRINTF(("report_error_jobs_started failed\n"));
+          DPRINTF("report_error_jobs_started failed\n");
        }
    }
    
@@ -1782,7 +1782,7 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
          range_list_print_to_string(z_ids, &dyn_task_str, false, false, false);
          
          if (count == 0 && handler->report_zombie_jobs_started && (ret=handler->report_zombie_jobs_started(handler, alpp))) {
-            DPRINTF(("report_zombie_jobs_started failed\n"));
+            DPRINTF("report_zombie_jobs_started failed\n");
             break;
          }
          ret = sge_handle_job(jep, ja_task, nullptr, nullptr, true, nullptr, &dyn_task_str,
@@ -1796,7 +1796,7 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
    }
 
    if (ret == 0 && count > 0 && handler->report_zombie_jobs_finished && (ret=handler->report_zombie_jobs_finished(handler, alpp))) {
-      DPRINTF(("report_zombie_jobs_finished failed\n"));
+      DPRINTF("report_zombie_jobs_finished failed\n");
    }
 
    sge_dstring_free(&dyn_task_str);
@@ -1853,7 +1853,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
                
                if (*count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
-                  DPRINTF(("report_pending_jobs_started failed\n"));
+                  DPRINTF("report_pending_jobs_started failed\n");
                   ret = 1;
                   break;
                }
@@ -1861,7 +1861,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                                     slots, slot, 0,
                                     qstat_env, &(handler->job_handler), alpp);
                if (ret) {
-                  DPRINTF(("sge_handle_job failed\n"));
+                  DPRINTF("sge_handle_job failed\n");
                   break;
                }
                lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
@@ -1883,7 +1883,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                   sge_dstring_sprintf(&ja_task_id_string, sge_u32, start);
                   
                   if (*count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
-                     DPRINTF(("report_pending_jobs_started failed\n"));
+                     DPRINTF("report_pending_jobs_started failed\n");
                      ret = 1;
                      break;
                   }
@@ -1891,7 +1891,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                                        slots, slot, 0,
                                        qstat_env, &(handler->job_handler), alpp);
                   if (ret) {
-                     DPRINTF(("sge_handle_job failed\n"));
+                     DPRINTF("sge_handle_job failed\n");
                      break;
                   }
                   (*count)++;
@@ -2119,7 +2119,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    }
    
    if ((ret = handler->report_job(handler, lGetUlong(job, JB_job_number), &summary, alpp))) {
-      DPRINTF(("handler->report_job failed\n"));
+      DPRINTF("handler->report_job failed\n");
       goto error;
    }
 
@@ -2132,7 +2132,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       
       if (handler->report_sub_tasks_started) {
          if ((ret = handler->report_sub_tasks_started(handler, alpp))) {
-            DPRINTF(("(handler->report_sub_tasks_started failed\n"));
+            DPRINTF("(handler->report_sub_tasks_started failed\n");
             goto error;
          }
       }
@@ -2144,7 +2144,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
           !strcmp(qname, summary.queue)) {
              
           if ((ret=job_handle_subtask(job, jatep, nullptr, handler, alpp))) {
-             DPRINTF(("sge_handle_subtask failed\n"));
+             DPRINTF("sge_handle_subtask failed\n");
              goto error;
           }      
       }
@@ -2156,7 +2156,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
               ((qname=lGetString(ep, JG_qname))) &&
               !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
              if ((ret=job_handle_subtask(job, jatep, task, handler, alpp))) {
-                DPRINTF(("sge_handle_subtask failed\n"));
+                DPRINTF("sge_handle_subtask failed\n");
                 goto error;
              }      
          }
@@ -2164,7 +2164,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       
       if (handler->report_sub_tasks_finished) {
          if ((ret=handler->report_sub_tasks_finished(handler, alpp))) {
-            DPRINTF(("(handler->report_sub_tasks_finished failed\n"));
+            DPRINTF("(handler->report_sub_tasks_finished failed\n");
             goto error;
          }
       }
@@ -2176,13 +2176,13 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       
       if (handler->report_additional_info) {
          if ((ret=handler->report_additional_info(handler, FULL_JOB_NAME, lGetString(job, JB_job_name), alpp))) {
-            DPRINTF(("handler->report_additional_info(Full jobname) failed"));
+            DPRINTF("handler->report_additional_info(Full jobname) failed");
             goto error;
          }
       }
       if (summary.queue && handler->report_additional_info) {
          if ((ret=handler->report_additional_info(handler, MASTER_QUEUE, summary.queue, alpp))) {
-            DPRINTF(("handler->report_additional_info(Master queue) failed"));
+            DPRINTF("handler->report_additional_info(Master queue) failed");
             goto error;
          }
       }
@@ -2198,7 +2198,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          sge_dstring_free(&range_string);
          
          if (ret) {
-            DPRINTF(("handler->report_requested_pe failed\n"));
+            DPRINTF("handler->report_requested_pe failed\n");
             goto error;
          }
       }
@@ -2211,13 +2211,13 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
          
          if ((ret=handler->report_granted_pe(handler, lGetString(jatep, JAT_granted_pe), pe_slots, alpp))) {
-            DPRINTF(("handler->report_granted_pe failed\n"));
+            DPRINTF("handler->report_granted_pe failed\n");
             goto error;
          }
       }
       if (lGetString(job, JB_checkpoint_name) && handler->report_additional_info) { 
          if ((ret=handler->report_additional_info(handler, CHECKPOINT_ENV, lGetString(job, JB_checkpoint_name), alpp))) {
-            DPRINTF(("handler->report_additional_info(CHECKPOINT_ENV) failed\n"));
+            DPRINTF("handler->report_additional_info(CHECKPOINT_ENV) failed\n");
             goto error;
          }
       }
@@ -2230,7 +2230,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                                  handler->report_hard_resource,
                                  handler->report_hard_resources_finished, alpp);
       if (ret) {
-         DPRINTF(("handle_resources for hard resources failed\n"));
+         DPRINTF("handle_resources for hard resources failed\n");
          goto error;
       }
 
@@ -2266,7 +2266,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                   lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
 
                      if ((ret=handler->report_request(handler, name, lGetString(ce, CE_defaultval), alpp)) ) {
-                        DPRINTF(("handler->report_request failed\n"));
+                        DPRINTF("handler->report_request failed\n");
                         break;
                      }
             }
@@ -2285,7 +2285,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                                  handler->report_soft_resource,
                                  handler->report_soft_resources_finished, alpp);
       if (ret) {
-         DPRINTF(("handle_resources for soft resources failed\n"));
+         DPRINTF("handle_resources for soft resources failed\n");
          goto error;
       }
       
@@ -2293,17 +2293,17 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          ql = lGetList(job, JB_hard_queue_list);
          if (ql) {
             if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, alpp))) {
-               DPRINTF(("handler->report_hard_requested_queues_started failed\n"));
+               DPRINTF("handler->report_hard_requested_queues_started failed\n");
                goto error;
             }
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
-                  DPRINTF(("handler->report_hard_requested_queue failed\n"));
+                  DPRINTF("handler->report_hard_requested_queue failed\n");
                   goto error;
                }
             }
             if (handler->report_hard_requested_queues_finished && (ret=handler->report_hard_requested_queues_finished(handler, alpp))) {
-               DPRINTF(("handler->report_hard_requested_queues_finished failed\n"));
+               DPRINTF("handler->report_hard_requested_queues_finished failed\n");
                goto error;
             }
          }
@@ -2313,17 +2313,17 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          ql = lGetList(job, JB_soft_queue_list);
          if (ql) {
             if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, alpp))) {
-               DPRINTF(("handler->report_soft_requested_queue_started failed\n"));
+               DPRINTF("handler->report_soft_requested_queue_started failed\n");
                goto error;
             }
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_soft_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
-                  DPRINTF(("handler->report_soft_requested_queue failed\n"));
+                  DPRINTF("handler->report_soft_requested_queue failed\n");
                   goto error;
                }
             }
             if (handler->report_soft_requested_queues_finished && (ret=handler->report_soft_requested_queues_finished(handler, alpp))) {
-               DPRINTF(("handler->report_soft_requested_queues_finished failed\n"));
+               DPRINTF("handler->report_soft_requested_queues_finished failed\n");
                goto error;
             }
          }
@@ -2333,17 +2333,17 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          ql = lGetList(job, JB_master_hard_queue_list);
          if (ql){
             if (handler->report_master_hard_requested_queues_started && (ret=handler->report_master_hard_requested_queues_started(handler, alpp))) {
-               DPRINTF(("handler->report_master_hard_requested_queues_started failed\n"));
+               DPRINTF("handler->report_master_hard_requested_queues_started failed\n");
                goto error;
             }
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_master_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
-                  DPRINTF(("handler->report_master_hard_requested_queue failed\n"));
+                  DPRINTF("handler->report_master_hard_requested_queue failed\n");
                   goto error;
                }
             }
             if (handler->report_master_hard_requested_queues_finished && (ret=handler->report_master_hard_requested_queues_finished(handler, alpp))) {
-               DPRINTF(("handler->report_master_hard_requested_queues_finished failed\n"));
+               DPRINTF("handler->report_master_hard_requested_queues_finished failed\n");
                goto error;
             }
          }
@@ -2354,20 +2354,20 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          if (ql) {
             if (handler->report_predecessors_requested_started && 
                 (ret=handler->report_predecessors_requested_started(handler, alpp))) {
-               DPRINTF(("handler->report_predecessors_requested_started failed\n"));
+               DPRINTF("handler->report_predecessors_requested_started failed\n");
                goto error;
             }
             
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_predecessor_requested(handler, lGetString(qrep, JRE_job_name), alpp))) {
-                  DPRINTF(("handler->report_predecessor_requested failed\n"));
+                  DPRINTF("handler->report_predecessor_requested failed\n");
                   goto error;
                }
             }
             
             if (handler->report_predecessors_requested_finished && 
                 (ret=handler->report_predecessors_requested_finished(handler, alpp))) {
-               DPRINTF(("handler->report_predecessors_requested_finished failed\n"));
+               DPRINTF("handler->report_predecessors_requested_finished failed\n");
                goto error;
             }
          }
@@ -2377,19 +2377,19 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          if (ql) {
             if (handler->report_predecessors_started && 
                 (ret=handler->report_predecessors_started(handler, alpp))) {
-               DPRINTF(("handler->report_predecessors_started failed\n"));
+               DPRINTF("handler->report_predecessors_started failed\n");
                goto error;
             }
             
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_predecessor(handler, lGetUlong(qrep, JRE_job_number), alpp))) {
-                  DPRINTF(("handler->report_predecessor failed\n"));
+                  DPRINTF("handler->report_predecessor failed\n");
                   goto error;
                }
             }
             if (handler->report_predecessors_finished && 
                 (ret=handler->report_predecessors_finished(handler, alpp))) {
-               DPRINTF(("handler->report_predecessors_finished failed\n"));
+               DPRINTF("handler->report_predecessors_finished failed\n");
                goto error;
             }
          }
@@ -2400,20 +2400,20 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          if (ql) {
             if (handler->report_ad_predecessors_requested_started && 
                 (ret=handler->report_ad_predecessors_requested_started(handler, alpp))) {
-               DPRINTF(("handler->report_ad_predecessors_requested_started failed\n"));
+               DPRINTF("handler->report_ad_predecessors_requested_started failed\n");
                goto error;
             }
             
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_ad_predecessor_requested(handler, lGetString(qrep, JRE_job_name), alpp))) {
-                  DPRINTF(("handler->report_ad_predecessor_requested failed\n"));
+                  DPRINTF("handler->report_ad_predecessor_requested failed\n");
                   goto error;
                }
             }
             
             if (handler->report_ad_predecessors_requested_finished && 
                 (ret=handler->report_ad_predecessors_requested_finished(handler, alpp))) {
-               DPRINTF(("handler->report_ad_predecessors_requested_finished failed\n"));
+               DPRINTF("handler->report_ad_predecessors_requested_finished failed\n");
                goto error;
             }
          }
@@ -2423,19 +2423,19 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          if (ql) {
             if (handler->report_ad_predecessors_started && 
                 (ret=handler->report_ad_predecessors_started(handler, alpp))) {
-               DPRINTF(("handler->report_ad_predecessors_started failed\n"));
+               DPRINTF("handler->report_ad_predecessors_started failed\n");
                goto error;
             }
             
             for_each_ep(qrep, ql) {
                if ((ret=handler->report_ad_predecessor(handler, lGetUlong(qrep, JRE_job_number), alpp))) {
-                  DPRINTF(("handler->report_ad_predecessor failed\n"));
+                  DPRINTF("handler->report_ad_predecessor failed\n");
                   goto error;
                }
             }
             if (handler->report_ad_predecessors_finished && 
                 (ret=handler->report_ad_predecessors_finished(handler, alpp))) {
-               DPRINTF(("handler->report_ad_predecessors_finished failed\n"));
+               DPRINTF("handler->report_ad_predecessors_finished failed\n");
                goto error;
             }
          }
@@ -2450,16 +2450,16 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
             binding_print_to_string(binding_elem, &binding_param);
             if (handler->report_binding_started && 
                 (ret=handler->report_binding_started(handler, alpp))) {
-               DPRINTF(("handler->report_binding_started failed\n"));
+               DPRINTF("handler->report_binding_started failed\n");
                goto error;
             }
             if ((ret=handler->report_binding(handler, sge_dstring_get_string(&binding_param), alpp))) {
-               DPRINTF(("handler->report_binding failed\n"));
+               DPRINTF("handler->report_binding failed\n");
                goto error;
             }
             if (handler->report_binding_finished && 
                 (ret=handler->report_binding_finished(handler, alpp))) {
-               DPRINTF(("handler->report_binding_finished failed\n"));
+               DPRINTF("handler->report_binding_finished failed\n");
                goto error;
             }
             sge_dstring_free(&binding_param);
@@ -2468,7 +2468,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    }
    
    if (handler->report_job_finished && (ret=handler->report_job_finished(handler, lGetUlong(job, JB_job_number), alpp))) {
-      DPRINTF(("handler->report_job_finished failed\n"));
+      DPRINTF("handler->report_job_finished failed\n");
       goto error;
    }
    
@@ -2494,7 +2494,7 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
    DENTER(TOP_LAYER);
    
    if (start_func && (ret=start_func(handler, alpp))) {
-      DPRINTF(("start_func failed\n"));
+      DPRINTF("start_func failed\n");
       DRETURN(ret);
    }
    /* walk through complex entries */
@@ -2508,13 +2508,13 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
 
       s = lGetString(ce, CE_stringval);
       if ((ret=resource_func(handler, name, s, uc, alpp))) {
-         DPRINTF(("resource_func failed\n"));
+         DPRINTF("resource_func failed\n");
          break;
       }
    }
    if (ret == 0 && finish_func ) {
       if ((ret=finish_func(handler, alpp))) {
-         DPRINTF(("finish_func failed"));
+         DPRINTF("finish_func failed");
       }
    }
    DRETURN(ret);

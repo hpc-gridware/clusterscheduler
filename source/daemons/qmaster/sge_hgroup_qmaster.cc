@@ -268,7 +268,7 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
          lList *rem_hosts = nullptr;
          lList *occupant_groups = nullptr;
 
-         DPRINTF(("got new HGRP_host_list\n"));
+         DPRINTF("got new HGRP_host_list\n");
 
          if (ret) {
             ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem,

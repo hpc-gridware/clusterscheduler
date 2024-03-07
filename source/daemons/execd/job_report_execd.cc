@@ -86,14 +86,14 @@ void trace_jr()
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("--- JOB REPORT LIST ----------------\n"));
+   DPRINTF("--- JOB REPORT LIST ----------------\n");
    for_each_ep(jr, jr_list) {
       const char *s;
 
       if ((s=lGetString(jr, JR_pe_task_id_str))) {
-         DPRINTF(("Jobtask " sge_u32"." sge_u32" task %s\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number), s));
+         DPRINTF("Jobtask " sge_u32"." sge_u32" task %s\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number), s);
       } else {
-         DPRINTF(("Jobtask " sge_u32"." sge_u32"\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number)));
+         DPRINTF("Jobtask " sge_u32"." sge_u32"\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number));
       }   
    }
    DRETURN_VOID;
@@ -121,7 +121,7 @@ lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaski
    }
 
    lAppendElem(jr_list, jr);
-   DPRINTF(("adding job report for " sge_U32CFormat "." sge_U32CFormat "\n", sge_u32c(jobid), sge_u32c(jataskid)));
+   DPRINTF("adding job report for " sge_U32CFormat "." sge_U32CFormat "\n", sge_u32c(jobid), sge_u32c(jataskid));
 
    if (jep != nullptr) {
       jatep = job_search_task(jep, nullptr, jataskid);
@@ -182,7 +182,7 @@ void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
       if (lGetUlong(jr, JR_ja_task_number) == jataskid) {
          const char *s = lGetString(jr, JR_pe_task_id_str);
 
-         DPRINTF(("!!!! removing jobreport for " sge_u32"." sge_u32" task %s !!!!\n", jobid, jataskid, s?s:"master"));
+         DPRINTF("!!!! removing jobreport for " sge_u32"." sge_u32" task %s !!!!\n", jobid, jataskid, s?s:"master");
          lRemoveElem(jr_list, &jr);
       }
    }
@@ -272,7 +272,7 @@ int do_ack(struct_msg_t *aMsg)
 
    DENTER(TOP_LAYER);
  
-   DPRINTF(("------- GOT ACK'S ---------\n"));
+   DPRINTF("------- GOT ACK'S ---------\n");
  
    /* we get a bunch of ack's */
    while (pb_unused(&(aMsg->buf)) > 0) {
@@ -296,13 +296,13 @@ int do_ack(struct_msg_t *aMsg)
             jataskid = lGetUlong(ack, ACK_id2);
             pe_task_id_str = lGetString(ack, ACK_str);
 
-            DPRINTF(("remove exiting job " sge_u32"/" sge_u32"/%s\n",
-                    jobid, jataskid, pe_task_id_str?pe_task_id_str:""));
+            DPRINTF("remove exiting job " sge_u32"/" sge_u32"/%s\n",
+                    jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
                remove_acked_job_exit(jobid, jataskid, pe_task_id_str, jr);
             } else {
-               DPRINTF(("acknowledged job " sge_u32"." sge_u32" not found\n", jobid, jataskid));
+               DPRINTF("acknowledged job " sge_u32"." sge_u32" not found\n", jobid, jataskid);
             }
 
             break;
@@ -316,13 +316,12 @@ int do_ack(struct_msg_t *aMsg)
             jataskid = lGetUlong(ack, ACK_id2);
             pe_task_id_str = lGetString(ack, ACK_str);
 
-            DPRINTF(("resending report for exiting job " sge_u32"/" sge_u32"/%s\n",
-                    jobid, jataskid, pe_task_id_str?pe_task_id_str:""));
+            DPRINTF("resending report for exiting job " sge_u32"/" sge_u32"/%s\n", jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
                flush_job_report(jr);
             } else {
-               DPRINTF(("job requested to resend " sge_u32"." sge_u32" not found\n", jobid, jataskid));
+               DPRINTF("job requested to resend " sge_u32"." sge_u32" not found\n", jobid, jataskid);
             }
 
             break;

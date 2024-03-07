@@ -386,9 +386,9 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       strcpy(arg0, "");
    }
    strcat(arg0, shell);
-   DPRINTF(("arg0 = %s\n", arg0));
-   DPRINTF(("arg1 = -c\n"));
-   DPRINTF(("arg2 = %s\n", command));
+   DPRINTF("arg0 = %s\n", arg0);
+   DPRINTF("arg1 = -c\n");
+   DPRINTF("arg2 = %s\n", command);
 
 
    /*
@@ -425,7 +425,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          DRETURN(-1);
       }
 
-      DPRINTF(("was able to resolve user\n"));
+      DPRINTF("was able to resolve user\n");
 
       /* 
        * only prepare change of user if target user is different from current one
@@ -434,13 +434,13 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          int res;
 
          if (myuid != SGE_SUPERUSER_UID) {
-            DPRINTF(("only root is allowed to switch to a different user\n"));
+            DPRINTF("only root is allowed to switch to a different user\n");
             ERROR(SFNMAX, MSG_SYSTEM_NOROOTRIGHTSTOSWITCHUSER);
             sge_free(&buffer);
             DRETURN(-2);
          }
 
-         DPRINTF(("Before initgroups\n"));
+         DPRINTF("Before initgroups\n");
 
          res = initgroups(pw->pw_name, pw->pw_gid);
          if (res) {
@@ -449,19 +449,19 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
             sge_exit(1);
          }
 
-         DPRINTF(("Initgroups was successful\n"));
+         DPRINTF("Initgroups was successful\n");
       }
-      DPRINTF(("user = %s\n", user));
-      DPRINTF(("myuid = %d\n", (int) myuid));
+      DPRINTF("user = %s\n", user);
+      DPRINTF("myuid = %d\n", (int) myuid);
       if (pw != nullptr) {
          tuid = pw->pw_uid;
-         DPRINTF(("target uid = %d\n", (int) tuid));
+         DPRINTF("target uid = %d\n", (int) tuid);
       }
 
       sge_free(&buffer);
    }
 
-   DPRINTF(("Now process will fork\n"));
+   DPRINTF("Now process will fork\n");
 
 #if defined(SOLARIS)
    pid = sge_smf_contract_fork(err_str, 256);
@@ -638,11 +638,11 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
       }
       if (i == 0) { /* not yet exited */
          if (timeout->tv_sec == 0) {
-            DPRINTF(("killing\n"));
+            DPRINTF("killing\n");
             timeout = nullptr;
             kill(pid, SIGKILL);
          } else {
-            DPRINTF(("%d seconds waiting for exit\n", timeout->tv_sec));
+            DPRINTF("%d seconds waiting for exit\n", timeout->tv_sec);
             sleep(1);
             timeout->tv_sec -= 1;
          }

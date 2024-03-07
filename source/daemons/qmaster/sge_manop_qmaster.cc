@@ -95,7 +95,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
          eve = sgeE_OPERATOR_ADD;
          break;
       default :
-         DPRINTF(("unknown target passed to %s\n", __func__));
+         DPRINTF("unknown target passed to %s\n", __func__);
          DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -198,7 +198,7 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
          eve = sgeE_OPERATOR_DEL;
          break;
       default :
-         DPRINTF(("unknown target passed to %s\n", __func__));
+         DPRINTF("unknown target passed to %s\n", __func__);
          DRETURN(STATUS_EUNKNOWN);
    }
 

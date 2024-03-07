@@ -401,7 +401,7 @@ char **argv
          }
          
          if (handler.destroy != nullptr ) {
-            DPRINTF(("Destroy handler\n"));
+            DPRINTF("Destroy handler\n");
             handler.destroy(&handler);
          }
       }
@@ -695,7 +695,7 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
    handler->destroy = qstat_stdout_destroy;
    
    if((ret=job_stdout_init(&(handler->job_handler), alpp))) {
-      DPRINTF(("job_stdout_init failed\n"));
+      DPRINTF("job_stdout_init failed\n");
       goto error;
    }
    
@@ -1206,7 +1206,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
       case MASTER_QUEUE:   sge_dstring_copy_string(&ds, "Master Queue"); break;
       case FULL_JOB_NAME:  sge_dstring_copy_string(&ds, "Full jobname"); break;
       default:
-           DPRINTF(("Unkown additional info(%d)\n", name));
+           DPRINTF("Unkown additional info(%d)\n", name);
            abort();
    }
    {

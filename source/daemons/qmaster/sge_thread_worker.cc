@@ -87,10 +87,10 @@ sge_worker_initialize() {
 
    sge_init_job_number();
    sge_init_ar_id();
-   DPRINTF(("job/ar counter have been initialized\n"));
+   DPRINTF("job/ar counter have been initialized\n");
 
    reporting_initialize(nullptr);
-   DPRINTF(("accounting and reporting module has been initialized\n"));
+   DPRINTF("accounting and reporting module has been initialized\n");
 
    INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]);
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
@@ -130,12 +130,12 @@ sge_worker_terminate() {
    {
       cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
       while (thread != nullptr) {
-         DPRINTF(("gets canceled\n"));
+         DPRINTF("gets canceled\n");
          cl_thread_list_delete_thread(Main_Control.worker_thread_pool, thread);
 
          thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
       }
-      DPRINTF(("all " SFN " threads terminated\n", threadnames[WORKER_THREAD]));
+      DPRINTF("all " SFN " threads terminated\n", threadnames[WORKER_THREAD]);
    }
 
    do_final_spooling = sge_qmaster_do_final_spooling();
@@ -144,7 +144,7 @@ sge_worker_terminate() {
    jsv_list_remove_all();
 
    reporting_shutdown(nullptr, do_final_spooling);
-   DPRINTF(("accounting and reporting module has been shutdown\n"));
+   DPRINTF("accounting and reporting module has been shutdown\n");
 
    /*
     * final spooling is only done if the shutdown of the current instance
@@ -157,13 +157,13 @@ sge_worker_terminate() {
    if (do_final_spooling == true) {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
-      DPRINTF(("job/ar counter were made persistent\n"));
+      DPRINTF("job/ar counter were made persistent\n");
       sge_userprj_spool(); /* spool the latest usage */
-      DPRINTF(("final job and user/project spooling has been triggered\n"));
+      DPRINTF("final job and user/project spooling has been triggered\n");
    }
 
    sge_shutdown_persistence(nullptr);
-   DPRINTF(("persistence module has been shutdown\n"));
+   DPRINTF("persistence module has been shutdown\n");
 
    DRETURN_VOID;
 }
@@ -177,7 +177,7 @@ sge_worker_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started\n"));
+   DPRINTF("started\n");
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
    sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);

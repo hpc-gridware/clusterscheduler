@@ -186,14 +186,14 @@ sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet) {
       while (packet->is_handled == false) {
          struct timespec ts{};
 
-         DPRINTF(("waiting for packet to be handling by worker\n"));
+         DPRINTF("waiting for packet to be handling by worker\n");
          sge_relative_timespec(CLIENT_WAIT_TIME_S, &ts);
          pthread_cond_timedwait(&(packet->cond), &(packet->mutex), &ts);
       }
 
       sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
-      DPRINTF(("got signal that packet is handled\n"));
+      DPRINTF("got signal that packet is handled\n");
    }
 
    DRETURN_VOID;   
@@ -290,7 +290,7 @@ sge_gdi_packet_broadcast_that_handled(sge_gdi_packet_class_t *packet)
 
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
    packet->is_handled = true; 
-   DPRINTF(("broadcast that packet is handled\n"));
+   DPRINTF("broadcast that packet is handled\n");
    pthread_cond_broadcast(&(packet->cond));
    sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
@@ -558,28 +558,28 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
             /*this error appears, if qmaster or any qmaster thread is not responding, or overloaded*/
             if (gdi_error == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
                cl_com_SIRM_t* cl_endpoint_status = nullptr;
-               DPRINTF(("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS=" sge_U32CFormat "\n", sge_u32c(runs)));
+               DPRINTF("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS=" sge_U32CFormat "\n", sge_u32c(runs));
 
                cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
                if (handle != nullptr) {
-                  DPRINTF(("TEST_2372_OUTPUT: GDI_TIMEOUT=" sge_U32CFormat "\n", sge_u32c(handle->synchron_receive_timeout)));
+                  DPRINTF("TEST_2372_OUTPUT: GDI_TIMEOUT=" sge_U32CFormat "\n", sge_u32c(handle->synchron_receive_timeout));
                }
                if (do_ping == true) {
-                  DPRINTF(("TEST_2372_OUTPUT: CL_PING=TRUE\n"));
+                  DPRINTF("TEST_2372_OUTPUT: CL_PING=TRUE\n");
                   cl_commlib_get_endpoint_status(handle, rcv_host, rcv_commproc, id, &cl_endpoint_status);
                   if (cl_endpoint_status != nullptr) {
                      if (cl_endpoint_status->application_status != 0) {
-                        DPRINTF(("TEST_2372_OUTPUT: QPING: error\n"));
+                        DPRINTF("TEST_2372_OUTPUT: QPING: error\n");
                      } else {
-                        DPRINTF(("TEST_2372_OUTPUT: QPING: ok\n"));
+                        DPRINTF("TEST_2372_OUTPUT: QPING: ok\n");
                      }
                      cl_com_free_sirm_message(&cl_endpoint_status);
                   } else {
-                     DPRINTF(("TEST_2372_OUTPUT: QPING: failed\n"));
+                     DPRINTF("TEST_2372_OUTPUT: QPING: failed\n");
                      break;
                   }
                } else {
-                  DPRINTF(("TEST_2372_OUTPUT: CL_PING=FALSE\n"));
+                  DPRINTF("TEST_2372_OUTPUT: CL_PING=FALSE\n");
                }
             } else {
                break;

@@ -591,8 +591,7 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
       const lListElem *hgroup;
       for_each_ep(hgroup, hgroup_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
-         DPRINTF(("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n",
-               hgroup_name, wc_hostgroup));
+         DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
          /* use hostgroup expression */
          if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], nullptr) == 0) {
             const lListElem *h;
@@ -610,7 +609,7 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
       }
    }
 
-   DPRINTF(("-q ?@%s rejected by \"%s\"\n", hostname, href));
+   DPRINTF("-q ?@%s rejected by \"%s\"\n", hostname, href);
 
    DRETURN(true);
 }

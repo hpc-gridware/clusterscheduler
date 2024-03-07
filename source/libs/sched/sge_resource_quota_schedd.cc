@@ -109,7 +109,7 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
 
    if (lGetBool(limit, RQRL_dynamic)) {
       double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry);
-      DPRINTF(("found a dynamic limit for host %s with value %d\n", lGetHost(exec_host, EH_name), (int)dynamic_limit));
+      DPRINTF("found a dynamic limit for host %s with value %d\n", lGetHost(exec_host, EH_name), (int)dynamic_limit);
       lSetDouble(limit, RQRL_dvalue, dynamic_limit);
    } 
 
@@ -696,8 +696,8 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
 
    if ((!cq_global && !eh_global) || (cq_global && eh_global &&
          (is_cqueue_expand(rule) || is_host_expand(rule)))) { /* failure at queue instance limit */
-      DPRINTF(("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", 
-            sge_dstring_get_string(rule_name), queue_name, host_name));
+      DPRINTF("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n",
+              sge_dstring_get_string(rule_name), queue_name, host_name);
       DRETURN(false);
    }
 
@@ -706,27 +706,23 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
 
       rqs_can_optimize(rule, &host_shadowed, &queue_shadowed, a);
       if (!host_shadowed && !queue_shadowed) {
-         DPRINTF(("GLOBAL: resource quota set %s deny job execution globally\n", 
-               sge_dstring_get_string(rule_name)));
+         DPRINTF("GLOBAL: resource quota set %s deny job execution globally\n", sge_dstring_get_string(rule_name));
          DRETURN(true);
       }
 
       if (host_shadowed && queue_shadowed) {
          rqs_excluded_cqueues(rule, a);
          rqs_excluded_hosts(rule, a);
-         DPRINTF(("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", 
-               sge_dstring_get_string(rule_name), queue_name, host_name));
+         DPRINTF("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", sge_dstring_get_string(rule_name), queue_name, host_name);
          DRETURN(false);
       }
 
       if (queue_shadowed) {
          rqs_excluded_cqueues(rule, a);
-         DPRINTF(("QUEUE: resource quota set %s deny job execution in all its queues\n", 
-               sge_dstring_get_string(rule_name)));
+         DPRINTF("QUEUE: resource quota set %s deny job execution in all its queues\n", sge_dstring_get_string(rule_name));
       } else { /* must be host_shadowed */
          rqs_excluded_hosts(rule, a);
-         DPRINTF(("HOST: resource quota set %s deny job execution in all its queues\n", 
-               sge_dstring_get_string(rule_name)));
+         DPRINTF("HOST: resource quota set %s deny job execution in all its queues\n", sge_dstring_get_string(rule_name));
       }
 
       DRETURN(false);
@@ -735,19 +731,16 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
    if (!cq_global) { /* failure at a cluster queue limit */
 
       if (host_shadowed(rule, a)) {
-         DPRINTF(("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", 
-               sge_dstring_get_string(rule_name), queue_name, host_name));
+         DPRINTF("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", sge_dstring_get_string(rule_name), queue_name, host_name);
          DRETURN(false);
       }
 
       if (lGetBool(lGetObject(rule, RQR_filter_queues), RQRF_expand) == true) {
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, queue_name, CTI_Type);
-         DPRINTF(("QUEUE: resource quota set %s deny job execution in queue %s\n", 
-               sge_dstring_get_string(rule_name), queue_name));
+         DPRINTF("QUEUE: resource quota set %s deny job execution in queue %s\n", sge_dstring_get_string(rule_name), queue_name);
       } else {
          rqs_expand_cqueues(rule, a);
-         DPRINTF(("QUEUE: resource quota set %s deny job execution in all its queues\n", 
-               sge_dstring_get_string(rule_name)));
+         DPRINTF("QUEUE: resource quota set %s deny job execution in all its queues\n", sge_dstring_get_string(rule_name));
       }
 
       DRETURN(false);
@@ -757,19 +750,16 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
    { /* failure at a host limit */
 
       if (cqueue_shadowed(rule, a)) {
-         DPRINTF(("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", 
-               sge_dstring_get_string(rule_name), queue_name, host_name));
+         DPRINTF("QUEUE INSTANCE: resource quota set %s deny job execution on %s@%s\n", sge_dstring_get_string(rule_name), queue_name, host_name);
          DRETURN(false);
       }
 
       if (lGetBool(lGetObject(rule, RQR_filter_hosts), RQRF_expand) == true) {
          lAddElemStr(&(a->skip_host_list), CTI_name, host_name, CTI_Type);
-         DPRINTF(("HOST: resource quota set %s deny job execution at host %s\n",    
-               sge_dstring_get_string(rule_name), host_name));
+         DPRINTF("HOST: resource quota set %s deny job execution at host %s\n", sge_dstring_get_string(rule_name), host_name);
       } else {
          rqs_expand_hosts(rule, a);
-         DPRINTF(("HOST: resource quota set %s deny job execution at all its hosts\n", 
-               sge_dstring_get_string(rule_name)));
+         DPRINTF("HOST: resource quota set %s deny job execution at all its hosts\n", sge_dstring_get_string(rule_name));
       }
 
       DRETURN(false);
@@ -944,7 +934,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
       }
    }
 
-   DPRINTF(("check_and_debit_rqs_slots(%s@%s) slots: %d slots_qend: %d\n", queue, host, *slots, *slots_qend));
+   DPRINTF("check_and_debit_rqs_slots(%s@%s) slots: %d slots_qend: %d\n", queue, host, *slots, *slots_qend);
 
    DRETURN_VOID;
 }
@@ -973,8 +963,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
          rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
-         DPRINTF(("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), 
-               lGetInt(rql, RQL_slots), lGetInt(rql, RQL_slots)+slots));
+         DPRINTF("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), lGetInt(rql, RQL_slots), lGetInt(rql, RQL_slots)+slots);
          lSetInt(rql, RQL_slots,      lGetInt(rql, RQL_slots) + slots);
          lSetInt(rql, RQL_slots_qend, lGetInt(rql, RQL_slots_qend) + slots_qend);
       }
@@ -1039,23 +1028,23 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    fflush(stdout);
    tmp_rue_elem = lCopyElem(lGetElemStr(rue_list, RUE_name, sge_dstring_get_string(rue_name)));
    if (tmp_rue_elem == nullptr) {
-      DPRINTF(("RD: 1\n"));
+      DPRINTF("RD: 1\n");
       tmp_rue_elem = lCreateElem(RUE_Type);
    }
 {
    const char *object_name = "bla";
    const lListElem *rde;
-   DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
-         object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
-            lGetDouble(tmp_rue_elem, RUE_utilized_now)));
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
+           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
+           lGetDouble(tmp_rue_elem, RUE_utilized_now));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
-      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
+      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
-   DPRINTF(("resource utilization: %s \"%s\" %f utilized now non-exclusive\n", 
-         object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
-            lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive)));
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
+           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
+           lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
-      DPRINTF(("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount)));
+      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
 }
 
@@ -1155,8 +1144,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 
                lSetUlong(qep, QU_tagged4schedule, MIN(tagged4schedule, lGetUlong(qep, QU_tagged4schedule)));
 
-               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (cache)\n",
-                     queue, host, result, tslots, tslots_qend, limit_s));
+               DPRINTF("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (cache)\n",
+                       queue, host, result, tslots, tslots_qend, limit_s);
             } else {
                int ttslots = INT_MAX;
                int ttslots_qend = INT_MAX;
@@ -1171,10 +1160,10 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                   lList *job_centry_list = lGetListRW(a->job, JB_hard_resource_list);
                   lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
                   if (raw_centry == nullptr) {
-                     DPRINTF(("ignoring limit %s because not defined", limit_name));
+                     DPRINTF("ignoring limit %s because not defined", limit_name);
                      continue;
                   } else {
-                     DPRINTF(("checking limit %s\n", lGetString(raw_centry, CE_name)));
+                     DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
                   }
 
                   /* found a rule, now check limit */
@@ -1210,8 +1199,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 
                }
 
-               DPRINTF(("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (fresh)\n",
-                     queue, host, result, ttslots, ttslots_qend, limit_s));
+               DPRINTF("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (fresh)\n",
+                       queue, host, result, ttslots, ttslots_qend, limit_s);
 
                /* store result for reuse */
                rql = lAddElemStr(&(a->limit_list), RQL_name, limit_s, RQL_Type);
@@ -1228,7 +1217,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
             }
 
             if (result != DISPATCH_OK || (tslots == 0 && ( a->is_reservation || !a->care_reservation || tslots_qend == 0))) {
-               DPRINTF(("RQS PARALLEL SORT OUT\n"));
+               DPRINTF("RQS PARALLEL SORT OUT\n");
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                               SCHEDD_INFO_CANNOTRUNRQSGLOBAL_SS,
                      sge_dstring_get_string(&rue_string), sge_dstring_get_string(&rule_name));
@@ -1248,8 +1237,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
    *slots = tslots;
    *slots_qend = tslots_qend;
 
-   DPRINTF(("parallel_rqs_slots_by_time(%s@%s) finalresult %d slots %d slots_qend %d\n", 
-         queue, host, result, *slots, *slots_qend));
+   DPRINTF("parallel_rqs_slots_by_time(%s@%s) finalresult %d slots %d slots_qend %d\n", queue, host, result, *slots, *slots_qend);
 
    DRETURN(result);
 }
@@ -1311,10 +1299,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
 
       if (raw_centry == nullptr) {
-         DPRINTF(("ignoring limit %s because not defined", limit_name));
+         DPRINTF("ignoring limit %s because not defined", limit_name);
          continue;
       } else {
-         DPRINTF(("checking limit %s\n", lGetString(raw_centry, CE_name)));
+         DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
       }
 
       is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED ? true : false;
@@ -1336,7 +1324,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             lSetString(raw_centry, CE_stringval, lGetString(raw_centry, CE_defaultval));
             lSetDouble(raw_centry, CE_doubleval, request);
             job_centry = raw_centry; 
-            DPRINTF(("using default request for %s!\n", lGetString(raw_centry, CE_name)));
+            DPRINTF("using default request for %s!\n", lGetString(raw_centry, CE_name));
          } else if (is_forced == true) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                            SCHEDD_INFO_NOTREQFORCEDRES); 
@@ -1344,7 +1332,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             break;
          } else {
             /* ignoring because centry was not requested and is no consumable */
-            DPRINTF(("complex not requested!\n"));
+            DPRINTF("complex not requested!\n");
             continue;
          }
       }
@@ -1379,7 +1367,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
                                        nullptr, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
                                        SGE_RQS_NAME);
             if (ret != DISPATCH_OK) {
-               DPRINTF(("denied because: %s\n", sge_dstring_get_string(&reason)));
+               DPRINTF("denied because: %s\n", sge_dstring_get_string(&reason));
                lFreeList(&tmp_rue_list);
                lFreeList(&tmp_centry_list);
                break;
@@ -1517,9 +1505,9 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       result = DISPATCH_OK;
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
-      DPRINTF(("rqs_by_slots(%s@%s) returns <at specified time> " sge_U32CFormat "\n", queue, host, tt_rqs_all));
+      DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> " sge_U32CFormat "\n", queue, host, tt_rqs_all);
    } else {
-      DPRINTF(("rqs_by_slots(%s@%s) returns <later> " sge_U32CFormat " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global"));
+      DPRINTF("rqs_by_slots(%s@%s) returns <later> " sge_U32CFormat " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global");
    }
 
    DRETURN(result);

@@ -162,7 +162,7 @@ const char *buf
    i = fork();
 #endif
    if (i>0) {
-      DPRINTF(("PARENT RETURNS\n"));
+      DPRINTF("PARENT RETURNS\n");
       DRETURN_VOID;
    }
    /* log fork() failure */
@@ -171,7 +171,7 @@ const char *buf
       DRETURN_VOID;
    } /* else in child */
 
-   DPRINTF(("CHILD CONTINUES\n"));
+   DPRINTF("CHILD CONTINUES\n");
    SETPGRP;
 
    sge_close_all_fds(nullptr, 0);
@@ -204,11 +204,11 @@ const char *buf
       close(pipefds[1]);
 
       if (mailer_has_subj_line) {
-         DPRINTF(("%s mail -s %s %s", mailer, subj, user_str));  
+         DPRINTF("%s mail -s %s %s", mailer, subj, user_str);
          execl(mailer, "mail", "-s", subj, user_str, nullptr);
       }
       else {
-         DPRINTF(("%s mail %s", mailer, user_str));  
+         DPRINTF("%s mail %s", mailer, user_str);
          execl(mailer, "mail", user_str, nullptr);
       }
       CRITICAL(MSG_MAIL_NOEXEC_SS, mailer, strerror(errno));
@@ -250,7 +250,7 @@ const char *buf
       }
 
       exit_status = status;
-      DPRINTF(("mailer exited with exit status %d\n", exit_status));
+      DPRINTF("mailer exited with exit status %d\n", exit_status);
       exit(exit_status);
    }
 FCLOSE_ERROR:

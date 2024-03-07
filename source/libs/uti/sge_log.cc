@@ -280,7 +280,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
       msg = buf;
    }
 
-   DPRINTF(("%s %d %s\n", file, line, msg));
+   DPRINTF("%s %d %s\n", file, line, msg);
 
    /* quick exit if nothing to log */
    if (log_level > MAX(log_state_get_log_level(), LOG_WARNING)) {

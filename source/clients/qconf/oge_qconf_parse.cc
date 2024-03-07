@@ -5304,15 +5304,15 @@ static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, i
    dataType = lGetPosType(dp,pos);
    switch (dataType) {
       case lStringT:
-         DPRINTF(("parse_name_list_to_cull: Adding lStringT type element\n"));
+         DPRINTF("parse_name_list_to_cull: Adding lStringT type element\n");
          lSetString(ep, nm, cp2);
          break;
       case lHostT:
-         DPRINTF(("parse_name_list_to_cull: Adding lHostT type element\n"));
+         DPRINTF("parse_name_list_to_cull: Adding lHostT type element\n");
          lSetHost(ep, nm, cp2);
          break;
       default:
-         DPRINTF(("parse_name_list_to_cull: unexpected data type\n"));
+         DPRINTF("parse_name_list_to_cull: unexpected data type\n");
          break;
    }
    lAppendElem(*lpp, ep);
@@ -5321,16 +5321,16 @@ static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, i
       ep = lCreateElem(dp);
       switch (dataType) {
          case lStringT:
-            DPRINTF(("parse_name_list_to_cull: Adding lStringT type element\n"));
+            DPRINTF("parse_name_list_to_cull: Adding lStringT type element\n");
             lSetString(ep, nm, cp2);
             break;
          case lHostT:
-            DPRINTF(("parse_name_list_to_cull: Adding lHostT type element\n"));
+            DPRINTF("parse_name_list_to_cull: Adding lHostT type element\n");
             lSetHost(ep, nm, cp2);
             sge_resolve_host(ep, EH_name);
             break;
          default:
-            DPRINTF(("parse_name_list_to_cull: unexpected data type\n"));
+            DPRINTF("parse_name_list_to_cull: unexpected data type\n");
             break;
       }
       lAppendElem(*lpp, ep);
@@ -5396,7 +5396,7 @@ static bool add_host_of_type(lList *arglp, u_long32 target)
          name = "administrative host";
          break;
       default:
-         DPRINTF(("add_host_of_type: unexpected type\n"));
+         DPRINTF("add_host_of_type: unexpected type\n");
          ret = false;
          DRETURN(ret);
    }
@@ -5967,7 +5967,7 @@ static bool show_object_list(u_long32 target, lDescr *type, int keynm, const cha
                }
                break;
             default:
-               DPRINTF(("show_object_list: unexpected data type\n")); 
+               DPRINTF("show_object_list: unexpected data type\n");
          }
       }
    } else {
@@ -6647,7 +6647,7 @@ static int qconf_is_adminhost(const char *host) {
       DRETURN(-1);
    }
 
-   DPRINTF(("host: '%s'\n", host));
+   DPRINTF("host: '%s'\n", host);
 
    /*
    ** GET SGE_AH_LIST 

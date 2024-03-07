@@ -116,7 +116,7 @@ main(int argc, char **argv)
    /* Set up the program information name */
    sge_setup_sig_handlers(QSUB);
 
-   DPRINTF(("Initializing JAPI\n"));
+   DPRINTF("Initializing JAPI\n");
 
    if (japi_init(nullptr, nullptr, nullptr, QSUB, false, nullptr, &diag)
                                                       != DRMAA_ERRNO_SUCCESS) {
@@ -177,7 +177,7 @@ main(int argc, char **argv)
    if (opt_list_is_X_true(opts_cmdline, "-b") ||
        (!opt_list_has_X(opts_cmdline, "-b") &&
         opt_list_is_X_true(opts_defaults, "-b"))) {
-      DPRINTF(("Skipping options from script due to -b option\n"));
+      DPRINTF("Skipping options from script due to -b option\n");
    } else {
       opt_list_append_opts_from_script(prog_number,
                                        &opts_scriptfile, &alp, 
@@ -207,7 +207,7 @@ main(int argc, char **argv)
    }
 
    if (wait_for_job) {
-      DPRINTF(("Wait for job end\n"));
+      DPRINTF("Wait for job end\n");
    }
 
    alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, 
@@ -225,9 +225,9 @@ main(int argc, char **argv)
 
    /* Check if job is immediate */
    is_immediate = (int)JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type));
-   DPRINTF(("Job is%s immediate\n", is_immediate ? "" : " not"));
+   DPRINTF("Job is%s immediate\n", is_immediate ? "" : " not");
 
-   DPRINTF(("Everything ok\n"));
+   DPRINTF("Everything ok\n");
 
    if (lGetUlong(job, JB_verify)) {
       cull_show_job(job, 0, false);
@@ -293,7 +293,7 @@ main(int argc, char **argv)
          goto Error;
       }
 
-      DPRINTF(("job id is: %ld\n", jobids->it.ji.jobid));
+      DPRINTF("job id is: %ld\n", jobids->it.ji.jobid);
       
       jobid_string = get_bulk_jobid_string((long)jobids->it.ji.jobid, start, end, step);
    }
@@ -324,7 +324,7 @@ main(int argc, char **argv)
       }
 
       jobid_string = strdup(sge_dstring_get_string(&jobid));
-      DPRINTF(("job id is: %s\n", jobid_string));
+      DPRINTF("job id is: %s\n", jobid_string);
 
       sge_dstring_free(&jobid);
    }
@@ -340,7 +340,7 @@ main(int argc, char **argv)
 
    just_verify = (lGetUlong(job, JB_verify_suitable_queues)==JUST_VERIFY || 
                   lGetUlong(job, JB_verify_suitable_queues)==POKE_VERIFY);
-   DPRINTF(("Just verifying job\n"));
+   DPRINTF("Just verifying job\n");
 
    if (!just_verify) {
       const char *output = sge_dstring_get_string(&diag); 
@@ -458,14 +458,14 @@ Error:
           * If the call to japi_init() succeeds, then we have an active session,
           * so coming here because of an error would not result in the
           * DRMAA_ERRNO_NO_ACTIVE_SESSION error. */
-         DPRINTF(("Sleeping for 15 seconds to wait for the exit to finish.\n"));
+         DPRINTF("Sleeping for 15 seconds to wait for the exit to finish.\n");
          
          sge_relative_timespec(15, &ts);
          sge_mutex_lock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
          
          while (!exited) {
             if (pthread_cond_timedwait(&exit_cv, &exit_mutex, &ts) == ETIMEDOUT) {
-               DPRINTF(("Exit has not finished after 15 seconds.  Exiting.\n"));
+               DPRINTF("Exit has not finished after 15 seconds.  Exiting.\n");
                break;
             }
          }

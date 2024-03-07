@@ -223,20 +223,20 @@ static void
 bootstrap_log_ts1_parameter() {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("BOOTSTRAP FILE ===\n"));
-   DPRINTF(("   admin_user           >%s<\n", sge_bootstrap_tl1.admin_user));
-   DPRINTF(("   default_domain       >%s<\n", sge_bootstrap_tl1.default_domain));
-   DPRINTF(("   ignore_fqdn          >%s<\n", sge_bootstrap_tl1.ignore_fqdn ? "true" : "false"));
-   DPRINTF(("   spooling_method      >%s<\n", sge_bootstrap_tl1.spooling_method));
-   DPRINTF(("   spooling_lib         >%s<\n", sge_bootstrap_tl1.spooling_lib));
-   DPRINTF(("   spooling_params      >%s<\n", sge_bootstrap_tl1.spooling_params));
-   DPRINTF(("   binary_path          >%s<\n", sge_bootstrap_tl1.binary_path));
-   DPRINTF(("   qmaster_spool_dir    >%s<\n", sge_bootstrap_tl1.qmaster_spool_dir));
-   DPRINTF(("   security_mode        >%s<\n", sge_bootstrap_tl1.security_mode));
-   DPRINTF(("   job_spooling         >%s<\n", sge_bootstrap_tl1.job_spooling ? "true" : "false"));
-   DPRINTF(("   listener_threads     >%d<\n", sge_bootstrap_tl1.listener_thread_count));
-   DPRINTF(("   worker_threads       >%d<\n", sge_bootstrap_tl1.worker_thread_count));
-   DPRINTF(("   scheduler_threads    >%d<\n", sge_bootstrap_tl1.scheduler_thread_count));
+   DPRINTF("BOOTSTRAP FILE ===\n");
+   DPRINTF("   admin_user           >%s<\n", sge_bootstrap_tl1.admin_user);
+   DPRINTF("   default_domain       >%s<\n", sge_bootstrap_tl1.default_domain);
+   DPRINTF("   ignore_fqdn          >%s<\n", sge_bootstrap_tl1.ignore_fqdn ? "true" : "false");
+   DPRINTF("   spooling_method      >%s<\n", sge_bootstrap_tl1.spooling_method);
+   DPRINTF("   spooling_lib         >%s<\n", sge_bootstrap_tl1.spooling_lib);
+   DPRINTF("   spooling_params      >%s<\n", sge_bootstrap_tl1.spooling_params);
+   DPRINTF("   binary_path          >%s<\n", sge_bootstrap_tl1.binary_path);
+   DPRINTF("   qmaster_spool_dir    >%s<\n", sge_bootstrap_tl1.qmaster_spool_dir);
+   DPRINTF("   security_mode        >%s<\n", sge_bootstrap_tl1.security_mode);
+   DPRINTF("   job_spooling         >%s<\n", sge_bootstrap_tl1.job_spooling ? "true" : "false");
+   DPRINTF("   listener_threads     >%d<\n", sge_bootstrap_tl1.listener_thread_count);
+   DPRINTF("   worker_threads       >%d<\n", sge_bootstrap_tl1.worker_thread_count);
+   DPRINTF("   scheduler_threads    >%d<\n", sge_bootstrap_tl1.scheduler_thread_count);
 
    DRETURN_VOID;
 }
@@ -268,7 +268,7 @@ bootstrap_init_from_file() {
    // early exist if we don't know where the bootstrap file is
    const char *bootstrap_file = bootstrap_get_bootstrap_file();
    if (bootstrap_file != nullptr) {
-      DPRINTF(("bootstrap file is %s\n", bootstrap_file));
+      DPRINTF("bootstrap file is %s\n", bootstrap_file);
    } else {
       CRITICAL(SFNMAX, MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE);
       sge_exit(1);

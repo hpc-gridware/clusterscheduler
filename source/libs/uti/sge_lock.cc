@@ -175,27 +175,27 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #endif   
 
    if (aMode == LOCK_READ) {
-      DPRINTF(("%s() about to lock rwlock \"%s\" for reading\n", func, locktype_names[aType]));
+      DPRINTF("%s() about to lock rwlock \"%s\" for reading\n", func, locktype_names[aType]);
 #ifdef SGE_USE_LOCK_FIFO
       res = sge_fifo_lock(SGE_RW_Locks[aType], true) ? 0 : 1;
 #else
       res = pthread_rwlock_rdlock(SGE_RW_Locks[aType]);
 #endif
-      DPRINTF(("%s() locked rwlock \"%s\" for reading\n", func, locktype_names[aType]));
+      DPRINTF("%s() locked rwlock \"%s\" for reading\n", func, locktype_names[aType]);
    } else if (aMode == LOCK_WRITE) {
-       DPRINTF(("%s() about to lock rwlock \"%s\" for writing\n", func, locktype_names[aType]));
+       DPRINTF("%s() about to lock rwlock \"%s\" for writing\n", func, locktype_names[aType]);
 #ifdef SGE_USE_LOCK_FIFO
       res = sge_fifo_lock(SGE_RW_Locks[aType], false) ? 0 : 1;
 #else
       res = pthread_rwlock_wrlock(SGE_RW_Locks[aType]);
 #endif
-      DPRINTF(("%s() locked rwlock \"%s\" for writing\n", func, locktype_names[aType]));
+      DPRINTF("%s() locked rwlock \"%s\" for writing\n", func, locktype_names[aType]);
    } else {
-      DPRINTF(("wrong lock type for global lock\n"));
+      DPRINTF("wrong lock type for global lock\n");
    }   
 
    if (res != 0) {
-      DPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
       abort();
    }
 
@@ -242,11 +242,11 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
       res = pthread_rwlock_wrlock(SGE_RW_Locks[aType]);
 #endif
    } else {
-      DPRINTF(("wrong lock type for global lock\n"));
+      DPRINTF("wrong lock type for global lock\n");
    }
 
    if (res != 0) {
-      DPRINTF((MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
       abort();
    }
 
@@ -318,10 +318,10 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
    res = pthread_rwlock_unlock(SGE_RW_Locks[aType]);
 #endif
    if (res != 0) {
-      DPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
       abort();
    }
-   DPRINTF(("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]));
+   DPRINTF("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]);
 
 #ifdef PRINT_LOCK
    {
@@ -348,7 +348,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
    res = pthread_rwlock_unlock(SGE_RW_Locks[aType]);
 #endif
    if (res != 0) {
-      DPRINTF((MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res)));
+      DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
       abort();
    }
 

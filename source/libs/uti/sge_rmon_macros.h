@@ -128,7 +128,7 @@
       rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1);                    \
    }
 
-#define DPRINTF(msg) \
+#define DPRINTF(...) \
    if (rmon_condition(xaybzc, INFOPRINT)) { \
       rmon_helper_t *helper = rmon_get_helper(); \
       if (helper != nullptr) { \
@@ -138,7 +138,7 @@
             helper->thread_id = ___thread_config->thread_id; \
          } \
       } \
-      rmon_mprintf msg ; \
+      rmon_mprintf(__VA_ARGS__); \
       if (helper != nullptr) { \
          helper->thread_name[0] = '\0'; \
          helper->thread_id = -1; \
@@ -146,9 +146,9 @@
    } \
    void()
 
-#define DPRINTF_(msg) \
+#define DPRINTF_(...) \
    if (rmon_condition(xaybzc, INFOPRINT)) { \
-      rmon_mprintf msg ; \
+      rmon_mprintf(__VA_ARGS__); \
    }
 
 #define ISTRACE (rmon_condition(xaybzc, TRACE))
@@ -162,8 +162,8 @@
 #define DRETURN(x) return x
 #define DRETURN_VOID return
 #define DTRACE
-#define DPRINTF(x)
-#define DPRINTF(x)
+#define DPRINTF(...)
+#define DPRINTF(...)
 #define DTIMEPRINTF(x)
 #define DSPECIALPRINTF(x)
 #define TRACEON

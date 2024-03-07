@@ -169,7 +169,7 @@ void
 obj_init(obj_state_ds ds_id) {
    DENTER(TOP_LAYER);
    GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-   DPRINTF(("thread will use data store %d\n", ds_id));
+   DPRINTF("thread will use data store %d\n", ds_id);
    obj_state->ds_id = ds_id;
    DRETURN_VOID;
 }
@@ -1065,9 +1065,9 @@ lList **object_type_get_master_list_rw(sge_object_type type) {
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
 
-      DPRINTF(("data store ID is %d\n", obj_state->ds_id));
-      DPRINTF(("master list type is %d\n", type));
-      DPRINTF(("master list is %p\n", obj_thread_shared.data_store[obj_state->ds_id].master_list[type]));
+      DPRINTF("data store ID is %d\n", obj_state->ds_id);
+      DPRINTF("master list type is %d\n", type);
+      DPRINTF("master list is %p\n", obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
 
       ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
 
@@ -1990,9 +1990,9 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
           */
          if (tmp_decr1->nm != tmp_decr2->nm ||
              mt_get_type(type1) != mt_get_type(type2)) {
-            DPRINTF(("Attribute " SFQ " of type " SFQ " cannot be compared with attribute " SFQ " of type " SFQ ".\n",
+            DPRINTF("Attribute " SFQ " of type " SFQ " cannot be compared with attribute " SFQ " of type " SFQ ".\n",
                     lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)],
-                    lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]));
+                    lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]);
             ret = true;
             break;
          }
@@ -2076,8 +2076,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
          }
 
          if (!equiv) {
-            DPRINTF(("Attributes " SFQ " of type " SFQ " are not equivalent.\n",
-                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]));
+            DPRINTF("Attributes " SFQ " of type " SFQ " are not equivalent.\n",
+                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]);
             DTRACE;
             ret = true;
          }
@@ -2087,7 +2087,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
        * Compare number of attributes within each element
        */
       if (tmp_decr1->nm != tmp_decr2->nm) {
-         DPRINTF(("Descriptor size is not equivalent\n"));
+         DPRINTF("Descriptor size is not equivalent\n");
          ret = true;
       }
    } else if (this_elem != nullptr || old_elem != nullptr) {
@@ -2564,7 +2564,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
    for_each_ep(range_elem, pe_range) {
       unsigned long pe_range_min = lGetUlong(range_elem, RN_min);
       unsigned long pe_range_max = lGetUlong(range_elem, RN_max);
-      DPRINTF(("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min));
+      DPRINTF("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min);
       if (pe_range_max == 0 || pe_range_min == 0) {
          ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -2638,9 +2638,8 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
       while ((rm_ep = prev)) {
          prev = lPrevRW(rm_ep);
          if (!strcmp(lGetString(rm_ep, CE_name), attr_name)) {
-            DPRINTF(("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
-                    attr_name, lGetString(ep, CE_stringval),
-                    attr_name, lGetString(rm_ep, CE_stringval)));
+            DPRINTF("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
+                    attr_name, lGetString(ep, CE_stringval), attr_name, lGetString(rm_ep, CE_stringval));
             lRemoveElem(rl, &rm_ep);
          }
       }

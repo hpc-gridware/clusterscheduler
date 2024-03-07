@@ -531,7 +531,7 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value) 
             }
          }
 
-         DPRINTF(("%s = " sge_u32"\n", variable, value));
+         DPRINTF("%s = " sge_u32"\n", variable, value);
       }
    }
 
@@ -578,7 +578,7 @@ bool parse_bool_param(const char *input, const char *variable, bool *value) {
             }
          }
 
-         DPRINTF(("%s = %s\n", variable, value ? "true" : "false"));
+         DPRINTF("%s = %s\n", variable, value ? "true" : "false");
       }
    }
 
@@ -619,7 +619,7 @@ bool parse_int_param(const char *input, const char *variable,
             }
          }
 
-         DPRINTF(("%s = %d\n", variable, value));
+         DPRINTF("%s = %d\n", variable, value);
       }
    }
 

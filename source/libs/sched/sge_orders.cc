@@ -341,7 +341,7 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
    DENTER(TOP_LAYER);
 
    if (*orders != nullptr) {
-      DPRINTF(("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders)));
+      DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
       order_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
                                orders, nullptr, nullptr, &state, false);
       sge_gdi_wait(&malp, &state);
@@ -378,10 +378,8 @@ lList *order_list
 
    for_each_ep(job, finished_jobs) {
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
-         DPRINTF(("DELETE JOB " sge_u32"." sge_u32"\n", lGetUlong(job, JB_job_number),
-            lGetUlong(ja_task, JAT_task_number)));
-         order_list = sge_create_orders(order_list, ORT_remove_job, job, 
-            ja_task, nullptr, true);
+         DPRINTF("DELETE JOB " sge_u32"." sge_u32"\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+         order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, nullptr, true);
       }
    }
 

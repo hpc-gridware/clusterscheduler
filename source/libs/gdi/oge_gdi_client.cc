@@ -279,7 +279,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           sge_csp->get_verify_func(
                                                   sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
          if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-            DPRINTF(("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret)));
+            DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, qualified_hostname, progname,
                                     0, sge_qmaster_port, cl_get_error_text(cl_ret));
@@ -291,7 +291,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
          */
          cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
          if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-            DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret)));
+            DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, component_get_component_name(),
                                     0, sge_qmaster_port, cl_get_error_text(cl_ret));
@@ -308,7 +308,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
       switch (me_who) {
          case EXECD:
             /* add qmaster as known endpoint */
-            DPRINTF(("re-read actual qmaster file (prepare_enroll)\n"));
+            DPRINTF("re-read actual qmaster file (prepare_enroll)\n");
             cl_com_append_known_endpoint_from_name((char *) master,
                                                    (char *) prognames[QMASTER],
                                                    1,
@@ -334,7 +334,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
             break;
 
          case QMASTER:
-            DPRINTF(("creating QMASTER handle\n"));
+            DPRINTF("creating QMASTER handle\n");
             cl_com_append_known_endpoint_from_name((char *) master,
                                                    (char *) prognames[QMASTER],
                                                    1,
@@ -373,8 +373,8 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                   if (getuniquehostname(master, act_resolved_qmaster_name, 0) == CL_RETVAL_OK &&
                       sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0) {
 
-                     DPRINTF(("act_qmaster file contains host " SFQ " which doesn't match local host name " SFQ "\n",
-                             master, qualified_hostname));
+                     DPRINTF("act_qmaster file contains host " SFQ " which doesn't match local host name " SFQ "\n",
+                             master, qualified_hostname);
 
                      cl_com_set_error_func(nullptr);
 
@@ -390,20 +390,20 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                         /* TODO: remove !!! */
                         sge_exit(1);
                      } else {
-                        DPRINTF(("qmaster on host " SFQ " is down\n", master));
+                        DPRINTF("qmaster on host " SFQ " is down\n", master);
                      }
                   } else {
-                     DPRINTF(("act_qmaster file contains local host name\n"));
+                     DPRINTF("act_qmaster file contains local host name\n");
                   }
                } else {
-                  DPRINTF(("skipping qmaster alive check because act_qmaster is not availabe\n"));
+                  DPRINTF("skipping qmaster alive check because act_qmaster is not availabe\n");
                }
             }
             break;
 
          default:
             /* this is for "normal" gdi clients of qmaster */
-            DPRINTF(("creating %s GDI handle\n", component_get_component_name()));
+            DPRINTF("creating %s GDI handle\n", component_get_component_name());
             handle = cl_com_create_handle(&cl_ret, communication_framework, CL_CM_CT_MESSAGE, false,
                                           (int)sge_qmaster_port, CL_TCP_DEFAULT,
                                           (char *) component_get_component_name(), my_component_id, 1, 0);
@@ -425,13 +425,13 @@ int gdi_client_prepare_enroll(lList **answer_list) {
 
       /* if this environment variable is set, we wait 15 seconds after
          communication lib setup */
-      DPRINTF(("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n"));
+      DPRINTF("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n");
       while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
-         DPRINTF(("timeout: " sge_U32CFormat "\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec)));
+         DPRINTF("timeout: " sge_U32CFormat "\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec));
          cl_commlib_trigger(handle, 1);
          gettimeofday(&now, nullptr);
       }
-      DPRINTF(("continue with setup\n"));
+      DPRINTF("continue with setup\n");
    }
    DRETURN(cl_ret);
 }

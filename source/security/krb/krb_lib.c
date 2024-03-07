@@ -408,7 +408,7 @@ int krb_init(const char *progname)
    gsd.initialized = 1;
 
 
-   DPRINTF(("====================[  KRB SECURITY  ]===========================\n"));
+   DPRINTF("====================[  KRB SECURITY  ]===========================\n");
 
 #ifdef notdef
    if (krbrealm) free(krbrealm);

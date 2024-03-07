@@ -84,13 +84,13 @@ tst_sos(int used, int total, const lListElem *so)
     */
    if ((threshold=lGetUlong(so, SO_threshold)) == 0) {
       /* queue must be full for suspend of queue C */
-      DPRINTF(("TSTSOS: %sfull -> %ssuspended\n", (used>=total)?"":"not ",
-               (used>=total)?"":"not "));
+      DPRINTF("TSTSOS: %sfull -> %ssuspended\n", (used>=total)?"":"not ",
+              (used>=total)?"":"not ");
       ret = (bool)(used >= total);
    } else {
       /* used slots greater or equal threshold */
-      DPRINTF(("TSTSOS: " sge_u32" slots used (limit " sge_u32") -> %ssuspended\n",
-            used, threshold, ((u_long32)(used) >= threshold)?"":"not "));
+      DPRINTF("TSTSOS: " sge_u32" slots used (limit " sge_u32") -> %ssuspended\n",
+            used, threshold, ((u_long32)(used) >= threshold)?"":"not ");
       ret = (bool)((u_long32)used >= threshold);
    }
    DRETURN(ret);
@@ -181,28 +181,23 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
          u_long32 current_action    = lGetUlong(elem, SO_action);
 
          if (threshold != 0 && threshold < current_threshold) {
-            DPRINTF(("Replacing entry with higher threshold: %d => %d\n",
-                     current_threshold, threshold));
+            DPRINTF("Replacing entry with higher threshold: %d => %d\n", current_threshold, threshold);
             lSetUlong(elem, SO_threshold, threshold);
          }
          if (slots_sum != 0 && slots_sum < current_slots_sum) {
-            DPRINTF(("Replacing entry with higher slots_sum: %d => %d\n",
-                     current_slots_sum, slots_sum));
+            DPRINTF("Replacing entry with higher slots_sum: %d => %d\n", current_slots_sum, slots_sum);
             lSetUlong(elem, SO_slots_sum, slots_sum);
          }
          if (seq_no != 0 && seq_no > current_seq_no) {
-            DPRINTF(("Replacing entry with lower seq_no: %d => %d\n",
-                     current_seq_no, seq_no));
+            DPRINTF("Replacing entry with lower seq_no: %d => %d\n", current_seq_no, seq_no);
             lSetUlong(elem, SO_seq_no, seq_no);
          }
          if (action != current_action) {
-            DPRINTF(("Replacing entry with different action: %d => %d\n",
-                     current_action, action));
+            DPRINTF("Replacing entry with different action: %d => %d\n", current_action, action);
             lSetUlong(elem, SO_action, action);
          }
       } else {
-         DPRINTF (("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n",
-                  threshold, slots_sum, seq_no));
+         DPRINTF("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n", threshold, slots_sum, seq_no);
          elem = lAddElemStr(this_list, SO_name, so_name, SO_Type);
          lSetUlong(elem, SO_threshold, threshold);
          lSetUlong(elem, SO_slots_sum, slots_sum);
@@ -257,9 +252,9 @@ so_list_resolve(const lList *so_list, lList **answer_list,
       const lListElem *so;
 
       if (cq_name != nullptr) {
-         DPRINTF(("Finding subordinates for %s on %s\n", cq_name, hostname));
+         DPRINTF("Finding subordinates for %s on %s\n", cq_name, hostname);
       } else {
-         DPRINTF(("Finding subordinates on host %s\n", hostname));
+         DPRINTF("Finding subordinates on host %s\n", hostname);
       }
       
       /* Get the list of resolved qinstances for each subordinate. */

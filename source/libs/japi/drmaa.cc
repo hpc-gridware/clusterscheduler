@@ -554,7 +554,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[])
    }
 
    for (i=0; name[i]; i++) {
-      DPRINTF(("adding \"%s\"\n", name[i]));
+      DPRINTF("adding \"%s\"\n", name[i]);
       if (!lAddElemStr(&(vector->it.si.strings), ST_name, name[i], ST_Type)) {
          japi_delete_string_vector((drmaa_attr_values_t *)vector);
          DRETURN(nullptr);
@@ -604,10 +604,10 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
    }
 
    if (lGetElemStr( p_attr->it.si.strings, ST_name, name ) != nullptr) {
-      DPRINTF(("Attribute %s is supported\n", name));
+      DPRINTF("Attribute %s is supported\n", name);
       ret = DRMAA_ERRNO_SUCCESS;
    } else {
-      DPRINTF(("Attribute %s is not supported\n", name));
+      DPRINTF("Attribute %s is not supported\n", name);
       ret = DRMAA_ERRNO_INVALID_ARGUMENT;
    }
 
@@ -850,7 +850,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    if (drmaa_is_attribute_supported(name, true, diagp)!=DRMAA_ERRNO_SUCCESS) {
-      DPRINTF(("setting not supported attribute \"%s\"\n", name));
+      DPRINTF("setting not supported attribute \"%s\"\n", name);
       japi_standard_error(DRMAA_ERRNO_INVALID_ARGUMENT, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
@@ -2266,7 +2266,7 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
          lListElem *ep = lGetElemStrRW(attrs, VA_variable, DRMAA_WD);
          const char *value = lGetString(ep, VA_value);
 
-         DPRINTF(("-wd = \"%s\"\n", new_path));
+         DPRINTF("-wd = \"%s\"\n", new_path);
 
          ep = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
          lSetString(ep, SPA_argval_lStringT, new_path);
@@ -2364,7 +2364,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
    
          ep = lCreateElem(PN_Type);
          lAppendElem(path_list, ep);
-         DPRINTF(("PN_path = \"%s\"\n", path));
+         DPRINTF("PN_path = \"%s\"\n", path);
          if( strlen( path )>0 ) {
             lSetString(ep, PN_path, path);
          } else if( !strcmp( sw, "-i" ) && bFileStaging==true ) {
@@ -2374,7 +2374,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          }
 
          if( cell ) {
-            DPRINTF(( "PN_file_host = \"%s\"\n", cell ));
+            DPRINTF( "PN_file_host = \"%s\"\n", cell );
             lSetHost( ep, PN_file_host, cell );
             sge_free(&cell);
          } else {
@@ -2383,15 +2383,15 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          }
          
 
-         DPRINTF(("FileStaging = %d\n", bFileStaging));
+         DPRINTF("FileStaging = %d\n", bFileStaging);
          lSetBool(ep, PN_file_staging, bFileStaging);
          
-         DPRINTF(("Adding args\n"));
+         DPRINTF("Adding args\n");
          ep = sge_add_arg(args, opt, lListT, sw, value);
-         DPRINTF(("Setting List\n"));
+         DPRINTF("Setting List\n");
          lSetList(ep, SPA_argval_lListT, path_list); 
          path_list = nullptr; /* must not free it later */
-         DPRINTF(("Freeing Path\n"));
+         DPRINTF("Freeing Path\n");
          sge_free(&new_path);
       } else {
          drmaa_errno = DRMAA_ERRNO_SUCCESS;
@@ -2638,7 +2638,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));
       memset(args, 0, sizeof(char *) * (num_args + 1));
 
-      DPRINTF(("processing %s, count %d = \"%s\"\n", DRMAA_NATIVE_SPECIFICATION, num_args, value));
+      DPRINTF("processing %s, count %d = \"%s\"\n", DRMAA_NATIVE_SPECIFICATION, num_args, value);
 
       if (num_args != 0) { 
          sge_parse_args(value, args);
@@ -2698,7 +2698,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
         (opt_list_is_X_true(opts_defaults, "-b") ||
         (!opt_list_has_X(opts_defaults, "-b") &&
          opt_list_is_X_true(opts_default, "-b"))))) {
-      DPRINTF(("Skipping options from script due to -b option\n"));
+      DPRINTF("Skipping options from script due to -b option\n");
    } else {
       const char *path = nullptr;
 
@@ -2728,12 +2728,12 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       }
 
       if (path != nullptr) {
-         DPRINTF(("Using \"%s\" for the working directory.\n", path));
+         DPRINTF("Using \"%s\" for the working directory.\n", path);
          opt_list_append_opts_from_script_path(prog_number, &opts_scriptfile, path, &alp,
                                                 opts_drmaa, environ);
          sge_free(&path);
       } else {
-         DPRINTF(("Using current directory for the working directory.\n"));
+         DPRINTF("Using current directory for the working directory.\n");
          opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp, opts_drmaa,
                                            environ);
       }
@@ -2770,7 +2770,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       char **args = nullptr;
       lListElem *ep = nullptr;
       
-      DPRINTF(("Processing job category\n"));
+      DPRINTF("Processing job category\n");
       
       /* This long series of ifs is really pointless since opts_drmaa is the
        * only one that can contain -cat.  However, I expect that at some point
@@ -2980,12 +2980,12 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    /* Turn each DRMAA attribute into a list entry. */
 
    DENTER(TOP_LAYER);
-   DPRINTF(("%d DRMAA attributes\n", lGetNumberOfElem(attrs)));
-   DPRINTF(("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs)));
+   DPRINTF("%d DRMAA attributes\n", lGetNumberOfElem(attrs));
+   DPRINTF("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs));
    
    /* job name -- -N <name>*/
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_NAME))) {
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_JOB_NAME, lGetString(ep, VA_value)));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_NAME, lGetString(ep, VA_value));
       
       ep_opt = sge_add_arg(args, N_OPT, lStringT, "-N", lGetString(ep, VA_value));
       lSetString(ep_opt, SPA_argval_lStringT, lGetString(ep, VA_value));
@@ -2995,19 +2995,19 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_CATEGORY))) {
       const char *value = lGetString(ep, VA_value);
       
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value);
       
-      DPRINTF(("%d args before adding job cat\n", lGetNumberOfElem(*args)));
+      DPRINTF("%d args before adding job cat\n", lGetNumberOfElem(*args));
       ep_opt = sge_add_arg(args, cat_OPT, lStringT, "-cat", value);
       lSetString(ep_opt, SPA_argval_lStringT, value);
-      DPRINTF(("%d args after adding job cat\n", lGetNumberOfElem(*args)));
+      DPRINTF("%d args after adding job cat\n", lGetNumberOfElem(*args));
    }
    
    /* join files -- -j "y|n" */
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOIN_FILES))) {
       const char *value = lGetString(ep, VA_value);
       
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_JOIN_FILES, value));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_JOIN_FILES, value);
       
       if (value[0] == 'y') {
          ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "y");
@@ -3054,7 +3054,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JS_STATE))) {
       const char *value = lGetString(ep, VA_value);
       
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_JS_STATE, value));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_JS_STATE, value);
       
       if (!strcmp(value, DRMAA_SUBMISSION_STATE_HOLD)) {
          ep_opt = sge_add_arg(args, h_OPT, lIntT, "-h", "");
@@ -3073,7 +3073,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       lList *nlp = lCreateList("variable list", VA_Type);
       int first_time = 1;
       
-      DPRINTF(("processing %s\n", DRMAA_V_ENV));
+      DPRINTF("processing %s\n", DRMAA_V_ENV);
       
       for_each_ep(oep, olp) {
          struct saved_vars_s *context = nullptr;
@@ -3103,7 +3103,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          sge_free_saved_vars(context);
       }
       
-      DPRINTF(("\"%s\"\n", sge_dstring_get_string(&env)));
+      DPRINTF("\"%s\"\n", sge_dstring_get_string(&env));
       
       ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
@@ -3122,7 +3122,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       const lListElem *tmp = nullptr;
       int first_time = 1;
       
-      DPRINTF(("processing %s = ", DRMAA_V_EMAIL));
+      DPRINTF("processing %s = ", DRMAA_V_EMAIL);
       
       for_each_ep(oep, olp) {
          struct saved_vars_s *context = nullptr;
@@ -3158,7 +3158,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       }
 
       
-      DPRINTF(("\"%s\"\n", sge_dstring_get_string(&email)));
+      DPRINTF("\"%s\"\n", sge_dstring_get_string(&email));
       
       ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
@@ -3169,7 +3169,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_BLOCK_EMAIL))) {
       const char *value = lGetString(ep, VA_value);
       
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_BLOCK_EMAIL, value));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_BLOCK_EMAIL, value);
       
       if (value[0] == '1') {
          ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "n");
@@ -3199,7 +3199,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
       
-      DPRINTF(("processing %s = \"%s\"\n", DRMAA_START_TIME, value));
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_START_TIME, value);
       
       if (!ulong_parse_date_time_from_string(&timeval, nullptr, value)) {
          sge_dstring_copy_string(diag, MSG_DRMAA_INVALID_TIME_STRING);
@@ -3212,7 +3212,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
    /* remote command -- last thing on the command line before the job args */
    if (!(ep=lGetElemStr(attrs, VA_variable, DRMAA_REMOTE_COMMAND))) {      
-      DPRINTF(("no remote command given\n"));
+      DPRINTF("no remote command given\n");
       
       sge_dstring_copy_string(diag, "job template must have \"" DRMAA_REMOTE_COMMAND "\" attribute set");
       
@@ -3220,7 +3220,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
    
    if ((scriptname = lGetString(ep, VA_value)) != nullptr) {
-      DPRINTF(("remote command is \"%s\"\n", scriptname));
+      DPRINTF("remote command is \"%s\"\n", scriptname);
       ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
       lSetString(ep_opt, SPA_argval_lStringT, scriptname);
 
@@ -3229,17 +3229,17 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          const lList *lp = lGetList(ep, NSV_strings);
          const lListElem *aep = nullptr;
 
-         DPRINTF(("processing %s\n", DRMAA_V_ARGV));
+         DPRINTF("processing %s\n", DRMAA_V_ARGV);
 
          for_each_ep(aep, lp) {
-            DPRINTF(("arg: \"%s\"\n", lGetString(aep, ST_name)));
+            DPRINTF("arg: \"%s\"\n", lGetString(aep, ST_name));
             ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
             lSetString(ep_opt, SPA_argval_lStringT, lGetString(aep, ST_name));
          }
       }
    }
 
-   DPRINTF(("%d args at end of method\n", lGetNumberOfElem(*args)));
+   DPRINTF("%d args at end of method\n", lGetNumberOfElem(*args));
    
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -3273,7 +3273,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
    DENTER(TOP_LAYER);
    
    /* average priority of 0 -- -p 0 */
-   DPRINTF(("setting default priority to 0\n"));
+   DPRINTF("setting default priority to 0\n");
    ep_opt = sge_add_arg(opts, p_OPT, lIntT, "-p", "0");
    lSetInt(ep_opt, SPA_argval_lIntT, 0);
    
@@ -3281,14 +3281,14 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
     * category, or default file attribute can use -b n to reenable script
     * attributes.
     */
-   DPRINTF(("enabling binary mode\n"));
+   DPRINTF("enabling binary mode\n");
    ep_opt = sge_add_arg(opts, b_OPT, lIntT, "-b", "y");
    lSetInt(ep_opt, SPA_argval_lIntT, 1);
    
    /* Bugfix: Issuezilla #658
     * In order to work around Bug #476, I set DRMAA to not spawn an exec
     * shell. */
-   DPRINTF(("disabling execution shell\n"));
+   DPRINTF("disabling execution shell\n");
    ep_opt = sge_add_arg(opts, shell_OPT, lIntT, "-shell", "n");
 
    /* Bugfix: Issuezilla #1151
@@ -3304,7 +3304,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
     * is very important, and if the performance overhead becomes too great, the
     * option can always be turned off in the native specification or job
     * category. */
-   DPRINTF(("disabling submission of unschedulable jobs\n"));
+   DPRINTF("disabling submission of unschedulable jobs\n");
    ep_opt = sge_add_arg(opts, w_OPT, lIntT, "-w", "e");
    lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
    
@@ -3350,7 +3350,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
     * Order is very important here
     */
    if (*opts_default != nullptr) {
-      DPRINTF(("Adding default options\n"));
+      DPRINTF("Adding default options\n");
       prune_arg_list(*opts_default);
       
       if (*opts_all == nullptr) {
@@ -3362,7 +3362,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    }
    
    if (*opts_defaults != nullptr) {
-      DPRINTF(("Adding defaults options\n"));
+      DPRINTF("Adding defaults options\n");
       prune_arg_list(*opts_defaults);
       
       if (*opts_all == nullptr) {
@@ -3374,7 +3374,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    }
    
    if (*opts_scriptfile != nullptr) {
-      DPRINTF(("Adding scriptfile options\n"));
+      DPRINTF("Adding scriptfile options\n");
       prune_arg_list(*opts_scriptfile);
       
       if (*opts_all == nullptr) {
@@ -3386,7 +3386,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    }
    
    if (*opts_job_cat != nullptr) {
-      DPRINTF(("Adding job cat options\n"));
+      DPRINTF("Adding job cat options\n");
       prune_arg_list(*opts_job_cat);
       
       if (*opts_all == nullptr) {
@@ -3398,7 +3398,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    }
    
    if (*opts_native != nullptr) {
-      DPRINTF(("Adding native options\n"));
+      DPRINTF("Adding native options\n");
       prune_arg_list(*opts_native);
       
       if (*opts_all == nullptr) {
@@ -3410,7 +3410,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    }
    
    if (*opts_drmaa != nullptr) {
-      DPRINTF(("Adding drmaa options\n"));
+      DPRINTF("Adding drmaa options\n");
       /* No need to prune since options are already bounded by DRMAA */
       if (*opts_all == nullptr) {
          *opts_all = *opts_drmaa;
@@ -3877,7 +3877,7 @@ static char *drmaa_expand_wd_path(const char*username, const char *path, lList *
    char str[MAX_STRING_SIZE];
    
    DENTER(TOP_LAYER);
-   DPRINTF(("Expanding \"%s\"\n", path));
+   DPRINTF("Expanding \"%s\"\n", path);
 
    /* First look for the job index placeholder.  It is illegal. */
    if (strstr(path, "$TASK_ID") != nullptr) {
@@ -3912,7 +3912,7 @@ static char *drmaa_expand_wd_path(const char*username, const char *path, lList *
       file = strcpy(file, path);
    }
 
-   DPRINTF(("Expanded to \"%s\"\n", file));
+   DPRINTF("Expanded to \"%s\"\n", file);
    DRETURN(file);
 }
 
@@ -4033,7 +4033,7 @@ static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *di
    p = drmaa_fill_string_vector(drmaa_supported_nonvector);
    
    if (japi_is_delegated_file_staging_enabled(diag)) {
-      DPRINTF(("adding \"%s\"\n", DRMAA_TRANSFER_FILES));
+      DPRINTF("adding \"%s\"\n", DRMAA_TRANSFER_FILES);
       if (!lAddElemStr(&(p->it.si.strings),
                        ST_name, DRMAA_TRANSFER_FILES, ST_Type)) {
          japi_delete_string_vector((drmaa_attr_values_t *)p);

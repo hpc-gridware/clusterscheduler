@@ -319,7 +319,7 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref)
    DENTER(TOP_LAYER);
 
    if (tref != nullptr) {
-      DPRINTF(("    @@@ "
+      DPRINTF("    @@@ "
          "job: " sge_u32" "
          "ja_task: " sge_u32" "
          "t: %f "
@@ -331,7 +331,7 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref)
          tref->ja_task_ticket,
          tref->ja_task_sticket,
          tref->ja_task_share
-      ));       
+      );
    }
    DRETURN_VOID;
 }
@@ -571,8 +571,8 @@ void sgeee_resort_pending_jobs(lList **job_list)
             /*
              * Update pending tickets in template element
              */
-            DPRINTF(("task_ref_copy_to_ja_task(tref = " sge_u32", template_task = " sge_u32")\n",
-               tref->ja_task_number, lGetUlong(ja_task_template, JAT_task_number)));
+            DPRINTF("task_ref_copy_to_ja_task(tref = " sge_u32", template_task = " sge_u32")\n",
+               tref->ja_task_number, lGetUlong(ja_task_template, JAT_task_number));
             task_ref_copy_to_ja_task(tref, ja_task_template);
             recompute_prio(tref, ja_task_template, nurg, npri);
          }
@@ -660,11 +660,11 @@ static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, d
    prio = weight_urgency * nurg + weight_priority * npri + weight_ticket * ntix;
    lSetDouble(task, JAT_prio, prio); 
 
-   DPRINTF(("%f tickets for task " sge_u32": ntix = %f (min/max %f/%f), "
+   DPRINTF("%f tickets for task " sge_u32": ntix = %f (min/max %f/%f), "
          "prio = %f\n",
          tref->ja_task_ticket, tref->ja_task_number,
          ntix, min_tix, max_tix, 
-         prio));
+         prio);
 
    DRETURN_VOID;
 }
@@ -1126,20 +1126,20 @@ delete_debited_job_usage( sge_ref_t *ref,
    
    DENTER(TOP_LAYER);
 
-   DPRINTF(("DDJU (1) " sge_u32"\n", lGetUlong(job, JB_job_number)));
+   DPRINTF("DDJU (1) " sge_u32"\n", lGetUlong(job, JB_job_number));
 
    if (user) {
       upu_list = lGetList(user, UU_debited_job_usage);
-      DPRINTF(("DDJU (2) " sge_u32"\n", lGetUlong(job, JB_job_number)));
+      DPRINTF("DDJU (2) " sge_u32"\n", lGetUlong(job, JB_job_number));
       if (upu_list) {
          
          /* Note: In order to cause the qmaster to delete the
             usage for this job, we zero out UPU_old_usage_list
             for this job in the UU_debited_job_usage list */
-         DPRINTF(("DDJU (3) " sge_u32"\n", lGetUlong(job, JB_job_number)));
+         DPRINTF("DDJU (3) " sge_u32"\n", lGetUlong(job, JB_job_number));
 
          if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            DPRINTF(("DDJU (4) " sge_u32"\n", lGetUlong(job, JB_job_number)));
+            DPRINTF("DDJU (4) " sge_u32"\n", lGetUlong(job, JB_job_number));
             lSetList(upu, UPU_old_usage_list, nullptr);
             lSetUlong(user, UU_usage_seqno, seqno);
          }
@@ -2795,18 +2795,18 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                                  JAT_scaled_usage_list, UA_Type)))
                   lSetDouble(u, UA_value, 1.0);
                decay_and_sum_usage(&jref, decay_list, sge_scheduling_run, curr_time);
-               DPRINTF(("DDJU (0) " sge_u32"." sge_u32"\n",
+               DPRINTF("DDJU (0) " sge_u32"." sge_u32"\n",
                   lGetUlong(job, JB_job_number),
-                  lGetUlong(ja_task, JAT_task_number)));
+                  lGetUlong(ja_task, JAT_task_number));
                delete_debited_job_usage(&jref, sge_scheduling_run);
             }
          }
       }
    } else {
-      DPRINTF(("\n"));
-      DPRINTF(("no DDJU: do_usage: %d finished_jobs %d\n",
-         do_usage, (finished_jobs!=nullptr)));
-      DPRINTF(("\n"));
+      DPRINTF("\n");
+      DPRINTF("no DDJU: do_usage: %d finished_jobs %d\n",
+         do_usage, (finished_jobs!=nullptr));
+      DPRINTF("\n");
    }     
    
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -2817,7 +2817,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     * PASS 0
     *-----------------------------------------------------------------*/
 
-   DPRINTF(("=====================[Pass 0]======================\n"));
+   DPRINTF("=====================[Pass 0]======================\n");
 
    for(job_ndx=0; job_ndx<num_jobs; job_ndx++) {
 
@@ -2845,7 +2845,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     * PASS 1
     *-----------------------------------------------------------------*/
 
-   DPRINTF(("=====================[Pass 1]======================\n"));
+   DPRINTF("=====================[Pass 1]======================\n");
 
    for(job_ndx=0; job_ndx<num_jobs; job_ndx++) {
       if (job_ref[job_ndx].queued)
@@ -2871,7 +2871,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     * PASS 2
     *-----------------------------------------------------------------*/
 
-   DPRINTF(("=====================[Pass 2]======================\n"));
+   DPRINTF("=====================[Pass 2]======================\n");
    { 
       double weight[k_last];
       bool share_override_tickets = sconf_get_share_override_tickets();
@@ -2946,7 +2946,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          switch(hierarchy[policy_ndx].policy) {
 
          case SHARE_TREE_POLICY:
-         DPRINTF(("calc share tree pending tickets: %.3f\n", total_share_tree_tickets));
+         DPRINTF("calc share tree pending tickets: %.3f\n", total_share_tree_tickets);
       /*-----------------------------------------------------------------
        * Calculate pending share tree tickets
        *
@@ -3040,7 +3040,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
        *      When this is done, undo all the changes to the different structures 
        *      (running job counters) and free the fcategory data-structure.
        *-----------------------------------------------------------------*/
-      DPRINTF(("calc funktional tickets %.3f\n", total_functional_tickets));
+      DPRINTF("calc funktional tickets %.3f\n", total_functional_tickets);
       if (total_functional_tickets > 0 && num_queued_jobs > 0) {
          sge_ref_t **sort_list=nullptr;
          lList *fcategories = nullptr;
@@ -3813,7 +3813,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
    if (running_jobs) {
       norders = lGetNumberOfElem(order_list);
 
-      DPRINTF(("   got %d running jobs\n", lGetNumberOfElem(running_jobs)));
+      DPRINTF("   got %d running jobs\n", lGetNumberOfElem(running_jobs));
 
       for_each_rw(job, running_jobs) {
          const char *pe_str = nullptr;
@@ -3835,8 +3835,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
             order_list = sge_create_orders(order_list, ORT_tickets, job, ja_task, granted, update_execd);
          }
       }
-      DPRINTF(("   added %d ticket orders for running jobs\n", 
-               lGetNumberOfElem(order_list) - norders));
+      DPRINTF("   added %d ticket orders for running jobs\n",
+               lGetNumberOfElem(order_list) - norders);
    }
 
 
@@ -3881,8 +3881,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
             order_list = sge_create_orders(order_list, ORT_clear_pri_info, job, nullptr, nullptr, false);
          }
       }
-      DPRINTF(("   added %d ticket orders for queued jobs\n", 
-               lGetNumberOfElem(order_list) - norders));
+      DPRINTF("   added %d ticket orders for queued jobs\n",
+               lGetNumberOfElem(order_list) - norders);
 
    }
 
@@ -3916,8 +3916,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                lFreeList(&up_list);
             }
          }
-         DPRINTF(("   added %d orders for updating usage of user\n",
-            lGetNumberOfElem(order_list) - norders));      
+         DPRINTF("   added %d orders for updating usage of user\n",
+            lGetNumberOfElem(order_list) - norders);
       }
 
       /*-----------------------------------------------------------------
@@ -3935,8 +3935,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                lFreeList(&up_list);
             }   
          }
-         DPRINTF(("   added %d orders for updating usage of project\n",
-            lGetNumberOfElem(order_list) - norders));
+         DPRINTF("   added %d orders for updating usage of project\n",
+            lGetNumberOfElem(order_list) - norders);
       }
 
       lFreeWhere(&user_where);
@@ -3959,8 +3959,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
             lSetList(order, OR_joker, up_list);
             lAppendElem(order_list, order);
          }
-         DPRINTF(("   added %d orders for updating share tree\n",
-            lGetNumberOfElem(order_list) - norders)); 
+         DPRINTF("   added %d orders for updating share tree\n",
+            lGetNumberOfElem(order_list) - norders);
       } 
 
       /*-----------------------------------------------------------------
@@ -3987,7 +3987,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
          lSetList(order, OR_joker, up_list);
          lAppendElem(order_list, order);
          
-         DPRINTF(("   added 1 order for scheduler configuration\n"));
+         DPRINTF("   added 1 order for scheduler configuration\n");
          
       }
       last_seqno = seqno;
@@ -4141,7 +4141,7 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
     * now combine ticket amount and static urgency scheme into 
     * absolute priority
     */
-   DPRINTF(("Normalizing tickets using %f/%f as min_tix/max_tix\n", min_tix, max_tix));
+   DPRINTF("Normalizing tickets using %f/%f as min_tix/max_tix\n", min_tix, max_tix);
    sge_do_sgeee_priority(running_jobs, min_tix, max_tix, do_nprio, do_nurg); 
    sge_do_sgeee_priority(pending_jobs, min_tix, max_tix, do_nprio, do_nurg); 
 
@@ -4281,9 +4281,9 @@ static void sgeee_priority(lListElem *task, u_long32 jobid, double nsu,
    geee_priority = weight_urgency * nsu + weight_ticket * nta +
                    weight_priority * npri;
 /*
-   DPRINTF(("SGEEE priority (" sge_u32 "." sge_u32 ") %f = %f * %f + %f * %f + %f * %f\n",
+   DPRINTF("SGEEE priority (" sge_u32 "." sge_u32 ") %f = %f * %f + %f * %f + %f * %f\n",
       jobid, lGetUlong(task, JAT_task_number), geee_priority, 
-      weight_urgency, nsu, weight_ticket, nta, weight_priority, npri));
+      weight_urgency, nsu, weight_ticket, nta, weight_priority, npri);
 */
    lSetDouble(task, JAT_ntix, nta);
    lSetDouble(task, JAT_prio, geee_priority);

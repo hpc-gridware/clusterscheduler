@@ -134,19 +134,19 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
       DRETURN(is_up_and_running);
    }
 
-   DPRINTF(("Try to send status information message to previous master host " SFQ " to port %ld\n", oldqmaster, sge_qmaster_port));
+   DPRINTF("Try to send status information message to previous master host " SFQ " to port %ld\n", oldqmaster, sge_qmaster_port);
    ret = cl_commlib_get_endpoint_status(handle, oldqmaster, (char *) prognames[QMASTER], 1, &status);
    if (ret != CL_RETVAL_OK) {
-      DPRINTF(("cl_commlib_get_endpoint_status() returned " SFQ "\n", cl_get_error_text(ret)));
+      DPRINTF("cl_commlib_get_endpoint_status() returned " SFQ "\n", cl_get_error_text(ret));
       is_up_and_running = 0;
-      DPRINTF(("old qmaster not responding - No master found\n"));
+      DPRINTF("old qmaster not responding - No master found\n");
    } else {
-      DPRINTF(("old qmaster is still running\n"));
+      DPRINTF("old qmaster is still running\n");
       is_up_and_running = 1;
    }
 
    if (status != nullptr) {
-      DPRINTF(("endpoint is up since %ld seconds and has status %ld\n", status->runtime, status->application_status));
+      DPRINTF("endpoint is up since %ld seconds and has status %ld\n", status->runtime, status->application_status);
       cl_com_free_sirm_message(&status);
    }
 
@@ -245,9 +245,9 @@ main(int argc, char **argv) {
       /* is there a running shadowd on this host (with unqualified name) */
       snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
 
-      DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
+      DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
-         DPRINTF(("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid)));
+         DPRINTF("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
@@ -258,9 +258,9 @@ main(int argc, char **argv) {
 
       /* is there a running shadowd on this host (with aliased name) */
       snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
-      DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
+      DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
-         DPRINTF(("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid)));
+         DPRINTF("shadowd_pid: " sge_U32CFormat "\n", sge_u32c(shadowd_pid));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
@@ -351,7 +351,7 @@ main(int argc, char **argv) {
 
             delay = 0;
             if (last_heartbeat == heartbeat) {
-               DPRINTF(("heartbeat not changed since seconds: " sge_U32CFormat "\n", sge_u32c(now - last)));
+               DPRINTF("heartbeat not changed since seconds: " sge_U32CFormat "\n", sge_u32c(now - last));
                delay = delay_time; /* set delay time */
 
                /*
@@ -373,7 +373,7 @@ main(int argc, char **argv) {
                      /* still the old qmaster name in act_qmaster file and still the old heartbeat */
                      latest_heartbeat = get_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30);
                      /* TODO: what do we when there is a timeout ??? */
-                     DPRINTF(("old qmaster name in act_qmaster and old heartbeat\n"));
+                     DPRINTF("old qmaster name in act_qmaster and old heartbeat\n");
                      if (!compare_qmaster_names(bootstrap_get_act_qmaster_file(), oldqmaster) &&
                          !shadowd_is_old_master_enrolled(sge_test_heartbeat, sge_get_qmaster_port(nullptr), oldqmaster) &&
                          (latest_heartbeat == heartbeat)) {
@@ -381,7 +381,7 @@ main(int argc, char **argv) {
 
                         strcpy(qmaster_name, SGE_PREFIX);
                         strcat(qmaster_name, prognames[QMASTER]);
-                        DPRINTF(("qmaster_name: " SFN "\n", qmaster_name));
+                        DPRINTF("qmaster_name: " SFN "\n", qmaster_name);
 
                         /*
                          * open logfile as admin user for initial qmaster/schedd 
@@ -424,10 +424,10 @@ main(int argc, char **argv) {
       } else {
          if (last_heartbeat < 0 || heartbeat < 0) {
             /* There was an error reading heartbeat or last_heartbeat */
-            DPRINTF(("can't read heartbeat file. last_heartbeat=" sge_U32CFormat ", heartbeat=" sge_U32CFormat "\n",
-                    sge_u32c(last_heartbeat), sge_u32c(heartbeat)));
+            DPRINTF("can't read heartbeat file. last_heartbeat=" sge_U32CFormat ", heartbeat=" sge_U32CFormat "\n",
+                    sge_u32c(last_heartbeat), sge_u32c(heartbeat));
          } else {
-            DPRINTF(("have to read the heartbeat file twice to check time differences\n"));
+            DPRINTF("have to read the heartbeat file twice to check time differences\n");
          }
       }
    }
@@ -473,7 +473,7 @@ compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
 
    ret = sge_hostcmp(newqmaster, oldqmaster);
 
-   DPRINTF(("strcmp() of old and new qmaster returns: " sge_U32CFormat "\n", sge_u32c(ret)));
+   DPRINTF("strcmp() of old and new qmaster returns: " sge_U32CFormat "\n", sge_u32c(ret));
 
    DRETURN(ret);
 }
@@ -492,7 +492,7 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    DENTER(TOP_LAYER);
 
    if (isLocked(QMASTER_LOCK_FILE)) {
-      DPRINTF(("lock file exits\n"));
+      DPRINTF("lock file exits\n");
       DRETURN(-2);
    }
 
@@ -512,7 +512,7 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    /* we are on the same machine as old qmaster */
    if (!strcmp(hp->h_name, qualified_hostname)) {
       sge_free_hostent(&hp);
-      DPRINTF(("qmaster was running on same machine\n"));
+      DPRINTF("qmaster was running on same machine\n");
       DRETURN(-2);
    }
 
@@ -526,8 +526,8 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    }
 
    sge_strlcpy(binpath, binary_path, SGE_PATH_MAX); /* copy global configuration path */
-   DPRINTF(("" SFQ "\n", binpath));
-   DPRINTF(("we are a candidate for shadow master\n"));
+   DPRINTF("" SFQ "\n", binpath);
+   DPRINTF("we are a candidate for shadow master\n");
 
    DRETURN(0);
 }

@@ -1451,7 +1451,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
 
 /* DEBUG */
 #if 1
-   DPRINTF(("%s\n", event_text(event, &buffer_wrapper)));
+   DPRINTF("%s\n", event_text(event, &buffer_wrapper));
 #else
    {
       u_long32 number, type, intkey, intkey2;
@@ -1462,9 +1462,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
       intkey2 = lGetUlong(event, ET_intkey2);
       strkey = lGetString(event, ET_strkey);
       strkey2 = lGetString(event, ET_strkey2);
-      DPRINTF(("\tEvent: %s intkey %d intkey2 %d strkey \"%s\" strkey2 \"%s\"\n",
-               event_text(event, &buffer_wrapper), intkey, intkey2,
-               strkey?strkey:"nullptr", strkey2?strkey2:"nullptr"));
+      DPRINTF("\tEvent: %s intkey %d intkey2 %d strkey \"%s\" strkey2 \"%s\"\n", event_text(event, &buffer_wrapper), intkey, intkey2, strkey?strkey:"nullptr", strkey2?strkey2:"nullptr");
    }
 #endif
 
@@ -1506,7 +1504,7 @@ sge_mirror_process_shutdown(sge_evc_class_t *evc, [[maybe_unused]] sge_object_ty
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("shutting down sge mirror\n"));
+   DPRINTF("shutting down sge mirror\n");
    sge_mirror_shutdown(evc);
 
    shut_me_down = 1;
@@ -1520,7 +1518,7 @@ sge_mirror_process_mark4registration(sge_evc_class_t *evc,  [[maybe_unused]] sge
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("mark4registration - this happens for ACK TIMEOUT or QMASTER GOES DOWN event\n"));
+   DPRINTF("mark4registration - this happens for ACK TIMEOUT or QMASTER GOES DOWN event\n");
 
    evc->ec_mark4registration(evc);
 

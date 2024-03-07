@@ -414,7 +414,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    DENTER(GDI_LAYER);
 
-   DPRINTF(("callback processing schedd config event\n"));
+   DPRINTF("callback processing schedd config event\n");
 
    new_ep = lFirstRW(lGetList(event, ET_new_version));
 
@@ -496,20 +496,20 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
       case SGE_EMA_ADD:
          if (new_ep != nullptr && lGetBool(new_ep, PR_consider_with_categories) == true) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_ADD(%s)\n", p));
+            DPRINTF("callback before project event: rebuild categories due to SGE_EMA_ADD(%s)\n", p);
          }
          break;
       case SGE_EMA_MOD:
          if (new_ep != nullptr && old_ep != nullptr &&
              lGetBool(new_ep, PR_consider_with_categories) != lGetBool(old_ep, PR_consider_with_categories)) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_MOD(%s)\n", p));
+            DPRINTF("callback before project event: rebuild categories due to SGE_EMA_MOD(%s)\n", p);
          }
          break;
       case SGE_EMA_DEL:
          if (old_ep != nullptr && lGetBool(old_ep, PR_consider_with_categories) == true) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_DEL(%s)\n", p));
+            DPRINTF("callback before project event: rebuild categories due to SGE_EMA_DEL(%s)\n", p);
          }
          break;
       default:
@@ -523,7 +523,7 @@ sge_callback_result
 sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(GDI_LAYER);
-   DPRINTF(("monitoring next scheduler run\n"));
+   DPRINTF("monitoring next scheduler run\n");
    evc->monitor_next_run = true;
    DRETURN(SGE_EMA_OK);
 }
@@ -532,7 +532,7 @@ sge_callback_result
 sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(GDI_LAYER);
-   DPRINTF(("notification about new global configuration\n"));
+   DPRINTF("notification about new global configuration\n");
    st_set_flag_new_global_conf(true);
    DRETURN(SGE_EMA_OK);
 }
@@ -544,7 +544,7 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
    lListElem *job = nullptr;
 
    DENTER(GDI_LAYER);
-   DPRINTF(("callback processing job event before default rule\n"));
+   DPRINTF("callback processing job event before default rule\n");
 
    if (action == SGE_EMA_DEL || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
@@ -590,7 +590,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
    lListElem *job = nullptr;
 
    DENTER(TOP_LAYER);
-   DPRINTF(("callback processing job event after default rule\n"));
+   DPRINTF("callback processing job event after default rule\n");
 
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
@@ -621,10 +621,9 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
          job_get_submit_task_ids(job, &start, &end, &step);
 
          if (job_is_array(job)) {
-            DPRINTF(("Added job-array " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n",
-                    job_id, start, end, step));
+            DPRINTF("Added job-array " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n", job_id, start, end, step);
          } else {
-            DPRINTF(("Added job " sge_u32"\n", job_id));
+            DPRINTF("Added job " sge_u32"\n", job_id);
          }
       }
          break;
@@ -695,7 +694,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
    if (action == SGE_EMA_DEL) {
       const lListElem *job;
       u_long32 job_id;
-      DPRINTF(("callback processing ja_task event after default rule SGE_EMA_DEL\n"));
+      DPRINTF("callback processing ja_task event after default rule SGE_EMA_DEL\n");
 
       job_id = lGetUlong(event, ET_intkey);
       job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
@@ -706,7 +705,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
          DRETURN(SGE_EMA_FAILURE);
       }
    } else {
-      DPRINTF(("callback processing ja_task event after default rule\n"));
+      DPRINTF("callback processing ja_task event after default rule\n");
    }
 
    DRETURN(SGE_EMA_OK);
@@ -751,7 +750,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
       case SGE_EMA_ADD:
          if (lGetBool(new_ep, US_consider_with_categories) == true) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_ADD(%s)\n", u));
+            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_ADD(%s)\n", u);
          }
          break;
       case SGE_EMA_MOD:
@@ -765,14 +764,14 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
                  object_list_has_differences(lGetList(old_ep, US_entries), nullptr, lGetList(new_ep, US_entries),
                                              false))) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_MOD(%s)\n", u));
+            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_MOD(%s)\n", u);
          }
 
          break;
       case SGE_EMA_DEL:
          if (lGetBool(old_ep, US_consider_with_categories) == true) {
             set_rebuild_categories(true);
-            DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_DEL(%s)\n", u));
+            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_DEL(%s)\n", u);
          }
          break;
       default:

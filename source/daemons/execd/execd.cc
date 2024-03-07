@@ -293,7 +293,7 @@ int main(int argc, char **argv)
    sge_ls_qidle(mconf_get_use_qidle());
    sge_ls_gnu_ls(1);
    
-   DPRINTF(("use_qidle: %d\n", mconf_get_use_qidle()));
+   DPRINTF("use_qidle: %d\n", mconf_get_use_qidle());
 
    /* test load sensor (internal or external) */
    {
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
    while (sge_execd_register_at_qmaster(false) != 0) {
       if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true)) {
          /* This is no error */
-         DPRINTF(("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n"));
+         DPRINTF("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n");
       }
       if (sge_get_com_error_flag(EXECD, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
          execd_exit_state = SGE_COM_ENDPOINT_NOT_UNIQUE;
@@ -486,7 +486,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       lAppendElem(hlp, hep);
 
       /* register at qmaster */
-      DPRINTF(("*****  Register at qmaster   *****\n"));
+      DPRINTF("*****  Register at qmaster   *****\n");
       if (!is_restart) {
          /*
           * This is a regular startup.
@@ -502,7 +502,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       }
       lFreeList(&hlp);
    } else {
-      DPRINTF(("*****  Register at qmaster - qmaster not alive!  *****\n"));
+      DPRINTF("*****  Register at qmaster - qmaster not alive!  *****\n");
    }
 
    if (alp == nullptr) {

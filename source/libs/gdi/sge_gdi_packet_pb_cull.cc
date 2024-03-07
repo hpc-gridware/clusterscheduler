@@ -62,19 +62,19 @@ sge_pack_gdi_info(u_long32 command) {
 
    switch (command) {
    case SGE_GDI_GET:
-      DPRINTF(("packing SGE_GDI_GET request\n"));
+      DPRINTF("packing SGE_GDI_GET request\n");
       break;
    case SGE_GDI_ADD:
    case SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION:
    case SGE_GDI_ADD | SGE_GDI_SET_ALL:
    case SGE_GDI_ADD | SGE_GDI_EXECD_RESTART:
-      DPRINTF(("packing SGE_GDI_ADD request\n"));
+      DPRINTF("packing SGE_GDI_ADD request\n");
       break;
    case SGE_GDI_DEL:
    case SGE_GDI_DEL | SGE_GDI_ALL_JOBS:
    case SGE_GDI_DEL | SGE_GDI_ALL_USERS:
    case SGE_GDI_DEL | SGE_GDI_ALL_JOBS | SGE_GDI_ALL_USERS:
-      DPRINTF(("packing SGE_GDI_DEL request\n"));
+      DPRINTF("packing SGE_GDI_DEL request\n");
       break;
    case SGE_GDI_MOD:
    case SGE_GDI_MOD | SGE_GDI_ALL_JOBS:
@@ -84,23 +84,23 @@ sge_pack_gdi_info(u_long32 command) {
    case SGE_GDI_MOD | SGE_GDI_REMOVE:
    case SGE_GDI_MOD | SGE_GDI_CHANGE:
    case SGE_GDI_MOD | SGE_GDI_SET_ALL:
-      DPRINTF(("packing SGE_GDI_MOD request\n"));
+      DPRINTF("packing SGE_GDI_MOD request\n");
       break;
    case SGE_GDI_TRIGGER:
-      DPRINTF(("packing SGE_GDI_TRIGGER request\n"));
+      DPRINTF("packing SGE_GDI_TRIGGER request\n");
       break;
    case SGE_GDI_PERMCHECK:
-      DPRINTF(("packing SGE_GDI_PERMCHECK request\n"));
+      DPRINTF("packing SGE_GDI_PERMCHECK request\n");
       break;
    case SGE_GDI_SPECIAL:
-      DPRINTF(("packing special things\n"));
+      DPRINTF("packing special things\n");
       break;
    case SGE_GDI_COPY:
-      DPRINTF(("request denied\n"));
+      DPRINTF("request denied\n");
       break;
    case SGE_GDI_REPLACE:
    case SGE_GDI_REPLACE | SGE_GDI_SET_ALL:
-      DPRINTF(("packing SGE_GDI_REPLACE request\n"));
+      DPRINTF("packing SGE_GDI_REPLACE request\n");
       break;
    default:
       ERROR(MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D, sge_u32c(command));

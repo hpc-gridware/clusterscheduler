@@ -711,7 +711,7 @@ sge_get_ar_id(monitoring_t *monitor) {
    ar_id_control.ar_id++;
    ar_id_control.changed = true;
    if (ar_id_control.ar_id > MAX_SEQNUM) {
-      DPRINTF(("highest ar number MAX_SEQNUM %d exceeded, starting over with 1\n", MAX_SEQNUM));
+      DPRINTF("highest ar number MAX_SEQNUM %d exceeded, starting over with 1\n", MAX_SEQNUM);
       ar_id_control.ar_id = 1;
       is_store_ar = true;
    }
@@ -947,7 +947,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr);
 
       /* remove the AR itself */
-      DPRINTF(("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer)));
+      DPRINTF("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer));
       lRemoveElem(master_ar_list, &ar);
       sge_event_spool(nullptr, 0, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
@@ -955,7 +955,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    } else {
       /* AR_RUNNING */
-      DPRINTF(("AR: started, changing state of AR " sge_u32"\n", ar_id));
+      DPRINTF("AR: started, changing state of AR " sge_u32"\n", ar_id);
 
       sge_ar_state_set_running(ar);
 
@@ -1069,7 +1069,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
 
    /* redirect scheduler monitoring into answer list */
    if (verify_mode == AR_JUST_VERIFY) {
-      DPRINTF(("AR Verify Mode\n"));
+      DPRINTF("AR Verify Mode\n");
       a.monitor_alpp = &talp;
    }
 
@@ -1783,8 +1783,8 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
          continue;
       }
 
-      DPRINTF(("removing job %d\n", lGetUlong(jep, JB_job_number)));
-      DPRINTF((" ----> task_start = %d, task_end = %d\n", start, end));
+      DPRINTF("removing job %d\n", lGetUlong(jep, JB_job_number));
+      DPRINTF(" ----> task_start = %d, task_end = %d\n", start, end);
 
       for (task_number = start;
            task_number <= end;
@@ -1794,7 +1794,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
 
             if (job_is_enrolled(jep, task_number)) {
                /* delete all enrolled pending tasks */
-               DPRINTF(("removing enrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number));
+               DPRINTF("removing enrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number);
                tmp_task = lGetSubUlongRW(jep, JAT_task_number, task_number, JB_ja_tasks);
 
                /* 
@@ -1816,7 +1816,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
                }
             } else {
                /* delete all unenrolled running tasks */
-               DPRINTF(("removing unenrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number));
+               DPRINTF("removing unenrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number);
                tmp_task = job_get_ja_task_template_pending(jep, task_number);
 
                sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -2125,7 +2125,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
 
    if (!VALID(type, lGetUlong(ar, AR_mail_options))) {
       sge_dstring_append_mailopt(&buffer, type);
-      DPRINTF(("mailopt %s was not requested\n", sge_dstring_get_string(&buffer)));
+      DPRINTF("mailopt %s was not requested\n", sge_dstring_get_string(&buffer));
       sge_dstring_free(&subject);
       sge_dstring_free(&body);
       sge_dstring_free(&buffer);

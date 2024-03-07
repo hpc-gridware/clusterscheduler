@@ -151,7 +151,7 @@ bool sge_unlink(const char *prefix, const char *suffix) {
       snprintf(str, sizeof(str), "%s", suffix);
    }
 
-   DPRINTF(("file to unlink: \"%s\"\n", str));
+   DPRINTF("file to unlink: \"%s\"\n", str);
    status = unlink(str);
 
    if (status) {
@@ -327,7 +327,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
       }
    }
 
-   DPRINTF(("Making dir \"%s\"\n", path));
+   DPRINTF("Making dir \"%s\"\n", path);
 
    memset(path_, 0, sizeof(path_));
    while ((unsigned char) path[i]) {
@@ -336,7 +336,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
          path_[i] = (unsigned char) 0;
          int res = sge_domkdir(path_, fmode, exit_on_error, false);
          if (res) {
-            DPRINTF(("retval = %d\n", res));
+            DPRINTF("retval = %d\n", res);
             DRETURN(res);
          }
       }
@@ -346,7 +346,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
 
    i = sge_domkdir(path_, fmode, exit_on_error, may_not_exist);
 
-   DPRINTF(("retval = %d\n", i));
+   DPRINTF("retval = %d\n", i);
    DRETURN(i);
 }
 

@@ -78,15 +78,15 @@ int sge_readnbytes(int sfd, char *ptr, int n) {
    int nleft = n;               /* number of bytes still to read */
 
    DENTER(BASIS_LAYER);
-   DPRINTF(("TOTAL BYTES TO BE READ %d\n", n));
+   DPRINTF("TOTAL BYTES TO BE READ %d\n", n);
 
    /* Read n bytes */
    while (nleft > 0) {
       i = read(sfd, ptr, nleft);
-      DPRINTF(("read %d bytes on fd %d\n", i, sfd));
+      DPRINTF("read %d bytes on fd %d\n", i, sfd);
 
       if (i < 0) {
-         DPRINTF(("sge_readnbytes: returning %d\n", i));
+         DPRINTF("sge_readnbytes: returning %d\n", i);
          DRETURN((i));
       } else {
          if (i == 0)
@@ -96,7 +96,7 @@ int sge_readnbytes(int sfd, char *ptr, int n) {
       ptr += i;
    }
 
-   DPRINTF(("sge_readnbytes: returning %d\n", nleft));
+   DPRINTF("sge_readnbytes: returning %d\n", nleft);
    DRETURN((n - nleft));
 
 }
@@ -139,13 +139,13 @@ int sge_writenbytes(int sfd, const char *ptr,
       DTRACE;
       i = write(sfd, ptr, nleft);
       if (i == -1) {
-         DPRINTF(("write failed with error %d: %s\n", i, strerror(errno)));
+         DPRINTF("write failed with error %d: %s\n", i, strerror(errno));
       } else {
-         DPRINTF(("wrote %d bytes on fd %d\n", i, sfd));
+         DPRINTF("wrote %d bytes on fd %d\n", i, sfd);
       }
 
       if (i <= 0) {
-         DPRINTF(("sge_writenbytes: returning %d\n", i));
+         DPRINTF("sge_writenbytes: returning %d\n", i);
          DRETURN((i));
       }
       nleft -= i;
@@ -604,7 +604,7 @@ char *sge_stream2string(FILE *fp, int *len) {
       }
 
       if (feof(fp)) {
-         DPRINTF(("got EOF\n"));
+         DPRINTF("got EOF\n");
          break;
       }
    }

@@ -680,7 +680,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    */
    is_qmaster_internal = component_is_qmaster_internal();
    
-   DPRINTF(("creating %s event client context\n", is_qmaster_internal ? "internal" : "external"));
+   DPRINTF("creating %s event client context\n", is_qmaster_internal ? "internal" : "external");
 
    if (is_qmaster_internal == true) {
       ret->ec_register = ec2_register_local;
@@ -977,10 +977,10 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
    handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle != nullptr) {
       cl_commlib_close_connection(handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
-      DPRINTF(("closed old connection to qmaster\n"));
+      DPRINTF("closed old connection to qmaster\n");
    }
    sge_evc->need_register = true;
-   DPRINTF(("*** Need new registration at qmaster ***\n"));
+   DPRINTF("*** Need new registration at qmaster ***\n");
    lSetBool(sge_evc->ec, EV_changed, true);
    DRETURN_VOID;
 }
@@ -1223,7 +1223,7 @@ static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handli
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      DPRINTF(("EVC: change event client to " sge_U32CFormat "\n", (u_long32)handling));
+      DPRINTF("EVC: change event client to " sge_U32CFormat "\n", (u_long32)handling);
 
       ret = (lGetUlong(sge_evc->ec, EV_busy_handling) != handling) ? true : false;
 
@@ -1289,14 +1289,14 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
       u_long32 id = sge_evc->ec_reg_id;
       ec_control_t *evco = nullptr;
 
-      DPRINTF(("ec2_deregister_local sge_evc->ec_reg_id %d\n", sge_evc->ec_reg_id));
+      DPRINTF("ec2_deregister_local sge_evc->ec_reg_id %d\n", sge_evc->ec_reg_id);
 
       /*
       ** signal thread when in ec2_get_local
       */
       evco = ec2_get_event_control(thiz);
       if (evco == nullptr) {
-         DPRINTF(("ec2_deregister_local evco IS nullptr\n"));
+         DPRINTF("ec2_deregister_local evco IS nullptr\n");
          DRETURN(false);
       }
 
@@ -1304,7 +1304,7 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
       
       evco->exit = true;
 
-      DPRINTF(("----> evco->exit = true\n"));
+      DPRINTF("----> evco->exit = true\n");
 
       pthread_cond_signal(&(evco->cond_var));
 #ifdef EVC_DEBUG      
@@ -1352,7 +1352,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
 
    sge_evc->next_event = 1;
 
-   DPRINTF(("trying to register as internal client with preset %d (0 means EV_ID_ANY)\n", (int)sge_evc->ec_reg_id));
+   DPRINTF("trying to register as internal client with preset %d (0 means EV_ID_ANY)\n", (int)sge_evc->ec_reg_id);
 
    if (sge_evc->ec == nullptr) {
       WARNING(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -1409,7 +1409,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
       } else {
          lSetBool(sge_evc->ec, EV_changed, false);
          sge_evc->need_register = false;
-         DPRINTF(("registered local event client with id " sge_u32"\n", sge_evc->ec_reg_id));
+         DPRINTF("registered local event client with id " sge_u32"\n", sge_evc->ec_reg_id);
       }
 
       lFreeList(&alp);
@@ -1496,13 +1496,13 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
          int ngc_error;
          ngc_error = cl_commlib_close_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
          if (ngc_error == CL_RETVAL_OK) {
-            DPRINTF(("closed old connection to qmaster\n"));
+            DPRINTF("closed old connection to qmaster\n");
          } else {
             INFO("error closing old connection to qmaster: " SFQ "\n", cl_get_error_text(ngc_error));
          }
          ngc_error = cl_commlib_open_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1);
          if (ngc_error == CL_RETVAL_OK) {
-            DPRINTF(("opened new connection to qmaster\n"));
+            DPRINTF("opened new connection to qmaster\n");
          } else {
             ERROR("error opening new connection to qmaster: " SFQ "\n", cl_get_error_text(ngc_error));
          }
@@ -1530,7 +1530,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
 
          if (new_id != 0) {
             lSetUlong(sge_evc->ec, EV_id, new_id);
-            DPRINTF(("REGISTERED with id " sge_U32CFormat "\n", new_id));
+            DPRINTF("REGISTERED with id " sge_U32CFormat "\n", new_id);
             lSetBool(sge_evc->ec, EV_changed, false);
             sge_evc->need_register = false;
             
@@ -1546,7 +1546,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
             /* TODO: remove exit_on_qmaster_down and move to calling code by delivering
                      better return values */
             if (exit_on_qmaster_down) {
-               DPRINTF(("exiting in ec2_register()\n"));
+               DPRINTF("exiting in ec2_register()\n");
                sge_exit(1);
             } else {
                /*
@@ -2471,10 +2471,10 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == nullptr) {
-      DPRINTF((SGE_EVENT, MSG_EVENT_UNINITIALIZED_EC));
+      DPRINTF(SGE_EVENT, MSG_EVENT_UNINITIALIZED_EC);
    } else if (thiz->ec_need_new_registration(thiz)) {
       /* not (yet) registered? Cannot send modification to qmaster! */
-      DPRINTF((MSG_EVENT_NOTREGISTERED));
+      DPRINTF(MSG_EVENT_NOTREGISTERED);
    } else {
       const char *ruser = nullptr;
       const char *rhost = nullptr;
@@ -2507,10 +2507,10 @@ static bool ec2_ack(sge_evc_class_t *thiz)
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == nullptr) {
-      DPRINTF((MSG_EVENT_UNINITIALIZED_EC));
+      DPRINTF(MSG_EVENT_UNINITIALIZED_EC);
    } else if (thiz->ec_need_new_registration(thiz)) {
       /* not (yet) registered? Cannot send modification to qmaster! */
-      DPRINTF((MSG_EVENT_NOTREGISTERED));
+      DPRINTF(MSG_EVENT_NOTREGISTERED);
    } else {
       local_t *evc_local = &(thiz->ec_local);
       if (evc_local && evc_local->ack_func) {
@@ -2558,11 +2558,11 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == nullptr) {
-      DPRINTF((MSG_EVENT_UNINITIALIZED_EC));
+      DPRINTF(MSG_EVENT_UNINITIALIZED_EC);
       answer_list_add(alpp, MSG_EVENT_UNINITIALIZED_EC, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    } else if (thiz->ec_need_new_registration(thiz)) {
       /* not (yet) registered? Cannot send modification to qmaster! */
-      DPRINTF((MSG_EVENT_NOTREGISTERED));
+      DPRINTF(MSG_EVENT_NOTREGISTERED);
       answer_list_add(alpp, MSG_EVENT_NOTREGISTERED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    } else {
       lList *lp, *alp;
@@ -2641,10 +2641,10 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == nullptr) {
-      DPRINTF((MSG_EVENT_UNINITIALIZED_EC));
+      DPRINTF(MSG_EVENT_UNINITIALIZED_EC);
    } else if (thiz->ec_need_new_registration(thiz)) {
       /* not (yet) registered? Cannot send modification to qmaster! */
-      DPRINTF((MSG_EVENT_NOTREGISTERED));
+      DPRINTF(MSG_EVENT_NOTREGISTERED);
    } else {
       int commit_id, gdi_ret;
       lList *lp, *alp = nullptr;
@@ -2797,13 +2797,11 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
 
       last_fetch_time = now;
 
-      DPRINTF(("ec2_get retrieving events - will do max %d fetches\n", 
-               max_fetch));
+      DPRINTF("ec2_get retrieving events - will do max %d fetches\n", max_fetch);
 
       /* fetch data until nothing left or maximum reached */
       while (!done) {
-         DPRINTF(("doing %s fetch for messages, %d still to do\n", 
-                  sync ? "sync" : "async", max_fetch));
+         DPRINTF("doing %s fetch for messages, %d still to do\n", sync ? "sync" : "async", max_fetch);
          if (thiz->ec_need_new_registration(thiz)) {
             ret = false;
             done = true;
@@ -2826,8 +2824,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
                continue;
             }
 
-            DPRINTF(("got %d events till " sge_u32"\n",
-                     lGetNumberOfElem(new_events), sge_evc->next_event - 1));
+            DPRINTF("got %d events till " sge_u32"\n", lGetNumberOfElem(new_events), sge_evc->next_event - 1);
 
             if (*event_list != nullptr) {
                lAddList(*event_list, &new_events);
@@ -2853,7 +2850,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
       if (sync && !fetch_ok) {
          time_t timeout = thiz->ec_get_edtime(thiz) * 10;
 
-         DPRINTF(("first syncronous get_event_list failed\n"));
+         DPRINTF("first syncronous get_event_list failed\n");
 
          /* we return false when we have reached a timeout or 
             on communication error, otherwise we return true */
@@ -2862,10 +2859,10 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
          /* check timeout */
          if (last_fetch_ok_time + timeout < now) {
             /* we have a  SGE_EM_TIMEOUT */
-            DPRINTF(("SGE_EM_TIMEOUT reached\n"));
+            DPRINTF("SGE_EM_TIMEOUT reached\n");
             ret = false;
          } else {
-            DPRINTF(("SGE_EM_TIMEOUT in " sge_U32CFormat " seconds\n", sge_u32c(last_fetch_ok_time + timeout - now) ));
+            DPRINTF("SGE_EM_TIMEOUT in " sge_U32CFormat " seconds\n", sge_u32c(last_fetch_ok_time + timeout - now) );
          }
 
          /* check for communicaton error */
@@ -2875,7 +2872,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
                case CL_RETVAL_SYNC_RECEIVE_TIMEOUT:
                   break;
                default:
-                  DPRINTF(("COMMUNICATION ERROR: %s\n", cl_get_error_text(commlib_error)));
+                  DPRINTF("COMMUNICATION ERROR: %s\n", cl_get_error_text(commlib_error));
                   ret = false;
                   break;
             }
@@ -2891,13 +2888,13 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
             answer_list_output(&alp);
             WARNING(SFNMAX, MSG_COMMD_FAILEDTOSENDACKEVENTDELIVERY);
          } else {
-            DPRINTF(("Sent ack for all events lower or equal %d\n", (sge_evc->next_event - 1)));
+            DPRINTF("Sent ack for all events lower or equal %d\n", (sge_evc->next_event - 1));
          }
       }
    }
 
    if (*event_list != nullptr) {
-      DPRINTF(("ec2_get - received %d events\n", lGetNumberOfElem(*event_list)));
+      DPRINTF("ec2_get - received %d events\n", lGetNumberOfElem(*event_list));
    }
 
    /* check if we got a QMASTER_GOES_DOWN or sgeE_ACK_TIMEOUT event. 
@@ -2974,13 +2971,9 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
 
    if (!lp || !lGetNumberOfElem(lp)) {
       /* got a dummy event list for alive protocol */
-      DPRINTF(("received empty event list\n"));
+      DPRINTF("received empty event list\n");
    } else {
-      DPRINTF(("Checking %d events (" sge_u32"-" sge_u32 ") while waiting for #" sge_u32"\n",
-            lGetNumberOfElem(lp), 
-            lGetUlong(lFirst(lp), ET_number),
-            lGetUlong(lLast(lp), ET_number),
-            i));
+      DPRINTF("Checking %d events (" sge_u32"-" sge_u32 ") while waiting for #" sge_u32"\n", lGetNumberOfElem(lp), lGetUlong(lFirst(lp), ET_number), lGetUlong(lLast(lp), ET_number), i);
     
       /* ensure number of last event is "waiting_for"-1 or higher */ 
       if ((j=lGetUlong(lLast(lp), ET_number)) < i-1) {
@@ -3014,8 +3007,7 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
          }
 
          if (skipped) {
-            DPRINTF(("Skipped %d events, still %d in list\n", skipped, 
-                     lGetNumberOfElem(lp)));
+            DPRINTF("Skipped %d events, still %d in list\n", skipped, lGetNumberOfElem(lp));
          }
 
          /* ensure number of events increase */
@@ -3037,7 +3029,7 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
          if (ret) {
             /* that's the new number we wait for */
             *waiting_for = i;
-            DPRINTF(("check complete, %d events in list\n", lGetNumberOfElem(lp)));
+            DPRINTF("check complete, %d events in list\n", lGetNumberOfElem(lp));
          }
       }
    }
@@ -3090,7 +3082,7 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
    tag = TAG_REPORT_REQUEST;
    id = 1;
 
-   DPRINTF(("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id ));
+   DPRINTF("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id );
    if ( (help=sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          DEBUG("commlib returns %s\n", cl_get_error_text(help));
@@ -3198,7 +3190,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
    evco->new_events = nullptr;
    evco->triggered = false;
 
-   DPRINTF(("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf)));
+   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
 
    sge_mutex_unlock("evco_event_thread_cond_mutex", __func__, __LINE__,
                     &(evco->mutex));
@@ -3235,12 +3227,12 @@ static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_li
    DENTER(EVC_LAYER);
 
    if (thiz == nullptr) {
-      DPRINTF(("EVENT UPDATE FUNCTION thiz IS nullptr\n"));
+      DPRINTF("EVENT UPDATE FUNCTION thiz IS nullptr\n");
       DRETURN(-1); 
    }
    evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
-      DPRINTF(("EVENT UPDATE FUNCTION evco IS nullptr\n"));
+      DPRINTF("EVENT UPDATE FUNCTION evco IS nullptr\n");
       DRETURN(-1);
    }
 
@@ -3256,7 +3248,7 @@ static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_li
       }   
       
       evco->triggered = true;
-      DPRINTF(("EVENT UPDATE FUNCTION jgdi_event_update_func() HAS BEEN TRIGGERED\n"));
+      DPRINTF("EVENT UPDATE FUNCTION jgdi_event_update_func() HAS BEEN TRIGGERED\n");
 
       pthread_cond_broadcast(&(evco->cond_var));
 #ifdef EVC_DEBUG      

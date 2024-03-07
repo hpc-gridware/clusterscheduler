@@ -267,7 +267,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
                /*
                 * check if the modification is possible or if
@@ -301,7 +301,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             if (object_list_has_differences(old_value, answer_list,
                                             new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
                lSetList(this_elem, attribute_name, lCopyList("", new_value));
                *has_changed_conf_attr = true;
@@ -317,7 +317,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
                lSetList(this_elem, attribute_name, lCopyList("", new_value));
                *has_changed_conf_attr = true;
@@ -332,7 +332,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                       matching_group, is_ambiguous, master_hgroup_list);
             if (old_value != new_value) {
                u_long32 slots_reserved = qinstance_slots_reserved(this_elem);
-               DPRINTF(("reserved slots %d\n", slots_reserved));
+               DPRINTF("reserved slots %d\n", slots_reserved);
                if (!initial_modify && new_value < slots_reserved) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_QINSTANCE_SLOTSRESERVED_USS, slots_reserved,
@@ -386,7 +386,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
                if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+                  DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
                   if (!initial_modify &&
                       ar_list_has_reservation_due_to_qinstance_complex_attr(master_ar_list, answer_list,
@@ -419,7 +419,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
                /*
                 * Suspend Threshold state will be reset later
@@ -518,7 +518,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * check "classic" queuewise subordinations
                 */
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ "\n", lNm2Str(attribute_name)));
+               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
 
                /*
@@ -634,7 +634,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             }
                break;
             default:
-               DPRINTF(("unhandled attribute\n"));
+               DPRINTF("unhandled attribute\n");
                break;
          }
       }

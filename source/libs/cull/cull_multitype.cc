@@ -89,10 +89,10 @@ int incompatibleType(const char *str) {
    DENTER(TOP_LAYER);
 
    for (i = 0; i < 5; i++)
-           DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
-   DPRINTF(("incompatible type in function %s()\n", str));
+           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+   DPRINTF("incompatible type in function %s()\n", str);
    for (i = 0; i < 5; i++)
-           DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
+           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
    abort();
    DRETURN(-1);
@@ -120,7 +120,7 @@ int unknownType(const char *str) {
 
    /* abort is used, so we don't free any memory; if you change this
       function please free your memory                      */
-   DPRINTF(("Unknown Type in %s.\n", str));
+   DPRINTF("Unknown Type in %s.\n", str);
    LERROR(LEUNKTYPE);
    DRETURN(-1);
    /* abort(); */
@@ -222,7 +222,7 @@ const char *lNm2Str(int nm) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!(ns = cull_state_get_name_space())) {
-      DPRINTF(("name vector uninitialized !!\n"));
+      DPRINTF("name vector uninitialized !!\n");
       goto Error;
    }
 
@@ -243,7 +243,7 @@ static const char *_lNm2Str(const lNameSpace *nsp, int nm) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!nsp) {
-      DPRINTF(("name vector uninitialized !!\n"));
+      DPRINTF("name vector uninitialized !!\n");
       DRETURN(nullptr);
    }
 
@@ -282,13 +282,13 @@ int lStr2Nm(const char *str) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!(ns = cull_state_get_name_space())) {
-      DPRINTF(("name vector uninitialized !!\n"));
+      DPRINTF("name vector uninitialized !!\n");
       DRETURN(NoName);
    }
 
    for (nsp = ns; nsp->lower; nsp++) {
       if ((ret = _lStr2Nm(nsp, str)) != NoName) {
-         DPRINTF(("Name: %s Id: %d\n", str, ret));
+         DPRINTF("Name: %s Id: %d\n", str, ret);
          DRETURN(ret);
       }
    }
@@ -306,7 +306,7 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str) {
 
    if (nsp) {
       for (i = 0; i < nsp->size; i++) {
-         DPRINTF(("%d: %s\n", nsp->namev[i]));
+         DPRINTF("%d: %s\n", nsp->namev[i]);
          if (!strcmp(nsp->namev[i], str)) {
             found = 1;
             break;
@@ -425,7 +425,7 @@ lDescr *lCopyDescr(const lDescr *dp) {
    DRETURN(new_descr);
 
    error:
-   DPRINTF(("lCopyDescr failed\n"));
+   DPRINTF("lCopyDescr failed\n");
    DRETURN(nullptr);
 }
 
@@ -469,7 +469,7 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
       }
 
       if (!fp) {
-         DPRINTF((format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash, is_hash));
+         DPRINTF(format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash, is_hash);
       } else {
          fprintf(fp, format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash, is_hash);
       }
@@ -838,7 +838,7 @@ const char *lGetPosString(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetString() */
       /* makro with an invalid nm        */
-      DPRINTF(("!!!!!!!!!!!! lGetPosString() got an invalid pos !!!!!!!!!\n"));
+      DPRINTF("!!!!!!!!!!!! lGetPosString() got an invalid pos !!!!!!!!!\n");
       DRETURN(nullptr);
    }
 
@@ -871,7 +871,7 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
    if (pos < 0) {
       /* someone has called lGetString() */
       /* makro with an invalid nm        */
-      DPRINTF(("!!!!!!!!!!!!!! lGetPosHost() got an invalid pos !!!!!!!!!\n"));
+      DPRINTF("!!!!!!!!!!!!!! lGetPosHost() got an invalid pos !!!!!!!!!\n");
       DRETURN(nullptr);
    }
 
@@ -3587,12 +3587,12 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: nullptr ptr passed to lAddSubStr\n"));
+      DPRINTF("error: nullptr ptr passed to lAddSubStr\n");
       DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("nullptr descriptor in element not allowed !!!"));
+      DPRINTF("nullptr descriptor in element not allowed !!!");
       abort();
    }
 
@@ -3645,12 +3645,12 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: nullptr ptr passed to lAddSubHost\n"));
+      DPRINTF("error: nullptr ptr passed to lAddSubHost\n");
       DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("nullptr descriptor in element not allowed !!!"));
+      DPRINTF("nullptr descriptor in element not allowed !!!");
       abort();
    }
 
@@ -3700,7 +3700,7 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
-      DPRINTF(("error: nullptr ptr passed to lAddElemStr\n"));
+      DPRINTF("error: nullptr ptr passed to lAddElemStr\n");
       DRETURN(nullptr);
    }
 
@@ -3714,7 +3714,7 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lStringT) {
-      DPRINTF(("error: lAddElemStr called to field which is no lStringT type\n"));
+      DPRINTF("error: lAddElemStr called to field which is no lStringT type\n");
       CRITICAL(MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -3760,7 +3760,7 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
    DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
-      DPRINTF(("error: nullptr ptr passed to lAddElemHost\n"));
+      DPRINTF("error: nullptr ptr passed to lAddElemHost\n");
       DRETURN(nullptr);
    }
 
@@ -3774,7 +3774,7 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lHostT) {
-      DPRINTF(("error: lAddElemHost called to field which is no lHostT type\n"));
+      DPRINTF("error: lAddElemHost called to field which is no lHostT type\n");
       CRITICAL(MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -3857,7 +3857,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str) {
-      DPRINTF(("error: nullptr ptr passed to lDelElemStr\n"));
+      DPRINTF("error: nullptr ptr passed to lDelElemStr\n");
       DRETURN(0);
    }
 
@@ -3991,7 +3991,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemStrFirst\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemStrFirst\n");
       DRETURN(nullptr);
    }
 
@@ -4013,7 +4013,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF(("error: lGetElemStrFirst called to field which is no lStringT type\n"));
+      DPRINTF("error: lGetElemStrFirst called to field which is no lStringT type\n");
       CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -4082,7 +4082,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    }
 
    if (!str) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemStr\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemStr\n");
       DRETURN(nullptr);
    }
 
@@ -4102,7 +4102,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF(("error: lGetElemStrNext called to field which is no lStringT type\n"));
+      DPRINTF("error: lGetElemStrNext called to field which is no lStringT type\n");
       DRETURN(nullptr);
    }
 
@@ -4162,7 +4162,7 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemStr\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemStr\n");
       DRETURN(nullptr);
    }
 
@@ -4181,7 +4181,7 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF(("error: lGetElemStrLike called to field which is no lStringT type\n"));
+      DPRINTF("error: lGetElemStrLike called to field which is no lStringT type\n");
       CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -4236,12 +4236,12 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: nullptr ptr passed to lAddSubUlong\n"));
+      DPRINTF("error: nullptr ptr passed to lAddSubUlong\n");
       DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("nullptr descriptor in element not allowed !!!"));
+      DPRINTF("nullptr descriptor in element not allowed !!!");
       abort();
    }
 
@@ -4291,7 +4291,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
-      DPRINTF(("error: nullptr ptr passed to lAddElemUlong\n"));
+      DPRINTF("error: nullptr ptr passed to lAddElemUlong\n");
       DRETURN(nullptr);
    }
 
@@ -4383,7 +4383,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !val) {
-      DPRINTF(("error: nullptr ptr passed to lDelElemUlong\n"));
+      DPRINTF("error: nullptr ptr passed to lDelElemUlong\n");
       DRETURN(0);
    }
 
@@ -4645,12 +4645,12 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: nullptr ptr passed to lAddSubUlong64\n"));
+      DPRINTF("error: nullptr ptr passed to lAddSubUlong64\n");
       DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("nullptr descriptor in element not allowed !!!"));
+      DPRINTF("nullptr descriptor in element not allowed !!!");
       abort();
    }
 
@@ -4700,7 +4700,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
    DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
-      DPRINTF(("error: nullptr ptr passed to lAddElemUlong64\n"));
+      DPRINTF("error: nullptr ptr passed to lAddElemUlong64\n");
       DRETURN(nullptr);
    }
 
@@ -4792,7 +4792,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !val) {
-      DPRINTF(("error: nullptr ptr passed to lDelElemUlong64\n"));
+      DPRINTF("error: nullptr ptr passed to lDelElemUlong64\n");
       DRETURN(0);
    }
 
@@ -5091,7 +5091,7 @@ lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemCaseStr\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemCaseStr\n");
       DRETURN(nullptr);
    }
 
@@ -5113,7 +5113,7 @@ lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF((":::::::::::::::: lGetElemCaseStr - data type is not lStringT !!! :::::::"));
+      DPRINTF(":::::::::::::::: lGetElemCaseStr - data type is not lStringT !!! :::::::");
       CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -5195,7 +5195,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
 
    /* check for null pointers */
    if ((str == nullptr) || (lp == nullptr)) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemHostFirst\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemHostFirst\n");
       DRETURN(nullptr);
    }
 
@@ -5205,7 +5205,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    data_type = lGetPosType(listDescriptor, pos);
    if ((pos < 0) || (data_type != lHostT)) {
       if (data_type != lHostT) {
-         DPRINTF((":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n"));
+         DPRINTF(":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n");
       }
       CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
@@ -5281,7 +5281,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    /* check for null *iterator and */
    /* check for null pointers */
    if ((str == nullptr) || (lp == nullptr) || (*iterator == nullptr)) {
-      DPRINTF(("error: nullptr ptr passed to lGetElemHostNext\n"));
+      DPRINTF("error: nullptr ptr passed to lGetElemHostNext\n");
       DRETURN(nullptr);
    }
 
@@ -5392,7 +5392,7 @@ int lDelElemHost(lList **lpp, int nm, const char *str) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str) {
-      DPRINTF(("error: nullptr ptr passed to lDelElemHost\n"));
+      DPRINTF("error: nullptr ptr passed to lDelElemHost\n");
       DRETURN(0);
    }
 

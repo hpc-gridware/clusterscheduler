@@ -1147,7 +1147,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
             if (value != nullptr) {
                ret = job_parse_validation_level(&level, value, QSUB, &local_answer_list);
 
-               DPRINTF(("result of parsing is %d\n", ret));
+               DPRINTF("result of parsing is %d\n", ret);
    
             }
             if (ret) {
@@ -1229,15 +1229,15 @@ jsv_handle_result_command(lListElem *jsv, lList **answer_list, dstring *c, dstri
    message = sge_dstring_get_string(&m);
    if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0 && state != nullptr) {
       if (strcmp(state, "ACCEPT") == 0) {
-         DPRINTF(("Job is accepted\n"));
+         DPRINTF("Job is accepted\n");
          lSetBool(jsv, JSV_accept, true);
          lSetBool(jsv, JSV_done, true);
       } else if (strcmp(state, "CORRECT") == 0) {
-         DPRINTF(("Job is corrected\n"));
+         DPRINTF("Job is corrected\n");
          lSetBool(jsv, JSV_accept, true);
          lSetBool(jsv, JSV_done, true);
       } else if (strcmp(state, "REJECT") == 0) {
-         DPRINTF(("Job is rejected\n"));
+         DPRINTF("Job is rejected\n");
          if (message != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, 
                                     ANSWER_QUALITY_ERROR, message);
@@ -1248,7 +1248,7 @@ jsv_handle_result_command(lListElem *jsv, lList **answer_list, dstring *c, dstri
          lSetBool(jsv, JSV_accept, false);
          lSetBool(jsv, JSV_done, true);
       } else if (strcmp(state, "REJECT_WAIT") == 0) {
-         DPRINTF(("Job is rejected temporarily\n"));
+         DPRINTF("Job is rejected temporarily\n");
          if (message != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, 
                                     ANSWER_QUALITY_ERROR, message);
@@ -2385,7 +2385,7 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, dstring *c, dstring 
    var = sge_dstring_get_string(&variable);
    val = sge_dstring_get_string(&value);
 
-   DPRINTF(("got from JSV \"%s %s %s\"", mod, var, (val != nullptr) ? val : ""));
+   DPRINTF("got from JSV \"%s %s %s\"", mod, var, (val != nullptr) ? val : "");
 
    if (strcmp(var, "__JSV_TEST_RESULT") == 0) {
       lSetBool(jsv, JSV_test, true);
@@ -2515,7 +2515,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
       }
    }
    if (ret) {
-      DPRINTF(("JSV - START will be sent\n"));
+      DPRINTF("JSV - START will be sent\n");
       ret &= jsv_send_command(jsv, answer_list, "START");
    }
    if (ret) {
@@ -2526,18 +2526,18 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
       if (strcmp(lGetString(jsv, JSV_context), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
          if (atoi(getenv("SGE_JSV_TIMEOUT")) > 0) {
             jsv_timeout = atoi(getenv("SGE_JSV_TIMEOUT")); 
-            DPRINTF(("JSV_TIMEOUT value of %d s being used from environment variable\n", jsv_timeout));
+            DPRINTF("JSV_TIMEOUT value of %d s being used from environment variable\n", jsv_timeout);
          }         
       } else {
          jsv_timeout = mconf_get_jsv_timeout();
-         DPRINTF(("JSV_TIMEOUT value of %d s being used from qmaster parameter\n", jsv_timeout));
+         DPRINTF("JSV_TIMEOUT value of %d s being used from qmaster parameter\n", jsv_timeout);
       }
 
       lSetBool(jsv, JSV_done, false);
       lSetBool(jsv, JSV_soft_shutdown, true);
       while (!lGetBool(jsv, JSV_done)) {
          if (sge_get_gmt() - start_time > jsv_timeout) {
-            DPRINTF(("JSV - master waited longer than %d s to get response from JSV\n", jsv_timeout));
+            DPRINTF("JSV - master waited longer than %d s to get response from JSV\n", jsv_timeout);
             /*
              * In case of a timeout we try it a second time. In that case we kill
              * the old instance and start a new one before we continue
@@ -2545,18 +2545,18 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
              * automatically reject the job which should be verified.
              */
             if (do_retry) {
-               DPRINTF(("JSV - will retry verification\n")); 
+               DPRINTF("JSV - will retry verification\n");
                lSetBool(jsv, JSV_restart, false);
                lSetBool(jsv, JSV_accept, false);
                lSetBool(jsv, JSV_done, false);
-               DPRINTF(("JSV process will be stopped now\n"));
+               DPRINTF("JSV process will be stopped now\n");
                ret &= jsv_stop(jsv, answer_list, false);
                if (ret) {
-                  DPRINTF(("JSV process will be started now\n"));
+                  DPRINTF("JSV process will be started now\n");
                   ret &= jsv_start(jsv, answer_list);
                }
                if (ret) {
-                  DPRINTF(("JSV process gets START command\n"));
+                  DPRINTF("JSV process gets START command\n");
                   while (fscanf((FILE *)lGetRef(jsv, JSV_err), "%[^\n]\n", input) == 1) {
                      ERROR(MSG_JSV_LOGMSG_S, input);
                   }
@@ -2565,7 +2565,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                start_time = sge_get_gmt();
                do_retry = false;
             } else {
-               DPRINTF(("JSV - reject due to timeout in communication process\n")); 
+               DPRINTF("JSV - reject due to timeout in communication process\n");
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                        "got no response from JSV script " SFQ,
                                        lGetString(jsv, JSV_command));
@@ -2599,7 +2599,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                   const char *c;
                   int i = -1;
 
-                  DPRINTF(("JSV << \"%s\"\n", input));
+                  DPRINTF("JSV << \"%s\"\n", input);
 
                   jsv_split_commandline(input, &command, &sub_command, &args);
                   c = sge_dstring_get_string(&command);

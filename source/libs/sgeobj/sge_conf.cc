@@ -813,10 +813,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          requires MALLOC_TRACE in environment (see mtrace(3) under Linux) */
       if (enable_mtrace != mtrace_before) {
          if (enable_mtrace == true) {
-            DPRINTF(("ENABLE_MTRACE=true ---> mtrace()\n"));
+            DPRINTF("ENABLE_MTRACE=true ---> mtrace()\n");
             mtrace();
          } else {
-            DPRINTF(("ENABLE_MTRACE=false ---> muntrace()\n"));
+            DPRINTF("ENABLE_MTRACE=false ---> muntrace()\n");
             muntrace();
          }
       }
@@ -1089,73 +1089,73 @@ void sge_show_conf()
    DENTER(BASIS_LAYER);
  
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DPRINTF(("conf.execd_spool_dir        >%s<\n", Master_Config.execd_spool_dir));
-   DPRINTF(("conf.mailer                 >%s<\n", Master_Config.mailer));
-   DPRINTF(("conf.prolog                 >%s<\n", Master_Config.prolog));
-   DPRINTF(("conf.epilog                 >%s<\n", Master_Config.epilog));
-   DPRINTF(("conf.shell_start_mode       >%s<\n", Master_Config.shell_start_mode));
-   DPRINTF(("conf.login_shells           >%s<\n", Master_Config.login_shells));
-   DPRINTF(("conf.administrator_mail     >%s<\n", Master_Config.administrator_mail?Master_Config.administrator_mail:"none"));
-   DPRINTF(("conf.min_gid                >%u<\n", (unsigned) Master_Config.min_gid));
-   DPRINTF(("conf.min_uid                >%u<\n", (unsigned) Master_Config.min_uid));
-   DPRINTF(("conf.load_report_time       >%u<\n", (unsigned) Master_Config.load_report_time));
-   DPRINTF(("conf.max_unheard            >%u<\n", (unsigned) Master_Config.max_unheard));
-   DPRINTF(("conf.loglevel               >%u<\n", (unsigned) Master_Config.loglevel));     
-   DPRINTF(("conf.xterm                  >%s<\n", Master_Config.xterm?Master_Config.xterm:"none"));
-   DPRINTF(("conf.load_sensor            >%s<\n", Master_Config.load_sensor?Master_Config.load_sensor:"none"));
-   DPRINTF(("conf.enforce_project        >%s<\n", Master_Config.enforce_project?Master_Config.enforce_project:"none"));
-   DPRINTF(("conf.enforce_user           >%s<\n", Master_Config.enforce_user?Master_Config.enforce_user:"none"));
-   DPRINTF(("conf.set_token_cmd          >%s<\n", Master_Config.set_token_cmd?Master_Config.set_token_cmd:"none"));
-   DPRINTF(("conf.pag_cmd                >%s<\n", Master_Config.pag_cmd?Master_Config.pag_cmd:"none"));
-   DPRINTF(("conf.token_extend_time      >%u<\n", (unsigned) Master_Config.token_extend_time));
-   DPRINTF(("conf.shepherd_cmd           >%s<\n", Master_Config.shepherd_cmd?Master_Config.pag_cmd:"none"));
-   DPRINTF(("conf.qmaster_params         >%s<\n", Master_Config.qmaster_params?Master_Config.qmaster_params:"none"));
-   DPRINTF(("conf.execd_params           >%s<\n", Master_Config.execd_params?Master_Config.execd_params:"none"));
-   DPRINTF(("conf.gid_range              >%s<\n", Master_Config.gid_range?Master_Config.gid_range:"none")); 
-   DPRINTF(("conf.zombie_jobs            >%u<\n", (unsigned) Master_Config.zombie_jobs));
-   DPRINTF(("conf.qlogin_daemon          >%s<\n", Master_Config.qlogin_daemon?Master_Config.qlogin_daemon:"none"));
-   DPRINTF(("conf.qlogin_command         >%s<\n", Master_Config.qlogin_command?Master_Config.qlogin_command:"none"));
-   DPRINTF(("conf.rsh_daemon             >%s<\n", Master_Config.rsh_daemon?Master_Config.rsh_daemon:"none"));
-   DPRINTF(("conf.rsh_command            >%s<\n", Master_Config.rsh_command?Master_Config.rsh_command:"none"));
-   DPRINTF(("conf.jsv_url                >%s<\n", Master_Config.jsv_url?Master_Config.jsv_url:"none"));
-   DPRINTF(("conf.jsv_allowed_mod        >%s<\n", Master_Config.jsv_allowed_mod?Master_Config.jsv_allowed_mod:"none"));
-   DPRINTF(("conf.rlogin_daemon          >%s<\n", Master_Config.rlogin_daemon?Master_Config.rlogin_daemon:"none"));
-   DPRINTF(("conf.rlogin_command         >%s<\n", Master_Config.rlogin_command?Master_Config.rlogin_command:"none"));
-   DPRINTF(("conf.reschedule_unknown     >%u<\n", (unsigned) Master_Config.reschedule_unknown));
-   DPRINTF(("conf.max_aj_instances       >%u<\n", (unsigned) Master_Config.max_aj_instances));
-   DPRINTF(("conf.max_aj_tasks           >%u<\n", (unsigned) Master_Config.max_aj_tasks));
-   DPRINTF(("conf.max_u_jobs             >%u<\n", (unsigned) Master_Config.max_u_jobs));
-   DPRINTF(("conf.max_jobs               >%u<\n", (unsigned) Master_Config.max_jobs));
-   DPRINTF(("conf.max_advance_reservations >%u<\n", (unsigned) Master_Config.max_advance_reservations));
-   DPRINTF(("conf.reprioritize           >%u<\n", Master_Config.reprioritize));
-   DPRINTF(("conf.auto_user_oticket      >%u<\n", Master_Config.auto_user_oticket));
-   DPRINTF(("conf.auto_user_fshare       >%u<\n", Master_Config.auto_user_fshare));
-   DPRINTF(("conf.auto_user_default_project >%s<\n", Master_Config.auto_user_default_project));
-   DPRINTF(("conf.auto_user_delete_time  >%u<\n", Master_Config.auto_user_delete_time));
-   DPRINTF(("conf.delegated_file_staging >%s<\n", Master_Config.delegated_file_staging));
-   DPRINTF(("conf.libjvm_path >%s<\n", Master_Config.libjvm_path));
-   DPRINTF(("conf.additional_jvm_args >%s<\n", Master_Config.additional_jvm_args));
+   DPRINTF("conf.execd_spool_dir        >%s<\n", Master_Config.execd_spool_dir);
+   DPRINTF("conf.mailer                 >%s<\n", Master_Config.mailer);
+   DPRINTF("conf.prolog                 >%s<\n", Master_Config.prolog);
+   DPRINTF("conf.epilog                 >%s<\n", Master_Config.epilog);
+   DPRINTF("conf.shell_start_mode       >%s<\n", Master_Config.shell_start_mode);
+   DPRINTF("conf.login_shells           >%s<\n", Master_Config.login_shells);
+   DPRINTF("conf.administrator_mail     >%s<\n", Master_Config.administrator_mail?Master_Config.administrator_mail:"none");
+   DPRINTF("conf.min_gid                >%u<\n", (unsigned) Master_Config.min_gid);
+   DPRINTF("conf.min_uid                >%u<\n", (unsigned) Master_Config.min_uid);
+   DPRINTF("conf.load_report_time       >%u<\n", (unsigned) Master_Config.load_report_time);
+   DPRINTF("conf.max_unheard            >%u<\n", (unsigned) Master_Config.max_unheard);
+   DPRINTF("conf.loglevel               >%u<\n", (unsigned) Master_Config.loglevel);
+   DPRINTF("conf.xterm                  >%s<\n", Master_Config.xterm?Master_Config.xterm:"none");
+   DPRINTF("conf.load_sensor            >%s<\n", Master_Config.load_sensor?Master_Config.load_sensor:"none");
+   DPRINTF("conf.enforce_project        >%s<\n", Master_Config.enforce_project?Master_Config.enforce_project:"none");
+   DPRINTF("conf.enforce_user           >%s<\n", Master_Config.enforce_user?Master_Config.enforce_user:"none");
+   DPRINTF("conf.set_token_cmd          >%s<\n", Master_Config.set_token_cmd?Master_Config.set_token_cmd:"none");
+   DPRINTF("conf.pag_cmd                >%s<\n", Master_Config.pag_cmd?Master_Config.pag_cmd:"none");
+   DPRINTF("conf.token_extend_time      >%u<\n", (unsigned) Master_Config.token_extend_time);
+   DPRINTF("conf.shepherd_cmd           >%s<\n", Master_Config.shepherd_cmd?Master_Config.pag_cmd:"none");
+   DPRINTF("conf.qmaster_params         >%s<\n", Master_Config.qmaster_params?Master_Config.qmaster_params:"none");
+   DPRINTF("conf.execd_params           >%s<\n", Master_Config.execd_params?Master_Config.execd_params:"none");
+   DPRINTF("conf.gid_range              >%s<\n", Master_Config.gid_range?Master_Config.gid_range:"none");
+   DPRINTF("conf.zombie_jobs            >%u<\n", (unsigned) Master_Config.zombie_jobs);
+   DPRINTF("conf.qlogin_daemon          >%s<\n", Master_Config.qlogin_daemon?Master_Config.qlogin_daemon:"none");
+   DPRINTF("conf.qlogin_command         >%s<\n", Master_Config.qlogin_command?Master_Config.qlogin_command:"none");
+   DPRINTF("conf.rsh_daemon             >%s<\n", Master_Config.rsh_daemon?Master_Config.rsh_daemon:"none");
+   DPRINTF("conf.rsh_command            >%s<\n", Master_Config.rsh_command?Master_Config.rsh_command:"none");
+   DPRINTF("conf.jsv_url                >%s<\n", Master_Config.jsv_url?Master_Config.jsv_url:"none");
+   DPRINTF("conf.jsv_allowed_mod        >%s<\n", Master_Config.jsv_allowed_mod?Master_Config.jsv_allowed_mod:"none");
+   DPRINTF("conf.rlogin_daemon          >%s<\n", Master_Config.rlogin_daemon?Master_Config.rlogin_daemon:"none");
+   DPRINTF("conf.rlogin_command         >%s<\n", Master_Config.rlogin_command?Master_Config.rlogin_command:"none");
+   DPRINTF("conf.reschedule_unknown     >%u<\n", (unsigned) Master_Config.reschedule_unknown);
+   DPRINTF("conf.max_aj_instances       >%u<\n", (unsigned) Master_Config.max_aj_instances);
+   DPRINTF("conf.max_aj_tasks           >%u<\n", (unsigned) Master_Config.max_aj_tasks);
+   DPRINTF("conf.max_u_jobs             >%u<\n", (unsigned) Master_Config.max_u_jobs);
+   DPRINTF("conf.max_jobs               >%u<\n", (unsigned) Master_Config.max_jobs);
+   DPRINTF("conf.max_advance_reservations >%u<\n", (unsigned) Master_Config.max_advance_reservations);
+   DPRINTF("conf.reprioritize           >%u<\n", Master_Config.reprioritize);
+   DPRINTF("conf.auto_user_oticket      >%u<\n", Master_Config.auto_user_oticket);
+   DPRINTF("conf.auto_user_fshare       >%u<\n", Master_Config.auto_user_fshare);
+   DPRINTF("conf.auto_user_default_project >%s<\n", Master_Config.auto_user_default_project);
+   DPRINTF("conf.auto_user_delete_time  >%u<\n", Master_Config.auto_user_delete_time);
+   DPRINTF("conf.delegated_file_staging >%s<\n", Master_Config.delegated_file_staging);
+   DPRINTF("conf.libjvm_path >%s<\n", Master_Config.libjvm_path);
+   DPRINTF("conf.additional_jvm_args >%s<\n", Master_Config.additional_jvm_args);
 
    for_each_ep(ep, Master_Config.user_lists) {
-      DPRINTF(("%s             >%s<\n", 
+      DPRINTF("%s             >%s<\n",
               lPrev(ep)?"             ":"conf.user_lists", 
-              lGetString(ep, US_name)));
+              lGetString(ep, US_name));
    }
    for_each_ep(ep, Master_Config.xuser_lists) {
-      DPRINTF(("%s            >%s<\n", 
+      DPRINTF("%s            >%s<\n",
               lPrev(ep)?"              ":"conf.xuser_lists", 
-              lGetString(ep, US_name)));
+              lGetString(ep, US_name));
    }
 
    for_each_ep(ep, Master_Config.projects) {
-      DPRINTF(("%s             >%s<\n", 
+      DPRINTF("%s             >%s<\n",
               lPrev(ep)?"             ":"conf.projects", 
-              lGetString(ep, PR_name)));
+              lGetString(ep, PR_name));
    }
    for_each_ep(ep, Master_Config.xprojects) {
-      DPRINTF(("%s            >%s<\n", 
+      DPRINTF("%s            >%s<\n",
               lPrev(ep)?"              ":"conf.xprojects", 
-              lGetString(ep, PR_name)));
+              lGetString(ep, PR_name));
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -2376,7 +2376,7 @@ int mconf_get_accounting_flush_time(void) {
    /* If the accounting_flush_time is not set, use the reporting_flush_time
     * instead. */
    else {
-      DPRINTF(("accounting_flush_time unset; using flush_time\n"));
+      DPRINTF("accounting_flush_time unset; using flush_time\n");
       ret = reporting_flush_time;
    }
 

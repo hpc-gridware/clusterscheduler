@@ -92,7 +92,7 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, cons
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       const char *s;
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
 
       s = lGetString(qep, nm);
       if (s) {
@@ -154,7 +154,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_nam
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
       lSetString(new_ep, nm, lGetString(qep, nm));
    }
 
@@ -198,7 +198,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char
    if ((pos = lGetPosViaElem(qep, nm, SGE_NO_ABORT)) >= 0) {
       const char *s;
 
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
 
       dataType = lGetPosType(lGetElemDescr(qep), pos);
       switch (dataType) {
@@ -219,7 +219,7 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char
             lSetHost(new_ep, nm, s);
             break;
          default:
-            DPRINTF(("unexpected data type\n"));
+            DPRINTF("unexpected data type\n");
             DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -257,7 +257,7 @@ attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) 
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
       lSetBool(new_ep, nm, lGetBool(qep, nm));
    }
 
@@ -293,7 +293,7 @@ int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_n
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
       lSetUlong(new_ep, nm, lGetUlong(qep, nm));
    }
 
@@ -330,7 +330,7 @@ attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
       lSetDouble(new_ep, nm, lGetDouble(qep, nm));
    }
 
@@ -372,7 +372,7 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
       const char *str;
 
       str = lGetString(qep, nm);
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
 
       if (!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)");
@@ -422,12 +422,12 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
       const char *str;
 
       str = lGetString(qep, nm);
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
 
       if (str != nullptr) {
          /* don't allow infinity for these parameters */
          if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
-            DPRINTF(("ERROR! Infinity value for \"%s\"\n", attr_name));
+            DPRINTF("ERROR! Infinity value for \"%s\"\n", attr_name);
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SIG_DIGIT_SS, attr_name, str);
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ESYNTAX);
@@ -749,7 +749,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
             next_elem = lNextRW(elem);
             mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
             if (mod_elem == nullptr) {
-               DPRINTF(("Removing attribute list for " SFQ "\n", name));
+               DPRINTF("Removing attribute list for " SFQ "\n", name);
                lRemoveElem(org_list, &elem);
             }
          }

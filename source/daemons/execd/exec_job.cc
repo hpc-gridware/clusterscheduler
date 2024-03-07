@@ -381,9 +381,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_task_id = lGetString(petep, PET_id);
    }
 
-   DPRINTF(("job: %ld jatask: %ld petask: %s\n",
-           job_id, ja_task_id,
-           pe_task_id != nullptr ? pe_task_id : "none"));
+   DPRINTF("job: %ld jatask: %ld petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
 
    master_q = responsible_queue(jep, jatep, petep);
    SGE_ASSERT((master_q));
@@ -428,8 +426,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    /* increment used slots */
-   DPRINTF(("%s: used slots increased from %d to %d\n", lGetString(master_q, QU_full_name),
-           used_slots, used_slots + 1));
+   DPRINTF("%s: used slots increased from %d to %d\n", lGetString(master_q, QU_full_name), used_slots, used_slots + 1);
    qinstance_set_slots_used(master_q, used_slots + 1);
 
    nhosts = get_nhosts(gdil);
@@ -1025,7 +1022,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       /* parse range add create list */
       gid_range = mconf_get_gid_range();
-      DPRINTF(("gid_range = %s\n", gid_range));
+      DPRINTF("gid_range = %s\n", gid_range);
       range_list_parse_from_string(&rlp, &alp, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
@@ -1147,20 +1144,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                 job_is_array(jep) ? ja_task_id : 0,
                 SGE_STDIN, stdin_path, SGE_PATH_MAX);
 
-   DPRINTF(("fs_stdin_host=%s\n", fs_stdin_host));
-   DPRINTF(("fs_stdin_path=%s\n", fs_stdin_path));
-   DPRINTF(("fs_stdin_tmp_path=%s/%s\n", tmpdir, fs_stdin_file ? fs_stdin_file : ""));
-   DPRINTF(("fs_stdin_file_staging=%d\n", bInputFileStaging));
+   DPRINTF("fs_stdin_host=%s\n", fs_stdin_host);
+   DPRINTF("fs_stdin_path=%s\n", fs_stdin_path);
+   DPRINTF("fs_stdin_tmp_path=%s/%s\n", tmpdir, fs_stdin_file ? fs_stdin_file : "");
+   DPRINTF("fs_stdin_file_staging=%d\n", bInputFileStaging);
 
-   DPRINTF(("fs_stdout_host=%s\n", fs_stdout_host));
-   DPRINTF(("fs_stdout_path=%s\n", fs_stdout_path));
-   DPRINTF(("fs_stdout_tmp_path=%s/%s\n", tmpdir, fs_stdout_file ? fs_stdout_file : ""));
-   DPRINTF(("fs_stdout_file_staging=%d\n", bOutputFileStaging));
+   DPRINTF("fs_stdout_host=%s\n", fs_stdout_host);
+   DPRINTF("fs_stdout_path=%s\n", fs_stdout_path);
+   DPRINTF("fs_stdout_tmp_path=%s/%s\n", tmpdir, fs_stdout_file ? fs_stdout_file : "");
+   DPRINTF("fs_stdout_file_staging=%d\n", bOutputFileStaging);
 
-   DPRINTF(("fs_stderr_host=%s\n", fs_stderr_host));
-   DPRINTF(("fs_stderr_path=%s\n", fs_stderr_path));
-   DPRINTF(("fs_stderr_tmp_path=%s/%s\n", tmpdir, fs_stderr_file ? fs_stderr_file : ""));
-   DPRINTF(("fs_stderr_file_staging=%d\n", bErrorFileStaging));
+   DPRINTF("fs_stderr_host=%s\n", fs_stderr_host);
+   DPRINTF("fs_stderr_path=%s\n", fs_stderr_path);
+   DPRINTF("fs_stderr_tmp_path=%s/%s\n", tmpdir, fs_stderr_file ? fs_stderr_file : "");
+   DPRINTF("fs_stderr_file_staging=%d\n", bErrorFileStaging);
 
    fprintf(fp, "fs_stdin_host=%s\n", fs_stdin_host);
    fprintf(fp, "fs_stdin_path=%s\n", fs_stdin_path);
@@ -1184,10 +1181,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    fprintf(fp, "tmpdir=%s\n", tmpdir);
 
-   DPRINTF(("stdout_path=%s\n", stdout_path));
-   DPRINTF(("stderr_path=%s\n", stderr_path));
-   DPRINTF(("stdin_path=%s\n", stdin_path));
-   DPRINTF(("merge_stderr=%d\n", (int) lGetBool(jep, JB_merge_stderr)));
+   DPRINTF("stdout_path=%s\n", stdout_path);
+   DPRINTF("stderr_path=%s\n", stderr_path);
+   DPRINTF("stdin_path=%s\n", stdin_path);
+   DPRINTF("merge_stderr=%d\n", (int) lGetBool(jep, JB_merge_stderr));
 
    {
       u_long32 jb_now = lGetUlong(jep, JB_type);
@@ -1456,14 +1453,14 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             JOB_TYPE_IS_QRSH(jb_now) ||
             JOB_TYPE_IS_QRLOGIN(jb_now))) {
          char *xterm = mconf_get_xterm();
-         DPRINTF(("interactive job\n"));
+         DPRINTF("interactive job\n");
          /*
          ** get xterm configuration value
          */
 
          if (xterm) {
             fprintf(fp, "exec_file=%s\n", xterm);
-            DPRINTF(("exec_file=%s\n", xterm));
+            DPRINTF("exec_file=%s\n", xterm);
          } else {
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOXTERM);
             FCLOSE(fp);
@@ -1914,7 +1911,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       putenv(ccname);
    }
 
-   DPRINTF(("**********************CHILD*********************\n"));
+   DPRINTF("**********************CHILD*********************\n");
    shepherd_name = SGE_SHEPHERD;
    snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
 
@@ -1922,20 +1919,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    shepherd_cmd = mconf_get_shepherd_cmd();
    if (shepherd_cmd && strlen(shepherd_cmd) &&
        strcasecmp(shepherd_cmd, "none")) {
-      DPRINTF(("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
+      DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name)));
+              lGetString(master_q, QU_full_name));
       execlp(shepherd_cmd, ps_name, nullptr);
    } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
-      DPRINTF(("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
+      DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name)));
+              lGetString(master_q, QU_full_name));
       execlp(dce_wrapper_cmd, ps_name, nullptr);
    } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
               !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
-      DPRINTF(("CHILD - About to exec ->%s< under queue -<%s<\n",
+      DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name)));
+              lGetString(master_q, QU_full_name));
 
       if (ISTRACE)
          execlp(shepherd_path, ps_name, nullptr);
@@ -1944,8 +1941,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    } else {
       char commandline[2048];
 
-      DPRINTF(("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name)));
+      DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
+              lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
       if (ISTRACE) {
          snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
       } else {
@@ -2008,8 +2005,7 @@ static int ck_login_sh(char *shell) {
       }
 
       ret = strncmp(cp, shell, strlen(shell));
-      DPRINTF(("strncmp(\"%s\", \"%s\", %d) = %d\n",
-              cp, shell, strlen(shell), ret));
+      DPRINTF("strncmp(\"%s\", \"%s\", %d) = %d\n", cp, shell, strlen(shell), ret);
       if (!ret) {
          sge_free(&login_shells);
          DRETURN(1);
@@ -2268,7 +2264,7 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
 
       } else {
          /* there was a problem allocating the cores */
-         DPRINTF(("ERROR: Couldn't allocate cores with respect to binding request!"));
+         DPRINTF("ERROR: Couldn't allocate cores with respect to binding request!");
          sge_dstring_append(result, "nullptr");
          retval = false;
       }
@@ -2295,7 +2291,7 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
 
       } else {
          /* couldn't allocate cores */
-         DPRINTF(("ERROR: Couldn't allocate cores with respect to binding request!"));
+         DPRINTF("ERROR: Couldn't allocate cores with respect to binding request!");
          sge_dstring_append(result, "nullptr");
          retval = false;
       }
@@ -2363,7 +2359,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
          strategy. */
 
       /* get the start socket and start core which was a submission parameter */
-      DPRINTF(("Get user defined starting point for binding (socket, core)"));
+      DPRINTF("Get user defined starting point for binding (socket, core)");
       first_socket = (int) lGetUlong(binding_elem, BN_parameter_socket_offset);
       first_core = (int) lGetUlong(binding_elem, BN_parameter_core_offset);
    }
@@ -2386,7 +2382,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
    } else {
       /* it was not possible to fit the binding strategy on host 
          because it is occupied already or any other reason */
-      DPRINTF(("ERROR: couldn't allocate cores with respect to binding request"));
+      DPRINTF("ERROR: couldn't allocate cores with respect to binding request");
       sge_dstring_append(result, "nullptr");
       retval = false;
    }
@@ -2666,7 +2662,7 @@ static bool linear_automatic_solaris(dstring* result, const lListElem* binding_e
          /* free the cores occupied by this job because we couldn't generate processor set */
          free_topology(topo_by_job, topo_by_job_length);
 
-         DPRINTF(("Couldn't create processor set"));
+         DPRINTF("Couldn't create processor set");
 
          retval = false;
       } else {
@@ -2765,11 +2761,11 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       automatically */
    if (automatic == false) {
       /* get the start socket and start core which was a submission parameter */
-      DPRINTF(("Get user defined starting point for binding (socket, core)"));
+      DPRINTF("Get user defined starting point for binding (socket, core)");
       first_socket = (int) lGetUlong(binding_elem, BN_parameter_socket_offset);
       first_core = (int) lGetUlong(binding_elem, BN_parameter_core_offset);
    } else {
-      DPRINTF(("Do determine starting point automatically"));
+      DPRINTF("Do determine starting point automatically");
    }
 
    /* try to allocate first core and first socket */
@@ -2784,11 +2780,11 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       if (automatic == false && (first_socket != used_first_socket 
             || first_core != used_first_core)) {
          /* we've a bug */ 
-         DPRINTF(("The starting point for binding is not like the user specified!"));
+         DPRINTF("The starting point for binding is not like the user specified!");
       }
 
       /* we found a socket and a core we can use as start point */
-      DPRINTF(("Found a socket and a core as starting point for binding"));
+      DPRINTF("Found a socket and a core as starting point for binding");
             
       /* 4. create processor set */
 
@@ -2807,7 +2803,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
          /* free the cores occupied by this job because we couldn't generate processor set */
          free_topology(topo_by_job, topo_by_job_length);
 
-         DPRINTF(("Couldn't create processor set"));
+         DPRINTF("Couldn't create processor set");
 
          retval = false;
       } else {
@@ -2831,7 +2827,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       
       snprintf(err_str, err_length, "binding: strategy does not fit on execution host");
 
-      DPRINTF(("Didn't find socket,core to start binding with"));
+      DPRINTF("Didn't find socket,core to start binding with");
       retval = false; 
    }
 

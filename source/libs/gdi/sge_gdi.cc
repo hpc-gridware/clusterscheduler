@@ -202,7 +202,7 @@ gdi_get_act_master_host(bool reread) {
 
       if (gdi_data_get_master_host() == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= 30) {
          /* re-read act qmaster file (max. every 30 seconds) */
-         DPRINTF(("re-read actual qmaster file\n"));
+         DPRINTF("re-read actual qmaster file\n");
          gdi_data_set_timestamp_qmaster_file(now);
 
          if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str, sizeof(err_str)) == -1) {
@@ -213,7 +213,7 @@ gdi_get_act_master_host(bool reread) {
             DRETURN(nullptr);
          }
          error_already_logged = false;
-         DPRINTF(("(re-)reading act_qmaster file. Got master host \"%s\"\n", master_name));
+         DPRINTF("(re-)reading act_qmaster file. Got master host \"%s\"\n", master_name);
          /*
          ** TODO: thread locking needed here ?
          */
@@ -249,8 +249,7 @@ gdi_is_alive(lList **answer_list) {
    cl_com_append_known_endpoint_from_name((char *) comp_host, (char *) comp_name, comp_id,
                                           (int)comp_port, CL_CM_AC_DISABLED, true);
 
-   DPRINTF(("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n",
-            comp_host ? comp_host : "", comp_name ? comp_name : "", comp_id));
+   DPRINTF("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n", comp_host ? comp_host : "", comp_name ? comp_name : "", comp_id);
    cl_ret = cl_commlib_get_endpoint_status(handle, (char *) comp_host, (char *) comp_name, comp_id, &status);
    if (cl_ret != CL_RETVAL_OK) {
 #if 0
@@ -655,11 +654,7 @@ sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffe
    if (i != CL_RETVAL_OK) {
       if (i != CL_RETVAL_NO_MESSAGE) {
          /* This if for errors */
-         DPRINTF((SGE_EVENT, MSG_GDI_RECEIVEMESSAGEFROMCOMMPROCFAILED_SISS,
-                 (commproc[0] ? commproc : "any"),
-                 (int) usid,
-                 (commproc[0] ? commproc : "any"),
-                 cl_get_error_text(i)));
+         DPRINTF(SGE_EVENT, MSG_GDI_RECEIVEMESSAGEFROMCOMMPROCFAILED_SISS, (commproc[0] ? commproc : "any"), (int) usid, (commproc[0] ? commproc : "any"), cl_get_error_text(i));
       }
       cl_com_free_message(&message);
       cl_com_free_endpoint(&sender);
@@ -905,7 +900,7 @@ bool sge_gdi_check_permission(lList **alpp, int option) {
    lList *permList = nullptr;
    lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
    if (permList == nullptr) {
-      DPRINTF(("Permlist is nullptr\n"));
+      DPRINTF("Permlist is nullptr\n");
       if (alpp != nullptr) {
          if (*alpp == nullptr) {
             *alpp = alp;
@@ -917,7 +912,7 @@ bool sge_gdi_check_permission(lList **alpp, int option) {
       DRETURN(false);
    } else {
       if (permList->first == nullptr) {
-         DPRINTF(("Permlist has no entries\n"));
+         DPRINTF("Permlist has no entries\n");
          failed_checks++;
       } else {
          /* check permissions */
@@ -928,7 +923,7 @@ bool sge_gdi_check_permission(lList **alpp, int option) {
             if (value != 1) {
                failed_checks++;
             }
-            DPRINTF(("MANAGER_CHECK: %ld\n", value));
+            DPRINTF("MANAGER_CHECK: %ld\n", value);
          }
 
          /* operator check */
@@ -937,7 +932,7 @@ bool sge_gdi_check_permission(lList **alpp, int option) {
             if (value != 1) {
                failed_checks++;
             }
-            DPRINTF(("OPERATOR_CHECK: %ld\n", value));
+            DPRINTF("OPERATOR_CHECK: %ld\n", value);
          }
 
       }
@@ -972,7 +967,7 @@ gdi_send_message_pb(int synchron, const char *tocomproc, int toid, const char *t
    DENTER(GDI_LAYER);
    int ret;
    if (!pb) {
-      DPRINTF(("no pointer for sge_pack_buffer\n"));
+      DPRINTF("no pointer for sge_pack_buffer\n");
       ret = gdi_send_message(synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
       DRETURN(ret);
    }
@@ -1044,7 +1039,7 @@ gdi_send_message(int synchron, const char *tocomproc, int toid, const char *toho
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", tocomproc);
          if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
-            DPRINTF(("using communication lib with SSL framework (execd_handle)\n"));
+            DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
          }
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
@@ -1139,7 +1134,7 @@ gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", fromcommproc);
          if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
-            DPRINTF(("using communication lib with SSL framework (execd_handle)\n"));
+            DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
          }
 
@@ -1270,12 +1265,12 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
       ret = sge_resolve_host(hep, EH_name);
 
       if (ret != CL_RETVAL_OK) {
-         DPRINTF(("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret)));
+         DPRINTF("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret));
          lFreeElem(&hep);
          ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, config_name);
          DRETURN(-2);
       }
-      DPRINTF(("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name)));
+      DPRINTF("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name));
 
       if (sge_get_com_error_flag(me, SGE_COM_ACCESS_DENIED, false) == true) {
          lFreeElem(&hep);
@@ -1299,11 +1294,11 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
        * they might otherwise send global twice
        */
       where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
-      DPRINTF(("requesting global\n"));
+      DPRINTF("requesting global\n");
    } else {
       where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name,
                      lGetHost(hep, EH_name));
-      DPRINTF(("requesting global and %s\n", lGetHost(hep, EH_name)));
+      DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
    }
    what = lWhat("%T(ALL)", CONF_Type);
    alp = sge_gdi(SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
@@ -1379,7 +1374,7 @@ int gdi_wait_for_conf(lList **conf_list) {
     * for better performance retrieve 2 configurations
     * in one gdi call
     */
-   DPRINTF(("qualified hostname: %s\n", qualified_hostname));
+   DPRINTF("qualified hostname: %s\n", qualified_hostname);
 
    while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
       if (ret == -6 || ret == -7) {
@@ -1410,14 +1405,14 @@ int gdi_wait_for_conf(lList **conf_list) {
       u_long32 now = sge_get_gmt();
       if (now - last_qmaster_file_read >= 30) {
          gdi_get_act_master_host(true);
-         DPRINTF(("re-read actual qmaster file\n"));
+         DPRINTF("re-read actual qmaster file\n");
          last_qmaster_file_read = now;
       }
    }
 
    ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
    if (ret) {
-      DPRINTF(("Error %d merging configuration \"%s\"\n", ret, qualified_hostname));
+      DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
    }
 
    /*
@@ -1452,7 +1447,7 @@ int gdi_get_merged_configuration(lList **conf_list) {
 
    DENTER(GDI_LAYER);
 
-   DPRINTF(("qualified hostname: %s\n", qualified_hostname));
+   DPRINTF("qualified hostname: %s\n", qualified_hostname);
    ret = gdi_get_configuration(qualified_hostname, &global, &local);
    if (ret) {
       ERROR(MSG_CONF_NOREADCONF_IS, ret, qualified_hostname);
@@ -1732,7 +1727,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
             if (sge_gdi_communication_error.com_endpoint_not_unique == false) {
                /* counts endpoint not unique errors (TODO: workaround for BT: 6350264, IZ: 1893) */
                /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 endpoint not unique */
-               DPRINTF(("got endpint not unique"));
+               DPRINTF("got endpint not unique");
                gettimeofday(&now, nullptr);
                if ((now.tv_sec - sge_gdi_communication_error.com_endpoint_not_unique_time) >
                    (3 * CL_DEFINE_READ_TIMEOUT)) {

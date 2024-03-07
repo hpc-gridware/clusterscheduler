@@ -132,7 +132,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
    
-   DPRINTF(("%s\n", event_text(event, &buffer_wrapper)));
+   DPRINTF("%s\n", event_text(event, &buffer_wrapper));
    if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
       u_long32 event_type = lGetUlong(event, ET_type);
       u_long32 timestamp = lGetUlong(event, ET_timestamp);

@@ -651,7 +651,7 @@ bool prof_stop_measurement(prof_level level, dstring *error) {
 
 #if 0
             if (time < (utime + stime)) {
-               DPRINTF(("---> utime + stime > time, difference is %d clock ticks\n", (utime + stime) - time));
+               DPRINTF("---> utime + stime > time, difference is %d clock ticks\n", (utime + stime) - time);
             }
 #endif
             theInfo[thread_num][level].total += time;

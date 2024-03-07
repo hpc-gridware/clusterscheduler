@@ -254,7 +254,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
       sge_dstring_free(&crl_file);
       DRETURN(-1);
    }
-   DPRINTF(("ca_key_file: %s\n", sge_dstring_get_string(&ca_key_file)));
+   DPRINTF("ca_key_file: %s\n", sge_dstring_get_string(&ca_key_file));
 
 	sge_dstring_sprintf(&ca_cert_file, "%s/%s", sge_dstring_get_string(&ca_root), CaCert);
 
@@ -273,10 +273,10 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
       sge_dstring_free(&crl_file);
       DRETURN(-1);
    }
-   DPRINTF(("ca_cert_file: %s\n", sge_dstring_get_string(&ca_cert_file)));
+   DPRINTF("ca_cert_file: %s\n", sge_dstring_get_string(&ca_cert_file));
 
 	sge_dstring_sprintf(&crl_file, "%s/%s", sge_dstring_get_string(&ca_root), CrlFile);
-   DPRINTF(("crl_file: %s\n", sge_dstring_get_string(&crl_file)));
+   DPRINTF("crl_file: %s\n", sge_dstring_get_string(&crl_file));
 
    /*
    ** determine user directory: 
@@ -353,12 +353,12 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
       sge_dstring_free(&crl_file);
       DRETURN(-1);
    }
-   DPRINTF(("key_file: %s\n", sge_dstring_get_string(&key_file)));
+   DPRINTF("key_file: %s\n", sge_dstring_get_string(&key_file));
 
    if (SGE_STAT(sge_dstring_get_string(&rand_file), &sbuf)) { 
       WARNING(MSG_SEC_RANDFILENOTFOUND_S, sge_dstring_get_string(&rand_file));
    } else {
-      DPRINTF(("rand_file: %s\n", sge_dstring_get_string(&rand_file)));
+      DPRINTF("rand_file: %s\n", sge_dstring_get_string(&rand_file));
    }   
 
    if ((sge_certfile = getenv("SGE_CERTFILE"))) {
@@ -386,10 +386,10 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
       sge_dstring_free(&crl_file);
       DRETURN(-1);
    }
-   DPRINTF(("cert_file: %s\n", sge_dstring_get_string(&cert_file)));
+   DPRINTF("cert_file: %s\n", sge_dstring_get_string(&cert_file));
 
    sge_dstring_sprintf(&reconnect_file, "%s/%s", sge_dstring_get_string(&userdir), ReconnectFile);
-   DPRINTF(("reconnect_file: %s\n", sge_dstring_get_string(&reconnect_file)));
+   DPRINTF("reconnect_file: %s\n", sge_dstring_get_string(&reconnect_file));
     
    sge_dstring_free(&userdir);
    sge_dstring_free(&user_local_dir);
@@ -398,11 +398,11 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
    sge_dstring_free(&ca_local_root);
 
    if (sec_ssl_setup_config != nullptr) {
-      DPRINTF(("deleting old ssl configuration setup ...\n"));
+      DPRINTF("deleting old ssl configuration setup ...\n");
       cl_com_free_ssl_setup(&sec_ssl_setup_config);
    }
 
-   DPRINTF(("creating ssl configuration setup ...\n"));
+   DPRINTF("creating ssl configuration setup ...\n");
    commlib_error = cl_com_create_ssl_setup(&sec_ssl_setup_config,
                                            CL_SSL_PEM_FILE,                         /* ssl_cert_mode        */
                                            CL_SSL_v23,                              /* ssl_method           */
@@ -418,14 +418,14 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
                                            ssl_cert_verify_func);                   /* ssl_verify_func (cl_ssl_verify_func_t)  */
    if ( commlib_error != CL_RETVAL_OK) {
       return_value = -1;
-      DPRINTF(("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(commlib_error)));
+      DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(commlib_error));
    }
 
 
    commlib_error = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
    if ( commlib_error != CL_RETVAL_OK) {
       return_value = -1;
-      DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(commlib_error)));
+      DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(commlib_error));
    }
 
    SEC_UNLOCK_SSL_SETUP();
@@ -458,7 +458,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     */
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ssl_cert_verify_func()\n"));
+   DPRINTF("ssl_cert_verify_func()\n");
 
    if (value == nullptr) {
       /* This should never happen */
@@ -469,7 +469,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
    if (service_mode == true) {
       switch(mode) {
          case CL_SSL_PEER_NAME: {
-            DPRINTF(("local service got certificate from peer \"%s\"\n", value));
+            DPRINTF("local service got certificate from peer \"%s\"\n", value);
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
                DRETURN(false);
@@ -478,7 +478,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             break;
          }
          case CL_SSL_USER_NAME: {
-            DPRINTF(("local service got certificate from user \"%s\"\n", value));
+            DPRINTF("local service got certificate from user \"%s\"\n", value);
 #if 0
             if (strcmp(value,"") != 0) {
                DRETURN(false);
@@ -490,7 +490,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
    } else {
       switch(mode) {
          case CL_SSL_PEER_NAME: {
-            DPRINTF(("local client got certificate from peer \"%s\"\n", value));
+            DPRINTF("local client got certificate from peer \"%s\"\n", value);
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
                DRETURN(false);
@@ -499,7 +499,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             break;
          }
          case CL_SSL_USER_NAME: {
-            DPRINTF(("local client got certificate from user \"%s\"\n", value));
+            DPRINTF("local client got certificate from user \"%s\"\n", value);
 #if 0
             if (strcmp(value,"") != 0) {
                DRETURN(false);
@@ -553,9 +553,9 @@ int sge_security_initialize(const char *progname, const char *username)
 
       dummy_string = sge_dummy_sec_string;
       if (dummy_string != nullptr) {
-         DPRINTF(("secure dummy string: %s\n", dummy_string));
+         DPRINTF("secure dummy string: %s\n", dummy_string);
       } else {
-         DPRINTF(("secure dummy string not available\n"));
+         DPRINTF("secure dummy string not available\n");
       }
 
       if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
@@ -1266,8 +1266,8 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle)
    sge_strlcpy(username, component_get_username(), sizeof(username));
    sge_strlcpy(groupname, component_get_groupname(), sizeof(groupname));
 
-   DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
-            username, uid, groupname, gid));
+   DPRINTF("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
+           username, uid, groupname, gid);
 
    snprintf(buffer, sizeof(buffer), pid_t_fmt " " pid_t_fmt " %s %s", uid, gid, username, groupname);
    if (sge_encrypt(buffer, sizeof(buffer), obuffer, sizeof(obuffer))) {
@@ -1346,7 +1346,7 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
             sge_strlcpy(user, userbuf, user_len);
             sge_strlcpy(group, groupbuf, group_len);
             if ((strlen(user) != 0) && (strlen(group) != 0)) {
-               DPRINTF(("uid/username = %d/%s, gid/groupname = %d/%s\n", (int)*uid, user, (int)*gid, group));
+               DPRINTF("uid/username = %d/%s, gid/groupname = %d/%s\n", (int)*uid, user, (int)*gid, group);
                ret = true;
             } else {
                CRITICAL(MSG_GDI_NULL_IN_GDI_SSS, (strlen(user) == 0) ? MSG_OBJ_USER : "", (strlen(group) == 0) ? MSG_OBJ_GROUP : "", packet->host);
@@ -1379,14 +1379,14 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 
    DENTER(TOP_LAYER);
 
-/*    DPRINTF(("======== intext:\n" SFN "\n=========\n", intext)); */
+/*    DPRINTF("======== intext:\n" SFN "\n=========\n", intext); */
 
    len = strlen(intext);
    if (!change_encoding(outbuf, &outsize, (unsigned char*) intext, &len, ENCODE_TO_STRING)) {
       DRETURN(false);
    }   
 
-/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
+/*    DPRINTF("======== outbuf:\n" SFN "\n=========\n", outbuf); */
 
    DRETURN(true);
 }
@@ -1408,7 +1408,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
 
    strcpy(outbuf, (char*)decbuf);
 
-/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
+/*    DPRINTF("======== outbuf:\n" SFN "\n=========\n", outbuf); */
 
    DRETURN(true);
 }
@@ -1430,7 +1430,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 
    DENTER(TOP_LAYER);
 
-/*    DPRINTF(("======== intext:\n" SFN "\n=========\n", intext)); */
+/*    DPRINTF("======== intext:\n" SFN "\n=========\n", intext); */
 
    if (!EVP_EncryptInit(&ctx, /*EVP_enc_null() EVP_bf_cbc()*/EVP_cast5_ofb(), key, iv)) {
       printf("EVP_EncryptInit failure !!!!!!!\n");
@@ -1451,7 +1451,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
       DRETURN(false);
    }   
 
-/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
+/*    DPRINTF("======== outbuf:\n" SFN "\n=========\n", outbuf); */
 
    DRETURN(true);
 }
@@ -1488,7 +1488,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
 
    *outsize = outlen+tmplen;
 
-/*    DPRINTF(("======== outbuf:\n" SFN "\n=========\n", outbuf)); */
+/*    DPRINTF("======== outbuf:\n" SFN "\n=========\n", outbuf); */
 
    DRETURN(true);
 }
@@ -1566,7 +1566,7 @@ int sge_security_verify_user(const char *host, const char *commproc, u_long32 id
    DENTER(TOP_LAYER);
 
    if (gdi_user == nullptr || host == nullptr || commproc == nullptr) {
-     DPRINTF(("gdi user name or host or commproc is nullptr\n"));
+     DPRINTF("gdi user name or host or commproc is nullptr\n");
      DRETURN(False);
    }
 
@@ -1615,33 +1615,33 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
       cl_com_handle_t* handle = nullptr;
       char* unique_identifier = nullptr;
 
-      DPRINTF(("sge_security_verify_unique_identifier: progname, progid = %s, %d\n", progname, (int)progid));
+      DPRINTF("sge_security_verify_unique_identifier: progname, progid = %s, %d\n", progname, (int)progid);
       handle = cl_com_get_handle(progname, progid);
-      DPRINTF(("sge_security_verify_unique_identifier: hostname, commproc, commid = %s, %s, %d\n", hostname, commproc, (int)commid));
+      DPRINTF("sge_security_verify_unique_identifier: hostname, commproc, commid = %s, %s, %d\n", hostname, commproc, (int)commid);
       ret = cl_com_ssl_get_unique_id(handle, (char*)hostname, (char*)commproc, commid, &unique_identifier);
       if (ret == CL_RETVAL_OK) {
-         DPRINTF(("unique identifier = " SFQ "\n", unique_identifier ));
-         DPRINTF(("user = " SFQ "\n", user));
+         DPRINTF("unique identifier = " SFQ "\n", unique_identifier );
+         DPRINTF("user = " SFQ "\n", user);
       } else {
-         DPRINTF(("-------> CL_RETVAL: %s\n", cl_get_error_text(ret)));
+         DPRINTF("-------> CL_RETVAL: %s\n", cl_get_error_text(ret));
       }
 
       if ( unique_identifier == nullptr ) {
-         DPRINTF(("unique_identifier is nullptr\n"));
+         DPRINTF("unique_identifier is nullptr\n");
          DRETURN(false);
       }
 
       if (check_admin_user) {
          if (strcmp(unique_identifier, user) != 0 
             && sge_is_user_superuser(unique_identifier) == false) { 
-            DPRINTF((MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr"));
+            DPRINTF(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             WARNING(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             sge_free(&unique_identifier);
             DRETURN(false);
          }     
       } else {
          if (strcmp(unique_identifier, user) != 0) {
-            DPRINTF((MSG_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr"));
+            DPRINTF(MSG_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             WARNING(MSG_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             sge_free(&unique_identifier);
             DRETURN(false);

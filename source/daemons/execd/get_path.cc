@@ -334,7 +334,7 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 
             sge_dstring_init(&error_string, error_string_buffer, sizeof(error_string_buffer));
 
-            DPRINTF(("could not rename old active job dir " SFN " - removing it\n", path));
+            DPRINTF("could not rename old active job dir " SFN " - removing it\n", path);
 
             if (sge_rmdir(path, &error_string)) {
                if (err_str != nullptr) {

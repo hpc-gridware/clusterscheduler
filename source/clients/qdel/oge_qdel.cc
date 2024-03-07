@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   DPRINTF(("force     = " sge_u32"\n", force));
+   DPRINTF("force     = " sge_u32"\n", force);
    
    if (user_list) {
       lListElem *id;
@@ -332,7 +332,7 @@ lList **alpp
              goto error;
          }
 
-         DPRINTF(("\"-t %s\"\n", *sp));
+         DPRINTF("\"-t %s\"\n", *sp);
 
          range_list_parse_from_string(&task_id_range_list, alpp, *sp,
                                       false, true, INF_NOT_ALLOWED);

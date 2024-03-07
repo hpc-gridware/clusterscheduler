@@ -271,14 +271,14 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
       int already_read;
 
       if (SGE_STAT(*pstr, &buf) < 0) {
-         DPRINTF(("-- defaults file %s does not exist\n", *pstr));
+         DPRINTF("-- defaults file %s does not exist\n", *pstr);
          continue;
       }
 
       already_read = 0;
       for (ppstr = def_files; *ppstr != *pstr; ppstr++) {
          if (!sge_filecmp(*ppstr, *pstr)) {
-            DPRINTF(("-- skipping %s as defaults file - already read as %s\n", *pstr, *ppstr));
+            DPRINTF("-- skipping %s as defaults file - already read as %s\n", *pstr, *ppstr);
             already_read = 1;
             break;
          }
@@ -286,7 +286,7 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
       if (already_read) {
          continue;
       }
-      DPRINTF(("-- defaults file: %s\n", *pstr));
+      DPRINTF("-- defaults file: %s\n", *pstr);
 
       alp = parse_script_file(prog_number, *pstr, "", pcmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
 
@@ -298,7 +298,7 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
          quality = (answer_quality_t)lGetUlong(aep, AN_quality);
 
          if (quality == ANSWER_QUALITY_ERROR) {
-            DPRINTF(("%s", lGetString(aep, AN_text)));
+            DPRINTF("%s", lGetString(aep, AN_text));
             if (status == STATUS_EDISK) {
                /*
                ** we turn this error into a warning here
@@ -308,7 +308,7 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
                do_exit = 1;
             }
          } else {
-            DPRINTF(("Warning: Error: %s\n", lGetString(aep, AN_text)));
+            DPRINTF("Warning: Error: %s\n", lGetString(aep, AN_text));
          }
          answer_list_add(answer_list, lGetString(aep, AN_text), status, quality);
       }

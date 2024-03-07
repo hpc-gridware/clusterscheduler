@@ -495,7 +495,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
          for_each_ep(qinstance, qinstance_list) {
             if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {
-               DPRINTF(("job has access to queue " SFQ "\n", lGetString(qinstance, QU_qname)));
+               DPRINTF("job has access to queue " SFQ "\n", lGetString(qinstance, QU_qname));
                has_permissions = 1;
                break;
             }
@@ -575,7 +575,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          lListElem *ar;
          u_long32 ar_start_time, ar_end_time, job_execution_time, job_duration, now_time;
 
-         DPRINTF(("job -ar " sge_u32"\n", sge_u32c(ar_id)));
+         DPRINTF("job -ar " sge_u32"\n", sge_u32c(ar_id));
 
          ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == nullptr) {
@@ -606,10 +606,10 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
          /* hard_resources h_rt limit */
          if (job_get_wallclock_limit(&job_duration, jep) == true) {
-            DPRINTF(("job -ar " sge_u32", ar_start_time " sge_u32", ar_end_time " sge_u32
+            DPRINTF("job -ar " sge_u32", ar_start_time " sge_u32", ar_end_time " sge_u32
                     ", job_execution_time " sge_u32", job duration " sge_u32" \n",
                     sge_u32c(ar_id), sge_u32c(ar_start_time), sge_u32c(ar_end_time),
-                    sge_u32c(job_execution_time), sge_u32c(job_duration)));
+                    sge_u32c(job_execution_time), sge_u32c(job_duration));
 
             /* fit the timeframe */
             if (job_duration > (ar_end_time - ar_start_time)) {

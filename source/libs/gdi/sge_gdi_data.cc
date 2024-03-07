@@ -76,18 +76,18 @@ gdi_set_master_host(const char *master_host) {
 static void
 gdi_data_log_tl_parameter(sge_gdi_tl_t *tl) {
    DENTER(TOP_LAYER);
-   DPRINTF(("request_id              >%d<\n", tl->request_id));
-   DPRINTF(("is_setup                >%s<\n", tl->is_setup ? "true" : "false"));
-   DPRINTF(("error_handle            >%p<\n", tl->error_handle));
-   DPRINTF(("last_commlib_error      >%d<\n", tl->last_commlib_error));
+   DPRINTF("request_id              >%d<\n", tl->request_id);
+   DPRINTF("is_setup                >%s<\n", tl->is_setup ? "true" : "false");
+   DPRINTF("error_handle            >%p<\n", tl->error_handle);
+   DPRINTF("last_commlib_error      >%d<\n", tl->last_commlib_error);
    DRETURN_VOID;
 }
 
 static void
 gdi_data_log_ts_parameter() {
    DENTER(TOP_LAYER);
-   DPRINTF(("master_host             >%s<\n", ts.master_host ? ts.master_host : "NA"));
-   DPRINTF(("timestamp_qmaster_file  >%d<\n", ts.timestamp_qmaster_file));
+   DPRINTF("master_host             >%s<\n", ts.master_host ? ts.master_host : "NA");
+   DPRINTF("timestamp_qmaster_file  >%d<\n", ts.timestamp_qmaster_file);
    DRETURN_VOID;
 }
 

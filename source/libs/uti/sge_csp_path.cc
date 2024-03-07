@@ -169,7 +169,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     */
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ssl_cert_verify_func()\n"));
+   DPRINTF("ssl_cert_verify_func()\n");
 
    if (value == nullptr) {
       /* This should never happen */
@@ -180,7 +180,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
    if (service_mode == true) {
       switch (mode) {
          case CL_SSL_PEER_NAME: {
-            DPRINTF(("local service got certificate from peer \"%s\"\n", value));
+            DPRINTF("local service got certificate from peer \"%s\"\n", value);
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
                DRETURN(false);
@@ -189,7 +189,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             break;
          }
          case CL_SSL_USER_NAME: {
-            DPRINTF(("local service got certificate from user \"%s\"\n", value));
+            DPRINTF("local service got certificate from user \"%s\"\n", value);
 #if 0
             if (strcmp(value,"") != 0) {
                DRETURN(false);
@@ -201,7 +201,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
    } else {
       switch (mode) {
          case CL_SSL_PEER_NAME: {
-            DPRINTF(("local client got certificate from peer \"%s\"\n", value));
+            DPRINTF("local client got certificate from peer \"%s\"\n", value);
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
                DRETURN(false);
@@ -210,7 +210,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             break;
          }
          case CL_SSL_USER_NAME: {
-            DPRINTF(("local client got certificate from user \"%s\"\n", value));
+            DPRINTF("local client got certificate from user \"%s\"\n", value);
 #if 0
             if (strcmp(value,"") != 0) {
                DRETURN(false);
@@ -475,17 +475,17 @@ static void sge_csp_path_dprintf(sge_csp_path_class_t *thiz) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ca_root             >%s<\n", es->ca_root ? es->ca_root : "NA"));
-   DPRINTF(("ca_local_root       >%s<\n", es->ca_local_root ? es->ca_local_root : "NA"));
-   DPRINTF(("CA_cert_file        >%s<\n", es->CA_cert_file ? es->CA_cert_file : "NA"));
-   DPRINTF(("CA_key_file         >%s<\n", es->CA_key_file ? es->CA_key_file : "NA"));
-   DPRINTF(("cert_file           >%s<\n", es->cert_file ? es->cert_file : "NA"));
-   DPRINTF(("key_file            >%s<\n", es->key_file ? es->key_file : "NA"));
-   DPRINTF(("rand_file           >%s<\n", es->rand_file ? es->rand_file : "NA"));
-   DPRINTF(("reconnect_file      >%s<\n", es->reconnect_file ? es->reconnect_file : "NA"));
-   DPRINTF(("CRL file            >%s<\n", es->crl_file ? es->crl_file : "NA"));
-   DPRINTF(("refresh_time        >%d<\n", es->refresh_time));
-   DPRINTF(("password            >%s<\n", es->password ? es->password : "NA"));
+   DPRINTF("ca_root             >%s<\n", es->ca_root ? es->ca_root : "NA");
+   DPRINTF("ca_local_root       >%s<\n", es->ca_local_root ? es->ca_local_root : "NA");
+   DPRINTF("CA_cert_file        >%s<\n", es->CA_cert_file ? es->CA_cert_file : "NA");
+   DPRINTF("CA_key_file         >%s<\n", es->CA_key_file ? es->CA_key_file : "NA");
+   DPRINTF("cert_file           >%s<\n", es->cert_file ? es->cert_file : "NA");
+   DPRINTF("key_file            >%s<\n", es->key_file ? es->key_file : "NA");
+   DPRINTF("rand_file           >%s<\n", es->rand_file ? es->rand_file : "NA");
+   DPRINTF("reconnect_file      >%s<\n", es->reconnect_file ? es->reconnect_file : "NA");
+   DPRINTF("CRL file            >%s<\n", es->crl_file ? es->crl_file : "NA");
+   DPRINTF("refresh_time        >%d<\n", es->refresh_time);
+   DPRINTF("password            >%s<\n", es->password ? es->password : "NA");
 
    DRETURN_VOID;
 }

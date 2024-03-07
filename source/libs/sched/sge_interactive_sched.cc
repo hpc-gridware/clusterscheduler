@@ -230,9 +230,7 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
    DENTER(TOP_LAYER);
    
    if (ep != nullptr) {
-      DPRINTF (("Removing job start order for job task %u.%u\n",
-                lGetUlong(job, JB_job_number),
-                lGetUlong(ja_task, JAT_task_number)));
+      DPRINTF("Removing job start order for job task %u.%u\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
       lRemoveElem(orderList, &ep);
    }
    
@@ -271,8 +269,8 @@ order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("JOB " sge_u32"." sge_u32" can't get dispatched - removing\n",
-      lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
+   DPRINTF("JOB " sge_u32"." sge_u32" can't get dispatched - removing\n",
+           lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
    
    orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, 
                                                  ORT_remove_immediate_job, 

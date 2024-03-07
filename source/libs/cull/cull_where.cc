@@ -245,7 +245,7 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
             case SUBSCOPE:
                if (!fp) {
-                  DPRINTF(("%s ->\n", out));
+                  DPRINTF("%s ->\n", out);
                } else {
                   fprintf(fp, "%s ->\n", out);
                }
@@ -260,28 +260,28 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
          switch (mt_get_type(cp->operand.cmp.mt)) {
             case lIntT:
                if (!fp) {
-                  DPRINTF(("%s %d\n", out, cp->operand.cmp.val.i));
+                  DPRINTF("%s %d\n", out, cp->operand.cmp.val.i);
                } else {
                   fprintf(fp, "%s %d\n", out, cp->operand.cmp.val.i);
                }
                break;
             case lUlongT:
                if (!fp) {
-                  DPRINTF(("%s " sge_u32"\n", out, cp->operand.cmp.val.ul));
+                  DPRINTF("%s " sge_u32"\n", out, cp->operand.cmp.val.ul);
                } else {
                   fprintf(fp, "%s " sge_u32"\n", out, cp->operand.cmp.val.ul);
                }
                break;
             case lUlong64T:
                if (!fp) {
-                  DPRINTF(("%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64));
+                  DPRINTF("%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64);
                } else {
                   fprintf(fp, "%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64);
                }
                break;
             case lStringT:
                if (!fp) {
-                  DPRINTF(("%s \"%s\"\n", out, cp->operand.cmp.val.str));
+                  DPRINTF("%s \"%s\"\n", out, cp->operand.cmp.val.str);
                } else {
                   fprintf(fp, "%s \"%s\"\n", out, cp->operand.cmp.val.str);
                }
@@ -289,53 +289,53 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
             case lHostT:
                if (!fp) {
-                  DPRINTF(("%s \"%s\"\n", out, cp->operand.cmp.val.host));
+                  DPRINTF("%s \"%s\"\n", out, cp->operand.cmp.val.host);
                } else {
                   fprintf(fp, "%s \"%s\"\n", out, cp->operand.cmp.val.host);
                }
                break;
 
             case lListT:
-/*          DPRINTF(("lWriteWhere error\n")); */
+/*          DPRINTF("lWriteWhere error\n"); */
                break;
             case lFloatT:
                if (!fp) {
-                  DPRINTF(("%s %f\n", out, cp->operand.cmp.val.fl));
+                  DPRINTF("%s %f\n", out, cp->operand.cmp.val.fl);
                } else {
                   fprintf(fp, "%s %f\n", out, cp->operand.cmp.val.fl);
                }
                break;
             case lDoubleT:
                if (!fp) {
-                  DPRINTF(("%s %f\n", out, cp->operand.cmp.val.db));
+                  DPRINTF("%s %f\n", out, cp->operand.cmp.val.db);
                } else {
                   fprintf(fp, "%s %f\n", out, cp->operand.cmp.val.db);
                }
                break;
             case lLongT:
                if (!fp) {
-                  DPRINTF(("%s %ld\n", out, cp->operand.cmp.val.l));
+                  DPRINTF("%s %ld\n", out, cp->operand.cmp.val.l);
                } else {
                   fprintf(fp, "%s %ld\n", out, cp->operand.cmp.val.l);
                }
                break;
             case lBoolT:
                if (!fp) {
-                  DPRINTF(("%s %s\n", out, cp->operand.cmp.val.b ? "true" : "false"));
+                  DPRINTF("%s %s\n", out, cp->operand.cmp.val.b ? "true" : "false");
                } else {
                   fprintf(fp, "%s %s\n", out, cp->operand.cmp.val.b ? "true" : "false");
                }
                break;
             case lCharT:
                if (!fp) {
-                  DPRINTF(("%s %c\n", out, cp->operand.cmp.val.c));
+                  DPRINTF("%s %c\n", out, cp->operand.cmp.val.c);
                } else {
                   fprintf(fp, "%s %c\n", out, cp->operand.cmp.val.c);
                }
                break;
             case lRefT:
                if (!fp) {
-                  DPRINTF(("%s %p\n", out, cp->operand.cmp.val.ref));
+                  DPRINTF("%s %p\n", out, cp->operand.cmp.val.ref);
                } else {
                   fprintf(fp, "%s %p\n", out, cp->operand.cmp.val.ref);
                }
@@ -348,19 +348,19 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
       case AND:
          if (!fp) {
-            DPRINTF(("%s(\n", space));
+            DPRINTF("%s(\n", space);
          } else {
             fprintf(fp, "%s(\n", space);
          }
          lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
          if (!fp) {
-            DPRINTF(("%s&&\n", space));
+            DPRINTF("%s&&\n", space);
          } else {
             fprintf(fp, "%s&&\n", space);
          }
          lWriteWhereTo_(cp->operand.log.second, depth + 1, fp);
          if (!fp) {
-            DPRINTF(("%s)\n", space));
+            DPRINTF("%s)\n", space);
          } else {
             fprintf(fp, "%s)\n", space);
          }
@@ -368,19 +368,19 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
       case OR:
          if (!fp) {
-            DPRINTF(("%s(\n", space));
+            DPRINTF("%s(\n", space);
          } else {
             fprintf(fp, "%s(\n", space);
          }
          lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
          if (!fp) {
-            DPRINTF(("%s||\n", space));
+            DPRINTF("%s||\n", space);
          } else {
             fprintf(fp, "%s||\n", space);
          }
          lWriteWhereTo_(cp->operand.log.second, depth + 1, fp);
          if (!fp) {
-            DPRINTF(("%s)\n", space));
+            DPRINTF("%s)\n", space);
          } else {
             fprintf(fp, "%s)\n", space);
          }
@@ -388,13 +388,13 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
       case NEG:
          if (!fp) {
-            DPRINTF(("%s!(\n", space));
+            DPRINTF("%s!(\n", space);
          } else {
             fprintf(fp, "%s!(\n", space);
          }
          lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
          if (!fp) {
-            DPRINTF(("%s)\n", space));
+            DPRINTF("%s)\n", space);
          } else {
             fprintf(fp, "%s)\n", space);
          }
@@ -403,7 +403,7 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
 
       default:
          LERROR(LEOPUNKNOWN);
-         DPRINTF(("error: LEOPUNKNOWN\n"));
+         DPRINTF("error: LEOPUNKNOWN\n");
          DRETURN_VOID;
    }
 
@@ -775,7 +775,7 @@ static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
     * Deliver descriptor & increment the WhereArgList to 
     * the next element 
     */
-   /*    DPRINTF(("(*wapp) = %p\n", *wapp)); */
+   /*    DPRINTF("(*wapp) = %p\n", *wapp); */
    dp = (*wapp)++->descriptor;
    if (!(dp)) {
       LERROR(LEDESCRNULL);
@@ -919,8 +919,8 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
    }
    eat_token(state);
 
-/*    DPRINTF(("(*wapp) = %p\n", *wapp)); */
-/*    DPRINTF(("(*wapp)->field = %d\n", (*wapp)->field)); */
+/*    DPRINTF("(*wapp) = %p\n", *wapp); */
+/*    DPRINTF("(*wapp)->field = %d\n", (*wapp)->field); */
    cp->operand.cmp.nm = (*wapp)->field;
    if ((cp->operand.cmp.pos = lGetPosInDescr(dp, cp->operand.cmp.nm)) < 0) {
       lFreeWhere(&cp);
@@ -965,7 +965,7 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
       case INT:
          if (mt_get_type(cp->operand.cmp.mt) != lIntT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEINTT);
-/*       DPRINTF(("(*wapp)->value.i = %d\n", (*wapp)->value.i)); */
+/*       DPRINTF("(*wapp)->value.i = %d\n", (*wapp)->value.i); */
          cp->operand.cmp.val.i = (*wapp)++->value.i;
          break;
 
@@ -974,7 +974,7 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
             incompatibleType(MSG_CULL_WHERE_SHOULDBESTRINGT);
 
          if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-            /* DPRINTF(("(*wapp)->value.str = %s\n", (*wapp)->value.str)); */
+            /* DPRINTF("(*wapp)->value.str = %s\n", (*wapp)->value.str); */
             cp->operand.cmp.val.str = (*wapp)++->value.str;
          }
          if (mt_get_type(cp->operand.cmp.mt) == lHostT) {
@@ -985,14 +985,14 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
       case ULONG:
          if (mt_get_type(cp->operand.cmp.mt) != lUlongT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEULONGT);
-/*       DPRINTF(("(*wapp)->value.ul = %ul\n", (*wapp)->value.ul)); */
+/*       DPRINTF("(*wapp)->value.ul = %ul\n", (*wapp)->value.ul); */
          cp->operand.cmp.val.ul = (*wapp)++->value.ul;
          break;
 
       case ULONG64:
          if (mt_get_type(cp->operand.cmp.mt) != lUlong64T)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEULONG64T);
-/*       DPRINTF(("(*wapp)->value.ul64 = %ul\n", (*wapp)->value.ul64)); */
+/*       DPRINTF("(*wapp)->value.ul64 = %ul\n", (*wapp)->value.ul64); */
          cp->operand.cmp.val.ul64 = (*wapp)++->value.ul64;
          break;
 
@@ -1001,42 +1001,42 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
             incompatibleType(MSG_CULL_WHERE_SHOULDBEFLOATT);
          /* a float value is stored as a double in the va_list */
          /* so we have to read it as a double value                              */
-/*       DPRINTF(("(*wapp)->value.fl = %f\n", (*wapp)->value.fl)); */
+/*       DPRINTF("(*wapp)->value.fl = %f\n", (*wapp)->value.fl); */
          cp->operand.cmp.val.fl = (*wapp)++->value.fl;
          break;
 
       case DOUBLE:
          if (mt_get_type(cp->operand.cmp.mt) != lDoubleT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEDOUBLET);
-/*       DPRINTF(("(*wapp)->value.db = %f\n", (*wapp)->value.db)); */
+/*       DPRINTF("(*wapp)->value.db = %f\n", (*wapp)->value.db); */
          cp->operand.cmp.val.db = (*wapp)++->value.db;
          break;
 
       case LONG:
          if (mt_get_type(cp->operand.cmp.mt) != lLongT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBELONGT);
-/*       DPRINTF(("(*wapp)->value.l = %ld\n", (*wapp)->value.l)); */
+/*       DPRINTF("(*wapp)->value.l = %ld\n", (*wapp)->value.l); */
          cp->operand.cmp.val.l = (*wapp)++->value.l;
          break;
 
       case CHAR:
          if (mt_get_type(cp->operand.cmp.mt) != lCharT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBECHART);
-/*       DPRINTF(("(*wapp)->value.c = %c\n", (*wapp)->value.c)); */
+/*       DPRINTF("(*wapp)->value.c = %c\n", (*wapp)->value.c); */
          cp->operand.cmp.val.c = (*wapp)++->value.c;
          break;
 
       case BOOL:
          if (mt_get_type(cp->operand.cmp.mt) != lBoolT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEBOOL);
-/*       DPRINTF(("(*wapp)->value.b = %c\n", (*wapp)->value.b)); */
+/*       DPRINTF("(*wapp)->value.b = %c\n", (*wapp)->value.b); */
          cp->operand.cmp.val.b = (*wapp)++->value.b;
          break;
 
       case REF:
          if (mt_get_type(cp->operand.cmp.mt) != lRefT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEREFT);
-/*       DPRINTF(("(*wapp)->value.ref = %p\n", (*wapp)->value.ref)); */
+/*       DPRINTF("(*wapp)->value.ref = %p\n", (*wapp)->value.ref); */
          cp->operand.cmp.val.ref = (*wapp)++->value.ref;
          break;
 
@@ -1185,30 +1185,30 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
             case lStringT:
                if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos))) {
                   LERROR(LENULLSTRING);
-                  DPRINTF(("lGetPosString in lCompare\n"));
+                  DPRINTF("lGetPosString in lCompare\n");
                   DRETURN(0);
                }
                if (!(str2 = cp->operand.cmp.val.str)) {
-                  DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
+                  DPRINTF("cp->operand.cmp.val.str in lCompare\n");
                   LERROR(LENULLSTRING);
                   DRETURN(0);
                }
                result = strcmp(str1, str2);
-               DPRINTF(("strcmp(%s, %s)(lStringT) = %d\n", str1, str2, result));
+               DPRINTF("strcmp(%s, %s)(lStringT) = %d\n", str1, str2, result);
                break;
             case lHostT:
                if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos))) {
                   LERROR(LENULLSTRING);
-                  DPRINTF(("lGetPosHost in lCompare\n"));
+                  DPRINTF("lGetPosHost in lCompare\n");
                   DRETURN(0);
                }
                if (!(str2 = cp->operand.cmp.val.host)) {
-                  DPRINTF(("cp->operand.cmp.val.host in lCompare\n"));
+                  DPRINTF("cp->operand.cmp.val.host in lCompare\n");
                   LERROR(LENULLSTRING);
                   DRETURN(0);
                }
                result = strcmp(str1, str2);
-               DPRINTF(("strcmp(%s, %s)(lhostT) = %d\n", str1, str2, result));
+               DPRINTF("strcmp(%s, %s)(lhostT) = %d\n", str1, str2, result);
                break;
 
             case lUlongT:
@@ -1291,12 +1291,12 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
          }
          if (str1 == nullptr) {
             LERROR(LENULLSTRING);
-            DPRINTF(("lGetPosString in lCompare\n"));
+            DPRINTF("lGetPosString in lCompare\n");
             DRETURN(0);
          }
 
          if (!(str2 = cp->operand.cmp.val.str)) {
-            DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
+            DPRINTF("cp->operand.cmp.val.str in lCompare\n");
             LERROR(LENULLSTRING);
             DRETURN(0);
          }
@@ -1321,7 +1321,7 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
             }
 
             if (!(str2 = cp->operand.cmp.val.str)) {
-               DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
+               DPRINTF("cp->operand.cmp.val.str in lCompare\n");
                LERROR(LENULLSTRING);
                DRETURN(0);
             }
@@ -1331,7 +1331,7 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
             }
 
             if (!(str2 = cp->operand.cmp.val.host)) {
-               DPRINTF(("cp->operand.cmp.val.host in lCompare\n"));
+               DPRINTF("cp->operand.cmp.val.host in lCompare\n");
                LERROR(LENULLSTRING);
                DRETURN(0);
             }
@@ -1371,7 +1371,7 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
          break;
 
       default:
-         DPRINTF(("lCompare(): unknown operator %d\n", cp->op));
+         DPRINTF("lCompare(): unknown operator %d\n", cp->op);
          exit(-1);
    }
    DRETURN(result);

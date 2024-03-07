@@ -151,7 +151,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
       /* job deadline dependent contribution */
       if ((deadline=lGetUlong(jep, JB_deadline))) {
           int time_left = deadline - now;
-/*           DPRINTF(("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline)); */
+/*           DPRINTF("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline); */
           /* might be too late for this job anyways we're optimistic and treat it high prior */
           dtc = weight_deadline / MAX(time_left, 1);
       }
@@ -160,7 +160,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
          dependent contribution */
       if ((cat = (lListElem *)lGetRef(jep, JB_category)) && lGetBool(cat, CT_rc_valid)) {
          rrc = lGetDouble(cat, CT_resource_contribution);
-/*         DPRINTF(("  resource contribution from category cache ---> %7f\n", rrc)); */
+/*         DPRINTF("  resource contribution from category cache ---> %7f\n", rrc); */
       } else {
          const lListElem *centry, *rr;
          double contribution;
@@ -198,8 +198,8 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
       lSetDouble(jep, JB_wtcontr, wtc);
       lSetDouble(jep, JB_urg, absolute_urgency);
 
-/*      DPRINTF(("--- job " sge_U32CFormat " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
-            lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency));
+/*      DPRINTF("--- job " sge_U32CFormat " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
+            lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency);
 */            
       
       /* track min/max values */
@@ -242,13 +242,12 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ASU min = %13.11f, ASU max = %13.11f\n", 
-         min_urgency, max_urgency));
+   DPRINTF("ASU min = %13.11f, ASU max = %13.11f\n", min_urgency, max_urgency);
    for_each_rw (jep, job_list) {
       double asu = lGetDouble(jep, JB_urg);
       nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       lSetDouble(jep, JB_nurg, nsu);
-/*    DPRINTF(("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu)); */
+/*    DPRINTF("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
    }
    DRETURN_VOID;
 }
@@ -305,8 +304,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
    else {
       /* use the first matching pe */
       if ((pep=pe_list_find_matching(pe_list, pe_name))) {
-         DPRINTF(("use %s as first matching pe for %s to verify schedulability\n", 
-                  lGetString(pep, PE_name), pe_name));
+         DPRINTF("use %s as first matching pe for %s to verify schedulability\n", lGetString(pep, PE_name), pe_name);
       }
    }
    if (!pep) {
@@ -323,9 +321,9 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
       dstring pe_range;
       sge_dstring_init(&pe_range, pe_range_str, sizeof(pe_range_str));
       range_list_print_to_string(range_list, &pe_range, true, false, false);
-      DPRINTF(("slot request assumed for static urgency is %d for %s PE range due to "
+      DPRINTF("slot request assumed for static urgency is %d for %s PE range due to "
           "PE's \"%s\" setting \"%s\"\n", n, pe_range_str, lGetString(pep, PE_name), 
-          urgency_slot_setting));
+          urgency_slot_setting);
    }
 
    DRETURN(n);

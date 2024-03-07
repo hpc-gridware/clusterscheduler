@@ -98,8 +98,8 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
                                                      ORT_suspend_on_threshold, 
                                                      jep, ja_task, nullptr, true);
 
-         DPRINTF(("++++ suspending job " sge_u32"/" sge_u32" on threshold\n",
-                  lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
+         DPRINTF("++++ suspending job " sge_u32"/" sge_u32" on threshold\n",
+                 lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number));
 
          /* prevent multiple selection of this job */
          lSetUlong(ja_task, JAT_state, 
@@ -107,7 +107,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
       }
 
       if (i==0 && !found) {
-         DPRINTF(("found no jobs for sot in queue %s\n", lGetString(qep, QU_full_name)));
+         DPRINTF("found no jobs for sot in queue %s\n", lGetString(qep, QU_full_name));
       }
    }
    
@@ -149,10 +149,8 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
          interval> now)) {
          char tmp[128];
          strcpy(tmp, sge_ctime((time_t)lGetUlong(qep, QU_last_suspend_threshold_ckeck), &ds));
-         DPRINTF(("queue was last checked at %s (interval = %s, now = %s)\n",
-            tmp,
-            lGetString(qep, QU_suspend_interval),
-            sge_ctime((time_t)now, &ds)));
+         DPRINTF("queue was last checked at %s (interval = %s, now = %s)\n",
+                 tmp, lGetString(qep, QU_suspend_interval), sge_ctime((time_t)now, &ds));
          continue;
       }
 
@@ -171,17 +169,15 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
                                                         ORT_unsuspend_on_threshold, 
                                                         jep, ja_task, nullptr, true);
 
-         DPRINTF(("---- unsuspending job " sge_u32"/" sge_u32" on threshold\n",
-            lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
+         DPRINTF("---- unsuspending job " sge_u32"/" sge_u32" on threshold\n",
+                 lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number));
 
          /* prevent multiple selection of this job */
-         lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) 
-            & ~JSUSPENDED_ON_THRESHOLD);
+         lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) & ~JSUSPENDED_ON_THRESHOLD);
       }
       
       if (i==0 && !found) {
-         DPRINTF(("found no jobs for usot in queue %s\n", 
-            lGetString(qep, QU_full_name)));
+         DPRINTF("found no jobs for usot in queue %s\n", lGetString(qep, QU_full_name));
       }
    }
 

@@ -99,12 +99,12 @@ static void
 bootstrap_env_log_tl1_parameter(sge_bootstrap_ts1_t *tl) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ENVIRONMENT ===\n"));
-   DPRINTF(("   sge_root             >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
-   DPRINTF(("   sge_cell             >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
-   DPRINTF(("   sge_qmaster_port     >%d<\n", tl->sge_qmaster_port));
-   DPRINTF(("   sge_execd_port       >%d<\n", tl->sge_execd_port));
-   DPRINTF(("   from_services        >%s<\n", tl->from_services ? "true" : "false"));
+   DPRINTF("ENVIRONMENT ===\n");
+   DPRINTF("   sge_root             >%s<\n", tl->sge_root ? tl->sge_root : "NA");
+   DPRINTF("   sge_cell             >%s<\n", tl->sge_cell ? tl->sge_cell : "NA");
+   DPRINTF("   sge_qmaster_port     >%d<\n", tl->sge_qmaster_port);
+   DPRINTF("   sge_execd_port       >%d<\n", tl->sge_execd_port);
+   DPRINTF("   from_services        >%s<\n", tl->from_services ? "true" : "false");
 
    DRETURN_VOID;
 }

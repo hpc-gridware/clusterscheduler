@@ -157,7 +157,7 @@ long *address
       *address = kernel_nlist[0].n_value;
       ret = 1;
    } else {
-      DPRINTF(("nlist(%s) failed: %s\n", name, strerror(errno)));
+      DPRINTF("nlist(%s) failed: %s\n", name, strerror(errno));
       *address = 0;
       ret = 0;
    }
@@ -178,7 +178,7 @@ kernel_fd_type *fd
       {
          kernel_initialized = 1;
       } else {
-         DPRINTF(("kvm_open() failed: %s\n", strerror(errno)));
+         DPRINTF("kvm_open() failed: %s\n", strerror(errno));
          kernel_initialized = 0;
       }
    } 
@@ -400,29 +400,29 @@ double get_cpu_load(void) {
       /* sum counters up to, but not including, wait state counter */
       for (j = 0; j < CPU_WAIT; j++) {
          cpu_time[j] += (long) cpu_stat[i].cpu_sysinfo.cpu[j];
-         DPRINTF(("cpu_time[%d] = %ld (+ %ld)\n", j,  cpu_time[j],
-               (long) cpu_stat[i].cpu_sysinfo.cpu[j]));
+         DPRINTF("cpu_time[%d] = %ld (+ %ld)\n", j,  cpu_time[j],
+               (long) cpu_stat[i].cpu_sysinfo.cpu[j]);
       }
       /* add in wait state breakdown counters */
       cpu_time[CPUSTATE_IOWAIT] += (long) cpu_stat[i].cpu_sysinfo.wait[W_IO] +
                                    (long) cpu_stat[i].cpu_sysinfo.wait[W_PIO];
-      DPRINTF(("cpu_time[%d] = %ld (+ %ld)\n", CPUSTATE_IOWAIT,  cpu_time[CPUSTATE_IOWAIT],
+      DPRINTF("cpu_time[%d] = %ld (+ %ld)\n", CPUSTATE_IOWAIT,  cpu_time[CPUSTATE_IOWAIT],
                                 (long) cpu_stat[i].cpu_sysinfo.wait[W_IO] +
-                                (long) cpu_stat[i].cpu_sysinfo.wait[W_PIO]));
+                                (long) cpu_stat[i].cpu_sysinfo.wait[W_PIO]);
 
 
       cpu_time[CPUSTATE_SWAP] += (long) cpu_stat[i].cpu_sysinfo.wait[W_SWAP];
-      DPRINTF(("cpu_time[%d] = %ld (+ %ld)\n", CPUSTATE_SWAP,  cpu_time[CPUSTATE_SWAP],
-         (long) cpu_stat[i].cpu_sysinfo.wait[W_SWAP]));
+      DPRINTF("cpu_time[%d] = %ld (+ %ld)\n", CPUSTATE_SWAP,  cpu_time[CPUSTATE_SWAP],
+         (long) cpu_stat[i].cpu_sysinfo.wait[W_SWAP]);
    }
    percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
    cpu_load = cpu_states[1] + cpu_states[2] + cpu_states[3] + cpu_states[4];
-   DPRINTF(("cpu_load %f ( %f %f %f %f )\n", cpu_load,
-         cpu_states[1], cpu_states[2], cpu_states[3], cpu_states[4]));
+   DPRINTF("cpu_load %f ( %f %f %f %f )\n", cpu_load,
+         cpu_states[1], cpu_states[2], cpu_states[3], cpu_states[4]);
 #if 0
 #if defined(SOLARIS) && !defined(SOLARIS64)
-   DPRINTF(("avenrun(%d %d %d) -> (%f %f %f)\n", avenrun[0], avenrun[1], avenrun[2],
-      KERNEL_TO_USER_AVG(avenrun[0]), KERNEL_TO_USER_AVG(avenrun[1]), KERNEL_TO_USER_AVG(avenrun[2])));
+   DPRINTF("avenrun(%d %d %d) -> (%f %f %f)\n", avenrun[0], avenrun[1], avenrun[2],
+      KERNEL_TO_USER_AVG(avenrun[0]), KERNEL_TO_USER_AVG(avenrun[1]), KERNEL_TO_USER_AVG(avenrun[2]));
 #endif
 #endif
 
@@ -692,8 +692,8 @@ static long percentages(int cnt, double *out, long *new_value, long *old_value, 
    for (i = 0; i < cnt; i++) {
       *out = ((double) ((*diffs++ * 1000 + half_total) / total_change)) / 10;
 #if 0
-      DPRINTF(("diffs: %lu half_total: %lu total_change: %lu -> %f",
-            *diffs, half_total, total_change, *out));
+      DPRINTF("diffs: %lu half_total: %lu total_change: %lu -> %f",
+            *diffs, half_total, total_change, *out);
 #endif
       out++;
    }

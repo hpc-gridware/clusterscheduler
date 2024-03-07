@@ -245,7 +245,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
             }
          }
 
-         DPRINTF(("REDUCING SLOTS OF QUEUE %s BY %d\n", qname, tagged));
+         DPRINTF("REDUCING SLOTS OF QUEUE %s BY %d\n", qname, tagged);
 
          qinstance_debit_consumable(qep, job, centry_list, tagged, master_task, nullptr);
       }
@@ -314,8 +314,7 @@ static int debit_job_from_hosts(
          lSetDouble(hep, EH_sort_value, new_sort_value);
          if (sort_hostlist)
             *sort_hostlist = 1;
-         DPRINTF(("Increasing sort value of Host %s from %f to %f\n",
-                 hnm, old_sort_value, new_sort_value));
+         DPRINTF("Increasing sort value of Host %s from %f to %f\n", hnm, old_sort_value, new_sort_value);
       }
 
       lResortElem(so, hep, host_list);

@@ -203,7 +203,7 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
          DRETURN(false);
       }
 
-      DPRINTF(("job requests %d slots on host %s\n", tasks[i].procs, tasks[i].host_name));
+      DPRINTF("job requests %d slots on host %s\n", tasks[i].procs, tasks[i].host_name);
   
       queue = lGetElemHost(*object_type_get_master_list(SGE_TYPE_CQUEUE), QU_qhostname, tasks[i].host_name);
       if (queue == nullptr) {

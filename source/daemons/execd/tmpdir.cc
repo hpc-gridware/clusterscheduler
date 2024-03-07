@@ -61,7 +61,7 @@ sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t uid, gi
    /* on same machine, under same queue */
    snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
-   DPRINTF(("making TMPDIR=%s\n", tmpdir));
+   DPRINTF("making TMPDIR=%s\n", tmpdir);
 
    sge_switch2start_user();
    sge_mkdir(tmpdir, 0755, false, false);
@@ -102,7 +102,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
    }
 
    snprintf(tmpstr, sizeof(tmpstr), "%s/" sge_u32"." sge_u32".%s", dir, jobid, jataskid, queue_name);
-   DPRINTF(("recursively unlinking \"%s\"\n", tmpstr));
+   DPRINTF("recursively unlinking \"%s\"\n", tmpstr);
    sge_switch2start_user();
    if (sge_rmdir(tmpstr, &err_str)) {
       ERROR(MSG_FILE_RECURSIVERMDIR_SS, tmpstr, err_str_buffer);
@@ -126,7 +126,7 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tm
 
    snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
-   DPRINTF(("TMPDIR=%s\n", tmpdir));
+   DPRINTF("TMPDIR=%s\n", tmpdir);
 
    DRETURN(tmpdir);
 }

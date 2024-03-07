@@ -269,8 +269,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                      double old_dval;
                      u_long32 relop;
                      if (!strncmp(attrname, "np_", 3) && nproc != 1 ) {
-                        DPRINTF(("fillComplexFromHost: dividing lc_factor for \"%s\" with value %f by %d to %f\n",
-                                 attrname, lc_factor, nproc, lc_factor / nproc));
+                        DPRINTF("fillComplexFromHost: dividing lc_factor for \"%s\" with value %f by %d to %f\n", attrname, lc_factor, nproc, lc_factor / nproc);
                         lc_factor /= nproc;
                      }
                      load_correction *= lc_factor;
@@ -286,7 +285,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                      }
 
                      snprintf(sval, sizeof(sval), "%8.3f", dval);
-                     DPRINTF(("%s: uc: %f c(%f): %f\n", attrname, old_dval, lc_factor, dval));
+                     DPRINTF("%s: uc: %f c(%f): %f\n", attrname, old_dval, lc_factor, dval);
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }
                }
@@ -373,7 +372,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
    }
 
    if (get_rsrc(attrname, true, &field, nullptr, nullptr, &type)!=0) {
-      DPRINTF(("is not a system queue attribute: %s\n", attrname));
+      DPRINTF("is not a system queue attribute: %s\n", attrname);
       DRETURN(false);
    }
 
@@ -586,7 +585,7 @@ lList *centry_list
    DENTER(TOP_LAYER);
 
    if (!host) {
-      DPRINTF(("!!missing host!!\n"));
+      DPRINTF("!!missing host!!\n");
    }
    /* build global complex and add it to result */
    lFreeList(new_centry_list);
@@ -862,7 +861,7 @@ static int resource_cmp(u_long32 relop, double req, double src_dl) {
       match = 0; /* default -> no match */
    }
 
-   DPRINTF((" %f %s %f -> match = %d\n", req, map_op2str(relop), src_dl, match));
+   DPRINTF(" %f %s %f -> match = %d\n", req, map_op2str(relop), src_dl, match);
 
    DRETURN(match);
 }
@@ -929,15 +928,12 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
       offer = lGetString(src_cplx, CE_stringval);
       monitor_dominance(dom_str, lGetUlong(src_cplx, CE_dominant));
 #if 0
-      DPRINTF(("%s(\"%s\", \"%s\")\n", type==TYPE_STR?"strcmp":"strcasecmp",
-            request, offer)); 
+      DPRINTF("%s(\"%s\", \"%s\")\n", type==TYPE_STR?"strcmp":"strcasecmp", request, offer);
 #endif
       match = string_cmp(type, used_relop, request, offer);
       snprintf(availability_text, STR_LEN_AVAIL_TEXT, "%s:%s=%s", dom_str, name, offer);
 #if 0
-      DPRINTF(("-l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-            name, request, dom_str, name, map_op2str(relop),
-            offer, match?"ok":"no match"));
+      DPRINTF("-l %s=%s, Q: %s:%s%s%s, Comparison: %s\n", name, request, dom_str, name, map_op2str(relop), offer, match?"ok":"no match");
 #endif
       DRETURN(match);
 
@@ -950,7 +946,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
       s=lGetString(req_cplx, CE_stringval); 
       if (!parse_ulong_val(&req_dl, nullptr, type, s, nullptr, 0)) {
 #if 0
-         DPRINTF(("%s is not of type %s\n", s, map_type2str(type)));
+         DPRINTF("%s is not of type %s\n", s, map_type2str(type));
 #endif
          req_dl = 0;
       }   
@@ -984,9 +980,9 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
             sge_dstring_copy_string(&resource_string, (src_dl > 0)?"true":"false");
 #if 0
             snprintf(availability_text1, sizeof(availability_text1), "%s:%s=%s", dom_str, name, src_dl?"true":"false");
-            DPRINTF(("-l %s=%f, Q: %s:%s:%f, Comparison(1): %s\n",
-                     name, req_all_slots, dom_str, map_op2str(used_relop),
-                     src_dl, m1?"ok":"no match"));
+            DPRINTF("-l %s=%f, Q: %s:%s:%f, Comparison(1): %s\n",
+                    name, req_all_slots, dom_str, map_op2str(used_relop),
+                    src_dl, m1?"ok":"no match");
 #endif
             break;
          case TYPE_MEM:
@@ -996,11 +992,11 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
                dstring request_string = DSTRING_INIT;
 
                double_print_memory_to_dstring(req_dl, &request_string);
-               DPRINTF(("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                        slots, name, sge_dstring_get_string(&request_string),
-                        dom_str, name, map_op2str(used_relop),
-                        sge_dstring_get_string(&resource_string), 
-                        m1?"ok":"no match"));
+               DPRINTF("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
+                       slots, name, sge_dstring_get_string(&request_string),
+                       dom_str, name, map_op2str(used_relop),
+                       sge_dstring_get_string(&resource_string),
+                       m1?"ok":"no match");
                sge_dstring_free(&request_string);
             }
 #endif            
@@ -1012,11 +1008,11 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
                dstring request_string = DSTRING_INIT;
 
                double_print_time_to_dstring(req_dl, &request_string);
-               DPRINTF(("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                        slots, name, sge_dstring_get_string(&request_string),
-                        dom_str, name, map_op2str(used_relop),
-                        sge_dstring_get_string(&resource_string), 
-                        m1?"ok":"no match"));
+               DPRINTF("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
+                       slots, name, sge_dstring_get_string(&request_string),
+                       dom_str, name, map_op2str(used_relop),
+                       sge_dstring_get_string(&resource_string),
+                       m1?"ok":"no match");
                sge_dstring_free(&request_string);
             }
 #endif            
@@ -1044,10 +1040,10 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
          case TYPE_BOO:
             sge_dstring_copy_string(&resource_string, (src_dl > 0)?"true":"false");
 #if 0
-            DPRINTF(("-l %s=%f, Q: %s:%s%s%f, Comparison(2): %s\n",
-                     name, req_dl?"true":"false", dom_str, name, 
-                     map_op2str(used_relop),
-                     src_dl?"true":"false", m2?"ok":"no match"));
+            DPRINTF("-l %s=%f, Q: %s:%s%s%f, Comparison(2): %s\n",
+                    name, req_dl?"true":"false", dom_str, name,
+                    map_op2str(used_relop),
+                    src_dl?"true":"false", m2?"ok":"no match");
 #endif
             break;
          case TYPE_MEM:
@@ -1057,11 +1053,11 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
                dstring request_string = DSTRING_INIT;
 
                double_print_memory_to_dstring(req_dl, &request_string);
-               DPRINTF(("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                        name, sge_dstring_get_string(&request_string),
-                        dom_str, name, map_op2str(used_relop),
-                        sge_dstring_get_string(&resource_string), 
-                        m2?"ok":"no match"));
+               DPRINTF("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
+                       name, sge_dstring_get_string(&request_string),
+                       dom_str, name, map_op2str(used_relop),
+                       sge_dstring_get_string(&resource_string),
+                       m2?"ok":"no match");
                sge_dstring_free(&request_string);
             }
 #endif            
@@ -1073,11 +1069,11 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
                dstring request_string = DSTRING_INIT;
 
                double_print_time_to_dstring(req_dl, &request_string);
-               DPRINTF(("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                        name, sge_dstring_get_string(&request_string),
-                        dom_str, name, map_op2str(used_relop),
-                        sge_dstring_get_string(&resource_string), 
-                        m2?"ok":"no match"));
+               DPRINTF("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
+                       name, sge_dstring_get_string(&request_string),
+                       dom_str, name, map_op2str(used_relop),
+                       sge_dstring_get_string(&resource_string),
+                       m2?"ok":"no match");
                sge_dstring_free(&request_string);
             }
 #endif            
@@ -1360,7 +1356,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
                double req_dl, off_dl;
                if (!parse_ulong_val(&req_dl, nullptr, type, request, nullptr, 0) ||
                     !parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
-                  DPRINTF(("%s is not of type %s\n", request, map_type2str(type)));
+                  DPRINTF("%s is not of type %s\n", request, map_type2str(type));
                   match = 0;
                } else {
                   match = resource_cmp(relop, req_dl, off_dl);
@@ -1379,14 +1375,12 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       }
 
       if (rejected) {
-         DPRINTF(("cluster queue \"%s\" will never match due to -l %s=%s\n",
-            lGetString(cq, CQ_name), name, request));
+         DPRINTF("cluster queue \"%s\" will never match due to -l %s=%s\n", lGetString(cq, CQ_name), name, request);
          sge_dstring_sprintf(unsatisfied, SFN "=" SFN, name, request);
          DRETURN(true);
       }
 
-      DPRINTF(("cluster queue \"%s\" might be suited according -l %s=%s\n",
-            lGetString(cq, CQ_name), name, request));
+      DPRINTF("cluster queue \"%s\" might be suited according -l %s=%s\n", lGetString(cq, CQ_name), name, request);
    }
 
    DRETURN(false);

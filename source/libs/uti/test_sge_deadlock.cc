@@ -109,7 +109,7 @@ static void *thread_function_1(void *anArg) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
 
-   DPRINTF(("Thread %u sleeping at %d\n", sge_locker_id(), sge_get_gmt()));
+   DPRINTF("Thread %u sleeping at %d\n", sge_locker_id(), sge_get_gmt());
    sleep(5);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -163,7 +163,7 @@ static void *thread_function_2(void *anArg) {
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
    sleep(3);
 
-   DPRINTF(("Thread %u sleeping\n", sge_locker_id()));
+   DPRINTF("Thread %u sleeping\n", sge_locker_id());
    sleep(5);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);

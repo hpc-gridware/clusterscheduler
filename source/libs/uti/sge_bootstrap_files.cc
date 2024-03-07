@@ -134,16 +134,16 @@ static void
 bootstrap_files_log_tl1_parameter(sge_bootstrap_files_tl1_t *tl) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("FILES AND PATHS ===\n"));
-   DPRINTF(("   cell_root            >%s<\n", tl->cell_root));
-   DPRINTF(("   conf_file            >%s<\n", tl->bootstrap_file));
-   DPRINTF(("   bootstrap_file       >%s<\n", tl->conf_file));
-   DPRINTF(("   act_qmaster_file     >%s<\n", tl->act_qmaster_file));
-   DPRINTF(("   acct_file            >%s<\n", tl->acct_file));
-   DPRINTF(("   reporting_file       >%s<\n", tl->reporting_file));
-   DPRINTF(("   local_conf_dir       >%s<\n", tl->local_conf_dir));
-   DPRINTF(("   shadow_masters_file  >%s<\n", tl->shadow_masters_file));
-   DPRINTF(("   alias_file           >%s<\n", tl->alias_file));
+   DPRINTF("FILES AND PATHS ===\n");
+   DPRINTF("   cell_root            >%s<\n", tl->cell_root);
+   DPRINTF("   conf_file            >%s<\n", tl->bootstrap_file);
+   DPRINTF("   bootstrap_file       >%s<\n", tl->conf_file);
+   DPRINTF("   act_qmaster_file     >%s<\n", tl->act_qmaster_file);
+   DPRINTF("   acct_file            >%s<\n", tl->acct_file);
+   DPRINTF("   reporting_file       >%s<\n", tl->reporting_file);
+   DPRINTF("   local_conf_dir       >%s<\n", tl->local_conf_dir);
+   DPRINTF("   shadow_masters_file  >%s<\n", tl->shadow_masters_file);
+   DPRINTF("   alias_file           >%s<\n", tl->alias_file);
 
    DRETURN_VOID;
 }

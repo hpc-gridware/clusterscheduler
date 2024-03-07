@@ -2814,7 +2814,7 @@ bool sconf_validate_config_(lList **answer_list)
    DENTER(TOP_LAYER);
 
    if (!sconf_is()){
-      DPRINTF(("sconf_validate: no config to validate\n"));
+      DPRINTF("sconf_validate: no config to validate\n");
       DRETURN(true);
    }
    
@@ -3186,7 +3186,7 @@ static int policy_hierarchy_verify_value(const char* value)
             int index = policy_hierarchy_char2enum(c);
 
             if (is_contained[index]) {
-               DPRINTF(("character \'%c\' is contained at least twice\n", c));
+               DPRINTF("character \'%c\' is contained at least twice\n", c);
                ret = 1;
                break;
             } 
@@ -3194,7 +3194,7 @@ static int policy_hierarchy_verify_value(const char* value)
             is_contained[index] = 1;
 
             if (is_contained[INVALID_POLICY]) {
-               DPRINTF(("Invalid character \'%c\'\n", c));
+               DPRINTF("Invalid character \'%c\'\n", c);
                ret = 2;
                break;
             }
@@ -3371,7 +3371,7 @@ void sconf_ph_print_array(policy_hierarchy_t array[])
    for (i = INVALID_POLICY + 1; i < LAST_POLICY_VALUE; i++) {
       char character = policy_hierarchy_enum2char(array[i-1].policy);
       
-      DPRINTF(("policy: %c; dependent: %d\n", character, array[i-1].dependent));
+      DPRINTF("policy: %c; dependent: %d\n", character, array[i-1].dependent);
    }   
 
    DRETURN_VOID;

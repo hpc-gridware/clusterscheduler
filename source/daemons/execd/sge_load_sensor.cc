@@ -261,7 +261,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    lSetRef(this_ls, LS_out, fp_out);
    lSetRef(this_ls, LS_err, fp_err);
 
-   DPRINTF(("%s: successfully started load sensor \"%s\"\n", __func__, lGetString(this_ls, LS_command)));
+   DPRINTF("%s: successfully started load sensor \"%s\"\n", __func__, lGetString(this_ls, LS_command));
 
    /* request first load report after starting */
    ls_send_command(this_ls, "\n");
@@ -388,8 +388,8 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
       exit_status = sge_peclose(sge_ls_get_pid(this_ls), (FILE *)lGetRef(this_ls, LS_in),
                             (FILE *)lGetRef(this_ls, LS_out), (FILE *)lGetRef(this_ls, LS_err),
                             (t.tv_sec ? &t : nullptr));
-      DPRINTF(("%s: load sensor `%s` stopped, exit status from sge_peclose= %d\n",
-               __func__, lGetString(this_ls, LS_command), exit_status));
+      DPRINTF("%s: load sensor `%s` stopped, exit status from sge_peclose= %d\n",
+              __func__, lGetString(this_ls, LS_command), exit_status);
    }
 
    sge_ls_set_pid(this_ls, -1);
@@ -440,13 +440,13 @@ static int read_ls(void)
          continue;
       }
 
-      DPRINTF(("receiving from %s\n", lGetString(ls_elem, LS_command)));
+      DPRINTF("receiving from %s\n", lGetString(ls_elem, LS_command));
 
       while (flag) {
          if (fscanf(file, "%[^\n]\n", input) != 1) {
             break;
          }
-         DPRINTF(("received: >>%s<<\n", input));
+         DPRINTF("received: >>%s<<\n", input);
 
          if (!strcmp(input, "begin") || !strcmp(input, "start")) {
             /* remove last possibly incomplete load report */
@@ -469,7 +469,7 @@ static int read_ls(void)
          /* add a newline for pattern matching in sscanf */
          strcat(input, "\n");
          if (sscanf(input, "%[^:]:%[^:]:%[^\n]", host, name, value) != 3) {
-            DPRINTF(("format error in line: \"%100s\"\n", input));
+            DPRINTF("format error in line: \"%100s\"\n", input);
             ERROR(MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input);
          } else {
             {
@@ -524,26 +524,26 @@ static int ls_send_command(lListElem *this_ls, const char *command)
    if (ret == -1) {
       switch (errno) {
       case EINTR:
-         DPRINTF(("select failed with EINTR\n"));
+         DPRINTF("select failed with EINTR\n");
          WARNING("[load_sensor %s] select failed with EINTR", lGetString(this_ls, LS_pid));
          break;
       case EBADF:
-         DPRINTF(("select failed with EBADF\n"));
+         DPRINTF("select failed with EBADF\n");
          WARNING("[load_sensor %s] select failed with EBADF", lGetString(this_ls, LS_pid));
          break;
       case EINVAL:
-         DPRINTF(("select failed with EINVAL\n"));
+         DPRINTF("select failed with EINVAL\n");
          WARNING("[load_sensor %s] select failed with EINVAL", lGetString(this_ls, LS_pid));
          break;
       default:
-         DPRINTF(("select failed with unexpected errno %d", errno));
+         DPRINTF("select failed with unexpected errno %d", errno);
          WARNING("[load_sensor %s] select failed with [%s]", lGetString(this_ls, LS_pid), strerror(errno));
       }
       DRETURN(-1);
    }
 
    if (!FD_ISSET(fileno((FILE *) lGetRef(this_ls, LS_in)), &writefds)) {
-      DPRINTF(("received: cannot read\n"));
+      DPRINTF("received: cannot read\n");
       WARNING("[load_sensor %s] received: cannot read", lGetString(this_ls, LS_pid));
       DRETURN(-1);
    }

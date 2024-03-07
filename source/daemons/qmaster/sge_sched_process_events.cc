@@ -95,7 +95,7 @@ event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
    
    Scheduler_Control.triggered = true;
 
-   DPRINTF(("EVENT UPDATE FUNCTION event_update_func() HAS BEEN TRIGGERED\n"));
+   DPRINTF("EVENT UPDATE FUNCTION event_update_func() HAS BEEN TRIGGERED\n");
 
    pthread_cond_signal(&Scheduler_Control.cond_var);
 

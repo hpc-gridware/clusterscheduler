@@ -83,7 +83,7 @@ heartbeat_initialize(void)
    if (getenv("SGE_TEST_HEARTBEAT_TIMEOUT") != nullptr) {
       time_t test_timeout = atoi(getenv("SGE_TEST_HEARTBEAT_TIMEOUT"));
       set_inc_qmaster_heartbeat_test_mode(test_timeout);
-      DPRINTF(("heartbeat timeout test enabled (timeout=" sge_U32CFormat ")\n", sge_u32c(test_timeout)));
+      DPRINTF("heartbeat timeout test enabled (timeout=" sge_U32CFormat ")\n", sge_u32c(test_timeout));
    }
 
    DRETURN_VOID;
@@ -131,18 +131,18 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 
    switch(retval) {
       case 0: {
-         DPRINTF(("(heartbeat) - incremented (or created) heartbeat file: %s(beat=%d)\n", QMASTER_HEARTBEAT_FILE, heartbeat));
+         DPRINTF("(heartbeat) - incremented (or created) heartbeat file: %s(beat=%d)\n", QMASTER_HEARTBEAT_FILE, heartbeat);
          break;
       }
       default: {
-         DPRINTF(("(heartbeat) - inc_qmaster_heartbeat() returned %d !!! (beat=%d)\n", retval, heartbeat));
+         DPRINTF("(heartbeat) - inc_qmaster_heartbeat() returned %d !!! (beat=%d)\n", retval, heartbeat);
          check_act_qmaster_file = 1;
          break;
       }
    }
 
    if (heartbeat % 20 == 0) {
-      DPRINTF(("(heartbeat) - checking act_qmaster file this time\n"));
+      DPRINTF("(heartbeat) - checking act_qmaster file this time\n");
       check_act_qmaster_file = 1;
    }
 
@@ -162,7 +162,7 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
                sge_shutdown(1);
             }
          } else {
-            DPRINTF(("(heartbeat) - act_qmaster file contains hostname " SFQ "\n", act_qmaster_name));
+            DPRINTF("(heartbeat) - act_qmaster file contains hostname " SFQ "\n", act_qmaster_name);
          }
       } else {
          WARNING(MSG_HEART_CANNOT_READ_FILE_S, err_str );

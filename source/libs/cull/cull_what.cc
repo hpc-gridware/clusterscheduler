@@ -80,7 +80,7 @@ void nm_set(int job_field[], int nm) {
       }
 
    /* set it */
-   DPRINTF(("%s\n", lNm2Str(nm)));
+   DPRINTF("%s\n", lNm2Str(nm));
    job_field[i++] = nm;
    job_field[i] = NoName;
 
@@ -301,7 +301,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    error:
    LERROR(error_status);
    lFreeWhat(&ep);
-   DPRINTF(("error_status = %d\n", error_status));
+   DPRINTF("error_status = %d\n", error_status);
    DRETURN(nullptr);
 }
 
@@ -526,7 +526,7 @@ lEnumeration *lWhatAll(void) {
 
    error:
    LERROR(error_status);
-   DPRINTF(("error_status = %d\n", error_status));
+   DPRINTF("error_status = %d\n", error_status);
    DRETURN(nullptr);
 }
 
@@ -686,7 +686,7 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
    }
    strcat(fmtstr, ")");
 
-   DPRINTF(("fmtstr: %s\n", fmtstr));
+   DPRINTF("fmtstr: %s\n", fmtstr);
 
    what = _lWhat(fmtstr, dp, intv, i);
 

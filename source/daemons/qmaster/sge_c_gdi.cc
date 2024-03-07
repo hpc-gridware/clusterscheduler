@@ -573,7 +573,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                         break;
 
                      default :
-                     DPRINTF(("--> FAILED: unexpected state from in the order processing <--\n"));
+                     DPRINTF("--> FAILED: unexpected state from in the order processing <--\n");
                         break;
                   }
                   break;
@@ -637,10 +637,10 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
    if (reprioritize_tickets && ticket_orders != nullptr) {
       distribute_ticket_orders(ticket_orders, monitor);
       lFreeList(&ticket_orders);
-      DPRINTF(("DISTRIBUTED NEW PRIORITIZE TICKETS\n"));
+      DPRINTF("DISTRIBUTED NEW PRIORITIZE TICKETS\n");
    } else {
       /* tickets not needed at execd's if no repriorization is done */
-      DPRINTF(("NO TICKET DELIVERY\n"));
+      DPRINTF("NO TICKET DELIVERY\n");
    }
 
    DRETURN_VOID;
@@ -849,8 +849,8 @@ static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_cl
       }
 
       if (did_mapping && strcmp(mapped_user, packet->user)) {
-         DPRINTF(("execution mapping: user %s mapped to %s on host %s\n",
-                 packet->user, mapped_user, requested_host));
+         DPRINTF("execution mapping: user %s mapped to %s on host %s\n",
+                 packet->user, mapped_user, requested_host);
 
          lSetString(ep, PERM_req_username, mapped_user);
       } else {
@@ -1286,7 +1286,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
    if (lGetNumberOfElem(tmp_list) != 0) {
       switch (task->target) {
          case SGE_CE_LIST:
-         DPRINTF(("rebuilding consumable debitation\n"));
+         DPRINTF("rebuilding consumable debitation\n");
             centry_redebit_consumables(tmp_list);
             break;
       }

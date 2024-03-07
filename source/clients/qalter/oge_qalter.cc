@@ -98,16 +98,16 @@ int main(int argc, char **argv) {
    ** get command name: qalter or qresub
    */
    if (!strcmp(sge_basename(argv[0], '/'), "qresub")) {
-      DPRINTF(("QRESUB\n"));
+      DPRINTF("QRESUB\n");
       me_who = QRESUB;
    } else if (!strcmp(sge_basename(argv[0], '/'), "qhold")) {
-      DPRINTF(("QHOLD\n"));
+      DPRINTF("QHOLD\n");
       me_who = QHOLD;
    } else if (!strcmp(sge_basename(argv[0], '/'), "qrls")) {
-      DPRINTF(("QRLS\n"));
+      DPRINTF("QRLS\n");
       me_who = QRLS;
    } else {
-      DPRINTF(("QALTER\n"));
+      DPRINTF("QALTER\n");
       me_who = QALTER;
    } 
 
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
    alp = qalter_parse_job_parameter(me_who, cmdline, &request_list, &all_jobs, 
                                     &all_users);
 
-   DPRINTF(("all_jobs = %d, all_user = %d\n", all_jobs, all_users));
+   DPRINTF("all_jobs = %d, all_user = %d\n", all_jobs, all_users);
 
    if (request_list && verify) {
       /* 
@@ -175,10 +175,10 @@ int main(int argc, char **argv) {
        (me_who == QHOLD) ||
        (me_who == QRLS) 
       ) {
-      DPRINTF(("QALTER\n"));
+      DPRINTF("QALTER\n");
       gdi_cmd = SGE_GDI_MOD;
    } else if (me_who == QRESUB){
-      DPRINTF(("QRESUB\n"));
+      DPRINTF("QRESUB\n");
       gdi_cmd = SGE_GDI_COPY;
    } else {
       printf("unknown binary name.\n");
@@ -449,7 +449,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lList *jref_list = nullptr;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
             for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
-               DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
+               DPRINTF("-hold_jid %s\n", lGetString(sep, ST_name));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
             }
             lRemoveElem(cmdline, &ep);
@@ -466,7 +466,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lList *jref_list = nullptr;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
             for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
-               DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
+               DPRINTF("-hold_jid_ad %s\n", lGetString(sep, ST_name));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
             }
             lRemoveElem(cmdline, &ep);
@@ -756,13 +756,13 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if ((all_or_jidlist == NOTINIT) && !strcmp(lGetString(ep, ID_str), "all")) {
          all_or_jidlist = ALL;
          (*all_jobs) = 1;
-         DPRINTF(("got \'all\' from parsing\n", jobid));
+         DPRINTF("got \'all\' from parsing\n", jobid);
       } else */
       if (((all_or_jidlist == NOTINIT) || (all_or_jidlist == JOB)) /* && 
                   jobid != 0*/) { 
          all_or_jidlist = JOB;
          (*all_jobs) = 0; 
-         DPRINTF(("got job " sge_u32 " from parsing\n", jobid));
+         DPRINTF("got job " sge_u32 " from parsing\n", jobid);
       } else {
          if (!strcmp(lGetString(ep, ID_str), "all") || (all_or_jidlist == ALL)) {
             answer_list_add(&answer, MSG_ANSWER_ALLANDJOBIDSARENOTVALID, 

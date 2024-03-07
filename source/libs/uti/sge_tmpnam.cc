@@ -118,7 +118,7 @@ char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message) {
    sge_strlcpy(aBuffer, sge_dstring_get_string(&s), SGE_PATH_MAX);
    sge_dstring_free(&s);
 
-   DPRINTF(("sge_tmpnam: returning %s\n", aBuffer));
+   DPRINTF("sge_tmpnam: returning %s\n", aBuffer);
    DRETURN(aBuffer);
 }
 

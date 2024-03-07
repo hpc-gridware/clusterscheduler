@@ -129,7 +129,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
                last--;
             last++;
 
-            /* DPRINTF(("pid: %d - progname: >%s<\n", pid, &buf[last])); */
+            /* DPRINTF("pid: %d - progname: >%s<\n", pid, &buf[last]); */
 
             /* get basename of program */
             ptr = strrchr(&buf[last], '/');
@@ -233,19 +233,19 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
 
             if (pidfound == pid) {
                last = len - 1;
-               DPRINTF(("last pos in line: %d\n", last));
+               DPRINTF("last pos in line: %d\n", last);
                while (last >= 0 && isspace((int) buf[last])) {
                   buf[last] = '\0';
                   last--;
                }
 
-               /* DPRINTF(("last pos in line now: %d\n", last)); */
+               /* DPRINTF("last pos in line now: %d\n", last); */
 
                while (last >= 0 && !isspace((int) buf[last]))
                   last--;
                last++;
 
-               /* DPRINTF(("pid: %d - progname: >%s<\n", pid, &buf[last])); */
+               /* DPRINTF("pid: %d - progname: >%s<\n", pid, &buf[last]); */
 
                /* get basename of program */
                ptr = strrchr(&buf[last], '/');

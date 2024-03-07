@@ -164,7 +164,7 @@ int sge_execd_process_messages()
                sge_set_flush_lr_flag(true);
                break;
             default:
-               DPRINTF(("***** UNKNOWN TAG TYPE %d\n", msg.tag));
+               DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
                break;
          }
          last_heard = now;
@@ -222,7 +222,7 @@ int sge_execd_process_messages()
 
             if (now - last_qmaster_file_read >= EXECD_MAX_RECONNECT_TIMEOUT) {
                /* re-read act qmaster file (max. every EXECD_MAX_RECONNECT_TIMEOUT seconds) */
-               DPRINTF(("re-read actual qmaster file\n"));
+               DPRINTF("re-read actual qmaster file\n");
                last_qmaster_file_read = now;
 
                /* Try to re-register at qmaster */
@@ -273,14 +273,14 @@ int sge_execd_process_messages()
                last_alive_check = now;
 
 #if 0
-               DPRINTF(("Do we have to to alive check of qmaster?\n"));
+               DPRINTF("Do we have to to alive check of qmaster?\n");
 
 
-               DPRINTF(("*************************************** alive check *****************************************************\n"));
-               DPRINTF(("last_heard=%ld\n", last_heard));
-               DPRINTF(("now=%ld\n", now));
-               DPRINTF(("now - last_heard = %ld\n", now - last_heard));
-               DPRINTF(("alive_check_interval=%ld\n", alive_check_interval));
+               DPRINTF("*************************************** alive check *****************************************************\n");
+               DPRINTF("last_heard=%ld\n", last_heard);
+               DPRINTF("now=%ld\n", now);
+               DPRINTF("now - last_heard = %ld\n", now - last_heard);
+               DPRINTF("alive_check_interval=%ld\n", alive_check_interval);
 #endif
                
                /*

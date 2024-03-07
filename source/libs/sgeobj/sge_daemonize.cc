@@ -167,7 +167,7 @@ bool sge_daemonize_prepare() {
                   exit_status = SGE_DAEMONIZE_DEAD_CHILD;
                }
             }
-            DPRINTF(("back=%d errno=%d\n", (int)back, errno_value));
+            DPRINTF("back=%d errno=%d\n", (int)back, errno_value);
             sleep(1);
          }
       }
@@ -175,7 +175,7 @@ bool sge_daemonize_prepare() {
       if (line_p >= 4) {
          line[3] = 0;
          exit_status = atoi(line);
-         DPRINTF(("received: \"%d\"\n", exit_status));
+         DPRINTF("received: \"%d\"\n", exit_status);
       }
 
       switch (exit_status) {

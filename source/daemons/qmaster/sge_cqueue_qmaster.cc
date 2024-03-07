@@ -161,11 +161,9 @@ qinstance_create(const lListElem *cqueue, lList **answer_list, const char *hostn
     */
    sge_qmaster_qinstance_state_set_ambiguous(ret, *is_ambiguous);
    if (*is_ambiguous) {
-      DPRINTF(("Qinstance " SFN "@" SFN " has ambiguous configuration\n",
-              cqueue_name, hostname));
+      DPRINTF("Qinstance " SFN "@" SFN " has ambiguous configuration\n", cqueue_name, hostname);
    } else {
-      DPRINTF(("Qinstance " SFN "@" SFN " has non-ambiguous configuration\n",
-              cqueue_name, hostname));
+      DPRINTF("Qinstance " SFN "@" SFN " has non-ambiguous configuration\n", cqueue_name, hostname);
    }
 
    /*
@@ -221,7 +219,7 @@ cqueue_add_qinstances(lListElem *cqueue, lList **answer_list, lList *add_hosts,
             qinstance = qinstance_create(cqueue, answer_list,
                                          hostname, &is_ambiguous, monitor, master_hgroup_list, master_cqueue_list);
             if (is_ambiguous) {
-               DPRINTF(("qinstance %s has ambiguous conf\n", hostname));
+               DPRINTF("qinstance %s has ambiguous conf\n", hostname);
             }
             lSetUlong(qinstance, QU_tag, SGE_QI_TAG_ADD);
             lAppendElem(list, qinstance);
@@ -495,12 +493,10 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
          sge_qmaster_qinstance_state_set_ambiguous(qinstance, will_be_ambiguous);
          if (will_be_ambiguous && !is_ambiguous) {
             state_changed = true;
-            DPRINTF(("Qinstance " SFQ " has ambiguous configuration\n",
-                    qinstance_name));
+            DPRINTF("Qinstance " SFQ " has ambiguous configuration\n", qinstance_name);
          } else if (!will_be_ambiguous && is_ambiguous) {
             state_changed = true;
-            DPRINTF(("Qinstance " SFQ " has non-ambiguous configuration\n",
-                    qinstance_name));
+            DPRINTF("Qinstance " SFQ " has non-ambiguous configuration\n", qinstance_name);
          }
 
          /*
@@ -510,13 +506,11 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
           * necessary to send mod-events.
           */
          if (state_changed) {
-            DPRINTF(("Internal state of qinstance " SFQ " has been changed\n",
-                    qinstance_name));
+            DPRINTF("Internal state of qinstance " SFQ " has been changed\n", qinstance_name);
             lSetUlong(qinstance, QU_tag, SGE_QI_TAG_MOD);
             qinstance_increase_qversion(qinstance);
          } else if (conf_changed) {
-            DPRINTF(("Only config value of qinstance " SFQ " has been changed\n",
-                    qinstance_name));
+            DPRINTF("Only config value of qinstance " SFQ " has been changed\n", qinstance_name);
             lSetUlong(qinstance, QU_tag, SGE_QI_TAG_MOD_ONLY_CONFIG);
             qinstance_increase_qversion(qinstance);
          }

@@ -55,7 +55,7 @@ void schedd_set_schedd_log_file()
 
    if (!*schedd_log_file) {
       snprintf(schedd_log_file, sizeof(schedd_log_file), "%s/%s/%s", cell_root, "common", SCHED_LOG_NAME);
-      DPRINTF(("schedd log file >>%s<<\n", schedd_log_file));
+      DPRINTF("schedd log file >>%s<<\n", schedd_log_file);
    }
 
    DRETURN_VOID;
@@ -86,7 +86,7 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 
       fp = fopen(schedd_log_file, "a");
       if (!fp) {
-         DPRINTF(("could not open schedd_log_file " SFQ "\n", schedd_log_file));
+         DPRINTF("could not open schedd_log_file " SFQ "\n", schedd_log_file);
          DRETURN(-1);
       }
 
@@ -97,7 +97,7 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 
    DRETURN(0);
 FCLOSE_ERROR:
-   DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, schedd_log_file, strerror(errno)));
+   DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, schedd_log_file, strerror(errno));
    DRETURN(-1);
 }
 

@@ -62,7 +62,7 @@ int do_kill_execd(struct_msg_t *aMsg)
 
    unpackint(&(aMsg->buf), &kill_jobs);
 
-   DPRINTF(("===>KILL EXECD%s\n", kill_jobs?" and jobs":""));
+   DPRINTF("===>KILL EXECD%s\n", kill_jobs?" and jobs":"");
    if (kill_jobs) {
       for_each_ep(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {

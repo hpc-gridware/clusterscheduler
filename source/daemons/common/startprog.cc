@@ -94,7 +94,7 @@ int startprog(int out, int err,
    argv[i] = nullptr;
  
  for (i=1; i<256 && (str = va_arg(argnp, char*)); i++) {
-   DPRINTF(("argv[%d] %s\n", i, str));   
+   DPRINTF("argv[%d] %s\n", i, str);
    argv[i] = str;
  }   
  va_end(argnp);
@@ -215,7 +215,7 @@ pid_t pid
  
    ret = exit_status == 8 ? -1 : exit_status;
    
-   DPRINTF(("exit status of child: %d\n",  ret));
+   DPRINTF("exit status of child: %d\n",  ret);
 
    DRETURN(ret);
 }

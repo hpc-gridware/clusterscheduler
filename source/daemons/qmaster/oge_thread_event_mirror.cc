@@ -30,7 +30,7 @@ oge_event_mirror_initialize() {
    dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
-   DPRINTF(("event mirror functionality has been initialized\n"));
+   DPRINTF("event mirror functionality has been initialized\n");
    sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[EVENT_MIRROR_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.event_mirror_thread_pool), "event mirror thread pool");
    cl_thread_list_create_thread(Main_Control.event_mirror_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
@@ -46,11 +46,11 @@ oge_event_mirror_terminate() {
 
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.event_mirror_thread_pool);
    while (thread != nullptr) {
-      DPRINTF((SFN " gets canceled\n", thread->thread_name));
+      DPRINTF(SFN " gets canceled\n", thread->thread_name);
       cl_thread_list_delete_thread(Main_Control.event_mirror_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.event_mirror_thread_pool);
    }
-   DPRINTF(("all " SFN " threads terminated\n", threadnames[EVENT_MIRROR_THREAD]));
+   DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MIRROR_THREAD]);
 
    DRETURN_VOID;
 }
@@ -88,7 +88,7 @@ oge_event_mirror_event_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unus
       lXchgList(new_event_obj, REP_list, &event_mirror_control.new_events);
    }
    event_mirror_control.triggered = true;
-   DPRINTF(("event update function oge_event_mirror_event_update_func() has been triggered\n"));
+   DPRINTF("event update function oge_event_mirror_event_update_func() has been triggered\n");
 
    // trigger the event mirror thread to wake up and process the events
    pthread_cond_signal(&event_mirror_control.cond_var);
@@ -121,7 +121,7 @@ oge_event_mirror_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
          // wait till we get notified by event master thread that there are new events
          wait_ret = pthread_cond_timedwait(&event_mirror_control.cond_var, &event_mirror_control.mutex, &ts);
          if (wait_ret != 0) {
-            DPRINTF(("timeout (or error) in oge_event_mirror_wait_for_event %d\n", wait_ret));
+            DPRINTF("timeout (or error) in oge_event_mirror_wait_for_event %d\n", wait_ret);
          }
       }
 
@@ -197,30 +197,30 @@ oge_event_mirror_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
    cl_thread_func_startup(thread_config);
    const char *thread_name = thread_config->thread_name;
-   DPRINTF((SFN " started\n", thread_name));
+   DPRINTF(SFN " started\n", thread_name);
 
    // initialize monitoring
    monitoring_t monitor;
    sge_monitor_init(&monitor, thread_name, NONE_EXT, NO_WARNING, NO_ERROR);
    sge_qmaster_thread_init(QMASTER, EVENT_MIRROR_THREAD, true);
-   DPRINTF(("initialized monitoring\n"));
+   DPRINTF("initialized monitoring\n");
 
    // register at profiling module
    set_thread_name(pthread_self(), "Event Mirror Thread");
    conf_update_thread_profiling("Event Mirror Thread");
-   DPRINTF(("registered at profiling module\n"));
+   DPRINTF("registered at profiling module\n");
 
    // set profiling parameters
    time_t next_prof_output = 0;
    prof_set_level_name(SGE_PROF_CUSTOM0, "main", nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM1, "wait", nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM2, "mirror", nullptr);
-   DPRINTF(("set profiling levels\n"));
+   DPRINTF("set profiling levels\n");
 
    // prepare as an event client/mirror
    sge_evc_class_t *evc = nullptr;
    bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, thread_name);
-   DPRINTF(("prepared event client/mirror mechanism\n"));
+   DPRINTF("prepared event client/mirror mechanism\n");
 
    // register as event mirror and subscribe events
    if (local_ret) {
@@ -229,7 +229,7 @@ oge_event_mirror_main(void *arg) {
                             &sge_handle_event_ack);
       evc->ec_register(evc, false, nullptr, &monitor);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
-      DPRINTF(("registered at event mirror\n"));
+      DPRINTF("registered at event mirror\n");
 
       sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
    }
@@ -246,10 +246,10 @@ oge_event_mirror_main(void *arg) {
 
          // if we lost connection we have to register again
          if (evc->ec_need_new_registration(evc)) {
-            DPRINTF(("event mirror thread lost connection to event master thread"));
+            DPRINTF("event mirror thread lost connection to event master thread");
             lFreeList(&event_list);
             if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
-               DPRINTF(("re-registered at event master!\n"));
+               DPRINTF("re-registered at event master!\n");
             }
          }
 
@@ -259,9 +259,9 @@ oge_event_mirror_main(void *arg) {
 
             if (do_shutdown == false && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
                handled_events = true;
-               DPRINTF(("events handled\n"));
+               DPRINTF("events handled\n");
             } else {
-               DPRINTF(("events contain shutdown event - ignoring events\n"));
+               DPRINTF("events contain shutdown event - ignoring events\n");
             }
             lFreeList(&event_list);
          }
@@ -286,7 +286,7 @@ oge_event_mirror_main(void *arg) {
          pthread_cleanup_pop(execute);
          pthread_cleanup_pop(execute);
          pthread_cleanup_pop(execute);
-         DPRINTF(("passed cancellation point\n"));
+         DPRINTF("passed cancellation point\n");
       }
    }
 

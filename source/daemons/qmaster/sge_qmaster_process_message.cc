@@ -160,7 +160,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
             do_report_request(&msg, monitor);
             break;
          default:
-            DPRINTF(("***** UNKNOWN TAG TYPE %d\n", msg.tag));
+            DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
       }
       clear_packbuffer(&(msg.buf));
    }
@@ -323,11 +323,11 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
       ERROR(MSG_COM_UNPACKINT_I, 1);
-      DPRINTF(("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name));
+      DPRINTF("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name);
       DRETURN_VOID;
    }
 
-   DPRINTF(("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name));
+   DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
 
    /* 
    ** check for scheduler shutdown if the request comes from admin or root 
@@ -384,7 +384,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
       ack_ulong = lGetUlong(ack, ACK_id);
       ack_ulong2 = lGetUlong(ack, ACK_id2);
 
-      DPRINTF(("ack_ulong = %ld, ack_ulong2 = %ld\n", ack_ulong, ack_ulong2));
+      DPRINTF("ack_ulong = %ld, ack_ulong2 = %ld\n", ack_ulong, ack_ulong2);
       switch (ack_tag) { /* send by dispatcher */
          case ACK_SIGJOB:
          case ACK_SIGQUEUE:
@@ -440,7 +440,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          lListElem *jatep = nullptr;
          const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-         DPRINTF(("TAG_SIGJOB\n"));
+         DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
             ERROR(MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong));
@@ -452,7 +452,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF(("JOB " sge_u32": SIGNAL ACK\n", lGetUlong(jep, JB_job_number)));
+         DPRINTF("JOB " sge_u32": SIGNAL ACK\n", lGetUlong(jep, JB_job_number));
          lSetUlong(jatep, JAT_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          {
@@ -492,7 +492,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF(("QUEUE %s: SIGNAL ACK\n", lGetString(qinstance, QU_full_name)));
+         DPRINTF("QUEUE %s: SIGNAL ACK\n", lGetString(qinstance, QU_full_name));
 
          lSetUlong(qinstance, QU_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));

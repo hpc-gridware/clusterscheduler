@@ -229,7 +229,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
 
    /* this should not really be necessary */
    if (jep == nullptr) {
-      DPRINTF(("got nullptr for job argument\n"));
+      DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
 
@@ -336,7 +336,7 @@ sge_task_depend_init(lListElem *jep, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (jep == nullptr) {
-      DPRINTF(("got nullptr for job argument\n"));
+      DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
 
@@ -400,7 +400,7 @@ sge_task_depend_flush(lListElem *jep, lList **alpp) {
 
    /* this should not really be necessary */
    if (jep == nullptr) {
-      DPRINTF(("got nullptr for job argument\n"));
+      DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
 
@@ -477,7 +477,7 @@ sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep
 
    /* equivalent jobs cannot be nullptr */
    if (pre_jep == nullptr || suc_jep == nullptr) {
-      DPRINTF(("got nullptr pre_jep or suc_jep job argument\n"));
+      DPRINTF("got nullptr pre_jep or suc_jep job argument\n");
       DRETURN(false);
    }
 

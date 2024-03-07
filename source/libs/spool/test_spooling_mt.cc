@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
    t = (pthread_t *)sge_malloc(threads * sizeof(pthread_t));
    args = (int *)sge_malloc(threads * sizeof(int));
 
-   DPRINTF(("writing to database %s from %d threads\n", url, threads));
+   DPRINTF("writing to database %s from %d threads\n", url, threads);
 
    /* initialize spooling */
    spooling_context = spool_create_dynamic_context(&answer_list, nullptr, url, nullptr);

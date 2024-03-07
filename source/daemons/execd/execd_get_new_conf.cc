@@ -100,11 +100,10 @@ int do_get_new_conf(struct_msg_t *aMsg)
             master_queue = responsible_queue(job, jatask, nullptr);
             priority = atoi(lGetString(master_queue, QU_priority));
 
-            DPRINTF(("Set priority of job " sge_u32"." sge_u32" running in"
-               " queue  %s to %d\n", 
+            DPRINTF("Set priority of job " sge_u32"." sge_u32" running in queue  %s to %d\n",
             lGetUlong(job, JB_job_number), 
             lGetUlong(jatask, JAT_task_number),
-            lGetString(master_queue, QU_full_name), priority));
+            lGetString(master_queue, QU_full_name), priority);
             ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),
                                       lGetUlong(jatask, JAT_task_number),
                                       nullptr, priority);
@@ -112,12 +111,11 @@ int do_get_new_conf(struct_msg_t *aMsg)
             for_each_rw(petask, lGetList(jatask, JAT_task_list)) {
                master_queue = responsible_queue(job, jatask, petask);
                priority = atoi(lGetString(master_queue, QU_priority));
-               DPRINTF(("Set priority of task " sge_u32"." sge_u32"-%s running "
-                        "in queue %s to %d\n", 
+               DPRINTF("Set priority of task " sge_u32"." sge_u32"-%s running in queue %s to %d\n",
                lGetUlong(job, JB_job_number), 
                lGetUlong(jatask, JAT_task_number),
                lGetString(petask, PET_id),
-               lGetString(master_queue, QU_full_name), priority));
+               lGetString(master_queue, QU_full_name), priority);
                ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),
                                          lGetUlong(jatask, JAT_task_number),
                                           lGetString(petask, PET_id),
@@ -135,7 +133,7 @@ int do_get_new_conf(struct_msg_t *aMsg)
    adm_mail_reset(BIT_ADM_NEW_CONF);
 
    sge_ls_qidle(use_qidle);
-   DPRINTF(("use_qidle: %d\n", use_qidle));
+   DPRINTF("use_qidle: %d\n", use_qidle);
 
    sge_free(&old_spool);
    sge_free(&spool_dir);

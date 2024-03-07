@@ -170,7 +170,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
                continue;
             }
 
-            DPRINTF(("matching host %s with qhost -l\n", lGetHost(ep, EH_name)));
+            DPRINTF("matching host %s with qhost -l\n", lGetHost(ep, EH_name));
 
             selected = sge_select_queue(resource_match_list, nullptr, ep, ehl, cl,
                                         true, -1, nullptr, nullptr, nullptr);
@@ -179,7 +179,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
                /* check for hostname match if there was a hostname match request */
                if (tmp_resource_list != nullptr) {
                   if (sge_hostcmp(lGetString(tmp_resource_list, CE_stringval), lGetHost(ep, EH_name)) != 0 ) {
-                     DPRINTF(("NOT matched hostname %s with qhost -l\n", lGetHost(ep, EH_name)));
+                     DPRINTF("NOT matched hostname %s with qhost -l\n", lGetHost(ep, EH_name));
                      lSetUlong(ep, EH_tagged, 0);
                   }
                }
@@ -263,7 +263,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
       }
       
       if (report_handler != nullptr) {
-         DPRINTF(("report host_finished: %s\n", lGetHost(ep, EH_name)));
+         DPRINTF("report host_finished: %s\n", lGetHost(ep, EH_name));
          ret = report_handler->report_host_finished(report_handler, lGetHost(ep, EH_name), alpp);
          if (ret != QHOST_SUCCESS) {
             break;

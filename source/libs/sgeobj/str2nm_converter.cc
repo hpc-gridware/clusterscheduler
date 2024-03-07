@@ -49,7 +49,7 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
 
    if (nsp) {
       for (i = 0; i < nsp->size; i++) {
-         DPRINTF(("%d: %s\n", nsp->namev[i]));
+         DPRINTF("%d: %s\n", nsp->namev[i]);
          if (!strcmp(nsp->namev[i], str)) {
             found = 1;
             break;
@@ -74,7 +74,7 @@ int lStr2NmGenerator(const char *str, lNameSpace *ns)
 
    for (nsp = ns; nsp->lower; nsp++) {
       if ((ret = _lStr2Nm(nsp, str)) != NoName) {
-         DPRINTF(("Name: %s Id: %d\n", str, ret));
+         DPRINTF("Name: %s Id: %d\n", str, ret);
          DRETURN(ret);
       }
    }

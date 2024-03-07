@@ -93,7 +93,7 @@ schedd_set_serf_log_file() {
 
    if (!*schedule_log_path) {
       snprintf(schedule_log_path, sizeof(schedule_log_path), "%s/%s/%s", cell_root, "common", schedule_log_file);
-      DPRINTF(("schedule log path >>%s<<\n", schedule_log_path));
+      DPRINTF("schedule log path >>%s<<\n", schedule_log_path);
    }
 
    DRETURN_VOID;
@@ -119,7 +119,7 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
 
    DRETURN_VOID;
 FCLOSE_ERROR:
-   DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno)));
+   DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno));
    DRETURN_VOID;
 }
 
@@ -137,7 +137,7 @@ schedd_serf_newline() {
    }
    DRETURN_VOID;
    FCLOSE_ERROR:
-   DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno)));
+   DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno));
    DRETURN_VOID;
 }
 
@@ -178,7 +178,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
        * otherwise we ran into a timeout or an error
        */
       if (wait_ret != 0) {
-         DPRINTF(("pthread_cond_timedwait for events failed %d\n", wait_ret));
+         DPRINTF("pthread_cond_timedwait for events failed %d\n", wait_ret);
       }
    }
 
@@ -489,7 +489,7 @@ sge_scheduler_main(void *arg) {
    /* register at profiling module */
    set_thread_name(pthread_self(), "Scheduler Thread");
    conf_update_thread_profiling("Scheduler Thread");
-   DPRINTF((SFN " started\n", thread_config->thread_name));
+   DPRINTF(SFN " started\n", thread_config->thread_name);
 
    /* initialize schedd_runlog logging */
    schedd_set_schedd_log_file();
@@ -514,7 +514,7 @@ sge_scheduler_main(void *arg) {
     * prepare event client/mirror mechanism
     */
    sge_gdi2_evc_setup(&evc, EV_ID_SCHEDD, &alp, "scheduler");
-   DPRINTF(("prepared event client/mirror mechanism\n"));
+   DPRINTF("prepared event client/mirror mechanism\n");
 
    /*
     * register as event mirror
@@ -523,14 +523,14 @@ sge_scheduler_main(void *arg) {
                          &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack);
    evc->ec_register(evc, false, nullptr, &monitor);
    evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
-   DPRINTF(("registered at event mirror\n"));
+   DPRINTF("registered at event mirror\n");
 
    /*
     * subscribe necessary data
     */
    ensure_valid_what_and_where(&where_what);
    subscribe_scheduler(evc, &where_what);
-   DPRINTF(("subscribed necessary data from event master\n"));
+   DPRINTF("subscribed necessary data from event master\n");
 
    /* 
     * schedulers main loop
@@ -567,7 +567,7 @@ sge_scheduler_main(void *arg) {
       if (evc->ec_need_new_registration(evc)) {
          lFreeList(&event_list);
          if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
-            DPRINTF(("re-registered at event master!\n"));
+            DPRINTF("re-registered at event master!\n");
          }
       }
 
@@ -578,9 +578,9 @@ sge_scheduler_main(void *arg) {
          /* update mirror and free data */
          if (do_shutdown == false && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
             handled_events = true;
-            DPRINTF(("events handled\n"));
+            DPRINTF("events handled\n");
          } else {
-            DPRINTF(("events contain shutdown event - ignoring events\n"));
+            DPRINTF("events contain shutdown event - ignoring events\n");
          }
          lFreeList(&event_list);
       }
@@ -616,8 +616,7 @@ sge_scheduler_main(void *arg) {
             char buffer[128];
 
             sge_dstring_init(&ds, buffer, sizeof(buffer));
-            DPRINTF(("================[SCHEDULING-EPOCH %s]==================\n",
-                    sge_at_time(0, &ds)));
+            DPRINTF("================[SCHEDULING-EPOCH %s]==================\n", sge_at_time(0, &ds));
             sge_dstring_free(&ds);
          }
 
@@ -631,7 +630,7 @@ sge_scheduler_main(void *arg) {
          copy.dept_list = lSelect("", master_userset_list, where_what.where_dept, where_what.what_acldept);
          copy.acl_list = lSelect("", master_userset_list, where_what.where_acl, where_what.what_acldept);
 
-         DPRINTF(("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
+         DPRINTF("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                   " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
                  lGetNumberOfElem(master_cqueue_list),
                  lGetNumberOfElem(master_job_list),
@@ -647,7 +646,7 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfElem(master_ar_list),
                  lGetNumberOfNodes(nullptr, master_sharetree_list, STN_children),
                  lGetNumberOfLeafs(nullptr, master_sharetree_list, STN_children)
-                 ));
+                 );
 
          sge_rebuild_job_category(master_job_list, master_userset_list,
                                   master_project_list, master_rqs_list);
@@ -732,7 +731,7 @@ sge_scheduler_main(void *arg) {
          copy.ar_list = lCopyList("", master_ar_list);
 
          /* report number of reduced and raw (in brackets) lists */
-         DPRINTF(("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
+         DPRINTF("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
                   ", A:" sge_uu32 ", D:" sge_uu32 ", P:" sge_uu32 ", CKPT:" sge_uu32 ", US:" sge_uu32 ", PR:" sge_uu32
                   ", RQS:" sge_uu32 ", AR:" sge_uu32 ", S:nd:%d/lf:%d\n",
                  lGetNumberOfElem(copy.queue_list),
@@ -752,7 +751,7 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfElem(copy.ar_list),
                  lGetNumberOfNodes(nullptr, copy.share_tree, STN_children),
                  lGetNumberOfLeafs(nullptr, copy.share_tree, STN_children)
-                 ));
+                 );
 
          if (getenv("SGE_ND")) {
             printf("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
@@ -876,7 +875,7 @@ sge_scheduler_main(void *arg) {
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
-      DPRINTF(("passed cancellation point\n"));
+      DPRINTF("passed cancellation point\n");
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

@@ -618,7 +618,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
        sge_get_file_path(pe_task_spool_file, sizeof(pe_task_spool_file), PE_TASK_SPOOL_FILE,
                          FORMAT_DEFAULT, flags, jobid, ja_taskid, pe_task_id);
       
-       DPRINTF(("try to remove " SFN "\n", pe_task_spool_file));
+       DPRINTF("try to remove " SFN "\n", pe_task_spool_file);
        if (sge_is_file(pe_task_spool_file) && !sge_unlink(nullptr, pe_task_spool_file)) {
           ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_PE_TASK_SPOOL_FILE, pe_task_spool_file);
       }
@@ -637,10 +637,10 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
       } else {
          remove_task_spool_file = job_is_enrolled(job, ja_taskid);
       }
-      DPRINTF(("remove_task_spool_file = %d\n", remove_task_spool_file));;
+      DPRINTF("remove_task_spool_file = %d\n", remove_task_spool_file);;
 
       if (remove_task_spool_file) {
-         DPRINTF(("removing " SFN "\n", task_spool_file));
+         DPRINTF("removing " SFN "\n", task_spool_file);
          if (sge_is_directory(task_spool_file)) {
             if (sge_rmdir(task_spool_file, &error_msg)) {
                ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer);
@@ -656,7 +656,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
           * This is only an indicator that another task is running which has 
           * been spooled in the directory.
           */  
-         DPRINTF(("try to remove " SFN "\n", task_spool_dir));
+         DPRINTF("try to remove " SFN "\n", task_spool_dir);
          if (sge_rmdir(task_spool_dir, &error_msg)) {
             ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer);
          } 
@@ -676,18 +676,18 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
    try_to_remove_sub_dirs = 0;
    if (!one_file) {
       if (ja_taskid == 0) { 
-         DPRINTF(("removing " SFN "\n", spoolpath_common));
+         DPRINTF("removing " SFN "\n", spoolpath_common);
          if (!sge_unlink(nullptr, spoolpath_common)) {
             ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_FILE, spoolpath_common);
          }
-         DPRINTF(("removing " SFN "\n", spool_dir));
+         DPRINTF("removing " SFN "\n", spool_dir);
          if (sge_rmdir(spool_dir, nullptr)) {
             ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_DIRECTORY, spool_dir);
          }
          try_to_remove_sub_dirs = 1;
       }
    } else {
-      DPRINTF(("removing " SFN "\n", spool_dir));
+      DPRINTF("removing " SFN "\n", spool_dir);
       if (!sge_unlink(nullptr, spool_dir)) {
          ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_FILE, spool_dir);
       }
@@ -699,10 +699,10 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
     * spooled in the same directory.
     */
    if (try_to_remove_sub_dirs) {
-      DPRINTF(("try to remove " SFN "\n", spool_dir_third));
+      DPRINTF("try to remove " SFN "\n", spool_dir_third);
 
       if (!sge_rmdir(spool_dir_third, nullptr)) {
-         DPRINTF(("try to remove " SFN "\n", spool_dir_second));
+         DPRINTF("try to remove " SFN "\n", spool_dir_second);
          sge_rmdir(spool_dir_second, nullptr);
       }
    }
@@ -815,7 +815,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
             /* check directory name */
             if (strcmp(fourth_dir, job_dir)) {
                fprintf(stderr, "%s %s\n", fourth_dir, job_dir);
-               DPRINTF(("Invalid directory " SFN "\n", fourth_dir));
+               DPRINTF("Invalid directory " SFN "\n", fourth_dir);
                continue;
             }
 

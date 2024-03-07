@@ -252,7 +252,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
 #if defined(SOLARIS)
       sprintf(procnam, "%s/%s", PROC_DIR, dent->d_name);
       if ((fd = open(procnam, O_RDONLY, 0)) == -1) {
-         DPRINTF(("open(%s) failed: %s\n", procnam, strerror(errno)));
+         DPRINTF("open(%s) failed: %s\n", procnam, strerror(errno));
          continue;
       }
 #elif defined(LINUX)

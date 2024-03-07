@@ -246,7 +246,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
             while ((ep = next_ep)) {
                next_ep = lGetElemStrNextRW(tmp_lr_list, LR_name, name, &iterator);
 
-               DPRINTF(("handling %s in execd_add_load_report\n", name));
+               DPRINTF("handling %s in execd_add_load_report\n", name);
                if (sge_hostcmp(lGetHost(ep, LR_host), hostname) == 0) {
                   /* we found the same load value in the temp list */
                   found = true;
@@ -255,8 +255,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
                      /* value hasn't changed, remove it from list */ 
                      lRemoveElem(tmp_lr_list, &ep);
                   } else {
-                     DPRINTF(("value %s has changed from %s to %s\n", name, 
-                        value ? value:"nullptr", lGetString(ep, LR_value)));
+                     DPRINTF("value %s has changed from %s to %s\n", name, value ? value:"nullptr", lGetString(ep, LR_value));
                      /* Old value is no longer valid */
                      lSetString(lr, LR_value, nullptr);
                   }
@@ -312,7 +311,7 @@ execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
       lSetList(report, REP_list, 
          lCopyList("execd config list copy", Execd_Config_List));
       lAppendElem(report_list, report);
-      DPRINTF(("handling conf report in execd_add_conf_report\n"));
+      DPRINTF("handling conf report in execd_add_conf_report\n");
    }
    DRETURN(0);
 }
@@ -350,7 +349,7 @@ execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
          lSetList(report, REP_list, lp_lic);
       }
       lAppendElem(report_list, report);
-      DPRINTF(("handling license report in execd_add_license_report\n"));
+      DPRINTF("handling license report in execd_add_license_report\n");
    }
    DRETURN(0);
 }
@@ -717,7 +716,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
    /* build a list of load values */
    if (loads >= 0) {
-      DPRINTF(("---> %f %f %f - %d\n", avg[0], avg[1], avg[2], (int) (avg[2] * 100.0)));
+      DPRINTF("---> %f %f %f - %d\n", avg[0], avg[1], avg[2], (int) (avg[2] * 100.0));
 
       sge_add_double2load_report(lpp, LOAD_ATTR_LOAD_AVG, avg[1], qualified_hostname, nullptr);
       sge_add_double2load_report(lpp, LOAD_ATTR_LOAD_SHORT, avg[0], qualified_hostname, nullptr);
@@ -882,40 +881,39 @@ void update_job_usage(const char* qualified_hostname)
          /* JG: TODO: make a function updating all load values in job report */
          /* replace cpu/mem/io with newer values */
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_CPU, JAT_usage_list))) {
-            DPRINTF(("added/updated 'cpu' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'cpu' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_CPU, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_MEM, JAT_usage_list))) {
-            DPRINTF(("added/updated 'mem' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'mem' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_MEM, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_IO, JAT_usage_list))) {
-            DPRINTF(("added/updated 'io' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'io' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_IO, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_IOW, JAT_usage_list))) {
-            DPRINTF(("added/updated 'iow' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'iow' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_IOW, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_VMEM, JAT_usage_list))) {
-            DPRINTF(("added/updated 'vmem' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'vmem' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_VMEM, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_MAXVMEM, JAT_usage_list))) {
-            DPRINTF(("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_RSS, JAT_usage_list))) {
-            DPRINTF(("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_RSS, nullptr, lGetDouble(uep, UA_value));
          }
          if ((uep = lGetSubStr(ja_task, UA_name, USAGE_ATTR_MAXRSS, JAT_usage_list))) {
-            DPRINTF(("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value)));
+            DPRINTF("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value));
             add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
          }
 
-         DPRINTF(("---> updating job report usage for job " sge_u32"." sge_u32"\n",
-             job_id, ja_task_id));
+         DPRINTF("---> updating job report usage for job " sge_u32"." sge_u32"\n", job_id, ja_task_id);
 
          for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             const char *pe_task_id = lGetString(pe_task, PET_id);
@@ -934,40 +932,40 @@ void update_job_usage(const char* qualified_hostname)
 
             /* replace cpu/mem/io with newer values */
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_CPU, PET_usage))) {
-               DPRINTF(("added/updated 'cpu' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'cpu' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_CPU, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_MEM, PET_usage))) {
-               DPRINTF(("added/updated 'mem' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'mem' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_MEM, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_IO, PET_usage))) {
-               DPRINTF(("added/updated 'io' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'io' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_IO, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_IOW, PET_usage))) {
-               DPRINTF(("added/updated 'iow' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'iow' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_IOW, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_VMEM, PET_usage))) {
-               DPRINTF(("added/updated 'vmem' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'vmem' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_VMEM, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_MAXVMEM, PET_usage))) {
-               DPRINTF(("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'maxvmem' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_RSS, PET_usage))) {
-               DPRINTF(("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'rss' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_RSS, nullptr, lGetDouble(uep, UA_value));
             }
             if ((uep = lGetSubStr(pe_task, UA_name, USAGE_ATTR_MAXRSS, PET_usage))) {
-               DPRINTF(("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value)));
+               DPRINTF("added/updated 'maxrss' usage: %f\n", lGetDouble(uep, UA_value));
                add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
             }
 
-            DPRINTF(("---> updating job report usage for job " sge_u32"." sge_u32" task \"%s\"\n",
-                job_id, ja_task_id, pe_task_id));
+            DPRINTF("---> updating job report usage for job " sge_u32"." sge_u32" task \"%s\"\n",
+                job_id, ja_task_id, pe_task_id);
 
          }
       }

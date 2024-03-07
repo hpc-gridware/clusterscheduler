@@ -64,7 +64,7 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
          /*
           * This is no error
           */
-         DPRINTF(("file " SFQ " does not exist\n", file));
+         DPRINTF("file " SFQ " does not exist\n", file);
          ret = true;
       } else {
          char *file_as_string = nullptr;

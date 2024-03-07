@@ -158,7 +158,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
 
    LANGUAGE_LOCK();
 
-   DPRINTF_(("****** starting localization procedure ... **********\n"));
+   DPRINTF_("****** starting localization procedure ... **********\n");
 
 
    while (stop <= 2) {
@@ -175,9 +175,9 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          packName = strdup(package);
       } else if (getenv(PACKAGE) != nullptr) {
          packName = strdup(getenv(PACKAGE));
-         DPRINTF_(("try to get language package name from environment " SFQ "\n", PACKAGE));
+         DPRINTF_("try to get language package name from environment " SFQ "\n", PACKAGE);
       } else {
-         DPRINTF_(("could not get environment variable " SFQ "\n", PACKAGE));
+         DPRINTF_("could not get environment variable " SFQ "\n", PACKAGE);
       }
 
       /* no package name given, using default one */
@@ -191,14 +191,14 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          locDir = strdup(localeDir);
       } else if (getenv(LOCALEDIR) != nullptr) {
          if (stop != 0) {
-            DPRINTF_(("ignoring environment " SFQ "\n", LOCALEDIR ));
+            DPRINTF_("ignoring environment " SFQ "\n", LOCALEDIR );
          } else {
             locDir = strdup(getenv(LOCALEDIR)); /* only the first time */
             stop++;
-            DPRINTF_(("try to get language package directory path from environment " SFQ "\n", LOCALEDIR));
+            DPRINTF_("try to get language package directory path from environment " SFQ "\n", LOCALEDIR);
          }
       } else {
-         DPRINTF_(("could not get environment variable " SFQ "\n", LOCALEDIR));
+         DPRINTF_("could not get environment variable " SFQ "\n", LOCALEDIR);
       }
 
       /* no directory given, using default one */
@@ -230,7 +230,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       }
 
       if (language_var == nullptr) {
-         DPRINTF_(("environment LANGUAGE or LANG is not set; no language selected - using defaults\n"));
+         DPRINTF_("environment LANGUAGE or LANG is not set; no language selected - using defaults\n");
          language_var = strdup("C");
       }
 
@@ -240,11 +240,11 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          help1 = sge_language_functions.setlocale_func(LC_MESSAGES, "");
          if (help1 != nullptr) {
             char *slash_pos = nullptr;
-            DPRINTF_(("setlocale() returns \"%s\"\n", help1));
+            DPRINTF_("setlocale() returns \"%s\"\n", help1);
             slash_pos = strstr(help1, "_");
             if (slash_pos != nullptr) {
                char *tmp_lang = nullptr;
-               DPRINTF_(("cutting of language string after \"_\":\n"));
+               DPRINTF_("cutting of language string after \"_\":\n");
                tmp_lang = strdup(help1);
                slash_pos = strstr(tmp_lang, "_");
                *slash_pos = 0;  /* cut off "_" */
@@ -255,7 +255,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
                language = strdup(help1);
             }
          } else {
-            DPRINTF_(("setlocale() returns nullptr"));
+            DPRINTF_("setlocale() returns nullptr");
             language = strdup(language_var);
          }
       }
@@ -264,20 +264,20 @@ int sge_init_languagefunc(char *package, char *localeDir) {
          so we can now try to setup the choosen language package (*.mo - file) */
       pathName = sge_malloc(sizeof(char) * (strlen(locDir) + strlen(language) + strlen(packName) + 100));
       sprintf(pathName, "%s/%s/LC_MESSAGES/%s.mo", locDir, language, packName);
-      DPRINTF_(("locale directory: >%s<\n", locDir));
-      DPRINTF_(("package file:     >%s.mo<\n", packName));
-      DPRINTF_(("language (LANG):  >%s<\n", language));
-      DPRINTF_(("loading message file: %s\n", pathName));
+      DPRINTF_("locale directory: >%s<\n", locDir);
+      DPRINTF_("package file:     >%s.mo<\n", packName);
+      DPRINTF_("language (LANG):  >%s<\n", language);
+      DPRINTF_("loading message file: %s\n", pathName);
 
       /* is the package file allright */
       back = open(pathName, O_RDONLY);
       if (back >= 0) {
-         DPRINTF_(("found message file - ok\n"));
+         DPRINTF_("found message file - ok\n");
          success = true;
          close(back);
          stop = 2;
       } else {
-         DPRINTF_(("could not open message file - error\n"));
+         DPRINTF_("could not open message file - error\n");
          success = false;
       }
       if (stop == 0) {
@@ -297,24 +297,24 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       char *help1 = nullptr;
       help1 = sge_language_functions.setlocale_func(LC_MESSAGES, "");
       if (help1 != nullptr) {
-         DPRINTF_(("setlocale() returns \"%s\"\n", help1));
+         DPRINTF_("setlocale() returns \"%s\"\n", help1);
       } else {
-         DPRINTF_(("setlocale() returns nullptr\n"));
+         DPRINTF_("setlocale() returns nullptr\n");
       }
       help1 = sge_language_functions.bindtextdomain_func(packName, locDir);
       if (help1 != nullptr) {
-         DPRINTF_(("bindtextdomain() returns \"%s\"\n", help1));
+         DPRINTF_("bindtextdomain() returns \"%s\"\n", help1);
       } else {
-         DPRINTF_(("bindtextdomain() returns nullptr\n"));
+         DPRINTF_("bindtextdomain() returns nullptr\n");
       }
       help1 = sge_language_functions.textdomain_func(packName);
       if (help1 != nullptr) {
-         DPRINTF_(("textdomain() returns \"%s\"\n", help1));
+         DPRINTF_("textdomain() returns \"%s\"\n", help1);
       } else {
-         DPRINTF_(("textdomain() returns nullptr\n"));
+         DPRINTF_("textdomain() returns nullptr\n");
       }
    } else {
-      DPRINTF_(("sge_init_language() called without valid sge_language_functions pointer!\n"));
+      DPRINTF_("sge_init_language() called without valid sge_language_functions pointer!\n");
       success = false;
    }
 
@@ -331,7 +331,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
    sge_enable_msg_id_string = getenv(SGE_ENABLE_MSG_ID);
    if (sge_enable_msg_id_string != nullptr) {
       int env_value = 0;
-      DPRINTF_(("SGE_ENABLE_MSG_ID is set to \"%s\"\n", sge_enable_msg_id_string));
+      DPRINTF_("SGE_ENABLE_MSG_ID is set to \"%s\"\n", sge_enable_msg_id_string);
       env_value = atoi(sge_enable_msg_id_string);
       if (env_value == 0) {
          sge_enable_msg_id = 0;
@@ -345,15 +345,15 @@ int sge_init_languagefunc(char *package, char *localeDir) {
 
 
    if (sge_enable_msg_id == 0) {
-      DPRINTF_(("error id output     : disabled\n"));
+      DPRINTF_("error id output     : disabled\n");
    } else {
-      DPRINTF_(("error id output     : enabled\n"));
+      DPRINTF_("error id output     : enabled\n");
    }
 
    if (success == true) {
-      DPRINTF_(("****** starting localization procedure ... success **\n"));
+      DPRINTF_("****** starting localization procedure ... success **\n");
    } else {
-      DPRINTF_(("****** starting localization procedure ... failed  **\n"));
+      DPRINTF_("****** starting localization procedure ... failed  **\n");
    }
 
    LANGUAGE_UNLOCK();
@@ -672,7 +672,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
          trans_message = sge_malloc(strlen(gettext_return_string) + 1 + 8); /* max "(99999) "*/
          new_mp = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
          if (new_mp != nullptr && org_message != nullptr && trans_message != nullptr) {
-            DPRINTF_(("add new hash table entry for message id: %d\n", msg_id));
+            DPRINTF_("add new hash table entry for message id: %d\n", msg_id);
             new_mp->id = msg_id;
             new_mp->category = 0;
             new_mp->counter = 1;
@@ -690,15 +690,15 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
          }
       } else {
          /* check element */
-         DPRINTF_(("using old hash entry for message id: %d\n", msg_id));
+         DPRINTF_("using old hash entry for message id: %d\n", msg_id);
          if (strcmp(msg_str, message_p.l->message) != 0) {
-            DPRINTF_(("duplicate message id error: returning gettext() message"));
-            DPRINTF_(("msg in : \"%s\"\n", msg_str));
-            DPRINTF_(("msg out: \"%s\"\n", message_p.l->message));
+            DPRINTF_("duplicate message id error: returning gettext() message");
+            DPRINTF_("msg in : \"%s\"\n", msg_str);
+            DPRINTF_("msg out: \"%s\"\n", message_p.l->message);
             DRETURN_(sge_gettext__((char *) msg_str));
          } else {
             message_p.l->counter = (message_p.l->counter) + 1;
-            DPRINTF_(("message count: " sge_U32CFormat "\n", sge_u32c(message_p.l->counter)));
+            DPRINTF_("message count: " sge_U32CFormat "\n", sge_u32c(message_p.l->counter));
             DRETURN_(message_p.l->local_message);
          }
       }
@@ -746,12 +746,12 @@ const char *sge_gettext__(const char *x) {
       z = sge_language_functions.gettext_func(x);
    } else {
       z = x;
-      DPRINTF_(("sge_gettext() called without valid gettext function pointer!\n"));
+      DPRINTF_("sge_gettext() called without valid gettext function pointer!\n");
    }
 
    /*z = gettext(x);*/
 
-   /*DPRINTF_(("gettext: '%s' -> '%s'\n", x ? x : "", z ? z : ""));*/
+   /*DPRINTF_("gettext: '%s' -> '%s'\n", x ? x : "", z ? z : "");*/
 
    DRETURN_(z);
 }

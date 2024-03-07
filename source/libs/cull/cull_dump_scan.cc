@@ -845,12 +845,12 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
          }
       }
       if (i == n)
-              DPRINTF(("lUndumpList: field %s not needed\n", lNm2Str(fdp[j].nm)));
+              DPRINTF("lUndumpList: field %s not needed\n", lNm2Str(fdp[j].nm));
    }
 
    for (i = 0; i < n; i++)
       if (found[i] == -1)
-              DPRINTF(("lUndumpList: field %s not found\n", lNm2Str(dp[i].nm)));
+              DPRINTF("lUndumpList: field %s not found\n", lNm2Str(dp[i].nm));
 
    /* LOOP OVER THE LIST ELEMENTS */
    for (k = 0; k < nelem; k++) {

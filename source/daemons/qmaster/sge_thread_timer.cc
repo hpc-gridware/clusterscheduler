@@ -187,28 +187,28 @@ sge_timer_initialize(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    te_init();
-   DPRINTF(("timed event module has been initialized\n"));
+   DPRINTF("timed event module has been initialized\n");
    heartbeat_initialize();
-   DPRINTF(("heartbeat module initialized\n"));
+   DPRINTF("heartbeat module initialized\n");
    ar_initialize_timer(&answer_list, monitor);
    answer_list_output(&answer_list);
-   DPRINTF(("ar and corresponding timers are initialized\n"));
+   DPRINTF("ar and corresponding timers are initialized\n");
    calendar_initalize_timer(monitor);
-   DPRINTF(("queue states and corresponding timers are initialized due to calendar settings\n"));
+   DPRINTF("queue states and corresponding timers are initialized due to calendar settings\n");
    host_initalitze_timer();
-   DPRINTF(("reschedule unknown timer have been initialized\n"));
+   DPRINTF("reschedule unknown timer have been initialized\n");
    sge_timer_register_event_handler();
-   DPRINTF(("timer are registered at timed event module\n"));
+   DPRINTF("timer are registered at timed event module\n");
    sge_timer_start_periodic_tasks();
-   DPRINTF(("periodic tasks are registered at timed event module\n"));
+   DPRINTF("periodic tasks are registered at timed event module\n");
    sge_initialize_persistance_timer();
-   DPRINTF(("persistence timer initialized at timed event module\n"));
+   DPRINTF("persistence timer initialized at timed event module\n");
    sge_setup_job_resend();
-   DPRINTF(("job resend functionality initialized\n"));
+   DPRINTF("job resend functionality initialized\n");
    sge_add_check_limit_trigger();
-   DPRINTF(("added timer event to check load reports and possibly to enforce limits\n"));
+   DPRINTF("added timer event to check load reports and possibly to enforce limits\n");
 
-   DPRINTF((SFN " related initialisation has been done\n", threadnames[TIMER_THREAD]));
+   DPRINTF(SFN " related initialisation has been done\n", threadnames[TIMER_THREAD]);
 
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
    cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
@@ -222,16 +222,16 @@ sge_timer_terminate() {
 
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    while (thread != nullptr) {
-      DPRINTF(("getting canceled\n"));
+      DPRINTF("getting canceled\n");
       cl_thread_list_delete_thread(Main_Control.timer_thread_pool, thread);
 
       thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    }
-   DPRINTF(("all " SFN " threads terminated\n", threadnames[TIMER_THREAD]));
+   DPRINTF("all " SFN " threads terminated\n", threadnames[TIMER_THREAD]);
 
    te_shutdown();
 
-   DPRINTF((SFN " related cleanup has been done\n", threadnames[TIMER_THREAD]));
+   DPRINTF(SFN " related cleanup has been done\n", threadnames[TIMER_THREAD]);
 
    DRETURN_VOID;
 }
@@ -294,7 +294,7 @@ sge_timer_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started\n"));
+   DPRINTF("started\n");
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, TET_EXT, TET_WARNING, TET_ERROR);
    sge_qmaster_thread_init(QMASTER, TIMER_THREAD, true);
@@ -333,8 +333,7 @@ sge_timer_main(void *arg) {
                            mconf_is_monitor_message());
 
          if ((Event_Control.next < te->when) || (Event_Control.deleted == true)) {
-            DPRINTF(("%s: event list changed - next:" sge_u32" --> start over\n", __func__,
-                    Event_Control.next));
+            DPRINTF("%s: event list changed - next:" sge_u32" --> start over\n", __func__, Event_Control.next);
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
@@ -365,7 +364,7 @@ sge_timer_main(void *arg) {
             cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
-            DPRINTF(("waiting for termination\n"));
+            DPRINTF("waiting for termination\n");
             sleep(1);
          }
       } while (sge_thread_has_shutdown_started());

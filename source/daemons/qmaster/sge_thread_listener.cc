@@ -87,7 +87,7 @@ sge_listener_terminate() {
     * are terminated.
     */
    sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
-   DPRINTF(("triggered shutdown event for event master module\n"));
+   DPRINTF("triggered shutdown event for event master module\n");
 
    /*
     * trigger pthread_cancel for each thread so that further 
@@ -109,11 +109,11 @@ sge_listener_terminate() {
     */
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    while (thread != nullptr) {
-      DPRINTF((SFN " gets canceled\n", thread->thread_name));
+      DPRINTF(SFN " gets canceled\n", thread->thread_name);
       cl_thread_list_delete_thread(Main_Control.listener_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    }
-   DPRINTF(("all " SFN " threads exited\n", threadnames[LISTENER_THREAD]));
+   DPRINTF("all " SFN " threads exited\n", threadnames[LISTENER_THREAD]);
    DRETURN_VOID;
 }
 
@@ -125,7 +125,7 @@ sge_listener_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("started\n"));
+   DPRINTF("started\n");
    cl_thread_func_startup(thread_config);
    sge_monitor_init(&monitor, thread_config->thread_name, LIS_EXT, MT_WARNING, MT_ERROR);
    sge_qmaster_thread_init(QMASTER, LISTENER_THREAD, true);
@@ -134,7 +134,7 @@ sge_listener_main(void *arg) {
    set_thread_name(pthread_self(), "Listener Thread");
    conf_update_thread_profiling("Listener Thread");
 
-   DPRINTF(("entering main loop\n"));
+   DPRINTF("entering main loop\n");
    while (true) {
       int execute = 0;
 
@@ -156,7 +156,7 @@ sge_listener_main(void *arg) {
             cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
-            DPRINTF(("waiting for termination\n"));
+            DPRINTF("waiting for termination\n");
             sleep(1);
          }
       } while (sge_thread_has_shutdown_started());

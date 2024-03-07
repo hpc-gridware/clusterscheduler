@@ -301,11 +301,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
       }
    }
 
-   DPRINTF(("QETI: P %d G %d H %d Q %d\n", 
-      lGetNumberOfElem(iter->cr_refs_pe),
-      lGetNumberOfElem(iter->cr_refs_global),
-      lGetNumberOfElem(iter->cr_refs_host),
-      lGetNumberOfElem(iter->cr_refs_queue)));
+   DPRINTF("QETI: P %d G %d H %d Q %d\n", lGetNumberOfElem(iter->cr_refs_pe), lGetNumberOfElem(iter->cr_refs_global), lGetNumberOfElem(iter->cr_refs_host), lGetNumberOfElem(iter->cr_refs_queue));
 
    DRETURN(iter);
 }
@@ -322,7 +318,7 @@ static void sge_qeti_init_refs(lList *cref_lp)
    for_each_rw(cr_ep, cref_lp) {
       rue_ep = (const lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       utilization_diagram = lGetList((lListElem *)lGetRef(cr_ep, QETI_resource_instance), RUE_utilized);
-      DPRINTF(("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram));
+      DPRINTF("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram);
       /* lLast() correctly returns a nullptr reference
          in case of an empty resource utilization diagram */
       lSetRef(cr_ep, QETI_queue_end_next, lLastRW(utilization_diagram));
@@ -345,11 +341,11 @@ static void sge_qeti_max_end_time(u_long32 *max_time, const lList *cref_lp)
    for_each_ep(cr_ep, cref_lp) {
       rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
-         DPRINTF(("   QETI END: %s\n", lGetString(rue_ep, RUE_name)));
+         DPRINTF("   QETI END: %s\n", lGetString(rue_ep, RUE_name));
          continue;
       }
-      DPRINTF(("   QETI END: %s " sge_U32CFormat " (" sge_U32CFormat ")\n",
-            lGetString(rue_ep, RUE_name), lGetUlong(ref, RDE_time), tmp_time));
+      DPRINTF("   QETI END: %s " sge_U32CFormat " (" sge_U32CFormat ")\n",
+              lGetString(rue_ep, RUE_name), lGetUlong(ref, RDE_time), tmp_time);
       tmp_time = MAX(tmp_time, lGetUlong(ref, RDE_time));
    }
    *max_time = tmp_time;
@@ -371,7 +367,7 @@ static void sge_qeti_switch_to_next(u_long32 time, lList *cref_lp)
    for_each_rw (cr_ep, cref_lp) {
       rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
-         DPRINTF(("   QETI NEXT: %s (finished)\n", lGetString(rue_ep, RUE_name)));
+         DPRINTF("   QETI NEXT: %s (finished)\n", lGetString(rue_ep, RUE_name));
          continue;
       }
 
@@ -379,8 +375,8 @@ static void sge_qeti_switch_to_next(u_long32 time, lList *cref_lp)
          ref = lPrevRW(ref);
       }
 
-      DPRINTF(("   QETI NEXT: %s set to " sge_U32CFormat " (%p)\n",
-            lGetString(rue_ep, RUE_name), ref?lGetUlong(ref, RDE_time):0, ref));
+      DPRINTF("   QETI NEXT: %s set to " sge_U32CFormat " (%p)\n",
+              lGetString(rue_ep, RUE_name), ref?lGetUlong(ref, RDE_time):0, ref);
       lSetRef(cr_ep, QETI_queue_end_next, ref);
    }
 
@@ -456,7 +452,7 @@ u_long32 sge_qeti_first(sge_qeti_t *qeti)
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_host);
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_queue);
 
-   DPRINTF(("sge_qeti_first() determines " sge_u32"\n", all_resources_queue_end_time));
+   DPRINTF("sge_qeti_first() determines " sge_u32"\n", all_resources_queue_end_time);
 
    /* switch to the next entry with all queue end next references whose 
       time is larger (?) or equal to all resources queue end time */
@@ -501,7 +497,7 @@ u_long32 sge_qeti_next(sge_qeti_t *qeti)
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_host);
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_queue);
 
-   DPRINTF(("sge_qeti_next() determines " sge_u32"\n", all_resources_queue_end_time));
+   DPRINTF("sge_qeti_next() determines " sge_u32"\n", all_resources_queue_end_time);
 
    /* switch to the next entry with all queue end next references whose 
       time is larger (?) or equal to all resources queue end time */

@@ -215,9 +215,9 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
    }
 
    if (ret == true) {
-      DPRINTF(("JSV - fd is ready. Data can be sent\n"));
+      DPRINTF("JSV - fd is ready. Data can be sent\n");
    } else {
-      DPRINTF(("JSV - fd is NOT ready\n"));
+      DPRINTF("JSV - fd is NOT ready\n");
    }
    DRETURN(ret);
 }
@@ -462,9 +462,9 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
       u = sge_dstring_get_string(user);
       p = sge_dstring_get_string(path);
 
-      DPRINTF(("type = %s\n", t != nullptr? t : "<null>"));
-      DPRINTF(("u = %s\n", u != nullptr ? u : "<null>"));
-      DPRINTF(("p = %s\n", p != nullptr ? p : "<null>"));
+      DPRINTF("type = %s\n", t != nullptr? t : "<null>");
+      DPRINTF("u = %s\n", u != nullptr ? u : "<null>");
+      DPRINTF("p = %s\n", p != nullptr ? p : "<null>");
 
       /*
        * either the type is not specified (the type "script" is used)
@@ -554,7 +554,7 @@ jsv_send_command(lListElem *jsv, lList **answer_list, const char *message)
    DENTER(TOP_LAYER);
    sge_dstring_sprintf(&buffer, "%s\n", message);
    new_message = sge_dstring_get_string(&buffer);
-   DPRINTF(("JSV(%s) >> %s\n", lGetString(jsv, JSV_context), message));
+   DPRINTF("JSV(%s) >> %s\n", lGetString(jsv, JSV_context), message);
    ret = jsv_send_data(jsv, answer_list, new_message, strlen(new_message));
    sge_dstring_free(&buffer);
    DRETURN(ret);
@@ -1002,17 +1002,17 @@ jsv_do_verify(const char *context, lListElem **job,
        */
       if (strcmp(context, JSV_CONTEXT_CLIENT) == 0) {
          jsv_url = nullptr;
-         DPRINTF(("JSV client context\n"));
+         DPRINTF("JSV client context\n");
       } else {
          jsv_url = mconf_get_jsv_url();
-         DPRINTF(("JSV server context\n"));
+         DPRINTF("JSV server context\n");
       }
 
       /*
        * update the list of JSV scripts for the current thread
        */
       jsv_list_update("jsv", context, answer_list, jsv_url);
-      DPRINTF(("JSV list for current thread updated\n"));
+      DPRINTF("JSV list for current thread updated\n");
 
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
       holding_mutex = true;
@@ -1025,7 +1025,7 @@ jsv_do_verify(const char *context, lListElem **job,
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
          if (jsv_is_started(jsv) == false) {
-            DPRINTF(("JSV is not started\n"));
+            DPRINTF("JSV is not started\n");
             ret &= jsv_start(jsv, answer_list);
          }
          if (ret) {
@@ -1039,7 +1039,7 @@ jsv_do_verify(const char *context, lListElem **job,
             lSetRef(jsv, JSV_old_job, old_job);
             lSetRef(jsv, JSV_new_job, new_job);
 
-            DPRINTF(("JSVs local variables initialized for verification run\n"));
+            DPRINTF("JSVs local variables initialized for verification run\n");
 
             /* 
              * A) If we came here and if the JSV which is currenty handled is a server JSV
@@ -1074,16 +1074,16 @@ jsv_do_verify(const char *context, lListElem **job,
              *      this function returns.
              */
             if (holding_lock) {
-               DPRINTF(("JSV releases global lock for verification process\n"));
+               DPRINTF("JSV releases global lock for verification process\n");
                sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
                holding_mutex = false;
                SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
-               DPRINTF(("Client/master will start communication with JSV\n"));
+               DPRINTF("Client/master will start communication with JSV\n");
                ret &= jsv_do_communication(jsv, answer_list);
-               DPRINTF(("JSV acquires global lock which was hold before communication with JSV\n"));
+               DPRINTF("JSV acquires global lock which was hold before communication with JSV\n");
                SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE)
             } else {
-               DPRINTF(("Client/master will start communication with JSV\n"));
+               DPRINTF("Client/master will start communication with JSV\n");
                ret &= jsv_do_communication(jsv, answer_list);
             }
 
@@ -1091,7 +1091,7 @@ jsv_do_verify(const char *context, lListElem **job,
             lSetRef(jsv, JSV_new_job, nullptr);
 
             if (lGetBool(jsv, JSV_accept)) {
-               DPRINTF(("JSV accepts job"));
+               DPRINTF("JSV accepts job");
                lFreeElem(job);
                *job = new_job;
                new_job = nullptr;
@@ -1099,7 +1099,7 @@ jsv_do_verify(const char *context, lListElem **job,
             } else {
                u_long32 jid = lGetUlong(new_job, JB_job_number);
 
-               DPRINTF(("JSV rejects job\n"));
+               DPRINTF("JSV rejects job\n");
                if (jid == 0) {
                   INFO(MSG_JSV_REJECTED_S, context);
                } else {
@@ -1111,7 +1111,7 @@ jsv_do_verify(const char *context, lListElem **job,
             if (lGetBool(jsv, JSV_restart)) {
                bool soft_shutdown = lGetBool(jsv, JSV_soft_shutdown) ? true : false;
 
-               DPRINTF(("JSV has to be rstarted\n"));
+               DPRINTF("JSV has to be rstarted\n");
                INFO(MSG_JSV_RESTART_S, context);
                ret &= jsv_stop(jsv, answer_list, soft_shutdown);
             }

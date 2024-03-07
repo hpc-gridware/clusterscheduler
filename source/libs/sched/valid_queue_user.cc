@@ -114,7 +114,7 @@ int sge_contained_in_access_list_(const char *user, const char *group,
             DRETURN(1);
          } 
       } else {
-      	DPRINTF(("cannot find userset list entry \"%s\"\n", lGetString(acl_search, US_name)));
+      	DPRINTF("cannot find userset list entry \"%s\"\n", lGetString(acl_search, US_name));
       }
    }
    DRETURN(0);
@@ -158,7 +158,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
    for_each_ep(acl_entry, lGetList(ar, AR_acl_list)) {
       user = lGetString(acl_entry, ARA_name);
 
-      DPRINTF(("check permissions for user %s\n", user));
+      DPRINTF("check permissions for user %s\n", user);
       if (!is_hgroup_name(user)) {
          if (sge_has_access_(user, lGetString(acl_entry, ARA_group), acl_list, xacl_list,
                              master_userset_list) == 0) {
@@ -170,7 +170,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
          /* skip preattached \@ sign */
          const char *acl_name = ++user;
 
-         DPRINTF(("acl :%s", acl_name));
+         DPRINTF("acl :%s", acl_name);
 
          /* at first xacl */
          if (xacl_list && lGetElemStr(xacl_list, US_name, acl_name) != nullptr) {

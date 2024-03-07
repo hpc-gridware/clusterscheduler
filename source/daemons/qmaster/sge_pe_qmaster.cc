@@ -109,7 +109,7 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
 
    /* ---- PE_user_list */
    if (lGetPosViaElem(pe, PE_user_list, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new PE_user_list\n"));
+      DPRINTF("got new PE_user_list\n");
       /* check user_lists */
       normalize_sublist(pe, PE_user_list);
       if (userset_list_validate_acl_list(lGetList(pe, PE_user_list), alpp, master_userset_list) != STATUS_OK) {
@@ -122,7 +122,7 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
 
    /* ---- PE_xuser_list */
    if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0) {
-      DPRINTF(("got new QU_axcl\n"));
+      DPRINTF("got new QU_axcl\n");
       /* check xuser_lists */
       normalize_sublist(pe, PE_xuser_list);
       if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp, master_userset_list) != STATUS_OK) {
@@ -334,7 +334,7 @@ debit_all_jobs_from_pes(lList *pe_list) {
 
       pe_set_slots_used(pep, 0);
       pe_name = lGetString(pep, PE_name);
-      DPRINTF(("debiting from pe %s:\n", pe_name));
+      DPRINTF("debiting from pe %s:\n", pe_name);
 
       for_each_ep(jep, master_job_list)
       {

@@ -224,7 +224,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
       if ((descr[i].mt & instr->selection) != 0) {
          spooling_field *sub_fields = nullptr;
 
-         DPRINTF(("field " SFQ " will be spooled\n", lNm2Str(descr[i].nm)));
+         DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[i].nm));
 
          fields[j].nm = descr[i].nm;
 
@@ -267,8 +267,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
             /* recursive spooling, e.g. sharetree */
             if (instr->sub_instr == instr && descr == sub_descr) {
                sub_fields = fields;
-               DPRINTF(("recursive structure detected for field %s\n",
-                       lNm2Str(descr[i].nm)));
+               DPRINTF("recursive structure detected for field %s\n", lNm2Str(descr[i].nm));
             } else {
                sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr,
                                                        instr->sub_instr);

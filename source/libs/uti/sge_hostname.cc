@@ -139,7 +139,7 @@ int sge_get_qmaster_port(bool *from_services) {
    gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
-      DPRINTF(("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec)));
+      DPRINTF("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec));
    }
 
    /* get port from cache when next_timeout for re-resolving is not reached */
@@ -148,7 +148,7 @@ int sge_get_qmaster_port(bool *from_services) {
       if (from_services != nullptr) {
          *from_services = is_port_from_services_file;
       }
-      DPRINTF(("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
+      DPRINTF("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port));
       sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
       DRETURN(int_port);
    }
@@ -189,7 +189,7 @@ int sge_get_qmaster_port(bool *from_services) {
          sge_exit(1);
       }
    } else {
-      DPRINTF(("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
+      DPRINTF("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port));
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
@@ -219,11 +219,11 @@ int sge_get_execd_port() {
    gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
-      DPRINTF(("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec)));
+      DPRINTF("reresolve port timeout in " sge_U32CFormat "\n", sge_u32c(next_timeout - now.tv_sec));
    }
    if (cached_port >= 0 && next_timeout > now.tv_sec) {
       int_port = cached_port;
-      DPRINTF(("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
+      DPRINTF("returning cached port value: " sge_U32CFormat "\n", sge_u32c(int_port));
       sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
       return int_port;
    }
@@ -255,7 +255,7 @@ int sge_get_execd_port() {
          sge_exit(1);
       }
    } else {
-      DPRINTF(("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port)));
+      DPRINTF("returning port value: " sge_U32CFormat "\n", sge_u32c(int_port));
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
@@ -324,14 +324,14 @@ struct hostent *sge_gethostbyname_retry(
    DENTER(TOP_LAYER);
 
    if (!name || name[0] == '\0') {
-      DPRINTF(("hostname to resolve is nullptr or has zero length\n"));
+      DPRINTF("hostname to resolve is nullptr or has zero length\n");
       DRETURN(nullptr);
    }
 
    he = sge_gethostbyname(name, nullptr);
    if (he == nullptr) {
       for (i = 0; i < MAX_NIS_RETRIES && he == nullptr; i++) {
-         DPRINTF(("Couldn't resolve hostname %s\n", name));
+         DPRINTF("Couldn't resolve hostname %s\n", name);
          sleep(1);
          he = sge_gethostbyname(name, nullptr);
       }
@@ -525,7 +525,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
          count++;
       }
 
-      DPRINTF (("%d names in h_addr_list\n", count));
+      DPRINTF("%d names in h_addr_list\n", count);
 
       copy->h_addr_list = (char **) sge_malloc(sizeof(char *) * (count + 1));
 
@@ -551,7 +551,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
          count++;
       }
 
-      DPRINTF (("%d names in h_aliases\n", count));
+      DPRINTF("%d names in h_aliases\n", count);
 
       copy->h_aliases = (char **) sge_malloc(sizeof(char *) * (count + 1));
 
@@ -636,7 +636,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 #ifdef GETHOSTBYADDR_R7
 #define SGE_GETHOSTBYADDR_FOUND
    /* This is for Solaris */
-   DPRINTF(("Getting host by addr - Solaris\n"));
+   DPRINTF("Getting host by addr - Solaris\n");
    {
       char buffer[4096];
       struct hostent *help_he = nullptr;
@@ -664,7 +664,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 #ifdef GETHOSTBYADDR
 #define SGE_GETHOSTBYADDR_FOUND
    /* This is for HPUX >= 11 */
-   DPRINTF(("Getting host by addr - Thread safe\n"));
+   DPRINTF("Getting host by addr - Thread safe\n");
    he = gethostbyaddr((const char *)addr, 4, AF_INET);
    /*
     * JG: TODO: shouldn't it be 
@@ -872,7 +872,7 @@ int sge_hostcmp(const char *h1, const char *h2) {
 
       cmp = SGE_STRCASECMP(h1_cpy, h2_cpy);
 
-      DPRINTF(("sge_hostcmp(%s, %s) = %d\n", h1_cpy, h2_cpy));
+      DPRINTF("sge_hostcmp(%s, %s) = %d\n", h1_cpy, h2_cpy);
    }
 
    DRETURN(cmp);
@@ -918,7 +918,7 @@ int sge_hostmatch(const char *h1, const char *h2) {
 
       cmp = fnmatch(h1_cpy, h2_cpy, 0);
 
-      DPRINTF(("sge_hostmatch(%s, %s) = %d\n", h1_cpy, h2_cpy));
+      DPRINTF("sge_hostmatch(%s, %s) = %d\n", h1_cpy, h2_cpy);
    }
 
    DRETURN(cmp);

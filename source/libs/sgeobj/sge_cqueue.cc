@@ -1661,15 +1661,14 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
    if (this_elem != nullptr) {
       for_each_ep(ep, attr_list) {
          attr_name = lGetString(ep, US_name);
-         DPRINTF((SFQ "\n", attr_name));
+         DPRINTF(SFQ "\n", attr_name);
       
          /* purge hostlist */         
          if (!sge_eval_expression(TYPE_HOST, attr_name, SGE_ATTR_HOSTLIST, nullptr)) {
             sublist = nullptr;
             lXchgList(this_elem, CQ_hostlist, &sublist);
             if (lDelElemHost(&sublist, HR_name, hgroup_or_hostname) == 1) {
-               DPRINTF((SFQ " deleted in " SFQ "\n", hgroup_or_hostname,
-                        SGE_ATTR_HOSTLIST ));
+               DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, SGE_ATTR_HOSTLIST);
                ret = true;
             }
             lXchgList(this_elem, CQ_hostlist, &sublist);
@@ -1684,8 +1683,7 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
                sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr );
 
                if (lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
-                  DPRINTF((SFQ " deleted in " SFQ "\n", hgroup_or_hostname,
-                           cqueue_attribute_array[index].name ));
+                  DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, cqueue_attribute_array[index].name);
                   ret = true;
                }
             }

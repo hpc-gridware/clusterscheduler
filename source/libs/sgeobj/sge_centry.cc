@@ -234,8 +234,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             dstring ds;
             sge_dstring_init(&ds, str_value, sizeof(str_value));
             sge_dstring_sprintf(&ds, "%.0f", dval);
-            DPRINTF(("normalized time value from \"%s\" to \"%s\"\n",
-                    lGetString(this_elem, CE_stringval), str_value));
+            DPRINTF("normalized time value from \"%s\" to \"%s\"\n",
+                    lGetString(this_elem, CE_stringval), str_value);
             lSetString(this_elem, CE_stringval, str_value);
          }
 
@@ -748,7 +748,7 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
                for old objects we change the type to the new one */
             int pos = lGetPosViaElem(entry, CE_consumable, SGE_NO_ABORT);
             if (mt_get_type(entry->descr[pos].mt) == lBoolT) {
-               DPRINTF(("Upgrading CE_consumable from bool to ulong\n"));
+               DPRINTF("Upgrading CE_consumable from bool to ulong\n");
                entry->descr[pos].mt = cep->descr[pos].mt;
             }
          }
@@ -1246,7 +1246,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
    if (!centry ||
        !(strval = lGetString(centry, CE_urgency_weight)) ||
        !(parse_ulong_val(&weight, nullptr, TYPE_INT, strval, nullptr, 0))) {
-      DPRINTF(("no contribution for attribute\n"));
+      DPRINTF("no contribution for attribute\n");
       DRETURN(0);
    }
 
@@ -1258,7 +1258,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
       case TYPE_BOO:
       case TYPE_DOUBLE:
          contribution = value * weight * slots;
-         DPRINTF(("   %s: %7f * %7f * %d    ---> %7f\n", name, value, weight, slots, contribution));
+         DPRINTF("   %s: %7f * %7f * %d    ---> %7f\n", name, value, weight, slots, contribution);
          break;
 
       case TYPE_STR:
@@ -1266,7 +1266,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
       case TYPE_HOST:
       case TYPE_RESTR:
          contribution = weight;
-         DPRINTF(("   %s: using weight as contrib ---> %7f\n", name, weight));
+         DPRINTF("   %s: using weight as contrib ---> %7f\n", name, weight);
          break;
 
    default:

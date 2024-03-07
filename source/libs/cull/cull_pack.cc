@@ -153,11 +153,11 @@ static int cull_unpack_switch(
       case lFloatT:
       case lLongT:
       case lCharT:
-         DPRINTF(("type not implemented\n"));
+         DPRINTF("type not implemented\n");
          ret = PACK_FORMAT;
          break;
       default:
-         DPRINTF(("unknown type %d\n", type));
+         DPRINTF("unknown type %d\n", type);
          ret = PACK_FORMAT;
          break;
    }
@@ -224,11 +224,11 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
       case lFloatT:
       case lLongT:
       case lCharT:
-         DPRINTF(("not implemented\n"));
+         DPRINTF("not implemented\n");
          ret = PACK_FORMAT;
          break;
       default:
-         DPRINTF(("unknown type %d\n", type));
+         DPRINTF("unknown type %d\n", type);
          ret = PACK_FORMAT;
          break;
    }
@@ -622,7 +622,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if (ep->descr == nullptr) {
-      DPRINTF(("element descriptor nullptr not allowed !!!\n"));
+      DPRINTF("element descriptor nullptr not allowed !!!\n");
       abort();
    }
 
@@ -1230,7 +1230,7 @@ int cull_pack_enum(
    DRETURN(PACK_SUCCESS);
 
    error:
-   DPRINTF(("error packing enumeration\n"));
+   DPRINTF("error packing enumeration\n");
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
    DRETURN(ret);
 }
@@ -1385,7 +1385,7 @@ int cull_pack_cond(
       DRETURN(ret);
    }
 
-   DPRINTF(("cp->op: %d\n", cp->op));
+   DPRINTF("cp->op: %d\n", cp->op);
 
    switch (cp->op) {
       case EQUAL:
@@ -1399,17 +1399,17 @@ int cull_pack_cond(
       case PATTERNCMP:
       case SUBSCOPE:
       case HOSTNAMECMP:
-         DPRINTF(("cp->operand.cmp.pos: %d\n", cp->operand.cmp.pos));
+         DPRINTF("cp->operand.cmp.pos: %d\n", cp->operand.cmp.pos);
          if ((ret = packint(pb, cp->operand.cmp.pos))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
-         DPRINTF(("cp->operand.cmp.mt: %d\n", cp->operand.cmp.mt));
+         DPRINTF("cp->operand.cmp.mt: %d\n", cp->operand.cmp.mt);
          if ((ret = packint(pb, cp->operand.cmp.mt))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
-         DPRINTF(("cp->operand.cmp.nm: %d\n", cp->operand.cmp.nm));
+         DPRINTF("cp->operand.cmp.nm: %d\n", cp->operand.cmp.nm);
          if ((ret = packint(pb, cp->operand.cmp.nm))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);

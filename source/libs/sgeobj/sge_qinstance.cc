@@ -1041,9 +1041,8 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
          bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);
          if (tmp_ret && dval != 0.0) {
             if (just_check == nullptr) {
-               DPRINTF(("debiting %f of %s on %s %s for %d slots\n", dval, name,
-                       (config_nm == QU_consumable_config_list) ? "queue" : "host",
-                       obj_name, debit_slots));
+               DPRINTF("debiting %f of %s on %s %s for %d slots\n", dval, name,
+                       (config_nm == QU_consumable_config_list) ? "queue" : "host", obj_name, debit_slots);
                lAddDouble(cr, RUE_utilized_now, debit_slots * dval);
             } else {
                double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
@@ -1072,9 +1071,9 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
              */
             dval = 1.0;
             if (just_check == nullptr) {
-               DPRINTF(("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", dval, name,
+               DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", dval, name,
                        (config_nm == QU_consumable_config_list) ? "queue" : "host",
-                       obj_name, debit_slots));
+                       obj_name, debit_slots);
                lAddDouble(cr, RUE_utilized_now_nonexclusive, debit_slots * dval);
             } else {
                double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);

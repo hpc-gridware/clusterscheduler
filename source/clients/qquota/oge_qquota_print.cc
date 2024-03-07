@@ -211,14 +211,14 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
 
                                  if (raw_centry == nullptr) {
                                     /* undefined centries can be ignored */
-                                    DPRINTF(("centry %s not defined -> IGNORING\n", limit_name));
+                                    DPRINTF("centry %s not defined -> IGNORING\n", limit_name);
                                     continue;
                                  }
 
                                  if ((resource_match_list != nullptr) &&
                                      ((centry_list_locate(resource_match_list, limit_name) == nullptr) &&
                                      (centry_list_locate(resource_match_list, lGetString(raw_centry, CE_shortcut)) == nullptr))) {
-                                    DPRINTF(("centry %s was not requested on CLI -> IGNORING\n", limit_name));
+                                    DPRINTF("centry %s was not requested on CLI -> IGNORING\n", limit_name);
                                     continue;
                                  }
 
@@ -230,7 +230,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
 
                                  if (lGetUlong(raw_centry, CE_consumable)) {
                                     /* for consumables we need to walk through the utilization and search for matching values */
-                                    DPRINTF(("found centry %s - consumable\n", limit_name));
+                                    DPRINTF("found centry %s - consumable\n", limit_name);
                                     for_each_ep(rue_elem, rue_list) {
                                        u_long32 dominant = 0;
                                        const char *rue_name = lGetString(rue_elem, RUE_name);
@@ -325,7 +325,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                     /* static values */
                                     qquota_filter_t qf = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
-                                    DPRINTF(("found centry %s - static value\n", limit_name));
+                                    DPRINTF("found centry %s - static value\n", limit_name);
                                     ret = qquota_print_out_rule(rule, rule_name, limit_name, 
                                                                 nullptr, lGetString(limit, RQRL_value),
                                                                 qf, raw_centry, report_handler, printed_rules, alpp);

@@ -159,8 +159,8 @@ sge_change_queue_version_acl(const char *acl_name) {
          if (is_used) {
             lList *answer_list = nullptr;
 
-            DPRINTF(("increasing version of queue " SFQ " because acl " SFQ
-                    " changed\n", lGetString(qinstance, QU_full_name), acl_name));
+            DPRINTF("increasing version of queue " SFQ " because acl " SFQ
+                    " changed\n", lGetString(qinstance, QU_full_name), acl_name);
             qinstance_increase_qversion(qinstance);
             sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
                             lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, false);
@@ -381,8 +381,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
 
       if (sge_contained_in_access_list(owner, nullptr, dep, nullptr)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
-         DPRINTF(("user %s got department " SFQ "\n",
-                 owner, lGetString(dep, US_name)));
+         DPRINTF("user %s got department " SFQ "\n", owner, lGetString(dep, US_name));
 
          DRETURN(1);
       }
@@ -398,7 +397,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
 
       if (sge_contained_in_access_list(nullptr, group, dep, nullptr)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
-         DPRINTF(("user %s got department \"%s\"\n", owner, lGetString(dep, US_name)));
+         DPRINTF("user %s got department \"%s\"\n", owner, lGetString(dep, US_name));
 
          DRETURN(1);
       }
@@ -410,7 +409,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
    */
    if (lGetElemStr(userset_list, US_name, DEFAULT_DEPARTMENT)) {
       lSetString(job, JB_department, DEFAULT_DEPARTMENT);
-      DPRINTF(("user %s got department " SFQ "\n", owner, DEFAULT_DEPARTMENT));
+      DPRINTF("user %s got department " SFQ "\n", owner, DEFAULT_DEPARTMENT);
       DRETURN(1);
    }
 
@@ -605,7 +604,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
 
    for_each_ep(ep, added) {
       u = lGetString(ep, US_name);
-      DPRINTF(("added userset: \"%s\"\n", u));
+      DPRINTF("added userset: \"%s\"\n", u);
       acl = lGetElemStrRW(master_userset_list, US_name, u);
       if (acl && lGetBool(acl, US_consider_with_categories) == false) {
          lSetBool(acl, US_consider_with_categories, true);
@@ -615,7 +614,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
 
    for_each_ep(ep, removed) {
       u = lGetString(ep, US_name);
-      DPRINTF(("removed userset: \"%s\"\n", u));
+      DPRINTF("removed userset: \"%s\"\n", u);
       acl = lGetElemStrRW(master_userset_list, US_name, u);
 
       if (acl && !userset_still_used(u)) {

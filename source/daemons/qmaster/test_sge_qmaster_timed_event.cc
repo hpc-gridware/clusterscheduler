@@ -106,7 +106,7 @@ void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
+   DPRINTF("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* calendar_event_handler() */
@@ -115,7 +115,7 @@ void signal_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
+   DPRINTF("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* signal_resend_event_handler() */
@@ -124,7 +124,7 @@ void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
+   DPRINTF("%s: time:" sge_u32" when:" sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* job_resend_event_handler() */

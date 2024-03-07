@@ -449,7 +449,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
 
    gmt_secs=mktime(&timeptr);
 
-   DPRINTF(("mktime returned: %ld\n",gmt_secs));
+   DPRINTF("mktime returned: %ld\n",gmt_secs);
 
    if (gmt_secs < 0) {
       sge_free_saved_vars(context);

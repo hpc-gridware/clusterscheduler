@@ -172,7 +172,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
       if ((crp = strchr(buf, (int)'\n')))
          *crp = '\0';
 
-      DPRINTF(("Path Alias: >%s<\n",buf));
+      DPRINTF("Path Alias: >%s<\n",buf);
 
       /* skip empty lines and comments */
       if (!strlen(buf) || (*buf == '#' )) {
@@ -431,13 +431,13 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
             sge_dstring_append(outpath, path + orign_str_len );
          }
 
-         DPRINTF(("Path " SFQ " has been aliased to " SFQ "\n", inpath, sge_dstring_get_string(outpath)));
+         DPRINTF("Path " SFQ " has been aliased to " SFQ "\n", inpath, sge_dstring_get_string(outpath));
  
          /* and we have to start all over again for subsequent aliases */
          sge_dstring_copy_dstring(&the_path, outpath);
       }
    } else {
-      DPRINTF(("\"path_aliases\" containes no elements\n"));
+      DPRINTF("\"path_aliases\" containes no elements\n");
    }
 
    sge_dstring_free(&the_path);

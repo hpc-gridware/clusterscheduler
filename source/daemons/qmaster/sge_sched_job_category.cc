@@ -229,8 +229,8 @@ sge_delete_job_category(lListElem *job) {
          const lListElem *cache = nullptr;
          const lList *cache_list = lGetList(cat, CT_cache);
 
-         DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n",
-                 lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
+         DPRINTF("############## Removing %s from category list (refcount: " sge_u32 ")\n",
+                 lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
 
          for_each_ep(cache, cache_list) {
             int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
@@ -366,7 +366,7 @@ sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const lLi
       DRETURN(0);
    }
 
-   DPRINTF(("### ### ### ###   REBUILDING CATEGORIES   ### ### ### ###\n"));
+   DPRINTF("### ### ### ###   REBUILDING CATEGORIES   ### ### ### ###\n");
 
    lFreeList(&CATEGORY_LIST);
    lFreeList(&CS_CATEGORY_LIST);

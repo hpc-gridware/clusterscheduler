@@ -288,15 +288,14 @@ static void client_check_window_change(COMM_HANDLE *handle)
        */
       received_window_change_signal = 0;
       if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0) {
-         DPRINTF(("sendig WINDOW_SIZE_CTRL_MSG with new window size: "
-                  "%d, %d, %d, %d to shepherd\n",
-                  ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel));
+         DPRINTF("sendig WINDOW_SIZE_CTRL_MSG with new window size: %d, %d, %d, %d to shepherd\n",
+                 ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
 
          snprintf(buf, sizeof(buf), "WS %d %d %d %d", ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf),
                             WINDOW_SIZE_CTRL_MSG, &err_msg);
       } else {
-         DPRINTF(("client_check_windows_change: ioctl() failed! sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n"));
+         DPRINTF("client_check_windows_change: ioctl() failed! sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n");
          snprintf(buf, sizeof(buf), "WS 60 80 480 640");
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf), WINDOW_SIZE_CTRL_MSG, &err_msg);
       }
@@ -345,8 +344,7 @@ void* tty_to_commlib(void *t_conf)
     */
    pbuf = sge_malloc(BUFSIZE);
    if (pbuf == nullptr) {
-      DPRINTF(("tty_to_commlib can't allocate working buffer: %s (%d)\n",
-         strerror(errno), errno));
+      DPRINTF("tty_to_commlib can't allocate working buffer: %s (%d)\n", strerror(errno), errno);
       do_exit = 1;
    }
 
@@ -368,14 +366,14 @@ void* tty_to_commlib(void *t_conf)
         if (g_raw_mode_state == 1) {
           /* restore raw-mode after SIGCONT */
           if (terminal_enter_raw_mode () != 0) {
-						 DPRINTF(("tty_to_commlib: couldn't enter raw mode for pty\n"));
+						 DPRINTF("tty_to_commlib: couldn't enter raw mode for pty\n");
              do_exit = 1;
              continue;
             }
         }
 			}
       
-      DPRINTF(("tty_to_commlib: Waiting in select() for data\n"));
+      DPRINTF("tty_to_commlib: Waiting in select() for data\n");
       ret = select(STDIN_FILENO+1, &read_fds, nullptr, nullptr, &timeout);
 
       thread_testcancel(t_conf);
@@ -393,28 +391,28 @@ void* tty_to_commlib(void *t_conf)
       if (ret > 0) {
          if (g_nostdin == 1) {
             /* We should never get here if STDIN is closed */
-            DPRINTF(("tty_to_commlib: STDIN ready to read while it should be closed!!!\n"));
+            DPRINTF("tty_to_commlib: STDIN ready to read while it should be closed!!!\n");
          }
-         DPRINTF(("tty_to_commlib: trying to read() from stdin\n"));
+         DPRINTF("tty_to_commlib: trying to read() from stdin\n");
          nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
          pbuf[nread] = '\0';
          sge_dstring_append (&dbuf, pbuf);
-         DPRINTF(("tty_to_commlib: nread = %d\n", nread));
+         DPRINTF("tty_to_commlib: nread = %d\n", nread);
 
          if (nread < 0 && (errno == EINTR || errno == EAGAIN)) {
-            DPRINTF(("tty_to_commlib: EINTR or EAGAIN\n"));
+            DPRINTF("tty_to_commlib: EINTR or EAGAIN\n");
             /* do nothing */
          } else if (nread <= 0) {
             do_exit = 1;
          } else {
-            DPRINTF(("tty_to_commlib: writing to commlib: %d bytes\n", nread));
+            DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
             if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
                 if (comm_write_message(g_comm_handle, g_hostname,
                     COMM_CLIENT, 1, (unsigned char*)pbuf, 
                     (unsigned long)nread, STDIN_DATA_MSG, &err_msg) != (unsigned long)nread) {
-                  DPRINTF(("tty_to_commlib: couldn't write all data\n"));
+                  DPRINTF("tty_to_commlib: couldn't write all data\n");
                 } else {
-                  DPRINTF(("tty_to_commlib: data successfully written\n"));
+                  DPRINTF("tty_to_commlib: data successfully written\n");
                 }
             }
             comm_flush_write_messages(g_comm_handle, &err_msg);
@@ -424,12 +422,12 @@ void* tty_to_commlib(void *t_conf)
           * We got either a select timeout or a select error. In both cases,
           * it's a good chance to check if our client is still alive.
           */
-         DPRINTF(("tty_to_commlib: Checking if client is still alive\n"));
+         DPRINTF("tty_to_commlib: Checking if client is still alive\n");
          if (comm_get_connection_count(g_comm_handle, &err_msg) == 0) {
-            DPRINTF(("tty_to_commlib: Client is not alive! -> exiting.\n"));
+            DPRINTF("tty_to_commlib: Client is not alive! -> exiting.\n");
             do_exit = 1;
          } else {
-            DPRINTF(("tty_to_commlib: Client is still alive\n"));
+            DPRINTF("tty_to_commlib: Client is still alive\n");
          }
       }
    } /* while (do_exit == 0) */
@@ -437,9 +435,9 @@ void* tty_to_commlib(void *t_conf)
    /* Send STDIN_CLOSE_MSG to the shepherd. That causes the shepherd to close its filedescriptor, also. */
    if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)" ",
                       1, STDIN_CLOSE_MSG, &err_msg) != 1) {
-      DPRINTF(("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n"));
+      DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
    } else {
-      DPRINTF(("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n"));
+      DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
    }
    /* clean up */
    sge_dstring_free(&dbuf);
@@ -447,7 +445,7 @@ void* tty_to_commlib(void *t_conf)
    thread_func_cleanup(t_conf);
    
    sge_dstring_free(&err_msg);
-   DPRINTF(("tty_to_commlib: exiting tty_to_commlib thread!\n"));
+   DPRINTF("tty_to_commlib: exiting tty_to_commlib thread!\n");
    DRETURN(nullptr);
 }
 
@@ -489,20 +487,19 @@ void* commlib_to_tty(void *t_conf)
       recv_mess.cl_message = nullptr;
       recv_mess.data = nullptr;
 
-      DPRINTF(("commlib_to_tty: recv_message()\n"));
+      DPRINTF("commlib_to_tty: recv_message()\n");
       ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
       if (ret != COMM_RETVAL_OK) {
          /* check if we are still connected to anybody. */
          /* if not - exit. */
-         DPRINTF(("commlib_to_tty: error receiving message: %s\n", 
-                  sge_dstring_get_string(&err_msg)));
+         DPRINTF("commlib_to_tty: error receiving message: %s\n", sge_dstring_get_string(&err_msg));
          if (comm_get_connection_count(g_comm_handle, &err_msg) == 0) {
-            DPRINTF(("commlib_to_tty: no endpoint found\n"));
+            DPRINTF("commlib_to_tty: no endpoint found\n");
             do_exit = 1;
             continue;
          }
       }
-      DPRINTF(("commlib_to_tty: received a message\n"));
+      DPRINTF("commlib_to_tty: received a message\n");
 
       thread_testcancel(t_conf);
       client_check_window_change(g_comm_handle);
@@ -512,13 +509,12 @@ void* commlib_to_tty(void *t_conf)
           received_signal == SIGQUIT ||
           received_signal == SIGTERM) {
          /* If we receive one of these signals, we must terminate */
-         DPRINTF(("commlib_to_tty: shutting down because of signal %d\n",
-                 received_signal));
+         DPRINTF("commlib_to_tty: shutting down because of signal %d\n", received_signal);
          do_exit = 1;
          continue;
       }
 
-      DPRINTF(("'parsing' message\n"));
+      DPRINTF("'parsing' message\n");
       /*
        * 'parse' message
        * A 1 byte prefix tells us what kind of message it is.
@@ -531,26 +527,26 @@ void* commlib_to_tty(void *t_conf)
                /* copy recv_mess.data to buf to append '\0' */
                memcpy(buf, recv_mess.data, MIN(99, recv_mess.cl_message->message_length - 1));
                buf[MIN(99, recv_mess.cl_message->message_length - 1)] = 0;
-               DPRINTF(("commlib_to_tty: received stdout message, writing to tty.\n"));
-               DPRINTF(("commlib_to_tty: message is: %s\n", buf));
+               DPRINTF("commlib_to_tty: received stdout message, writing to tty.\n");
+               DPRINTF("commlib_to_tty: message is: %s\n", buf);
 /* TODO: If it's not possible to write all data to the tty, retry blocking
  *       until all data was written. The commlib must block then, too.
  */
                if (sge_writenbytes(STDOUT_FILENO, recv_mess.data,
                           (int)(recv_mess.cl_message->message_length-1))
                        != (int)(recv_mess.cl_message->message_length-1)) {
-                  DPRINTF(("commlib_to_tty: sge_writenbytes() error\n"));
+                  DPRINTF("commlib_to_tty: sge_writenbytes() error\n");
                }
                break;
             case STDERR_DATA_MSG:
-               DPRINTF(("commlib_to_tty: received stderr message, writing to tty.\n"));
+               DPRINTF("commlib_to_tty: received stderr message, writing to tty.\n");
 /* TODO: If it's not possible to write all data to the tty, retry blocking
  *       until all data was written. The commlib must block then, too.
  */
                if (sge_writenbytes(STDERR_FILENO, recv_mess.data,
                           (int)(recv_mess.cl_message->message_length-1))
                        != (int)(recv_mess.cl_message->message_length-1)) {
-                  DPRINTF(("commlib_to_tty: sge_writenbytes() error\n"));
+                  DPRINTF("commlib_to_tty: sge_writenbytes() error\n");
                }
                break;
             case WINDOW_SIZE_CTRL_MSG:
@@ -566,12 +562,12 @@ void* commlib_to_tty(void *t_conf)
                 * (and perhaps some data messages),  which is already in the 
                 * send_messages list of the connection, to the client.
                 */
-               DPRINTF(("commlib_to_tty: received register message!\n"));
+               DPRINTF("commlib_to_tty: received register message!\n");
                /* Send the settings in response */
                snprintf(buf, sizeof(buf), "noshell = %d", g_noshell);
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
                   (unsigned char*)buf, strlen(buf)+1, SETTINGS_CTRL_MSG, &err_msg);
-               DPRINTF(("commlib_to_tty: sent SETTINGS_CTRL_MSG, ret = %d\n", ret));
+               DPRINTF("commlib_to_tty: sent SETTINGS_CTRL_MSG, ret = %d\n", ret);
                break;
             case UNREGISTER_CTRL_MSG:
                /* control message */
@@ -580,8 +576,8 @@ void* commlib_to_tty(void *t_conf)
                 * client. We answer with a UNREGISTER_RESPONSE_CTRL_MSG so
                 * the client knows that it can quit now. We can quit, also.
                 */
-               DPRINTF(("commlib_to_tty: received unregister message!\n"));
-               DPRINTF(("commlib_to_tty: writing UNREGISTER_RESPONSE_CTRL_MSG\n"));
+               DPRINTF("commlib_to_tty: received unregister message!\n");
+               DPRINTF("commlib_to_tty: writing UNREGISTER_RESPONSE_CTRL_MSG\n");
 
                /* copy recv_mess.data to buf to append '\0' */
                memcpy(buf, recv_mess.data, MIN(99, recv_mess.cl_message->message_length - 1));
@@ -596,8 +592,7 @@ void* commlib_to_tty(void *t_conf)
                comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, 
                   (unsigned char*)" ", 1, UNREGISTER_RESPONSE_CTRL_MSG, &err_msg);
 
-               DPRINTF(("commlib_to_tty: received exit_status from shepherd: %d\n", 
-                        g_exit_status));
+               DPRINTF("commlib_to_tty: received exit_status from shepherd: %d\n", g_exit_status);
                comm_flush_write_messages(g_comm_handle, &err_msg);
                do_exit = 1;
 #if 0
@@ -611,7 +606,7 @@ void* commlib_to_tty(void *t_conf)
    }
 
    thread_func_cleanup(t_conf);
-   DPRINTF(("commlib_to_tty: exiting commlib_to_tty thread!\n"));
+   DPRINTF("commlib_to_tty: exiting commlib_to_tty thread!\n");
    sge_dstring_free(&err_msg);
    DRETURN(nullptr);
 }
@@ -727,8 +722,8 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
     * why we "goto cleanup" in case of error.
     */
 
-   DPRINTF(("creating worker threads\n"));
-   DPRINTF(("creating tty_to_commlib thread\n"));
+   DPRINTF("creating worker threads\n");
+   DPRINTF("creating tty_to_commlib thread\n");
    ret = create_thread(thread_lib_handle, &pthread_tty_to_commlib, cl_com_log_list,
       "tty_to_commlib thread", 1, tty_to_commlib);
    if (ret != CL_RETVAL_OK) {
@@ -738,7 +733,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
       goto cleanup;
    }
 
-   DPRINTF(("creating commlib_to_tty thread\n"));
+   DPRINTF("creating commlib_to_tty thread\n");
    ret = create_thread(thread_lib_handle, &pthread_commlib_to_tty, cl_com_log_list,
       "commlib_to_tty thread", 1, commlib_to_tty);
    if (ret != CL_RETVAL_OK) {
@@ -755,10 +750,10 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
     * exit. Then it closes the tty_to_commlib thread, too, and 
     * cleans up everything.
     */
-   DPRINTF(("waiting for end of commlib_to_tty thread\n"));
+   DPRINTF("waiting for end of commlib_to_tty thread\n");
    thread_join(pthread_commlib_to_tty);
 
-   DPRINTF(("shutting down tty_to_commlib thread\n"));
+   DPRINTF("shutting down tty_to_commlib thread\n");
    thread_shutdown(pthread_tty_to_commlib);
 
    /*
@@ -767,7 +762,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
     */
    close(STDIN_FILENO);
 
-   DPRINTF(("waiting for end of tty_to_commlib thread\n"));
+   DPRINTF("waiting for end of tty_to_commlib thread\n");
    thread_join(pthread_tty_to_commlib);
 cleanup:
    /*
@@ -775,7 +770,7 @@ cleanup:
     * by OS on process end, but we want to be sure.
     */
    ret = terminal_leave_raw_mode();
-   DPRINTF(("terminal_leave_raw_mode() returned %s (%d)\n", strerror(ret), ret));
+   DPRINTF("terminal_leave_raw_mode() returned %s (%d)\n", strerror(ret), ret);
    if (ret != 0) {
       sge_dstring_sprintf(p_err_msg, "error resetting terminal mode: %s (%d)", strerror(ret), ret);
       ret_val = 7; 
@@ -837,7 +832,7 @@ int start_ijs_server(bool csp_mode, const char* username,
     * It gets freed in force_ijs_server_shutdown().
     * TODO: Cleaner solution for this!
     */
-   DPRINTF(("starting commlib server\n"));
+   DPRINTF("starting commlib server\n");
    ret = comm_open_connection(true, csp_mode, COMM_SERVER, 0, COMM_CLIENT,
                               nullptr, username, phandle, p_err_msg);
    if (ret != 0 || *phandle == nullptr) {
@@ -899,7 +894,7 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
       cl_log_list_set_log_level(cl_com_get_log_list(), CL_LOG_OFF);
 #endif
       cl_com_ignore_timeouts(true);
-      DPRINTF(("shut down the connection from our side\n"));
+      DPRINTF("shut down the connection from our side\n");
       ret = cl_commlib_shutdown_handle(*phandle, false);
       if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(p_err_msg, "error shutting down the connection: %s",
@@ -953,21 +948,20 @@ int force_ijs_server_shutdown(COMM_HANDLE **phandle,
 
    if (phandle == nullptr || *phandle == nullptr) {
       sge_dstring_sprintf(p_err_msg, "invalid connection handle");
-      DPRINTF(("invalid connection handle - nothing to shut down\n"));
+      DPRINTF("invalid connection handle - nothing to shut down\n");
       DRETURN(1);
    }
 
-   DPRINTF(("connection is still alive\n"));
+   DPRINTF("connection is still alive\n");
 
    /* This will remove the handle */
    ret = comm_shutdown_connection(*phandle, COMM_CLIENT, g_hostname, p_err_msg);
    sge_free(&g_hostname);
    if (ret != COMM_RETVAL_OK) {
-      DPRINTF(("comm_shutdown_connection() failed: %s (%d)\n",
-               sge_dstring_get_string(p_err_msg), ret));
+      DPRINTF("comm_shutdown_connection() failed: %s (%d)\n", sge_dstring_get_string(p_err_msg), ret);
       ret = 2;
    } else {
-      DPRINTF(("successfully shut down the connection\n"));
+      DPRINTF("successfully shut down the connection\n");
    }
    *phandle = nullptr;
 

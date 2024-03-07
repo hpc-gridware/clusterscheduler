@@ -250,7 +250,7 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
 
    /* FIX_CONST */
    value = (char*) lGetString(ep, value_nm);
-   DPRINTF(("%s = %s\n", key, value?value:"<null ptr>"));
+   DPRINTF("%s = %s\n", key, value?value:"<null ptr>");
 
    DRETURN(value);
 }
@@ -290,15 +290,15 @@ int name_nm
    dataType = lGetPosType(lGetElemDescr(ep),pos);
    switch (dataType) {
       case lStringT:
-         DPRINTF(("set_conf_string: lStringT data type (Type: %s)\n",lNm2Str(name_nm)));
+         DPRINTF("set_conf_string: lStringT data type (Type: %s)\n",lNm2Str(name_nm));
          lSetString(ep, name_nm, str);
          break;
       case lHostT:
-         DPRINTF(("set_conf_string: lHostT data type (Type: %s)\n",lNm2Str(name_nm)));
+         DPRINTF("set_conf_string: lHostT data type (Type: %s)\n",lNm2Str(name_nm));
          lSetHost(ep, name_nm, str);
          break;
       default:
-         DPRINTF(("!!!!!!!!!set_conf_string: unexpected data type !!!!!!!!!!!!!!!!!\n"));
+         DPRINTF("!!!!!!!!!set_conf_string: unexpected data type !!!!!!!!!!!!!!!!!\n");
          break;
    } 
    lDelElemStr(clpp, CF_name, key);
@@ -786,15 +786,15 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
       dataType = lGetPosType(lGetElemDescr(lep),pos);
       switch (dataType) {
          case lStringT:
-            DPRINTF(("set_conf_list: lStringT data type (Type: %s)\n",lNm2Str(name_nm)));
+            DPRINTF("set_conf_list: lStringT data type (Type: %s)\n",lNm2Str(name_nm));
             tmp_str = lGetString(lep, sub_name_nm);
             break;
          case lHostT:
-            DPRINTF(("set_conf_list: lHostT data type (Type: %s)\n",lNm2Str(name_nm)));
+            DPRINTF("set_conf_list: lHostT data type (Type: %s)\n",lNm2Str(name_nm));
             tmp_str = lGetHost(lep, sub_name_nm);
             break;
          default:
-            DPRINTF(("!!!!!!!!!set_conf_string: unexpected data type !!!!!!!!!!!!!!!!!\n"));
+            DPRINTF("!!!!!!!!!set_conf_string: unexpected data type !!!!!!!!!!!!!!!!!\n");
             break;
       }
       if (strcasecmp("NONE", tmp_str)) {

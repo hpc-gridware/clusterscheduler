@@ -233,7 +233,7 @@ sge_switch2admin_user() {
    }
 
    if (!sge_is_start_user_superuser()) {
-      DPRINTF((MSG_SWITCH_USER_NOT_ROOT));
+      DPRINTF(MSG_SWITCH_USER_NOT_ROOT);
       ret = 0;
       goto exit;
    } else {
@@ -255,8 +255,8 @@ sge_switch2admin_user() {
    }
 
    exit:
-DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
-        (long) geteuid(), (long) getegid(), (long) uid, (long) gid));
+DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
+        (long) geteuid(), (long) getegid(), (long) uid, (long) gid);
    DRETURN(ret);
 } /* sge_switch_2admin_user() */
 
@@ -314,7 +314,7 @@ sge_switch2start_user() {
    start_gid = getgid();
 
    if (!sge_is_start_user_superuser()) {
-      DPRINTF((MSG_SWITCH_USER_NOT_ROOT));
+      DPRINTF(MSG_SWITCH_USER_NOT_ROOT);
       ret = 0;
       goto exit;
    } else {
@@ -335,8 +335,8 @@ sge_switch2start_user() {
    }
 
    exit:
-DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
-        (long) geteuid(), (long) getegid(), (long) uid, (long) gid));
+DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
+        (long) geteuid(), (long) getegid(), (long) uid, (long) gid);
    DRETURN(ret);
 } /* sge_switch2start_user() */
 
@@ -380,7 +380,7 @@ sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
    buffer = sge_malloc(size);
 
    do {
-      DPRINTF(("name: %s retries: %d\n", user, retries));
+      DPRINTF("name: %s retries: %d\n", user, retries);
 
       if (!retries--) {
          sge_free(&buffer);
@@ -1128,7 +1128,7 @@ set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
    admin_user.initialized = true;
    sge_mutex_unlock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
 
-   DPRINTF(("auid=%ld; agid=%ld\n", (long) theUID, (long) theGID));
+   DPRINTF("auid=%ld; agid=%ld\n", (long) theUID, (long) theGID);
 
    DRETURN_VOID;
 } /* set_admin_user() */

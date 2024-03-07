@@ -68,7 +68,7 @@ int do_ticket(struct_msg_t *aMsg)
          ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
       }
-      DPRINTF(("got %lf new tickets for job " sge_u32"." sge_u32"\n", ticket, jobid, jataskid));
+      DPRINTF("got %lf new tickets for job " sge_u32"." sge_u32"\n", ticket, jobid, jataskid);
       job_ticket = lAddElemUlong(&ticket_modifier, JB_job_number, jobid, JB_Type);   
       if (job_ticket) {
          task_ticket = lAddElemUlong(&jatasks, JAT_task_number, jataskid, JAT_Type);
@@ -79,7 +79,7 @@ int do_ticket(struct_msg_t *aMsg)
       }
    }
   
-   DPRINTF(("got new tickets for %d jobs\n", lGetNumberOfElem(ticket_modifier)));
+   DPRINTF("got new tickets for %d jobs\n", lGetNumberOfElem(ticket_modifier));
 
 #ifdef COMPILE_DC
    { 
@@ -90,7 +90,7 @@ int do_ticket(struct_msg_t *aMsg)
       }
 
       sge_switch2start_user();
-      DPRINTF(("ADJUST PRIORITIES\n"));
+      DPRINTF("ADJUST PRIORITIES\n");
       ptf_adjust_job_priorities();
       sge_switch2admin_user();
    }

@@ -312,7 +312,7 @@ sge_setup_job_resend() {
             te_add_event(ev);
             te_free_event(&ev);
 
-            DPRINTF(("Did add job resend for " sge_u32 "/" sge_u32 " at %d\n", job_num, task_num, when));
+            DPRINTF("Did add job resend for " sge_u32 "/" sge_u32 " at %d\n", job_num, task_num, when);
          }
 
          task = lNext(task);
@@ -647,7 +647,7 @@ communication_setup() {
 
    /* updating the commlib paramterlist with new or changed parameters */
    cl_com_update_parameter_list(qmaster_params);
-   DPRINTF(("received qmaster_params are: %s\n", qmaster_params));
+   DPRINTF("received qmaster_params are: %s\n", qmaster_params);
    sge_free(&qmaster_params);
 
    /* now enable qmaster communication */
@@ -830,7 +830,7 @@ setup_qmaster() {
    /*
    ** read in all objects and check for correctness
    */
-   DPRINTF(("Complex Attributes----------------------\n"));
+   DPRINTF("Complex Attributes----------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
@@ -880,7 +880,7 @@ setup_qmaster() {
       }
    }
 
-   DPRINTF(("host_list----------------------------\n"));
+   DPRINTF("host_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_EXECHOST),
                    SGE_TYPE_EXECHOST);
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_ADMINHOST),
@@ -909,7 +909,7 @@ setup_qmaster() {
       }
    }
 
-   DPRINTF(("manager_list----------------------------\n"));
+   DPRINTF("manager_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_MANAGER), SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
@@ -923,14 +923,14 @@ setup_qmaster() {
       }
    }
    for_each_rw(ep, *object_type_get_master_list(SGE_TYPE_MANAGER)) {
-      DPRINTF(("%s\n", lGetString(ep, UM_name)));
+      DPRINTF("%s\n", lGetString(ep, UM_name));
    }
 
-   DPRINTF(("host group definitions-----------\n"));
+   DPRINTF("host group definitions-----------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
 
-   DPRINTF(("operator_list----------------------------\n"));
+   DPRINTF("operator_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_OPERATOR),
                    SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
@@ -945,24 +945,24 @@ setup_qmaster() {
       }
    }
    for_each_rw(ep, *object_type_get_master_list(SGE_TYPE_OPERATOR)) {
-      DPRINTF(("%s\n", lGetString(ep, UO_name)));
+      DPRINTF("%s\n", lGetString(ep, UO_name));
    }
 
 
-   DPRINTF(("userset_list------------------------------\n"));
+   DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
-   DPRINTF(("calendar list ------------------------------\n"));
+   DPRINTF("calendar list ------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_CALENDAR),
                    SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
-   DPRINTF(("resource quota list -----------------------\n"));
+   DPRINTF("resource quota list -----------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_RQS), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
-   DPRINTF(("cluster_queue_list---------------------------------\n"));
+   DPRINTF("cluster_queue_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
    cqueue_list_set_unknown_state(*(object_type_get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true);
@@ -1033,15 +1033,15 @@ setup_qmaster() {
       }
    }
 
-   DPRINTF(("pe_list---------------------------------\n"));
+   DPRINTF("pe_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_PE), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
-   DPRINTF(("ckpt_list---------------------------------\n"));
+   DPRINTF("ckpt_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_CKPT), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
-   DPRINTF(("advance reservation list -----------------------\n"));
+   DPRINTF("advance reservation list -----------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
 
@@ -1053,7 +1053,7 @@ setup_qmaster() {
       }
    }
 
-   DPRINTF(("job_list-----------------------------------\n"));
+   DPRINTF("job_list-----------------------------------\n");
    /* measure time needed to read job database */
    time_start = time(nullptr);
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
@@ -1073,8 +1073,8 @@ setup_qmaster() {
 
       for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
 
-         DPRINTF(("JOB " sge_u32 " PRIORITY %d\n", lGetUlong(jep, JB_job_number),
-                 (int) lGetUlong(jep, JB_priority) - BASE_PRIORITY));
+         DPRINTF("JOB " sge_u32 " PRIORITY %d\n", lGetUlong(jep, JB_job_number),
+                 (int) lGetUlong(jep, JB_priority) - BASE_PRIORITY);
 
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);
@@ -1123,24 +1123,24 @@ setup_qmaster() {
    rebuild_signal_events();
 
 
-   DPRINTF(("user list-----------------------------------\n"));
+   DPRINTF("user list-----------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_USER), SGE_TYPE_USER);
    answer_list_output(&answer_list);
 
    remove_invalid_job_references(1);
 
-   DPRINTF(("project list-----------------------------------\n"));
+   DPRINTF("project list-----------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_PROJECT), SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
 
    remove_invalid_job_references(0);
 
-   DPRINTF(("scheduler config -----------------------------------\n"));
+   DPRINTF("scheduler config -----------------------------------\n");
 
    sge_read_sched_configuration(spooling_context, &answer_list);
    answer_list_output(&answer_list);
 
-   DPRINTF(("share tree list-----------------------------------\n"));
+   DPRINTF("share tree list-----------------------------------\n");
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_SHARETREE),
                    SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);

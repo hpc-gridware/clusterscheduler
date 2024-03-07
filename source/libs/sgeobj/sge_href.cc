@@ -883,7 +883,7 @@ href_list_debug_print(const lList *this_list, const char *prefix)
    }
    if (!is_first_hostname) {
       sge_dstring_append(&message, "\n");
-      DPRINTF((sge_dstring_get_string(&message)));
+      DPRINTF(sge_dstring_get_string(&message));
    }
    sge_dstring_free(&message);
    DRETURN_VOID;

@@ -183,7 +183,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-A %s\"\n", *sp));
+         DPRINTF("\"-A %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, A_OPT, lStringT, *(sp - 1), *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
@@ -213,7 +213,7 @@ u_long32 flags
                DRETURN(answer);
             }
 
-            DPRINTF(("\"-ar %s\"\n", *sp));
+            DPRINTF("\"-ar %s\"\n", *sp);
 
             ulong_list_parse_from_string(&ar_id_list, &answer, *sp, ",");
 
@@ -275,7 +275,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-ac %s\"\n", *sp));
+         DPRINTF("\"-ac %s\"\n", *sp);
          i_ret = var_list_parse_from_string(&variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
@@ -310,7 +310,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-b %s\"\n", *sp));
+         DPRINTF("\"-b %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, b_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -386,7 +386,7 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         DPRINTF(("\"%s %s\"\n", *(sp - 1), *sp));
+         DPRINTF("\"%s %s\"\n", *(sp - 1), *sp);
 
          attr = sge_parse_checkpoint_attr(*sp);
          if (attr == 0) {
@@ -431,7 +431,7 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         DPRINTF(("\"%s %s\"\n", *(sp - 1), *sp));
+         DPRINTF("\"%s %s\"\n", *(sp - 1), *sp);
 
          ep_opt = sge_add_arg(pcmdline, 0, lStringT, *(sp - 1), *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
@@ -445,7 +445,7 @@ u_long32 flags
 
       if (!strcmp("-clear", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          ep_opt = sge_add_noarg(pcmdline, clear_OPT, *sp, nullptr);
 
          sp++;
@@ -457,7 +457,7 @@ u_long32 flags
 
       if (!strcmp("-explain", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          ep_opt = sge_add_noarg(pcmdline, explain_OPT, *sp, nullptr);
 
          sp++;
@@ -469,7 +469,7 @@ u_long32 flags
 
       if (!strcmp("-xml", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          ep_opt = sge_add_noarg(pcmdline, xml_OPT, *sp, nullptr);
 
          sp++;
@@ -481,7 +481,7 @@ u_long32 flags
 
       if (!strcmp("-cwd", *sp)) {
          ep_opt = sge_add_noarg(pcmdline, wd_OPT, "-wd", nullptr);
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          
          sp++;
          continue;
@@ -504,7 +504,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-C %s\"\n", *sp));
+         DPRINTF("\"-C %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, C_OPT, lStringT, *(sp - 1), *sp);
 
@@ -535,7 +535,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-d %s\"\n", *sp));
+         DPRINTF("\"-d %s\"\n", *sp);
 
          if (!parse_ulong_val(&timeval, nullptr, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -565,7 +565,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-dc %s\"\n", *sp));
+         DPRINTF("\"-dc %s\"\n", *sp);
          i_ret = var_list_parse_from_string(&variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
@@ -601,7 +601,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-display %s\"\n", *sp));
+         DPRINTF("\"-display %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, display_OPT, lStringT, *(sp - 1), *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
@@ -664,7 +664,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-e %s\"\n", *sp));
+         DPRINTF("\"-e %s\"\n", *sp);
 
          if (prog_number == QRSUB) {
             u_long32 timeval;
@@ -706,7 +706,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-i %s\"\n", *sp));
+         DPRINTF("\"-i %s\"\n", *sp);
 
          i_ret = cull_parse_path_list(&path_list, *sp);
          if (i_ret) {
@@ -755,7 +755,7 @@ u_long32 flags
          else {
             hold = MINUS_H_TGT_USER;
          }
-         DPRINTF(("\"-h %s\"\n", *sp));
+         DPRINTF("\"-h %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, h_OPT, lIntT, cmd_switch, cmd_arg);
          lSetInt(ep_opt, SPA_argval_lIntT, hold);
@@ -769,7 +769,7 @@ u_long32 flags
 
       if (!strcmp("-hard", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
 
          hard_soft_flag = 1;
          ep_opt = sge_add_noarg(pcmdline, hard_OPT, *sp, nullptr);
@@ -794,7 +794,7 @@ u_long32 flags
             DRETURN(answer);
          }
          
-         DPRINTF(("\"-he %s\"\n", *sp));
+         DPRINTF("\"-he %s\"\n", *sp);
          
          if (set_yn_option(pcmdline, he_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -807,7 +807,7 @@ u_long32 flags
       /* "-help" */
 
       if (!strcmp("-help", *sp)) {
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
 
          ep_opt = sge_add_noarg(pcmdline, help_OPT, *sp, nullptr);
 
@@ -830,7 +830,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-hold_jid %s\"\n", *sp));
+         DPRINTF("\"-hold_jid %s\"\n", *sp);
          i_ret = cull_parse_jid_hold_list(&jid_hold_list, *sp);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -858,7 +858,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-hold_jid_ad %s\"\n", *sp));
+         DPRINTF("\"-hold_jid_ad %s\"\n", *sp);
          i_ret = cull_parse_jid_hold_list(&jid_ad_hold_list, *sp);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -890,7 +890,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-j %s\"\n", *sp));
+         DPRINTF("\"-j %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, j_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -955,7 +955,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-jsv %s\"\n", *sp));
+         DPRINTF("\"-jsv %s\"\n", *sp);
 
          sge_dstring_append(&input, *sp);
          success = jsv_url_parse(&input, &answer, &type, &user, &path, true);
@@ -997,7 +997,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-l %s\"\n", *sp));
+         DPRINTF("\"-l %s\"\n", *sp);
 
          resource_list = centry_list_parse_from_string(nullptr, *sp, false);
          if (!resource_list) {
@@ -1029,7 +1029,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-m %s\"\n", *sp));
+         DPRINTF("\"-m %s\"\n", *sp);
          mail_options = sge_parse_mail_options(&answer, *sp, prog_number);
          if (!mail_options) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1058,7 +1058,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-masterq %s\"\n", *sp));
+         DPRINTF("\"-masterq %s\"\n", *sp);
          i_ret = cull_parse_destination_identifier_list(&id_list, *sp);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1087,7 +1087,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-M %s\"\n", *sp));
+         DPRINTF("\"-M %s\"\n", *sp);
 
          i_ret = mailrec_parse(&mail_list, *sp);
           if (i_ret) {
@@ -1131,7 +1131,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-N %s\"\n", *sp));
+         DPRINTF("\"-N %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, N_OPT, lStringT, *(sp - 1), *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
 
@@ -1144,7 +1144,7 @@ u_long32 flags
 
       if (!strcmp("-notify", *sp)) {
 
-         DPRINTF(("\"-notify\"\n"));
+         DPRINTF("\"-notify\"\n");
 
          ep_opt = sge_add_noarg(pcmdline, notify_OPT, *sp, nullptr);
 
@@ -1168,7 +1168,7 @@ u_long32 flags
             DRETURN(answer);
          }
          
-         DPRINTF(("\"-now %s\"\n", *sp));
+         DPRINTF("\"-now %s\"\n", *sp);
          
          if (set_yn_option(pcmdline, now_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1192,7 +1192,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-o %s\"\n", *sp));
+         DPRINTF("\"-o %s\"\n", *sp);
          i_ret = cull_parse_path_list(&stdout_path_list, *sp);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1286,7 +1286,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-P %s\"\n", *sp));
+         DPRINTF("\"-P %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, P_OPT, lStringT, *(sp - 1), *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
 
@@ -1356,7 +1356,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-q %s\"\n", *sp));
+         DPRINTF("\"-q %s\"\n", *sp);
          i_ret = cull_parse_destination_identifier_list(&id_list, *sp);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1390,7 +1390,7 @@ DTRACE;
             DRETURN(answer);
          }
 
-         DPRINTF(("\"-r %s\"\n", *sp));
+         DPRINTF("\"-r %s\"\n", *sp);
 
          if ((strcasecmp("y", *sp) == 0) || (strcasecmp("yes", *sp) == 0)) {
             ep_opt = sge_add_arg(pcmdline, r_OPT, lIntT, *(sp - 1), *sp);
@@ -1427,7 +1427,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-R %s\"\n", *sp));
+         DPRINTF("\"-R %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, R_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1453,7 +1453,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-sc %s\"\n", *sp));
+         DPRINTF("\"-sc %s\"\n", *sp);
          i_ret = var_list_parse_from_string(&variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1475,7 +1475,7 @@ DTRACE;
 
       if (!strcmp("-soft", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          hard_soft_flag = 2;
          ep_opt = sge_add_noarg(pcmdline, soft_OPT, *sp, nullptr);
 
@@ -1500,7 +1500,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-shell %s\"\n", *sp));
+         DPRINTF("\"-shell %s\"\n", *sp);
 
          if (set_yn_option (pcmdline, shell_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1527,7 +1527,7 @@ DTRACE;
             DRETURN(answer);
          }
          
-         DPRINTF(("\"-sync %s\"\n", *sp));
+         DPRINTF("\"-sync %s\"\n", *sp);
          
          if (set_yn_option (pcmdline, sync_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1550,7 +1550,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-S %s\"\n", *sp));
+         DPRINTF("\"-S %s\"\n", *sp);
 
          i_ret = cull_parse_path_list(&shell_list, *sp);
          if (i_ret) {
@@ -1579,7 +1579,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-t %s\"\n", *sp));
+         DPRINTF("\"-t %s\"\n", *sp);
 
          range_list_parse_from_string(&task_id_range_list, &answer, *sp,
                                       false, true, INF_NOT_ALLOWED);
@@ -1648,7 +1648,7 @@ DTRACE;
             DRETURN(answer);
          }
  
-         DPRINTF(("\"-u %s\"\n", *sp));
+         DPRINTF("\"-u %s\"\n", *sp);
 
          if (prog_number == QRSUB) {
             int rule[] = {ARA_name, 0};
@@ -1676,7 +1676,7 @@ DTRACE;
       if (!strcmp("-uall", *sp)) {
          ep_opt = sge_add_noarg(pcmdline, u_OPT, *sp, nullptr);
 
-         DPRINTF(("\"-uall \"\n"));
+         DPRINTF("\"-uall \"\n");
          sp++;
   
          continue;
@@ -1695,7 +1695,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-v %s\"\n", *sp));
+         DPRINTF("\"-v %s\"\n", *sp);
 
          i_ret = var_list_parse_from_string(&variable_list, *sp, 1);
          if (i_ret) {
@@ -1715,7 +1715,7 @@ DTRACE;
 
       if (!strcmp("-verify", *sp)) {
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          ep_opt = sge_add_noarg(pcmdline, verify_OPT, *sp, nullptr);
 
          sp++;
@@ -1728,7 +1728,7 @@ DTRACE;
       if (!strcmp("-V", *sp)) {
          lList *env_list = nullptr;
 
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
          i_ret = var_list_parse_from_environment(&env_list, envp);
          if (i_ret) {
              answer_list_add(&answer, MSG_PARSE_COULDNOTPARSEENVIRIONMENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -1762,7 +1762,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-w %s\"\n", *sp));
+         DPRINTF("\"-w %s\"\n", *sp);
          lret = job_parse_validation_level(&level, *sp, prog_number, &answer);
          if (!lret) {
             DRETURN(answer);
@@ -1810,7 +1810,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-@ %s\"\n", *sp));
+         DPRINTF("\"-@ %s\"\n", *sp);
 
          alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
          for_each_ep(aep, alp) {
@@ -1860,7 +1860,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-pty %s\"\n", *sp));
+         DPRINTF("\"-pty %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, pty_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1885,7 +1885,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         DPRINTF(("\"-suspend_remote %s\"\n", *sp));
+         DPRINTF("\"-suspend_remote %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, suspend_remote_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
@@ -1923,7 +1923,7 @@ DTRACE;
       /* - for read script from stdin */
 
       if (!strcmp("-", *sp)) {
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
 
          if ((flags & FLG_USE_PSEUDOS)) {
             if (!is_qalter) {
@@ -1952,7 +1952,7 @@ DTRACE;
       /* -- separator for qalter between job ids and job args */
 
       if (!strcmp("--", *sp)) {
-         DPRINTF(("\"%s\"\n", *sp));
+         DPRINTF("\"%s\"\n", *sp);
 
          if ((flags & FLG_USE_PSEUDOS)) {
             sp++;
@@ -1976,7 +1976,7 @@ DTRACE;
 
 /*-----------------------------------------------------------------------------*/
 
-      DPRINTF(("===%s===\n", *sp));
+      DPRINTF("===%s===\n", *sp);
 
       /*
       ** with qsub and qsh this can only
@@ -2040,11 +2040,11 @@ char *time_str
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("--------time_string: %s\n", time_str));
+   DPRINTF("--------time_string: %s\n", time_str);
    if (!parse_ulong_val(nullptr, &seconds, TYPE_TIM, time_str, nullptr, 0))
       seconds = 0;
 
-     DPRINTF(("-------- seconds: %d\n", (int) seconds));
+     DPRINTF("-------- seconds: %d\n", (int) seconds);
    DRETURN(seconds);
 }
 

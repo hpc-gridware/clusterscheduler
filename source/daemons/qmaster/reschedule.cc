@@ -614,8 +614,8 @@ add_to_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 ta
    if (host) {
       ruep = lAddSubUlong(host, RU_job_number, job_number, EH_reschedule_unknown_list, RU_Type);
 
-      DPRINTF(("RU: ADDED " sge_u32"." sge_u32" to EH_reschedule_unknown_list "
-                                            "of host " SFN "\n", job_number, task_number, lGetHost(host, EH_name)));
+      DPRINTF("RU: ADDED " sge_u32"." sge_u32" to EH_reschedule_unknown_list "
+                                            "of host " SFN "\n", job_number, task_number, lGetHost(host, EH_name));
 
       lSetUlong(ruep, RU_task_number, task_number);
       lSetUlong(ruep, RU_state, state);
@@ -699,8 +699,8 @@ delete_from_reschedule_unknown_list(lListElem *host) {
          if (state == RESCHEDULE_SKIP_JR_REMOVE
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
 
-            DPRINTF(("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",
-                    lGetUlong(thiz, RU_job_number), lGetUlong(thiz, RU_task_number)));
+            DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",
+                    lGetUlong(thiz, RU_job_number), lGetUlong(thiz, RU_task_number));
             lRemoveElem(rulp, &thiz);
             changed = true;
          }
@@ -823,7 +823,7 @@ skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, 
                ret = 3;
             } else {
                ret = 1;
-               DPRINTF(("RU: GOT JR\n"));
+               DPRINTF("RU: GOT JR\n");
             }
          }
          break;
@@ -866,8 +866,8 @@ update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_l
             if (lGetUlong(ruep, RU_state) == RESCHEDULE_HANDLE_JR_WAIT) {
 
                lSetUlong(ruep, RU_state, RESCHEDULE_HANDLE_JR_REMOVE);
-               DPRINTF(("RU: DECREMENTED PE-TAG OF " sge_u32"." sge_u32"\n",
-                       job_number, task_number));
+               DPRINTF("RU: DECREMENTED PE-TAG OF " sge_u32"." sge_u32"\n",
+                       job_number, task_number);
             }
             break;
          }
@@ -962,12 +962,11 @@ update_reschedule_unknown_timeout(lListElem *host) {
          timeout = 0;
       }
 
-      DPRINTF(("%s: reschedule_unknown timeout for host " SFN " is " sge_u32"\n",
-              __func__, hostname, timeout));
+      DPRINTF("%s: reschedule_unknown timeout for host " SFN " is " sge_u32"\n", __func__, hostname, timeout);
 
       lSetUlong(host, EH_reschedule_unknown, timeout);
    } else {
-      DPRINTF(("%s: host == nullptr\n", __func__));
+      DPRINTF("%s: host == nullptr\n", __func__);
    }
 
    DRETURN_VOID;
@@ -1014,7 +1013,7 @@ reschedule_unknown_timeout(lListElem *hep) {
          lFreeElem(&conf_entry);
       }
 
-      DPRINTF(("%s: reschedule_unknown timeout for host %s is " sge_u32"\n", __func__, host, timeout));
+      DPRINTF("%s: reschedule_unknown timeout for host %s is " sge_u32"\n", __func__, host, timeout);
 
       lSetUlong(hep, EH_reschedule_unknown, timeout);
 
@@ -1054,7 +1053,7 @@ reschedule_unknown_trigger(lListElem *hep) {
       u_long32 when = time(nullptr) + timeout + add_time;
       te_event_t ev = nullptr;
 
-      DPRINTF(("RU: Autorescheduling enabled for host " SFN ". (" sge_u32 " sec)\n", host, timeout + add_time));
+      DPRINTF("RU: Autorescheduling enabled for host " SFN ". (" sge_u32 " sec)\n", host, timeout + add_time);
 
       ev = te_new_event((time_t) when, TYPE_RESCHEDULE_UNKNOWN_EVENT, ONE_TIME_EVENT, timeout, 0, host);
       te_add_event(ev);

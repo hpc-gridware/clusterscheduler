@@ -242,7 +242,7 @@ static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_
    error->next = nullptr;
    sge_dstring_free(&ds);
 
-   DPRINTF(("error: %s\n", error->message ? error->message : ""));
+   DPRINTF("error: %s\n", error->message ? error->message : "");
 
    if (et->first == nullptr) {
       et->first = error;

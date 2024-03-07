@@ -449,7 +449,7 @@ static bool read_validate_object(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("reading " SFN " " SFQ "\n", object_type_get_name(object_type), key));
+   DPRINTF("reading " SFN " " SFQ "\n", object_type_get_name(object_type), key);
 
    ep = spool_classic_default_read_func(answer_list, type, rule, key, 
                                          object_type);
@@ -909,7 +909,7 @@ spool_classic_default_read_func(lList **answer_list,
 
       sge_dstring_free(&filepath_dstring);
    } else {
-      DPRINTF(("error: one of the required parameters is nullptr\n"));
+      DPRINTF("error: one of the required parameters is nullptr\n");
    }
 
    DRETURN(ep);
@@ -1067,8 +1067,8 @@ spool_classic_default_write_func(lList **answer_list,
             
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
-            DPRINTF(("spooling job %d.%d %s\n", job_id, ja_task_id, 
-                     pe_task_id != nullptr ? pe_task_id : "<null>"));
+            DPRINTF("spooling job %d.%d %s\n", job_id, ja_task_id,
+                    pe_task_id != nullptr ? pe_task_id : "<null>");
 
             if (object_type == SGE_TYPE_JOB) {
                job = (lListElem *)object;
@@ -1258,8 +1258,8 @@ spool_classic_default_delete_func(lList **answer_list,
             
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
    
-            DPRINTF(("spooling job %d.%d %s\n", job_id, ja_task_id, 
-                     pe_task_id != nullptr ? pe_task_id : "<null>"));
+            DPRINTF("spooling job %d.%d %s\n", job_id, ja_task_id,
+                    pe_task_id != nullptr ? pe_task_id : "<null>");
             if (job_remove_spool_file(job_id, ja_task_id, pe_task_id, 
                                       SPOOL_DEFAULT) != 0) {
                ret = false;

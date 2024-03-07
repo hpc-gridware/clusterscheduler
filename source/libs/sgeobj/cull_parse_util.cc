@@ -94,21 +94,21 @@ lList **pplist
 
    DENTER(BASIS_LAYER);
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
-      DPRINTF(("cull_parse_string_list: nullptr pointer received\n"));
+      DPRINTF("cull_parse_string_list: nullptr pointer received\n");
       DRETURN(-1);
    }
    if (*interpretation_rule == 0) {
-      DPRINTF(("cull_parse_string_list: zero interpretation rule\n"));
+      DPRINTF("cull_parse_string_list: zero interpretation rule\n");
       DRETURN(-2);
    }
    list = lCreateList(listname, descr);
    if (!list) {
-      DPRINTF(("cull_parse_string_list: cannot create list\n"));
+      DPRINTF("cull_parse_string_list: cannot create list\n");
       DRETURN(-3);      
    }
    ep = lCreateElem(descr);
    if (!ep) {
-      DPRINTF(("cull_parse_string_list: cannot create element\n"));
+      DPRINTF("cull_parse_string_list: cannot create element\n");
       lFreeList(&list);
       DRETURN(-4);      
    }
@@ -121,7 +121,7 @@ lList **pplist
          rule = interpretation_rule;
          ep = lCreateElem(descr);
          if (!ep) {
-            DPRINTF(("cull_parse_string_list: cannot create another element\n"));
+            DPRINTF("cull_parse_string_list: cannot create another element\n");
             lFreeList(&list);
             DRETURN(-5);      
          }
@@ -138,8 +138,7 @@ lList **pplist
                lFloat f;
 
                if (sscanf(*pstrlist, "%f", &f) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting float: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting float: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-6);
                }
@@ -152,8 +151,7 @@ lList **pplist
                lDouble dd;
 
                if (sscanf(*pstrlist, "%99lg", &dd) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting double: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting double: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-7);
                }
@@ -166,8 +164,7 @@ lList **pplist
                lUlong ul;
 
                if (sscanf(*pstrlist, sge_uu32, &ul) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting ulong: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-8);
                }
@@ -181,8 +178,7 @@ lList **pplist
                lLong l;
 
                if (sscanf(*pstrlist, "%ld", &l) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting long: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting long: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-9);
                }
@@ -195,8 +191,7 @@ lList **pplist
                lChar c;
 
                if (sscanf(*pstrlist, "%c", &c) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting char: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting char: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-10);
                }
@@ -209,8 +204,7 @@ lList **pplist
                lInt i;
 
                if (sscanf(*pstrlist, "%d", &i) != 1) {
-                  DPRINTF(("cull_parse_string_list: " \
-                           "error interpreting int: %s\n", *pstrlist));
+                  DPRINTF("cull_parse_string_list: error interpreting int: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-11);
                }
@@ -234,11 +228,11 @@ lList **pplist
             /*
             ** list types are skipped at the moment
             */
-            DPRINTF(("skipped list type")); 
+            DPRINTF("skipped list type");
             break;
 
          default:
-            DPRINTF(("encountered unknown list field type %d\n", type));
+            DPRINTF("encountered unknown list field type %d\n", type);
             lFreeList(&list);
             DRETURN(-12);
 
@@ -247,12 +241,12 @@ lList **pplist
    } /* end for */
 
    if (*rule != 0) {
-      DPRINTF(("invalid number of entries specified\n"));
+      DPRINTF("invalid number of entries specified\n");
       lFreeList(&list);
       DRETURN(-13);
    } 
    *pplist = list;
-   DPRINTF(("list parsed: \n"));
+   DPRINTF("list parsed: \n");
 
    DRETURN(0);
 }
@@ -355,19 +349,19 @@ int nm_value
    
    if (lGetType(lGetListDescr(*lpp_old), nm_var) != 
        lGetType(lGetListDescr(lp_new), nm_var)) {
-      DPRINTF(("cull_merge_definition_list: conflicting types for nm_var\n"));
+      DPRINTF("cull_merge_definition_list: conflicting types for nm_var\n");
       DRETURN(-2);
    }
    if (lGetType(lGetListDescr(*lpp_old), nm_value) != 
        lGetType(lGetListDescr(lp_new), nm_value)) {
-      DPRINTF(("cull_merge_definition_list: conflicting types for nm_value\n"));
+      DPRINTF("cull_merge_definition_list: conflicting types for nm_value\n");
       DRETURN(-3);
    }
 
    if (!*lpp_old) {
       *lpp_old = lCreateList("copied list", lGetListDescr(lp_new));
       if (!*lpp_old) {
-         DPRINTF(("memory allocation fault\n"));
+         DPRINTF("memory allocation fault\n");
          DRETURN(-4);
       }
    }
@@ -430,7 +424,7 @@ int nm_value
                "list type not implemented with this function\n"));
             DRETURN(-4);
          default:
-            DPRINTF(("cull_merge_definition_list: invalid type\n"));
+            DPRINTF("cull_merge_definition_list: invalid type\n");
             DRETURN(-5);
          } /* end switch */
          if (is_there) {
@@ -475,7 +469,7 @@ int nm_value
                "list type not implemented with function\n"));
             DRETURN(-6);
          default:
-            DPRINTF(("cull_merge_definition_list: invalid type to set\n"));
+            DPRINTF("cull_merge_definition_list: invalid type to set\n");
             DRETURN(-7);
          } /* end switch */
       }
@@ -587,7 +581,7 @@ int double_keys
                "list type not implemented with this function\n"));
             DRETURN(-4);
          default:
-            DPRINTF(("cull_compress_definition_list: invalid type\n"));
+            DPRINTF("cull_compress_definition_list: invalid type\n");
             DRETURN(-5);
          } /* end switch */
          
@@ -638,7 +632,7 @@ int *interpretation_rule
 
    DENTER(BASIS_LAYER);
    if (!str || !lpp) {
-      DPRINTF(("cull_parse_simple_list: nullptr pointer received\n"));
+      DPRINTF("cull_parse_simple_list: nullptr pointer received\n");
       DRETURN(-1);
     }
 
@@ -647,20 +641,20 @@ int *interpretation_rule
    */
    pstr = string_list(str, " ,\t\n\f\r\v",  nullptr);
    if (!pstr) {
-      DPRINTF(("cull_parse_simple_list: could not parse string\n"));
+      DPRINTF("cull_parse_simple_list: could not parse string\n");
       DRETURN(-2);
    }
    if (!strcasecmp("NONE", pstr[0])) {
       *lpp = nullptr;
       sge_free(&pstr);
-      DPRINTF(("cull_parse_simple_list: String is NONE, no list, not an error\n"));
+      DPRINTF("cull_parse_simple_list: String is NONE, no list, not an error\n");
       DRETURN(0);
    }
    
    ret = cull_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
    sge_free(&pstr);
    if (ret) {
-      DPRINTF(("cull_parse_simple_list: cull_parse_string_list returns %d\n", ret));
+      DPRINTF("cull_parse_simple_list: cull_parse_string_list returns %d\n", ret);
       DRETURN(-3);
    }
    DRETURN(0);
@@ -726,21 +720,21 @@ unsigned long flags
    ** problem: one might allow nullptr deli as no deli
    */
    if (!which_elements_rule || !pdelis) {
-      DPRINTF(("uni_print_list: nullptr pointer received\n"));
+      DPRINTF("uni_print_list: nullptr pointer received\n");
       DRETURN(-1);
    }
    if (!fp && !buff) {
-      DPRINTF(("uni_print_list: must have either file or buffer\n"));
+      DPRINTF("uni_print_list: must have either file or buffer\n");
       DRETURN(-1);
    }
    if (buff && !buff_size) {
-      DPRINTF(("uni_print_list: zero len output required\n"));
+      DPRINTF("uni_print_list: zero len output required\n");
       DRETURN(-1);
    }
 
    if (!lp) {
       if (buff_size && (cb_sum + (sizeof("NONE") - 1) > buff_size)) {
-         DPRINTF(("max_len too small even for zero list\n"));
+         DPRINTF("max_len too small even for zero list\n");
          DRETURN(-1);
       }
       if (fp) {
@@ -755,7 +749,7 @@ unsigned long flags
       cb_sum += cb;
       if (pdelis[2] && *pdelis[2]) {
          if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
-            DPRINTF(("max_len too small even for zero list plus delimiter\n"));
+            DPRINTF("max_len too small even for zero list plus delimiter\n");
             DRETURN(-1);
          }
          if (fp) {
@@ -770,13 +764,13 @@ unsigned long flags
       DRETURN(0);
    }
    if (*which_elements_rule == 0) {
-      DPRINTF(("uni_print_list: zero interpretation rule\n"));
+      DPRINTF("uni_print_list: zero interpretation rule\n");
       DRETURN(-2);
    }
 
    descr = lGetListDescr(lp);
    if (!descr) {
-      DPRINTF(("uni_print_list: list has no descriptor\n"));
+      DPRINTF("uni_print_list: list has no descriptor\n");
       DRETURN(-3);
    }
 
@@ -784,7 +778,7 @@ unsigned long flags
 
       if (!begin && pdelis[1] && *pdelis[1]) {
          if (buff_size && (cb_sum + strlen(pdelis[1]) > buff_size)) {
-            DPRINTF(("max_len too small\n"));
+            DPRINTF("max_len too small\n");
             DRETURN(-1);
          }
          if (fp) {
@@ -796,7 +790,7 @@ unsigned long flags
             snprintf(buff, buff_size, "%s", pdelis[1]);
          }
          if (cb <= 0) {
-            DPRINTF(("uni_print_list: error writing delimiter 1\n"));
+            DPRINTF("uni_print_list: error writing delimiter 1\n");
             DRETURN(-4);
          }
          buff += cb;
@@ -857,11 +851,11 @@ unsigned long flags
             ** list types are skipped at the moment
             */
             *str = 0;
-            DPRINTF(("skipped list type")); 
+            DPRINTF("skipped list type");
             break;
 
          default:
-            DPRINTF(("encountered unknown list field type %d\n", type));
+            DPRINTF("encountered unknown list field type %d\n", type);
             DRETURN(-19);
          } /* end switch */
 
@@ -878,7 +872,7 @@ unsigned long flags
              (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) 
                || strcmp(cp, "0"))) {
             if (buff_size && (cb_sum + strlen(pdelis[0]) > buff_size)) {
-               DPRINTF(("max_len too small\n"));
+               DPRINTF("max_len too small\n");
                DRETURN(-1);
             }
             if (fp) {
@@ -890,7 +884,7 @@ unsigned long flags
                snprintf(buff, sizeof(buff_size), "%s", pdelis[0]);
             }
             if (cb <= 0) {
-               DPRINTF(("uni_print_list: error writing delimiter\n"));
+               DPRINTF("uni_print_list: error writing delimiter\n");
                DRETURN(-5);
             }
             buff += cb;
@@ -898,7 +892,7 @@ unsigned long flags
          }
 
          if (buff_size && (cb_sum + strlen(cp) > buff_size)) {
-            DPRINTF(("max_len too small\n"));
+            DPRINTF("max_len too small\n");
             DRETURN(-1);
          }
          if (*cp) {
@@ -910,7 +904,7 @@ unsigned long flags
                snprintf(buff, buff_size, "%s", cp);
             }
             if (cb <= 0) {
-               DPRINTF(("uni_print_list: error writing to file\n"));
+               DPRINTF("uni_print_list: error writing to file\n");
                DRETURN(-6);
             }
             buff += cb;
@@ -923,7 +917,7 @@ unsigned long flags
 
    if (!begin && pdelis[2] && *pdelis[2]) {
       if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
-         DPRINTF(("max_len too small\n"));
+         DPRINTF("max_len too small\n");
          DRETURN(-1);
       }
       if (fp) {
@@ -934,7 +928,7 @@ unsigned long flags
          snprintf(buff, buff_size, "%s", pdelis[2]);
       }
       if (cb <= 0) {
-         DPRINTF(("uni_print_list: error writing delimiter 1\n"));
+         DPRINTF("uni_print_list: error writing delimiter 1\n");
          DRETURN(-4);
       }
       buff += cb;
@@ -1208,7 +1202,7 @@ parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
-      DPRINTF(("OPTION: %s\n", option));
+      DPRINTF("OPTION: %s\n", option);
       lp = nullptr;
       lXchgList(ep, SPA_argval_lListT, &lp);
 

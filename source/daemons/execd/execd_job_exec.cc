@@ -128,9 +128,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
       /* we expect one jatask to start per request */
       ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
       if (ja_task != nullptr) {
-         DPRINTF(("new job %ld.%ld\n", 
-            (long) lGetUlong(job, JB_job_number),
-            (long) lGetUlong(ja_task, JAT_task_number)));
+         DPRINTF("new job %ld.%ld\n", (long) lGetUlong(job, JB_job_number), (long) lGetUlong(ja_task, JAT_task_number));
          ret = handle_job(job, ja_task, 0);
          if (ret != 0) {
             lFreeElem(&job);
@@ -153,9 +151,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
          DRETURN(0);
       }
 
-      DPRINTF(("new pe task for job: %ld.%ld\n", 
-            (long) lGetUlong(petrep, PETR_jobid), 
-            (long) lGetUlong(petrep, PETR_jataskid)));
+      DPRINTF("new pe task for job: %ld.%ld\n", (long) lGetUlong(petrep, PETR_jobid), (long) lGetUlong(petrep, PETR_jataskid));
 
       ret = handle_task(petrep, aMsg->snd_name, aMsg->snd_host, aMsg->snd_id, apb);
 
@@ -199,8 +195,7 @@ int do_job_slave(struct_msg_t *aMsg)
    lFreeList(&answer_list);
 
    for_each_rw(ja_task, lGetList(jelem, JB_ja_tasks)) {
-      DPRINTF(("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number),
-         (long) lGetUlong(ja_task, JAT_task_number)));
+      DPRINTF("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number), (long) lGetUlong(ja_task, JAT_task_number));
       ret = handle_job(jelem, ja_task, 1);
    }
 
@@ -223,8 +218,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
    DENTER(TOP_LAYER);
 
-   DPRINTF(("got %s job " sge_u32"\n",
-           slave ?"slave ":"", lGetUlong(jelem, JB_job_number)));
+   DPRINTF("got %s job " sge_u32"\n", slave ?"slave ":"", lGetUlong(jelem, JB_job_number));
 
    jobid = lGetUlong(jelem, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
@@ -239,7 +233,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    jep = lGetElemUlongFirstRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    while (jep != nullptr) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
-         DPRINTF(("Job " sge_u32"." sge_u32" is already running - skip the new one\n", jobid, jataskid));
+         DPRINTF("Job " sge_u32"." sge_u32" is already running - skip the new one\n", jobid, jataskid);
          goto Ignore;   /* don't set queue in error state */
       }
 
@@ -250,8 +244,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    lSetUlong(jatep, JAT_status, slave?JSLAVE:JIDLE);
 
    /* now we have a queue and a job filled */
-   DPRINTF(("===>JOB_EXECUTION: >" sge_u32"." sge_u32"< with " sge_u32" tickets\n", jobid, jataskid,
-               (u_long32)lGetDouble(jatep, JAT_tix)));
+   DPRINTF("===>JOB_EXECUTION: >" sge_u32"." sge_u32"< with " sge_u32" tickets\n", jobid, jataskid, (u_long32)lGetDouble(jatep, JAT_tix));
 
    /* initialize job */
    for_each_rw (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
@@ -296,9 +289,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
          lListElem *mq = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), 
                                     JG_queue);
          slots = lGetUlong(mq, QU_job_slots) + 1;
-         DPRINTF(("Increasing job slots in master queue \"%s\" "
-            "to %d because job is not first task\n",
-               lGetString(mq, QU_qname), slots));
+         DPRINTF("Increasing job slots in master queue \"%s\" to %d because job is not first task\n",
+                 lGetString(mq, QU_qname), slots);
          lSetUlong(mq, QU_job_slots, slots);
       }
    }
@@ -337,7 +329,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
                nwritten = sge_writenbytes(fd, lGetString(jelem, JB_script_ptr), lGetUlong(jelem, JB_script_size));
                if (nwritten != (int)lGetUlong(jelem, JB_script_size)) {
-                  DPRINTF(("errno: %d\n", errno));
+                  DPRINTF("errno: %d\n", errno);
                   sge_dstring_sprintf(&err_str, MSG_EXECD_NOWRITESCRIPT_SIUS, 
                                       lGetString(jelem, JB_exec_file), nwritten, 
                                       sge_u32c(lGetUlong(jelem, JB_script_size)), 
@@ -435,7 +427,7 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
                     PET_granted_destin_identifier_list, JG_Type);
    lSetHost(jge, JG_qhostname, qualified_hostname);
    lSetUlong(jge, JG_slots, 1);
-   DPRINTF(("selected queue %s for task\n", qname));
+   DPRINTF("selected queue %s for task\n", qname);
 
    DRETURN(lGetListRW(petep, PET_granted_destin_identifier_list));
 }
@@ -505,13 +497,12 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
             sge_get_active_job_file_path(&shepherd_about_to_exit,
                                          jobid, jataskid, petaskid,
                                          "shepherd_about_to_exit");
-            DPRINTF(("checking for file %s\n", sge_dstring_get_string(&shepherd_about_to_exit)));
+            DPRINTF("checking for file %s\n", sge_dstring_get_string(&shepherd_about_to_exit));
 
             if (SGE_STAT(sge_dstring_get_string(&shepherd_about_to_exit), &stat_buffer) == 0) {
                lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, 
                                        lGetString(pe_task_queue, JG_qname), petep);
-               DPRINTF(("task %s of job %d.%d already exited, using its slot for new task\n", 
-                        petaskid, jobid, jataskid));
+               DPRINTF("task %s of job %d.%d already exited, using its slot for new task\n", petaskid, jobid, jataskid);
                sge_dstring_free(&shepherd_about_to_exit);         
                DRETURN(jat_gdil); 
             }
@@ -647,7 +638,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    /* do not accept the task if job is in deletion */
    if (lGetUlong(jatep, JAT_state) & JDELETED) {
-      DPRINTF(("received task exec request while job is in deletion or exiting\n"));
+      DPRINTF("received task exec request while job is in deletion or exiting\n");
       goto Error;
    }
 
@@ -664,7 +655,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    /* generate unique task id by combining consecutive number 1-max(u_long32) */
    tid = MAX(1, lGetUlong(jatep, JAT_next_pe_task_id));
    snprintf(new_task_id, sizeof(new_task_id), "%d.%s", tid, unqualified_hostname);
-   DPRINTF(("using pe_task_id_str %s for job " sge_u32"." sge_u32"\n", new_task_id, jobid, jataskid));
+   DPRINTF("using pe_task_id_str %s for job " sge_u32"." sge_u32"\n", new_task_id, jobid, jataskid);
    petep = lCreateElem(PET_Type);
    lSetString(petep, PET_id, new_task_id);
 
@@ -681,10 +672,10 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    requested_queue = lGetString(petrep, PETR_queuename);
 
-   DPRINTF(("got task (" sge_u32"/%s) from (%s/%s/%d) %s queue selection\n",
-            lGetUlong(jep, JB_job_number), new_task_id,
-            commproc, host, id,
-            requested_queue != nullptr ? "with" : "without"));
+   DPRINTF("got task (" sge_u32"/%s) from (%s/%s/%d) %s queue selection\n",
+           lGetUlong(jep, JB_job_number), new_task_id,
+           commproc, host, id,
+           requested_queue != nullptr ? "with" : "without");
 
    gdil = job_get_queue_for_task(jatep, petep, qualified_hostname, requested_queue);
          
@@ -744,7 +735,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    /* put task into task_list of slave/master job */ 
    /* send ack to sender of task */
    if (tid) {
-      DPRINTF(("sending tid %s\n", new_task_id)); 
+      DPRINTF("sending tid %s\n", new_task_id);
       packstr(apb, new_task_id);
    }
 
@@ -756,7 +747,7 @@ Error:
     *           See issue GE-3461.
     */
    /* send nack to sender of task */
-   DPRINTF(("sending nack\n")); 
+   DPRINTF("sending nack\n");
    packstr(apb, "none");    
 
    DRETURN(-1);

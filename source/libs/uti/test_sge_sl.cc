@@ -636,10 +636,10 @@ test_thread1_main(void *arg) {
       sge_sl_elem_t *elem;
       int i;
 
-      DPRINTF(("action = %d\n", action));
+      DPRINTF("action = %d\n", action);
       if (action == 3 || action == 6) {
          sge_sl_lock(global->list); /* unlock will be sone below in action 3 */
-         DPRINTF(("search_action = %d\n", search_action));
+         DPRINTF("search_action = %d\n", search_action);
          switch (search_action) {
             case 0:
                /* first element */

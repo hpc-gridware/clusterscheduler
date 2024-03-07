@@ -202,18 +202,16 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
              *((int**)(func_ptr[i])) = (int*)dlsym(lib_ptr, func_name[i]);
 
              if (*((int**)(func_ptr[i])) == nullptr) {
-                 DPRINTF(("%s: unable to initialize function %s\n",
-                         "sge_init_lib", func_name[i]));
+                 DPRINTF("%s: unable to initialize function %s\n", "sge_init_lib", func_name[i]);
                  DRETURN(1);
              } else {
-                 DPRINTF(("function " SFQ " successfully initialized\n",
-                         func_name[i]));
+                 DPRINTF("function " SFQ " successfully initialized\n", func_name[i]);
              }
              i++;
          }
          ret = 0;
      } else {
-         DPRINTF(("Can't open %s library\n", lib_name));
+         DPRINTF("Can't open %s library\n", lib_name);
          ret = 1;
      }
  } else {
@@ -312,12 +310,11 @@ static int once_libscf_init(void)
  DENTER(TOP_LAYER);
  /* Init scf lib ONCE */
  if (pthread_once(&libscfcontrol, init_scf_lib) != 0) {
-     DPRINTF(("once_libscf_init() -> pthread_once call failed: useSMF=%d, libscf=%d, libcontract=%d\n",
-              useSMF, libscfLoaded, libcontractLoaded));
+     DPRINTF("once_libscf_init() -> pthread_once call failed: useSMF=%d, libscf=%d, libcontract=%d\n",
+              useSMF, libscfLoaded, libcontractLoaded);
      DRETURN(1);
  }
- DPRINTF(("once_libscf_init() -> useSMF=%d, libscf=%d, libcontract=%d\n",
-          useSMF, libscfLoaded, libcontractLoaded));
+ DPRINTF("once_libscf_init() -> useSMF=%d, libscf=%d, libcontract=%d\n", useSMF, libscfLoaded, libcontractLoaded);
  DRETURN((libscfLoaded == 1) ? 0 : 1);
 }
 
@@ -533,7 +530,7 @@ static void init_fmri(void)
  /* We explicitly check the fmri for valid service names */
  if (temp && is_valid_sge_fmri(temp)) {
      FMRI = sge_strdup(nullptr, temp);
-     DPRINTF(("init_fmri() - FMRI set to %s\n", (FMRI==nullptr) ? "nullptr" : FMRI));
+     DPRINTF("init_fmri() - FMRI set to %s\n", (FMRI==nullptr) ? "nullptr" : FMRI);
  }
  DRETURN_VOID;
 }
@@ -569,8 +566,7 @@ static char *get_fmri(void)
  if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
      ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()");
  }
- DPRINTF(("get_fmri() -> useSMF=%d, FMRI=%s\n",
-          useSMF, (FMRI==nullptr) ? "nullptr" : FMRI));
+ DPRINTF("get_fmri() -> useSMF=%d, FMRI=%s\n", useSMF, (FMRI==nullptr) ? "nullptr" : FMRI);
  DRETURN(FMRI);
 }
 
@@ -666,7 +662,7 @@ int sge_smf_used(void)
  if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
      ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()");
  }
- DPRINTF(("sge_smf_used() -> useSMF=%d\n", useSMF));
+ DPRINTF("sge_smf_used() -> useSMF=%d\n", useSMF);
  DRETURN(useSMF);
 }
 
@@ -977,7 +973,7 @@ void sge_smf_temporary_disable_instance(void)
      ERROR(MSG_SMF_DISABLE_FAILED_SSUU, FMRI,shared_scf_func__scf_strerror(shared_scf_func__scf_error()), geteuid(), getuid());
      DRETURN_VOID;
  }
- DPRINTF(("Service %s temporary disabled.\n", FMRI));
+ DPRINTF("Service %s temporary disabled.\n", FMRI);
  DRETURN_VOID;
 }
 

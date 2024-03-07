@@ -70,7 +70,7 @@ int sos_schedd(const char *qname, lList *qlist)
 
    /* first sos ? */
    if (sos==1) {
-      DPRINTF(("QUEUE %s GETS SUSPENDED ON SUBORDINATE\n", qname));
+      DPRINTF("QUEUE %s GETS SUSPENDED ON SUBORDINATE\n", qname);
       /* state transition */
       qinstance_state_set_susp_on_sub(q, true);
    }

@@ -118,8 +118,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    DENTER(EVENT_LAYER);
 
 
-   DPRINTF(("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__, aType, aKey1, aKey2, strKey ? strKey
-                                                                                                        : MSG_SMALLNULL));
+   DPRINTF("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__, aType, aKey1, aKey2, strKey ? strKey : MSG_SMALLNULL);
 
    if (ignore_keys) {
       cond = lWhere("%T(%I != %u || %I != %u)", TE_Type, TE_type, aType, TE_mode, ONE_TIME_EVENT);
@@ -139,7 +138,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    n = lGetNumberOfElem(Event_Control.list);
 
    if (0 == n) {
-      DPRINTF(("%s: event list empty!\n", __func__));
+      DPRINTF("%s: event list empty!\n", __func__);
 
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
@@ -151,7 +150,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    lSplit(&Event_Control.list, nullptr, nullptr, cond);
 
    if (nullptr == Event_Control.list) {
-      DPRINTF(("%s: event list has been freed --> recreate \n", __func__));
+      DPRINTF("%s: event list has been freed --> recreate \n", __func__);
 
       Event_Control.list = lCreateList("timed event list", TE_Type);
       res = n; /* all elements have been deleted */
@@ -164,7 +163,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 
       pthread_cond_signal(&Event_Control.cond_var);
 
-      DPRINTF(("%s: did delete %d event!\n", __func__, res));
+      DPRINTF("%s: did delete %d event!\n", __func__, res);
    }
 
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -193,7 +192,7 @@ void te_wait_empty(void) {
    DENTER(EVENT_LAYER);
 
    while (lGetNumberOfElem((const lList *) Event_Control.list) == 0) {
-      DPRINTF(("%s: event list empty --> will wait\n", __func__));
+      DPRINTF("%s: event list empty --> will wait\n", __func__);
       Event_Control.next = 0;
       pthread_cond_wait(&Event_Control.cond_var, &Event_Control.mutex);
    }
@@ -220,8 +219,8 @@ void te_wait_empty(void) {
 *
 *******************************************************************************/
 void te_wait_next(te_event_t te, time_t now) {
-   struct timespec ts;
    DENTER(EVENT_LAYER);
+   struct timespec ts{};
 
    ts.tv_sec = te->when;
    ts.tv_nsec = 0;
@@ -229,9 +228,7 @@ void te_wait_next(te_event_t te, time_t now) {
    while (Event_Control.next == te->when) {
       int res = 0;
 
-      DPRINTF(("%s: time:" sge_u32" next:" sge_u32" --> will wait\n",
-              __func__, now, Event_Control.next));
-
+      DPRINTF("%s: time:" sge_u32" next:" sge_u32" --> will wait\n", __func__, now, Event_Control.next);
       res = pthread_cond_timedwait(&Event_Control.cond_var, &Event_Control.mutex, &ts);
       if (ETIMEDOUT == res) { break; }
    }
@@ -279,14 +276,14 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
       Handler_Tbl.list = (struct tbl_elem *) sge_realloc((char *) Handler_Tbl.list, sz, 1);
       Handler_Tbl.max *= TBL_GROW_FACTOR;
 
-      DPRINTF(("%s: grow handler table to %d elements\n", __func__, Handler_Tbl.max));
+      DPRINTF("%s: grow handler table to %d elements\n", __func__, Handler_Tbl.max);
    }
 
    Handler_Tbl.list[Handler_Tbl.num].type = aType;
    Handler_Tbl.list[Handler_Tbl.num].handler = aHandler;
    Handler_Tbl.num++;
 
-   DPRINTF(("%s: handler #%d for event type %d\n", __func__, (Handler_Tbl.num - 1), aType));
+   DPRINTF("%s: handler #%d for event type %d\n", __func__, (Handler_Tbl.num - 1), aType);
 
    sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
@@ -449,8 +446,8 @@ te_add_event(te_event_t anEvent) {
    lSetUlong(le, TE_uval1, anEvent->ulong_key_2);
    lSetString(le, TE_sval, anEvent->str_key);
 
-   DPRINTF(("%s: (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", __func__, anEvent->type,
-           when, anEvent->mode, anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL));
+   DPRINTF("%s: (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", __func__, anEvent->type,
+           when, anEvent->mode, anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
@@ -465,7 +462,7 @@ te_add_event(te_event_t anEvent) {
 
       pthread_cond_signal(&Event_Control.cond_var);
 
-      DPRINTF(("%s: did signal delivery thread!\n", __func__));
+      DPRINTF("%s: did signal delivery thread!\n", __func__);
    }
 
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -908,7 +905,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
 
    DENTER(EVENT_LAYER);
 
-   DPRINTF(("%s: event (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent)));
+   DPRINTF("%s: event (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent));
 
    sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
@@ -932,7 +929,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    if (RECURRING_EVENT == anEvent->mode) {
       anEvent->when = time(nullptr) + anEvent->interval;
 
-      DPRINTF(("%s: reccuring event (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent)));
+      DPRINTF("%s: reccuring event (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent));
 
       te_add_event(anEvent);
    }

@@ -447,7 +447,7 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
          /* if everything is ok - set the database handle */
          if (ret) {
             bdb_set_db(info, db, (bdb_database)i);
-            DPRINTF(("opened database connection, env = %p, db = %p\n", env, db));
+            DPRINTF("opened database connection, env = %p, db = %p\n", env, db);
          }
       }
 
@@ -774,14 +774,14 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
                done = true;
                break;
             } else if (dbret == DB_NOTFOUND) {
-               DPRINTF(("last record reached\n"));
+               DPRINTF("last record reached\n");
                done = true;
                break;
             } else if (key_dbt.data != nullptr &&
                        strncmp((const char *)key_dbt.data, key, strlen(key)) 
                        != 0) {
-               DPRINTF(("current key is %s\n", key_dbt.data));
-               DPRINTF(("last record of this object type reached\n"));
+               DPRINTF("current key is %s\n", key_dbt.data);
+               DPRINTF("last record of this object type reached\n");
                done = true;
                break;
             } else {
@@ -1161,7 +1161,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
       if (sub_objects) {
          DBC *dbc;
 
-         DPRINTF(("querying objects with keys %s*\n", key));
+         DPRINTF("querying objects with keys %s*\n", key);
 
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          dbret = db->cursor(db, txn, &dbc, 0);
@@ -1196,14 +1196,14 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
                   done = true;
                   break;
                } else if (dbret == DB_NOTFOUND) {
-                  DPRINTF(("last record reached\n"));
+                  DPRINTF("last record reached\n");
                   done = true;
                   break;
                } else if (cursor_dbt.data != nullptr &&
                           strncmp((char *)cursor_dbt.data, key, strlen(key)) 
                           != 0) {
-                  DPRINTF(("current key is %s\n", cursor_dbt.data));
-                  DPRINTF(("last record of this object type reached\n"));
+                  DPRINTF("current key is %s\n", cursor_dbt.data);
+                  DPRINTF("last record of this object type reached\n");
                   done = true;
                   break;
                } else {
@@ -1616,7 +1616,7 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
                               bdb_get_database_name(database));
       ret = false;
    } else {
-      DPRINTF(("querying objects with keys %s*\n", key));
+      DPRINTF("querying objects with keys %s*\n", key);
 
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
       dbret = db->cursor(db, txn, &dbc, 0);
@@ -1650,14 +1650,14 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
                done = true;
                break;
             } else if (dbret == DB_NOTFOUND) {
-               DPRINTF(("last record reached\n"));
+               DPRINTF("last record reached\n");
                done = true;
                break;
             } else if (key_dbt.data != nullptr &&
                        strncmp((const char *)key_dbt.data, key, strlen(key)) 
                        != 0) {
-               DPRINTF(("current key is %s\n", key_dbt.data));
-               DPRINTF(("last record of this object type reached\n"));
+               DPRINTF("current key is %s\n", key_dbt.data);
+               DPRINTF("last record of this object type reached\n");
                done = true;
                break;
             } else {
@@ -1703,7 +1703,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               bdb_get_database_name(database));
    } else {
-      DPRINTF(("querying object with key %s\n", key));
+      DPRINTF("querying object with key %s\n", key);
 
       /* initialize query to first record for this object type */
       memset(&key_dbt, 0, sizeof(key_dbt));
@@ -1737,7 +1737,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
                                     cull_pack_strerror(cull_ret));
             ret = nullptr;
          }
-         DPRINTF(("init_packbuffer succeeded\n"));
+         DPRINTF("init_packbuffer succeeded\n");
 
          descr = object_type_get_descr(object_name_get_type((const char *)key_dbt.data));
          cull_ret = cull_unpack_elem_partial(&pb, &ret, descr, pack_part);
@@ -1786,7 +1786,7 @@ spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               bdb_get_database_name(database));
    } else {
-      DPRINTF(("querying string with key %s\n", key));
+      DPRINTF("querying string with key %s\n", key);
 
       /* initialize query to first record for this object type */
       memset(&key_dbt, 0, sizeof(key_dbt));

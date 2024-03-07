@@ -195,16 +195,16 @@ void
 sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
    DENTER(TOP_LAYER);
    if (task != nullptr) {
-      DPRINTF(("task->id = " sge_U32CFormat "\n", sge_u32c(task->id)));
-      DPRINTF(("task->command = " sge_U32CFormat "\n", sge_u32c(task->command)));
-      DPRINTF(("task->target = " sge_U32CFormat "\n", sge_u32c(task->target)));
-      DPRINTF(("task->data_list = %p\n", task->data_list));
-      DPRINTF(("task->answer_list = %p\n", task->answer_list));
-      DPRINTF(("task->condition = %p\n", task->condition));
-      DPRINTF(("task->enumeration = %p\n", task->enumeration));
-      DPRINTF(("task->next = %p\n", task->next));
+      DPRINTF("task->id = " sge_U32CFormat "\n", sge_u32c(task->id));
+      DPRINTF("task->command = " sge_U32CFormat "\n", sge_u32c(task->command));
+      DPRINTF("task->target = " sge_U32CFormat "\n", sge_u32c(task->target));
+      DPRINTF("task->data_list = %p\n", task->data_list);
+      DPRINTF("task->answer_list = %p\n", task->answer_list);
+      DPRINTF("task->condition = %p\n", task->condition);
+      DPRINTF("task->enumeration = %p\n", task->enumeration);
+      DPRINTF("task->next = %p\n", task->next);
    } else {
-      DPRINTF(("task is nullptr\n"));
+      DPRINTF("task is nullptr\n");
    }
    DRETURN_VOID;
 }
@@ -317,13 +317,13 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
    if (packet != nullptr) {
       sge_gdi_task_class_t *task;
 
-      DPRINTF(("packet->id = " sge_U32CFormat "\n", sge_u32c(packet->id)));
-      DPRINTF(("packet->host = " SFQ "\n", packet->host ? packet->host : "<null>"));
-      DPRINTF(("packet->commproc = " SFQ "\n", packet->commproc ? packet->commproc : "<null>"));
-      DPRINTF(("packet->auth_info = " SFQ "\n", packet->auth_info ? packet->auth_info : "<null>"));
-      DPRINTF(("packet->version = " sge_U32CFormat "\n", sge_u32c(packet->version)));
-      DPRINTF(("packet->first_task = %p\n", packet->first_task));
-      DPRINTF(("packet->last_task = %p\n", packet->last_task));
+      DPRINTF("packet->id = " sge_U32CFormat "\n", sge_u32c(packet->id));
+      DPRINTF("packet->host = " SFQ "\n", packet->host ? packet->host : "<null>");
+      DPRINTF("packet->commproc = " SFQ "\n", packet->commproc ? packet->commproc : "<null>");
+      DPRINTF("packet->auth_info = " SFQ "\n", packet->auth_info ? packet->auth_info : "<null>");
+      DPRINTF("packet->version = " sge_U32CFormat "\n", sge_u32c(packet->version));
+      DPRINTF("packet->first_task = %p\n", packet->first_task);
+      DPRINTF("packet->last_task = %p\n", packet->last_task);
 
       task = packet->first_task;
       while (task != nullptr) {
@@ -331,7 +331,7 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
          task = task->next;
       }
    } else {
-      DPRINTF(("packet is nullptr\n"));;
+      DPRINTF("packet is nullptr\n");;
    }
    DRETURN_VOID;
 }

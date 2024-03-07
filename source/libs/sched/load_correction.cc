@@ -77,10 +77,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
          double host_lcf = 0.0;
 
 #if 1
-         DPRINTF(("JOB " sge_u32"." sge_u32" start_time = " sge_u32" running_time " sge_u32
-            " decay_time = " sge_u32"\n", job_id, ja_task_id,
-            lGetUlong(ja_task, JAT_start_time), running_time, 
-            decay_time));
+         DPRINTF("JOB " sge_u32"." sge_u32" start_time = " sge_u32" running_time " sge_u32 " decay_time = " sge_u32"\n", job_id, ja_task_id, lGetUlong(ja_task, JAT_start_time), running_time, decay_time);
 #endif
          if (running_time > decay_time) {
             continue;
@@ -96,16 +93,14 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             qnm = lGetString(granted_queue, JG_qname);
             qep = qinstance_list_locate2(queue_list, qnm);
             if (qep == nullptr) {
-               DPRINTF(("Unable to find queue \"%s\" from gdil "
-                        "list of job " sge_u32"." sge_u32"\n", qnm, job_id, ja_task_id));
+               DPRINTF("Unable to find queue \"%s\" from gdil " "list of job " sge_u32"." sge_u32"\n", qnm, job_id, ja_task_id);
                continue;
             }
            
             hnm=lGetHost(granted_queue, JG_qhostname); 
             hep = lGetElemHostRW(host_list, EH_name, hnm);
             if (hep == nullptr) {
-               DPRINTF(("Unable to find host \"%s\" from gdil "
-                        "list of job " sge_u32"." sge_u32"\n", hnm, job_id, ja_task_id));
+               DPRINTF("Unable to find host \"%s\" from gdil " "list of job " sge_u32"." sge_u32"\n", hnm, job_id, ja_task_id);
                continue;
             } 
 
@@ -136,9 +131,9 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                       lGetUlong(hep, EH_load_correction_factor));
 
 #if 1
-            DPRINTF(("JOB " sge_u32"." sge_u32" [" sge_u32" slots] in queue %s increased lc of host "
-                     "%s by " sge_u32" to " sge_u32"\n", job_id, ja_task_id, slots, qnm, hnm,
-                     (u_long32)(100*host_lcf), lGetUlong(hep, EH_load_correction_factor)));
+            DPRINTF("JOB " sge_u32"." sge_u32" [" sge_u32" slots] in queue %s increased lc of host "
+                    "%s by " sge_u32" to " sge_u32"\n", job_id, ja_task_id, slots, qnm, hnm,
+                    (u_long32)(100*host_lcf), lGetUlong(hep, EH_load_correction_factor));
 #endif
             if (monitor_next_run) {
                char log_string[2048 + 1];
@@ -234,8 +229,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
             if (parse_ulong_val(&load_correction, nullptr, type, s, nullptr, 0)) {
                lc_factor = ((double)lGetUlong(hep, EH_load_correction_factor))/100.0;
                load_correction *= lc_factor;
-               DPRINTF(("%s:%s %s %8.3f %8.3f\n", 
-                  host_name, attr_name, s, load_correction, lc_factor));
+               DPRINTF("%s:%s %s %8.3f %8.3f\n", host_name, attr_name, s, load_correction, lc_factor);
                dval -= load_correction;
             }
          }
@@ -247,11 +241,11 @@ correct_capacities(lList *host_list, const lList *centry_list)
          if (inuse_ext > 0.0) {
             lSetDouble(total, CE_doubleval, full_capacity - inuse_ext);
 
-            DPRINTF(("%s:%s %8.3f --> %8.3f (ext: %8.3f = all %8.3f - ubC %8.3f - load %8.3f) lc = %8.3f\n",
-               host_name, attr_name, full_capacity, lGetDouble(total, CE_doubleval),
-               inuse_ext, full_capacity, lGetDouble(inuse_rms, RUE_utilized_now), dval, load_correction));
+            DPRINTF("%s:%s %8.3f --> %8.3f (ext: %8.3f = all %8.3f - ubC %8.3f - load %8.3f) lc = %8.3f\n",
+                    host_name, attr_name, full_capacity, lGetDouble(total, CE_doubleval),
+                    inuse_ext, full_capacity, lGetDouble(inuse_rms, RUE_utilized_now), dval, load_correction);
          } else
-            DPRINTF(("ext: %8.3f <= 0\n", inuse_ext));
+            DPRINTF("ext: %8.3f <= 0\n", inuse_ext);
       }
    }
    lFreeList(&job_load_adj_list);

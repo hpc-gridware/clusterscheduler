@@ -302,7 +302,7 @@ lList *alp = nullptr;
              goto error;
          }
 
-         DPRINTF(("\"-t %s\"\n", *sp));
+         DPRINTF("\"-t %s\"\n", *sp);
 
          range_list_parse_from_string(&task_id_range_list, &alp, *sp,
                                       false, true, INF_NOT_ALLOWED);

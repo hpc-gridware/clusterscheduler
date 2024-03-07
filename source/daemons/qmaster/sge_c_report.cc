@@ -98,7 +98,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
    DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(report_list) == 0) {
-      DPRINTF(("received empty report\n"));
+      DPRINTF("received empty report\n");
       if (rhost != nullptr) {
          WARNING(MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, rhost);
       } else {
@@ -211,8 +211,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
                            const char *sim_host = lGetHost(shep, EH_name);
                            lListElem *clp = nullptr;
 
-                           DPRINTF(("Copy load values of %s to simulated host %s\n",
-                                   rhost, sim_host));
+                           DPRINTF("Copy load values of %s to simulated host %s\n", rhost, sim_host);
 
                            for_each_rw(clp, lGetList(report, REP_list)) {
                               if (strcmp(lGetHost(clp, LR_host), SGE_GLOBAL_NAME) != 0) {
@@ -231,7 +230,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
          case NUM_REP_REPORT_CONF:
             MONITOR_ECONF(monitor);
             if (sge_compare_configuration(hep, lGetList(report, REP_list)) != 0) {
-               DPRINTF(("%s: configuration on host %s is not up to date\n", __func__, rhost));
+               DPRINTF("%s: configuration on host %s is not up to date\n", __func__, rhost);
                send_tag_new_conf = true;
             }
             break;
@@ -257,7 +256,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
             break;
 
          default:
-            DPRINTF(("received invalid report type %ld\n", rep_type));
+            DPRINTF("received invalid report type %ld\n", rep_type);
       }
    } /* end for_each */
 
@@ -332,8 +331,7 @@ update_license_data(lListElem *hep, lList *lp_lic) {
 
       lSetUlong(hep, EH_processors, processors);
 
-      DPRINTF(("%s has " sge_u32 " processors\n",
-              lGetHost(hep, EH_name), processors));
+      DPRINTF("%s has " sge_u32 " processors\n", lGetHost(hep, EH_name), processors);
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name), nullptr, nullptr,
                       hep, nullptr, nullptr, true, true);
       answer_list_output(&answer_list);

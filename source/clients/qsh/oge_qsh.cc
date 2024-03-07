@@ -243,7 +243,7 @@ static void forward_signal(int sig)
 {
    DENTER(TOP_LAYER);
    if (child_pid > 0) {
-      DPRINTF(("forwarding signal %d to child %d\n", sig, child_pid));
+      DPRINTF("forwarding signal %d to child %d\n", sig, child_pid);
       kill(child_pid, sig);
    }
    DRETURN_VOID;
@@ -308,7 +308,7 @@ static int open_qrsh_socket(int *port) {
    }
    
    *port = ntohs(server.sin_port);
-   DPRINTF(("qrsh will listen on port %d\n", *port));
+   DPRINTF("qrsh will listen on port %d\n", *port);
 
    if (listen(sock, 1) == -1) {
       ERROR(MSG_QSH_ERRORLISTENINGONSOCKETCONNECTION_S, strerror(errno));
@@ -372,7 +372,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
             if (msgsock == -1) {
                ERROR(MSG_QSH_ERRORINACCEPTONSOCKET_S, strerror(errno));
             }
-            DPRINTF(("accepted client connection, fd = %d\n", msgsock));
+            DPRINTF("accepted client connection, fd = %d\n", msgsock);
          }
          break;
    } 
@@ -855,7 +855,7 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
       DRETURN(0);
    }
 
-   DPRINTF(("qlogin_starter sent: %s\n", data));
+   DPRINTF("qlogin_starter sent: %s\n", data);
   
    s_code = strtok(data, ":");
 
@@ -956,7 +956,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
    if (inherit_job) {
       client_name = getenv("SGE_RSH_COMMAND");
       if (client_name != nullptr && strlen(client_name) > 0) {
-         DPRINTF(("rsh client name: %s\n", client_name));
+         DPRINTF("rsh client name: %s\n", client_name);
          if (strcasecmp(client_name, "builtin") == 0) {
             g_new_interactive_job_support = true;
          }
@@ -1314,11 +1314,11 @@ void block_notification_signals(void)
 
    if (sig1 > 0) {
       SIGIGNORE(sig1);
-      DPRINTF(("ignoring signal %d\n", (int)sig1));
+      DPRINTF("ignoring signal %d\n", (int)sig1);
    }
    if (sig2 > 0) {
       SIGIGNORE(sig2);
-      DPRINTF(("ignoring signal %d\n", (int)sig2));
+      DPRINTF("ignoring signal %d\n", (int)sig2);
    }
 
    DRETURN_VOID;
@@ -1607,7 +1607,7 @@ int main(int argc, char **argv)
          JOB_TYPE_SET_BINARY(jb_type);
          lSetUlong(job, JB_type, jb_type);
       } else {
-         DPRINTF(("handling script submission\n"));
+         DPRINTF("handling script submission\n");
      
          /* move -C directives into opts_qrsh - we need them for parsing 
           * the script 
@@ -1672,7 +1672,7 @@ int main(int argc, char **argv)
    }   
    
    if (!existing_job) {
-      DPRINTF(("Everything ok\n"));
+      DPRINTF("Everything ok\n");
 #ifndef NO_SGE_COMPILE_DEBUG
       if (rmon_mlgetl(&RMON_DEBUG_ON, TOP_LAYER) & INFOPRINT) { 
          lWriteElemTo(job, stdout);
@@ -1826,7 +1826,7 @@ int main(int argc, char **argv)
          /*
           * Wait for the client (=shepherd) to connect to us
           */
-         DPRINTF(("waiting for connection\n"));
+         DPRINTF("waiting for connection\n");
          ret = comm_wait_for_connection(comm_handle, COMM_CLIENT,
                                         QSH_SOCKET_FINAL_TIMEOUT, &host, &err_msg);
          if (ret != COMM_RETVAL_OK) {
@@ -1839,7 +1839,7 @@ int main(int argc, char **argv)
             close(STDIN_FILENO);
          }
 
-         DPRINTF(("starting IJS server\n"));
+         DPRINTF("starting IJS server\n");
          sge_dstring_sprintf(&err_msg, "<null>");
          ret = run_ijs_server(comm_handle, host, job_id, nostdin, noshell, 
                               is_rsh, is_qlogin, pty_option, suspend_remote_option,
@@ -1848,8 +1848,7 @@ int main(int argc, char **argv)
             ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
          }
          stop_ijs_server(&comm_handle, &err_msg);
-         DPRINTF(("stop_ijs_server returned error: %s\n",
-            sge_dstring_get_string(&err_msg)));
+         DPRINTF("stop_ijs_server returned error: %s\n", sge_dstring_get_string(&err_msg));
          sge_dstring_free(&err_msg);
          if (ret != 0) {
             return 1;
@@ -1897,8 +1896,8 @@ int main(int argc, char **argv)
       lp_jobs = lCreateList("submitted jobs", JB_Type);
       lAppendElem(lp_jobs, job);
    
-      DPRINTF(("B E F O R E     S E N D I N G! ! ! ! ! ! ! ! ! ! ! ! ! !\n"));
-      DPRINTF(("=====================================================\n"));
+      DPRINTF("B E F O R E     S E N D I N G! ! ! ! ! ! ! ! ! ! ! ! ! !\n");
+      DPRINTF("=====================================================\n");
 
       /* submit the job to the QMaster */
       alp = sge_gdi(SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
@@ -1911,7 +1910,7 @@ int main(int argc, char **argv)
       } else {
         job_id = 0;
       }
-      DPRINTF(("job id is: %ld\n", job_id));
+      DPRINTF("job id is: %ld\n", job_id);
 
       status = 0; 
       
@@ -1956,8 +1955,8 @@ int main(int argc, char **argv)
       
       VERBOSE_LOG((stderr, SFNMAX, MSG_QSH_WAITINGFORINTERACTIVEJOBTOBESCHEDULED));
 
-      DPRINTF(("R E A D I N G    J O B ! ! ! ! ! ! ! ! ! ! !\n"));
-      DPRINTF(("============================================\n"));
+      DPRINTF("R E A D I N G    J O B ! ! ! ! ! ! ! ! ! ! !\n");
+      DPRINTF("============================================\n");
       
       while (!do_exit) {
          lCondition *where;
@@ -1971,7 +1970,7 @@ int main(int argc, char **argv)
          int msgsock = -1;
          int random_poll = polling_interval + (rand() % polling_interval);
 
-         DPRINTF(("random polling set to %d\n", random_poll));
+         DPRINTF("random polling set to %d\n", random_poll);
 
          /* close connection to QMaster */
          cl_commlib_close_connection(cl_com_get_handle(progname,0),
@@ -2015,14 +2014,14 @@ int main(int argc, char **argv)
                      host, port, job_dir, utilbin_dir, is_rsh, is_rlogin, 
                      nostdin, noshell, sock);
 
-                  DPRINTF(("exit_status = %d\n", exit_status));
+                  DPRINTF("exit_status = %d\n", exit_status);
 
                   if (exit_status < 0) {
                      WARNING(MSG_QSH_CLEANINGUPAFTERABNORMALEXITOF_S, client_name);
                      cl_com_ignore_timeouts(false);
                      cl_commlib_open_connection(cl_com_get_handle(progname,0),
                         (char*)mastername, (char*)prognames[QMASTER], 1);
-                     DPRINTF(("deleting job\n"));
+                     DPRINTF("deleting job\n");
                      delete_job(job_id, lp_jobs);
                      exit_status = EXIT_FAILURE;
                   }
@@ -2030,7 +2029,7 @@ int main(int argc, char **argv)
                   do_exit = 1;
                   continue;
                } else {
-                  DPRINTF(("---- got NO valid socket! ----\n"));
+                  DPRINTF("---- got NO valid socket! ----\n");
                }
             } else { /* if (g_new_interactive_job_support == true) */
                int     ret;
@@ -2048,20 +2047,20 @@ int main(int argc, char **argv)
                /*
                 * Wait for the client to connect to us
                 */
-               DPRINTF(("waiting for connection\n"));
+               DPRINTF("waiting for connection\n");
                sge_dstring_sprintf(&err_msg, "<null>");
                ret = comm_wait_for_connection(comm_handle, COMM_CLIENT, 
                                               random_poll, &host, &err_msg);
 
                if (ret != COMM_RETVAL_OK) {
                   if (ret == COMM_GOT_TIMEOUT) {
-                     DPRINTF(("got no connection within timeout of %d s\n", random_poll));
+                     DPRINTF("got no connection within timeout of %d s\n", random_poll);
                      /* Loop again */
                   } else {
                      /* comm_wait_for_connection() returned an error */
                      ERROR(MSG_QSH_ERRORWHILEWAITINGFORBUILTINIJSCONNECTION_S, sge_dstring_get_string(&err_msg));
 
-                     DPRINTF(("got error while waiting for connection\n"));
+                     DPRINTF("got error while waiting for connection\n");
                      cl_com_ignore_timeouts(false);
                      /* Tell the master to delete the job */
                      cl_commlib_open_connection(cl_com_get_handle(progname,0),
@@ -2086,7 +2085,7 @@ int main(int argc, char **argv)
                   b_already_logged_job_was_scheduled = true;
            
                   if (nostdin == 1) {
-                     DPRINTF(("closing STDIN\n"));
+                     DPRINTF("closing STDIN\n");
                      close(STDIN_FILENO);
                   }
 
@@ -2099,7 +2098,7 @@ int main(int argc, char **argv)
                      ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
                   }
                   stop_ijs_server(&comm_handle, &err_msg);
-                  DPRINTF(("stop_ijs_server returned: %s\n", sge_dstring_get_string(&err_msg)));
+                  DPRINTF("stop_ijs_server returned: %s\n", sge_dstring_get_string(&err_msg));
 
                   if (ret == 0) {
                      // we are done
@@ -2162,10 +2161,10 @@ int main(int argc, char **argv)
          ja_task = lFirstRW(lGetList(jep, JB_ja_tasks)); 
          if (ja_task) {
             job_status = lGetUlong(ja_task, JAT_status);
-            DPRINTF(("Job Status is: %lx\n", job_status));
+            DPRINTF("Job Status is: %lx\n", job_status);
          } else {
             job_status = JIDLE;
-            DPRINTF(("Job Status is: %lx (unenrolled)\n", job_status));
+            DPRINTF("Job Status is: %lx (unenrolled)\n", job_status);
          }
    
          lFreeList(&lp_poll);
@@ -2226,7 +2225,7 @@ int main(int argc, char **argv)
 
          if (!do_exit && polling_interval < QSH_POLLING_MAX) {
             polling_interval *= 2;
-            DPRINTF(("polling_interval set to %d\n", polling_interval));
+            DPRINTF("polling_interval set to %d\n", polling_interval);
          }
       } /* end of while (1) polling */
       if (g_new_interactive_job_support == true && comm_handle != nullptr) {

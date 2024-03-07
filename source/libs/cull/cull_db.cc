@@ -1111,7 +1111,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    dataType = lGetPosType(dp, pos);
    switch (dataType) {
       case lStringT:
-         DPRINTF(("lString2List: got lStringT data type\n"));
+         DPRINTF("lString2List: got lStringT data type\n");
          for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
             if (lGetElemStr(*lpp, nm, s)) {
                /* silently ignore multiple occurencies */
@@ -1126,7 +1126,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
 
          break;
       case lHostT:
-         DPRINTF(("lString2List: got lHostT data type\n"));
+         DPRINTF("lString2List: got lHostT data type\n");
          for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
             if (lGetElemHost(*lpp, nm, s)) {
                /* silently ignore multiple occurencies */
@@ -1141,7 +1141,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
 
          break;
       default:
-         DPRINTF(("lString2List: unexpected data type\n"));
+         DPRINTF("lString2List: unexpected data type\n");
          break;
    }
 
@@ -1191,7 +1191,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
    dataType = lGetPosType(dp, pos);
    switch (dataType) {
       case lStringT:
-         DPRINTF(("lString2ListNone: got lStringT data type\n"));
+         DPRINTF("lString2ListNone: got lStringT data type\n");
          if (lGetNumberOfElem(*lpp) > 1 && lGetElemCaseStr(*lpp, nm, "none")) {
             lFreeList(lpp);
             return 1;
@@ -1201,7 +1201,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
             lFreeList(lpp);
          break;
       case lHostT:
-         DPRINTF(("lString2ListNone: got lHostT data type\n"));
+         DPRINTF("lString2ListNone: got lHostT data type\n");
          if (lGetNumberOfElem(*lpp) > 1 && lGetElemHost(*lpp, nm, "none")) {
             lFreeList(lpp);
             return 1;
@@ -1212,7 +1212,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
          break;
 
       default:
-         DPRINTF(("lString2ListNone: unexpected data type\n"));
+         DPRINTF("lString2ListNone: unexpected data type\n");
          break;
    }
 

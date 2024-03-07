@@ -252,14 +252,14 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    /* get list of finished pe tasks */
    pe_task_list = lGetList(ja_task, JAT_finished_task_list);
    if (pe_task_list == nullptr) {
-      DPRINTF(("no finished pe task list to clear in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number)));
+      DPRINTF("no finished pe task list to clear in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number));
       DRETURN(false);
    }
 
    /* if we have such a list, delete it (lSetList will free the list) */
    lSetList(ja_task, JAT_finished_task_list, nullptr);
 
-   DPRINTF(("cleared finished pe task list in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number)));
+   DPRINTF("cleared finished pe task list in ja_task " sge_U32CFormat "\n", lGetUlong(ja_task, JAT_task_number));
 
    DRETURN(true);
 }

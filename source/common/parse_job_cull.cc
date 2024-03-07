@@ -371,7 +371,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
          for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
-            DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
+            DPRINTF("-hold_jid %s\n", lGetString(sep, ST_name));
             lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
          }
          lRemoveElem(cmdline, &ep);
@@ -386,7 +386,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
          for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
-            DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
+            DPRINTF("-hold_jid_ad %s\n", lGetString(sep, ST_name));
             lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
          }
          lRemoveElem(cmdline, &ep);
@@ -802,10 +802,10 @@ u_long32 flags
       }
 
       if (directive_prefix == nullptr) {
-         DPRINTF(("directive prefix = <null> - will skip parsing of script\n"));
+         DPRINTF("directive prefix = <null> - will skip parsing of script\n");
          dpl = 0;
       } else {
-         DPRINTF(("directive prefix = " SFQ "\n", directive_prefix));
+         DPRINTF("directive prefix = " SFQ "\n", directive_prefix);
          dpl = strlen(directive_prefix);
       }
 
@@ -926,7 +926,7 @@ u_long32 flags
             if ((parameters != nullptr) && (*parameters != '\0')) {
                lListElem *ep = nullptr;
                
-               DPRINTF(("parameter in script: %s\n", parameters));
+               DPRINTF("parameter in script: %s\n", parameters);
 
                /*
                ** here cull comes in 
@@ -936,13 +936,13 @@ u_long32 flags
                str_table = string_list(parameters, " \t\n", nullptr);
                
                for (i=0; str_table[i]; i++) {
-                  DPRINTF(("str_table[%d] = '%s'\n", i, str_table[i])); 
+                  DPRINTF("str_table[%d] = '%s'\n", i, str_table[i]);
                }
 
                sge_strip_quotes(str_table);
 
                for (i=0; str_table[i]; i++) {
-                  DPRINTF(("str_table[%d] = '%s'\n", i, str_table[i]));      
+                  DPRINTF("str_table[%d] = '%s'\n", i, str_table[i]);
                }
 
                /*
@@ -958,11 +958,11 @@ u_long32 flags
                   quality = (answer_quality_t)lGetUlong(aep, AN_quality);
 
                   if (quality == ANSWER_QUALITY_ERROR) {
-                     DPRINTF(("%s", lGetString(aep, AN_text)));
+                     DPRINTF("%s", lGetString(aep, AN_text));
                      do_exit = 1;
                   }
                   else {
-                     DPRINTF(("Warning: %s\n", lGetString(aep, AN_text)));
+                     DPRINTF("Warning: %s\n", lGetString(aep, AN_text));
                   }
                   answer_list_add(&answer, lGetString(aep, AN_text), status,
                                   quality);

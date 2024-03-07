@@ -147,7 +147,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
       /* parse arguments */
       path = strdup(args);
 
-      DPRINTF(("using database path %s\n", path));
+      DPRINTF("using database path %s\n", path);
 
       info = bdb_create(path);
       lSetRef(rule, SPR_clientdata, info);
@@ -921,8 +921,8 @@ spool_berkeleydb_default_write_func(lList **answer_list,
 
    DENTER(BDB_LAYER);
 
-   DPRINTF(("spool_berkeleydb_default_write_func called for %s with key %s\n",
-            object_type_get_name(object_type), key != nullptr ? key : "<null>"));
+   DPRINTF("spool_berkeleydb_default_write_func called for %s with key %s\n",
+           object_type_get_name(object_type), key != nullptr ? key : "<null>");
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {

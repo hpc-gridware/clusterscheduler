@@ -102,8 +102,8 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
          job_id = lGetUlong(event, ET_intkey);
          ja_task_id = lGetUlong(event, ET_intkey2);
 
-         DPRINTF(("got final usage for job %s\n", 
-                  job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring)));
+         DPRINTF("got final usage for job %s\n",
+                  job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring));
          sge_dstring_free(&id_dstring);
 
          job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
@@ -428,12 +428,11 @@ static void allocate_queue_slots(lList **allocated_queues, lListElem *queue, u_l
       const char *queue_name;
 
       queue_name = lGetString(queue, QU_full_name);
-      DPRINTF(("found %d slots in queue %s\n", queue_free_slots, queue_name));
+      DPRINTF("found %d slots in queue %s\n", queue_free_slots, queue_name);
 
       slots = MIN(*procs, queue_free_slots);
       *procs -= slots;
-      DPRINTF(("allocating %d slots in queue %s, still %d slots to allocate\n", 
-               slots, queue_name, *procs));
+      DPRINTF("allocating %d slots in queue %s, still %d slots to allocate\n", slots, queue_name, *procs);
 
       granted_queue = lAddElemStr(allocated_queues, JG_qname, lGetString(queue, QU_full_name), 
                                   JG_Type);
@@ -470,9 +469,9 @@ static void simple_scheduler(sge_evc_class_t *evc)
       }
    }
    
-   DPRINTF(("jobs requests %d slots in parallel environment %s\n",
-            procs,
-            pe_name != nullptr ? pe_name : "-"));
+   DPRINTF("jobs requests %d slots in parallel environment %s\n",
+           procs,
+           pe_name != nullptr ? pe_name : "-");
 
 #if 0 /* TODO: PE <-> Queue relation is stored in Queue object */
    /* allocate free slots
@@ -505,7 +504,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
 
    /* if all requested slots could be granted, procs should be 0 */
    if(procs > 0) {
-      DPRINTF(("job could not be scheduled\n"));
+      DPRINTF("job could not be scheduled\n");
       lFreeList(&allocated_queues);
       DRETURN_VOID;
    }

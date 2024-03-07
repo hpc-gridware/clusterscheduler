@@ -84,11 +84,11 @@ int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
          int i = 0;
 
          master_host = gdi_get_act_master_host(false);
-         DPRINTF(("SENDING LOAD AND REPORTS\n"));
+         DPRINTF("SENDING LOAD AND REPORTS\n");
          report_list = lCreateList("report list", REP_Type);
          for (i = 0; report_sources[i].type; i++) {
             if (!which || which == report_sources[i].type) {
-               DPRINTF(("%s\n", report_types[report_sources[i].type - 1]));
+               DPRINTF("%s\n", report_types[report_sources[i].type - 1]);
                report_sources[i].func(report_list, now, &(report_sources[i].next_send));
             }
          }
@@ -166,7 +166,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
       lListElem *search_ep = lGetElemHostFirstRW(*lpp, LR_host, host, &iterator);
 
       while (search_ep != nullptr) {
-         DPRINTF(("---> %s\n", lGetString(search_ep, LR_name)));
+         DPRINTF("---> %s\n", lGetString(search_ep, LR_name));
          if (strcmp(lGetString(search_ep, LR_name), name) == 0) {
             ep = search_ep;
             break;
@@ -176,7 +176,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
    }
    
    if (ep == nullptr) {
-      DPRINTF(("adding new load variable %s for host %s\n", name, host));
+      DPRINTF("adding new load variable %s for host %s\n", name, host);
       ep = lAddElemStr(lpp, LR_name, name, LR_Type);
       lSetHost(ep, LR_host, host);
       lSetUlong(ep, LR_global, (u_long32)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
@@ -185,7 +185,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
 
    lSetString(ep, LR_value, value);
 
-   DPRINTF(("load value %s for host %s: %s\n", name, host, value)); 
+   DPRINTF("load value %s for host %s: %s\n", name, host, value);
 
    DRETURN(0);
 }

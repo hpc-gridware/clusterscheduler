@@ -195,7 +195,7 @@ int lerror(void) {
       DRETURN(-1);
    }
 
-   DPRINTF(("%s\n", errorText));
+   DPRINTF("%s\n", errorText);
 
    DRETURN(0);
 }

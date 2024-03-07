@@ -213,7 +213,7 @@ sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monito
          lSetHost(ep, object->key_nm, hostname);
          break;
       default:
-      DPRINTF(("sge_add_host_of_type: unexpected datatype\n"));
+      DPRINTF("sge_add_host_of_type: unexpected datatype\n");
    }
    ret = sge_gdi_add_mod_generic(nullptr, ep, 1, object, username,
                                  qualified_hostname, 0, &ppList, monitor);
@@ -451,7 +451,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
 
       /* ---- EH_acl */
       if (lGetPosViaElem(ep, EH_acl, SGE_NO_ABORT) >= 0) {
-         DPRINTF(("got new EH_acl\n"));
+         DPRINTF("got new EH_acl\n");
          /* check acl list */
          if (userset_list_validate_acl_list(lGetList(ep, EH_acl), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
@@ -466,7 +466,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
 
       /* ---- EH_xacl */
       if (lGetPosViaElem(ep, EH_xacl, SGE_NO_ABORT) >= 0) {
-         DPRINTF(("got new EH_xacl\n"));
+         DPRINTF("got new EH_xacl\n");
          /* check xacl list */
          if (userset_list_validate_acl_list(lGetList(ep, EH_xacl), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
@@ -483,7 +483,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
 
       /* ---- EH_prj */
       if (lGetPosViaElem(ep, EH_prj, SGE_NO_ABORT) >= 0) {
-         DPRINTF(("got new EH_prj\n"));
+         DPRINTF("got new EH_prj\n");
          /* check prj list */
          if (verify_project_list(alpp, lGetList(ep, EH_prj), master_project_list, "projects", object->object_name,
                                  host) != STATUS_OK) {
@@ -499,7 +499,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
 
       /* ---- EH_xprj */
       if (lGetPosViaElem(ep, EH_xprj, SGE_NO_ABORT) >= 0) {
-         DPRINTF(("got new EH_xprj\n"));
+         DPRINTF("got new EH_xprj\n");
          /* check xprj list */
          if (verify_project_list(alpp, lGetList(ep, EH_xprj), master_project_list, "xprojects", object->object_name,
                                  host) != STATUS_OK) {
@@ -773,7 +773,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
          lep = lGetSubStrRW(*hepp, HL_name, name, EH_load_list);
          if (lep == nullptr) {
             lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
-            DPRINTF(("%s: adding load value: " SFQ " = " SFQ "\n", host, name, value));
+            DPRINTF("%s: adding load value: " SFQ " = " SFQ "\n", host, name, value);
             if (is_static == 1) {
                statics_changed = true;
             }
@@ -857,7 +857,7 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          if (load_report_host != nullptr) {
             const char *real_host = lGetString(load_report_host, CE_stringval);
             if (real_host != nullptr && sge_hostcmp(real_host, host) != 0) {
-               DPRINTF(("skip trashing load values for host %s simulated by %s\n", host, real_host));
+               DPRINTF("skip trashing load values for host %s simulated by %s\n", host, real_host);
                continue;
             }
          }
@@ -926,7 +926,7 @@ load_report_interval(lListElem *hep) {
          lFreeElem(&conf_entry);
       }
 
-      DPRINTF(("%s: load value timeout for host %s is " sge_u32"\n", __func__, host, timeout));
+      DPRINTF("%s: load value timeout for host %s is " sge_u32"\n", __func__, host, timeout);
 
       lSetUlong(hep, EH_load_report_interval, timeout);
    }
@@ -964,8 +964,7 @@ exec_host_change_queue_version(const char *exechost_name) {
             next_qinstance = lGetElemHostNextRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
             name = exechost_name;
          }
-         DPRINTF((SFQ " has changed. Increasing qversion of" SFQ "\n",
-                 name, lGetString(qinstance, QU_full_name)));
+         DPRINTF(SFQ " has changed. Increasing qversion of" SFQ "\n", name, lGetString(qinstance, QU_full_name));
          qinstance_increase_qversion(qinstance);
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
                          0, 0, lGetString(qinstance, QU_qname),
@@ -1040,7 +1039,7 @@ master_kill_execds(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
       }
       if (lGetNumberOfElem(task->answer_list) == 0) {
          /* no exechosts have been killed */
-         DPRINTF((MSG_SGETEXT_NOEXECHOSTS));
+         DPRINTF(MSG_SGETEXT_NOEXECHOSTS);
          INFO(SFNMAX, MSG_SGETEXT_NOEXECHOSTS);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
@@ -1114,7 +1113,7 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
          INFO(MSG_COM_NOTIFICATION_SSS, action_str, (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
-      DPRINTF((SGE_EVENT));
+      DPRINTF(SGE_EVENT);
    }
 
    if (kill_jobs) {
@@ -1247,8 +1246,8 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
       }
    }
 
-   DPRINTF(("=====>STARTING_UP: %s %s on >%s< is starting up\n",
-           feature_get_product_name(FS_SHORT_VERSION, &ds), "execd", rhost));
+   DPRINTF("=====>STARTING_UP: %s %s on >%s< is starting up\n",
+           feature_get_product_name(FS_SHORT_VERSION, &ds), "execd", rhost);
 
    INFO(MSG_LOG_REGISTER_SS, "execd", rhost);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_ERROR);
@@ -1473,7 +1472,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
    if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
       lListElem *tmp_elem = nullptr;
 
-      DPRINTF(("got new %s\n", attr_name));
+      DPRINTF("got new %s\n", attr_name);
 
       /* check if corresponding complex attributes exist */
       if (ensure_attrib_available(alpp, ep, EH_consumable_config_list, master_centry_list)) {

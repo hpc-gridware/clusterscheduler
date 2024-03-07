@@ -152,12 +152,10 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, u_long32 j
 
          if (suspend == true) {
             SETBIT(JSUSPENDED_ON_SLOTWISE_SUBORDINATE, state);
-            DPRINTF(("Setting status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n",
-                    job_id, task_id));
+            DPRINTF("Setting status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n", job_id, task_id);
          } else {
             CLEARBIT(JSUSPENDED_ON_SLOTWISE_SUBORDINATE, state);
-            DPRINTF(("Clearing status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n",
-                    job_id, task_id));
+            DPRINTF("Clearing status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n", job_id, task_id);
          }
          lSetUlong(jatep, JAT_state, state);
          ret = true;
@@ -1420,12 +1418,10 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
    /*
     * do operation
     */
-   DPRINTF(("qinstance " SFQ " " SFN " " SFN " on subordinate\n", full_name,
-           (do_action ? "" : "already"),
-           (suspend ? "suspended" : "unsuspended")));
+   DPRINTF("qinstance " SFQ " " SFN " " SFN " on subordinate\n", full_name,
+           (do_action ? "" : "already"), (suspend ? "suspended" : "unsuspended"));
    if (do_action) {
-      DPRINTF(("Due to other suspend states signal will %sbe delivered\n",
-              send_qinstance_signal ? "NOT " : ""));
+      DPRINTF("Due to other suspend states signal will %sbe delivered\n", send_qinstance_signal ? "NOT " : "");
       if (send_qinstance_signal) {
          ret = (sge_signal_queue(signal, this_elem, nullptr, nullptr, monitor) == 0) ? true : false;
       }
@@ -1507,8 +1503,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
          while ((so = next_so) != nullptr) {
             next_so = lNextRW(so);
             if (!tst_sos(slots_used, slots, so)) {
-               DPRINTF (("Removing %s because it's not suspended\n",
-                       lGetString(so, SO_name)));
+               DPRINTF("Removing %s because it's not suspended\n", lGetString(so, SO_name));
                lRemoveElem(*resolved_so_list, &so);
             }
          }

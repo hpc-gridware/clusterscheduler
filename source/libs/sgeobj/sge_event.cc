@@ -558,7 +558,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
                                  MSG_EVENT_INVALIDNAME);
          DTRACE;
          ret = false;
-         DPRINTF(("EV name false\n"));
+         DPRINTF("EV name false\n");
       }
    }
 
@@ -576,7 +576,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
                                  MSG_EVENT_INVALIDID);
          DTRACE;
          ret = false;
-         DPRINTF(("EV_id false: " sge_u32"\n", id));
+         DPRINTF("EV_id false: " sge_u32"\n", id);
       }
 #endif
    }
@@ -588,7 +588,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
                                  MSG_EVENT_INVALIDDTIME_II, d_time,
                                  CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5);
          ret = false;
-         DPRINTF(("d_time false\n"));         
+         DPRINTF("d_time false\n");
       }
    }
 

@@ -160,7 +160,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, 0);
       if (ret) {
-         DPRINTF(("Error %d formatting jid_request_list as -hold_jid\n", ret));
+         DPRINTF("Error %d formatting jid_request_list as -hold_jid\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGJIDPREDECESSORLISTASHOLDJID);
          return answer;
@@ -178,7 +178,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, 0);
       if (ret) {
-         DPRINTF(("Error %d formatting ja_ad_request_list as -hold_jid_ad\n", ret));
+         DPRINTF("Error %d formatting ja_ad_request_list as -hold_jid_ad\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGJIDPREDECESSORLISTASHOLDJIDAD);
          return answer;
@@ -213,7 +213,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          0);
       if (ret) {
-         DPRINTF(("Error %d formatting job_identifier_list as -jid\n", ret));
+         DPRINTF("Error %d formatting job_identifier_list as -jid\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGJOBIDENTIFIERLISTASJID);
          DRETURN(answer);
@@ -258,7 +258,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    if ((ul = lGetUlong(job, JB_mail_options))) {
       cp = sge_unparse_mail_options(ul);
       if (!cp) {
-         DPRINTF(("Error unparsing mail options\n"));
+         DPRINTF("Error unparsing mail options\n");
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_ERRORUNPARSINGMAILOPTIONS);
          return answer;
@@ -298,7 +298,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 
          ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp_new, fields, delis, FLG_NO_DELIS_STRINGS);
          if (ret) {
-            DPRINTF(("Error %d formatting mail list as -M\n", ret));
+            DPRINTF("Error %d formatting mail list as -M\n", ret);
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_LIST_ERRORFORMATTINGMAILLISTASM);
             return answer;
@@ -379,7 +379,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting hard_queue_list as -q\n", ret));
+         DPRINTF("Error %d formatting hard_queue_list as -q\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGHARDQUEUELISTASQ);
          return answer;
@@ -396,7 +396,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting soft_queue_list as -q\n", ret));
+         DPRINTF("Error %d formatting soft_queue_list as -q\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGSOFTQUEUELISTASQ);
          return answer;
@@ -441,7 +441,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting shell_list\n", ret));
+         DPRINTF("Error %d formatting shell_list\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGSHELLLIST);
          return answer;
@@ -463,7 +463,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting environment list as -v\n", ret));
+         DPRINTF("Error %d formatting environment list as -v\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGENVIRONMENTLISTASV);
          return answer;
@@ -502,7 +502,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting job arguments\n", ret));
+         DPRINTF("Error %d formatting job arguments\n", ret);
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGJOBARGUMENTS);
          return answer;
@@ -667,7 +667,7 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
 
       ret = centry_list_append_to_string(lp, str, sizeof(str) - 1);
       if (ret) {
-         DPRINTF(("Error %d formatting hard_resource_list as -l\n", ret));
+         DPRINTF("Error %d formatting hard_resource_list as -l\n", ret);
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGHARDRESOURCELISTASL);
          return ret;
@@ -708,7 +708,7 @@ lList **alpp
       sge_dstring_append(&string_buffer, cp);
       sge_dstring_append(&string_buffer, " ");
       if (!(lp = lGetList(job, JB_pe_range))) {
-         DPRINTF(("Job has parallel environment with no ranges\n"));
+         DPRINTF("Job has parallel environment with no ranges\n");
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_JOBHASPEWITHNORANGES);
          sge_dstring_free(&string_buffer);
@@ -722,7 +722,7 @@ lList **alpp
          sge_dstring_free(&range_string);
       }
       if (ret) {
-         DPRINTF(("Error %d formatting ranges in -pe\n", ret));
+         DPRINTF("Error %d formatting ranges in -pe\n", ret);
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGRANGESINPE);
          sge_dstring_free(&string_buffer);
@@ -753,7 +753,7 @@ static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lLi
 
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       if (ret) {
-         DPRINTF(("Error %d formatting path_list\n", ret));
+         DPRINTF("Error %d formatting path_list\n", ret);
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGPATHLIST);
          return ret;

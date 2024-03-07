@@ -566,7 +566,7 @@ static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_
    switch(name) {
       case CHECKPOINT_ENV:
       case MASTER_QUEUE:
-         DPRINTF(("Skip additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value));
+         DPRINTF("Skip additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
          DRETURN(0);
       default:
          {
@@ -574,7 +574,7 @@ static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_
             /*lListElem *xml_elem = nullptr;*/
             lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
             
-            DPRINTF(("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value));
+            DPRINTF("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
             xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
             /* xml_elem = xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value); 
             TODO: xml_addAttribute(xmlElem, "name", lGetString(job, JB_pe)); */
@@ -921,14 +921,14 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
    
    if (qstat_env->full_listing & QSTAT_DISPLAY_FULL) {
       if (ctx->queue_elem == nullptr) {
-         DPRINTF(("Illegal State: ctx->queue_elem is nullptr !!!\n"));
+         DPRINTF("Illegal State: ctx->queue_elem is nullptr !!!\n");
          abort();
       }
-      DPRINTF(("add queue_info for queue %s to queue_list\n", qname ));
+      DPRINTF("add queue_info for queue %s to queue_list\n", qname );
       
       queue_list = lGetListRW(ctx->queue_list_elem, XMLE_List);
       if (queue_list == nullptr) {
-         DPRINTF(("Had empty queue list, create new one\n"));
+         DPRINTF("Had empty queue list, create new one\n");
          queue_list = lCreateList("Queue-List", XMLE_Type);
          lSetList(ctx->queue_list_elem, XMLE_List, queue_list);
       }
@@ -952,11 +952,11 @@ static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, 
    if (qstat_env->full_listing & QSTAT_DISPLAY_FULL) {
       
       if (ctx->queue_elem != nullptr) {
-         DPRINTF(("Illegal state: ctx->queue_elem has to be nullptr"));
+         DPRINTF("Illegal state: ctx->queue_elem has to be nullptr");
          abort();
       }
       
-      DPRINTF(("Create ctx->queue_elem for queue %s\n", qname));
+      DPRINTF("Create ctx->queue_elem for queue %s\n", qname);
    
       temp = lCreateElem(XMLE_Type);
       lSetBool(temp, XMLE_Print, false);
@@ -976,7 +976,7 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
    DENTER(TOP_LAYER);
 
    if (ctx->queue_elem == nullptr) {
-      DPRINTF(("Ilegal state: ctx->queue_elem must not be nullptr"));
+      DPRINTF("Ilegal state: ctx->queue_elem must not be nullptr");
       abort();
    }
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
@@ -1058,7 +1058,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
    attribute_list = lGetListRW(xml_elem, XMLE_List);
    
-   DPRINTF(("queue resource: %s, %s, %s\n", dom, name, value));
+   DPRINTF("queue resource: %s, %s, %s\n", dom, name, value);
    xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
    xml_addAttribute(xml_elem, "name", name);  
    xml_addAttribute(xml_elem, "type", dom);
@@ -1140,7 +1140,7 @@ void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list,
    }
 
    if (suppress_binding_data) {
-      DPRINTF(("Data concerning binding will not ne shown\n"));
+      DPRINTF("Data concerning binding will not ne shown\n");
    }
 
    if (error) {

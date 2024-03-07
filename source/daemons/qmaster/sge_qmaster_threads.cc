@@ -104,7 +104,7 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
       DRETURN_VOID;
    }
 
-   DPRINTF(("uid/username = %d/%s, gid/groupname = %d/%s\n", (int) uid, username, (int) gid, groupname));
+   DPRINTF("uid/username = %d/%s, gid/groupname = %d/%s\n", (int) uid, username, (int) gid, groupname);
 
    if (!manop_is_manager(username, master_manager_list)) {
       ERROR(SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES);
@@ -176,7 +176,7 @@ sge_daemonize_qmaster() {
    DENTER(TOP_LAYER);
 
    if (getenv("SGE_ND") != nullptr) {
-      DPRINTF(("sge_qmaster is not daemonized\n"));
+      DPRINTF("sge_qmaster is not daemonized\n");
       DRETURN(false);
    }
 

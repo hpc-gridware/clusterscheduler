@@ -726,7 +726,7 @@ void project_update_categories(const lList *added, const lList *removed) {
 
    for_each_ep(ep, added) {
       p = lGetString(ep, PR_name);
-      DPRINTF(("added project: \"%s\"\n", p));
+      DPRINTF("added project: \"%s\"\n", p);
       prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
       if (prj && lGetBool(prj, PR_consider_with_categories) == false) {
          lSetBool(prj, PR_consider_with_categories, true);
@@ -736,7 +736,7 @@ void project_update_categories(const lList *added, const lList *removed) {
 
    for_each_ep(ep, removed) {
       p = lGetString(ep, PR_name);
-      DPRINTF(("removed project: \"%s\"\n", p));
+      DPRINTF("removed project: \"%s\"\n", p);
       prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
 
       if (prj && !project_still_used(p)) {

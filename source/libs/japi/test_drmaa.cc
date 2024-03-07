@@ -671,7 +671,7 @@ int main(int argc, char *argv[])
    */
    int gdi_errno = gdi_client_setup_and_enroll(JAPI, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
-      DPRINTF(("gdi_errno = %d", gdi_errno));
+      DPRINTF("gdi_errno = %d", gdi_errno);
       answer_list_output(&alp);
       sge_exit(1);
    }
