@@ -132,8 +132,8 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, host_update_master_list,                nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, nullptr,                                   nullptr, nullptr },
+   { nullptr, host_update_master_list,                nullptr, nullptr },
+   { nullptr, nullptr,                                nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr },
    { nullptr, ja_task_update_master_list,             nullptr, nullptr },
    { nullptr, pe_task_update_master_list,             nullptr, nullptr },
@@ -147,7 +147,7 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, cqueue_update_master_list,              nullptr, nullptr },
    { nullptr, qinstance_update_cqueue_list,           nullptr, nullptr },
    { nullptr, schedd_conf_update_master_list,         nullptr, nullptr },
-   { nullptr, nullptr,                                   nullptr, nullptr },
+   { nullptr, nullptr,                                nullptr, nullptr },
    { nullptr, sge_mirror_process_shutdown,            nullptr, nullptr },
    { nullptr, sge_mirror_process_mark4registration,   nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr },
@@ -376,8 +376,8 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
       int i;
       
       for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
-         sge_mirror_subscribe_internal(evc, (sge_object_type) i, callback_before, callback_after, client_data, nullptr,
-                                       nullptr);
+         sge_mirror_subscribe_internal(evc, (sge_object_type) i, callback_before, callback_after, client_data,
+                                       nullptr, nullptr);
       }
    } else {
       ret = sge_mirror_subscribe_internal(evc, type, callback_before, callback_after, client_data, where, what);
@@ -387,12 +387,9 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
 }
 
 static sge_mirror_error
-sge_mirror_subscribe_internal(sge_evc_class_t *evc,
-                      sge_object_type type,
-                      sge_mirror_callback callback_before,
-                      sge_mirror_callback callback_after,
-                      void *client_data,
-                      const lCondition *where, const lEnumeration *what)
+sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
+                              sge_mirror_callback callback_before, sge_mirror_callback callback_after,
+                              void *client_data, const lCondition *where, const lEnumeration *what)
 {
    lListElem *what_el = lWhatToElem(what);
    lListElem *where_el = lWhereToElem(where);
