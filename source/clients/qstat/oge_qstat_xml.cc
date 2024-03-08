@@ -1086,7 +1086,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    }
 
    if (error) {
-      xml_elem = xml_getHead("comunication_error", *answer_list, nullptr);
+      xml_elem = xml_getHead("communication_error", *answer_list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, 
          (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
       lFreeElem(&xml_elem);
@@ -1144,7 +1144,7 @@ void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list,
    }
 
    if (error) {
-      xml_elem = xml_getHead("comunication_error", *answer_list, nullptr);
+      xml_elem = xml_getHead("communication_error", *answer_list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1); 
       lFreeElem(&xml_elem);
    } else {
