@@ -4007,13 +4007,12 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF("error: lGetElemStrFirst called to field which is no lStringT type\n");
       CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -4097,7 +4096,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
@@ -4176,12 +4175,11 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
-      DPRINTF("error: lGetElemStrLike called to field which is no lStringT type\n");
       CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }

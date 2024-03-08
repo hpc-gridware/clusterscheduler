@@ -473,12 +473,15 @@ sge_scheduler_main(void *arg) {
    sge_where_what_t where_what;
 
    DENTER(TOP_LAYER);
-
    memset(&where_what, 0, sizeof(where_what));
 
-   /*
-    * startup
-    */
+   // set thread name and id used by logging an others
+   const char *thread_name = thread_config->thread_name;
+   int thread_id = thread_config->thread_id;
+   component_set_thread_name(thread_name);
+   component_set_thread_id(thread_id);
+   DPRINTF(SFN "(%d) started\n", thread_name, thread_id);
+
    /* initialize commlib thread */
    cl_thread_func_startup(thread_config);
 

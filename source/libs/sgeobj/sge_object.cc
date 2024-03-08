@@ -158,6 +158,7 @@ public:
 // although not used the constructor call has the side effect to initialize the pthread_key => do not delete
 static ObjectThreadInit object_obj{};
 
+// initialize thread local storage so that a thread used the OBJ_STATE_GLOBAL ds is not changed later on
 static void
 obj_state_init(obj_thread_local_t *state) {
    DENTER(TOP_LAYER);
@@ -165,6 +166,7 @@ obj_state_init(obj_thread_local_t *state) {
    DRETURN_VOID;
 }
 
+// set the main DS that should be used by the thread using this function
 void
 obj_init(obj_state_ds ds_id) {
    DENTER(TOP_LAYER);

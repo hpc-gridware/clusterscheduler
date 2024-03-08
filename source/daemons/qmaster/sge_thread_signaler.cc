@@ -132,15 +132,21 @@ sge_signaler_main(void *arg) {
 
    DENTER(TOP_LAYER);
 
-   cl_thread_func_startup(thread_config);
+   // set thread name and id used by logging an others
+   const char *thread_name = thread_config->thread_name;
+   int thread_id = thread_config->thread_id;
+   component_set_thread_name(thread_name);
+   component_set_thread_id(thread_id);
+   DPRINTF(SFN "(%d) started\n", thread_name, thread_id);
 
+   // init monitoring
+   cl_thread_func_startup(thread_config);
    sge_monitor_init(&monitor, thread_config->thread_name, NONE_EXT, ST_WARNING, ST_ERROR);
    sge_qmaster_thread_init(QMASTER, SIGNAL_THREAD, true);
 
    sigemptyset(&sig_set);
    sigaddset(&sig_set, SIGINT);
    sigaddset(&sig_set, SIGTERM);
-
 
    /* register at profiling module */
    set_thread_name(pthread_self(), "Signal Thread");

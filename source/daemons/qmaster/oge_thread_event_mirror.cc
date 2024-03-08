@@ -15,7 +15,6 @@
 #include "oge_thread_event_mirror.h"
 #include "setup_qmaster.h"
 #include "sge_thread_main.h"
-#include "sge_conf.h"
 
 master_event_mirror_class_t master_event_mirror = {
         PTHREAD_MUTEX_INITIALIZER,  // mutex
@@ -196,8 +195,13 @@ oge_event_mirror_main(void *arg) {
    // initialize commlib thread
    auto *thread_config = (cl_thread_settings_t *) arg;
    cl_thread_func_startup(thread_config);
+
+   // set thread name and id used by logging an others
    const char *thread_name = thread_config->thread_name;
-   DPRINTF(SFN " started\n", thread_name);
+   int thread_id = thread_config->thread_id;
+   component_set_thread_name(thread_name);
+   component_set_thread_id(thread_id);
+   DPRINTF(SFN "(%d) started\n", thread_name, thread_id);
 
    // initialize monitoring
    monitoring_t monitor;
@@ -224,13 +228,13 @@ oge_event_mirror_main(void *arg) {
 
    // register as event mirror and subscribe events
    if (local_ret) {
-      sge_mirror_initialize(evc, OBJ_STATE_SCHEDULER, &oge_event_mirror_event_update_func,
-                            &sge_mod_event_client, &sge_add_event_client, &sge_remove_event_client,
-                            &sge_handle_event_ack);
+      sge_mirror_initialize(evc, OBJ_STATE_READER, &oge_event_mirror_event_update_func, &sge_mod_event_client,
+                            &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack);
       evc->ec_register(evc, false, nullptr, &monitor);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
       DPRINTF("registered at event mirror\n");
 
+      // DS should be a copy of the master DS - wee need all events
       sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
    }
 
@@ -268,7 +272,6 @@ oge_event_mirror_main(void *arg) {
 
          // actions if events where processed
          if (handled_events == true) {
-
             thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
             sge_monitor_output(&monitor);
          }
@@ -292,6 +295,5 @@ oge_event_mirror_main(void *arg) {
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
    // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
-
    DRETURN(nullptr);
 }

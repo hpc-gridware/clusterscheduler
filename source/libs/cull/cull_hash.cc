@@ -746,7 +746,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    pos = lGetPosInDescr(descr, nm);
 
    if (pos < 0) {
-      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(0);
    }
 

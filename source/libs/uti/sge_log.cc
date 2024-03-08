@@ -59,7 +59,31 @@ typedef struct {
 static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1, 1};
 
 static void
-sge_do_log(u_long32 prog_number, const char *prog_name, const char *unqualified_hostname, int level, const char *msg);
+sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
+           const char *unqualified_hostname, int level, const char *msg) {
+   if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {
+      int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
+      if (fd  >= 0) {
+         // initialize static dstring
+         char msg2log[4 * MAX_STRING_SIZE];
+         dstring msg_string;
+         sge_dstring_init(&msg_string, msg2log, sizeof(msg2log));
+
+         // write log message to dstring
+         append_time((time_t) sge_get_gmt(), &msg_string, false);
+         sge_dstring_sprintf_append(&msg_string, "|%12.12s|%02d|%s|%c|%s\n", prog_or_thread_name, thread_id, unqualified_hostname, level, msg);
+
+         // write the buffer to file
+         ssize_t len = strlen(msg2log);
+         if (write(fd, msg2log, len) != len) {
+
+            // write to stderr if logging failed
+            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_string));
+         }
+         close(fd);
+      }
+   }
+}
 
 /****** uti/log/log_state_get_log_level() ******************************************
 *  NAME
@@ -266,13 +290,7 @@ void log_state_set_log_as_admin_user(int i) {
 void
 sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
    DENTER_(BASIS_LAYER);
-   u_long32 me = component_get_component_id();
-   const char *thread_name = component_get_thread_name();
-   const char *unqualified_hostname = component_get_unqualified_hostname();
-   bool is_daemonized = component_is_daemonized();
    char buf[128 * 4];
-   int level_char;
-   char level_string[32 * 4];
 
    /* Make sure to have at least a one byte logging string */
    if (!msg || msg[0] == '\0') {
@@ -291,6 +309,8 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
       return;
    }
 
+   int level_char;
+   char level_string[32 * 4];
    switch (log_level) {
       case LOG_PROF:
          strcpy(level_string, MSG_LOG_PROFILING);
@@ -326,35 +346,18 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
          break;
    }
 
-   /* avoid double output in debug mode */
+   // avoid double output in debug mode
+   bool is_daemonized = component_is_daemonized();
    if (!is_daemonized &&
        !rmon_condition(TOP_LAYER, INFOPRINT) && (log_state_get_log_verbose() || log_level <= LOG_WARNING)) {
       fprintf(stderr, "%s%s\n", level_string, msg);
    }
 
-   sge_do_log(me, thread_name, unqualified_hostname, level_char, msg);
+   // log into the log file
+   u_long32 me = component_get_component_id();
+   const char *thread_name = component_get_thread_name();
+   const int thread_id = component_get_thread_id();
+   const char *unqualified_hostname = component_get_unqualified_hostname();
+   sge_do_log(me, thread_name, thread_id, unqualified_hostname, level_char, msg);
 }
 
-static void
-sge_do_log(u_long32 prog_number, const char *prog_name, const char *unqualified_hostname, int level, const char *msg) {
-   if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {
-      int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
-      if (fd  >= 0) {
-         char msg2log[4 * MAX_STRING_SIZE];
-         dstring msg_string;
-
-         sge_dstring_init(&msg_string, msg2log, sizeof(msg2log));
-         append_time((time_t) sge_get_gmt(), &msg_string, false);
-         sge_dstring_sprintf_append(&msg_string, "|%6.6s|%s|%c|%s\n", prog_name, unqualified_hostname, level, msg);
-
-         ssize_t len = strlen(msg2log);
-         if (write(fd, msg2log, len) != len) {
-            /* we are in error logging here - the only chance to log this problem
-             * might be to write it to stderr
-             */
-            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_string));
-         }
-         close(fd);
-      }
-   }
-}

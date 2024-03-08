@@ -52,6 +52,7 @@
 #include "evm/sge_event_master.h"
 
 #include "basis_types.h"
+#include "oge_thread_event_mirror.h"
 #include "sge_thread_main.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
@@ -261,7 +262,8 @@ int main(int argc, char *argv[]) {
     */
    sge_signaler_initialize();
    sge_event_master_initialize();
-#if OGE_ENABLE_MIRROR_THREADS
+#define OGE_ENABLE_MIRROR_THREADS
+#if defined(OGE_ENABLE_MIRROR_THREADS)
    oge_event_mirror_initialize();
 #endif
    sge_timer_initialize(&monitor);
@@ -284,7 +286,7 @@ int main(int argc, char *argv[]) {
    sge_listener_terminate();
    sge_worker_terminate();
    sge_timer_terminate();
-#if OGE_ENABLE_MIRROR_THREADS
+#if defined (OGE_ENABLE_MIRROR_THREADS)
    oge_event_mirror_terminate();
 #endif
    sge_event_master_terminate();

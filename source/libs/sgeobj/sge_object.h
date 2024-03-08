@@ -166,10 +166,13 @@ typedef enum {
    SGE_TYPE_NONE            /* this must the last entry */
 } sge_object_type;
 
+// array index in ds array
 enum obj_state_ds {
-   OBJ_STATE_GLOBAL = 0,      // array index in ds array
-   OBJ_STATE_SCHEDULER = 1,   // array index in ds array
-   OBJ_STATE_MAX = OBJ_STATE_SCHEDULER,
+   OBJ_STATE_GLOBAL = 0,   // RW-QS (used by worker-RW threads to handle RW requests)
+   OBJ_STATE_SCHEDULER,    // Scheduler Snapshot (used by main scheduler thread)
+   OBJ_STATE_LISTENER,     // Auth Snapshot (used by listener threads)
+   OBJ_STATE_READER,       // Reader Snapshot (used by worker-RO threads)
+   OBJ_STATE_MAX = OBJ_STATE_READER,
 };
 
 /* Datastructure for internal storage of object/message related information */
