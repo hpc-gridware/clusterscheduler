@@ -260,7 +260,7 @@ static mirror_description *mir_get_mirror_base()
 *     Eventclient/-ID-numbers
 *******************************************************************************/
 sge_mirror_error
-sge_mirror_initialize(sge_evc_class_t *evc, obj_state_ds ds_id, event_client_update_func_t update_func,
+sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func,
                       evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
                       evm_ack_func_t ack_func)
 {
@@ -274,7 +274,6 @@ sge_mirror_initialize(sge_evc_class_t *evc, obj_state_ds ds_id, event_client_upd
    evc->ec_local.init = true;
 
    pthread_once(&mir_once_control, mir_mt_init);
-   obj_init(ds_id);
 
    /* subscribe some events with default handling */
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -1066,7 +1065,7 @@ const char *sge_mirror_strerror(sge_mirror_error num)
 
 static void sge_mirror_free_list(sge_object_type type)
 {
-   object_type_free_master_list(type);
+   oge::DataStore::free_master_list(type);
 }
 
 static sge_mirror_error
@@ -1527,7 +1526,7 @@ generic_update_master_list( [[maybe_unused]] sge_evc_class_t *evc, sge_object_ty
                            sge_event_action action, lListElem *event,  [[maybe_unused]] void *client_data)
 {
    DENTER(TOP_LAYER);
-   lList **list = object_type_get_master_list_rw(type);
+   lList **list = oge::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
    int key_nm = object_type_get_key_nm(type);
    const char *key = lGetString(event, ET_strkey);
@@ -1761,7 +1760,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
    DENTER(TOP_LAYER);
-   lList **list = object_type_get_master_list_rw(type);
+   lList **list = oge::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
    int key_nm = object_type_get_key_nm(type);
    const char *key = lGetString(event, ET_strkey);

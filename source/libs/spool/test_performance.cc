@@ -100,7 +100,7 @@ static bool generate_jobs(int num)
       lSetString(job, JB_group, random_string(10));
       lSetString(job, JB_account, random_string(20));
       lSetString(job, JB_cwd, random_string(100));
-      lAppendElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), job);
+      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), job);
 
       if ((i % 10) == 0) {
          int j;
@@ -121,7 +121,7 @@ static bool update_jobs(void)
    lListElem *job;
    int num_total = 0;
 
-   for_each_rw(job, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+   for_each_rw(job, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
       lSetString(job, JB_project, random_string(20));
       num_total++;
    }
@@ -142,9 +142,9 @@ static bool spool_data(void)
 
    context = spool_get_default_context();
 
-   fprintf(stdout, "spooling " sge_uu32 " jobs\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)));
+   fprintf(stdout, "spooling " sge_uu32 " jobs\n", lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)));
 
-   for_each_rw(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_rw(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
          key = job_get_key(lGetUlong(job, JB_job_number), 0, nullptr, &key_ds);
@@ -176,7 +176,7 @@ static bool read_spooled_data()
    context = spool_get_default_context();
 
    /* jobs */
-   spool_read_list(&answer_list, context, object_type_get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
+   spool_read_list(&answer_list, context, oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
    answer_list_output(&answer_list);
 
    return true;
@@ -193,7 +193,7 @@ static bool delete_spooled_data()
    context = spool_get_default_context();
 
    /* jobs */
-   for_each_rw(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_rw(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       snprintf(key, sizeof(key),  sge_U32CFormat".0", sge_u32c(lGetUlong(job, JB_job_number)));
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key, true);
       answer_list_output(&answer_list);
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   *object_type_get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
 
 #define defstring(str) #str
 
@@ -339,8 +339,8 @@ int main(int argc, char *argv[])
    prof_reset(SGE_PROF_SPOOLINGIO, nullptr);
 
    clear_caches();
-   lFreeList(object_type_get_master_list_rw(SGE_TYPE_JOB));
-   *object_type_get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   lFreeList(oge::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    read_spooled_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
    spool_shutdown_context(&answer_list, spooling_context);
    spool_startup_context(&answer_list, spooling_context, true);
 
-   lFreeList(object_type_get_master_list_rw(SGE_TYPE_JOB));
+   lFreeList(oge::DataStore::get_master_list_rw(SGE_TYPE_JOB));
 
    spool_shutdown_context(&answer_list, spooling_context);
    answer_list_output(&answer_list);

@@ -477,6 +477,9 @@ int main(int argc, char *argv[])
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QEVENT);
 
+   // select primary DS
+   oge::DataStore::select_active_ds(oge::DataStore::Id::GLOBAL);
+
    /* setup event client */
    gdi_setup = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
    if (gdi_setup != AE_OK) {
@@ -512,7 +515,7 @@ int main(int argc, char *argv[])
       lCondition *where =nullptr;
       lEnumeration *what = nullptr;
 
-      sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_ACK);
 
       /* put out information about -trigger option */
@@ -632,7 +635,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    
    DENTER(TOP_LAYER);
 
-   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
 
 #ifdef QEVENT_SHOW_ALL
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
@@ -713,7 +716,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
    
    DENTER(TOP_LAYER);
 
-   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, print_event, nullptr, nullptr, nullptr, nullptr);
 

@@ -37,6 +37,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -53,7 +54,6 @@
 #include "evm/sge_event_master.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
-#include "sge_pe_qmaster.h"
 #include "reschedule.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_persistence_qmaster.h"
@@ -168,7 +168,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
    char job_id_buffer[MAX_STRING_SIZE];
    dstring job_id_dstring;
    const char *job_id_string;
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -208,7 +208,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
       jataskid = lGetUlong(jr, JR_ja_task_number);
       rstate = lGetUlong(jr, JR_state);
 
-      jep = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
+      jep = lGetElemUlongRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
       if (jep != nullptr) {
          jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
@@ -502,7 +502,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                    */
                   lListElem *host;
 
-                  host = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), rhost);
+                  host = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost);
                   update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 
                   DPRINTF("RU: CLEANUP FOR SLAVE JOB " SFN " on host " SFN "\n", job_id_string, rhost);

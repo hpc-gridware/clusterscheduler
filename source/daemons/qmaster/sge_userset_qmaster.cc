@@ -141,7 +141,7 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
 static void
 sge_change_queue_version_acl(const char *acl_name) {
    const lListElem *cqueue;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -428,10 +428,10 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    const lListElem *cqueue;
    lList *user_lists = nullptr;
    const lListElem *cl;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
 
    /*
@@ -542,10 +542,10 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 static bool userset_still_used(const char *u) {
    const lListElem *qc, *cq, *hep, *rqs;
    dstring ds = DSTRING_INIT;
-   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    sge_dstring_sprintf(&ds, "@%s", u);
 
@@ -598,7 +598,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
    const lListElem *ep;
    const char *u;
    lListElem *acl;
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
 
    DENTER(TOP_LAYER);
 
@@ -665,9 +665,9 @@ int userset_mod(lList **alpp, lListElem *new_userset,
                 const char *rhost, gdi_object_t *object, int sub_command,
                 monitoring_t *monitor) {
    const char *userset_name;
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -855,7 +855,7 @@ int userset_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lLis
    const char *userset_name;
    dstring ds = DSTRING_INIT;
    const lListElem *rqs;
-   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
+   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 

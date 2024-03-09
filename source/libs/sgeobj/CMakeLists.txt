@@ -3,6 +3,7 @@ set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
       config.cc
       cull_parse_util.cc
+      oge_DataStore.cc
       parse.cc
       sge_ack.cc
       sge_advance_reservation.cc
@@ -61,7 +62,7 @@ set(LIBRARY_SOURCES
       sge_utility.cc
       sge_var.cc
       str2nm_converter.cc
-      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/RequestLimits.cc
+      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/oge_RequestLimits.cc
       cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 

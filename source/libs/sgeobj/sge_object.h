@@ -56,8 +56,7 @@
 *     sgeobj/Object/object_get_name_prefix()
 *     sgeobj/Object/object_append_field_to_dstring()
 *     sgeobj/Object/object_parse_field_from_string()
-*     sgeobj/Object/object_type_get_master_list()
-*     sgeobj/Object/object_type_free_master_list()
+*     sgeobj/Object/oge::DataStore::get_master_list()
 *     sgeobj/Object/object_type_get_name()
 *     sgeobj/Object/object_type_get_descr()
 *     sgeobj/Object/object_type_get_key_nm()
@@ -166,14 +165,6 @@ typedef enum {
    SGE_TYPE_NONE            /* this must the last entry */
 } sge_object_type;
 
-// array index in ds array
-enum obj_state_ds {
-   OBJ_STATE_GLOBAL = 0,   // RW-QS (used by worker-RW threads to handle RW requests)
-   OBJ_STATE_SCHEDULER,    // Scheduler Snapshot (used by main scheduler thread)
-   OBJ_STATE_LISTENER,     // Auth Snapshot (used by listener threads)
-   OBJ_STATE_READER,       // Reader Snapshot (used by worker-RO threads)
-   OBJ_STATE_MAX = OBJ_STATE_READER,
-};
 
 /* Datastructure for internal storage of object/message related information */
 typedef struct {
@@ -181,24 +172,6 @@ typedef struct {
    lDescr *descr;                         /* descriptor, e.g. JB_Type       */
    const int key_nm;                      /* nm of key attribute        */
 } object_description;
-
-void
-obj_init(obj_state_ds ds_id);
-
-lList **
-object_type_get_master_list_rw(sge_object_type type);
-
-const lList **
-object_type_get_master_list(sge_object_type type);
-
-lListElem *
-object_type_get_master_str_elem_rw(sge_object_type type, int key_nm, const char *key);
-
-const lListElem *
-object_type_get_master_str_elem(sge_object_type type, int key_nm, const char *key);
-
-bool
-object_type_free_master_list(sge_object_type type);
 
 const char *
 object_type_get_name(sge_object_type type);

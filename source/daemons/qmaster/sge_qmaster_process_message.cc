@@ -438,7 +438,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
       case ACK_SIGJOB: {
          lListElem *jep = nullptr;
          lListElem *jatep = nullptr;
-         const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
@@ -472,7 +472,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          const lListElem *cqueue = nullptr;
          dstring cqueue_name = DSTRING_INIT;
          dstring host_domain = DSTRING_INIT;
-         const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 

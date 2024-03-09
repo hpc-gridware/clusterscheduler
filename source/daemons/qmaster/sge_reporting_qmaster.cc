@@ -49,10 +49,10 @@
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
@@ -565,9 +565,9 @@ reporting_create_acct_record(lList **answer_list, lListElem *job_report, lListEl
    bool do_reporting = mconf_get_do_reporting();
    bool do_accounting = mconf_get_do_accounting();
    const char *acct_file = bootstrap_get_acct_file();
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 
@@ -1003,10 +1003,10 @@ reporting_create_host_consumable_record(lList **answer_list,
 static bool
 reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor) {
    bool ret = true;
-   const lList *master_stree_list = *object_type_get_master_list(SGE_TYPE_SHARETREE);
-   const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_stree_list = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+   const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER);
 

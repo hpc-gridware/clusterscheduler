@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdlib>
-#include <pthread.h>
 #include <cstdio>
 #include <cstring>
 
@@ -46,6 +45,7 @@
 #   include "cull/cull_observe.h"
 #endif
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance_type.h"
@@ -69,6 +69,7 @@
 #define OBJECT_LAYER BASIS_LAYER
 
 /* One entry per event type */
+// TODO: OGE-254 move object_base into cull namespace
 static object_description object_base[SGE_TYPE_ALL] = {
         /* list               name                 descr      key */
         {"ADMINHOST",         AH_Type,   AH_name},
@@ -104,77 +105,7 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"JOBSCRIPT",         STU_Type,  STU_name},
 };
 
-// the key to get thread local memory
-static pthread_key_t obj_state_key;
-static pthread_once_t obj_once = PTHREAD_ONCE_INIT;
 
-// thread local storage
-struct obj_thread_local_t {
-   obj_state_ds ds_id; // default data store ID that should be used
-};
-
-// data store
-struct obj_data_store_t {
-   lList *master_list[SGE_TYPE_ALL]; // master list
-};
-
-// thread shared storage data type
-struct obj_thread_shared_t {
-   obj_data_store_t data_store[OBJ_STATE_MAX+1]; // all data stores that are available
-};
-
-// thread shared storage
-obj_thread_shared_t obj_thread_shared{};
-
-static void
-obj_state_destroy(void *st) {
-   auto *tlocal = (obj_thread_local_t *) st;
-   sge_free(&tlocal);
-}
-
-static void
-obj_thread_local_once_init() {
-   pthread_key_create(&obj_state_key, obj_state_destroy);
-
-   // initialize thread shared storage
-   for (int ds_id = OBJ_STATE_GLOBAL; ds_id <= OBJ_STATE_MAX; ds_id++) {
-      for (int list_id = 0; list_id < SGE_TYPE_ALL; list_id++) {
-         obj_thread_shared.data_store[ds_id].master_list[list_id] = nullptr;
-      }
-   }
-}
-
-static void obj_mt_init() {
-   pthread_once(&obj_once, obj_thread_local_once_init);
-}
-
-class ObjectThreadInit {
-public:
-   ObjectThreadInit() {
-      obj_mt_init();
-   }
-};
-
-// although not used the constructor call has the side effect to initialize the pthread_key => do not delete
-static ObjectThreadInit object_obj{};
-
-// initialize thread local storage so that a thread used the OBJ_STATE_GLOBAL ds is not changed later on
-static void
-obj_state_init(obj_thread_local_t *state) {
-   DENTER(TOP_LAYER);
-   state->ds_id = OBJ_STATE_GLOBAL;
-   DRETURN_VOID;
-}
-
-// set the main DS that should be used by the thread using this function
-void
-obj_init(obj_state_ds ds_id) {
-   DENTER(TOP_LAYER);
-   GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-   DPRINTF("thread will use data store %d\n", ds_id);
-   obj_state->ds_id = ds_id;
-   DRETURN_VOID;
-}
 
 /****** sgeobj/object/object_append_raw_field_to_dstring() *********************
 *  NAME
@@ -1026,123 +957,6 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 }
 
 
-/****** sgeobj/object/object_type_get_master_list() **************************
-*  NAME
-*     object_type_get_master_list() -- get master list for object type
-*
-*  SYNOPSIS
-*     lList** object_type_get_master_list(const sge_object_type type) 
-*
-*  FUNCTION
-*     Returns a pointer to the master list holding objects of the 
-*     given type.
-*
-*  INPUTS
-*     const sge_object_type type - the object type 
-*
-*  RESULT
-*     lList** - the corresponding master list, or nullptr, if the object
-*               type has no associated master list
-*
-*  EXAMPLE
-*     object_type_get_master_list(SGE_TYPE_JOB) will return a pointer 
-*     to the Master_Job_List.
-*
-*     object_type_get_master_list(SGE_TYPE_SHUTDOWN) will return nullptr,
-*     as this object type has no associated master list.
-*
-*  NOTES
-*
-*  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
-*     sgeobj/object/object_type_get_name()
-*     sgeobj/object/object_type_get_descr()
-*     sgeobj/object/object_type_get_key_nm()
-*******************************************************************************/
-lList **object_type_get_master_list_rw(sge_object_type type) {
-   lList **ret = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-
-      DPRINTF("data store ID is %d\n", obj_state->ds_id);
-      DPRINTF("master list type is %d\n", type);
-      DPRINTF("master list is %p\n", obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
-
-      ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
-
-#ifdef OBSERVE
-         if (*obj_state->object_base[type].list) {
-            lObserveChangeListType(*obj_state->object_base[type].list, true, obj_state->object_base[type].type_name);
-         }
-#endif
-
-   } else {
-      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
-   }
-
-   DRETURN(ret);
-}
-
-const lList **object_type_get_master_list(sge_object_type type) {
-   return (const lList **) object_type_get_master_list_rw(type);
-}
-
-lListElem *object_type_get_master_str_elem_rw(sge_object_type type, int key_nm, const char *key) {
-   lList **master_list = object_type_get_master_list_rw(type);
-   if (master_list == nullptr) {
-      return nullptr;
-   }
-   return lGetElemStrRW(*master_list, key_nm, key);
-}
-
-const lListElem *object_type_get_master_str_elem(sge_object_type type, int key_nm, const char *key) {
-   return object_type_get_master_str_elem_rw(type, key_nm, key);
-}
-
-/****** sgeobj/object/object_type_free_master_list() ***************************
-*  NAME
-*     object_type_free_master_list() -- free the master list 
-*
-*  SYNOPSIS
-*     bool 
-*     object_type_free_master_list(const sge_object_type type) 
-*
-*  FUNCTION
-*     Frees the masterlist for a certain type of objects.
-*
-*  INPUTS
-*     const sge_object_type type - the object type
-*
-*  RESULT
-*     bool - true, if the list existed and could be freed, else false
-*
-*  NOTES
-*
-*  SEE ALSO
-*     sgeobj/object/--object-Typedefs
-*******************************************************************************/
-bool object_type_free_master_list(sge_object_type type) {
-   bool ret = false;
-
-   DENTER(OBJECT_LAYER);
-
-   if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-
-      if (obj_thread_shared.data_store[obj_state->ds_id].master_list[type]) {
-         lFreeList(&obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
-         ret = true;
-      }
-   } else {
-      ERROR(MSG_OBJECT_INVALID_OBJECT_TYPE_SI, __func__, type);
-   }
-
-   DRETURN(ret);
-}
-
 /****** sgeobj/object/object_type_get_name() *********************************
 *  NAME
 *     object_type_get_name() -- get a printable name for event type
@@ -1163,7 +977,7 @@ bool object_type_free_master_list(sge_object_type type) {
 *     object_type_get_name(SGE_TYPE_JOB) will return "JOB"
 *
 *  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
+*     sgeobj/object/oge::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1253,7 +1067,7 @@ sge_object_type object_name_get_type(const char *name) {
 *     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
 *
 *  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
+*     sgeobj/object/oge::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1294,7 +1108,7 @@ const lDescr *object_type_get_descr(sge_object_type type) {
 *     object_type_get_key_nm(SGE_TYPE_SHUTDOWN) will return -1
 *
 *  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
+*     sgeobj/object/oge::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_descr()
 *******************************************************************************/
@@ -2578,7 +2392,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
    if (range_list_get_number_of_ids(pe_range) > 1) {
-      const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+      const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);

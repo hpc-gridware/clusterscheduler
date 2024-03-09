@@ -427,7 +427,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
       lListElem *old_ep = sconf_get_config();
       const char *new_load_formula = lGetString(new_ep, SC_load_formula);
       lList *alpp = nullptr;
-      const lList *master_centry_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
+      const lList *master_centry_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
 
       if (master_centry_list != nullptr &&
           !validate_load_formula(new_load_formula, &alpp, master_centry_list, SGE_ATTR_LOAD_FORMULA)) {
@@ -490,7 +490,7 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    p = lGetString(event, ET_strkey);
    new_ep = lFirst(lGetList(event, ET_new_version));
-   old_ep = prj_list_locate(*object_type_get_master_list(SGE_TYPE_PROJECT), p);
+   old_ep = prj_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
 
    switch (action) {
       case SGE_EMA_ADD:
@@ -548,7 +548,7 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    if (action == SGE_EMA_DEL || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job = lGetElemUlongRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
@@ -594,7 +594,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
 
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job = lGetElemUlongRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
@@ -607,16 +607,16 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
    switch (action) {
       case SGE_EMA_LIST:
          set_rebuild_categories(true);
-         sge_do_priority(*object_type_get_master_list_rw(SGE_TYPE_JOB), nullptr); /* recompute the priorities */
+         sge_do_priority(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), nullptr); /* recompute the priorities */
          break;
 
       case SGE_EMA_ADD: {
          u_long32 start, end, step;
 
          /* add job category */
-         sge_add_job_category(job, *object_type_get_master_list(SGE_TYPE_USERSET),
-                              *object_type_get_master_list(SGE_TYPE_PROJECT),
-                              *object_type_get_master_list(SGE_TYPE_RQS));
+         sge_add_job_category(job, *oge::DataStore::get_master_list(SGE_TYPE_USERSET),
+                              *oge::DataStore::get_master_list(SGE_TYPE_PROJECT),
+                              *oge::DataStore::get_master_list(SGE_TYPE_RQS));
 
          job_get_submit_task_ids(job, &start, &end, &step);
 
@@ -638,9 +638,9 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                */
 
                sge_add_job_category(job,
-                                    *object_type_get_master_list(SGE_TYPE_USERSET),
-                                    *object_type_get_master_list(SGE_TYPE_PROJECT),
-                                    *object_type_get_master_list(SGE_TYPE_RQS));
+                                    *oge::DataStore::get_master_list(SGE_TYPE_USERSET),
+                                    *oge::DataStore::get_master_list(SGE_TYPE_PROJECT),
+                                    *oge::DataStore::get_master_list(SGE_TYPE_RQS));
                break;
 
             case sgeE_JOB_FINAL_USAGE: {
@@ -697,7 +697,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
       DPRINTF("callback processing ja_task event after default rule SGE_EMA_DEL\n");
 
       job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job = lGetElemUlong(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == nullptr) {
          dstring id_dstring = DSTRING_INIT;
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
@@ -744,7 +744,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
 
    u = lGetString(event, ET_strkey);
    new_ep = lFirst(lGetList(event, ET_new_version));
-   old_ep = userset_list_locate(*object_type_get_master_list(SGE_TYPE_USERSET), u);
+   old_ep = userset_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_USERSET), u);
 
    switch (action) {
       case SGE_EMA_ADD:

@@ -35,6 +35,7 @@
 
 #include "gdi/sge_gdi.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_event.h"
 
@@ -166,9 +167,8 @@ typedef enum {
 
 /* Initialization - Shutdown */
 sge_mirror_error 
-sge_mirror_initialize(sge_evc_class_t *evc, obj_state_ds ds_id, event_client_update_func_t update_func,
-                      evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
-                      evm_ack_func_t ack_func);
+sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func, evm_mod_func_t mod_func,
+                      evm_add_func_t add_func, evm_remove_func_t remove_func, evm_ack_func_t ack_func);
 
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
 

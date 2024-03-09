@@ -37,7 +37,6 @@
 #include <cfloat>
 
 #include "uti/sge_arch.h"
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -50,9 +49,9 @@
 
 #include "comm/commlib.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_pe.h"
@@ -1143,7 +1142,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each_ep(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = nullptr;

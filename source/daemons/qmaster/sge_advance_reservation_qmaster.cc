@@ -120,7 +120,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   lList *ar_master_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
+   lList *ar_master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
    next_ar = lFirstRW(ar_master_list);
 
@@ -218,13 +218,13 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -479,7 +479,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    dstring buffer = DSTRING_INIT;
    lCondition *ar_where = nullptr;
    u_long32 now;
-   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -851,7 +851,7 @@ static u_long32
 guess_highest_ar_id() {
    const lListElem *ar;
    u_long32 maxid = 0;
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -915,7 +915,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
     */
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   lList *master_ar_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
+   lList *master_ar_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
    if (!(ar = ar_list_locate(master_ar_list, ar_id))) {
       ERROR(MSG_EVE_TE4AR_U, sge_u32c(ar_id));
@@ -1021,16 +1021,16 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
    int i = 0;
    lListElem *dummy_job = lCreateElem(JB_Type);
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_cal_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_cal_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    /* These lists must be copied */
-   lList *master_pe_list = lCopyList("", *object_type_get_master_list(SGE_TYPE_PE));
-   lList *master_exechost_list = lCopyList("", *object_type_get_master_list(SGE_TYPE_EXECHOST));
+   lList *master_pe_list = lCopyList("", *oge::DataStore::get_master_list(SGE_TYPE_PE));
+   lList *master_exechost_list = lCopyList("", *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST));
 
    dispatch_t result = DISPATCH_NEVER_CAT;
 
@@ -1273,10 +1273,10 @@ ar_do_reservation(lListElem *ar, bool incslots) {
    const char *granted_pe = lGetString(ar, AR_granted_pe);
    u_long32 start_time = lGetUlong(ar, AR_start_time);
    u_long32 duration = lGetUlong(ar, AR_duration);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
    bool is_master_task = true;
 
    DENTER(TOP_LAYER);
@@ -1568,8 +1568,8 @@ void
 ar_initialize_reserved_queue_list(lListElem *ar) {
    const lListElem *gep;
    const lList *gdil = lGetList(ar, AR_granted_slots);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    dstring buffer = DSTRING_INIT;
    bool is_master_queue = true;
 
@@ -1772,7 +1772,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   nextjep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
+   nextjep = lFirstRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB));
    while ((jep = nextjep)) {
       u_long32 task_number;
       u_long32 start = MIN(job_get_smallest_unenrolled_task_id(jep), job_get_smallest_enrolled_task_id(jep));

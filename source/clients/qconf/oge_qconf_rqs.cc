@@ -38,6 +38,7 @@
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_answer.h"
 
@@ -481,7 +482,7 @@ bool
 rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_command)
 {
    bool ret = false;
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
    
    DENTER(TOP_LAYER);
 

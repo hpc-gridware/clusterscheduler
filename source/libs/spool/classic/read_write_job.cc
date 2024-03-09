@@ -54,6 +54,7 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/oge_DataStore.h"
 
 #include "spool/sge_dirent.h"
 
@@ -345,7 +346,7 @@ int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
       start = sge_get_gmt();
    }
 
-   if (job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), flags)) {
+   if (job_has_to_spool_one_file(job, *oge::DataStore::get_master_list(SGE_TYPE_PE), flags)) {
       ret = job_write_as_single_file(job, ja_taskid, flags); 
    } else {
       if (!(flags & SPOOL_ONLY_JATASK) && !(flags & SPOOL_ONLY_PETASK)) {
@@ -431,7 +432,7 @@ static int job_write_ja_task_part(lListElem *job, u_long32 ja_task_id,
 
       if ((flags & SPOOL_WITHIN_EXECD) ||
          job_is_enrolled(job, lGetUlong(ja_task, JAT_task_number))) {
-         if (job_might_be_tight_parallel(job, *object_type_get_master_list(SGE_TYPE_PE))) {
+         if (job_might_be_tight_parallel(job, *oge::DataStore::get_master_list(SGE_TYPE_PE))) {
             flags = (sge_spool_flags_t)((int)flags | SPOOL_HANDLE_PARALLEL_TASKS);
          }
 
@@ -600,8 +601,8 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
    int handle_as_zombie = flags & SPOOL_HANDLE_AS_ZOMBIE;
    int one_file;
    const lList *master_list = handle_as_zombie ? 
-                        *object_type_get_master_list(SGE_TYPE_ZOMBIE) : 
-                        *object_type_get_master_list(SGE_TYPE_JOB);
+                        *oge::DataStore::get_master_list(SGE_TYPE_ZOMBIE) :
+                        *oge::DataStore::get_master_list(SGE_TYPE_JOB);
    lListElem *job = lGetElemUlongRW(master_list, JB_job_number, jobid);
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
@@ -611,7 +612,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
 
    sge_dstring_init(&error_msg, error_msg_buffer, sizeof(error_msg_buffer));
 
-   one_file = job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), flags);
+   one_file = job_has_to_spool_one_file(job, *oge::DataStore::get_master_list(SGE_TYPE_PE), flags);
    if (ja_taskid != 0 && pe_task_id != nullptr && !one_file) {
        char pe_task_spool_file[SGE_PATH_MAX];
 
@@ -740,7 +741,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
    DSTRING_STATIC(dstr_path, SGE_PATH_MAX);
    const char *str_path;
    int handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
-   lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
+   lList *master_suser_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(TOP_LAYER); 
    sge_get_file_path(first_dir, sizeof(first_dir), JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, nullptr);
@@ -841,9 +842,9 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                sge_get_file_path(script_file, sizeof(script_file), JOB_SCRIPT_FILE, FORMAT_DEFAULT, flags, job_id, 0, nullptr);
                if (SGE_STAT(script_file, &stat_buffer)) {
                   ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, sge_u32c(lGetUlong(job, JB_job_number)));
-                  job_list_add_job(object_type_get_master_list_rw(SGE_TYPE_JOB), "job list", job, 0);
+                  job_list_add_job(oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list", job, 0);
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
-                  lRemoveElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), &job);
+                  lRemoveElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), &job);
                   continue;
                }
             }  
@@ -866,7 +867,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
             job_list_add_job(job_list, list_name, job, 0);
             
             if (!handle_as_zombie) {
-               job_list_register_new_job(*object_type_get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+               job_list_register_new_job(*oge::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
                suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
             }
          }

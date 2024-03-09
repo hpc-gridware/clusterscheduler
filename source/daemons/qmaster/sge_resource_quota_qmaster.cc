@@ -125,7 +125,7 @@ rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *r
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
    DENTER(TOP_LAYER);
 
@@ -383,10 +383,10 @@ rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost)
 static bool
 rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    bool ret = true;
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -728,8 +728,8 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 static void
 rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs) {
    lList *old_lp = nullptr, *new_lp = nullptr;
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER);
 

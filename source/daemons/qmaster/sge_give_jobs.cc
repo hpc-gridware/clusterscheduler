@@ -257,8 +257,8 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, const lListElem *pe, monitorin
    bool is_pe_jobs = false;
    lDescr *rdp = nullptr;
    lEnumeration *what;
-   const lList *master_centry_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -384,7 +384,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
    lListElem *jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
    int ret = 0;
    int failed = CL_RETVAL_OK;
-   lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    const char *sge_root = bootstrap_get_sge_root();
    bool simulate_execd = mconf_get_simulate_execds();
@@ -489,8 +489,8 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = nullptr;
    lEnumeration *what;
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -659,10 +659,10 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    time_t now;
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
-   lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   lList **master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -834,7 +834,7 @@ trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 ja_task_
 void
 sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *dep;
-   lList *master_zombie_list = *object_type_get_master_list_rw(SGE_TYPE_ZOMBIE);
+   lList *master_zombie_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
    const u_long32 zombie_count = mconf_get_zombie_jobs();
 
    DENTER(TOP_LAYER);
@@ -906,12 +906,12 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
    lListElem *rqs = nullptr;
    lListElem *ep = nullptr;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -931,7 +931,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    switch (mode) {
       case COMMIT_ST_SENT: {
          bool master_task = true;
-         const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+         const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
          lSetUlong(jatep, JAT_state, JRUNNING);
          lSetUlong(jatep, JAT_status, JTRANSFERING);
@@ -1075,7 +1075,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          /* add a reschedule unknown list entry to all slave
             hosts where a part of that job ran */
          {
-            const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+            const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
             const char *pe_name = lGetString(jep, JB_pe);
 
             if (pe_name) {
@@ -1361,7 +1361,7 @@ release_successor_jobs(const lListElem *jep) {
    const lListElem *jid;
    lListElem *suc_jep;
    u_long32 job_ident;
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1396,7 +1396,7 @@ release_successor_jobs_ad(const lListElem *jep) {
    const lListElem *jid;
    lListElem *suc_jep;
    u_long32 job_ident;
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1438,7 +1438,7 @@ release_successor_jobs_ad(const lListElem *jep) {
 static void
 release_successor_tasks_ad(lListElem *jep, u_long32 task_id) {
    const lListElem *jid;
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1499,14 +1499,14 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    const lListElem *ep;
    lList *answer_list = nullptr;
    u_long32 now;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
    lListElem *rqs = nullptr;
    lListElem *global_host_ep = nullptr;
    bool master_task = true;
@@ -1642,7 +1642,7 @@ static void
 reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name) {
    DENTER(BASIS_LAYER);
    const char *s;
-   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    const lListElem *res = lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, rlimit_name);
 
    if ((res != nullptr) && (s = lGetString(res, CE_stringval))) {
@@ -1673,8 +1673,8 @@ static int
 sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *ja_task, int spool_job, int no_events) {
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    int remove_job = (!ja_task || job_get_ja_tasks(job) == 1);
-   const lList *master_suser_list = *object_type_get_master_list(SGE_TYPE_SUSER);
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_suser_list = *oge::DataStore::get_master_list(SGE_TYPE_SUSER);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1780,7 +1780,7 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    u_long32 job_id = lGetUlong(job, JB_job_number);
    int is_defined;
-   lList **master_zombie_list = object_type_get_master_list_rw(SGE_TYPE_ZOMBIE);
+   lList **master_zombie_list = oge::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
 
    DENTER(TOP_LAYER);
 
@@ -1917,7 +1917,7 @@ setCheckpointObj(lListElem *job) {
    lListElem *tmp_ckpt = nullptr;
    const char *ckpt_name = nullptr;
    int ret = 0;
-   const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
+   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
 
    DENTER(TOP_LAYER);
 
@@ -1944,7 +1944,7 @@ bool
 gdil_del_all_orphaned(const lList *gdil_list, lList **alpp) {
    bool ret = true;
    const lListElem *gdil_ep;
-   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    dstring cqueue_name = DSTRING_INIT;
    dstring host_name = DSTRING_INIT;

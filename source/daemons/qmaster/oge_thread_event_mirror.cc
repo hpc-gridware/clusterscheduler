@@ -221,6 +221,9 @@ oge_event_mirror_main(void *arg) {
    prof_set_level_name(SGE_PROF_CUSTOM2, "mirror", nullptr);
    DPRINTF("set profiling levels\n");
 
+   // this thread will use the READER data store
+   oge::DataStore::select_active_ds(oge::DataStore::Id::READER);
+
    // prepare as an event client/mirror
    sge_evc_class_t *evc = nullptr;
    bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, thread_name);
@@ -228,7 +231,7 @@ oge_event_mirror_main(void *arg) {
 
    // register as event mirror and subscribe events
    if (local_ret) {
-      sge_mirror_initialize(evc, OBJ_STATE_READER, &oge_event_mirror_event_update_func, &sge_mod_event_client,
+      sge_mirror_initialize(evc, &oge_event_mirror_event_update_func, &sge_mod_event_client,
                             &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack);
       evc->ec_register(evc, false, nullptr, &monitor);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);

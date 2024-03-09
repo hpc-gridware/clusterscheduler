@@ -35,6 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_qinstance.h"
@@ -83,9 +84,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    u_long32 failed, general_failure;
    lList *saved_gdil;
 
-   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
-   lList *master_ar_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
-   lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_ar_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
+   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 
@@ -292,7 +293,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
             found_host = true;
 
-            for_each_ep(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+            for_each_ep(cqueue, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
                const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, host);
 

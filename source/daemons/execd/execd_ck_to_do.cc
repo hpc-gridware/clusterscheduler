@@ -45,6 +45,7 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
@@ -113,7 +114,7 @@ static void notify_ptf()
    if (waiting4osjid) {
       waiting4osjid = 0;
 
-      for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          lListElem* jatep;
          
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
@@ -183,7 +184,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(jep, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
 
       for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
@@ -405,7 +406,7 @@ int do_ck_to_do(bool is_qmaster_down) {
     * disabled by the execd_param PDC_INTERVAL set to NEVER. 
     */
    pdc_interval = mconf_get_pdc_interval();
-   if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) > 0 &&
+   if (lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 &&
        pdc_interval != U_LONG32_MAX &&
        next_pdc <= now ) {
       next_pdc = now + pdc_interval;
@@ -435,7 +436,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    if (next_signal <= now) {
       next_signal = now + SIGNAL_RESEND_INTERVAL;
       /* resend signals to shepherds */
-      for_each_rw (jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_rw (jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
             // don't update wallclock before job actually started or after it ended */
@@ -514,7 +515,7 @@ int do_ck_to_do(bool is_qmaster_down) {
 
    /* check for end of simulated jobs */
    if (mconf_get_simulate_jobs()) {
-      for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jatep, JAT_end_time) <= now) {
                lListElem *jr = nullptr;
@@ -667,12 +668,12 @@ static int sge_start_jobs()
 
    DENTER(TOP_LAYER);
 
-   if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) == 0) {
+   if (lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
       DPRINTF("No jobs to start\n");
       DRETURN(0);
    }
 
-   for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+   for_each_rw(jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
       for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
          state_changed = exec_job_or_task(jep, jatep, nullptr);
 

@@ -36,6 +36,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
@@ -91,7 +92,7 @@ int do_get_new_conf(struct_msg_t *aMsg)
 
       sge_switch2start_user();
 
-      for_each_rw (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_rw (job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
          lListElem *master_queue;
 
          for_each_rw (jatask, lGetList(job, JB_ja_tasks)) {

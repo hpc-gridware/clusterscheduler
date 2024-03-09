@@ -39,6 +39,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_report.h"
@@ -152,7 +153,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
    this_seqno = lGetUlong(lFirst(report_list), REP_seqno);
 
    /* need exec host for all types of reports */
-   if (!(hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), rhost))) {
+   if (!(hep = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost))) {
       ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S, rhost);
       DRETURN_VOID;
    }
@@ -199,7 +200,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
                sge_update_load_values(rhost, lGetListRW(report, REP_list));
 
                if (mconf_get_simulate_execds()) {
-                  const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+                  const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
                   const lListElem *shep;
                   const lListElem *simhostElem = nullptr;
 

@@ -86,6 +86,9 @@ int main()
 
    sge_setup_sig_handlers(QEVENT);
 
+   // this thread will use the GLOBAL data store
+   oge::DataStore::select_active_ds(oge::DataStore::Id::GLOBAL);
+
    /* setup event client */
    int cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
    if (cl_err != AE_OK) {
@@ -98,7 +101,7 @@ int main()
       sge_exit(1);
    }
 
-   sge_mirror_initialize(evc, OBJ_STATE_GLOBAL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
    
    while(!shut_me_down) {

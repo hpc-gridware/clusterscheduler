@@ -69,8 +69,8 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        monitoring_t *monitor) {
    int ret;
    const char *s, *pe_name;
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -253,9 +253,9 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   lList *master_pe_list = *object_type_get_master_list_rw(SGE_TYPE_PE);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   lList *master_pe_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -325,7 +325,7 @@ debit_all_jobs_from_pes(lList *pe_list) {
    const lListElem *jep;
    lListElem *pep;
    int slots;
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 

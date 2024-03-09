@@ -93,18 +93,18 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    DENTER(TOP_LAYER);
 
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-   const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
-   const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
-   lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   lList *master_suser_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);

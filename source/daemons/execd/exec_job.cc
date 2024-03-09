@@ -60,6 +60,7 @@
 
 #include "gdi/qm_name.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
@@ -236,7 +237,7 @@ static int addgrpid_already_in_use(long add_grp_id) {
    const lListElem *ja_task = nullptr;
    const lListElem *pe_task = nullptr;
 
-   for_each_ep(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          const char *id = lGetString(ja_task, JAT_osjobid);
          if (id != nullptr && atol(id) == add_grp_id) {

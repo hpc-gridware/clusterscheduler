@@ -79,10 +79,10 @@ bool check_attr_str_list_find_value(void)
       hgroup1 = hgroup_create(nullptr, "@A", hostref_list1);
       hgroup2 = hgroup_create(nullptr, "@B", hostref_list2);
       hgroup3 = hgroup_create(nullptr, "@C", hostref_list3);
-      *object_type_get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
-      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup1);
-      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup2);
-      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup3);
+      *oge::DataStore::get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
+      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup1);
+      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup2);
+      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup3);
    }
    return ret;
 }

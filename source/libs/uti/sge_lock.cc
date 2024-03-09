@@ -94,11 +94,17 @@ static double writer_count[NUM_OF_LOCK_TYPES] = {0.0, 0.0};
 *******************************************************************************/
 #ifdef SGE_USE_LOCK_FIFO
 static sge_fifo_rw_lock_t Global_Lock;
+static sge_fifo_rw_lock_t Scheduler_Lock;
+static sge_fifo_rw_lock_t Reader_All_Lock;
+static sge_fifo_rw_lock_t Reader_Auth_Lock;
 static sge_fifo_rw_lock_t Master_Conf_Lock;
 
 /* watch out. The order in this array has to be the same as in the sge_fifo_rw_lock_t type */
 static sge_fifo_rw_lock_t *SGE_RW_Locks[NUM_OF_LOCK_TYPES] = {
         &Global_Lock,
+        &Scheduler_Lock,
+        &Reader_All_Lock,
+        &Reader_Auth_Lock,
         &Master_Conf_Lock,
 };
 
@@ -116,8 +122,11 @@ static pthread_rwlock_t *SGE_RW_Locks[NUM_OF_LOCK_TYPES] = {
 
 /* 'locktype_names' has to be in sync with the definition of 'sge_locktype_t' */
 static const char *locktype_names[NUM_OF_LOCK_TYPES] = {
-        "global",          /* LOCK_GLOBAL */
-        "master_config",   /* LOCK_MASTER_CONF */
+        "global",          ///< LOCK_GLOBAL
+        "scheduler",       ///< LOCK_SCHEDULER
+        "reader_all",      ///< LOCK_READ_ALL_DS
+        "reader_auth",     ///< LOCK_READ_AUTH_DS
+        "master_config",   ///< LOCK_MASTER_CONF
 };
 
 static pthread_once_t lock_once = PTHREAD_ONCE_INIT;

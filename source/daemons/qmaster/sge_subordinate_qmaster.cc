@@ -36,6 +36,7 @@
 #include "uti/sge_sl.h"
 #include "uti/sge_string.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -137,7 +138,7 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, u_long32 j
    lListElem *jep = nullptr;
    lListElem *jatep = nullptr;
    u_long32 state = 0;
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -207,7 +208,7 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
    const char *node_host_name = nullptr;
    lListElem *cqueue = nullptr;
    lListElem *root_qinstance = nullptr;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -287,7 +288,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
    lListElem *qinstance = nullptr;
    lListElem *super_qinstance = nullptr;
    lListElem *so = nullptr;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -773,7 +774,7 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance, sge_sl_list_t **tree_
    const lList *so_list = nullptr;
    const lListElem *so = nullptr;
    lListElem *sub_qinstance = nullptr;
-   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    /* get all qinstances in the slotwise sos tree excluding the super qinstance
     * (i.e. the root node of the tree), it was already added in the iteration before.
@@ -845,7 +846,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
    /* Walk over job list and get the tasks that are running in the qinstances
     * of the slotwise sos tree. Store informations about these tasks in the tree list.
     */
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
    const lListElem *job = nullptr;
    u_long32 sum = 0;
 

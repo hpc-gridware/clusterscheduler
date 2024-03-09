@@ -427,7 +427,7 @@ check_config(lList **alpp, lListElem *conf) {
    const lListElem *ep;
    const char *name, *value;
    const char *conf_name;
-   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
 
    DENTER(TOP_LAYER);
 
@@ -545,7 +545,7 @@ check_config(lList **alpp, lListElem *conf) {
          }
 
          /* .. checking project names */
-         ok = (verify_project_list(alpp, tmp, *object_type_get_master_list(SGE_TYPE_PROJECT), name, "configuration",
+         ok = (verify_project_list(alpp, tmp, *oge::DataStore::get_master_list(SGE_TYPE_PROJECT), name, "configuration",
                                    conf_name) == STATUS_OK);
          lFreeList(&tmp);
          if (!ok) {
@@ -719,7 +719,7 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration) {
    lList *conf = nullptr;
-   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -738,7 +738,7 @@ sge_get_config_version_for_host(const char *aName) {
    u_long32 version = 0;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
-   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -780,7 +780,7 @@ sge_get_configuration_for_host(const char *aName) {
    lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
-   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -940,7 +940,7 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
    lListElem *elem = nullptr;
    u_long32 old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
-   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
+   lList *config_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -1002,7 +1002,7 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
 static int
 do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer) {
    lListElem *elem = nullptr;
-   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
+   lList *config_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -1022,7 +1022,7 @@ do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer) {
 static int
 remove_conf_by_name(char *aConfName) {
    lListElem *elem = nullptr;
-   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
+   lList *config_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 

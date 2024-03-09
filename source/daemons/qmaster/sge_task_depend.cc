@@ -34,6 +34,7 @@
 
 #include "uti/sge_rmon_macros.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
@@ -223,7 +224,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
    const lListElem *pre = nullptr;  /* JRE_Type */
    u_long32 hold_state, new_state;
    int Depend = 0;
-   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 

@@ -35,6 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -370,8 +371,8 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
    lListElem *ar = nullptr;
    u_long32 exit_status = 0;
    bool do_accounting_summary = false;
-   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 

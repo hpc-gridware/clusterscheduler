@@ -73,7 +73,7 @@ static bool add_job(int job_id)
    bool write_ok;
    lListElem *job;
    lList *answer_list = nullptr;
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    const char *key;
    dstring key_dstring;
@@ -109,7 +109,7 @@ static bool del_job(int job_id)
 {
    bool del_ok;
    lList *answer_list = nullptr;
-   lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
+   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    const char *key;
    dstring key_dstring;
