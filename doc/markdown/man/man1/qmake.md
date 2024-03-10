@@ -166,7 +166,7 @@ For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx
 
 # SEE ALSO
 
-submit(1) , xxqs_name_sxx_pe(5) as well as make(1) (GNU make manpage) and *The GNU Make Manual* 
+submit(1), xxqs_name_sxx_pe(5) as well as make(1) (GNU make manpage) and *The GNU Make Manual* 
 
 # COPYRIGHT
 
