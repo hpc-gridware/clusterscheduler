@@ -36,8 +36,7 @@ information.
 
 Please use the *-ackpt*, *-dckpt*, *-mckpt* or *-sckpt* options to the
 *qconf*(1) command to manipulate checkpointing environments from the
-command-line or use the corresponding *qmon*(1) dialogue for X-Windows
-based interactive configuration.
+command-line.
 
 Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline
 (\\newline) characters. The backslash and the newline are replaced with

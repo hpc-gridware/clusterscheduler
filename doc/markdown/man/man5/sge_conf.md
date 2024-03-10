@@ -1108,17 +1108,6 @@ If this parameter is set to true, the usage of reserved resources is
 used for the accounting entries **cpu**, **mem** and **io** instead of
 the measured usage.
 
-<!-- -->
-
-ENABLE_WINDOMACC  
-If this parameter is set to true, Windows Domain accounts (WinDomAcc)
-are used on Windows hosts. These accounts require the use of
-*sgepasswd*(1) (see also *sgepasswd*(5)). If this parameter is set to
-false or is not set, local Windows accounts are used. On non-Windows
-hosts, this parameter is ignored.
-
-<!-- -->
-
 IGNORE_NGROUPS_MAX_LIMIT  
 If a user is assigned to NGROUPS_MAX-1 supplementary groups so that
 xxQS_NAMExx is not able to add an addition one for job tracking then the
