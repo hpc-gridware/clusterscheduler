@@ -61,7 +61,6 @@ set(LIBRARY_SOURCES
       sge_userset.cc
       sge_utility.cc
       sge_var.cc
-      str2nm_converter.cc
       ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/oge_RequestLimits.cc
       cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")

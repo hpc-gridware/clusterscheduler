@@ -46,7 +46,6 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_ulong.h"
-#include "sgeobj/str2nm_converter.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_binding.h"
 
@@ -177,7 +176,7 @@ int sort_dj_list(lList *djobs, lList *field_list, bool sort_waiting)
             strcpy(dir_str, "%I- ");
          }
          strcat(format_string, dir_str);
-         if ((ret = lStr2NmGenerator(field_str, taccdj_nmv)) != NoName) {
+         if ((ret = lStr2Nm(field_str, taccdj_nmv)) != NoName) {
             sort_key[ind] = ret;
             ind++;
          } else {

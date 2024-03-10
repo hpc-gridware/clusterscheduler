@@ -275,26 +275,32 @@ static const char *_lNm2Str(const lNameSpace *nsp, int nm) {
 *               Should have a hash table that will be extended whenever
 *               a new name has to be resolved.
 ******************************************************************************/
-int lStr2Nm(const char *str) {
-   const lNameSpace *nsp, *ns;
-   int ret;
+int lStr2Nm(const char *str, const lNameSpace *ns) {
 
    DENTER(CULL_BASIS_LAYER);
 
-   if (!(ns = cull_state_get_name_space())) {
-      DPRINTF("name vector uninitialized !!\n");
-      DRETURN(NoName);
+   // use the default CULL namespace if nothing is provider by caller
+   if (ns == nullptr) {
+      ns = cull_state_get_name_space();
+      if (ns == nullptr) {
+         DRETURN(NoName);
+      }
    }
 
-   for (nsp = ns; nsp->lower; nsp++) {
-      if ((ret = _lStr2Nm(nsp, str)) != NoName) {
-         DPRINTF("Name: %s Id: %d\n", str, ret);
+   // find namespace entry
+   for (const lNameSpace *nsp = ns; nsp->lower; nsp++) {
+      int ret = _lStr2Nm(nsp, str);
+      if (ret != NoName) {
          DRETURN(ret);
       }
    }
 
    LERROR(LENAMENOT);
    DRETURN(NoName);
+}
+
+int lStr2Nm(const char *str) {
+   return lStr2Nm(str, nullptr);
 }
 
 static int _lStr2Nm(const lNameSpace *nsp, const char *str) {

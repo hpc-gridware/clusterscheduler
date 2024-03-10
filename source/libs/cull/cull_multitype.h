@@ -64,6 +64,7 @@ void lInit(const lNameSpace *namev);
 const char *lNm2Str(int nm);
 
 int lStr2Nm(const char *str);
+int lStr2Nm(const char *str, const lNameSpace *ns);
 
 const char *lMt2Str(int mt);
 
