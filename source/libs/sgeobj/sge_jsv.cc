@@ -1077,11 +1077,11 @@ jsv_do_verify(const char *context, lListElem **job,
                DPRINTF("JSV releases global lock for verification process\n");
                sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
                holding_mutex = false;
-               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
                DPRINTF("Client/master will start communication with JSV\n");
                ret &= jsv_do_communication(jsv, answer_list);
                DPRINTF("JSV acquires global lock which was hold before communication with JSV\n");
-               SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE)
+               SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);
             } else {
                DPRINTF("Client/master will start communication with JSV\n");
                ret &= jsv_do_communication(jsv, answer_list);

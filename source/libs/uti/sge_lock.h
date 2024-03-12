@@ -69,26 +69,15 @@ typedef enum {
 void
 sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
 
+bool
+sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
+
 void
 sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
 
 sge_locker_t
 sge_locker_id();
 
-#if defined(SGE_LOCK)
-#error "SGE_LOCK already defined!"
-#endif
-
-#define SGE_LOCK(type, mode) \
-{ \
-   sge_lock(type, mode, __func__, sge_locker_id()); \
-}
-
-#if defined(SGE_UNLOCK)
-#error "SGE_UNLOCK already defined!"
-#endif
-
-#define SGE_UNLOCK(type, mode) \
-{ \
-   sge_unlock(type, mode, __func__, sge_locker_id()); \
-}
+#define SGE_TRY_LOCK(type, mode) sge_try_lock(type, mode, __func__, sge_locker_id())
+#define SGE_LOCK(type, mode) sge_lock(type, mode, __func__, sge_locker_id())
+#define SGE_UNLOCK(type, mode) sge_unlock(type, mode, __func__, sge_locker_id())

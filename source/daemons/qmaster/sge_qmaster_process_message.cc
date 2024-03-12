@@ -377,7 +377,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
    while (pb_unused(&(aMsg->buf)) > 0) {
       if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
          ERROR("failed unpacking ACK");
-         SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+         SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
       ack_tag = lGetUlong(ack, ACK_type);
@@ -394,7 +394,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
             */
             if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                                aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
                DRETURN_VOID;
             }
             /* an execd sends a job specific acknowledge ack_ulong == jobid of received job */
@@ -417,7 +417,7 @@ do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
       lFreeElem(&ack);
    }
 
-   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
    DRETURN_VOID;
 }
 

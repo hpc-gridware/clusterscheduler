@@ -35,37 +35,19 @@
 #include "uti/sge_lock_fifo.h"
 #include "uti/sge_rmon_macros.h"
 
-#define FIFO_LOCK_QUEUE_LENGTH 128
+static const int FIFO_LOCK_QUEUE_LENGTH = 512;
 
-/****** lib/lock/sge_fifo_lock_init() *****************************************
-*  NAME
-*     sge_fifo_lock_init() -- initialize a fifo read/write lock 
-*
-*  SYNOPSIS
-*     bool sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) 
-*
-*  FUNCTION
-*     This function is used to initialize a fifo read/write lock.
-*
-*     On success the function returns true. If the lock object can't be 
-*     initialized then the function will return with false. 
-*
-*  INPUTS
-*     sge_fifo_rw_lock_t *lock - fifo lock object
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_fifo_lock_init() is MT safe 
-*
-*  SEE ALSO
-*     lib/lock/sge_fifo_lock_init 
-*     lib/lock/sge_fifo_lock
-*     lib/lock/sge_fifo_unlock
-*******************************************************************************/
+/**
+ * initialize a fifo read/write lock.
+ *
+ * This function is used to initialize a fifo read/write lock.
+ *
+ * On success the function returns true. If the lock object can't be initialized then the function will return with
+ * false.
+ *
+ * @param lock fifo lock object
+ * @return true on success false in case of error
+ */
 bool
 sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
    bool ret = true;
@@ -101,7 +83,7 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
                ret = false;
             }
          } else {
-            /* has already been handled in the for loop above */
+            // has already been handled in the for loop above
          }
       } else {
          ret = false;
@@ -112,92 +94,60 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
    return ret;
 }
 
-/****** lib/lock/sge_fifo_lock() *********************************************
-*  NAME
-*     sge_fifo_lock() -- acquire a read/write lock
-*
-*  SYNOPSIS
-*     bool sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) 
-*
-*  FUNCTION
-*     A call to this function acquires either a read or a write lock
-*     depending on the value of "is_reader".
-*
-*     If the value of "is_reader" is "true" the function returns as soon
-*     as it gets the read lock. This is the case if there is noone 
-*     currently holding the write lock and if there was noone previously
-*     trying to get the write lock.
-*
-*     If the value of "is_reader" is "false" then the function returns
-*     as soon as it gets the write lock. This is only the case if there
-*     is noone holding a read or write lock and only if there was noone 
-*     else who tried to get the read or write lock.
-*
-*     A thread my hold multiple concurrent read locks. If so the
-*     corresponding sge_fifo_unlock() function has to be called once
-*     for each lock obtained.
-*
-*     Multiple threads might obtain a read lock whereas only one thread
-*     can have the write lock at the same time.
-*
-*     Threads which can't acquire a read or write lock block till the
-*     lock is available. A certain number of blocking threads (defined by
-*     the define FIFO_LOCK_QUEUE_LENGTH) wait in a queue so that
-*     each of those threads has a chance to get the lock. 
-*
-*     If more than FIFO_LOCK_QUEUE_LENGTH threads try to get the lock 
-*     it might happen that then there are threads which will never 
-*     get the lock (This behaviour depends on the implementation
-*     of the pthread library).
-*
-*     A read/write lock has to be initialized with sge_fifo_lock_init()
-*     before it can be used with this function.
-*
-*  INPUTS
-*     sge_fifo_rw_lock_t *lock - lock object 
-*     bool is_reader           - try to get the read lock (true) 
-*                                or write lock (false)
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error occured
-*
-*  NOTES
-*     MT-NOTE: sge_fifo_lock() is MT safe 
-*
-*  SEE ALSO
-*     lib/lock/sge_fifo_lock_init
-*     lib/lock/sge_fifo_lock
-*     lib/lock/sge_fifo_unlock
-*******************************************************************************/
-bool
-sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
+/**
+ * Acquire a read/write lock.
+ *
+ * A call to this function acquires either a read or a write lock depending on the value of "is_reader".
+ * If the value of "is_reader" is "true" the function returns as soon as it gets the read lock. This is the case if
+ * there is noone currently holding the write lock and if there was noone previously trying to get the write lock.
+ *
+ * If the value of "is_reader" is "false" then the function returns as soon as it gets the write lock. This is only
+ * the case if there is noone holding a read or write lock and only if there was noone else who tried to get the read
+ * or write lock.
+ *
+ * A thread my hold multiple concurrent read locks. If so the corresponding sge_fifo_unlock() function has to be
+ * called once for each lock obtained.
+ *
+ * Multiple threads might obtain a read lock whereas only one thread can have the write lock at the same time.
+ *
+ * Threads which can't acquire a read or write lock block till the lock is available. A certain number of blocking
+ * threads (defined by the define FIFO_LOCK_QUEUE_LENGTH) wait in a queue so that each of those threads has a chance
+ * to get the lock.
+ *
+ * If more than FIFO_LOCK_QUEUE_LENGTH threads try to get the lock it might happen that then there are threads which
+ * will never get the lock (This behaviour depends on the implementation of the pthread library).
+ *
+ * A read/write lock has to be initialized with sge_fifo_lock_init() before it can be used with this function.
+ *
+ * @param lock FIFO lock object
+ * @param is_reader true if a read lock should be acquired
+ * @param do_mutex_lock true (default) if the internal lock was not already acquired before this function call.
+ * @return true if the requested lock could be acquired.
+ */
+static bool
+sge_fifo_lock_internal(sge_fifo_rw_lock_t *lock, bool is_reader, bool do_mutex_lock = true) {
    bool ret = true;
 
-   /* lock the lock-structure */
-   int lret = pthread_mutex_lock(&(lock->mutex));
+   // lock the lock-structure
+   int lret = 0;
+   if (do_mutex_lock) {
+      lret = pthread_mutex_lock(&(lock->mutex));
+   }
    if (lret == 0) {
       bool do_wait = false;
       bool do_wait_in_queue = false;
 
-      /*
-       * If the current thread has to wait later on and if there is
-       * no place available in the list of waiting threads then wait
-       * till there is space in the queue.
-       *
-       * read lock:
-       *    if the queue is full and this readers can't
-       *    get the lock because a writer has it already then
-       *    this thread will wait either:
-       *     - till there is a place in the queue or 
-       *     - till the writer released the lock so that
-       *       this reader can have it
-       *
-       * write lock: 
-       *    if the queue is full then wait till there is space 
-       *    available
-       */
+      // If the current thread has to wait later on and if there is no place available in the list of waiting threads
+      // then wait till there is space in the queue.
+      //
+      // read lock:
+      //    if the queue is full and this readers can't get the lock because a writer has it already then this thread
+      //    will wait either:
+      //       - till there is a place in the queue or
+      //       - till the writer released the lock so that this reader can have it
+      //
+      // write lock:
+      //    if the queue is full then wait till there is space available
       do {
          do_wait = (bool) ((lock->reader_waiting + lock->writer_waiting) == FIFO_LOCK_QUEUE_LENGTH);
          if (do_wait) {
@@ -207,19 +157,15 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
          }
       } while (do_wait);
 
-      /* 
-       * Append the thread to the queue if it is necessary
-       *
-       * read lock:
-       *    if there is currently a writer active or waiting or another thread is currently 
-       *    waking up (because is was signaled) then this reader has to wait in 
-       *    queue. If there are other readers active or none is active then this 
-       *    reader can continue.
-       *
-       * write lock:
-       *    the writer has to wait in queue if there is an active reader or 
-       *    writer or if someone is currently waking up...
-       */
+      // Append the thread to the queue if it is necessary
+      //
+      // read lock:
+      //    if there is currently a writer active or waiting or another thread is currently waking up (because it
+      //    was signaled) then this reader has to wait in queue. If there are other readers active or none is active
+      //    then this reader can continue.
+      //
+      // write lock:
+      //    the writer has to wait in queue if there is an active reader or writer or if someone is currently waking up
       if (is_reader) {
          do_wait_in_queue = (bool) (lock->writer_active + lock->writer_waiting + lock->signaled > 0);
       } else {
@@ -228,31 +174,22 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
       if (do_wait_in_queue) {
          int index;
 
-         /* 
-          * position the tail pointer behind the element which
-          * will be filled now. This will be the place where the
-          * next waiting thread will be stored.
-          */
+         // position the tail pointer behind the element which will be filled now. This will be the place where the
+         // next waiting thread will be stored.
          index = lock->tail;
          lock->tail++;
 
-         /* 
-          * check if the new tail is behind the position of the
-          * allocated array. Move then to the first array element.
-          */
+         // check if the new tail is behind the position of the allocated array. Move then to the first array element.
          if (lock->tail == lock->size) {
             lock->tail = 0;
          }
 
-         /* store information about the thread which will wait */
+         // store information about the thread which will wait
          lock->array[index].is_reader = is_reader;
          lock->array[index].is_signaled = false;
 
-         /* 
-          * block this thread now till it gets a signal to continue.
-          * The signal will be sent by an unlock call of another
-          * reader or writer which hat the lock before.
-          */
+         // block this thread now till it gets a signal to continue. The signal will be sent by an unlock call of
+         // another reader or writer which hat the lock before.
          while (!lock->array[index].is_signaled) {
             if (is_reader) {
                lock->reader_waiting++;
@@ -267,35 +204,23 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
             }
          }
 
-         /*
-          * remove this thread from the signaled threads counter 
-          */
+         // remove this thread from the signaled threads counter
          if (lock->array[index].is_signaled) {
             lock->signaled--;
          }
 
-         /*
-          * This thread will get the lock because it is the first in
-          * the queue. Remove the information about this thread from the 
-          * queue. 
-          */
+         // This thread will get the lock because it is the first in the queue. Remove the information about this
+         // thread from the queue.
          index = lock->head;
          lock->head++;
 
-         /* 
-          * check if the new head is behind the position of the
-          * allocated array. Move then to the first array element.
-          */
+         // check if the new head is behind the position of the allocated array. Move then to the first array element.
          if (lock->head == lock->size) {
             lock->head = 0;
          }
 
-         /*
-          * if this thread is a reader and if there is at least one 
-          * additional thread in the queue and if that thread is 
-          * also a reader then wake it so that they can do work
-          * simultaniously
-          */
+         // if this thread is a reader and if there is at least one additional thread in the queue and if that thread
+         // is also a reader then wake it so that they can do work simultaneously
 
          if (lock->array[index].is_reader && lock->reader_waiting > 0 && lock->array[lock->head].is_reader) {
             lock->array[lock->head].is_signaled = true;
@@ -303,35 +228,30 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
             pthread_cond_signal(&(lock->array[lock->head].cond));
          }
 
-         /*
-          * there is now space in the queue available. if there
-          * are threads waiting outside the queue then notify  
-          * one so that it can append at the end.
-          */
+         // there is now space in the queue available. if ther are threads waiting outside the queue then notify
+         // one so that it can append at the end.
          if (lock->waiting > 0) {
             pthread_cond_signal(&(lock->cond));
          }
 
-         /*
-          * this is not necessary but it might make debugging easier.
-          * preinitialize the array element with predefined values.
-          * which indicate that this entry is 'empty'
-          */
+         // this is not necessary, but it might make debugging easier. pre-initialize the array element with
+         // predefined values which indicate that this entry is 'empty'
          lock->array[index].is_reader = false;
          lock->array[index].is_signaled = false;
       }
 
-      /*
-       * now the thread has the lock. increase the counter.
-       */
+      // now the thread has the lock. increase the counter.
       if (is_reader) {
          lock->reader_active++;
       } else {
          lock->writer_active++;
       }
 
-      /* unlock the lock-structure */
-      lret = pthread_mutex_unlock(&(lock->mutex));
+      // unlock the lock-structure
+      lret = 0;
+      if (do_mutex_lock) {
+         lret = pthread_mutex_unlock(&(lock->mutex));
+      }
       if (lret != 0) {
          ret = false;
       }
@@ -341,54 +261,87 @@ sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    return ret;
 }
 
-/****** lib/lock/sge_fifo_ulock() *****************************************
-*  NAME
-*     sge_fifo_ulock() -- release a read or write lock 
-*
-*  SYNOPSIS
-*     bool sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) 
-*
-*  FUNCTION
-*     Releases a read or write lock previously obtained with 
-*     sge_fifo_lock() or sge_fifo_unlock() 
-*
-*  INPUTS
-*     sge_fifo_rw_lock_t *lock - lock object 
-*     bool is_reader           - type of lock to be released 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: sge_fifo_ulock() is MT safe 
-*
-*  SEE ALSO
-*     lib/lock/sge_fifo_lock_init
-*     lib/lock/sge_fifo_lock
-*     lib/lock/sge_fifo_unlock
-*******************************************************************************/
+/**
+ * Blocks the calling thread till it can acquire the requested lock.
+ *
+ * If is_reader is true then the function tries to acquire a read lock otherwise a write lock
+ * For details see sge_fifo_lock_internal()
+ *
+ * @param lock FIFO lock object
+ * @param is_reader true if a read lock should be acquired
+ * @return true if the requested lock could be acquired.
+ */
+bool
+sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
+   return sge_fifo_lock_internal(lock, is_reader);
+}
+
+/**
+ * Trys to acquire the lock but does not block the calling thread if the lock cannot be acquired now.
+ *
+ * @param lock FIFO lock object
+ * @param is_reader true if a read lock should be acquired
+ * @return true if the requested lock could be acquired. Returns immediately with false if lock cannot be granted.
+ */
+bool
+sge_fifo_try_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
+   bool ret = false;
+
+   int lret = pthread_mutex_lock(&(lock->mutex));
+   if (lret == 0) {
+      bool is_someone_waiting = ((lock->reader_waiting + lock->writer_waiting) > 0) ? true : false;
+      // is there a queue slot available?
+      bool can_get_queue_slot = ((lock->reader_waiting + lock->writer_waiting) < FIFO_LOCK_QUEUE_LENGTH) ? true : false;
+      // can get read lock because now other writer locked before us?
+      bool can_get_read_lock = (lock->writer_active + lock->writer_waiting == 0) ? true : false;
+      // can get the write lock because noone else wants a lock now?
+      bool can_get_write_lock = ((lock->writer_active + lock->reader_active + lock->signaled == 0)) ? true : false;
+
+      bool do_lock_now;
+      if ((is_reader && can_get_queue_slot && can_get_read_lock)) {
+         // Read lock can be acquired immediately if there is a place in the queue and if there are only waiting reader
+         do_lock_now = true;
+      } else if (!is_reader && !is_someone_waiting && can_get_write_lock) {
+         // Write lock can only be acquired immediately if nonone is waiting and noone holds a lock
+         do_lock_now = true;
+      } else {
+         // Otherwise an attempt to lock would result in blocking this thread
+         do_lock_now = false;
+      }
+
+      if (do_lock_now) {
+         ret = sge_fifo_lock_internal(lock, is_reader, false);
+      }
+      pthread_mutex_unlock(&(lock->mutex));
+   }
+   return ret;
+}
+
+/**
+ * Release a read or write lock.
+ *
+ * Releases a read or write lock previously obtained with sge_fifo_lock() or sge_fifo_unlock().
+ *
+ * @param lock lock object
+ * @param is_reader true for a read lock
+ * @return true on success false otherwise
+ */
 bool
 sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    bool ret = true;
 
-   /* lock the lock-structure */
+   // lock the lock-structure
    int lret = pthread_mutex_lock(&(lock->mutex));
    if (lret == 0) {
 
-      /*
-       * decrease the counter.
-       */
+      // decrease the counter.
       if (is_reader) {
          lock->reader_active--;
       } else {
          lock->writer_active--;
       }
 
-      /* 
-       * notify the next waiting thread if there is one
-       */
+      // notify the next waiting thread if there is one
       if ((lock->reader_active + lock->writer_active + lock->signaled) == 0 &&
           (lock->reader_waiting + lock->writer_waiting > 0)) {
          lock->array[lock->head].is_signaled = true;
@@ -396,7 +349,7 @@ sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) {
          pthread_cond_signal(&(lock->array[lock->head].cond));
       }
 
-      /* unlock the lock-structure */
+      // unlock the lock-structure
       lret = pthread_mutex_unlock(&(lock->mutex));
       if (lret != 0) {
          ret = false;
@@ -406,4 +359,3 @@ sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    }
    return ret;
 }
-

@@ -292,9 +292,9 @@ sge_worker_main(void *arg) {
           * do unlock
           */
          if (is_only_read_request) {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ)
+            SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
          } else {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          }
 
          if (packet->is_gdi_request == true) {

@@ -15,6 +15,7 @@
 #include "oge_thread_event_mirror.h"
 #include "setup_qmaster.h"
 #include "sge_thread_main.h"
+#include "sge_lock.h"
 
 master_event_mirror_class_t master_event_mirror = {
         PTHREAD_MUTEX_INITIALIZER,  // mutex
@@ -164,7 +165,7 @@ oge_event_mirror_cleanup_thread([[maybe_unused]] void *arg) {
       // trash the thread pool
       cl_thread_list_cleanup(&Main_Control.event_mirror_thread_pool);
 
-      // shutdown of old thread finished. now a new event mirror can be  started
+     // shutdown of old thread finished. now a new event mirror can be  started
       master_event_mirror.is_running = false;
    }
 
@@ -174,16 +175,25 @@ oge_event_mirror_cleanup_thread([[maybe_unused]] void *arg) {
 }
 
 static void
-oge_event_mirror_cleanup_monitor(monitoring_t *monitor) {
+oge_event_mirror_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
+   auto *monitor = (monitoring_t *)arg;
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
 static void
-oge_event_mirror_cleanup_event_client(sge_evc_class_t *evc) {
+oge_event_mirror_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
+   auto *evc = (sge_evc_class_t *)arg;
    sge_mirror_shutdown(evc);
+   DRETURN_VOID;
+}
+
+static void
+oge_event_mirror_cleanup_data_store(void *unused) {
+   DENTER(TOP_LAYER);
+   oge::DataStore::free_all_master_lists();
    DRETURN_VOID;
 }
 
@@ -243,9 +253,12 @@ oge_event_mirror_main(void *arg) {
 
    // enter main loop
    if (local_ret) {
+
+      // do not exit even if shutdown event is received. We want th thread only to terminate in the cancellation
+      // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
+      // cleanup (free of data store memory and more) at the cancellation point
       while (true) {
          lList *event_list = nullptr;
-         bool handled_events = false;
 
          // wait for new events
          MONITOR_IDLE_TIME(oge_event_mirror_wait_for_event(evc, &event_list), (&monitor),
@@ -260,21 +273,62 @@ oge_event_mirror_main(void *arg) {
             }
          }
 
-         // process received events
+         // did we receive a shutdown event?
+         bool do_shutdown = false;
          if (event_list != nullptr) {
-            bool do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+            do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
 
-            if (do_shutdown == false && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
-               handled_events = true;
-               DPRINTF("events handled\n");
-            } else {
-               DPRINTF("events contain shutdown event - ignoring events\n");
+            if (do_shutdown) {
+               DPRINTF("received event to shutdown");
             }
+
             lFreeList(&event_list);
          }
 
+         // handle events
+         const long wait_time = 200;
+         const long max_wait_time = 2000;
+         long remaining_wait_time = max_wait_time;
+         bool did_handle_events = false;
+         bool got_lock = false;
+         bool do_try_lock = true;
+
+         while (!got_lock) {
+            // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
+            if (do_try_lock) {
+               got_lock = SGE_TRY_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+            } else {
+               SGE_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+               got_lock = true;
+            }
+
+            if (got_lock) {
+               // we got the lock and can process the events
+               sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+               lFreeList(&event_list);
+
+               if (mirror_ret == SGE_EM_OK) {
+                  did_handle_events = true;
+                  DPRINTF("events handled successfully\n");
+               } else {
+                  DPRINTF("error during event processing");
+               }
+
+               // release lock
+               SGE_UNLOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+            } else {
+               // we did not get the lock. wait a short time before retry. if the max wait time is consumed
+               // then continue with a hard lock instead of a try lock
+               sge_usleep(wait_time);
+               remaining_wait_time -= wait_time;
+               if (remaining_wait_time <= 0) {
+                  do_try_lock = false;
+               }
+            }
+         }
+
          // actions if events where processed
-         if (handled_events == true) {
+         if (did_handle_events == true) {
             thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
             sge_monitor_output(&monitor);
          }
@@ -286,12 +340,14 @@ oge_event_mirror_main(void *arg) {
          // pthread cancellation point (functions are pushed in reverse order of execution)
          int execute = 0;
          pthread_cleanup_push(oge_event_mirror_cleanup_thread, nullptr);
-         pthread_cleanup_push((void (*)(void *)) oge_event_mirror_cleanup_monitor, (void *) &monitor);
-         pthread_cleanup_push((void (*)(void *)) oge_event_mirror_cleanup_event_client, (void *) evc);
+         pthread_cleanup_push(oge_event_mirror_cleanup_monitor, &monitor);
+         pthread_cleanup_push(oge_event_mirror_cleanup_data_store, nullptr);
+         pthread_cleanup_push(oge_event_mirror_cleanup_event_client, evc);
          cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute);
-         pthread_cleanup_pop(execute);
-         pthread_cleanup_pop(execute);
+         pthread_cleanup_pop(execute); // event client registration
+         pthread_cleanup_pop(execute); // data store that was filled by this mirror
+         pthread_cleanup_pop(execute); // monitor
+         pthread_cleanup_pop(execute); // thread itself
          DPRINTF("passed cancellation point\n");
       }
    }

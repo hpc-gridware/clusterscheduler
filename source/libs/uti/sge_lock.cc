@@ -138,6 +138,123 @@ static sge_locker_t id_callback_impl();
 
 static sge_locker_t (*id_callback)() = id_callback_impl;
 
+#ifdef SGE_LOCK_DEBUG
+void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
+{
+   int res = -1;
+
+   DENTER(BASIS_LAYER);
+
+   pthread_once(&lock_once, lock_once_init);
+
+#ifdef PRINT_LOCK
+   {
+      struct timeval now;
+      gettimeofday(&now, nullptr);
+      printf("%ld try lock %lu:%lus %s(%d)\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, locktype_names[aType], aMode);
+   }
+#endif
+
+   if (aMode == LOCK_READ) {
+      DPRINTF("%s() about to try lock rwlock \"%s\" for reading\n", func, locktype_names[aType]);
+#ifdef SGE_USE_LOCK_FIFO
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], true) ? 0 : 1;
+#else
+      res = pthread_rwlock_tryrdlock(SGE_RW_Locks[aType]);
+#endif
+      DPRINTF("%s() try locked rwlock \"%s\" for reading\n", func, locktype_names[aType]);
+   } else if (aMode == LOCK_WRITE) {
+      DPRINTF("%s() about to try lock rwlock \"%s\" for writing\n", func, locktype_names[aType]);
+#ifdef SGE_USE_LOCK_FIFO
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], false) ? 0 : 1;
+#else
+      res = pthread_rwlock_trywrlock(SGE_RW_Locks[aType]);
+#endif
+      DPRINTF("%s() try locked rwlock \"%s\" for writing\n", func, locktype_names[aType]);
+   } else {
+      DPRINTF("wrong try lock type for global lock\n");
+   }
+
+   if (res != 0) {
+      DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
+      abort();
+   }
+
+#ifdef PRINT_LOCK
+   {
+      struct timeval now;
+      gettimeofday(&now, nullptr);
+      printf("%ld got lock %lu:%lus %s(%d)\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, locktype_names[aType], aMode);
+   }
+#endif
+
+   DRETURN(res);
+} /* sge_try_lock */
+
+#else
+
+bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
+   int res = -1;
+
+#ifdef SGE_DEBUG_LOCK_TIME
+   struct timeval before;
+   struct timeval after;
+   double time;
+#endif
+
+   DENTER(BASIS_LAYER);
+
+   pthread_once(&lock_once, lock_once_init);
+
+#ifdef SGE_DEBUG_LOCK_TIME
+   gettimeofday(&before, nullptr);
+#endif
+
+   if (aMode == LOCK_READ) {
+#ifdef SGE_USE_LOCK_FIFO
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], true) ? 0 : 1;
+#else
+      res = pthread_rwlock_tryrdlock(SGE_RW_Locks[aType]);
+#endif
+   } else if (aMode == LOCK_WRITE) {
+#ifdef SGE_USE_LOCK_FIFO
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], false) ? 0 : 1;
+#else
+      res = pthread_rwlock_trywrlock(SGE_RW_Locks[aType]);
+#endif
+   } else {
+      DPRINTF("wrong try lock type for global lock\n");
+   }
+
+#ifdef SGE_DEBUG_LOCK_TIME
+      gettimeofday(&after, nullptr);
+      time = after.tv_usec - before.tv_usec;
+      time = after.tv_sec - before.tv_sec + (time/1000000);
+
+      if (aMode == LOCK_READ) {
+         if (time < reader_min[aType]) {
+            reader_min[aType] = time;
+         }
+         if (time > reader_max[aType]) {
+            reader_max[aType] = time;
+         }
+         reader_all[aType] += time;
+         reader_count[aType]++;
+      } else {
+         if (time < writer_min[aType]) {
+            writer_min[aType] = time;
+         }
+         if (time > writer_max[aType]) {
+            writer_max[aType] = time;
+         }
+         writer_all[aType] += time;
+         writer_count[aType]++;
+      }
+#endif
+
+   DRETURN(res);
+} /* sge_try_lock */
+#endif
 
 /****** sge_lock/sge_lock() ****************************************************
 *  NAME
