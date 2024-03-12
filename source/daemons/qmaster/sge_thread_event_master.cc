@@ -54,15 +54,17 @@
 #include "sge_thread_event_master.h"
 
 static void
-sge_event_master_cleanup_monitor(monitoring_t *monitor) {
+sge_event_master_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
+   auto *monitor = static_cast<monitoring_t *>(arg);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
 static void
-sge_event_master_cleanup_report_list(lList **list) {
+sge_event_master_cleanup_report_list(void *arg) {
    DENTER(TOP_LAYER);
+   auto *list = static_cast<lList **>(arg);
    lFreeList(list);
    DRETURN_VOID;
 }
@@ -145,8 +147,8 @@ sge_event_master_main(void *arg) {
 
       // pthread cancellation point
       int execute = 0;
-      pthread_cleanup_push((void (*)(void *)) sge_event_master_cleanup_monitor, (void *) &monitor);
-      pthread_cleanup_push((void (*)(void *)) sge_event_master_cleanup_report_list, (void *) &report_list);
+      pthread_cleanup_push(sge_event_master_cleanup_monitor, static_cast<void *>(&monitor));
+      pthread_cleanup_push(sge_event_master_cleanup_report_list, static_cast<void *>(&report_list));
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);

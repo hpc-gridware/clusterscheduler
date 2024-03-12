@@ -124,7 +124,7 @@ void
 oge::DataStore::free_master_list(sge_object_type type) {
    DENTER(DATA_STORE_LAYER);
    GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-   lFreeList(&obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
+   lFreeList(get_master_list_rw(type));
    DRETURN_VOID;
 }
 
@@ -138,8 +138,8 @@ void
 oge::DataStore::free_all_master_lists() {
    DENTER(DATA_STORE_LAYER);
    GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-   for (auto &master_list : obj_thread_shared.data_store[obj_state->ds_id].master_list) {
-      lFreeList(&master_list);
+   for (int type = SGE_TYPE_FIRST; type < SGE_TYPE_ALL; type++) {
+      lFreeList(get_master_list_rw(static_cast<sge_object_type>(type)));
    }
    DRETURN_VOID;
 }

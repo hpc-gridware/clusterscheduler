@@ -1044,7 +1044,7 @@ gdi_send_message(int synchron, const char *tocomproc, int toid, const char *toho
          }
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
                               false, sge_get_execd_port(), CL_TCP_DEFAULT,
-                              "execd_handle", 0, 1, 0);
+                              "execd_handle", 0, 0, 500);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
             ERROR(MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc);
@@ -1140,7 +1140,7 @@ gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
                               false, (int)sge_execd_port, CL_TCP_DEFAULT,
-                              "execd_handle", 0, 1, 0);
+                              "execd_handle", 0, 0, 500);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
             ERROR(MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc);

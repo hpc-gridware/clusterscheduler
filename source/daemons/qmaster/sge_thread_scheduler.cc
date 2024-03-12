@@ -143,15 +143,17 @@ schedd_serf_newline() {
 
 
 static void
-sge_scheduler_cleanup_monitor(monitoring_t *monitor) {
+sge_scheduler_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
+   auto monitor = static_cast<monitoring_t *>(arg);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
 static void
-sge_scheduler_cleanup_event_client(sge_evc_class_t *evc) {
+sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
+   auto *evc = static_cast<sge_evc_class_t *>(arg);
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
@@ -875,8 +877,8 @@ sge_scheduler_main(void *arg) {
        * sge_scheduler_cleanup_thread() is the last function which should be called, so it is pushed first
        */
       pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
-      pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_monitor, (void *) &monitor);
-      pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_event_client, (void *) evc);
+      pthread_cleanup_push(sge_scheduler_cleanup_monitor, static_cast<void *>(&monitor));
+      pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(evc));
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);

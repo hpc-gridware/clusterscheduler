@@ -41,6 +41,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
+#include "sgeobj/oge_DataStore.h"
+
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
 #endif
@@ -67,8 +69,9 @@
 #include "msg_qmaster.h"
 
 static void
-sge_worker_cleanup_monitor(monitoring_t *monitor) {
+sge_worker_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
+   auto *monitor = static_cast<monitoring_t *>(arg);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -107,8 +110,6 @@ sge_worker_terminate() {
 
    DENTER(TOP_LAYER);
 
-   sge_tq_wakeup_waiting(Master_Task_Queue);
-
    /*
     * trigger pthread_cancel for each thread so that further 
     * shutdown process will be faster
@@ -123,6 +124,8 @@ sge_worker_terminate() {
          cl_thread_shutdown(thr->thread_config);
       }
    }
+
+   sge_tq_wakeup_waiting(Master_Task_Queue);
 
    /*
     * Shutdown/delete the threads and wait for termination
@@ -339,12 +342,10 @@ sge_worker_main(void *arg) {
       } else {
          int execute = 0;
 
-         /* 
-          * pthread cancellation point
-          */
-         pthread_cleanup_push((void (*)(void *)) sge_worker_cleanup_monitor, (void *) p_monitor);
-            cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute);
+         // pthread cancellation point
+         pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
+         cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_pop(execute); // cleanup monitor
       }
    }
 

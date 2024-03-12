@@ -87,7 +87,7 @@ sge_listener_terminate() {
     * are terminated.
     */
    sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
-   DPRINTF("triggered shutdown event for event master module\n");
+   DPRINTF("triggered shutdown event for event clients to be delivered by event master module\n");
 
    /*
     * trigger pthread_cancel for each thread so that further 
@@ -150,17 +150,15 @@ sge_listener_main(void *arg) {
 
          sge_qmaster_process_message(&monitor);
 
-         thread_output_profiling("listener thread profiling summary:\n",
-                                 &next_prof_output);
+         thread_output_profiling("listener thread profiling summary:\n", &next_prof_output);
 
          sge_monitor_output(&monitor);
       }
 
       /* pthread cancellation point */
       do {
-         pthread_cleanup_push((void (*)(void *)) sge_listener_cleanup_monitor,
-                              (void *) &monitor);
-            cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_push((void (*)(void *)) sge_listener_cleanup_monitor, (void *) &monitor);
+         cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
             DPRINTF("waiting for termination\n");

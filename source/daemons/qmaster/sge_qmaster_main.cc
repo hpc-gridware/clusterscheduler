@@ -43,6 +43,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge.h"
 
+#include "sgeobj/oge_DataStore.h"
 #include "sgeobj/sge_conf.h"
 
 #include "comm/cl_commlib.h"
@@ -295,7 +296,8 @@ int main(int argc, char *argv[]) {
    /*
     * Remaining shutdown operations
     */
-   sge_clean_lists();
+   // sge_clean_lists();
+   oge::DataStore::free_all_master_lists();
    sge_monitor_free(&monitor);
 
    sge_shutdown(sge_qmaster_get_exit_state());
