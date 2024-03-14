@@ -36,6 +36,7 @@
 #include <sys/types.h>
 
 #include "uti/sge_rmon_monitoring_level.h"
+#include "uti/sge_component.h"
 
 #include "comm/cl_commlib.h"
 
@@ -50,9 +51,10 @@
    static const int xaybzc = layer; \
    rmon_mopen(); \
    if (rmon_condition(xaybzc, TRACE)) { \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-      if (___thread_config != nullptr) { \
-         rmon_menter (SGE_FUNC, ___thread_config->thread_name, ___thread_config->thread_id); \
+      const char *__thread_name = component_get_thread_name(); \
+      int __thread_id = component_get_thread_id(); \
+      if (__thread_name != nullptr) { \
+         rmon_menter (SGE_FUNC, __thread_name, __thread_id); \
       } else { \
          rmon_menter (SGE_FUNC, nullptr, -1); \
       } \
@@ -62,9 +64,10 @@
 #define DENTER(layer) \
    static const int xaybzc = layer; \
    if (rmon_condition(xaybzc, TRACE)) { \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-      if (___thread_config != nullptr) { \
-         rmon_menter (__func__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      const char *__thread_name = component_get_thread_name(); \
+      int __thread_id = component_get_thread_id(); \
+      if (__thread_name != nullptr) { \
+         rmon_menter (__func__, __thread_name, __thread_id); \
       } else { \
          rmon_menter (__func__, nullptr, -1); \
       } \
@@ -80,9 +83,10 @@
 
 #define DRETURN(ret) \
    if (rmon_condition(xaybzc, TRACE)) { \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-      if (___thread_config != nullptr) { \
-         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      const char *__thread_name = component_get_thread_name(); \
+      int __thread_id = component_get_thread_id(); \
+      if (__thread_name != nullptr) { \
+         rmon_mexit(__func__, __FILE__, __LINE__, __thread_name, __thread_id); \
       } else { \
          rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
       } \
@@ -97,9 +101,10 @@
 
 #define DRETURN_VOID \
    if (rmon_condition(xaybzc, TRACE)) { \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-      if (___thread_config != nullptr) { \
-         rmon_mexit(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      const char *__thread_name = component_get_thread_name(); \
+      int __thread_id = component_get_thread_id(); \
+      if (__thread_name != nullptr) { \
+         rmon_mexit(__func__, __FILE__, __LINE__, __thread_name, __thread_id); \
       } else { \
          rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
       } \
@@ -114,9 +119,10 @@
 
 #define DTRACE \
    if (rmon_condition(xaybzc, TRACE)) { \
-      cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-      if (___thread_config != nullptr) { \
-         rmon_mtrace(__func__, __FILE__, __LINE__, ___thread_config->thread_name, ___thread_config->thread_id); \
+      const char *__thread_name = component_get_thread_name(); \
+      int __thread_id = component_get_thread_id(); \
+      if (__thread_name != nullptr) { \
+         rmon_mtrace(__func__, __FILE__, __LINE__, __thread_name, __thread_id); \
       } else { \
          rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1); \
       } \
@@ -132,10 +138,11 @@
    if (rmon_condition(xaybzc, INFOPRINT)) { \
       rmon_helper_t *helper = rmon_get_helper(); \
       if (helper != nullptr) { \
-         cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config(); \
-         if (___thread_config != nullptr) { \
-            strcpy(helper->thread_name, ___thread_config->thread_name); \
-            helper->thread_id = ___thread_config->thread_id; \
+         const char *__thread_name = component_get_thread_name(); \
+         int __thread_id = component_get_thread_id(); \
+         if (__thread_name != nullptr) { \
+            strcpy(helper->thread_name, __thread_name); \
+            helper->thread_id = __thread_id; \
          } \
       } \
       rmon_mprintf(__VA_ARGS__); \

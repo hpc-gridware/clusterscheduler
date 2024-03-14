@@ -28,10 +28,6 @@ struct event_mirror_control_t {
    lList *new_events;                  ///< new events that neet to get processed
 };
 
-struct event_mirror_argument_t {
-   oge::DataStore::Id data_store_id;
-};
-
 event_mirror_control_t event_mirror_control = {
         "event_mirror_control_mutex",  // mutex name
         PTHREAD_MUTEX_INITIALIZER,     // mutex
@@ -39,13 +35,6 @@ event_mirror_control_t event_mirror_control = {
         false,                         // exit
         false,                         // triggered
         nullptr,                       // new_events
-};
-
-master_event_mirror_class_t master_event_mirror = {
-        PTHREAD_MUTEX_INITIALIZER,     // mutex
-        false,                         // is_running
-        0,                             // thread_id
-        true                           // use_bootstrap
 };
 
 // trigger the event mirror thread to wake up either to handle events or to terminate
@@ -60,14 +49,8 @@ void
 oge_event_mirror_initialize() {
    DENTER(TOP_LAYER);
 
-   cl_thread_settings_t *dummy_thread_p = nullptr;
-   cl_thread_list_setup(&(Main_Control.event_mirror_thread_pool), "event mirror thread pool");
-   DPRINTF("event mirror thread pool initialized\n");
-
    auto data_store_id = oge::DataStore::Id::READER_ALL;
-   cl_thread_list_create_thread(Main_Control.event_mirror_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                threadnames[EVENT_MIRROR_THREAD], 0, oge_event_mirror_main, nullptr,
-                                (void *)data_store_id, CL_TT_EVENT_MIRROR);
+   pthread_create(&Main_Control.mirror_thread, nullptr, oge_event_mirror_main, (void *)data_store_id);
    DPRINTF("added event mirror thread for %d\n", data_store_id);
 
    DRETURN_VOID;
@@ -77,32 +60,13 @@ void
 oge_event_mirror_terminate() {
    DENTER(TOP_LAYER);
 
-   // trigger pthread_cancel for each thread so that it will terminate when it reaches the cancellation point
-   cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.event_mirror_thread_pool);
-   cl_thread_list_elem_t *thr;
-   while ((thr = thr_nxt) != nullptr) {
-      thr_nxt = cl_thread_list_get_next_elem(thr);
-
-      cl_thread_shutdown(thr->thread_config);
-   }
-   DPRINTF("triggered termination of all " SFN " threads\n", threadnames[EVENT_MIRROR_THREAD]);
+   pthread_cancel(Main_Control.mirror_thread);
 
    // wake up the mirror threads
    oge_event_mirror_wakeup();
    DPRINTF("triggered wake up of all " SFN " threads\n", threadnames[EVENT_MIRROR_THREAD]);
 
-   // join the threads
-   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.event_mirror_thread_pool);
-   while (thread != nullptr) {
-      cl_thread_list_delete_thread(Main_Control.event_mirror_thread_pool, thread);
-
-      thread = cl_thread_list_get_first_thread(Main_Control.event_mirror_thread_pool);
-   }
-   DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MIRROR_THREAD]);
-
-   // trash the thread pool
-   cl_thread_list_cleanup(&Main_Control.event_mirror_thread_pool);
-   DPRINTF(SFQ " thread pool terminated\n", threadnames[EVENT_MIRROR_THREAD]);
+   pthread_join(Main_Control.mirror_thread, nullptr);
 
    DRETURN_VOID;
 }
@@ -182,35 +146,6 @@ oge_event_mirror_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
    DRETURN_VOID;
 }
 
-#if 0
-void
-oge_event_mirror_cleanup_thread([[maybe_unused]] void *arg) {
-   static const char *mutex_name = "master event mirror";
-   DENTER(TOP_LAYER);
-
-   sge_mutex_lock(mutex_name, __func__, __LINE__, &master_event_mirror.mutex);
-
-   if (master_event_mirror.is_running) {
-      // delete thread config before thread itself is deleted
-      cl_thread_unset_thread_config();
-
-      // delete event mirror thread (but do not wait for termination!)
-      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
-      cl_thread_list_delete_thread_without_join(Main_Control.scheduler_thread_pool, thread);
-
-      // trash the thread pool
-      cl_thread_list_cleanup(&Main_Control.event_mirror_thread_pool);
-
-     // shutdown of old thread finished. now a new event mirror can be  started
-      master_event_mirror.is_running = false;
-   }
-
-   sge_mutex_unlock(mutex_name, __func__, __LINE__, &master_event_mirror.mutex);
-
-   DRETURN_VOID;
-}
-#endif
-
 static void
 oge_event_mirror_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -239,14 +174,10 @@ oge_event_mirror_main(void *arg) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr; // answer_list
 
-   // initialize commlib thread
-   auto *thread_config = (cl_thread_settings_t *) arg;
-   cl_thread_func_startup(thread_config);
+   auto thread_name = threadnames[EVENT_MIRROR_THREAD];
+   auto thread_id = (oge::DataStore::Id)(long)arg;
+   auto data_store_id = (oge::DataStore::Id)(long)arg;
 
-   // set thread name and id used by logging an others
-   const char *thread_name = thread_config->thread_name;
-   auto thread_id = thread_config->thread_id;
-   auto data_store_id = (oge::DataStore::Id)(long)(thread_config->thread_user_data);
    component_set_thread_name(thread_name);
    component_set_thread_id(thread_id);
    DPRINTF(SFN "(%d) started handling data store %ld\n", thread_name, thread_id, data_store_id);
@@ -318,57 +249,60 @@ oge_event_mirror_main(void *arg) {
 
             if (do_shutdown) {
                DPRINTF("received event to shutdown\n");
-            }
 
-            lFreeList(&event_list);
-         }
-
-         // handle events
-         const long wait_time = 200;
-         const long max_wait_time = 2000;
-         long remaining_wait_time = max_wait_time;
-         bool did_handle_events = false;
-         bool got_lock = false;
-         bool do_try_lock = true;
-
-         while (!got_lock) {
-            // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
-            if (do_try_lock) {
-               got_lock = SGE_TRY_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
-            } else {
-               SGE_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
-               got_lock = true;
-            }
-
-            if (got_lock) {
-               // we got the lock and can process the events
-               sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+               // no need to handle the events if we shut down afterward
                lFreeList(&event_list);
-
-               if (mirror_ret == SGE_EM_OK) {
-                  did_handle_events = true;
-                  DPRINTF("events handled successfully\n");
-               } else {
-                  DPRINTF("error during event processing\n");
-               }
-
-               // release lock
-               SGE_UNLOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
-            } else {
-               // we did not get the lock. wait a short time before retry. if the max wait time is consumed
-               // then continue with a hard lock instead of a try lock
-               sge_usleep(wait_time);
-               remaining_wait_time -= wait_time;
-               if (remaining_wait_time <= 0) {
-                  do_try_lock = false;
-               }
             }
          }
 
-         // actions if events where processed
-         if (did_handle_events == true) {
-            thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
-            sge_monitor_output(&monitor);
+         // handle events (if shutdown is not pending)
+         if (!do_shutdown) {
+            const long wait_time = 200;
+            const long max_wait_time = 2000;
+            long remaining_wait_time = max_wait_time;
+            bool did_handle_events = false;
+            bool got_lock = false;
+            bool do_try_lock = true;
+
+            while (!got_lock) {
+               // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
+               if (do_try_lock) {
+                  got_lock = SGE_TRY_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+               } else {
+                  SGE_LOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+                  got_lock = true;
+               }
+
+               if (got_lock) {
+                  // we got the lock and can process the events
+                  sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+                  lFreeList(&event_list);
+
+                  if (mirror_ret == SGE_EM_OK) {
+                     did_handle_events = true;
+                     DPRINTF("events handled successfully\n");
+                  } else {
+                     DPRINTF("error during event processing\n");
+                  }
+
+                  // release lock
+                  SGE_UNLOCK(LOCK_READ_ALL_DS, LOCK_WRITE);
+               } else {
+                  // we did not get the lock. wait a short time before retry. if the max wait time is consumed
+                  // then continue with a hard lock instead of a try lock
+                  sge_usleep(wait_time);
+                  remaining_wait_time -= wait_time;
+                  if (remaining_wait_time <= 0) {
+                     do_try_lock = false;
+                  }
+               }
+            }
+
+            // actions if events where processed
+            if (did_handle_events == true) {
+               thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
+               sge_monitor_output(&monitor);
+            }
          }
 
          // reset the busy state to get more events
@@ -377,19 +311,13 @@ oge_event_mirror_main(void *arg) {
 
          // pthread cancellation point (functions are pushed in reverse order of execution)
          int execute = 0;
-#if 0
-         pthread_cleanup_push(oge_event_mirror_cleanup_thread, nullptr);
-#endif
          pthread_cleanup_push(oge_event_mirror_cleanup_monitor, &monitor);
          pthread_cleanup_push(oge_event_mirror_cleanup_data_store, nullptr);
          pthread_cleanup_push(oge_event_mirror_cleanup_event_client, evc);
-         cl_thread_func_testcancel(thread_config);
+         pthread_testcancel();
          pthread_cleanup_pop(execute); // event client registration
          pthread_cleanup_pop(execute); // data store that was filled by this mirror
          pthread_cleanup_pop(execute); // monitor
-#if 0
-         pthread_cleanup_pop(execute); // thread itself
-#endif
          DPRINTF("passed cancellation point\n");
       }
    }

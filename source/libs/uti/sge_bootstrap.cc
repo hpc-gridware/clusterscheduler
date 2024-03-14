@@ -94,7 +94,7 @@ const char *threadnames[] = {
         "worker",        /* 5 */
         "signal",        /* 6 */
         "scheduler",     /* 7 */
-        "event_mirror",  /* 8 */
+        "mirror",        /* 8 */
         nullptr
 };
 

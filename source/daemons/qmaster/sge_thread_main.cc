@@ -49,7 +49,12 @@ main_control_t Main_Control = {
         nullptr,
         nullptr,
         nullptr,
-        nullptr
+#if 1
+
+#else
+        nullptr,
+#endif
+
 };
 
 int

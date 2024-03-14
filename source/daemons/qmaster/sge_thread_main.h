@@ -65,7 +65,12 @@ typedef struct {
    cl_raw_list_t *test_thread_pool;
 
    /* Event mirror thread */
+#if 0
    cl_raw_list_t *event_mirror_thread_pool;
+#else
+   pthread_t mirror_thread;
+#endif
+
 } main_control_t;
 
 extern main_control_t Main_Control;
