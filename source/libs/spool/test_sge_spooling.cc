@@ -657,7 +657,7 @@ int main(int argc, char *argv[])
    read_spooled_data();
    
    /* initialize mirroring */
-   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, spool_event_before, spool_event_after, nullptr, nullptr, nullptr);
    prof_start(SGE_PROF_ALL, nullptr);
 

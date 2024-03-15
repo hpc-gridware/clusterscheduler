@@ -97,6 +97,7 @@ int sge_add_event_client(lListElem *ev,
                          char *ruser,
                          char *rhost,
                          event_client_update_func_t update_func,
+                         void *update_func_arg,
                          monitoring_t *monitor);
 
 int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost);

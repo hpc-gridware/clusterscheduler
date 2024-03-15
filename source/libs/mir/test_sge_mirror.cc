@@ -101,7 +101,7 @@ int main()
       sge_exit(1);
    }
 
-   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
    
    while(!shut_me_down) {

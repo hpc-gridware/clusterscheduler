@@ -262,7 +262,7 @@ static mirror_description *mir_get_mirror_base()
 sge_mirror_error
 sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func,
                       evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
-                      evm_ack_func_t ack_func)
+                      evm_ack_func_t ack_func, void *update_func_arg)
 {
    DENTER(TOP_LAYER);
 
@@ -272,6 +272,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
    evc->ec_local.remove_func = remove_func;
    evc->ec_local.ack_func = ack_func;
    evc->ec_local.init = true;
+   evc->ec_local.update_func_arg = update_func_arg;
 
    pthread_once(&mir_once_control, mir_mt_init);
 

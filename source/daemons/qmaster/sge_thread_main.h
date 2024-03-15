@@ -32,9 +32,13 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
+#include <vector>
 
 #include "sgeobj/sge_daemonize.h"
+
 #include "gdi/sge_gdi_packet.h"
+
+#include "oge_MirrorDataStore.h"
 
 typedef struct {
    /* exit state: 100 = another master took over */
@@ -65,12 +69,7 @@ typedef struct {
    cl_raw_list_t *test_thread_pool;
 
    /* Event mirror thread */
-#if 0
-   cl_raw_list_t *event_mirror_thread_pool;
-#else
-   pthread_t mirror_thread;
-#endif
-
+   std::vector<oge::MirrorDataStore *>mirror_thread_pool;
 } main_control_t;
 
 extern main_control_t Main_Control;

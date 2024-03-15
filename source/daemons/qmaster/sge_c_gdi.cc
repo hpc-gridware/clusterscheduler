@@ -507,7 +507,8 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
 
                sge_add_event_client(ep, &(task->answer_list),
                                     (sub_command & SGE_GDI_RETURN_NEW_VERSION) ? &(task->data_list) : nullptr,
-                                    packet->user, packet->host, (event_client_update_func_t) nullptr, monitor);
+                                    packet->user, packet->host,
+                                    (event_client_update_func_t) nullptr, nullptr, monitor);
             }
          }
       } else if (task->target == SGE_JB_LIST) {

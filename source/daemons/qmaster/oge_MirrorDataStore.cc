@@ -1,7 +1,7 @@
-/*___INFO__MARK_BEGIN_CLOSED__*/
-/*___INFO__MARK_END_CLOSED__*/
+/*___INFO__MARK_BEGIN_NEW__*/
+/*___INFO__MARK_END_NEW__*/
 
-#include <string>
+#include <functional>
 
 #include "uti/sge_component.h"
 #include "uti/sge_mtutil.h"
@@ -14,137 +14,9 @@
 
 #include "sgeobj/sge_report.h"
 
-#include "oge_thread_event_mirror.h"
+#include "oge_MirrorDataStore.h"
 #include "setup_qmaster.h"
-#include "sge_thread_main.h"
 #include "sge_lock.h"
-
-struct event_mirror_control_t {
-   const std::string mutex_name;       ///< unique mutex name
-   pthread_mutex_t mutex;              ///< used to secure other attributes within this object
-   pthread_cond_t cond_var;            ///< used to wait for new events
-   bool exit;                          ///< true -> exit event processing
-   bool triggered;                     ///< true if new events are pending that need to get processed
-   lList *new_events;                  ///< new events that neet to get processed
-};
-
-event_mirror_control_t event_mirror_control = {
-        "event_mirror_control_mutex",  // mutex name
-        PTHREAD_MUTEX_INITIALIZER,     // mutex
-        PTHREAD_COND_INITIALIZER,      // cond_var
-        false,                         // exit
-        false,                         // triggered
-        nullptr,                       // new_events
-};
-
-// trigger the event mirror thread to wake up either to handle events or to terminate
-void
-oge_event_mirror_wakeup() {
-   sge_mutex_lock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-   pthread_cond_signal(&event_mirror_control.cond_var);
-   sge_mutex_unlock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-}
-
-void
-oge_event_mirror_initialize() {
-   DENTER(TOP_LAYER);
-
-   auto data_store_id = oge::DataStore::Id::READER_ALL;
-   pthread_create(&Main_Control.mirror_thread, nullptr, oge_event_mirror_main, (void *)data_store_id);
-   DPRINTF("added event mirror thread for %d\n", data_store_id);
-
-   DRETURN_VOID;
-}
-
-void
-oge_event_mirror_terminate() {
-   DENTER(TOP_LAYER);
-
-   pthread_cancel(Main_Control.mirror_thread);
-
-   // wake up the mirror threads
-   oge_event_mirror_wakeup();
-   DPRINTF("triggered wake up of all " SFN " threads\n", threadnames[EVENT_MIRROR_THREAD]);
-
-   pthread_join(Main_Control.mirror_thread, nullptr);
-
-   DRETURN_VOID;
-}
-
-void
-oge_event_mirror_event_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **alpp, lList *event_list) {
-   DENTER(TOP_LAYER);
-
-   sge_mutex_lock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-
-   // move the events from control of event master to the event mirror thread
-   lListElem *new_event_obj = lFirstRW(event_list);
-   if (event_mirror_control.new_events != nullptr) {
-      lList *events = nullptr;
-      lXchgList(new_event_obj, REP_list, &events);
-      lAddList(event_mirror_control.new_events, &events);
-   } else {
-      lXchgList(new_event_obj, REP_list, &event_mirror_control.new_events);
-   }
-   event_mirror_control.triggered = true;
-   DPRINTF("event update function oge_event_mirror_event_update_func() has been triggered\n");
-
-   // trigger the event mirror thread to wake up
-   pthread_cond_signal(&event_mirror_control.cond_var);
-
-   sge_mutex_unlock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-
-   DRETURN_VOID;
-}
-
-static void
-oge_event_mirror_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
-   static const long timeout_s = 10;
-   static const long timeout_n = 0;
-   int wait_ret;
-   bool do_ack = false;
-
-   DENTER(TOP_LAYER);
-
-   // fetch events
-   {
-      sge_mutex_lock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-
-      // if we did not receive a signal about new events then we will wait for one
-      if (!event_mirror_control.triggered) {
-         struct timespec ts{};
-         u_long32 current_time = sge_get_gmt();
-         ts.tv_sec = (long) current_time + timeout_s;
-         ts.tv_nsec = timeout_n;
-
-         // wait till we get notified by event master thread that there are new events
-         wait_ret = pthread_cond_timedwait(&event_mirror_control.cond_var, &event_mirror_control.mutex, &ts);
-         if (wait_ret != 0) {
-            DPRINTF("timeout (or error) in oge_event_mirror_wait_for_event %d\n", wait_ret);
-         }
-      }
-
-      // fetch the new events
-      if (event_mirror_control.triggered) {
-         *event_list = event_mirror_control.new_events;
-         event_mirror_control.new_events = nullptr;
-         event_mirror_control.triggered = false;
-         do_ack = true;
-      }
-
-      sge_mutex_unlock(event_mirror_control.mutex_name.c_str(), __func__, __LINE__, &event_mirror_control.mutex);
-   }
-
-   // acknowledge events
-   if (do_ack) {
-      if (lGetElemUlong(*event_list, ET_type, sgeE_ACK_TIMEOUT) != nullptr) {
-         evc->ec_mark4registration(evc);
-      }
-      evc->ec_ack(evc);
-   }
-
-   DRETURN_VOID;
-}
 
 static void
 oge_event_mirror_cleanup_monitor(void *arg) {
@@ -169,14 +41,52 @@ oge_event_mirror_cleanup_data_store([[maybe_unused]] void *unused) {
    DRETURN_VOID;
 }
 
+
+void
+oge::MirrorDataStore::event_mirror_update_func(u_long32 ec_id, lList **alpp, lList *event_list, void *arg) {
+   DENTER(TOP_LAYER);
+   auto *mirror_thread = static_cast<oge::MirrorDataStore *>(arg);
+
+   sge_mutex_lock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
+
+   // move the events from control of event master to the event mirror thread
+   lListElem *new_event_obj = lFirstRW(event_list);
+   if (mirror_thread->new_events != nullptr) {
+      lList *events = nullptr;
+      lXchgList(new_event_obj, REP_list, &events);
+      lAddList(mirror_thread->new_events, &events);
+   } else {
+      lXchgList(new_event_obj, REP_list, &mirror_thread->new_events);
+   }
+   mirror_thread->triggered = true;
+   DPRINTF("event update function oge_event_mirror_event_update_func() has been triggered\n");
+
+   // trigger the event mirror thread to wake up
+   pthread_cond_signal(&mirror_thread->cond_var);
+
+   sge_mutex_unlock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
+
+   DRETURN_VOID;
+}
+
+oge::MirrorDataStore::MirrorDataStore(oge::DataStore::Id data_store_id) :
+        mutex(PTHREAD_MUTEX_INITIALIZER),
+        cond_var(PTHREAD_COND_INITIALIZER),
+        mutex_name("event_mirror_control_mutex"),
+        triggered(false),
+        new_events(nullptr),
+        data_store_id(data_store_id)
+{
+   ;
+}
+
 void *
-oge_event_mirror_main(void *arg) {
+oge::MirrorDataStore::main([[maybe_unused]] void *arg) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr; // answer_list
 
    auto thread_name = threadnames[EVENT_MIRROR_THREAD];
-   auto thread_id = (oge::DataStore::Id)(long)arg;
-   auto data_store_id = (oge::DataStore::Id)(long)arg;
+   auto thread_id = (oge::DataStore::Id)(long)data_store_id;
 
    component_set_thread_name(thread_name);
    component_set_thread_id(thread_id);
@@ -204,20 +114,19 @@ oge_event_mirror_main(void *arg) {
    oge::DataStore::select_active_ds(data_store_id);
 
    // prepare as an event client/mirror
-   sge_evc_class_t *evc = nullptr;
    bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, thread_name);
    DPRINTF("prepared event client/mirror mechanism\n");
 
    // register as event mirror and subscribe events
    if (local_ret) {
-      sge_mirror_initialize(evc, &oge_event_mirror_event_update_func, &sge_mod_event_client,
-                            &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack);
+      sge_mirror_initialize(evc, oge::MirrorDataStore::event_mirror_update_func, &sge_mod_event_client,
+                            &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack, this);
       evc->ec_register(evc, false, nullptr, &monitor);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
       DPRINTF("registered at event mirror\n");
 
-      // DS should be a copy of the master DS - wee need all events
-      sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
+      // Subscribe events that are required for the data store
+      subscribe_events();
    }
 
    // enter main loop
@@ -230,7 +139,7 @@ oge_event_mirror_main(void *arg) {
          lList *event_list = nullptr;
 
          // wait for new events
-         MONITOR_IDLE_TIME(oge_event_mirror_wait_for_event(evc, &event_list), (&monitor),
+         MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor),
                            mconf_get_monitor_time(), mconf_is_monitor_message());
 
          // if we lost connection we have to register again
@@ -325,4 +234,61 @@ oge_event_mirror_main(void *arg) {
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
    // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
    DRETURN(nullptr);
+}
+
+void
+oge::MirrorDataStore::wait_for_event(lList **event_list) {
+   static const long timeout_s = 10;
+   static const long timeout_n = 0;
+   int wait_ret;
+   bool do_ack = false;
+
+   DENTER(TOP_LAYER);
+
+   // fetch events
+   {
+      sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+
+      // if we did not receive a signal about new events then we will wait for one
+      if (!triggered) {
+         struct timespec ts{};
+         u_long32 current_time = sge_get_gmt();
+         ts.tv_sec = (long) current_time + timeout_s;
+         ts.tv_nsec = timeout_n;
+
+         // wait till we get notified by event master thread that there are new events
+         wait_ret = pthread_cond_timedwait(&cond_var, &mutex, &ts);
+         if (wait_ret != 0) {
+            DPRINTF("timeout (or error) in oge_event_mirror_wait_for_event %d\n", wait_ret);
+         }
+      }
+
+      // fetch the new events
+      if (triggered) {
+         *event_list = new_events;
+         new_events = nullptr;
+         triggered = false;
+         do_ack = true;
+      }
+
+      sge_mutex_unlock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+   }
+
+   // acknowledge events
+   if (do_ack) {
+      if (lGetElemUlong(*event_list, ET_type, sgeE_ACK_TIMEOUT) != nullptr) {
+         evc->ec_mark4registration(evc);
+      }
+      evc->ec_ack(evc);
+   }
+
+   DRETURN_VOID;
+}
+
+// trigger the event mirror thread to wake up either to handle events or to terminate
+void
+oge::MirrorDataStore::wakeup() {
+   sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+   pthread_cond_signal(&cond_var);
+   sge_mutex_unlock(mutex_name.c_str(), __func__, __LINE__, &mutex);
 }

@@ -528,7 +528,7 @@ sge_scheduler_main(void *arg) {
     * register as event mirror
     */
    sge_mirror_initialize(evc, &event_update_func, &sge_mod_event_client,
-                         &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack);
+                         &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack, nullptr);
    evc->ec_register(evc, false, nullptr, &monitor);
    evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
    DPRINTF("registered at event mirror\n");

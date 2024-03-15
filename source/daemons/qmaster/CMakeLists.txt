@@ -4,6 +4,10 @@ add_executable(
       configuration_qmaster.cc
       job_exit.cc
       job_report_qmaster.cc
+      oge_MirrorDataStore.cc
+      oge_MirrorReaderDataStore.cc
+      oge_MirrorListenerDataStore.cc
+      oge_thread_mirror.cc
       qmaster_to_execd.cc
       reschedule.cc
       sched_conf_qmaster.cc
@@ -59,8 +63,7 @@ add_executable(
       ../../common/sge_options.cc
       ../../common/usage.cc
       ../../common/execution_states.cc
-      oge_thread_event_mirror.cc
-      oge_thread_event_mirror.h)
+)
 
 target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
 

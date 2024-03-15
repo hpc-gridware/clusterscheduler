@@ -79,7 +79,7 @@
 *
 *******************************************************************************/
 void
-event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
+event_update_func(u_long32 ec_id, lList **alpp, lList *event_list, void *arg)
 {
    DENTER(TOP_LAYER);
 

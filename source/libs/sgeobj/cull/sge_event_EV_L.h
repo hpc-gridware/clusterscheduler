@@ -129,7 +129,8 @@ enum {
    EV_events,
    EV_sub_array,
    EV_state,
-   EV_update_function
+   EV_update_function,
+   EV_update_function_arg
 };
 
 LISTDEF(EV_Type)
@@ -154,6 +155,7 @@ LISTDEF(EV_Type)
    SGE_REF(EV_sub_array, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_ULONG(EV_state, CULL_DEFAULT)
    SGE_REF(EV_update_function, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(EV_update_function_arg, CULL_ANY_SUBTYPE, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(EVN)
@@ -178,6 +180,7 @@ NAMEDEF(EVN)
    NAME("EV_sub_array")
    NAME("EV_state")
    NAME("EV_update_function")
+   NAME("EV_update_function_arg")
 NAMEEND
 
 #define EV_SIZE sizeof(EVN)/sizeof(char *)

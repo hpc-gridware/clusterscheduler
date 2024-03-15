@@ -51,6 +51,7 @@ typedef struct {
    evm_mod_func_t mod_func;
    evm_remove_func_t remove_func;
    evm_ack_func_t ack_func;
+   void *update_func_arg;
 } local_t;
 
 

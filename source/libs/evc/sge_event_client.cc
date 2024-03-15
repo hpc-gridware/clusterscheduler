@@ -1386,7 +1386,8 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
          ** set busy handling, sets EV_changed to true if it is really changed
          */
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
-         evc_local->add_func(sge_evc->ec, &alp, &eclp, (char*)ruser, (char*)rhost, evc_local->update_func, monitor);
+         evc_local->add_func(sge_evc->ec, &alp, &eclp, (char*)ruser, (char*)rhost,
+                             evc_local->update_func, evc_local->update_func_arg, monitor);
          if (eclp) {
             sge_evc->ec_reg_id = lGetUlong(lFirst(eclp), EV_id);
             lFreeList(&eclp);
@@ -2482,6 +2483,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
       ruser = bootstrap_get_admin_user();
       rhost = gdi_get_act_master_host(false);
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
+      lSetRef(sge_evc->ec, EV_update_function_arg, (void *)evc_local->update_func_arg);
 
       /*
        *  to add may also means to modify

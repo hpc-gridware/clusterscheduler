@@ -423,7 +423,8 @@ static void sge_event_master_process_add_event_client(const lListElem *request, 
 }
 
 int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *ruser, 
-                         char *rhost, event_client_update_func_t update_func, monitoring_t *monitor)
+                         char *rhost, event_client_update_func_t update_func,
+                         void *update_func_arg, monitoring_t *monitor)
 {
    lListElem *ep = nullptr;
    u_long32 now;
@@ -538,6 +539,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
    lSetRef(ep, EV_update_function, (void*) update_func);
+   lSetRef(ep, EV_update_function_arg, update_func_arg);
 #pragma GCC diagnostic pop
    lSetBool(clio, EV_changed, false);
 
@@ -2063,6 +2065,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
    u_long32 now;
    u_long32 ec_id = 0;
    event_client_update_func_t update_func = nullptr;
+   void *update_func_arg = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2093,6 +2096,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
       update_func = (event_client_update_func_t) lGetRef(event_client, EV_update_function);
+      update_func_arg = lGetRef(event_client, EV_update_function_arg);
 #pragma GCC diagnostic pop
 
       host = lGetHost(event_client, EV_host);
@@ -2179,7 +2183,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
             lXchgList(report, REP_list, &lp);
 
             if (update_func != nullptr) {
-               update_func(ec_id, nullptr, report_list);
+               update_func(ec_id, nullptr, report_list, update_func_arg);
                ret = CL_RETVAL_OK;
             } else {
                ret = report_list_send(report_list, host, commproc, commid, 0);

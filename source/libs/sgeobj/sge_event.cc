@@ -602,18 +602,12 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_FLUSHDELAYCANNOTBEGTDTIME);
          ret = false;
-/* printf("EV_flush_delay false\n");          */
       }
    }
 
    /* subscription */
    if (ret) {
       ret = event_client_verify_subscription(event_client, answer_list, (int)d_time);
-#if 0      
-if (ret == false) {
-   printf("event_client_verify_subscription false\n");         
-}
-#endif
    }
 
    /* busy handling comes from an enum with defined set of values */
@@ -624,7 +618,6 @@ if (ret == false) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDBUSYHANDLING);
          ret = false;
-/* printf("EV_busy_handling false\n");          */
       }
    }
 
@@ -635,10 +628,8 @@ if (ret == false) {
          if (verify_str_key(
          answer_list, session, MAX_VERIFY_STRING,
          "session key", KEY_TABLE) != STATUS_OK) {
-            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                    MSG_EVENT_INVALIDSESSIONKEY);
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_EVENT_INVALIDSESSIONKEY);
             ret = false;
-/* printf("EV_session false\n");          */
          }
       }
    }
@@ -646,10 +637,8 @@ if (ret == false) {
    /* disallow an EV_update_function from event_client request */
    if (ret) {
       if (lGetRef(event_client, EV_update_function) != nullptr) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                 MSG_EVENT_INVALIDUPDATEFUNCTION);
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_EVENT_INVALIDUPDATEFUNCTION);
          ret = false;
-/* printf("EV_update_function false\n");          */
       }
    }
 
