@@ -31,6 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <fstream>
+
 #include "basis_types.h"
 #include "sge_dstring.h"
 
@@ -219,8 +221,8 @@ int sge_is_valid_filename2(const char *fname);
 
 int sge_is_valid_filename(const char *fname);
 
-int sge_spoolmsg_write(FILE *file, char comment_char,
-                       const char *version);
+int sge_spoolmsg_write(FILE *file, char comment_char, const char *version);
+int sge_spoolmsg_write(std::ofstream &stream, char comment_char, const char *version);
 
 void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version);
 

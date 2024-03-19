@@ -143,6 +143,7 @@ lUlong lGetUlong(const lListElem *ep, int name);
 lUlong64 lGetUlong64(const lListElem *ep, int name);
 
 const char *lGetString(const lListElem *ep, int name);
+const char *lGetStringNotNull(const lListElem *ep, int name);
 
 const char *lGetHost(const lListElem *ep, int name);
 

@@ -1058,7 +1058,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       sge_free(&qmaster_params);
       sge_free(&execd_params);
       sge_free(&reporting_params);
-
    }
 
    lFreeList(&mlist);

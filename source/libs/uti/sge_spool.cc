@@ -393,6 +393,15 @@ int sge_spoolmsg_write(FILE *file, char comment_char, const char *version) {
    return -1;
 }
 
+int sge_spoolmsg_write(std::ofstream &stream, char comment_char, const char *version) {
+   stream << comment_char << " Version: " << version << '\n';
+   for (int i = 0; spoolmsg_message[i] != nullptr; ++i) {
+      stream << comment_char << spoolmsg_message[i] << '\n';
+   }
+
+   return stream.fail() ? -1 : 0;
+}
+
 void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version) {
    int i = 0;
 

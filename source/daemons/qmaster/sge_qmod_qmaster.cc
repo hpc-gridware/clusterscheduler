@@ -68,6 +68,7 @@
 
 #include "spool/sge_spooling.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge.h"
 #include "sge_pe_qmaster.h"
 #include "evm/sge_queue_event_master.h"
@@ -782,7 +783,7 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
                             jep, jatep, nullptr, true, true);
          }
       }
-      reporting_create_job_log(nullptr, now, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+      oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
    }
    DRETURN_VOID;
 }
@@ -821,7 +822,7 @@ qmod_job_unsuspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long3
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
                          jep, jatep, nullptr, true, true);
-         reporting_create_job_log(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
          DRETURN_VOID;
       } else {
          /* guess admin tries to remove threshold suspension by qmon -us <jobid> */
@@ -920,7 +921,7 @@ qmod_job_unsuspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long3
          }
       }
    }
-   reporting_create_job_log(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+   oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
    DRETURN_VOID;
 }
 

@@ -47,6 +47,7 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_report_execd.h"
 #include "execution_states.h"
 #include "job_report_qmaster.h"
@@ -55,7 +56,6 @@
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "reschedule.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_daemons_common.h"
 #include "msg_qmaster.h"
@@ -386,9 +386,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                       * reporting file to have correct daily usage reporting with
                       * long running jobs
                       */
-                     if (reporting_is_intermediate_acct_required(jep, jatep, petask)) {
+                     if (oge::ReportingFileWriter::is_intermediate_acct_required(jep, jatep, petask)) {
                         /* write intermediate usage */
-                        reporting_create_acct_record(nullptr, jr, jep, jatep, true);
+                        oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, true);
 
                         /* this action has changed the ja_task/pe_task - spool */
                         if (pe_task_id_str != nullptr) {
@@ -638,7 +638,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            DPRINTF("--- petask " SFN " -> final usage\n", job_id_string);
                            lSetUlong(petask, PET_status, JFINISHED);
 
-                           reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+                           oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
 
                            /* add tasks (scaled) usage to past usage container */
                            {

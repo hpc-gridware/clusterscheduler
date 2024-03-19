@@ -67,6 +67,7 @@
 #include "sgeobj/sge_jsv.h"
 
 #include "configuration_qmaster.h"
+#include "oge_ReportingFileWriter.h"
 #include "sge.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_userset_qmaster.h"
@@ -376,7 +377,6 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       lListElem *global = nullptr;
       lList *answer_list = nullptr;
       char *qmaster_params = nullptr;
-      int accounting_flush_time = mconf_get_accounting_flush_time();
 
       if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
          WARNING(MSG_CONFIG_NOLOCAL_S, qualified_hostname);
@@ -390,14 +390,6 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
          ERROR(MSG_CONF_CANTMERGECONFIGURATIONFORHOST_S, qualified_hostname);
       }
       answer_list_output(&answer_list);
-
-      /* Restart the accounting flush event if needed. */
-      if ((accounting_flush_time == 0) &&
-          (mconf_get_accounting_flush_time() != 0)) {
-         te_event_t ev = te_new_event(time(nullptr), TYPE_ACCOUNTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
-         te_add_event(ev);
-         te_free_event(&ev);
-      }
 
       lFreeElem(&local);
       lFreeElem(&global);
@@ -414,6 +406,9 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       cl_com_update_parameter_list(qmaster_params);
 
       sge_free(&qmaster_params);
+
+      // propagate possible changes in the reporting_params to reporting writers
+      oge::ReportingFileWriter::update_config_all();
    }
 
    /* invalidate configuration cache */

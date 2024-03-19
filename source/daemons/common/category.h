@@ -31,6 +31,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/sge_dstring.h"
+#include "cull/cull.h"
+
 void
 sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, bool *did_project, const lList *lirs_list); 
 

@@ -56,6 +56,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_conf.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_job_enforce_limit.h"
 #include "sge_reporting_qmaster.h"
@@ -429,7 +430,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                            lListElem *dummy_jr = lCreateElem(JR_Type);
 
                            job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
-                           reporting_create_acct_record(nullptr, dummy_jr, job, ja_task, false);
+                           oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
                            lFreeElem(&dummy_jr);
                         }
                      }
@@ -440,9 +441,9 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    */
                   dummy_jr = lCreateElem(JR_Type);
                   job_report_init_from_job_with_usage(dummy_jr, job, ja_task, nullptr, now);
-                  reporting_create_acct_record(nullptr, dummy_jr, job, ja_task, false);
+                  oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
                   lFreeElem(&dummy_jr);
-                  reporting_create_job_log(nullptr, now, JL_DELETED, MSG_SCHEDD,
+                  oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD,
                                            lGetHost(gdil_ep, JG_qhostname),
                                            nullptr, job, ja_task, nullptr, MSG_LOG_DELFORCED);
 

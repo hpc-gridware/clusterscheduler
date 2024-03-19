@@ -58,12 +58,12 @@
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_serf.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_persistence_qmaster.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_subordinate_qmaster.h"
 #include "sge_qmod_qmaster.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "msg_qmaster.h"
 
@@ -933,7 +933,7 @@ sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_s
    bool changed;
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
       sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_DISABLED, set_state);
    }
@@ -947,7 +947,7 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
    bool changed;
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
       sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_SUSPENDED, set_state);
    }
@@ -961,7 +961,7 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_unknown(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
       if (mconf_get_simulate_execds()) {
          sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                      lGetString(this_elem, QU_full_name), QI_UNKNOWN, false);
@@ -980,7 +980,7 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
       sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_ERROR, set_state);
    }
@@ -994,7 +994,7 @@ sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state
    bool changed;
    changed = qinstance_state_set_susp_on_sub(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
    }
 
    return changed;
@@ -1005,7 +1005,7 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
    bool changed;
    changed = qinstance_state_set_cal_disabled(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
    }
 
    return changed;
@@ -1016,7 +1016,7 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
    bool changed;
    changed = qinstance_state_set_cal_suspended(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
    }
 
    return changed;
@@ -1027,7 +1027,7 @@ sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_orphaned(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
    }
 
    return changed;
@@ -1038,7 +1038,7 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) 
    bool changed;
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
-      reporting_create_queue_record(nullptr, this_elem, sge_get_gmt());
+      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt());
       sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_AMBIGUOUS, set_state);
    }

@@ -71,6 +71,7 @@
 
 #include "spool/sge_spooling.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "symbols.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -87,7 +88,6 @@
 #include "sge_utility_qmaster.h"
 #include "qmaster_to_execd.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_job_enforce_limit.h"
 
@@ -751,7 +751,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
             sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                             0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
                             host_ep, nullptr, nullptr, true, statics_changed);
-            reporting_create_host_record(&answer_list, *hepp, now);
+            oge::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
             statics_changed = false;
          }
 
@@ -802,14 +802,14 @@ sge_update_load_values(const char *rhost, lList *lp) {
                       0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
                       *hepp, nullptr, nullptr, true, statics_changed);
 
-      reporting_create_host_record(&answer_list, *hepp, now);
+      oge::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
    }
 
    if (global_ep) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, SGE_GLOBAL_NAME, nullptr, nullptr,
                       global_ep, nullptr, nullptr, true, false);
-      reporting_create_host_record(&answer_list, global_ep, now);
+      oge::ReportingFileWriter::create_host_records(&answer_list, global_ep, now);
    }
    answer_list_output(&answer_list);
 

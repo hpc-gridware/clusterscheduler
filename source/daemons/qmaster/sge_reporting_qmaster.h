@@ -41,31 +41,11 @@
 
 #include "sgeobj/sge_daemonize.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 
-
-typedef enum {
-   JL_UNKNOWN = 0,   /* job is in unknown state - should never be seen */
-   JL_PENDING,       /* job is pending */
-   JL_SENT,          /* job has been sent to execd */
-   JL_RESENT,        /* job has been resent to execd - sent hasn't been ack */
-   JL_DELIVERED,     /* job has been delivered - execd replied with ack */
-   JL_RUNNING,       /* job is running (reported by execd) */
-   JL_SUSPENDED,     /* job has been suspended */
-   JL_UNSUSPENDED,   /* job has been unsuspended */
-   JL_HELD,          /* a hold was applied */
-   JL_RELEASED,      /* all holds were released */
-   JL_RESTART,       /* a restart of the job was requested */
-   JL_MIGRATE,       /* a migration was requested */
-   JL_DELETED,       /* the job has been deleted */
-   JL_FINISHED,      /* the job has finished */
-   JL_ERROR,         /* job is in error state */
-
-   JL_ALL
-} job_log_t;
-
-bool
-reporting_initialize(lList **answer_list);
+void
+reporting_initialize();
 
 bool
 reporting_shutdown(lList **answer_list, bool do_spool);
@@ -74,43 +54,96 @@ void
 reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
-reporting_create_new_job_record(lList **answer_list, const lListElem *job);
+intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task);
 
-bool
-reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log_t, const char *user, const char *host,
-                         const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
-                         const lListElem *pe_task, const char *message);
+namespace oge {
+   class ClassicReportingFileWriter : public ReportingFileWriter {
+   private:
+      static const char REPORTING_DELIMITER{':'};
+      bool do_joblog;
+      bool log_consumables;
+      u_long32 sharelog_interval;
+      u_long32 next_sharelog;
+   public:
+      ClassicReportingFileWriter() : ReportingFileWriter(bootstrap_get_reporting_file()),
+      do_joblog(false), log_consumables(false), sharelog_interval(0), next_sharelog(0) {
+      }
 
-bool
-reporting_create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                             lListElem *ja_task, bool intermediate);
+      u_long32
+      trigger(monitoring_t *monitor) override;
 
-bool
-reporting_create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time);
+      void update_config() override;
 
-bool
-reporting_create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
-                                        u_long32 report_time);
+      void
+      create_record(const char *type, const char *data);
 
-bool
-reporting_create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time);
+      bool
+      create_new_job_record(lList **answer_list, const lListElem *job) override;
 
-bool
-reporting_create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                         const lListElem *job, u_long32 report_time);
+      bool
+      create_job_log(lList **answer_list, u_long32 event_time, job_log_t, const char *user, const char *host,
+                     const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
+                     const lListElem *pe_task, const char *message) override;
 
-bool
-reporting_is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task);
+      bool
+      create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
+                         lListElem *ja_task, bool intermediate) override;
 
-bool
-reporting_create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      bool
+      create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time) override;
 
-bool
-reporting_create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      bool
+      create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
+                                    u_long32 report_time) override;
 
-bool
-reporting_create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                               const char *ar_description, u_long32 report_time);
+      bool
+      create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time) override;
 
-bool
-reporting_create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      bool
+      create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
+                                     const lListElem *job, u_long32 report_time) override;
+
+      bool
+      create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+
+      bool
+      create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+
+      bool
+      create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
+                           const char *ar_description, u_long32 report_time) override;
+
+      bool
+      create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+
+      void
+      create_sharelog_record(monitoring_t *monitor);
+
+      // non virtual functions
+      static void
+      create_single_ar_acct_record(dstring *dstr, const lListElem *ar, const char *cqueue_name,
+                                   const char *hostname, u_long32 slots, u_long32 report_time);
+
+      bool
+      write_load_values(lList **answer_list, dstring *buffer,
+                        const lList *load_list, const lList *variables);
+      void
+      reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *actual, const lList *total,
+                                  const lListElem *host, const lListElem *job) const;
+   };
+
+   class ClassicAccountingFileWriter : public ReportingFileWriter {
+   private:
+      static const char REPORTING_DELIMITER = ':';
+   public:
+      ClassicAccountingFileWriter() : ReportingFileWriter(bootstrap_get_acct_file()) {
+      }
+
+      void update_config() override;
+
+      bool
+      create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
+                         lListElem *ja_task, bool intermediate) override;
+
+   };
+}

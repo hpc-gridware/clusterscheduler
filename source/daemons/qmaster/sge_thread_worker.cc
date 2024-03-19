@@ -39,7 +39,6 @@
 #include "uti/sge_os.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/oge_DataStore.h"
 
@@ -92,7 +91,7 @@ sge_worker_initialize() {
    sge_init_ar_id();
    DPRINTF("job/ar counter have been initialized\n");
 
-   reporting_initialize(nullptr);
+   reporting_initialize();
    DPRINTF("accounting and reporting module has been initialized\n");
 
    INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]);

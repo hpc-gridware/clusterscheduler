@@ -35,7 +35,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
-#include <pwd.h>
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -79,10 +78,10 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_utility_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_job_qmaster.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_qinstance_qmaster.h"
 #include "mail.h"
@@ -155,10 +154,10 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
          ar_do_reservation(ar, false);
 
-         reporting_create_ar_log_record(nullptr, ar, ARL_TERMINATED,
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                         "end time of AR reached",
                                         now);
-         reporting_create_ar_acct_records(nullptr, ar, now);
+         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
          sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
 
@@ -404,10 +403,10 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 
    /* with old_ep it is possible to identify if it is an add or modify request */
    if (old_ep == nullptr) {
-      reporting_create_new_ar_record(nullptr, ep, timestamp);
-      reporting_create_ar_attribute_record(nullptr, ep, timestamp);
+      oge::ReportingFileWriter::create_new_ar_records(nullptr, ep, timestamp);
+      oge::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
    } else {
-      reporting_create_ar_attribute_record(nullptr, ep, timestamp);
+      oge::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
    }
 
    /*
@@ -615,10 +614,10 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
          /* unblock reserved queues */
          ar_do_reservation(ar, false);
 
-         reporting_create_ar_log_record(nullptr, ar, ARL_DELETED,
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED,
                                         "AR deleted",
                                         now);
-         reporting_create_ar_acct_records(nullptr, ar, now);
+         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
          gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp);
 
@@ -936,10 +935,10 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       /* unblock reserved queues */
       ar_do_reservation(ar, false);
 
-      reporting_create_ar_log_record(nullptr, ar, ARL_TERMINATED,
+      oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                      "end time of AR reached",
                                      timestamp);
-      reporting_create_ar_acct_records(nullptr, ar, timestamp);
+      oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, timestamp);
 
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
@@ -968,7 +967,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
                     sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
       lListElem_clear_changed_info(ar);
 
-      reporting_create_ar_log_record(nullptr, ar, ARL_STARTTIME_REACHED,
+      oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
                                      sge_get_gmt());
 
@@ -1913,7 +1912,7 @@ sge_ar_state_set_running(lListElem *ar) {
       lSetUlong(ar, AR_state, AR_ERROR);
       if (old_state != AR_WARNING && old_state != lGetUlong(ar, AR_state)) {
          /* state change from "running" to "error" */
-         reporting_create_ar_log_record(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt());
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
       } else if (old_state != lGetUlong(ar, AR_state)) {
          /* state change from "warning" to "error" */
@@ -1923,7 +1922,7 @@ sge_ar_state_set_running(lListElem *ar) {
       lSetUlong(ar, AR_state, AR_RUNNING);
       if (old_state != AR_WAITING && old_state != lGetUlong(ar, AR_state)) {
          /* state change from "error" to "running" */
-         reporting_create_ar_log_record(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt());
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
       }
    }
@@ -1963,12 +1962,12 @@ sge_ar_state_set_waiting(lListElem *ar) {
    if (sge_ar_has_errors(ar)) {
       lSetUlong(ar, AR_state, AR_WARNING);
       if (old_state != lGetUlong(ar, AR_state)) {
-         reporting_create_ar_log_record(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt());
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt());
       }
    } else {
       lSetUlong(ar, AR_state, AR_WAITING);
       if (old_state != lGetUlong(ar, AR_state)) {
-         reporting_create_ar_log_record(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt());
+         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt());
       }
    }
 }

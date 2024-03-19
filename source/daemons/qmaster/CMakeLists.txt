@@ -7,6 +7,7 @@ add_executable(
       oge_MirrorDataStore.cc
       oge_MirrorReaderDataStore.cc
       oge_MirrorListenerDataStore.cc
+      oge_ReportingFileWriter.cc
       oge_thread_mirror.cc
       qmaster_to_execd.cc
       reschedule.cc
@@ -95,6 +96,7 @@ target_include_directories(test_sge_qmaster_timed_event PRIVATE "./")
 target_link_libraries(test_sge_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_calendar test_sge_calendar.cc
+        oge_ReportingFileWriter.cc
       sge_calendar_qmaster.cc sge_utility_qmaster.cc sge_advance_reservation_qmaster.cc
       sge_qmaster_timed_event.cc sge_reporting_qmaster.cc sge_rusage.cc sge_qinstance_qmaster.cc
       sge_qmod_qmaster.cc sge_job_qmaster.cc sge_give_jobs.cc sge_subordinate_qmaster.cc

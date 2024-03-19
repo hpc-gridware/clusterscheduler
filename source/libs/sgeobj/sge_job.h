@@ -460,3 +460,4 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name);
 
 bool
 job_init_binding_elem(lListElem *jep);
+

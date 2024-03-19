@@ -56,9 +56,10 @@
 #include "spool/sge_spooling.h"
 
 #include "evm/sge_event_master.h"
+
+#include "oge_ReportingFileWriter.h"
 #include "sge_c_gdi.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_reporting_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
@@ -562,13 +563,13 @@ void centry_redebit_consumables(const lList *centries) {
          for_each_ep(qinstance, qinstance_list) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
             const lListElem *host = lGetElemHost(master_ehost_list, EH_name, hostname);
-            reporting_create_queue_consumable_record(&answer_list, host, qinstance, nullptr, now);
+            oge::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, qinstance, nullptr, now);
          }
       }
       answer_list_output(&answer_list);
       /* dump all host consumables */
       for_each_rw (hep, master_ehost_list) {
-         reporting_create_host_consumable_record(&answer_list, hep, nullptr, now);
+         oge::ReportingFileWriter::create_host_consumable_records(&answer_list, hep, nullptr, now);
       }
       answer_list_output(&answer_list);
    }

@@ -77,6 +77,7 @@
 
 #include "spool/sge_spooling.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge.h"
 #include "basis_types.h"
 #include "sge_subordinate_qmaster.h"
@@ -713,7 +714,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
             lSetDouble(ue, UA_value, runtime);
 
             lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
-            reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+            oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
             sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
          }
          lFreeElem(&jr);
@@ -940,7 +941,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             compute_qwallclock = true;
          }
 
-         reporting_create_job_log(nullptr, now, JL_SENT, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_SENT, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
                                   MSG_LOG_SENT2EXECD);
 
          global_host_ep = host_list_locate(master_exechost_list, "global");
@@ -988,7 +989,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 "global", nullptr, nullptr, global_host_ep);
-                  reporting_create_host_consumable_record(&answer_list, global_host_ep, jep, now);
+                  oge::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, jep, now);
                   answer_list_output(&answer_list);
                   lListElem_clear_changed_info(global_host_ep);
                }
@@ -997,12 +998,12 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 queue_hostname, nullptr, nullptr, host);
-                  reporting_create_host_consumable_record(&answer_list, host, jep, now);
+                  oge::ReportingFileWriter::create_host_consumable_records(&answer_list, host, jep, now);
                   answer_list_output(&answer_list);
                   lListElem_clear_changed_info(host);
                }
                qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, nullptr);
-               reporting_create_queue_consumable_record(&answer_list, host, queue, jep, now);
+               oge::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, jep, now);
                answer_list_output(&answer_list);
                /* this info is not spooled */
                qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
@@ -1050,7 +1051,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
       }
       case COMMIT_ST_ARRIVED:
          lSetUlong(jatep, JAT_status, JRUNNING);
-         reporting_create_job_log(nullptr, now, JL_DELIVERED, MSG_QMASTER, qualified_hostname,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELIVERED, MSG_QMASTER, qualified_hostname,
                                   jr, jep, jatep, nullptr, MSG_LOG_DELIVERED);
          job_enroll(jep, nullptr, jataskid);
          {
@@ -1069,7 +1070,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
       case COMMIT_ST_FAILED_AND_ERROR:
          WARNING(MSG_JOB_RESCHEDULE_UU, sge_u32c(jobid), sge_u32c(jataskid));
 
-         reporting_create_job_log(nullptr, now, JL_RESTART, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_RESTART, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
                                   SGE_EVENT);
          /* JG: TODO: no accounting record created? Or somewhere else? */
          /* add a reschedule unknown list entry to all slave
@@ -1193,7 +1194,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          break;
 
       case COMMIT_ST_FINISHED_FAILED:
-         reporting_create_job_log(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname, jr, jep,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname, jr, jep,
                                   jatep, nullptr, MSG_LOG_EXITED);
          remove_from_reschedule_unknown_lists(jobid, jataskid);
          if (handle_zombies) {
@@ -1206,7 +1207,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events);
          break;
       case COMMIT_ST_FINISHED_FAILED_EE:
-         reporting_create_job_log(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
                                   jr, jep, jatep, nullptr, MSG_LOG_WAIT4SGEDEL);
          remove_from_reschedule_unknown_lists(jobid, jataskid);
 
@@ -1264,7 +1265,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
       case COMMIT_ST_DEBITED_EE: /* triggered by ORT_remove_job */
       case COMMIT_ST_NO_RESOURCES: /* triggered by ORT_remove_immediate_job */
-         reporting_create_job_log(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, jr, jep, jatep, nullptr,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, jr, jep, jatep, nullptr,
                                   (mode == COMMIT_ST_DEBITED_EE) ? MSG_LOG_DELSGE : MSG_LOG_DELIMMEDIATE);
 
          if (mode == COMMIT_ST_NO_RESOURCES) {
@@ -1276,7 +1277,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
       case COMMIT_ST_DELIVERY_FAILED:
          /* The same as case COMMIT_ST_RESCHEDULED except sge_clear_granted_resources() may not increase free slots. */
          WARNING(MSG_JOB_RESCHEDULE_UU, sge_u32c(jobid), sge_u32c(jataskid));
-         reporting_create_job_log(nullptr, now, JL_RESTART, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_RESTART, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
                                   SGE_EVENT);
          lSetUlong(jatep, JAT_status, JIDLE);
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
@@ -1553,7 +1554,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              "global", nullptr, nullptr, global_host_ep);
-               reporting_create_host_consumable_record(&answer_list, global_host_ep, job, now);
+               oge::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, job, now);
                answer_list_output(&answer_list);
                lListElem_clear_changed_info(global_host_ep);
             }
@@ -1562,12 +1563,12 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                              queue_hostname, nullptr, nullptr, host);
-               reporting_create_host_consumable_record(&answer_list, host, job, now);
+               oge::ReportingFileWriter::create_host_consumable_records(&answer_list, host, job, now);
                answer_list_output(&answer_list);
                lListElem_clear_changed_info(host);
             }
             qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, nullptr);
-            reporting_create_queue_consumable_record(&answer_list, host, queue, job, now);
+            oge::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, job, now);
             /* this info is not spooled */
             qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
             lListElem_clear_changed_info(queue);

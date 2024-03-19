@@ -94,9 +94,9 @@
 
 #include "spool/sge_spooling.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_task_depend.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_job_verify.h"
 #include "sge_qmaster_main.h"
@@ -331,8 +331,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    /* do job logging */
-   reporting_create_new_job_record(nullptr, *jep);
-   reporting_create_job_log(nullptr, lGetUlong(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
+   oge::ReportingFileWriter::create_new_job_records(nullptr, *jep);
+   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
                             *jep, nullptr, nullptr, MSG_LOG_NEWJOB);
 
    /*
@@ -1021,8 +1021,8 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
-         reporting_create_acct_record(nullptr, dummy_jr, j, t, false);
-         reporting_create_job_log(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
+         oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, j, t, false);
+         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
          sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
@@ -3744,7 +3744,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
 
             (*deleted_tasks)++;
 
-            reporting_create_job_log(nullptr, sge_get_gmt(), JL_DELETED,
+            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED,
                                      ruser, rhost, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
             sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -3771,7 +3771,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
             sge_dstring_free(&buffer);
          } else {
             /* JG: TODO: this joblog seems to have an invalid job object! */
-/*                reporting_create_job_log(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, nullptr, nullptr, MSG_LOG_DELETED); */
+/*                oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, nullptr, nullptr, MSG_LOG_DELETED); */
 
 #if 0 /* EB: TODO: this should not be necessary because events have been sent in sge_commit_job() above */
             sge_add_event(start_time, sgeE_JOB_DEL, job_number, 0, 
@@ -3873,7 +3873,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                   DRETURN(njobs);
                }
 
-               reporting_create_job_log(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
+               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
                                         MSG_LOG_DELETED);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
@@ -4033,5 +4033,67 @@ job_verify_project(const lListElem *job, lList **alpp,
 
    lFreeList(&projects);
    DRETURN(ret);
+}
+
+/*
+* NOTES
+*     MT-NOTE: reporting_get_job_log_name() is MT-safe
+*/
+const char *
+get_job_log_name(const job_log_t type) {
+   const char *ret;
+
+   switch (type) {
+      case JL_UNKNOWN:
+         ret = MSG_JOBLOG_ACTION_UNKNOWN;
+         break;
+      case JL_PENDING:
+         ret = MSG_JOBLOG_ACTION_PENDING;
+         break;
+      case JL_SENT:
+         ret = MSG_JOBLOG_ACTION_SENT;
+         break;
+      case JL_RESENT:
+         ret = MSG_JOBLOG_ACTION_RESENT;
+         break;
+      case JL_DELIVERED:
+         ret = MSG_JOBLOG_ACTION_DELIVERED;
+         break;
+      case JL_RUNNING:
+         ret = MSG_JOBLOG_ACTION_RUNNING;
+         break;
+      case JL_SUSPENDED:
+         ret = MSG_JOBLOG_ACTION_SUSPENDED;
+         break;
+      case JL_UNSUSPENDED:
+         ret = MSG_JOBLOG_ACTION_UNSUSPENDED;
+         break;
+      case JL_HELD:
+         ret = MSG_JOBLOG_ACTION_HELD;
+         break;
+      case JL_RELEASED:
+         ret = MSG_JOBLOG_ACTION_RELEASED;
+         break;
+      case JL_RESTART:
+         ret = MSG_JOBLOG_ACTION_RESTART;
+         break;
+      case JL_MIGRATE:
+         ret = MSG_JOBLOG_ACTION_MIGRATE;
+         break;
+      case JL_DELETED:
+         ret = MSG_JOBLOG_ACTION_DELETED;
+         break;
+      case JL_FINISHED:
+         ret = MSG_JOBLOG_ACTION_FINISHED;
+         break;
+      case JL_ERROR:
+         ret = MSG_JOBLOG_ACTION_ERROR;
+         break;
+      default:
+         ret = "!!!! unknown job state !!!!";
+         break;
+   }
+
+   return ret;
 }
 

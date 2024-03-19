@@ -949,6 +949,19 @@ const char *lGetString(const lListElem *ep, int name) {
    DRETURN((lString) ep->cont[pos].str);
 }
 
+/*
+* NOTES
+*     MT-NOTE: MT-safety depends on lGetString (which has no MT-NOTE)
+*              lGetStringNotNull() itself is MT-safe
+*/
+const char *lGetStringNotNull(const lListElem *ep, int name) {
+   const char *ret = lGetString(ep, name);
+   if (ret == nullptr) {
+      ret = "";
+   }
+   return ret;
+}
+
 /****** cull/multitype/lGetHost() **********************************************
 *  NAME
 *     lGetHost() -- Return hostname string for specified field 

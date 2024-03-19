@@ -45,10 +45,10 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
 
+#include "oge_ReportingFileWriter.h"
 #include "sge_give_jobs.h"
 #include "execution_states.h"
 #include "symbols.h"
-#include "sge_reporting_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_persistence_qmaster.h"
@@ -155,9 +155,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
     */
    if (((lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) || (failed && !lGetString(jep, JB_exec_file)) ||
        (failed && general_failure == GFSTATE_JOB && JOB_TYPE_IS_NO_ERROR(lGetUlong(jep, JB_type)))) {
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JREMOVED);
 
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
@@ -183,8 +183,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
                ar_do_reservation(ar, false);
 
-               reporting_create_ar_log_record(nullptr, ar, ARL_DELETED, "AR deleted", timestamp);
-               reporting_create_ar_acct_records(nullptr, ar, timestamp);
+               oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED, "AR deleted", timestamp);
+               oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, timestamp);
 
                lRemoveElem(master_ar_list, &ar);
 
@@ -204,9 +204,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
        */
    else if ((failed && general_failure == GFSTATE_JOB)) {
       DPRINTF("set job " sge_u32 "." sge_u32 " in ERROR state\n", lGetUlong(jep, JB_job_number), jataskid);
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(nullptr, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JERRORSET);
       lSetUlong(jatep, JAT_start_time, 0);
       ja_task_message_add(jatep, 1, err_str);
@@ -219,11 +219,11 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    else if (((failed && (failed <= SSTATE_BEFORE_JOB)) ||
              general_failure)) {
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JNOSTARTRESCHEDULE);
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       lSetUlong(jatep, JAT_start_time, 0);
    }
       /*
@@ -234,9 +234,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
              (!lGetUlong(jep, JB_restart) && (queueep != nullptr && lGetBool(queueep, QU_rerun))))) {
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JRERUNRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
@@ -249,8 +249,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       /* job_restarted == 2 means a checkpoint in the ckpt arena */
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
-      reporting_create_job_log(nullptr, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JCKPTRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
@@ -262,8 +262,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    else if (failed == SSTATE_AGAIN) {
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
-      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JNORESRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_USER_RESCHEDULED, COMMIT_DEFAULT, monitor);
@@ -272,8 +272,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
        * case 7: job finished 
        */
    else {
-      reporting_create_acct_record(nullptr, jr, jep, jatep, false);
-      reporting_create_job_log(nullptr, timestamp, JL_FINISHED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
+      oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
+      oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_FINISHED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_EXITED);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
    }
