@@ -235,19 +235,49 @@ int verify_request_version(lList **alpp, u_long32 version, char *host, char *com
 
 #endif
 
+bool
+sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                              lList **answer_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+   bool request_handled;
+   int operation = SGE_GDI_GET_OPERATION(task->command);
+
+#if 0
+   sge_pack_buffer *pb = &(packet->pb);
+#endif
+   sge_pack_buffer *pb = &(packet->pb);
+   switch (operation) {
+#if 0
+      case SGE_GDI_TRIGGER:
+         MONITOR_GDI_TRIG(monitor);
+         sge_c_gdi_trigger(packet, task, monitor);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         break;
+#endif
+      case SGE_GDI_PERMCHECK:
+#if 0
+         MONITOR_GDI_PERM(monitor);
+#endif
+         sge_c_gdi_permcheck(packet, task, monitor);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         request_handled = true;
+         break;
+      default:
+         // requests that are not handled in listener will be processed in a worker thread
+         request_handled = false;
+   }
+
+   DRETURN(request_handled);
+}
+
 /* ------------------------------------------------------------ */
 void
-sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, monitoring_t *monitor) {
-   const char *target_name = nullptr;
-   const char *operation_name = nullptr;
-   int sub_command = 0;
-   int operation = 0;
-   gdi_object_t *ao;
-   sge_pack_buffer *pb = &(packet->pb);
-
+sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                            lList **answer_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   ao = get_gdi_object(task->target);
+   const char *target_name = nullptr;
+   gdi_object_t *ao = get_gdi_object(task->target);
    if (ao != nullptr) {
       target_name = ao->object_name;
    }
@@ -255,9 +285,9 @@ sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **an
       target_name = MSG_UNKNOWN_OBJECT;
    }
 
-   sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
-   operation = SGE_GDI_GET_OPERATION(task->command);
-   operation_name = sge_gdi_task_get_operation_name(task);
+   int sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
+   int operation = SGE_GDI_GET_OPERATION(task->command);
+   const char *operation_name = sge_gdi_task_get_operation_name(task);
 
 #ifdef OBSERVE
    dstring target_dstr = DSTRING_INIT;
@@ -317,9 +347,11 @@ sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **an
    INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc, (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid);
    sge_dstring_free(&target_dstr);
 #else
-   DEBUG("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, target_name, packet->host, packet->commproc, (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
+   DEBUG("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, target_name, packet->host, packet->commproc,
+         (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 #endif
 
+   sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
       case SGE_GDI_GET:
          MONITOR_GDI_GET(monitor);
@@ -363,8 +395,7 @@ sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **an
          break;
       default:
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_UNKNOWNOP);
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP,
-                         ANSWER_QUALITY_ERROR);
+         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          break;
    }
@@ -811,86 +842,53 @@ static void sge_c_gdi_copy(gdi_object_t *ao,
 
 /* ------------------------------------------------------------ */
 
-static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
-   lList *lp = nullptr;
-   lListElem *ep = nullptr;
+static void
+sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_admin_host_list = *oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+   const lList *master_submit_host_list = *oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
 
-   DENTER(GDI_LAYER);
+   DENTER(TOP_LAYER);
 
-   if (task->answer_list == nullptr) {
-      const char *mapped_user = nullptr;
-      const char *requested_host = nullptr;
-      bool did_mapping = false;
+   // whatever client sent - we do not need that, instead we use data from commlib stored in packet
+   lFreeList(&task->data_list);
+   const char *hostname = packet->host;
+   const char *username = packet->user;
 
-      lUlong value;
-      /* create PERM_Type list for answer structure*/
-      lp = lCreateList("permissions", PERM_Type);
-      ep = lCreateElem(PERM_Type);
-      lAppendElem(lp, ep);
+   // create list with element and fill in username, hostname and corresponding permission
+   lListElem *ep = lAddElemStr(&task->data_list, PERM_sge_username, username, PERM_Type);
+   lSetHost(ep, PERM_req_host, hostname);
 
-      /* set sge username */
-      lSetString(ep, PERM_sge_username, packet->user);
+   // add user roles
+   bool is_manager = manop_is_manager(username, master_manager_list);
+   bool is_operator = manop_is_operator(username, master_manager_list, master_operator_list);
+   lSetBool(ep, PERM_is_manager, is_manager);
+   lSetBool(ep, PERM_is_operator, is_operator);
 
-      /* set requested host name */
-      if (task->data_list == nullptr) {
-         requested_host = packet->host;
-      } else {
-         lList *tmp_lp = nullptr;
-         lListElem *tmp_ep = nullptr;
+   // add host roles
+   bool is_admin_host = (lGetElemHost(master_admin_host_list, AH_name, hostname) != nullptr);
+   bool is_submit_host = (lGetElemHost(master_submit_host_list, SH_name, hostname) != nullptr);
+   lSetBool(ep, PERM_is_admin_host, is_admin_host);
+   lSetBool(ep, PERM_is_submit_host, is_submit_host);
 
-         tmp_lp = task->data_list;
-         tmp_ep = tmp_lp->first;
-         requested_host = lGetHost(tmp_ep, PERM_req_host);
-      }
+   // show the results
+   DPRINTF("manager/operator/admin_host/submit_host: %s/%s/%s/%s\n",
+           is_manager ? "true" : "false",
+           is_operator ? "true" : "false",
+           is_admin_host ? "true" : "false",
+           is_submit_host ? "true" : "false");
 
-      if (requested_host != nullptr) {
-         lSetHost(ep, PERM_req_host, requested_host);
-      }
+   // client might have sent lCondition and lEnumeration (where/what) but we ignore it for this kind of request
 
-      if (did_mapping && strcmp(mapped_user, packet->user)) {
-         DPRINTF("execution mapping: user %s mapped to %s on host %s\n",
-                 packet->user, mapped_user, requested_host);
-
-         lSetString(ep, PERM_req_username, mapped_user);
-      } else {
-         lSetString(ep, PERM_req_username, "");
-      }
-
-
-      /* check for manager permission */
-      value = 0;
-      if (manop_is_manager(packet->user, master_manager_list)) {
-         value = 1;
-      }
-      lSetUlong(ep, PERM_is_manager, value);
-
-      /* check for operator permission */
-      value = 0;
-      if (manop_is_operator(packet->user, master_manager_list, master_operator_list)) {
-         value = 1;
-      }
-      lSetUlong(ep, PERM_is_operator, value);
-      if ((task->condition != nullptr) && (task->enumeration != nullptr)) {
-         task->data_list = lSelect("", lp, task->condition, task->enumeration);
-         lFreeList(&lp);
-      } else {
-         task->data_list = lp;
-      }
-   }
-
+   // report success
    answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
    DRETURN_VOID;
 }
 
-/*
- * MT-NOTE: sge_c_gdi_permcheck() is MT safe
- */
 static void
-sge_c_gdi_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                    monitoring_t *monitor) {
-   DENTER(GDI_LAYER);
+sge_c_gdi_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    switch (task->target) {
       case SGE_DUMMY_LIST:
          sge_gdi_do_permcheck(packet, task);
@@ -902,8 +900,7 @@ sge_c_gdi_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
    DRETURN_VOID;
 }
 
-void sge_c_gdi_replace(gdi_object_t *ao,
-                       sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+void sge_c_gdi_replace(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                        int sub_command, monitoring_t *monitor) {
    lList *tmp_list = nullptr;
    lListElem *ep = nullptr;
@@ -1039,7 +1036,7 @@ sge_gdi_tigger_thread_state_transition(sge_gdi_packet_class_t *packet,
    DRETURN_VOID;
 }
 
-/****** qmaster/sge_c_gdi/sge_gdi_shutdown_event_client() **********************
+/****** qmaster/sge_c_gdi_process_in_worker/sge_gdi_shutdown_event_client() **********************
 *  NAME
 *     sge_gdi_shutdown_event_client() -- shutdown event client
 *
@@ -1117,7 +1114,7 @@ sge_gdi_shutdown_event_client(sge_gdi_packet_class_t *packet, sge_gdi_task_class
    DRETURN_VOID;
 } /* sge_gdi_shutdown_event_client() */
 
-/****** qmaster/sge_c_gdi/get_client_id() **************************************
+/****** qmaster/sge_c_gdi_process_in_worker/get_client_id() **************************************
 *  NAME
 *     get_client_id() -- get client id from ID_Type element.
 *
@@ -1164,7 +1161,7 @@ static int get_client_id(lListElem *anElem, int *anID) {
    DRETURN(0);
 } /* get_client_id() */
 
-/****** qmaster/sge_c_gdi/trigger_scheduler_monitoring() ***********************
+/****** qmaster/sge_c_gdi_process_in_worker/trigger_scheduler_monitoring() ***********************
 *  NAME
 *     trigger_scheduler_monitoring() -- trigger scheduler monitoring
 *

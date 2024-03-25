@@ -5,10 +5,17 @@
 
 #include "oge_MirrorListenerDataStore.h"
 
-oge::MirrorListenerDataStore::MirrorListenerDataStore() : MirrorDataStore(oge::DataStore::Id::LISTENER) {
-   ;
-}
+namespace oge {
+   MirrorListenerDataStore::MirrorListenerDataStore() : MirrorDataStore(DataStore::Id::LISTENER, LOCK_LISTENER) {
+      ;
+   }
 
-void oge::MirrorListenerDataStore::subscribe_events() {
-   sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   void MirrorListenerDataStore::subscribe_events() {
+      sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_subscribe(evc, SGE_TYPE_SUBMITHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_subscribe(evc, SGE_TYPE_HGROUP, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_subscribe(evc, SGE_TYPE_MANAGER, nullptr, nullptr, nullptr, nullptr, nullptr);
+      sge_mirror_subscribe(evc, SGE_TYPE_OPERATOR, nullptr, nullptr, nullptr, nullptr, nullptr);
+   }
+
 }

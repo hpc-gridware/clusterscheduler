@@ -1570,20 +1570,16 @@ int sge_security_verify_user(const char *host, const char *commproc, u_long32 id
      DRETURN(False);
    }
 
-   if (is_daemon(commproc) 
-       && (strcmp(gdi_user, admin_user) != 0) 
-       && (sge_is_user_superuser(gdi_user) == false)) {
+   if (is_daemon(commproc) && (strcmp(gdi_user, admin_user) != 0) && (sge_is_user_superuser(gdi_user) == false)) {
       DRETURN(False);
    }
 
    if (!is_daemon(commproc)) {
-      if (false == sge_security_verify_unique_identifier(false, gdi_user, progname, 0,
-                                            host, commproc, id)) {
+      if (!sge_security_verify_unique_identifier(false, gdi_user, progname, 0, host, commproc, id)) {
          DRETURN(False);
       }
    } else {
-      if (false == sge_security_verify_unique_identifier(true, admin_user, progname, 0,
-                                            host, commproc, id)) {
+      if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0, host, commproc, id)) {
          DRETURN(False);
       }
    }

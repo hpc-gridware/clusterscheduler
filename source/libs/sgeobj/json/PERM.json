@@ -1,47 +1,55 @@
 {
 	"className":	"Permission",
-	"summary":	"@todo add summary",
+	"summary":	"Object used to request given permissions of user and host.",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Object used to request given permissions of user and host."
 		}],
 	"cullPrefix":	"PERM",
 	"attributes":	[{
 			"name":	"is_manager",
-			"summary":	"@todo add summary",
+			"summary":	"true if manager",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"true if user has manager role"
 				}],
-			"type":	"lUlongT",
+			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"is_operator",
-			"summary":	"@todo add summary",
+			"summary":	"true if operator",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"true if user has operator role"
 				}],
-			"type":	"lUlongT",
+			"type":	"lBoolT",
 			"flags":	[]
 		}, {
-			"name":	"req_host",
-			"summary":	"@todo add summary",
+            "name":	"is_admin_host",
+            "summary":	"true if admin host",
+            "description":	[{
+              "line":	"true if the specified host is an admin host"
+            }],
+            "type":	"lBoolT",
+            "flags":	[]
+        }, {
+            "name":	"is_submit_host",
+            "summary":	"true if submit host",
+            "description":	[{
+                "line":	"true if the specified host is a submit host"
+            }],
+            "type":	"lBoolT",
+            "flags":	[]
+        }, {
+			"name":	"host",
+			"summary":	"hostname",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"name of the host with the specified permissions"
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
-			"name":	"req_username",
-			"summary":	"@todo add summary",
+			"name":	"username",
+			"summary":	"username",
 			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lStringT",
-			"flags":	[]
-		}, {
-			"name":	"sge_username",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
+					"line":	"username with the specified permissions"
 				}],
 			"type":	"lStringT",
 			"flags":	[]

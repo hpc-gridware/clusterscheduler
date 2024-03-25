@@ -13,7 +13,7 @@ namespace oge {
       enum Id {
          GLOBAL = 0,   ///< RW-DS (used by worker threads to handle RO-requests)
          SCHEDULER,    ///< Scheduler Snapshot (used by main scheduler thread)
-         LISTENER,     ///< Auth Snapshot (used by listener threads)
+         LISTENER,     ///< Listener Snapshot (used by listener threads)
          READER,       ///< Reader Snapshot (used by worker threads to handle RO-requests)
          MAX_ID,       ///< Maximum amount of thread local storages
       };

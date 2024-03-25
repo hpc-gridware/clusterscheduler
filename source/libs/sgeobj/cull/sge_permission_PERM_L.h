@@ -39,16 +39,13 @@
 *
 * @todo add description
 *
-*    SGE_ULONG(PERM_is_manager) - @todo add summary
+*    SGE_BOOL(PERM_is_manager) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(PERM_is_operator) - @todo add summary
+*    SGE_BOOL(PERM_is_operator) - @todo add summary
 *    @todo add description
 *
 *    SGE_HOST(PERM_req_host) - @todo add summary
-*    @todo add description
-*
-*    SGE_STRING(PERM_req_username) - @todo add summary
 *    @todo add description
 *
 *    SGE_STRING(PERM_sge_username) - @todo add summary
@@ -59,24 +56,27 @@
 enum {
    PERM_is_manager = PERM_LOWERBOUND,
    PERM_is_operator,
+   PERM_is_admin_host,
+   PERM_is_submit_host,
    PERM_req_host,
-   PERM_req_username,
    PERM_sge_username
 };
 
 LISTDEF(PERM_Type)
-   SGE_ULONG(PERM_is_manager, CULL_DEFAULT)
-   SGE_ULONG(PERM_is_operator, CULL_DEFAULT)
+   SGE_BOOL(PERM_is_manager, CULL_DEFAULT)
+   SGE_BOOL(PERM_is_operator, CULL_DEFAULT)
+   SGE_BOOL(PERM_is_admin_host, CULL_DEFAULT)
+   SGE_BOOL(PERM_is_submit_host, CULL_DEFAULT)
    SGE_HOST(PERM_req_host, CULL_DEFAULT)
-   SGE_STRING(PERM_req_username, CULL_DEFAULT)
    SGE_STRING(PERM_sge_username, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PERMN)
    NAME("PERM_is_manager")
    NAME("PERM_is_operator")
+   NAME("PERM_is_admin_host")
+   NAME("PERM_is_submit_host")
    NAME("PERM_req_host")
-   NAME("PERM_req_username")
    NAME("PERM_sge_username")
 NAMEEND
 

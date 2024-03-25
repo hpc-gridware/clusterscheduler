@@ -233,7 +233,9 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag);
 
 lList *gdi_tsm();
 
-bool sge_gdi_check_permission(lList **alpp, int option);
+bool
+sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
+                       bool *is_admin_host, bool *is_submit_host);
 
 int
 gdi_send_message_pb(int synchron, const char *tocomproc, int toid, const char *tohost, int tag, sge_pack_buffer *pb,

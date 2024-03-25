@@ -130,6 +130,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid);
 /************************************************************************/
 static int qconf_is_manager(const char *user);
 static int qconf_is_adminhost(const char *host);
+static int qconf_is_manager_on_admin_host(const char *user, const char *host);
 /************************************************************************/
 
 static const char *write_attr_tmp_file(const char *name, const char *value, 
@@ -216,8 +217,7 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-acal", *spp) == 0) ||
           (strcmp("-Acal", *spp) == 0)) {
          if (!strcmp("-acal", *spp)) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
            
@@ -329,8 +329,7 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Ackpt", *spp) == 0)) {
 
          if (!strcmp("-ackpt", *spp)) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
 
@@ -454,8 +453,7 @@ int sge_parse_qconf(char *argv[])
          char *host = nullptr;
 
          cp = nullptr;
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             lListElem *hep = nullptr;
 
@@ -648,8 +646,7 @@ int sge_parse_qconf(char *argv[])
             spp = sge_parser_get_next(spp);
             name = *spp;
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          rqs_add(&alp, name);
 
          aep = lFirst(alp);
@@ -678,8 +675,7 @@ int sge_parse_qconf(char *argv[])
          } else {
             sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          rqs_add_from_file(&alp, file);
 
@@ -741,8 +737,7 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Ap", *spp) == 0)) {
 
          if (!strcmp("-ap", *spp)) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
            
             spp = sge_parser_get_next(spp);
 
@@ -866,8 +861,7 @@ int sge_parse_qconf(char *argv[])
       /* "-auser" */
 
       if (strcmp("-auser", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          /* get a template for editing */
          ep = getUserTemplate(); 
@@ -902,9 +896,8 @@ int sge_parse_qconf(char *argv[])
       /* "-aprj" */
 
       if (strcmp("-aprj", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
-        
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+
          /* get a template for editing */
          ep = getPrjTemplate(); 
          
@@ -1080,8 +1073,7 @@ int sge_parse_qconf(char *argv[])
          lListElem *unspecified = nullptr;
          
          if (strcmp("-astree", *spp) == 0) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             /* get the sharetree .. */
             what = lWhat("%T(ALL)", STN_Type);
@@ -1346,8 +1338,7 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-clearusage", *spp) == 0) {
          lList *lp2=nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          /* get user list */
          what = lWhat("%T(ALL)", STN_Type);
@@ -1925,8 +1916,7 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-mc", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          if (centry_list_modify(&answer_list) == false) {
             sge_parse_return = 1;
@@ -1944,8 +1934,7 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-mcal", *spp) == 0) || 
           (strcmp("-Mcal", *spp) == 0)) {
          if (!strcmp("-mcal", *spp)) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
            
@@ -2100,8 +2089,7 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-mckpt", *spp) == 0) || 
           (strcmp("-Mckpt", *spp) == 0)) {
          if (strcmp("-mckpt", *spp) == 0) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
 
@@ -2304,9 +2292,8 @@ int sge_parse_qconf(char *argv[])
       /* "-me [server_name,...]" */
 
       if (strcmp("-me", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
-         
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("hosts to change", &arglp, EH_Type, EH_name, 
             *spp);
@@ -2372,8 +2359,7 @@ int sge_parse_qconf(char *argv[])
             spp = sge_parser_get_next(spp);
             name = *spp;
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          rqs_modify(&alp, name);
          sge_parse_return |= show_answer_list(alp);
 
@@ -2388,8 +2374,7 @@ int sge_parse_qconf(char *argv[])
          const char *file = nullptr;
          const char *name = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             file = *spp;
@@ -2415,9 +2400,8 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Mp", *spp) == 0)) {
 
          if (!strcmp("-mp", *spp)) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
-         
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
+
             spp = sge_parser_get_next(spp);
 
             /* get last version of this pe from qmaster */
@@ -3155,9 +3139,8 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-Msconf" */
       if (strcmp("-Msconf", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
-         
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+
          spp = sge_parser_get_next(spp);
 
          fields_out[0] = NoName;
@@ -3217,8 +3200,7 @@ int sge_parse_qconf(char *argv[])
       /* "-msconf"  modify scheduler configuration */
 
       if (strcmp("-msconf", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          /* get the scheduler configuration .. */
          what = lWhat("%T(ALL)", SC_Type);
@@ -3263,8 +3245,7 @@ int sge_parse_qconf(char *argv[])
          lListElem *unspecified = nullptr;
          
          if (strcmp("-mstree", *spp) == 0) {
-            qconf_is_adminhost(qualified_hostname);
-            qconf_is_manager(username);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             /* get the sharetree .. */
             what = lWhat("%T(ALL)", STN_Type);
@@ -3360,8 +3341,7 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-mu", *spp) == 0) {
          /* check for adminhost and manager privileges */
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
 
@@ -3552,8 +3532,7 @@ int sge_parse_qconf(char *argv[])
       /* "-muser username" */
 
       if (strcmp("-muser", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
         
@@ -3624,8 +3603,7 @@ int sge_parse_qconf(char *argv[])
       /* "-mprj projectname" */
 
       if (strcmp("-mprj", *spp) == 0) {
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
         
@@ -3960,14 +3938,10 @@ int sge_parse_qconf(char *argv[])
          const char *host;
 
          if (!strcmp("-aconf", *spp)) {
-            qconf_is_manager(username);
-            qconf_is_adminhost(qualified_hostname);
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
             action = ACTION_aconf;
          } else if (!strcmp("-mconf", *spp)) {
-            qconf_is_manager(username);
-            if (qconf_is_adminhost(qualified_hostname) != 0) {
-               DRETURN(1);
-            }
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
             action = ACTION_mconf;
          } else if (!strcmp("-Aconf", *spp)) {
             action = ACTION_Aconf;
@@ -4697,8 +4671,7 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-mce", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
@@ -4716,8 +4689,7 @@ int sge_parse_qconf(char *argv[])
          lList *answer_list = nullptr;
          char* file = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             file = *spp;
@@ -4770,8 +4742,7 @@ int sge_parse_qconf(char *argv[])
          lList *answer_list = nullptr;
          char* file = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             file = *spp;
@@ -4808,8 +4779,7 @@ int sge_parse_qconf(char *argv[])
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          hgroup_modify(&answer_list, *spp);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -4829,8 +4799,7 @@ int sge_parse_qconf(char *argv[])
          } else {
             sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN); 
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          hgroup_modify_from_file(&answer_list, file);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -4853,9 +4822,8 @@ int sge_parse_qconf(char *argv[])
             group = *spp;
             is_validate_name = true;
          }
-         
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          hgroup_add(&answer_list, group, is_validate_name);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -4875,8 +4843,7 @@ int sge_parse_qconf(char *argv[])
          } else {
             sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN); 
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          hgroup_add_from_file(&answer_list, file);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -4958,8 +4925,7 @@ int sge_parse_qconf(char *argv[])
 
          spp = sge_parser_get_next(spp);
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          cqueue_modify(&answer_list, *spp);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -4973,8 +4939,7 @@ int sge_parse_qconf(char *argv[])
          lList *answer_list = nullptr;
          char* file = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             file = *spp;
@@ -4998,8 +4963,7 @@ int sge_parse_qconf(char *argv[])
             spp = sge_parser_get_next(spp);
             name = *spp;
          }
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          cqueue_add(&answer_list, name);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -5013,8 +4977,7 @@ int sge_parse_qconf(char *argv[])
          lList *answer_list = nullptr;
          char* file = nullptr;
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             file = *spp;
@@ -5038,8 +5001,7 @@ int sge_parse_qconf(char *argv[])
 
          spp = sge_parser_get_next(spp);
 
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
          cqueue_delete(&answer_list, *spp);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
@@ -6559,128 +6521,100 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
    DRETURN(failed);
 }
 
-/*
-** NAME
-**   qconf_is_manager
-** PARAMETER
-**   user     - user name to check
-** RETURN
-**   
-** EXTERNAL
-**
-** DESCRIPTION
-**   retrieves manager list from qmaster and checks if the
-**   given user is manager
-*/
-static int qconf_is_manager(const char *user) {
-   int perm_return;
-   lList *alp = nullptr;
-
+static int
+qconf_is_manager(const char *user) {
    DENTER(TOP_LAYER);
 
-   
-   if (!user || !*user) {
-      /* no input name */
-      DRETURN(-1);
-   }
-   perm_return = sge_gdi_check_permission(&alp, MANAGER_CHECK);
-   if (perm_return == true) {
-     /* user is manager */
-     if (alp != nullptr) {
-        lFreeList(&alp);
-        alp = nullptr;
-     }
-     DRETURN(1);
-   }
-
-   /*
-   ** user is no manager
-   */
-   if (perm_return == -10 ) {
-      /* fills SGE_EVENT with diagnosis information */
-      if (alp != nullptr) {
-         lListElem *aep;
-         if (lGetUlong(aep = lFirstRW(alp), AN_status) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         }
-      }
-   } else {
-      fprintf(stderr, MSG_SGETEXT_MUSTBEMANAGER_S , user);
-      fprintf(stderr, "\n");
-   }
-
-   if (alp != nullptr) {
-      lFreeList(&alp);
-      alp = nullptr;
-   }
-
-   sge_exit(1);
-   DRETURN(0);
-}
-
-
-
-/*
-** NAME
-**   qconf_is_adminhost
-** PARAMETER
-**   host     -  resolved hostname to check
-** RETURN
-**   
-** EXTERNAL
-**
-** DESCRIPTION
-**   retrieves adminhost list from qmaster and checks if the
-**   given host is contained 
-*/
-static int qconf_is_adminhost(const char *host) {
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
-   lList *alp = nullptr;
-   lListElem *aep = nullptr;
-   lList *lp = nullptr;
-   lListElem  *ep = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   if (!host || !*host) {
+   // check input parameter
+   if (user == nullptr) {
       DRETURN(-1);
    }
 
-   DPRINTF("host: '%s'\n", host);
-
-   /*
-   ** GET SGE_AH_LIST 
-   */
-   where = lWhere("%T(%Ih=%s)", AH_Type, AH_name, host);
-   what = lWhat("%T(ALL)", AH_Type);
-   alp = sge_gdi(SGE_AH_LIST, SGE_GDI_GET, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   if (!alp) {
-      sge_exit(1);
-   }
-   if (lGetUlong(aep = lFirstRW(alp), AN_status) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      lFreeList(&alp);
+   // ask master if current user is manager
+   lList *alp = nullptr;
+   bool is_manager = false;
+   bool perm_return = sge_gdi_get_permission(&alp, &is_manager, nullptr, nullptr, nullptr);
+   if (!perm_return) {
+      DTRACE;
+      answer_list_output(&alp);
       sge_exit(1);
    }
    lFreeList(&alp);
 
-   ep = host_list_locate(lp, host);
+   // if user is no manager then exit
+   if (!is_manager) {
+      fprintf(stderr, MSG_SGETEXT_MUSTBEMANAGER_S , user);
+      fprintf(stderr, "\n");
+      sge_exit(1);
+   }
 
-   if (!ep) {
-      /*
-      ** host is no adminhost
-      */
-      lFreeList(&lp);
+   DRETURN(0);
+}
+
+static int
+qconf_is_adminhost(const char *host) {
+   DENTER(TOP_LAYER);
+
+   // check input parameter
+   if (host == nullptr) {
+      DRETURN(-1);
+   }
+
+   // ask master if current host is admin host
+   lList *alp = nullptr;
+   bool is_admin_host = false;
+   bool perm_return = sge_gdi_get_permission(&alp, nullptr, nullptr, &is_admin_host, nullptr);
+   if (!perm_return) {
+      DTRACE;
+      answer_list_output(&alp);
+      sge_exit(1);
+   }
+   lFreeList(&alp);
+
+   // if host has no permission then exit
+   if (!is_admin_host) {
       fprintf(stderr, MSG_ANSWER_DENIEDHOSTXISNOADMINHOST_S, host);
       fprintf(stderr, "\n");
       sge_exit(1);
    }
 
-   lFreeList(&lp);
+   DRETURN(0);
+}
+
+static int
+qconf_is_manager_on_admin_host(const char *user, const char *host) {
+   DENTER(TOP_LAYER);
+
+   // check input parameter
+   if (host == nullptr) {
+      DRETURN(-1);
+   }
+
+   // ask master if current host is admin host
+   lList *alp = nullptr;
+   bool is_admin_host = false;
+   bool is_manager = false;
+   bool perm_return = sge_gdi_get_permission(&alp, &is_manager, nullptr, &is_admin_host, nullptr);
+   if (!perm_return) {
+      DTRACE;
+      answer_list_output(&alp);
+      sge_exit(1);
+   }
+   lFreeList(&alp);
+
+   // if user is no manager then exit
+   if (!is_manager) {
+      fprintf(stderr, MSG_SGETEXT_MUSTBEMANAGER_S , user);
+      fprintf(stderr, "\n");
+      sge_exit(1);
+   }
+   // if host has no permission then exit
+   if (!is_admin_host) {
+      fprintf(stderr, MSG_ANSWER_DENIEDHOSTXISNOADMINHOST_S, host);
+      fprintf(stderr, "\n");
+      sge_exit(1);
+   }
+
    DRETURN(0);
 }
 

@@ -55,6 +55,8 @@
 
 #include "msg_qmaster.h"
 
+#define GDI_PACKET_LAYER GDI_LAYER
+
 static bool
 sge_pack_gdi_info(u_long32 command) {
    DENTER(GDI_LAYER);
@@ -162,7 +164,7 @@ u_long32
 sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet) {
    u_long32 ret = 0;
 
-   DENTER(TOP_LAYER);
+   DENTER(GDI_PACKET_LAYER);
    if (packet != nullptr) {
       bool local_ret;
       lList *local_answer_list = nullptr;
@@ -217,7 +219,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
    bool has_next;
    int pack_ret;
 
-   DENTER(TOP_LAYER);
+   DENTER(GDI_PACKET_LAYER);
    *packet = sge_gdi_packet_create_base(answer_list);
    if (*packet != nullptr) {
       bool first = true;
@@ -341,7 +343,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
 *******************************************************************************/
 bool
 sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb) {
-   DENTER(TOP_LAYER);
+   DENTER(GDI_PACKET_LAYER);
    bool ret = true;
 
    sge_gdi_task_class_t *task = packet->first_task;
@@ -400,7 +402,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 bool
 sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
                          sge_pack_buffer *pb) {
-   DENTER(TOP_LAYER);
+   DENTER(GDI_PACKET_LAYER);
    bool ret = true;
    int pack_ret;
 

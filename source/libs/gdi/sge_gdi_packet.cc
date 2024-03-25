@@ -722,6 +722,7 @@ sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp) {
          WARNING(MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id), sge_u32c(version), feature_get_product_name(FS_VERSION, &ds));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
+      DTRACE;
       ret = false;
    }
    DRETURN(ret);

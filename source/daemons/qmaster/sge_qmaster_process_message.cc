@@ -61,6 +61,7 @@
 
 #include "evm/sge_event_master.h"
 
+#include "sge_c_gdi.h"
 #include "sge_qmaster_main.h"
 #include "sge_thread_worker.h"
 #include "msg_qmaster.h"
@@ -176,9 +177,7 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   /*
-    * unpack the packet and set values 
-    */
+   // unpack the incoming request
    local_ret = sge_gdi_packet_unpack(&packet, answer_list, pb_in);
    packet->host = sge_strdup(nullptr, aMsg->snd_host);
    packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
@@ -187,30 +186,34 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    packet->is_intern_request = false;
    packet->is_gdi_request = true;
 
-   /* 
-    * Security checks:
-    *    check version 
-    *    check auth_info (user)
-    *    check host, commproc 
-    */
+   // check GDI version
    if (local_ret) {
+      DTRACE;
       local_ret = sge_gdi_packet_verify_version(packet, &(packet->first_task->answer_list));
    }
+
+   // auth_info (user/group)
    if (local_ret) {
+      DTRACE;
       local_ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
                                                  &(packet->uid), packet->user, sizeof(packet->user),
                                                  &(packet->gid), packet->group, sizeof(packet->group));
    }
+
+   // check csp (if enabled)
    if (local_ret) {
       const char *admin_user = bootstrap_get_admin_user();
       const char *progname = component_get_component_name();
 
+      DTRACE;
       if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
+
+   // TODO: error case is not handled (local_ret == false)
 
    /*
     * EB: TODO: CLEANUP: Handle permission checks in listener not in worker thread.
@@ -221,10 +224,47 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
     * packbuffer to a worker thread.
     */
 
-   /*
-    * Put the packet into the queue so that a worker can handle it
-    */
-   sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+   bool do_handle_in_listener = false;
+   {
+      DTRACE;
+      sge_gdi_task_class_t *task = packet->first_task;
+      while (task != nullptr) {
+         int operation = SGE_GDI_GET_OPERATION(task->command);
+
+         if (operation == SGE_GDI_PERMCHECK) {
+            do_handle_in_listener = true;
+         }
+         task = task->next;
+      }
+   }
+
+
+   // if all requests can be handled in worker then we do that
+   // otherwise we store the request to get processed by another thread
+   if (do_handle_in_listener) {
+      // prepare packbuffer for the clients answer
+      init_packbuffer(&(packet->pb), 0, 0);
+
+      // handle the requests
+      SGE_LOCK(LOCK_LISTENER, LOCK_READ);
+      sge_gdi_task_class_t *task = packet->first_task;
+      while (task != nullptr) {
+         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
+
+         task = task->next;
+      }
+      SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
+
+      // send the response
+      MONITOR_MESSAGES_OUT(monitor);
+      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                               &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+      clear_packbuffer(&(packet->pb));
+      sge_gdi_packet_free(&packet);
+   } else {
+      sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+   }
+
    DRETURN_VOID;
 }
 

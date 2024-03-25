@@ -866,13 +866,13 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
    DRETURN(alp);
 }
 
-/****** gdi/sge/sge_gdi_check_permission() **********************************
+/****** gdi/sge/sge_gdi_get_permission() **********************************
 *
 *  NAME
-*     sge_gdi_check_permission() -- check permissions of gdi request 
+*     sge_gdi_get_permission() -- check permissions of gdi request
 *
 *  SYNOPSIS
-*     int sge_gdi_check_permission(int option);
+*     int sge_gdi_get_permission(int option);
 *
 *  FUNCTION
 *     This function asks the qmaster for the permission (PERM_Type) 
@@ -891,61 +891,42 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
 *     gdilib/sge_gdi_get_mapping_name()
 *     gdilib/PERM_LOWERBOUND
 ******************************************************************************/
-bool sge_gdi_check_permission(lList **alpp, int option) {
-   bool access_status = false;
-   int failed_checks = 0;
+bool
+sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
+                       bool *is_admin_host, bool *is_submit_host) {
+   DENTER(TOP_LAYER);
 
-   DENTER(GDI_LAYER);
-
-   lList *permList = nullptr;
-   lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
-   if (permList == nullptr) {
-      DPRINTF("Permlist is nullptr\n");
-      if (alpp != nullptr) {
-         if (*alpp == nullptr) {
-            *alpp = alp;
-         } else {
-            lAddList(*alpp, &alp);
-         }
-      }
-      failed_checks++;
+   // fetch permissions for current user and host from qmaster
+   lList *permission_list = nullptr;
+   lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permission_list, nullptr, nullptr);
+   if (permission_list == nullptr || lGetNumberOfElem(permission_list) != 1) {
+      answer_list_append_list(alpp, &alp);
+      lFreeList(&permission_list);
       DRETURN(false);
-   } else {
-      if (permList->first == nullptr) {
-         DPRINTF("Permlist has no entries\n");
-         failed_checks++;
-      } else {
-         /* check permissions */
-
-         /* manager check */
-         if (option & MANAGER_CHECK) {
-            lUlong value = lGetUlong(permList->first, PERM_is_manager);
-            if (value != 1) {
-               failed_checks++;
-            }
-            DPRINTF("MANAGER_CHECK: %ld\n", value);
-         }
-
-         /* operator check */
-         if (option & OPERATOR_CHECK) {
-            lUlong value = lGetUlong(permList->first, PERM_is_operator);
-            if (value != 1) {
-               failed_checks++;
-            }
-            DPRINTF("OPERATOR_CHECK: %ld\n", value);
-         }
-
-      }
    }
 
-   lFreeList(&permList);
+   // prepare return values
+   const lListElem *perm = lFirst(permission_list);
+   if (is_manager != nullptr) {
+      *is_manager = lGetBool(perm, PERM_is_manager);
+      DPRINTF("is_manager: %s\n", *is_manager ? "true" : "false");
+   }
+   if (is_operator != nullptr) {
+      *is_operator = lGetBool(perm, PERM_is_operator);
+      DPRINTF("is_operator: %s\n", *is_manager ? "true" : "false");
+   }
+   if (is_admin_host != nullptr) {
+      *is_admin_host = lGetBool(perm, PERM_is_admin_host);
+      DPRINTF("is_admin_host: %s\n", *is_admin_host ? "true" : "false");
+   }
+   if (is_submit_host != nullptr) {
+      *is_submit_host = lGetBool(perm, PERM_is_submit_host);
+      DPRINTF("is_submit_host: %s\n", *is_submit_host ? "true" : "false");
+   }
+
+   lFreeList(&permission_list);
    lFreeList(&alp);
-
-   if (failed_checks == 0) {
-      access_status = true;
-   }
-
-   DRETURN(access_status);
+   DRETURN(true);
 }
 
 

@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
    /* Has the user the permission to use the the '-f' (forced) flag */
    have_master_privileges = false;
    if (force == 1) {
-      have_master_privileges = sge_gdi_check_permission(&alp, MANAGER_CHECK);
+      sge_gdi_get_permission(&alp, &have_master_privileges, nullptr, nullptr, nullptr);
       lFreeList(&alp);
    }
    /* delete the job */

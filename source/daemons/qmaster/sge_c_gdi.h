@@ -89,9 +89,13 @@ struct _gdi_object_t {
 
 gdi_object_t *get_gdi_object(u_long32);
 
+bool
+sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                              lList **answer_list, monitoring_t *monitor);
+
 void
-sge_c_gdi(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
-          monitoring_t *monitor);
+sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
+                            monitoring_t *monitor);
 
 int
 sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_object_t *object,

@@ -264,7 +264,7 @@ sge_worker_main(void *arg) {
              */
             task = packet->first_task;
             while (task != nullptr) {
-               sge_c_gdi(packet, task, &(task->answer_list), p_monitor);
+               sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
 
                task = task->next;
             }
