@@ -48,7 +48,7 @@ enum {
    SGE_SHARE_MON  // 32
 };
 
-enum {
+enum thread_type_t {
    MAIN_THREAD, // 1
    LISTENER_THREAD, // 2
    EVENT_MASTER_THREAD, // 3

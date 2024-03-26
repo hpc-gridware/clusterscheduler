@@ -84,7 +84,10 @@
 #include "msg_qmaster.h"
 
 static void
-sge_c_gdi_get(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+sge_c_gdi_get_in_worker(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+
+static void
+sge_c_gdi_get_in_listener(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
 
 static void
 sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, gdi_object_t *ao,
@@ -102,8 +105,11 @@ sge_c_gdi_copy(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_cl
                int sub_command, monitoring_t *monitor);
 
 static void
-sge_c_gdi_trigger(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                  monitoring_t *monitor);
+sge_c_gdi_trigger_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+
+static void
+sge_c_gdi_trigger_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                            monitoring_t *monitor);
 
 static void
 sge_c_gdi_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
@@ -239,35 +245,51 @@ bool
 sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                               lList **answer_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   bool request_handled;
-   int operation = SGE_GDI_GET_OPERATION(task->command);
 
-#if 0
-   sge_pack_buffer *pb = &(packet->pb);
-#endif
+   const char *target_name = nullptr;
+   gdi_object_t *ao = get_gdi_object(task->target);
+   if (ao != nullptr) {
+      target_name = ao->object_name;
+   }
+   if (ao == nullptr || target_name == nullptr) {
+      target_name = MSG_UNKNOWN_OBJECT;
+   }
+
+   int operation = SGE_GDI_GET_OPERATION(task->command);
+   const char *operation_name = sge_gdi_task_get_operation_name(task);
+
+   DPRINTF("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
+           (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
+
    sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
-#if 0
       case SGE_GDI_TRIGGER:
+#if 0
          MONITOR_GDI_TRIG(monitor);
-         sge_c_gdi_trigger(packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
-         break;
 #endif
+         sge_c_gdi_trigger_in_listener(packet, task, monitor);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         DRETURN(true);
       case SGE_GDI_PERMCHECK:
 #if 0
          MONITOR_GDI_PERM(monitor);
 #endif
          sge_c_gdi_permcheck(packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
-         request_handled = true;
-         break;
+         DRETURN(true);
+      case SGE_GDI_GET:
+#if 0
+         MONITOR_GDI_GET(monitor);
+#endif
+         sge_c_gdi_get_in_listener(ao, packet, task, monitor);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         DRETURN(true);
       default:
          // requests that are not handled in listener will be processed in a worker thread
-         request_handled = false;
+         DRETURN(false);
    }
 
-   DRETURN(request_handled);
+   DRETURN(false);
 }
 
 /* ------------------------------------------------------------ */
@@ -347,15 +369,15 @@ sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
    INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc, (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid);
    sge_dstring_free(&target_dstr);
 #else
-   DEBUG("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, target_name, packet->host, packet->commproc,
-         (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
+   DPRINTF("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
+           (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 #endif
 
    sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
       case SGE_GDI_GET:
          MONITOR_GDI_GET(monitor);
-         sge_c_gdi_get(ao, packet, task, monitor);
+         sge_c_gdi_get_in_worker(ao, packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          break;
       case SGE_GDI_ADD:
@@ -380,7 +402,7 @@ sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
          break;
       case SGE_GDI_TRIGGER:
          MONITOR_GDI_TRIG(monitor);
-         sge_c_gdi_trigger(packet, task, monitor);
+         sge_c_gdi_trigger_in_worker(packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          break;
       case SGE_GDI_PERMCHECK:
@@ -404,7 +426,33 @@ sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
 }
 
 static void
-sge_c_gdi_get(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+sge_c_gdi_get_in_listener(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   // for get requests we do not need what the client might have sent to us
+   lFreeList(&(task->data_list));
+
+   // check the permission
+   if (!sge_task_check_get_perm_host(packet, task, monitor)) {
+      DRETURN_VOID;
+   }
+
+   // handle he get request
+   switch (task->target) {
+      case SGE_EV_LIST:
+         task->data_list = sge_select_event_clients("", task->condition, task->enumeration);
+         task->do_select_pack_simultaneous = false;
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);
+         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_END);
+         DRETURN_VOID;
+      default:
+         DRETURN_VOID;
+   }
+   DRETURN_VOID;
+}
+
+static void
+sge_c_gdi_get_in_worker(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    /* Whatever client sent with this get request - we don't need it */
@@ -415,19 +463,6 @@ sge_c_gdi_get(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_cla
    }
 
    switch (task->target) {
-#ifdef QHOST_TEST
-      case SGE_QHOST:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, "SGE_QHOST\n");
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-         task->do_select_pack_simultaneous = false;
-         DRETURN_VOID;
-#endif
-      case SGE_EV_LIST:
-         task->data_list = sge_select_event_clients("", task->condition, task->enumeration);
-         task->do_select_pack_simultaneous = false;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_END);
-         DRETURN_VOID;
       case SGE_CONF_LIST:
          task->data_list = sge_get_configuration(task->condition, task->enumeration);
          task->do_select_pack_simultaneous = false;
@@ -944,61 +979,75 @@ void sge_c_gdi_replace(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi
    DRETURN_VOID;
 }
 
-/*
- * MT-NOTE: sge_c_gdi_trigger() is MT safe
- */
 static void
-sge_c_gdi_trigger(sge_gdi_packet_class_t *packet,
-                  sge_gdi_task_class_t *task, monitoring_t *monitor) {
-   u_long32 target = task->target;
-
+sge_c_gdi_trigger_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
    DENTER(GDI_LAYER);
-
+   u_long32 target = task->target;
    switch (target) {
-      case SGE_EH_LIST: /* kill execd */
-      case SGE_MASTER_EVENT:  /* kill master */
-      case SGE_SC_LIST:       /* trigger scheduler monitoring */
+      case SGE_MASTER_EVENT:
+         // shutdown request for qmaster (qconf -km)
          if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
          }
-
-         if (SGE_EH_LIST == target) {
-            sge_gdi_kill_exechost(packet, task);
+         sge_gdi_kill_master(packet, task);
+         DRETURN_VOID;
+      case SGE_SC_LIST:
+         // trigger scheduling (qconf -tsm)
+         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+            ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+            DRETURN_VOID;
          }
+         trigger_scheduler_monitoring(packet, task, monitor);
+         DRETURN_VOID;
+      case SGE_EV_LIST:
+         // shutdown of event client (qconf -kec)
+         sge_gdi_shutdown_event_client(packet, task, monitor);
+         answer_list_log(&(task->answer_list), false, true);
+         DRETURN_VOID;
+      case SGE_DUMMY_LIST:
+         // start stop of scheduler (qconf -ks | -kt scheduler | -at scheduler)
+         sge_gdi_tigger_thread_state_transition(packet, task, monitor);
+         answer_list_log(&(task->answer_list), false, true);
+         DRETURN_VOID;
+      default:
+         // unknown operation for a listener thread
+         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+         DRETURN_VOID;
+   }
+   DRETURN_VOID;
+}
 
-         if (SGE_SC_LIST == target) {
-            trigger_scheduler_monitoring(packet, task, monitor);
-         } else if (target == SGE_MASTER_EVENT) {
-            sge_gdi_kill_master(packet, task);
+static void
+sge_c_gdi_trigger_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+   DENTER(GDI_LAYER);
+   u_long32 target = task->target;
+   switch (target) {
+      case SGE_EH_LIST:
+         // shutdown of execd (qconf -ke)
+         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+            ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+            DRETURN_VOID;
          }
-         break;
-
+         sge_gdi_kill_exechost(packet, task);
+         DRETURN_VOID;
       case SGE_CQ_LIST:
       case SGE_JB_LIST:
+         // state changes of queues and jobs
          sge_set_commit_required();
          sge_gdi_qmod(packet, task, monitor);
          sge_commit();
-         break;
-
-      case SGE_EV_LIST:
-         /* kill scheduler or event client */
-         sge_gdi_shutdown_event_client(packet, task, monitor);
-         answer_list_log(&(task->answer_list), false, true);
-         break;
-      case SGE_DUMMY_LIST:
-         sge_gdi_tigger_thread_state_transition(packet, task, monitor);
-         answer_list_log(&(task->answer_list), false, true);
-         break;
+         DRETURN_VOID;
       default:
-         /* permissions should be checked in the functions. Here we don't
-            know what is to do, so we don't know what permissions we need */
+         // unknown operation for a worker thread
          WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-         break;
+         DRETURN_VOID;
    }
-
    DRETURN_VOID;
 }
 

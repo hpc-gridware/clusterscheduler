@@ -20,7 +20,10 @@
 #include "setup_qmaster.h"
 
 namespace oge {
-
+   /**
+    * pthread cleanup handler to release the monitor
+    * @param arg Monitor pointer
+    */
    void
    MirrorDataStore::thread_cleanup_monitor(void *arg) {
       DENTER(TOP_LAYER);
@@ -29,6 +32,10 @@ namespace oge {
       DRETURN_VOID;
    }
 
+   /**
+    * pthread cleanup handler to shutdown the event client
+    * @param arg Event client pointer
+    */
    void
    MirrorDataStore::thread_cleanup_event_client(void *arg) {
       DENTER(TOP_LAYER);
@@ -37,6 +44,10 @@ namespace oge {
       DRETURN_VOID;
    }
 
+   /**
+    * pthread cleanup handler to free all master lists of the mirrored data store
+    * @param unused
+    */
    void
    MirrorDataStore::thread_cleanup_data_store([[maybe_unused]] void *unused) {
       DENTER(TOP_LAYER);
@@ -44,14 +55,21 @@ namespace oge {
       DRETURN_VOID;
    }
 
-
+   /**
+    * Will be called by event master to pass a list of events to a mirror thread (main method of this class).
+    * Triggers also the wakeup of the mirror thread so that it can process the received events.
+    *
+    * @param ec_id Event client ID
+    * @param answer_list AN_Type list that might be used to report errors to the event mirror.
+    * @param event_list List of new events
+    * @param arg Passthrough argument - here it is the instance of a MirrorDataStore subclass
+    */
    void
-   MirrorDataStore::event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **alpp,
+   MirrorDataStore::event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **answer_list,
                                              lList *event_list, void *arg) {
       DENTER(TOP_LAYER);
       auto *mirror_thread = static_cast<MirrorDataStore *>(arg);
 
-      DPRINTF("Notify event mirror about new events in event_mirror_update_func()\n");
       sge_mutex_lock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
 
       // move the events from control of event master to the event mirror thread
@@ -63,22 +81,25 @@ namespace oge {
       } else {
          lXchgList(new_event_obj, REP_list, &mirror_thread->new_events);
       }
-      DPRINTF("Mirror has now %d events waiting to get processed\n", lGetNumberOfElem(mirror_thread->new_events));
-      mirror_thread->triggered = true;
 
       // wakeup the mirror
-      DPRINTF("event update function oge_event_mirror_event_update_func() has been triggered\n");
+      mirror_thread->triggered = true;
       pthread_cond_signal(&mirror_thread->cond_var);
+
       sge_mutex_unlock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
 
       DRETURN_VOID;
    }
 
+   /**
+    * Block till event master has new events to get processed.
+    * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
+    *
+    * @param event_list List of new events
+    */
    void
    MirrorDataStore::wait_for_event(lList **event_list) {
-      static const long timeout_s = 1;
-      static const long timeout_n = 0;
-      int wait_ret;
+      int pthread_ret;
       bool do_ack = false;
 
       DENTER(TOP_LAYER);
@@ -89,22 +110,29 @@ namespace oge {
 
          // if we did not receive a signal about new events then we will wait for one
          if (!triggered) {
+#if 0
+            static const long timeout_s = 15;
+            static const long timeout_n = 0;
             struct timespec ts{};
             u_long32 current_time = sge_get_gmt();
             ts.tv_sec = (long) current_time + timeout_s;
             ts.tv_nsec = timeout_n;
 
             // wait till we get notified by event master thread that there are new events
-            DPRINTF("Will wait for events now\n");
-            wait_ret = pthread_cond_timedwait(&cond_var, &mutex, &ts);
-            if (wait_ret != 0) {
-               DPRINTF("Stopped waiting for events now %d\n", __func__, wait_ret);
-            }
+
+            DPRINTF("will wait for events now (with timeout)\n");
+            pthread_ret = pthread_cond_timedwait(&cond_var, &mutex, &ts);
+#else
+            DPRINTF("will wait for events now (without timeout)\n");
+            pthread_ret = pthread_cond_wait(&cond_var, &mutex);
+#endif
          }
+
+         DPRINTF("woke up (pthread_ret=%d, triggered=%s, #events=%d)\n",
+                 pthread_ret, triggered ? "true" : "false", lGetNumberOfElem(new_events));
 
          // fetch the new events
          if (triggered) {
-            DPRINTF("Fetching events in event mirror\n");
             *event_list = new_events;
             new_events = nullptr;
             triggered = false;
@@ -125,6 +153,12 @@ namespace oge {
       DRETURN_VOID;
    }
 
+   /**
+    * Constructor.
+    *
+    * @param data_store_id Data store that will be filled with data.
+    * @param lock_type Lock that should be used to secure the data store
+    */
    MirrorDataStore::MirrorDataStore(DataStore::Id data_store_id, sge_locktype_t lock_type) :
            mutex(PTHREAD_MUTEX_INITIALIZER),
            cond_var(PTHREAD_COND_INITIALIZER),
@@ -137,7 +171,33 @@ namespace oge {
       SGE_ASSERT(lock_type != LOCK_GLOBAL);
    }
 
-   void *
+   /**
+    * Mirror threads main routine.
+    *
+    * Does the setup of a qmaster thread (with monitor, profiling, ...) but without commlib. Can therefor not
+    * communicate with other daemons or clients.
+    *
+    * This thread subscribes as event client at the event master thread and replicates those data subscribed in
+    * subscribe_events() to that data store that has been passed to the constructor of this class. Access to the data
+    * store is synchronized using the lock object that was also specified during construction of this object.
+    *
+    * In the main loop of the thread the thread waits for new events. Within the first second after new events have
+    * been received the thread tries to get a write lock to the data store. If this is not possible then a regular
+    * write lock is requested.
+    *
+    * The wait time can therefore be much more that one second if:
+    *    - there are either threads already accessing the data store
+    *    - there are threads waiting in the FIFO lock list because they tried to acquire the lock before this thread.
+    *
+    * As soon as the thread gets the lock it will process the events to update the data store and notify the event
+    * master about the processed events.
+    *
+    * After that it will pass the cancellation point and restart in the main loop.
+    *
+    * @param arg The usual void* argument of pthreads.
+    * @return Will never return.
+    */
+   [[noreturn]] void *
    MirrorDataStore::main([[maybe_unused]] void *arg) {
       DENTER(TOP_LAYER);
       lList *alp = nullptr;
@@ -172,7 +232,7 @@ namespace oge {
 
       // prepare as an event client/mirror
       std::string mirror_name{thread_name};
-      mirror_name += std::to_string(data_store_id);
+      mirror_name += '-' + std::to_string(data_store_id);
       bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, mirror_name.c_str());
       DPRINTF("prepared event client/mirror mechanism\n");
 
@@ -180,129 +240,127 @@ namespace oge {
       if (local_ret) {
          sge_mirror_initialize(evc, MirrorDataStore::event_mirror_update_func, &sge_mod_event_client,
                                &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack, this);
+
          evc->ec_register(evc, false, nullptr, &monitor);
          evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
-         evc->ec_set_edtime(evc, 1);
-         evc->ec_commit(evc, nullptr);
-         DPRINTF("registered at event mirror\n");
 
          // Subscribe events that are required for the data store
          subscribe_events();
+
+         evc->ec_commit(evc, nullptr);
+
+         DPRINTF("registered at event mirror and subscribed events\n");
       }
 
-      // enter main loop
-      if (local_ret) {
+      // do not exit even if shutdown event is received. We want th thread only to terminate in the cancellation
+      // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
+      // cleanup (free of data store memory and more) at the cancellation point
+      while (true) {
+         lList *event_list = nullptr;
 
-         // do not exit even if shutdown event is received. We want th thread only to terminate in the cancellation
-         // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
-         // cleanup (free of data store memory and more) at the cancellation point
-         while (true) {
-            lList *event_list = nullptr;
+         // wait for new events
+         MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor),
+                           mconf_get_monitor_time(), mconf_is_monitor_message());
 
-            // wait for new events
-            MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor),
-                              mconf_get_monitor_time(), mconf_is_monitor_message());
-
-            DPRINTF("Received %d events\n", lGetNumberOfElem(event_list));
-
-            // if we lost connection we have to register again
-            if (evc->ec_need_new_registration(evc)) {
-               DPRINTF("event mirror thread lost connection to event master thread\n");
-               lFreeList(&event_list);
-               if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
-                  DPRINTF("re-registered at event master!\n");
-               }
+         // if we lost connection we have to register again
+         if (evc->ec_need_new_registration(evc)) {
+            DPRINTF("event mirror thread lost connection to event master thread\n");
+            lFreeList(&event_list);
+            if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
+               DPRINTF("re-registered at event master!\n");
             }
-
-            // did we receive a shutdown event?
-            bool do_shutdown = false;
-            if (event_list != nullptr) {
-               do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
-
-               if (do_shutdown) {
-                  DPRINTF("received event to shutdown\n");
-
-                  // no need to handle the events if we shut down afterward
-                  lFreeList(&event_list);
-               }
-            }
-
-            // handle events (if shutdown is not pending)
-            if (!do_shutdown) {
-               const long wait_time = 200;
-               const long max_wait_time = 2000;
-               long remaining_wait_time = max_wait_time;
-               bool did_handle_events = false;
-               bool got_lock = false;
-               bool do_try_lock = true;
-
-               while (!got_lock) {
-                  // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
-                  if (do_try_lock) {
-                     got_lock = SGE_TRY_LOCK(lock_type, LOCK_WRITE);
-                  } else {
-                     SGE_LOCK(lock_type, LOCK_WRITE);
-                     got_lock = true;
-                  }
-
-                  if (got_lock) {
-                     // we got the lock and can process the events
-                     DPRINTF("Process %d events\n", lGetNumberOfElem(event_list));
-                     sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
-                     lFreeList(&event_list);
-
-                     if (mirror_ret == SGE_EM_OK) {
-                        did_handle_events = true;
-                        DPRINTF("events handled successfully\n");
-                     } else {
-                        DPRINTF("error during event processing\n");
-                     }
-
-                     // release lock
-                     SGE_UNLOCK(lock_type, LOCK_WRITE);
-                  } else {
-                     // we did not get the lock. wait a short time before retry. if the max wait time is consumed
-                     // then continue with a hard lock instead of a try lock
-                     sge_usleep(wait_time);
-                     remaining_wait_time -= wait_time;
-                     if (remaining_wait_time <= 0) {
-                        do_try_lock = false;
-                     }
-                  }
-               }
-
-               // actions if events where processed
-               if (did_handle_events == true) {
-                  thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
-                  sge_monitor_output(&monitor);
-               }
-            }
-
-            // reset the busy state to get more events
-            evc->ec_set_busy(evc, 0);
-            evc->ec_commit(evc, nullptr);
-
-            // pthread cancellation point (functions are pushed in reverse order of execution)
-            int execute = 0;
-            pthread_cleanup_push(thread_cleanup_monitor, &monitor);
-            pthread_cleanup_push(thread_cleanup_data_store, nullptr);
-            pthread_cleanup_push(thread_cleanup_event_client, evc);
-            pthread_testcancel();
-            pthread_cleanup_pop(execute); // event client registration
-            pthread_cleanup_pop(execute); // data store that was filled by this mirror
-            pthread_cleanup_pop(execute); // monitor
-            DPRINTF("passed cancellation point\n");
          }
+
+         // did we receive a shutdown event?
+         bool do_shutdown = false;
+         if (event_list != nullptr) {
+            do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+
+            if (do_shutdown) {
+               DPRINTF("received event to shutdown\n");
+
+               // no need to handle the events if we shut down afterward
+               lFreeList(&event_list);
+            }
+         }
+
+         // handle events (if shutdown is not pending)
+         if (!do_shutdown) {
+            const long wait_time = 200;
+            const long max_wait_time = 1000;
+            long remaining_wait_time = max_wait_time;
+            bool did_handle_events = false;
+            bool got_lock = false;
+            bool do_try_lock = true;
+
+            while (!got_lock) {
+               // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
+               if (do_try_lock) {
+                  got_lock = SGE_TRY_LOCK(lock_type, LOCK_WRITE);
+               } else {
+                  SGE_LOCK(lock_type, LOCK_WRITE);
+                  got_lock = true;
+               }
+
+               if (got_lock) {
+                  // we got the lock and can process the events
+                  sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+                  lFreeList(&event_list);
+
+                  if (mirror_ret == SGE_EM_OK) {
+                     did_handle_events = true;
+                  } else {
+                     DPRINTF("error during event processing\n");
+                  }
+
+                  // release lock
+                  SGE_UNLOCK(lock_type, LOCK_WRITE);
+               } else {
+                  // we did not get the lock. wait a short time before retry. if the max wait time is consumed
+                  // then continue with a hard lock instead of a try lock
+                  sge_usleep(wait_time);
+                  remaining_wait_time -= wait_time;
+                  if (remaining_wait_time <= 0) {
+                     do_try_lock = false;
+                  }
+               }
+            }
+
+            // actions if events where processed
+            if (did_handle_events == true) {
+               thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
+               sge_monitor_output(&monitor);
+            }
+         }
+
+         // reset the busy state to get more events
+         evc->ec_set_busy(evc, 0);
+         evc->ec_commit(evc, nullptr);
+
+         // pthread cancellation point (functions are pushed in reverse order of execution)
+         int execute = 0;
+         pthread_cleanup_push(thread_cleanup_monitor, &monitor);
+         pthread_cleanup_push(thread_cleanup_data_store, nullptr);
+         pthread_cleanup_push(thread_cleanup_event_client, evc);
+         pthread_testcancel();
+         pthread_cleanup_pop(execute); // event client registration
+         pthread_cleanup_pop(execute); // data store that was filled by this mirror
+         pthread_cleanup_pop(execute); // monitor
+         DPRINTF("passed cancellation point\n");
       }
 
       // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
       // pthread_cleanup_push()/pthread_cleanup_pop() before and after the call of cl_thread_func_testcancel()
-      DRETURN(nullptr);
    }
 
-
-
-   // trigger the event mirror thread to wake up either to handle events or to terminate
+   /**
+    * Trigger the event mirror thread to wakeup.
+    *
+    * Mirror threads wait for new events in MirrorDataStore::wait_for_event(). This method is used by event master
+    * to wakeup a mirror thread so that it processes the events that event master wants to deliver.
+    *
+    * Also used during shutdown of qmaster to wakeup the thread.
+    */
    void
    MirrorDataStore::wakeup() {
       DENTER(TOP_LAYER);

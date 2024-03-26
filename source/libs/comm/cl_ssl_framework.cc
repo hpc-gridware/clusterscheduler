@@ -4721,7 +4721,7 @@ static int cl_com_ssl_fill_private_from_peer_cert(cl_com_ssl_private_t *com_priv
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <limits.h>
+#include <climits>
 
 #include "comm/lists/cl_errors.h"
 #include "comm/cl_connection_list.h"

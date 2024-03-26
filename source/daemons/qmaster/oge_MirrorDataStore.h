@@ -39,10 +39,11 @@ namespace oge {
 
       virtual void wait_for_event(lList **event_list);
       virtual void wakeup();
-      virtual void *main([[maybe_unused]] void *arg);
+
+      [[noreturn]] virtual void *main([[maybe_unused]] void *arg);
       virtual void subscribe_events() = 0;
 
-      static void event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **alpp, lList *event_list, void *arg);
+      static void event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **answer_list, lList *event_list, void *arg);
 
       friend void event_mirror_initialize();
       friend void event_mirror_terminate();

@@ -32,12 +32,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <limits.h>
 #include <cctype>
 #include <fnmatch.h>
 
@@ -75,15 +69,11 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_utility.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
@@ -121,7 +111,7 @@ static int edit_usersets(lList *arglp);
 /************************************************************************/
 static int print_config(const char *config_name);
 static int delete_config(const char *config_name);
-static int add_modify_config(const char *config_name, const char *filename, u_long32 flags);
+static int add_modify_config(const char *cfn, const char *filename, u_long32 flags);
 static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
 static lListElem* edit_project(lListElem *ep, uid_t uid, gid_t gid);
 static lListElem* edit_user(lListElem *ep, uid_t uid, gid_t gid);
@@ -450,37 +440,37 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-ae [server_name]" */
       if (strcmp("-ae", *spp) == 0) {
-         char *host = nullptr;
+         char *hostname = nullptr;
 
          cp = nullptr;
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          if (!sge_next_is_an_opt(spp)) {
-            lListElem *hep = nullptr;
+            lListElem *host_ep = nullptr;
 
             spp = sge_parser_get_next(spp);
 
             /* try to resolve hostname */
-            hep = lCreateElem(EH_Type);
-            lSetHost(hep, EH_name, *spp);
+            host_ep = lCreateElem(EH_Type);
+            lSetHost(host_ep, EH_name, *spp);
 
-            switch (sge_resolve_host(hep, EH_name)) {
+            switch (sge_resolve_host(host_ep, EH_name)) {
                case CL_RETVAL_OK:
                   break;
                default:
-                  fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(hep, EH_name));
+                  fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
                   fprintf(stderr, "\n");
-                  lFreeElem(&hep);
+                  lFreeElem(&host_ep);
                   DRETURN(1);
             }
-            
-            host = sge_strdup(host, lGetHost(hep, EH_name));
-            lFreeElem(&hep);
+
+            hostname = sge_strdup(hostname, lGetHost(host_ep, EH_name));
+            lFreeElem(&host_ep);
          } else {
             /* no template name given - then use "template" as name */
-            host = sge_strdup(host, SGE_TEMPLATE_NAME);
+            hostname = sge_strdup(hostname, SGE_TEMPLATE_NAME);
          }
          /* get a template host entry .. */
-         where = lWhere("%T( %Ih=%s )", EH_Type, EH_name, host);
+         where = lWhere("%T( %Ih=%s )", EH_Type, EH_name, hostname);
          what = lWhat("%T(ALL)", EH_Type);
          alp = sge_gdi(SGE_EH_LIST, SGE_GDI_GET, &arglp, where, what);
          lFreeWhat(&what);
@@ -490,7 +480,7 @@ int sge_parse_qconf(char *argv[])
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_free(&host);
+            sge_free(&hostname);
             lFreeList(&alp);
             spp++;
             sge_parse_return = 1;
@@ -498,9 +488,9 @@ int sge_parse_qconf(char *argv[])
          }
          
          if (arglp == nullptr || lGetNumberOfElem(arglp) == 0) {
-            fprintf(stderr, MSG_EXEC_XISNOEXECHOST_S, host);   
+            fprintf(stderr, MSG_EXEC_XISNOEXECHOST_S, hostname);
             fprintf(stderr, "\n");
-            sge_free(&host);
+            sge_free(&hostname);
             lFreeList(&alp);
             lFreeList(&arglp);
             spp++;
@@ -508,7 +498,7 @@ int sge_parse_qconf(char *argv[])
             continue;
          }
 
-         sge_free(&host);
+         sge_free(&hostname);
          lFreeList(&alp);
          
          /* edit the template */
@@ -531,7 +521,7 @@ int sge_parse_qconf(char *argv[])
             DRETURN(1);
          }
 
-         host = sge_strdup(host, lGetHost(ep, EH_name));
+         hostname = sge_strdup(hostname, lGetHost(ep, EH_name));
          lFreeList(&arglp);
 
          lp = lCreateList("hosts to add", EH_Type);
@@ -543,7 +533,7 @@ int sge_parse_qconf(char *argv[])
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_free(&host);
+            sge_free(&hostname);
             spp++;
             sge_parse_return = 1;
             continue;
@@ -552,13 +542,13 @@ int sge_parse_qconf(char *argv[])
          ep = lFirstRW(alp);
          answer_exit_if_not_recoverable(ep);
          if (answer_get_status(ep) == STATUS_OK) {
-            fprintf(stderr, MSG_EXEC_ADDEDHOSTXTOEXECHOSTLIST_S, host);
+            fprintf(stderr, MSG_EXEC_ADDEDHOSTXTOEXECHOSTLIST_S, hostname);
          } else {
             fprintf(stderr, "%s", lGetString(ep, AN_text));
          }
          fprintf(stderr, "\n");
       
-         sge_free(&host);
+         sge_free(&hostname);
          lFreeList(&alp);
          spp++;
          continue;
@@ -1804,16 +1794,16 @@ int sge_parse_qconf(char *argv[])
       /* parse before -ke[j] */
 
       if (strncmp("-kec", *spp, 4) == 0) {
-         int opt = EVENTCLIENT_KILL;
+         int action_flag = EVENTCLIENT_KILL;
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
          /* found namelist -> process */
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = gdi_kill(nullptr, opt);
+            alp = gdi_kill(nullptr, action_flag);
          } else {
             lString2List(*spp, &lp, ID_Type, ID_str, ", ");
-            alp = gdi_kill(lp, opt);
+            alp = gdi_kill(lp, action_flag);
          }      
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
@@ -1827,7 +1817,7 @@ int sge_parse_qconf(char *argv[])
       /* <name> may be "scheduler" */
 
       if (strncmp("-at", *spp, 4) == 0) {
-         int opt = THREAD_START;
+         int action_flag = THREAD_START;
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
@@ -1835,7 +1825,7 @@ int sge_parse_qconf(char *argv[])
          for_each_rw (ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_START);
          }
-         alp = gdi_kill(lp, opt);
+         alp = gdi_kill(lp, action_flag);
          lFreeList(&lp);
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
@@ -1849,7 +1839,7 @@ int sge_parse_qconf(char *argv[])
       /* <name> may be "scheduler" */
 
       if (strncmp("-kt", *spp, 4) == 0) {
-         int opt = THREAD_START;
+         int action_flag = THREAD_START;
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
@@ -1857,7 +1847,7 @@ int sge_parse_qconf(char *argv[])
          for_each_rw(ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_STOP);
          }
-         alp = gdi_kill(lp, opt);
+         alp = gdi_kill(lp, action_flag);
          lFreeList(&lp);
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
@@ -1869,7 +1859,7 @@ int sge_parse_qconf(char *argv[])
       /* -ke[j] <host> ... */
       /* <host> may be "all" */
       if (strncmp("-k", *spp, 2) == 0) {
-         int opt = EXECD_KILL;
+         int action_flag = EXECD_KILL;
          /* no adminhost/manager check needed here */
 
          cp = (*spp) + 2;
@@ -1884,7 +1874,7 @@ int sge_parse_qconf(char *argv[])
 
          if (*cp == 'j') {
             cp++;
-            opt |= JOB_KILL;
+            action_flag |= JOB_KILL;
          }
 
          if (!sge_next_is_an_opt(spp)) {
@@ -1895,11 +1885,11 @@ int sge_parse_qconf(char *argv[])
          }
 
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = gdi_kill(nullptr, opt);
+            alp = gdi_kill(nullptr, action_flag);
          } else {   
             /* found namelist -> process */
             lString2List(*spp, &lp, EH_Type, EH_name, ", ");
-            alp = gdi_kill(lp, opt);
+            alp = gdi_kill(lp, action_flag);
          }
          sge_parse_return |= show_answer_list(alp);
 
@@ -2569,15 +2559,15 @@ int sge_parse_qconf(char *argv[])
       handle_exechost = (strcmp(sge_dstring_get_string(&object_name), "exechost") == 0) ? true : false;
 
       if (handle_exechost) {
-         lEnumeration *what = nullptr;
+         lEnumeration *what_all = nullptr;
          lList *list = nullptr;
          lListElem *elem = nullptr;
          lList *answer_list = nullptr;
          const lListElem *answer_ep;
 
-         what = lWhat("%T(ALL)", EH_Type);
-         answer_list = sge_gdi(SGE_EH_LIST, SGE_GDI_GET, &list, nullptr, what);
-         lFreeWhat(&what);
+         what_all = lWhat("%T(ALL)", EH_Type);
+         answer_list = sge_gdi(SGE_EH_LIST, SGE_GDI_GET, &list, nullptr, what_all);
+         lFreeWhat(&what_all);
 
          answer_ep = lFirst(answer_list);
          answer_exit_if_not_recoverable(answer_ep);
@@ -2790,15 +2780,15 @@ int sge_parse_qconf(char *argv[])
             }
          }
       } else if (handle_cqueue || handle_domain || handle_qinstance) {
-         lEnumeration *what = nullptr;
+         lEnumeration *what_all = nullptr;
          lList *list = nullptr;
          lListElem *elem = nullptr;
          lList *answer_list = nullptr;
          const lListElem *answer_ep;
 
-         what = lWhat("%T(ALL)", CQ_Type);
-         answer_list = sge_gdi(SGE_CQ_LIST, SGE_GDI_GET, &list, nullptr, what);
-         lFreeWhat(&what);
+         what_all = lWhat("%T(ALL)", CQ_Type);
+         answer_list = sge_gdi(SGE_CQ_LIST, SGE_GDI_GET, &list, nullptr, what_all);
+         lFreeWhat(&what_all);
 
          answer_ep = lFirst(answer_list);
          answer_exit_if_not_recoverable(answer_ep);
@@ -2932,8 +2922,8 @@ int sge_parse_qconf(char *argv[])
          {SGE_PE_LIST,         SGE_OBJ_PE,        PE_Type,   SGE_ATTR_PE_NAME,   PE_name,   nullptr,     &qconf_sfi,        nullptr},
          {SGE_CK_LIST,         SGE_OBJ_CKPT,      CK_Type,   SGE_ATTR_CKPT_NAME, CK_name,   nullptr,     &qconf_sfi,        nullptr},
          {SGE_HGRP_LIST,       SGE_OBJ_HGROUP,    HGRP_Type, SGE_ATTR_HGRP_NAME, HGRP_name, nullptr,     &qconf_sfi,        nullptr},
-         {SGE_RQS_LIST,        SGE_OBJ_RQS,       RQS_Type,  SGE_ATTR_RQS_NAME,  RQS_name, nullptr,      &qconf_rqs_sfi,    rqs_xattr_pre_gdi},
-         {0,                   nullptr,              0,         nullptr,               0,         nullptr,     nullptr,        nullptr}
+         {SGE_RQS_LIST,        SGE_OBJ_RQS,       RQS_Type,  SGE_ATTR_RQS_NAME,  RQS_name,  nullptr,     &qconf_rqs_sfi,    rqs_xattr_pre_gdi},
+         {0,                   nullptr,           nullptr,   nullptr,            NoName,    nullptr,     nullptr,           nullptr}
       }; 
 /* *INDENT-ON* */
       
@@ -2952,7 +2942,7 @@ int sge_parse_qconf(char *argv[])
       info_entry[4].fields = HGRP_fields;
       info_entry[5].fields = RQS_fields;
       
-      /* no adminhost/manager check needed here */
+      /* no admin host/manager check needed here */
         
       /* Capital letter => we will read from file */
       if (isupper((*spp)[1])) {
@@ -3028,8 +3018,8 @@ int sge_parse_qconf(char *argv[])
    if (strcmp("-purge", *spp) == 0) {
 
       static object_info_entry info_entry[] = {
-         {SGE_CQ_LIST,     SGE_OBJ_CQUEUE,    QR_Type,   SGE_ATTR_QNAME,     QR_name,   nullptr,        &qconf_sfi,    cqueue_xattr_pre_gdi},
-         {0,                   nullptr,              0,         nullptr,               0,         nullptr,        nullptr}
+         {SGE_CQ_LIST, SGE_OBJ_CQUEUE, QR_Type, SGE_ATTR_QNAME, QR_name, nullptr, &qconf_sfi, cqueue_xattr_pre_gdi},
+         {0,           nullptr,        nullptr, nullptr,        NoName,  nullptr, nullptr,    nullptr}
       };
 
       int index = 0;
@@ -3568,7 +3558,7 @@ int sge_parse_qconf(char *argv[])
          newep = edit_user(ep, uid, gid);
 
          /* if the user name has changed, we need to print an error message */   
-         if (newep == nullptr || strcmp(lGetString(ep, UU_name), lGetString(newep, UU_name))) {
+         if (newep == nullptr || strcmp(lGetString(ep, UU_name), lGetString(newep, UU_name)) != 0) {
             fprintf(stderr, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, lGetString(ep, UU_name), lGetString(newep, UU_name));
             fprintf(stderr, "\n");
             lFreeElem(&newep);
@@ -3660,7 +3650,7 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-Muser", *spp) == 0) {
          char* file = nullptr;
-         const char* username = nullptr;
+         const char* uname = nullptr;
          spooling_field *fields = nullptr;
 
          /* no adminhost/manager check needed here */
@@ -3697,12 +3687,12 @@ int sge_parse_qconf(char *argv[])
 
          if (newep == nullptr) {
             sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE); 
-         } 
-         
-         username = lGetString(newep, UU_name); 
+         }
+
+         uname = lGetString(newep, UU_name);
                  
          /* get user */
-         where = lWhere("%T( %I==%s )", UU_Type, UU_name, username);
+         where = lWhere("%T( %I==%s )", UU_Type, UU_name, uname);
          what = lWhat("%T(ALL)", UU_Type);
          alp = sge_gdi(SGE_UU_LIST, SGE_GDI_GET, &lp, where, what);
          lFreeWhere(&where);
@@ -3719,7 +3709,7 @@ int sge_parse_qconf(char *argv[])
          }
 
          if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, username);
+            fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, uname);
             fprintf(stderr, "\n");
             fflush(stdout);
             fflush(stderr);
@@ -3934,8 +3924,8 @@ int sge_parse_qconf(char *argv[])
          action_enum action = ACTION_sconf;
          char *host_list = nullptr;
          int ret, first = 1;
-         lListElem *hep;
-         const char *host;
+         lListElem *host_ep;
+         const char *hostname;
 
          if (!strcmp("-aconf", *spp)) {
             qconf_is_manager_on_admin_host(username, qualified_hostname);
@@ -3957,7 +3947,7 @@ int sge_parse_qconf(char *argv[])
          }
             
          /* host_list might look like host1,host2,... */
-         hep = lCreateElem(EH_Type);
+         host_ep = lCreateElem(EH_Type);
 
          for ((cp = sge_strtok(host_list, ",")); cp && *cp;
              (cp = sge_strtok(nullptr, ","))) {
@@ -3970,12 +3960,12 @@ int sge_parse_qconf(char *argv[])
             ** it would be uncomfortable if you could only give files in .
             */
             if ((action == ACTION_Aconf || action == ACTION_Mconf) && cp && strrchr(cp, '/')) {
-               lSetHost(hep, EH_name, strrchr(cp, '/') + 1);
+               lSetHost(host_ep, EH_name, strrchr(cp, '/') + 1);
             } else {
-               lSetHost(hep, EH_name, cp);
+               lSetHost(host_ep, EH_name, cp);
             }
             
-            switch ((ret=sge_resolve_host(hep, EH_name))) {
+            switch ((ret=sge_resolve_host(host_ep, EH_name))) {
             case CL_RETVAL_OK:
                break;
             default:
@@ -3983,7 +3973,7 @@ int sge_parse_qconf(char *argv[])
                fprintf(stderr, "\n");
                break;
             }
-            host = lGetHost(hep, EH_name);
+            hostname = lGetHost(host_ep, EH_name);
 
             first = 0;
 
@@ -3993,23 +3983,23 @@ int sge_parse_qconf(char *argv[])
             }   
                
             if (action == ACTION_sconf) {
-               if (print_config(host) != 0) {
+               if (print_config(hostname) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf) {
-               if (add_modify_config(host, nullptr, 1) != 0) {
+               if (add_modify_config(hostname, nullptr, 1) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_mconf) {
-               if (add_modify_config(host, nullptr, 0) != 0) {
+               if (add_modify_config(hostname, nullptr, 0) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_Aconf) {
-               if (add_modify_config(host, cp, 1) != 0) {
+               if (add_modify_config(hostname, cp, 1) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_Mconf) {
-               if (add_modify_config(host, cp, 2) != 0) {
+               if (add_modify_config(hostname, cp, 2) != 0) {
                   sge_parse_return = 1;
                }
             }
@@ -4017,7 +4007,7 @@ int sge_parse_qconf(char *argv[])
          } /* end for */
          
          sge_free(&host_list);
-         lFreeElem(&hep);
+         lFreeElem(&host_ep);
 
          spp++;
          continue;
@@ -4093,8 +4083,8 @@ int sge_parse_qconf(char *argv[])
       /* "-dconf config_list" */
       if (strcmp("-dconf", *spp) == 0) {
          char *host_list = nullptr;
-         lListElem *hep = nullptr;
-         const char *host = nullptr;
+         lListElem *host_ep = nullptr;
+         const char *hostname = nullptr;
          int ret;
 
          /* no adminhost/manager check needed here */
@@ -4103,14 +4093,14 @@ int sge_parse_qconf(char *argv[])
             spp = sge_parser_get_next(spp);
 
             host_list = sge_strdup(nullptr, *spp);
-            hep = lCreateElem(EH_Type);
+            host_ep = lCreateElem(EH_Type);
 
             for ((cp = sge_strtok(host_list, ",")); cp && *cp;
                 (cp = sge_strtok(nullptr, ","))) {
                
-               lSetHost(hep, EH_name, cp);
+               lSetHost(host_ep, EH_name, cp);
                
-               switch (sge_resolve_host(hep, EH_name)) {
+               switch (sge_resolve_host(host_ep, EH_name)) {
                case CL_RETVAL_OK:
                   break;
                default:
@@ -4119,18 +4109,18 @@ int sge_parse_qconf(char *argv[])
                   sge_parse_return = 1;
                   break;
                }
-               host = lGetHost(hep, EH_name);
-               ret = delete_config(host);
+               hostname = lGetHost(host_ep, EH_name);
+               ret = delete_config(hostname);
                /*
                ** try the unresolved name if this was different
                */
-               if (ret && strcmp(cp, host)) {
+               if (ret && strcmp(cp, hostname) != 0) {
                   delete_config(cp);
                }
             } /* end for */
 
             sge_free(&host_list);
-            lFreeElem(&hep);
+            lFreeElem(&host_ep);
          }
          else {
             fprintf(stderr, "%s\n", MSG_ANSWER_NEEDHOSTNAMETODELLOCALCONFIG);
@@ -5279,7 +5269,7 @@ static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, i
    }
    lAppendElem(*lpp, ep);
 
-   while ((cp2 = sge_strtok(0, ",")) != nullptr) {
+   while ((cp2 = sge_strtok(nullptr, ",")) != nullptr) {
       ep = lCreateElem(dp);
       switch (dataType) {
          case lStringT:
@@ -5366,12 +5356,12 @@ static bool add_host_of_type(lList *arglp, u_long32 target)
    for_each_rw(argep, arglp) {
       /* resolve hostname */
       if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
-         const char* host = lGetHost(argep, nm);
+         const char* hostname = lGetHost(argep, nm);
          ret = false;
-         if ( host == nullptr) {
-            host = "";
+         if (hostname == nullptr) {
+            hostname = "";
          }
-         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, host);
+         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, hostname);
          fprintf(stderr, "\n");
          continue;
       }
@@ -5880,17 +5870,13 @@ static bool show_object_list(u_long32 target, lDescr *type, int keynm, const cha
 
    switch (keynm) {
    case EH_name:
-      where = lWhere("%T(!(%Ic=%s || %Ic=%s))",
-         type, keynm, SGE_TEMPLATE_NAME, 
-               keynm, SGE_GLOBAL_NAME );
+      where = lWhere("%T(!(%Ic=%s || %Ic=%s))", type, keynm, SGE_TEMPLATE_NAME, keynm, SGE_GLOBAL_NAME );
       break;
    case CONF_name:
-      where = lWhere("%T(!(%I c= %s))",
-         type, keynm, SGE_GLOBAL_NAME );
+      where = lWhere("%T(!(%I c= %s))", type, keynm, SGE_GLOBAL_NAME );
       break;   
    case EV_host:
-      where = lWhere("%T(%I==%u))", 
-         type, EV_id, EV_ID_SCHEDD);
+      where = lWhere("%T(%I==%u))", type, EV_id, EV_ID_SCHEDD);
       break;
    default:
       where = nullptr; /* all elements */
@@ -6400,7 +6386,7 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
    }
 
    if (filename == nullptr) {
-      bool failed = false;
+      bool local_failed = false;
 
       /* get config or make an empty config entry if none exists */
       if (ep == nullptr) {
@@ -6418,19 +6404,19 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
 
       if (status != 0) {
          unlink(tmpname);
-         failed = true;
+         local_failed = true;
          sge_free(&fields);
          sge_free(&tmpname);
       }
       if (status < 0) {
          fprintf(stderr, "%s\n", MSG_PARSE_EDITFAILED);
          sge_free(&fields);
-         DRETURN(failed);
+         DRETURN(local_failed);
       }
       else if (status > 0) {
          fprintf(stderr, "%s\n", MSG_ANSWER_CONFIGUNCHANGED);
          sge_free(&fields);
-         DRETURN(failed);
+         DRETURN(local_failed);
       }
 
       fields_out[0] = NoName;
@@ -6440,7 +6426,7 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
 
       if (answer_list_output(&alp)) {
          lFreeElem(&ep);
-         failed = true;
+         local_failed = true;
       }
 
       if (ep != nullptr) {
@@ -6452,11 +6438,11 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
       if (missing_field != NoName) {
          lFreeElem(&ep);
          answer_list_output(&alp);
-         failed = true;
+         local_failed = true;
       }
 
       /* If the configuration is legitematly nullptr, create an empty object. */
-      if (!failed && (ep == nullptr)) {
+      if (!local_failed && (ep == nullptr)) {
          ep = lCreateElem(CONF_Type);
       }
 
@@ -6466,8 +6452,8 @@ static int add_modify_config(const char *cfn, const char *filename, u_long32 fla
          fprintf(stderr, "%s\n", MSG_ANSWER_ERRORREADINGTEMPFILE);
          unlink(tmpname);
          sge_free(&tmpname);
-         failed = true;
-         DRETURN(failed);
+         local_failed = true;
+         DRETURN(local_failed);
       }
       unlink(tmpname);
       sge_free(&tmpname);

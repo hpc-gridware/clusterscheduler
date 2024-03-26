@@ -34,7 +34,7 @@
 #include <cfloat>
 #include <ctime>
 #include <cstring>
-#include <limits.h>
+#include <climits>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"

@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
 
 #include <fcntl.h>
 #include <kvm.h>
-#include <limits.h>
+#include <climits>
 #endif
 
 #if defined(DARWIN)

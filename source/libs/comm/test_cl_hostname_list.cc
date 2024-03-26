@@ -37,7 +37,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <csignal>
-#include <limits.h>
+#include <climits>
 
 #include <arpa/inet.h>  /* for inet_makeaddr() */
 #include <netinet/in.h>

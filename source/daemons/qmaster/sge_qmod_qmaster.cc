@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 #include <cstdlib>
 #include <cstring>
-#include <limits.h>
+#include <climits>
 #include <fnmatch.h>
 
 #include "uti/sge_bootstrap.h"

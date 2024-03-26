@@ -39,7 +39,7 @@
 #include <csignal>
 #include <fcntl.h>
 #include <pwd.h>
-#include <limits.h>
+#include <climits>
 #include <cerrno>
 #include <poll.h>
 #include <sys/types.h>

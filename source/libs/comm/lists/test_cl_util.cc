@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <cstdlib>
 
-#include <limits.h>
+#include <climits>
 
 #include "comm/lists/cl_util.h"
 

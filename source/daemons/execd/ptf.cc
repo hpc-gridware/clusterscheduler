@@ -48,7 +48,7 @@
 #include <cerrno>
 #include <sys/types.h>
 #include <unistd.h>
-#include <limits.h>
+#include <climits>
 #include <math.h>
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)

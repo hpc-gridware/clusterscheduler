@@ -41,7 +41,7 @@
 #include <cerrno>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <limits.h>
+#include <climits>
 #include <csignal>
 #include <pthread.h>
 

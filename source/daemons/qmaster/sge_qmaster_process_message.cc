@@ -63,12 +63,11 @@
 
 #include "sge_c_gdi.h"
 #include "sge_qmaster_main.h"
-#include "sge_thread_worker.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
 static void
-do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor);
+do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
 do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor);
@@ -146,7 +145,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
       switch (msg.tag) {
          case TAG_GDI_REQUEST:
             MONITOR_INC_GDI(monitor);
-            do_gdi_packet(nullptr, &msg, monitor);
+            do_gdi_packet(&msg, monitor);
             break;
          case TAG_ACK_REQUEST:
             MONITOR_INC_ACK(monitor);
@@ -169,8 +168,41 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
+static thread_type_t
+get_gdi_executor_thread_type(sge_gdi_packet_class_t *packet) {
+   DENTER(TOP_LAYER);
+
+   // check each task of a multi request
+   sge_gdi_task_class_t *task = packet->first_task;
+   while (task) {
+      u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
+      u_long32 target = task->target;
+
+      if (operation == SGE_GDI_PERMCHECK) {
+         // GDI permission requests to check client user and host permissions
+         ;
+      } else if (operation == SGE_GDI_TRIGGER && (target == SGE_MASTER_EVENT || target == SGE_SC_LIST ||
+                                                  target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+         // shutdown request of qmaster (SGE_MASTER_EVENT)
+         // trigger scheduling (SGE_SC_LIST)
+         // termination of event client (SGE_EV_LIST)
+         // start stop of thread (SGE_DUMMY_LIST)
+         ;
+      } else if (operation == SGE_GDI_GET && target == SGE_EV_LIST) {
+         // show event client list (SGE_EV_LIST); data comes from event master therefor no global lock required
+         ;
+      } else {
+         // singe GDI requests or multi GDI requests that have a task that cannot be executed in a listener
+         // will cause the full request to be executed by a worker
+         DRETURN(WORKER_THREAD);
+      }
+      task = task->next;
+   }
+   DRETURN(LISTENER_THREAD);
+}
+
 static void
-do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
+do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
    sge_gdi_packet_class_t *packet = nullptr;
    bool local_ret;
@@ -178,7 +210,7 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    // unpack the incoming request
-   local_ret = sge_gdi_packet_unpack(&packet, answer_list, pb_in);
+   local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
    packet->host = sge_strdup(nullptr, aMsg->snd_host);
    packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
@@ -213,56 +245,35 @@ do_gdi_packet(lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
       }
    }
 
-   // TODO: error case is not handled (local_ret == false)
+   // TODO: error cases are not handled (local_ret == false)
 
-   /*
-    * EB: TODO: CLEANUP: Handle permission checks in listener not in worker thread.
-    *
-    * This would be the correct place to handle all permissions   
-    * checks which are currently done inside of sge_c_gdi.
-    * This can only be done if it is not neccessary anymore to pass a 
-    * packbuffer to a worker thread.
-    */
+   // if all requests can be handled here then we do that otherwise we store the request to get processed by a worker
+   if (local_ret) {
+      thread_type_t type = get_gdi_executor_thread_type(packet);
+      if (type == LISTENER_THREAD) {
+         // prepare packbuffer for the clients answer
+         init_packbuffer(&(packet->pb), 0, 0);
 
-   bool do_handle_in_listener = false;
-   {
-      DTRACE;
-      sge_gdi_task_class_t *task = packet->first_task;
-      while (task != nullptr) {
-         int operation = SGE_GDI_GET_OPERATION(task->command);
+         // handle the requests
+         SGE_LOCK(LOCK_LISTENER, LOCK_READ);
+         sge_gdi_task_class_t *task = packet->first_task;
+         while (task != nullptr) {
+            sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
 
-         if (operation == SGE_GDI_PERMCHECK) {
-            do_handle_in_listener = true;
+            task = task->next;
          }
-         task = task->next;
+         SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
+
+         // send the response
+         MONITOR_MESSAGES_OUT(monitor);
+         sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                  &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+         clear_packbuffer(&(packet->pb));
+         sge_gdi_packet_free(&packet);
+      } else {
+         // worker request queue
+         sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
       }
-   }
-
-
-   // if all requests can be handled in worker then we do that
-   // otherwise we store the request to get processed by another thread
-   if (do_handle_in_listener) {
-      // prepare packbuffer for the clients answer
-      init_packbuffer(&(packet->pb), 0, 0);
-
-      // handle the requests
-      SGE_LOCK(LOCK_LISTENER, LOCK_READ);
-      sge_gdi_task_class_t *task = packet->first_task;
-      while (task != nullptr) {
-         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
-
-         task = task->next;
-      }
-      SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
-
-      // send the response
-      MONITOR_MESSAGES_OUT(monitor);
-      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                               &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
-      clear_packbuffer(&(packet->pb));
-      sge_gdi_packet_free(&packet);
-   } else {
-      sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
    }
 
    DRETURN_VOID;

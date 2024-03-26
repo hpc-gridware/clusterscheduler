@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
-#include <limits.h>
+#include <climits>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"

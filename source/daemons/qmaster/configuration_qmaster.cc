@@ -34,7 +34,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
-#include <limits.h>
+#include <climits>
 #include <pwd.h>
 
 #include "uti/config_file.h"

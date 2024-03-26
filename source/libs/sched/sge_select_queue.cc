@@ -33,7 +33,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cfloat>
-#include <limits.h>
+#include <climits>
 #ifdef SGE_PQS_API
 #include <dlfcn.h>
 #endif

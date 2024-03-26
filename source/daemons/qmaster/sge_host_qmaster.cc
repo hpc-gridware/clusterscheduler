@@ -992,8 +992,7 @@ sge_gdi_kill_exechost(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
 
    if (!manop_is_manager(packet->user, master_manager_list)) {
       ERROR(SFNMAX, MSG_OBJ_SHUTDOWNPERMS);
-      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR,
-                      ANSWER_QUALITY_ERROR);
+      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
 

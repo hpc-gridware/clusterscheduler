@@ -37,7 +37,7 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>
-#include <limits.h>
+#include <climits>
 #include <dlfcn.h>
 #include <pthread.h>
 

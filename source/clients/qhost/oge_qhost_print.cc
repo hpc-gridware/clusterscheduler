@@ -34,7 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <sys/stat.h>
-#include <limits.h>
+#include <climits>
 #include <math.h>
 #include <cfloat>
 
