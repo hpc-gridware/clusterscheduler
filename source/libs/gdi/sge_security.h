@@ -73,8 +73,8 @@ int store_sec_cred2(const char* sge_root,
                     int *general, 
                     dstring *err_str);
 
-int sge_security_verify_user(const char *host, const char *commproc, u_long32 id,
-                             const char *admin_user, const char *user, const char *progname); 
+bool
+sge_security_verify_user(const char *host, const char *commproc, u_long32 id, const char *user);
 
 bool sge_security_verify_unique_identifier(bool check_admin_user, 
                                            const char* user, 

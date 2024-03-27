@@ -697,33 +697,34 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
 ******************************************************************************/
 bool
 sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp) {
-   bool ret = true;
-   const char *client_version = nullptr;
+   DENTER(TOP_LAYER);
    dstring ds;
    char buffer[256];
-   const vdict_t *vp;
-   const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
-   u_long32 version = packet->version;
-
-   DENTER(TOP_LAYER);
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   if (version != GRM_GDI_VERSION) {
+   if (packet->version != GRM_GDI_VERSION) {
+      const vdict_t *vp;
+      const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
+      const char *client_version = nullptr;
+
+      // try to find a version entry in the version table
       for (vp = &vdict[0]; vp->version; vp++) {
-         if (version == vp->version) {
+         if (packet->version == vp->version) {
             client_version = vp->release;
          }
       }
 
+      // show a warning and either print the version ID or the version string if we found one in the table
       if (client_version) {
-         WARNING(MSG_GDI_WRONG_GDI_SSISS, packet->host, packet->commproc, (int) (packet->id), client_version, feature_get_product_name(FS_VERSION, &ds));
+         WARNING(MSG_GDI_WRONG_GDI_SSISS, packet->host, packet->commproc, (int) (packet->id),
+                 client_version, feature_get_product_name(FS_VERSION, &ds));
       } else {
-         WARNING(MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id), sge_u32c(version), feature_get_product_name(FS_VERSION, &ds));
+         WARNING(MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id),
+                 sge_u32c(packet->version), feature_get_product_name(FS_VERSION, &ds));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
-      DTRACE;
-      ret = false;
+      DRETURN(false);
    }
-   DRETURN(ret);
+   DRETURN(true);
 }
 

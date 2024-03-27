@@ -205,14 +205,12 @@ get_gdi_executor_thread_type(sge_gdi_packet_class_t *packet) {
 
 static void
 do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
-   sge_pack_buffer *pb_in = &(aMsg->buf);
-   sge_gdi_packet_class_t *packet = nullptr;
-   bool local_ret;
-
    DENTER(TOP_LAYER);
 
    // unpack the incoming request
-   local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
+   sge_pack_buffer *pb_in = &(aMsg->buf);
+   sge_gdi_packet_class_t *packet = nullptr;
+   bool local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
    packet->host = sge_strdup(nullptr, aMsg->snd_host);
    packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
@@ -226,7 +224,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       local_ret = sge_gdi_packet_verify_version(packet, &(packet->first_task->answer_list));
    }
 
-   // auth_info (user/group)
+   // check auth_info (user/group)
    if (local_ret) {
       DTRACE;
       local_ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
@@ -236,46 +234,70 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // check csp (if enabled)
    if (local_ret) {
-      const char *admin_user = bootstrap_get_admin_user();
-      const char *progname = component_get_component_name();
-
       DTRACE;
-      if (!sge_security_verify_user(packet->host, packet->commproc,
-                                    packet->commproc_id, admin_user, packet->user, progname)) {
+      if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
 
-   // TODO: error cases are not handled (local_ret == false)
-
-   // if all requests can be handled here then we do that otherwise we store the request to get processed by a worker
+   // handle GDI request limits
    if (local_ret) {
-      thread_type_t type = get_gdi_executor_thread_type(packet);
-      if (type == LISTENER_THREAD) {
-         // prepare packbuffer for the clients answer
-         init_packbuffer(&(packet->pb), 0, 0);
+      // TODO handle gdi request limits
+   }
 
-         // handle the requests
-         SGE_LOCK(LOCK_LISTENER, LOCK_READ);
-         sge_gdi_task_class_t *task = packet->first_task;
-         while (task != nullptr) {
-            sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
+   // handle specific auth/security
+   if (local_ret) {
+      // TODO check if permissions are sufficient for each individual task
+   }
 
-            task = task->next;
-         }
-         SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
+   // handle errors that might have happened above and then exit
+   if (!local_ret) {
+      sge_gdi_task_class_t *task = packet->first_task;
 
-         // send the response
-         MONITOR_MESSAGES_OUT(monitor);
-         sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                                  &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
-         clear_packbuffer(&(packet->pb));
-         sge_gdi_packet_free(&packet);
-      } else {
-         // worker request queue
-         sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+      init_packbuffer(&packet->pb, 0, 0);
+      while(task) {
+         // data might still be that what client sent initially. no need to re-transfer that
+         lFreeList(&task->data_list);
+
+         // for all tasks we pack the answer of the first task which contains general errors
+         // like version mismatch, auth_info or security issues.
+         sge_gdi_packet_pack_task(packet, task, &packet->first_task->answer_list, &packet->pb);
+         task = task->next;
       }
+      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                               &packet->pb, TAG_GDI_REQUEST, packet->response_id, nullptr);
+      clear_packbuffer(&packet->pb);
+      sge_gdi_packet_free(&packet);
+
+      DRETURN_VOID;
+   }
+
+   // execute request in listener or store it in a queue for the workers
+   thread_type_t type = get_gdi_executor_thread_type(packet);
+   if (type == LISTENER_THREAD) {
+      // prepare packbuffer for the clients answer
+      init_packbuffer(&(packet->pb), 0, 0);
+
+      // handle the requests
+      SGE_LOCK(LOCK_LISTENER, LOCK_READ);
+      sge_gdi_task_class_t *task = packet->first_task;
+      while (task != nullptr) {
+         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
+
+         task = task->next;
+      }
+      SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
+
+      // send the response
+      MONITOR_MESSAGES_OUT(monitor);
+      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                               &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+      clear_packbuffer(&(packet->pb));
+      sge_gdi_packet_free(&packet);
+   } else {
+      // add to the worker request queue
+      sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
    }
 
    DRETURN_VOID;

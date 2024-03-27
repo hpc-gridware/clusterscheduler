@@ -96,7 +96,7 @@ static bool is_master(const char* progname);
 #endif
 
 static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize);
-static bool sge_decrypt(char *intext, int inlen, char *outbuf, int *outsize);
+static bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
 static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
 
 
@@ -1334,22 +1334,21 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                                uid_t *uid, char *user, size_t user_len, 
                                gid_t *gid, char *group, size_t group_len)
 {
-   bool ret = false;
-   char dbuffer[2 * SGE_SEC_BUFSIZE];
+   DENTER(TOP_LAYER);
+   char auth_buffer[2 * SGE_SEC_BUFSIZE];
    int dlen = 0;
 
-   DENTER(TOP_LAYER);
-   if (sge_decrypt(packet->auth_info, strlen(packet->auth_info), dbuffer, &dlen)) {
+   if (packet->auth_info != nullptr && sge_decrypt(packet->auth_info, strlen(packet->auth_info), auth_buffer, &dlen)) {
       char userbuf[2 * SGE_SEC_BUFSIZE];
       char groupbuf[2 * SGE_SEC_BUFSIZE];
 
-      if (sscanf(dbuffer, uid_t_fmt " " gid_t_fmt " %s %s", uid, gid, userbuf, groupbuf) == 4) {
+      if (sscanf(auth_buffer, uid_t_fmt " " gid_t_fmt " %s %s", uid, gid, userbuf, groupbuf) == 4) {
          if (strlen(userbuf) <= user_len && strlen(groupbuf) <= group_len) {
             sge_strlcpy(user, userbuf, user_len);
             sge_strlcpy(group, groupbuf, group_len);
             if ((strlen(user) != 0) && (strlen(group) != 0)) {
                DPRINTF("uid/username = %d/%s, gid/groupname = %d/%s\n", (int)*uid, user, (int)*gid, group);
-               ret = true;
+               DRETURN(true);
             } else {
                CRITICAL(MSG_GDI_NULL_IN_GDI_SSS, (strlen(user) == 0) ? MSG_OBJ_USER : "", (strlen(group) == 0) ? MSG_OBJ_GROUP : "", packet->host);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
@@ -1366,7 +1365,7 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
       ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
    }
-   DRETURN(ret);
+   DRETURN(false);
 }
 
 #ifndef CRYPTO
@@ -1396,22 +1395,20 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 /*
 ** MT-NOTE: standard sge_decrypt() is MT safe
 */
-static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
+static bool sge_decrypt(char *intext, int inlen, char *out_buffer, int* outsize)
 {
-   unsigned char decbuf[2*SGE_SEC_BUFSIZE];
-   int declen = sizeof(decbuf);
-
    DENTER(TOP_LAYER);
 
-   if (!change_encoding(intext, &inlen, decbuf, &declen, DECODE_FROM_STRING)) {
+   // decode
+   unsigned char buffer[2 * SGE_SEC_BUFSIZE];
+   int buffer_len = sizeof(buffer);
+   if (!change_encoding(intext, &inlen, buffer, &buffer_len, DECODE_FROM_STRING)) {
       DRETURN(false);
-   }   
-   decbuf[declen] = '\0';
+   }
 
-   strcpy(outbuf, (char*)decbuf);
-
-/*    DPRINTF("======== outbuf:\n" SFN "\n=========\n", outbuf); */
-
+   // return the result
+   buffer[buffer_len] = '\0';
+   strcpy(out_buffer, (char*)buffer);
    DRETURN(true);
 }
 
@@ -1562,34 +1559,31 @@ static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* us
 }
 
 /* MT-NOTE: sge_security_verify_user() is MT safe (assumptions) */
-int sge_security_verify_user(const char *host, const char *commproc, u_long32 id,
-                             const char *admin_user, const char *gdi_user, const char *progname) 
+bool
+sge_security_verify_user(const char *host, const char *commproc, u_long32 id, const char *gdi_user)
 {
    DENTER(TOP_LAYER);
 
    if (gdi_user == nullptr || host == nullptr || commproc == nullptr) {
-     DPRINTF("gdi user name or host or commproc is nullptr\n");
-     DRETURN(False);
+      DRETURN(false);
    }
 
+   const char *admin_user = bootstrap_get_admin_user();
    if (is_daemon(commproc) && (strcmp(gdi_user, admin_user) != 0) && (sge_is_user_superuser(gdi_user) == false)) {
-      DRETURN(False);
+      DRETURN(false);
    }
 
-   if (!is_daemon(commproc)) {
-      if (!sge_security_verify_unique_identifier(false, gdi_user, progname, 0, host, commproc, id)) {
-         DRETURN(False);
-      }
-   } else {
-      if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0, host, commproc, id)) {
-         DRETURN(False);
-      }
+   const char *component_name = component_get_component_name();
+   bool check_admin_user = is_daemon(commproc);
+   const char *user = check_admin_user ? admin_user : gdi_user;
+   if (!sge_security_verify_unique_identifier(check_admin_user, user, component_name, 0, host, commproc, id)) {
+      DRETURN(false);
    }
 
 #ifdef KERBEROS
 
    if (krb_verify_user(host, commproc, id, user) < 0) {
-      DRETURN(False);
+      DRETURN(false);
    }
 
 #endif /* KERBEROS */
