@@ -95,6 +95,10 @@ bool
 sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                               lList **answer_list, monitoring_t *monitor);
 
+bool
+sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                                     monitoring_t *monitor);
+
 void
 sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
                             monitoring_t *monitor);
@@ -108,5 +112,4 @@ void sge_clean_lists(void);
 /* EB: TODO: CLEANUP: should be replaced with sge_gdi_packet_verify_version() */
 int verify_request_version(lList **alpp, u_long32 version, char *host, char *commproc, int id);
 
-int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc, int mod, lListElem *ep,
-                           monitoring_t *monitor);
+

@@ -18,6 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "sgeobj/sge_host.h"
+
 #include "mir/sge_mirror.h"
 
 #include "oge_MirrorListenerDataStore.h"
@@ -29,38 +31,44 @@ namespace oge {
 
    void MirrorListenerDataStore::subscribe_events() {
       sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
-      sge_mirror_subscribe(evc, SGE_TYPE_SUBMITHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
-      sge_mirror_subscribe(evc, SGE_TYPE_HGROUP, nullptr, nullptr, nullptr, nullptr, nullptr);
-      sge_mirror_subscribe(evc, SGE_TYPE_MANAGER, nullptr, nullptr, nullptr, nullptr, nullptr);
-      sge_mirror_subscribe(evc, SGE_TYPE_OPERATOR, nullptr, nullptr, nullptr, nullptr, nullptr);
-
       evc->ec_set_flush(evc, sgeE_ADMINHOST_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_ADMINHOST_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_ADMINHOST_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_ADMINHOST_DEL, true, 0);
 
+      sge_mirror_subscribe(evc, SGE_TYPE_SUBMITHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_flush(evc, sgeE_SUBMITHOST_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_SUBMITHOST_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_SUBMITHOST_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_SUBMITHOST_DEL, true, 0);
 
+      sge_mirror_subscribe(evc, SGE_TYPE_HGROUP, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_flush(evc, sgeE_HGROUP_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_HGROUP_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_HGROUP_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_HGROUP_DEL, true, 0);
 
+      sge_mirror_subscribe(evc, SGE_TYPE_MANAGER, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_flush(evc, sgeE_MANAGER_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_MANAGER_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_MANAGER_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_MANAGER_DEL, true, 0);
 
+      sge_mirror_subscribe(evc, SGE_TYPE_OPERATOR, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_flush(evc, sgeE_OPERATOR_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_OPERATOR_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_OPERATOR_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_OPERATOR_DEL, true, 0);
 
-      evc->ec_set_edtime(evc, 15);
+      // We need just the name to see if a host is an execution host
+      lEnumeration *eh_what = lWhat("%T(%I)", EH_Type, EH_name);
+      sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST, nullptr, nullptr, nullptr, nullptr, eh_what);
+      evc->ec_set_flush(evc, sgeE_EXECHOST_LIST, true, 0);
+      evc->ec_set_flush(evc, sgeE_EXECHOST_ADD, true, 0);
+      evc->ec_set_flush(evc, sgeE_EXECHOST_MOD, true, 0);
+      evc->ec_set_flush(evc, sgeE_EXECHOST_DEL, true, 0);
 
+      evc->ec_set_edtime(evc, 15);
       // no need to call evc->ec_commit(). This is done directly after this method returns.
    }
 }

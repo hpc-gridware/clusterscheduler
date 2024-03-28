@@ -142,20 +142,6 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
 
    DENTER(TOP_LAYER);
 
-
-   if (!packet->host || (strlen(packet->user) == 0) || !packet->commproc) {
-      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
-      answer_list_add(&(task->answer_list), SGE_EVENT,
-                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      sge_dstring_free(&cqueue_buffer);
-      sge_dstring_free(&hostname_buffer);
-      DRETURN_VOID;
-   }
-
-   if (sge_chck_mod_perm_host(&(task->answer_list), task->target, packet->host, packet->commproc, 0, nullptr, monitor)) {
-      DRETURN_VOID;
-   }
-
    /*
    ** loop over the ids and change queue or job state and signal them
    ** if necessary

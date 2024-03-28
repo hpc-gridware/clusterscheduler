@@ -218,21 +218,28 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    packet->is_intern_request = false;
    packet->is_gdi_request = true;
 
+   // check results of sge_strdup()
+   if (packet->host == nullptr || packet->commproc == nullptr) {
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
+      answer_list_add(&packet->first_task->answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      local_ret = false;
+   }
+
    // check GDI version
    if (local_ret) {
       DTRACE;
-      local_ret = sge_gdi_packet_verify_version(packet, &(packet->first_task->answer_list));
+      local_ret = sge_gdi_packet_verify_version(packet, &packet->first_task->answer_list);
    }
 
    // check auth_info (user/group)
    if (local_ret) {
       DTRACE;
-      local_ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
+      local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
                                                  &(packet->uid), packet->user, sizeof(packet->user),
                                                  &(packet->gid), packet->group, sizeof(packet->group));
    }
 
-   // check csp (if enabled)
+   // check CSP mode if enabled
    if (local_ret) {
       DTRACE;
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
@@ -246,9 +253,18 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       // TODO handle gdi request limits
    }
 
-   // handle specific auth/security
+   // handle request specific requirements already here so that we save time potentially in the worker
+   //    - manager/operator permissions
+   //    - admin/submit/exec host
    if (local_ret) {
-      // TODO check if permissions are sufficient for each individual task
+      sge_gdi_task_class_t *task = packet->first_task;
+      while(task) {
+         local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
+         if (!local_ret) {
+            break;
+         }
+         task = task->next;
+      }
    }
 
    // handle errors that might have happened above and then exit
