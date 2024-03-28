@@ -1,5 +1,6 @@
 #pragma once
-// Copyright Ernst Bablick
+/*___INFO__MARK_BEGIN_NEW__*/
+/*___INFO__MARK_END_NEW__*/
 
 void fgl_rsv_sort(void);
 

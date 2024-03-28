@@ -29,6 +29,7 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
+/*___INFO__MARK_END__*/
 
 #include "sgeobj/sge_daemonize.h"
 

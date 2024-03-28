@@ -1,5 +1,4 @@
 #pragma once
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -30,6 +29,7 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
+/*___INFO__MARK_END__*/
 
 bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
                               double *load, bool *is_load_available, u_long32 *used, u_long32 *resv, u_long32 *total,

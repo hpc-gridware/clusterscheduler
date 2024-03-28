@@ -28,8 +28,9 @@
  *
  *   All Rights Reserved.
  *
+ *  Portions of this code are Copyright 2011 Univa Inc.
+ *
  ************************************************************************/
-/* Portions of this code are Copyright 2011 Univa Inc. */
 /*___INFO__MARK_END__*/
 
 #define COMM_SERVER "qrsh_ijs"

@@ -1,5 +1,4 @@
 #pragma once
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -30,6 +29,7 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
+/*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
