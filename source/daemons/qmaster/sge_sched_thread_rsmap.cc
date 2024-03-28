@@ -1,5 +1,5 @@
-/*___INFO__MARK_BEGIN__*/
-/*___INFO__MARK_END__*/
+/*___INFO__MARK_BEGIN_NEW__*/
+/*___INFO__MARK_END_NEW__*/
 
 #include "basis_types.h"
 #include "sge.h"

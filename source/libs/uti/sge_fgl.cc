@@ -1,4 +1,5 @@
-// Copyright Ernst Bablick
+/*___INFO__MARK_BEGIN_NEW__*/
+/*___INFO__MARK_END_NEW__*/
 
 #include <pthread.h>
 #include <cstdio>

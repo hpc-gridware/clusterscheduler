@@ -1,7 +1,9 @@
+/*___INFO__MARK_BEGIN_NEW__*/
+/*___INFO__MARK_END_NEW__*/
+
 #include <iostream>
 
 #include "TestClass.h"
-
 
 oge::TestClass::TestClass(const std::string &name) {
    TestClass::method(name);

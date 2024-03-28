@@ -1,4 +1,7 @@
+/*___INFO__MARK_BEGIN_NEW__*/
 /* Portions of this code are Copyright 2011 Univa Inc. */
+/*___INFO__MARK_END_NEW__*/
+
 #if defined(DARWIN)
 #  include <sys/ioctl.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)

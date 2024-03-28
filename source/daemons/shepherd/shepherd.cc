@@ -30,8 +30,8 @@
  * Portions of this software are Copyright (c) 2011 Univa Corporation
  *
  ************************************************************************/
-/* Portions of this software are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
