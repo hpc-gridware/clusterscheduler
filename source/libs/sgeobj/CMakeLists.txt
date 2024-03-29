@@ -70,15 +70,6 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
 
 
-if (PROJECT_FEATURES MATCHES "oge-extensions")
-   add_executable(test_RequestLimits
-      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/test_RequestLimits.cc)
-   target_include_directories(test_RequestLimits PRIVATE
-         "./../../../../${PROJECT_FEATURES}/source/libs"
-         "./")
-   target_link_libraries(test_RequestLimits PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-endif()
-
 
 
 #add_subdirectory(cpp)
