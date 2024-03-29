@@ -30,25 +30,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
-#include <cstdio>
-#include <cstdlib>
+#include "cstdio"
+#include "cstdlib"
 
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull.h"
+#include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_href.h"
-#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_attr.h"
+#include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_href.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/oge_DataStore.h"
 
 bool check_attr_str_list_find_value(void) 
 {
    bool ret = false;
-   lList *attr_list = nullptr;
-   lList *answer_list = nullptr;
-   lList *ambiguous_hostref_list = nullptr;
-   lListElem *attr = nullptr;
 
    {
       lList *hostref_list1 = nullptr;
@@ -58,31 +56,31 @@ bool check_attr_str_list_find_value(void)
       lListElem *hgroup2;
       lListElem *hgroup3;
 
-      hostref_list_add(&hostref_list1, nullptr, "a");
-      hostref_list_add(&hostref_list1, nullptr, "b");
-      hostref_list_add(&hostref_list1, nullptr, "c");
-      hostref_list_add(&hostref_list1, nullptr, "d");
-      hostref_list_add(&hostref_list1, nullptr, "e");
+      href_list_add(&hostref_list1, nullptr, "a");
+      href_list_add(&hostref_list1, nullptr, "b");
+      href_list_add(&hostref_list1, nullptr, "c");
+      href_list_add(&hostref_list1, nullptr, "d");
+      href_list_add(&hostref_list1, nullptr, "e");
 
-      hostref_list_add(&hostref_list2, nullptr, "f");
-      hostref_list_add(&hostref_list2, nullptr, "a");
-      hostref_list_add(&hostref_list2, nullptr, "b");
-      hostref_list_add(&hostref_list2, nullptr, "g");
-      hostref_list_add(&hostref_list2, nullptr, "c");
+      href_list_add(&hostref_list2, nullptr, "f");
+      href_list_add(&hostref_list2, nullptr, "a");
+      href_list_add(&hostref_list2, nullptr, "b");
+      href_list_add(&hostref_list2, nullptr, "g");
+      href_list_add(&hostref_list2, nullptr, "c");
 
-      hostref_list_add(&hostref_list3, nullptr, "f");
-      hostref_list_add(&hostref_list3, nullptr, "g");
-      hostref_list_add(&hostref_list3, nullptr, "h");
-      hostref_list_add(&hostref_list3, nullptr, "i");
-      hostref_list_add(&hostref_list3, nullptr, "j");
+      href_list_add(&hostref_list3, nullptr, "f");
+      href_list_add(&hostref_list3, nullptr, "g");
+      href_list_add(&hostref_list3, nullptr, "h");
+      href_list_add(&hostref_list3, nullptr, "i");
+      href_list_add(&hostref_list3, nullptr, "j");
    
-      hgroup1 = hgroup_create(nullptr, "@A", hostref_list1);
-      hgroup2 = hgroup_create(nullptr, "@B", hostref_list2);
-      hgroup3 = hgroup_create(nullptr, "@C", hostref_list3);
+      hgroup1 = hgroup_create(nullptr, "@A", hostref_list1, true);
+      hgroup2 = hgroup_create(nullptr, "@B", hostref_list2, true);
+      hgroup3 = hgroup_create(nullptr, "@C", hostref_list3, true);
       *oge::DataStore::get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
-      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup1);
-      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup2);
-      lAppendElem(*oge::DataStore::get_master_list(SGE_TYPE_HGROUP), hgroup3);
+      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup1);
+      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup2);
+      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup3);
    }
    return ret;
 }

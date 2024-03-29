@@ -10,28 +10,7 @@ add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
       ${LIBRARY_INCLUDES})
 
-add_executable(test_performance test_performance.cc)
-target_include_directories(test_performance PRIVATE "./")
-target_link_libraries(test_performance PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm uti commlists ${SGE_LIBS})
 
-add_executable(test_spooling_mt test_spooling_mt.cc)
-target_include_directories(test_spooling_mt PRIVATE "./")
-target_link_libraries(test_spooling_mt PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_spooling_utilities test_sge_spooling_utilities.cc)
-target_include_directories(test_sge_spooling_utilities PRIVATE "./")
-target_link_libraries(test_sge_spooling_utilities PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_spooling test_sge_spooling.cc ../../common/sig_handlers.cc)
-target_include_directories(test_sge_spooling PRIVATE "./")
-target_link_libraries(test_sge_spooling PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm uti commlists ${SGE_LIBS})
-
-if (INSTALL_SGE_TEST)
-   install(TARGETS test_performance DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_spooling_mt DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_spooling_utilities DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_spooling DESTINATION testbin/${SGE_ARCH})
-endif ()
 
 
 add_subdirectory(berkeleydb)

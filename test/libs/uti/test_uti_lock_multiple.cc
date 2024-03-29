@@ -36,7 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/test_sge_lock_main.h"
+#include "test_uti_lock_main.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_time.h"

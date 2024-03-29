@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <cstdio>
 
-#include "test_sge_lock_main.h"
+#include "test_uti_lock_main.h"
 
 #include "uti/sge_lock.h"
 #include "uti/sge_time.h"
