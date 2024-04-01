@@ -66,7 +66,7 @@ struct sge_evc_class_str {
 
    local_t ec_local; 
 
-   bool (*ec_register)(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList **alpp, monitoring_t *monitor);
+   bool (*ec_register)(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList **alpp);
    bool (*ec_deregister)(sge_evc_class_t *thiz);
    bool (*ec_commit)(sge_evc_class_t *thiz, lList **alpp);
    bool (*ec_ack)(sge_evc_class_t *thiz); 

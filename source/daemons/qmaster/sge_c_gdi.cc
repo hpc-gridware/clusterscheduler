@@ -593,7 +593,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
             sge_add_event_client(ep, &(task->answer_list),
                                  (sub_command & SGE_GDI_RETURN_NEW_VERSION) ? &(task->data_list) : nullptr,
                                  packet->user, packet->host,
-                                 (event_client_update_func_t) nullptr, nullptr, monitor);
+                                 (event_client_update_func_t) nullptr, nullptr);
          }
       }
    } else if (task->target == SGE_JB_LIST) {
@@ -881,8 +881,8 @@ sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task)
    const char *username = packet->user;
 
    // create list with element and fill in username, hostname and corresponding permission
-   lListElem *ep = lAddElemStr(&task->data_list, PERM_sge_username, username, PERM_Type);
-   lSetHost(ep, PERM_req_host, hostname);
+   lListElem *ep = lAddElemStr(&task->data_list, PERM_username, username, PERM_Type);
+   lSetHost(ep, PERM_host, hostname);
 
    // add user roles
    bool is_manager = manop_is_manager(username, master_manager_list);
@@ -1124,7 +1124,7 @@ sge_gdi_shutdown_event_client(sge_gdi_packet_class_t *packet, sge_gdi_task_class
       if (client_id == EV_ID_ANY) {
          res = sge_shutdown_dynamic_event_clients(packet->user, &(local_alp), monitor);
       } else {
-         res = sge_shutdown_event_client(client_id, packet->user, packet->uid, &(local_alp), monitor);
+         res = sge_shutdown_event_client(client_id, packet->user, packet->uid, &(local_alp));
       }
 
       if ((res == EINVAL) && (client_id == EV_ID_SCHEDD)) {

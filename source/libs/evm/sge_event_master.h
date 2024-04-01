@@ -99,14 +99,13 @@ int sge_add_event_client(lListElem *ev,
                          char *ruser,
                          char *rhost,
                          event_client_update_func_t update_func,
-                         void *update_func_arg,
-                         monitoring_t *monitor);
+                         void *update_func_arg);
 
 int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost);
 bool sge_has_event_client(u_long32 aClientID);
 void sge_remove_event_client(u_long32 aClientID);
 lList* sge_select_event_clients(const char *list_name, const lCondition *where, const lEnumeration *what);
-int sge_shutdown_event_client(u_long32 aClientID, const char* anUser, uid_t anUID, lList **alpp, monitoring_t *monitor);
+int sge_shutdown_event_client(u_long32 aClientID, const char* anUser, uid_t anUID, lList **alpp);
 int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitoring_t *monitor);
 
 bool sge_add_event(u_long32 timestamp,

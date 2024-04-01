@@ -47,6 +47,12 @@
 * It can be a list of objects or an individual object
 * An event has a unique serial number.
 *
+*    SGE_ULONG64(ET_unique_id) - unique ID for an event within qmaster.
+*    A unique number. IDs are always increasing for generated events. No wrap around.
+*    It is used in qmaster to synchronize activities between transaction processing happening
+*    in different threads. Session table contains the biggest ID of the last RW request that
+*    was handled in any thread for that session.
+*
 *    SGE_ULONG(ET_number) - serial number
 *    A unique serial number.
 *    It is used to acknowledge receipt of a list of events
@@ -85,7 +91,8 @@
 */
 
 enum {
-   ET_number = ET_LOWERBOUND,
+   ET_unique_id = ET_LOWERBOUND,
+   ET_number,
    ET_timestamp,
    ET_type,
    ET_intkey,
@@ -96,6 +103,7 @@ enum {
 };
 
 LISTDEF(ET_Type)
+   SGE_ULONG64(ET_unique_id, CULL_PRIMARY_KEY)
    SGE_ULONG(ET_number, CULL_DEFAULT)
    SGE_ULONG(ET_timestamp, CULL_DEFAULT)
    SGE_ULONG(ET_type, CULL_DEFAULT)
@@ -107,6 +115,7 @@ LISTDEF(ET_Type)
 LISTEND
 
 NAMEDEF(ETN)
+   NAME("ET_unique_id")
    NAME("ET_number")
    NAME("ET_timestamp")
    NAME("ET_type")

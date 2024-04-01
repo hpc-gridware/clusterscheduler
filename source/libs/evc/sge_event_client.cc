@@ -626,15 +626,12 @@ static bool ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay);
 static u_long32 ec2_get_flush_delay(sge_evc_class_t *thiz);
 static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling);
 static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz);
-static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp, monitoring_t *monitor);
+static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp);
 static bool ec2_deregister(sge_evc_class_t *thiz);
 static bool ec2_deregister_local(sge_evc_class_t *thiz);
-static bool ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp, monitoring_t *monitor);
+static bool ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp);
 static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event);
-static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval);
-static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall);
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where);
-static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event);
 static bool ec2_subscribe_all(sge_evc_class_t *thiz);
 static bool ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event);
 static bool ec2_unsubscribe_all(sge_evc_class_t *thiz);
@@ -646,15 +643,14 @@ static bool ec2_set_busy(sge_evc_class_t *thiz, int busy);
 static bool ec2_get_busy(sge_evc_class_t *thiz);
 static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
-static void ec2_config_changed(sge_evc_class_t *thiz);
-static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);                        
+static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);
 static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp); 
 static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
 static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error);
 static ev_registration_id ec2_get_id(sge_evc_class_t *thiz);
-static bool ec2_get_local(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
+static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down);
 static void ec2_wait_local(sge_evc_class_t *thiz);
 static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list);
 static void ec2_wait(sge_evc_class_t *thiz);
@@ -666,12 +662,9 @@ static bool ec2_evco_exit(sge_evc_class_t *thiz);
 sge_evc_class_t *
 sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
 {
-   sge_evc_class_t *ret = (sge_evc_class_t *)sge_malloc(sizeof(sge_evc_class_t));
-   sge_evc_t *sge_evc = nullptr;
-   bool is_qmaster_internal = false;
-
    DENTER(EVC_LAYER);
 
+   auto *ret = (sge_evc_class_t *)sge_malloc(sizeof(sge_evc_class_t));
    if (!ret) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       DRETURN(nullptr);
@@ -680,7 +673,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    /*
    ** get type of connection internal/external
    */
-   is_qmaster_internal = component_is_qmaster_internal();
+   bool is_qmaster_internal = component_is_qmaster_internal();
    
    DPRINTF("creating %s event client context\n", is_qmaster_internal ? "internal" : "external");
 
@@ -731,7 +724,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
 
    ret->sge_evc_handle = nullptr;
 
-   sge_evc = (sge_evc_t*)sge_malloc(sizeof(sge_evc_t));
+   auto *sge_evc = (sge_evc_t*)sge_malloc(sizeof(sge_evc_t));
    if (!sge_evc) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_evc_class_destroy(&ret);
@@ -826,13 +819,10 @@ static void sge_evc_destroy(sge_evc_t **sge_evc)
 *     list of events
 *******************************************************************************/
 static bool
-sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
-{
-   bool ret = false;
-   const char *name = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-
+sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -847,6 +837,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    sge_evc->event_control.rebuild_categories = true;
    sge_evc->event_control.new_global_conf = false;
 
+   const char *name;
    if (ec_name != nullptr) {
       name = ec_name;
    } else {
@@ -914,7 +905,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
 *******************************************************************************/
 static bool ec2_is_initialized(sge_evc_class_t *thiz) 
 {
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
    if (sge_evc == nullptr || sge_evc->ec == nullptr) {
       return false;
@@ -942,7 +933,7 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz)
 *******************************************************************************/
 static lListElem* ec2_get_event_client(sge_evc_class_t *thiz) 
 {
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
    return sge_evc->ec;
 }
@@ -968,17 +959,15 @@ static lListElem* ec2_get_event_client(sge_evc_class_t *thiz)
 *  SEE ALSO
 *     Eventclient/Client/ec_need_new_registration()
 *******************************************************************************/
-static void ec2_mark4registration(sge_evc_class_t *thiz)
-{
-   cl_com_handle_t* handle = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-   const char *mastername = gdi_get_act_master_host(true);
-
+static void
+ec2_mark4registration(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   auto *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
+   const char *master_name = gdi_get_act_master_host(true);
 
-   handle = cl_com_get_handle(component_get_component_name(), 0);
+   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle != nullptr) {
-      cl_commlib_close_connection(handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
+      cl_commlib_close_connection(handle, (char*)master_name, (char*)prognames[QMASTER], 1, false);
       DPRINTF("closed old connection to qmaster\n");
    }
    sge_evc->need_register = true;
@@ -1003,12 +992,10 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
 *     bool - true, if the client has to (re)register, else false 
 *
 *******************************************************************************/
-static bool ec2_need_new_registration(sge_evc_class_t *thiz)
-{
-   sge_evc_t *sge_evc = nullptr;
-
+static bool
+ec2_need_new_registration(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
-   sge_evc = (sge_evc_t*) thiz->sge_evc_handle;
+   auto sge_evc = (sge_evc_t*) thiz->sge_evc_handle;
    DRETURN(sge_evc->need_register);
 }
 
@@ -1044,13 +1031,12 @@ static bool ec2_need_new_registration(sge_evc_class_t *thiz)
 *  SEE ALSO
 *     Eventclient/Client/ec_get_edtime()
 *******************************************************************************/
-static bool ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
-
+static bool
+ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval) {
    DENTER(EVC_LAYER);
-   
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
+
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
@@ -1083,12 +1069,11 @@ static bool ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval)
 *  SEE ALSO
 *     Eventclient/Client/ec_set_edtime()
 *******************************************************************************/
-static u_long32 ec2_get_edtime(sge_evc_class_t *thiz) 
-{
-   int interval = 0;
-   sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
-
+static u_long32
+ec2_get_edtime(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   u_long32 interval = 0;
+   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -1125,13 +1110,12 @@ static u_long32 ec2_get_edtime(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_commit()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
-
+static bool
+ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) {
    DENTER(EVC_LAYER);
-   
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
+
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
@@ -1166,12 +1150,11 @@ static bool ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay)
 *     Eventclient/Client/ec_set_flush_delay()
 *     Eventclient/-Busy-state
 *******************************************************************************/
-static u_long32 ec2_get_flush_delay(sge_evc_class_t *thiz) 
-{
-   u_long32 flush_delay = 0;
-   sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
-
+static u_long32
+ec2_get_flush_delay(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   u_long32 flush_delay = 0;
+   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -1215,13 +1198,12 @@ static u_long32 ec2_get_flush_delay(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_commit()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
    DENTER(EVC_LAYER);
-   
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
@@ -1258,12 +1240,11 @@ static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handli
 *     Eventclient/Client/ec_set_edtime()
 *     Eventclient/-Busy-state
 *******************************************************************************/
-static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz) 
-{
-   ev_busy_handling handling = EV_BUSY_NO_HANDLING;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static ev_busy_handling
+ec2_get_busy_handling(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   ev_busy_handling handling = EV_BUSY_NO_HANDLING;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -1274,12 +1255,11 @@ static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz)
    DRETURN(handling);
 }
 
-static bool ec2_deregister_local(sge_evc_class_t *thiz)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_deregister_local(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1289,14 +1269,13 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
    } else {
       local_t *evc_local = &(thiz->ec_local);
       u_long32 id = sge_evc->ec_reg_id;
-      ec_control_t *evco = nullptr;
 
       DPRINTF("ec2_deregister_local sge_evc->ec_reg_id %d\n", sge_evc->ec_reg_id);
 
       /*
       ** signal thread when in ec2_get_local
       */
-      evco = ec2_get_event_control(thiz);
+      ec_control_t *evco = ec2_get_event_control(thiz);
       if (evco == nullptr) {
          DPRINTF("ec2_deregister_local evco IS nullptr\n");
          DRETURN(false);
@@ -1339,10 +1318,9 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
 
 
 static bool
-ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp, monitoring_t *monitor)
-{
+ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp) {
    bool ret = true;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    DENTER(EVC_LAYER);
 
@@ -1361,8 +1339,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
       ret = false;
    } else {
       lList *alp = nullptr;
-      const lListElem *aep = nullptr;
-      local_t *evc_local = &(thiz->ec_local); 
+      local_t *evc_local = &(thiz->ec_local);
 
       lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
 
@@ -1389,13 +1366,14 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
          */
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
          evc_local->add_func(sge_evc->ec, &alp, &eclp, (char*)ruser, (char*)rhost,
-                             evc_local->update_func, evc_local->update_func_arg, monitor);
+                             evc_local->update_func, evc_local->update_func_arg);
          if (eclp) {
             sge_evc->ec_reg_id = lGetUlong(lFirst(eclp), EV_id);
             lFreeList(&eclp);
          }
       }
 
+      const lListElem *aep;
       if (alp != nullptr) {
          aep = lFirst(alp);
          ret = ((lGetUlong(aep, AN_status) == STATUS_OK) ? true : false);
@@ -1422,7 +1400,6 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
    DRETURN(ret);
 }
 
-
 /****** Eventclient/Client/ec_register() ***************************************
 *  NAME
 *     ec_register() -- register at the event server
@@ -1448,12 +1425,11 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
 *     Eventclient/Client/ec_deregister()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp, monitoring_t *monitor)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1557,8 +1533,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
                 * when client does not handle errors and perform a wait before retry
                 * in an endless while loop.
                 */
-               cl_com_handle_t* com_handle = nullptr;
-               com_handle = cl_com_get_handle(component_get_component_name(), 0);
+               cl_com_handle_t* com_handle = cl_com_get_handle(component_get_component_name(), 0);
                if (com_handle != nullptr) {
                   cl_commlib_trigger(com_handle, 1);
                } else {
@@ -1605,10 +1580,9 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
 *******************************************************************************/
 static bool ec2_deregister(sge_evc_class_t *thiz)
 {
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1682,12 +1656,11 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_commit()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static bool
+ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1714,10 +1687,9 @@ static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event)
    DRETURN(ret);
 }
 
-static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) 
-{
-
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+static void
+ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    DENTER(EVC_LAYER);
 
@@ -1753,9 +1725,7 @@ static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, b
 
 static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall) 
 {
-   const lList *subscribed = nullptr;
-   lListElem *sub_el = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    DENTER(EVC_LAYER);
   
@@ -1764,10 +1734,10 @@ static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bo
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      subscribed = lGetList(sge_evc->ec, EV_subscribed);
+      const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                lSetBool(sub_el, EVS_flush, flush);
                lSetUlong(sub_el, EVS_interval, intervall);
@@ -1807,22 +1777,19 @@ static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bo
 *     cull/cull_where/lWhereFromElem()
 *******************************************************************************/
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where) {
-   const lList *subscribed = nullptr;
-   lListElem *sub_el = nullptr;
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
    DENTER(EVC_LAYER);
- 
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      subscribed = lGetList(sge_evc->ec, EV_subscribed);
+      const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                lSetObject(sub_el, EVS_what, lCopyElem(what));
                lSetObject(sub_el, EVS_where, lCopyElem(where));
@@ -1836,24 +1803,20 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
    DRETURN(ret);
 }
 
-static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) 
-{
-
-   lList *subscribed =nullptr;
-   lListElem *sub_el = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static void
+ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
    DENTER(EVC_LAYER);
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
+      lList *subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                if (lRemoveElem(subscribed, &sub_el) == 0) {
                   lSetBool(sge_evc->ec, EV_changed, true);
@@ -1935,12 +1898,11 @@ static bool ec2_subscribe_all(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_commit()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static bool
+ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2037,12 +1999,11 @@ static bool ec2_unsubscribe_all(sge_evc_class_t *thiz)
 *     Eventclient/-Flushing
 *     Eventclient/Client/ec_set_flush()
 *******************************************************************************/
-static int ec2_get_flush(sge_evc_class_t *thiz, ev_event event)
-{
-   int ret = EV_NO_FLUSH;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static int
+ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
    DENTER(EVC_LAYER);
+   int ret = EV_NO_FLUSH;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2098,12 +2059,11 @@ static int ec2_get_flush(sge_evc_class_t *thiz, ev_event event)
 *     Eventclient/Client/ec_unset_flush()
 *     Eventclient/Client/ec_subscribe_flush()
 *******************************************************************************/
-static bool ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static bool
+ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2165,12 +2125,11 @@ static bool ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int
 *     Eventclient/Client/ec_get_flush()
 *     Eventclient/Client/ec_subscribe_flush()
 ******************************************************************************/
-static bool ec2_unset_flush(sge_evc_class_t *thiz, ev_event event)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+static bool
+ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2272,12 +2231,11 @@ static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush
 *     Eventclient/Client/ec_set_busy_handling()
 *     Eventclient/Client/ec_get_busy()
 *******************************************************************************/
-static bool ec2_set_busy(sge_evc_class_t *thiz, int busy)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_set_busy(sge_evc_class_t *thiz, int busy) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -2314,12 +2272,10 @@ static bool ec2_set_busy(sge_evc_class_t *thiz, int busy)
 *     Eventclient/Client/ec_set_busy_handling()
 *     Eventclient/Client/ec_set_busy()
 *******************************************************************************/
-static bool ec2_get_busy(sge_evc_class_t *thiz)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool ec2_get_busy(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -2352,12 +2308,10 @@ static bool ec2_get_busy(sge_evc_class_t *thiz)
 *     Eventclient/-Session filtering
 *     Eventclient/Client/ec_get_session()
 *******************************************************************************/
-static bool ec2_set_session(sge_evc_class_t *thiz, const char *session)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool ec2_set_session(sge_evc_class_t *thiz, const char *session) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -2390,12 +2344,10 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session)
 *     Eventclient/-Session filtering
 *     Eventclient/Client/ec_set_session()
 *******************************************************************************/
-static const char *ec2_get_session(sge_evc_class_t *thiz)
-{
-   const char *ret = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static const char *ec2_get_session(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   const char *ret = nullptr;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -2419,9 +2371,9 @@ static const char *ec2_get_session(sge_evc_class_t *thiz)
 *  RESULT
 *     ev_registration_id - the event client id
 *******************************************************************************/
-static ev_registration_id ec2_get_id(sge_evc_class_t *thiz)
-{
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+static ev_registration_id
+ec2_get_id(sge_evc_class_t *thiz) {
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    DENTER(EVC_LAYER);
    if (sge_evc->ec == nullptr) {
@@ -2454,21 +2406,20 @@ static ev_registration_id ec2_get_id(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_unsubscribe_all()
 *     Eventclient/Client/ec_set_edtime()
 ******************************************************************************/
-static void ec2_config_changed(sge_evc_class_t *thiz) 
-{
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+static void
+ec2_config_changed(sge_evc_class_t *thiz) {
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc != nullptr && sge_evc->ec != nullptr) {
       lSetBool(sge_evc->ec, EV_changed, true);
    }   
 }
 
-static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2479,11 +2430,9 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
       /* not (yet) registered? Cannot send modification to qmaster! */
       DPRINTF(SFN "\n", MSG_EVENT_NOTREGISTERED);
    } else {
-      const char *ruser = nullptr;
-      const char *rhost = nullptr;
       local_t *evc_local = &(thiz->ec_local);
-      ruser = bootstrap_get_admin_user();
-      rhost = gdi_get_act_master_host(false);
+      const char *ruser = bootstrap_get_admin_user();
+      const char *rhost = gdi_get_act_master_host(false);
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
       lSetRef(sge_evc->ec, EV_update_function_arg, (void *)evc_local->update_func_arg);
 
@@ -2502,12 +2451,11 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
    DRETURN(ret);
 }
 
-static bool ec2_ack(sge_evc_class_t *thiz) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_ack(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == nullptr) {
@@ -2551,12 +2499,11 @@ static bool ec2_ack(sge_evc_class_t *thiz)
 *     Eventclient/Client/ec_config_changed()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2634,12 +2581,11 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
 *     Eventclient/Client/ec_config_changed()
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
-static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) 
-{
-   bool ret = false;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static bool
+ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
    DENTER(EVC_LAYER);
+   bool ret = false;
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2733,15 +2679,14 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
 *     Eventclient/Client/ec_register()
 *     Eventclient/Client/ec_commit()
 *******************************************************************************/
-static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) 
-{
+static bool
+ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
+   DENTER(EVC_LAYER);
    bool ret = true;
    lList *report_list = nullptr;
    u_long32 wrong_number;
    lList *alp = nullptr;
-   sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
-   DENTER(EVC_LAYER);
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2750,7 +2695,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
       ret = false;
    } else if (thiz->ec_need_new_registration(thiz)) {
       sge_evc->next_event = 1;
-      ret = thiz->ec_register(thiz, exit_on_qmaster_down, nullptr, nullptr);
+      ret = thiz->ec_register(thiz, exit_on_qmaster_down, nullptr);
    }
   
    if (ret) {
@@ -2959,15 +2904,14 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
 *     static bool - true on success, else false
 *
 *******************************************************************************/
-static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number)
-{
+static bool
+ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
+   DENTER(EVC_LAYER);
    bool ret = true;
    lListElem *ep;
    lListElem *tmp;
    u_long32 i, j;
    int skipped;
-  
-   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -3067,24 +3011,21 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
 *  SEE ALSO
 *     Eventclient/Client/ec_get()
 ******************************************************************************/
-static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error )
-{
-   int tag;
+static bool
+get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error ) {
+   DENTER(EVC_LAYER);
    bool ret = true;
    sge_pack_buffer pb;
    int help;
    char rhost[CL_MAXHOSTLEN+1] = "";
    char commproc[CL_MAXHOSTLEN+1] = "";
-   u_short id = 0;
-
-   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
    /* TODO: check if all the functionality of get_event_list has been mapped */
    
-   tag = TAG_REPORT_REQUEST;
-   id = 1;
+   int tag = TAG_REPORT_REQUEST;
+   u_short id = 1;
 
    DPRINTF("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id );
    if ( (help=sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
@@ -3101,7 +3042,7 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
       }
       clear_packbuffer(&pb);
    }
-   if ( commlib_error != nullptr) {
+   if (commlib_error != nullptr) {
       *commlib_error = help;
    }
 
@@ -3111,18 +3052,15 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
 }
 
 bool 
-sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name)
-{
-   sge_evc_class_t *evc = nullptr;
-
+sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name) {
    DENTER(EVC_LAYER);
 
    if (evc_ref == nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_NULLPOINTER);
       DRETURN(false);
    }
-   
-   evc = sge_evc_class_create(reg_id, alpp, name);
+
+   sge_evc_class_t *evc = sge_evc_class_create(reg_id, alpp, name);
    if (evc == nullptr) {
       DRETURN(false);
    }
@@ -3133,48 +3071,41 @@ sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList *
 }
 
 static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
+   DENTER(EVC_LAYER);
    ec_control_t *event_control = nullptr;
 
-   DENTER(EVC_LAYER);
-   if (thiz && thiz->ec_is_initialized(thiz)) {
-      if (component_is_qmaster_internal()) {
-         sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-         event_control = &(sge_evc->event_control);
-      }
+   if (thiz && thiz->ec_is_initialized(thiz) && component_is_qmaster_internal()) {
+      auto *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
+      event_control = &(sge_evc->event_control);
    }
    DRETURN(event_control);
 }
 
 static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down) {
-   lList *event_list = nullptr;
-   ec_control_t * evco = nullptr;
-   u_long32 current_time = 0; 
-   struct timespec ts;
-   dstring dsbuf;
+   DENTER(EVC_LAYER);
+   struct timespec ts{};
+   dstring ds_buffer;
    char buffer[1024];
 
-   DENTER(EVC_LAYER);
-
-   sge_dstring_init(&dsbuf, buffer, sizeof(buffer));
+   sge_dstring_init(&ds_buffer, buffer, sizeof(buffer));
 
    if (thiz == nullptr) {
       DRETURN(false);
    }
-   evco = ec2_get_event_control(thiz);
+   ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
       DRETURN(false);
    }
 
    if (thiz->ec_need_new_registration(thiz)) {
-      sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+      auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
       sge_evc->next_event = 1;
-      thiz->ec_register(thiz, exit_on_qmaster_down, nullptr, nullptr);
+      thiz->ec_register(thiz, exit_on_qmaster_down, nullptr);
    }
 
-   sge_mutex_lock("evco_event_thread_cond_mutex", __func__, __LINE__,
-                  &(evco->mutex));
+   sge_mutex_lock("evco_event_thread_cond_mutex", __func__, __LINE__, &(evco->mutex));
 
-   current_time = sge_get_gmt();
+   u_long32 current_time = sge_get_gmt();
    while (!evco->triggered && !evco->exit &&
           ((sge_get_gmt() - current_time) < EC_TIMEOUT_S)){
       ts.tv_sec = (long) current_time + EC_TIMEOUT_S;
@@ -3190,11 +3121,11 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
    }
 
    /* taking out the new events */
-   event_list = evco->new_events;
+   lList *event_list = evco->new_events;
    evco->new_events = nullptr;
    evco->triggered = false;
 
-   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
+   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &ds_buffer));
 
    sge_mutex_unlock("evco_event_thread_cond_mutex", __func__, __LINE__,
                     &(evco->mutex));
@@ -3211,7 +3142,8 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
    DRETURN(true);
 }
 
-static void ec2_wait_local(sge_evc_class_t *thiz) {
+static void
+ec2_wait_local(sge_evc_class_t *thiz) {
 
    DENTER(EVC_LAYER);
    /*
@@ -3223,24 +3155,22 @@ static void ec2_wait_local(sge_evc_class_t *thiz) {
    DRETURN_VOID;
 }
 
-static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
-
-   ec_control_t *evco = nullptr;
-   int num_events = 0;
-
+static int
+ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
    DENTER(EVC_LAYER);
 
    if (thiz == nullptr) {
       DPRINTF("EVENT UPDATE FUNCTION thiz IS nullptr\n");
       DRETURN(-1); 
    }
-   evco = ec2_get_event_control(thiz);
+   ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
       DPRINTF("EVENT UPDATE FUNCTION evco IS nullptr\n");
       DRETURN(-1);
    }
 
-   if ((num_events = lGetNumberOfElem(lGetList(lFirst(event_list), REP_list))) > 0) {
+   int num_events = lGetNumberOfElem(lGetList(lFirst(event_list), REP_list));
+   if (num_events > 0) {
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
       if (evco->new_events != nullptr) {
          lList *events = nullptr;
@@ -3269,48 +3199,46 @@ printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_c
    DRETURN(num_events);
 }
 
-static void ec2_wait(sge_evc_class_t *thiz) {
+static void
+ec2_wait(sge_evc_class_t *thiz) {
    /* do nothing */
 }
 
-static int ec2_signal(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
+static int
+ec2_signal(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
    /* do nothing */
    return 1;
 }
 
-static bool ec2_evco_triggered(sge_evc_class_t *thiz) {
-   bool ret = false;
-   ec_control_t *evco = nullptr;
-
+static bool
+ec2_evco_triggered(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    if (thiz == nullptr) {
       DRETURN(false); 
    }
-   evco = ec2_get_event_control(thiz);
+   ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
       DRETURN(false);
    }
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
-   ret = evco->triggered;
+   bool ret = evco->triggered;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
 
    DRETURN(ret);
 }
 
-static bool ec2_evco_exit(sge_evc_class_t *thiz) {
-   bool ret = false;
-   ec_control_t *evco = nullptr;
-
+static bool
+ec2_evco_exit(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    if (thiz == nullptr) {
       DRETURN(false); 
    }
-   evco = ec2_get_event_control(thiz);
+   ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
       DRETURN(false);
    }
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
-   ret = evco->exit;
+   bool ret = evco->exit;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
 
    DRETURN(ret);

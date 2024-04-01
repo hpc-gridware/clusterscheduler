@@ -108,6 +108,10 @@
 *    SGE_REF(EV_update_function) - update function
 *    Pointer to an update function used for updating internal event clients (threads in sge_qmaster).
 *
+*    SGE_REF(EV_update_function_arg) - update function argument
+*    Pointer that is passed to the update_function when it is called.
+*    The pointer can be specified during mirror/evc initialize.
+*
 */
 
 enum {

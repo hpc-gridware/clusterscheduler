@@ -4120,7 +4120,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
       goto SetupFailed;
    }
    
-   if (!evc->ec_register(evc, false, &alp, nullptr)) {
+   if (!evc->ec_register(evc, false, &alp)) {
       const lListElem *aep = lFirst(alp);
       DPRINTF("error: ec_register() failed\n");
       if (aep) {

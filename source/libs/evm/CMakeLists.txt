@@ -20,7 +20,11 @@
 
 # source/libs/evm
 set(LIBRARY_NAME evm)
-set(LIBRARY_SOURCES sge_event_master.cc sge_queue_event_master.cc)
+set(LIBRARY_SOURCES
+      oge_event_master.cc
+      sge_event_master.cc
+      sge_queue_event_master.cc
+)
 set(LIBRARY_INCLUDES "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

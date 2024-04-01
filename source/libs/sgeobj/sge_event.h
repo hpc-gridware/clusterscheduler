@@ -100,8 +100,7 @@ typedef int (*evm_add_func_t)(
    char *ruser,                            /* request user or <admin_user> for internal ec */
    char *rhost,                            /* request host or <master_host> for internal ec */
    event_client_update_func_t update_func, /* the event client update_func */
-   void *update_func_arg,                  /* additional argument passed to update_func */
-   monitoring_t *monitor                   /* the monitoring structure */
+   void *update_func_arg                   /* additional argument passed to update_func */
 );
 
 /**

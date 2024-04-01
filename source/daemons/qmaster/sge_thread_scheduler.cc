@@ -531,7 +531,7 @@ sge_scheduler_main(void *arg) {
     */
    sge_mirror_initialize(evc, &event_update_func, &sge_mod_event_client,
                          &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack, nullptr);
-   evc->ec_register(evc, false, nullptr, &monitor);
+   evc->ec_register(evc, false, nullptr);
    evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
    DPRINTF("registered at event mirror\n");
 
@@ -576,7 +576,7 @@ sge_scheduler_main(void *arg) {
       /* If we lost connection we have to register again */
       if (evc->ec_need_new_registration(evc)) {
          lFreeList(&event_list);
-         if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
+         if (evc->ec_register(evc, false, nullptr) == true) {
             DPRINTF("re-registered at event master!\n");
          }
       }

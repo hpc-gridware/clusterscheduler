@@ -12,6 +12,19 @@
 		}],
 	"cullPrefix":	"ET",
 	"attributes":	[{
+			"name":	"unique_id",
+			"summary":	"unique ID for an event within qmaster.",
+			"description":	[{
+				 "line":	"A unique number. IDs are always increasing for generated events. No wrap around."
+			}, { "line":	"It is used in qmaster to synchronize activities between transaction processing happening"
+			}, { "line":	"in different threads. Session table contains the biggest ID of the last RW request that"
+			}, { "line":	"was handled in any thread for that session."
+			}],
+			"type":	"lUlong64T",
+			"flags":	[{
+				"name":	"PRIMARY_KEY"
+			}]
+		}, {
 			"name":	"number",
 			"summary":	"serial number",
 			"description":	[{

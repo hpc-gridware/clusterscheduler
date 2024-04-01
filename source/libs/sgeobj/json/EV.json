@@ -191,5 +191,16 @@
 			"subClassName":	"ANY",
 			"subCullPrefix":	"ANY",
 			"flags":	[]
+	    }, {
+		    "name":	"update_function_arg",
+		    "summary":	"update function argument",
+		    "description":	[{
+			         "line":	"Pointer that is passed to the update_function when it is called."
+			    }, { "line":	"The pointer can be specified during mirror/evc initialize."
+		    }],
+		    "type":	"lRefT",
+		    "subClassName":	"ANY",
+		    "subCullPrefix":	"ANY",
+		    "flags":	[]
 		}]
 }

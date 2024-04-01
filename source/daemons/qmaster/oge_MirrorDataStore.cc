@@ -258,7 +258,7 @@ namespace oge {
          sge_mirror_initialize(evc, MirrorDataStore::event_mirror_update_func, &sge_mod_event_client,
                                &sge_add_event_client, &sge_remove_event_client, &sge_handle_event_ack, this);
 
-         evc->ec_register(evc, false, nullptr, &monitor);
+         evc->ec_register(evc, false, nullptr);
          evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_RELEASED);
 
          // Subscribe events that are required for the data store
@@ -283,7 +283,7 @@ namespace oge {
          if (evc->ec_need_new_registration(evc)) {
             DPRINTF("event mirror thread lost connection to event master thread\n");
             lFreeList(&event_list);
-            if (evc->ec_register(evc, false, nullptr, &monitor) == true) {
+            if (evc->ec_register(evc, false, nullptr) == true) {
                DPRINTF("re-registered at event master!\n");
             }
          }

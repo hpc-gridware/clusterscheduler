@@ -37,21 +37,27 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Object used to request given permissions of user and host.
 *
-* @todo add description
+* Object used to request given permissions of user and host.
 *
-*    SGE_BOOL(PERM_is_manager) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PERM_is_manager) - true if manager
+*    true if user has manager role
 *
-*    SGE_BOOL(PERM_is_operator) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PERM_is_operator) - true if operator
+*    true if user has operator role
 *
-*    SGE_HOST(PERM_req_host) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PERM_is_admin_host) - true if admin host
+*    true if the specified host is an admin host
 *
-*    SGE_STRING(PERM_sge_username) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PERM_is_submit_host) - true if submit host
+*    true if the specified host is a submit host
+*
+*    SGE_HOST(PERM_host) - hostname
+*    name of the host with the specified permissions
+*
+*    SGE_STRING(PERM_username) - username
+*    username with the specified permissions
 *
 */
 
@@ -60,8 +66,8 @@ enum {
    PERM_is_operator,
    PERM_is_admin_host,
    PERM_is_submit_host,
-   PERM_req_host,
-   PERM_sge_username
+   PERM_host,
+   PERM_username
 };
 
 LISTDEF(PERM_Type)
@@ -69,8 +75,8 @@ LISTDEF(PERM_Type)
    SGE_BOOL(PERM_is_operator, CULL_DEFAULT)
    SGE_BOOL(PERM_is_admin_host, CULL_DEFAULT)
    SGE_BOOL(PERM_is_submit_host, CULL_DEFAULT)
-   SGE_HOST(PERM_req_host, CULL_DEFAULT)
-   SGE_STRING(PERM_sge_username, CULL_DEFAULT)
+   SGE_HOST(PERM_host, CULL_DEFAULT)
+   SGE_STRING(PERM_username, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PERMN)
@@ -78,8 +84,8 @@ NAMEDEF(PERMN)
    NAME("PERM_is_operator")
    NAME("PERM_is_admin_host")
    NAME("PERM_is_submit_host")
-   NAME("PERM_req_host")
-   NAME("PERM_sge_username")
+   NAME("PERM_host")
+   NAME("PERM_username")
 NAMEEND
 
 #define PERM_SIZE sizeof(PERMN)/sizeof(char *)
