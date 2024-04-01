@@ -62,6 +62,7 @@ set(PROJECT_3RDPARTY_HOME
         CACHE STRING "installation directory for 3rdparty tools")
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
+include(CTest)
 
 architecture_specific_settings()
 
@@ -156,6 +157,7 @@ endif ()
 
 if (INSTALL_SGE_BIN OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
    add_subdirectory(source)
+   add_subdirectory(test)
 endif ()
 
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")

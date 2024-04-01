@@ -37,16 +37,3 @@ if (INSTALL_SGE_BIN)
    install(TARGETS spoolc DESTINATION lib/${SGE_ARCH})
 endif ()
 
-add_executable(test_flatfile_spool test_flatfile_spool.cc)
-target_include_directories(test_flatfile_spool PRIVATE "./")
-target_link_libraries(test_flatfile_spool PRIVATE spool spoolc gdi sgeobj uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_spooling_flatfile
-      test_sge_spooling_flatfile.cc)
-target_include_directories(test_sge_spooling_flatfile PRIVATE "./")
-target_link_libraries(test_sge_spooling_flatfile PRIVATE spool spoolc gdi sgeobj uti commlists ${SGE_LIBS})
-
-if (INSTALL_SGE_TEST)
-   install(TARGETS test_flatfile_spool DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_spooling_flatfile DESTINATION testbin/${SGE_ARCH})
-endif ()

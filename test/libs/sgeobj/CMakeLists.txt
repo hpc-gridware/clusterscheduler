@@ -1,0 +1,58 @@
+# test/libs/sgeobj
+
+add_executable(test_sgeobj_eval_expression test_sgeobj_eval_expression.cc)
+target_include_directories(test_sgeobj_eval_expression PRIVATE "./")
+target_link_libraries(test_sgeobj_eval_expression PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_eval_expression COMMAND test_sgeobj_eval_expression)
+
+add_executable(test_sgeobj_performance test_sgeobj_performance.cc)
+target_include_directories(test_sgeobj_performance PRIVATE "./")
+target_link_libraries(test_sgeobj_performance PRIVATE sgeobj gdi cull uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_performance COMMAND test_sgeobj_performance)
+
+add_executable(test_sgeobj_attr test_sgeobj_attr.cc)
+target_include_directories(test_sgeobj_attr PRIVATE "./")
+target_link_libraries(test_sgeobj_attr PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_attr COMMAND test_sgeobj_attr)
+
+add_executable(test_sgeobj_fgl test_sgeobj_fgl.cc)
+target_include_directories(test_sgeobj_fgl PRIVATE "./")
+target_link_libraries(test_sgeobj_fgl PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_fgl COMMAND test_sgeobj_fgl)
+
+add_executable(test_sgeobj_object test_sgeobj_object.cc)
+target_include_directories(test_sgeobj_object PRIVATE "./")
+target_link_libraries(test_sgeobj_object PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_object COMMAND test_sgeobj_object)
+
+add_executable(test_sgeobj_range test_sgeobj_range.cc)
+target_include_directories(test_sgeobj_range PRIVATE "./")
+target_link_libraries(test_sgeobj_range PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_range COMMAND test_sgeobj_range)
+
+add_executable(test_sgeobj_resource_quota test_sgeobj_resource_quota.cc)
+target_include_directories(test_sgeobj_resource_quota PRIVATE "./")
+target_link_libraries(test_sgeobj_resource_quota PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_resource_quota COMMAND test_sgeobj_resource_quota)
+
+add_executable(test_sgeobj_schedd_conf test_sgeobj_schedd_conf.cc)
+target_include_directories(test_sgeobj_schedd_conf PRIVATE "./")
+target_link_libraries(test_sgeobj_schedd_conf PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_schedd_conf COMMAND test_sgeobj_schedd_conf)
+
+add_executable(test_sgeobj_utility test_sgeobj_utility.cc)
+target_include_directories(test_sgeobj_utility PRIVATE "./")
+target_link_libraries(test_sgeobj_utility PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+add_test(NAME test_sgeobj_utility COMMAND test_sgeobj_utility)
+
+if (INSTALL_SGE_TEST)
+   install(TARGETS test_sgeobj_eval_expression DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_performance DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_attr DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_fgl DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_object DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_range DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_resource_quota DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_schedd_conf DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_utility DESTINATION testbin/${SGE_ARCH})
+endif ()

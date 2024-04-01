@@ -15,10 +15,3 @@ add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
       ${LIBRARY_INCLUDES})
 
-add_executable(test_sge_mirror test_sge_mirror.cc ../../common/sig_handlers.cc)
-target_include_directories(test_sge_mirror PRIVATE "./")
-target_link_libraries(test_sge_mirror PRIVATE mir evc gdi sgeobj cull comm uti commlists ${SGE_LIBS})
-
-if (INSTALL_SGE_TEST)
-   install(TARGETS test_sge_mirror DESTINATION testbin/${SGE_ARCH})
-endif ()

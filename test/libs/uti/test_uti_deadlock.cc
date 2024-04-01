@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "test_sge_lock_main.h"
+#include "test_uti_lock_main.h"
 
 #include <unistd.h>
 #include <cstdio>

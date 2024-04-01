@@ -20,15 +20,3 @@ add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
       ${LIBRARY_INCLUDES})
 
-add_executable(test_category test_category.cc)
-target_include_directories(test_category PRIVATE "./")
-target_link_libraries(test_category PRIVATE daemonscommon sched sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_heartbeat test_heartbeat.cc)
-target_include_directories(test_heartbeat PRIVATE "./")
-target_link_libraries(test_heartbeat PRIVATE daemonscommon uti commlists ${SGE_LIBS})
-
-if (INSTALL_SGE_TEST)
-   install(TARGETS test_category DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_heartbeat DESTINATION testbin/${SGE_ARCH})
-endif ()

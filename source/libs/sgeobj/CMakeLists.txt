@@ -68,64 +68,8 @@ set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
-add_executable(test_eval_expression test_eval_expression.cc)
-target_include_directories(test_eval_expression PRIVATE "./")
-target_link_libraries(test_eval_expression PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
 
-add_executable(test_obj_performance test_obj_performance.cc)
-target_include_directories(test_obj_performance PRIVATE "./")
-target_link_libraries(test_obj_performance PRIVATE sgeobj gdi cull uti commlists ${SGE_LIBS})
 
-#add_executable(test_sge_attr test_sge_attr.cc)
-#target_include_directories(test_sge_attr PRIVATE "./")
-#target_link_libraries(test_sge_attr PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
-#add_executable(test_sge_fgl test_sge_fgl.cc)
-#target_include_directories(test_sge_fgl PRIVATE "./")
-#target_link_libraries(test_sge_fgl PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
-
-add_executable(test_sge_object test_sge_object.cc)
-target_include_directories(test_sge_object PRIVATE "./")
-target_link_libraries(test_sge_object PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_range test_sge_range.cc)
-target_include_directories(test_sge_range PRIVATE "./")
-target_link_libraries(test_sge_range PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_resource_quota test_sge_resource_quota.cc)
-target_include_directories(test_sge_resource_quota PRIVATE "./")
-target_link_libraries(test_sge_resource_quota PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_schedd_conf test_sge_schedd_conf.cc)
-target_include_directories(test_sge_schedd_conf PRIVATE "./")
-target_link_libraries(test_sge_schedd_conf PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-
-add_executable(test_sge_utility test_sge_utility.cc)
-target_include_directories(test_sge_utility PRIVATE "./")
-target_link_libraries(test_sge_utility PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-
-if (PROJECT_FEATURES MATCHES "oge-extensions")
-   add_executable(test_RequestLimits
-      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/test_RequestLimits.cc)
-   target_include_directories(test_RequestLimits PRIVATE
-         "./../../../../${PROJECT_FEATURES}/source/libs"
-         "./")
-   target_link_libraries(test_RequestLimits PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
-endif()
-
-if (INSTALL_SGE_TEST)
-   install(TARGETS test_eval_expression DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_obj_performance DESTINATION testbin/${SGE_ARCH})
-   #    install(TARGETS test_sge_attr DESTINATION testbin/${SGE_ARCH})
-   #    install(TARGETS test_sge_fgl DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_object DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_range DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_resource_quota DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_schedd_conf DESTINATION testbin/${SGE_ARCH})
-   install(TARGETS test_sge_utility DESTINATION testbin/${SGE_ARCH})
-   if (PROJECT_FEATURES MATCHES "oge-extensions")
-      install(TARGETS test_RequestLimits DESTINATION testbin/${SGE_ARCH})
-   endif()
-endif ()
 
 #add_subdirectory(cpp)

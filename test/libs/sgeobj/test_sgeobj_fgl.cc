@@ -1,9 +1,9 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cstdlib>
-#include <cstdio>
-#include <pthread.h>
+#include "cstdio"
+#include "cstdlib"
+#include "pthread.h"
 
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
@@ -14,6 +14,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/oge_DataStore.h"
 
 #define THREADS 32L
 #define REQUESTS (1024L*1024L*16L)
@@ -119,7 +120,7 @@ void *thread1(void *data) {
    dstring thread_name = DSTRING_INIT;
 
    sge_dstring_sprintf(&thread_name, "thread%d", thread->id);
-   _DENTER(TOP_LAYER, sge_dstring_get_string(&thread_name));
+   DENTER(TOP_LAYER);
    //sge_dstring_free(&thread_name);
 
    lInit(nmv); 
