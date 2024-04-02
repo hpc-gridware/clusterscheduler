@@ -30,6 +30,8 @@
  * 
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
+ *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 

@@ -29,6 +29,8 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
+ *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstring>
