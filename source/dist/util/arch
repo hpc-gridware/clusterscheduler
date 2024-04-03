@@ -148,6 +148,9 @@ Linux)
    ppc64)
       lxmachine=ppc64
       ;;
+   ppc64le)
+      lxmachine=ppc64le
+      ;;
    mips)
       lxmachine=mips
       ;;
