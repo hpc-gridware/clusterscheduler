@@ -43,11 +43,14 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "oge_BaseAccountingFileWriter.h"
+#include "oge_BaseReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 
 void
 reporting_initialize();
+void
+reporting_reinitialize_timed_event();
 
 bool
 reporting_shutdown(lList **answer_list, bool do_spool);
@@ -59,22 +62,12 @@ bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task);
 
 namespace oge {
-   class ClassicReportingFileWriter : public ReportingFileWriter {
+   class ClassicReportingFileWriter : public BaseReportingFileWriter {
    private:
       static const char REPORTING_DELIMITER{':'};
-      bool do_joblog;
-      bool log_consumables;
-      u_long32 sharelog_interval;
-      u_long32 next_sharelog;
    public:
-      ClassicReportingFileWriter() : ReportingFileWriter(bootstrap_get_reporting_file()),
-      do_joblog(false), log_consumables(false), sharelog_interval(0), next_sharelog(0) {
+      ClassicReportingFileWriter() : BaseReportingFileWriter(bootstrap_get_reporting_file()) {
       }
-
-      u_long32
-      trigger(monitoring_t *monitor) override;
-
-      void update_config() override;
 
       void
       create_record(const char *type, const char *data);
@@ -119,7 +112,7 @@ namespace oge {
       create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
 
       void
-      create_sharelog_record(monitoring_t *monitor);
+      create_sharelog_record(monitoring_t *monitor) override;
 
       // non virtual functions
       static void
@@ -134,14 +127,12 @@ namespace oge {
                                   const lListElem *host, const lListElem *job) const;
    };
 
-   class ClassicAccountingFileWriter : public ReportingFileWriter {
+   class ClassicAccountingFileWriter : public BaseAccountingFileWriter {
    private:
       static const char REPORTING_DELIMITER = ':';
    public:
-      ClassicAccountingFileWriter() : ReportingFileWriter(bootstrap_get_acct_file()) {
+      ClassicAccountingFileWriter() : BaseAccountingFileWriter(bootstrap_get_acct_file()) {
       }
-
-      void update_config() override;
 
       bool
       create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,

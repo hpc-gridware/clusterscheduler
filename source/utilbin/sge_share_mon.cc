@@ -364,7 +364,9 @@ main(int argc, char **argv)
 
       sconf_set_config(&config, nullptr);
 
-      sge_sharetree_print(&output_dstring, sharetree, users, projects, usersets, group_nodes, decay_usage, names, &format);
+      sge_sharetree_print(&output_dstring, nullptr, sharetree, users, projects, usersets, group_nodes, decay_usage,
+                          names,
+                          &format);
 
       if (count && strlen(format.rec_delim)) {
 	      sge_dstring_sprintf_append(&output_dstring, "%s", format.rec_delim);

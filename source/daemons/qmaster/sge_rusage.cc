@@ -59,10 +59,8 @@ sge_u32"%c%f%c%f%c%f%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"
 sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s%c%d%c" sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32"%c" sge_u32"" \
 "\n"
 
-#define SET_STR_DEFAULT(jr, nm, s) if (!lGetString(jr, nm)) \
-                                      lSetString(jr, nm, s);
-#define SET_HOST_DEFAULT(jr, nm, s) if (!lGetHost(jr, nm)) \
-                                      lSetHost(jr, nm, s);
+#define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
+                                      lSetString(jr, nm, s)
 
 /****** sge_rusage/reporting_get_ulong_usage() ********************************
 *  NAME
@@ -355,13 +353,38 @@ none_string(const char *str) {
    return ret;
 }
 
-const char *
-sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
-                 const char delimiter, bool intermediate) {
+static void
+write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, int value) {
+   writer->Key(key);
+   writer->Int(value);
+}
+
+static void
+write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, u_long32 value) {
+   writer->Key(key);
+   writer->Uint64(value);
+}
+
+static void
+write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, double value) {
+   writer->Key(key);
+   writer->Double(value);
+}
+
+static void
+write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, const char *value) {
+   if (value != nullptr) {
+      writer->Key(key);
+      writer->String(value);
+   }
+}
+
+bool
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer,
+                 lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
+                 const char delimiter, bool intermediate, bool is_reporting) {
    const lList *usage_list = nullptr; /* usage list of ja_task or pe_task */
    lList *reported_list = nullptr; /* already reported usage of ja_task or pe_task */
-   const char *pe_task_id;
-   const char *ret = nullptr;
    char *qname = nullptr;
    char *hostname = nullptr;
    lListElem *pe_task = nullptr;
@@ -378,17 +401,23 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
 
    DENTER(TOP_LAYER);
 
-   /* invalid input data */
-   if (buffer == nullptr) {
-      DRETURN(ret);
+   if (jr == nullptr || job == nullptr || ja_task == nullptr) {
+      DRETURN(false);
+   }
+
+   /* we expect either string buffer or json writer to be set */
+   if ((buffer == nullptr && writer == nullptr) ||
+       (buffer != nullptr && writer != nullptr)) {
+      DRETURN(false);
    }
 
    /* 
     * Figure out if it is a parallel job,
     * and if we shall write individual accounting entries or a summary.
     */
-   if (lGetString(ja_task, JAT_granted_pe) != nullptr) {
-      const lListElem *pe = pe_list_locate(master_pe_list, lGetString(ja_task, JAT_granted_pe));
+   const char *granted_pe = lGetString(ja_task, JAT_granted_pe);
+   if (granted_pe != nullptr) {
+      const lListElem *pe = pe_list_locate(master_pe_list, granted_pe);
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
 
@@ -397,19 +426,21 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     * - the pe task usage list for pe tasks
     * - the ja_task list for ja tasks
     */
-   if ((pe_task_id = lGetString(jr, JR_pe_task_id_str)) != nullptr) {
+   u_long32 job_id = lGetUlong(job, JB_job_number);
+   u_long32 ja_task_id = job_is_array(job) ? lGetUlong(ja_task, JAT_task_number) : 0;
+   const char *pe_task_id = lGetString(jr, JR_pe_task_id_str);
+   if (pe_task_id != nullptr) {
       /* nothing to be done for pe task, if summary is requested */
       if (do_accounting_summary) {
-         DRETURN(ret);
+         DRETURN(false);
       }
 
       /* try to find the pe_task */
       pe_task = lGetElemStrRW(lGetList(ja_task, JAT_task_list), PET_id, pe_task_id);
       if (pe_task == nullptr) {
-         dstring err_buffer = DSTRING_INIT;
-         ERROR(MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S, job_get_id_string(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), pe_task_id, &err_buffer));
-         sge_dstring_free(&err_buffer);
-         DRETURN(ret);
+         DSTRING_STATIC(err_buffer, MAX_STRING_SIZE);
+         ERROR(MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &err_buffer));
+         DRETURN(false);
       }
 
       /* we output pe_task usage */
@@ -425,11 +456,9 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     */
    if (intermediate) {
       if (pe_task != nullptr) {
-         reported_list = lGetOrCreateList(pe_task, PET_reported_usage,
-                                          "reported_usage", UA_Type);
+         reported_list = lGetOrCreateList(pe_task, PET_reported_usage, "reported_usage", UA_Type);
       } else {
-         reported_list = lGetOrCreateList(ja_task, JAT_reported_usage_list,
-                                          "reported_usage", UA_Type);
+         reported_list = lGetOrCreateList(ja_task, JAT_reported_usage_list, "reported_usage", UA_Type);
       }
 
       /* 
@@ -438,34 +467,24 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
        */
       start_time = usage_list_get_ulong_usage(reported_list, LAST_INTERMEDIATE, 0),
 
-              /* now set actual time as time of last intermediate usage report */
-              usage_list_set_ulong_usage(reported_list, LAST_INTERMEDIATE, now);
+      /* now set actual time as time of last intermediate usage report */
+      usage_list_set_ulong_usage(reported_list, LAST_INTERMEDIATE, now);
    }
 
    SET_STR_DEFAULT(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
 
    /* job name and account get taken from local job structure */
-   if (lGetString(job, JB_job_name) == nullptr) {
-      lSetString(job, JB_job_name, "UNKNOWN");
-   }
-   if (lGetString(job, JB_account) == nullptr) {
-      lSetString(job, JB_account, "UNKNOWN");
-   }
+   SET_STR_DEFAULT(job, JB_job_name, "UNKNOWN");
+   SET_STR_DEFAULT(job, JB_account, "UNKNOWN");
 
    /* figure out queue name and host name */
-   {
-      dstring cqueue = DSTRING_INIT;
-      dstring hname = DSTRING_INIT;
+   DSTRING_STATIC(cqueue, MAX_STRING_SIZE);
+   DSTRING_STATIC(hname, MAX_STRING_SIZE);
 
-      cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, nullptr,
-                        nullptr);
+   cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, nullptr, nullptr);
 
-      qname = strdup(sge_dstring_get_string(&cqueue));
-      hostname = strdup(sge_dstring_get_string(&hname));
-
-      sge_dstring_free(&cqueue);
-      sge_dstring_free(&hname);
-   }
+   qname = strdup(sge_dstring_get_string(&cqueue));
+   hostname = strdup(sge_dstring_get_string(&hname));
 
    /* get submission_time, start_time, end_time */
    end_time = usage_list_get_ulong_usage(usage_list, "end_time", 0);
@@ -523,84 +542,190 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     * see man page getrusage(2), so nothing to be done for intermediate
     * records.
     */
-   ret = sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT,
-                             qname, delimiter,
-                             hostname, delimiter,
-                             lGetString(job, JB_group), delimiter,
-                             lGetString(job, JB_owner), delimiter,
-                             lGetString(job, JB_job_name), delimiter,
-                             lGetUlong(jr, JR_job_number), delimiter,
-                             lGetString(job, JB_account), delimiter,
-                             usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
-                             submission_time, delimiter,
-                             start_time, delimiter,
-                             end_time, delimiter,
-                             lGetUlong(jr, JR_failed), delimiter,
-                             exit_status, delimiter,
-                             usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            "ru_utime", "ru_utime", 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            "ru_stime", "ru_stime", 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            "ru_maxrss", "ru_maxrss", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_ixrss", "ru_ixrss", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_ismrss", "ru_ismrss", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_idrss", "ru_idrss", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_isrss", "ru_isrss", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_minflt", "ru_minflt", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_majflt", "ru_majflt", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_nswap", "ru_nswap", 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            "ru_inblock", "ru_inblock", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_oublock", "ru_oublock", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_msgsnd", "ru_msgsnd", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_msgrcv", "ru_msgrcv", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_nsignals", "ru_nsignals", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_nvcsw", "ru_nvcsw", 0), delimiter,
-                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                           "ru_nivcsw", "ru_nivcsw", 0), delimiter,
-                             none_string(lGetString(job, JB_project)), delimiter,
-                             none_string(lGetString(job, JB_department)), delimiter,
-                             none_string(lGetString(ja_task, JAT_granted_pe)), delimiter,
-                             sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)), delimiter,
-                             job_is_array(job) ? lGetUlong(ja_task, JAT_task_number) : 0, delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT,
-                                                            USAGE_ATTR_CPU, 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT,
-                                                            USAGE_ATTR_MEM, 0), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT,
-                                                            USAGE_ATTR_IO, 0), delimiter,
-                             none_string(category_str), delimiter,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT,
-                                                            USAGE_ATTR_IOW, 0), delimiter,
-                             none_string(pe_task_id), delimiter,
-                             reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
-                                                            intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT,
-                                                            USAGE_ATTR_MAXVMEM, 0), delimiter,
-                             lGetUlong(job, JB_ar), delimiter,
-                             (ar != nullptr) ? lGetUlong(ar, AR_submission_time) : 0
-   );
+   if (buffer != nullptr) {
+      sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT,
+                                qname, delimiter,
+                                hostname, delimiter,
+                                lGetString(job, JB_group), delimiter,
+                                lGetString(job, JB_owner), delimiter,
+                                lGetString(job, JB_job_name), delimiter,
+                                lGetUlong(jr, JR_job_number), delimiter,
+                                lGetString(job, JB_account), delimiter,
+                                usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
+                                submission_time, delimiter,
+                                start_time, delimiter,
+                                end_time, delimiter,
+                                lGetUlong(jr, JR_failed), delimiter,
+                                exit_status, delimiter,
+                                usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               "ru_utime", "ru_utime", 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               "ru_stime", "ru_stime", 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               "ru_maxrss", "ru_maxrss", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_ixrss", "ru_ixrss", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_ismrss", "ru_ismrss", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_idrss", "ru_idrss", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_isrss", "ru_isrss", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_minflt", "ru_minflt", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_majflt", "ru_majflt", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_nswap", "ru_nswap", 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               "ru_inblock", "ru_inblock", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_oublock", "ru_oublock", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_msgsnd", "ru_msgsnd", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_msgrcv", "ru_msgrcv", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_nsignals", "ru_nsignals", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_nvcsw", "ru_nvcsw", 0), delimiter,
+                                reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                              "ru_nivcsw", "ru_nivcsw", 0), delimiter,
+                                none_string(lGetString(job, JB_project)), delimiter,
+                                none_string(lGetString(job, JB_department)), delimiter,
+                                none_string(granted_pe), delimiter,
+                                sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)), delimiter,
+                                job_is_array(job) ? lGetUlong(ja_task, JAT_task_number) : 0, delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT,
+                                                               USAGE_ATTR_CPU, 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT,
+                                                               USAGE_ATTR_MEM, 0), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT,
+                                                               USAGE_ATTR_IO, 0), delimiter,
+                                none_string(category_str), delimiter,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                               ja_task,
+                                                               intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT,
+                                                               USAGE_ATTR_IOW, 0), delimiter,
+                                none_string(pe_task_id), delimiter,
+                                reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
+                                                               intermediate ? USAGE_ATTR_MAXVMEM
+                                                                            : USAGE_ATTR_MAXVMEM_ACCT,
+                                                               USAGE_ATTR_MAXVMEM, 0), delimiter,
+                                lGetUlong(job, JB_ar), delimiter,
+                                (ar != nullptr) ? lGetUlong(ar, AR_submission_time) : 0
+      );
+   } else {
+      writer->StartObject();
 
-   sge_free(&qname);
-   sge_free(&hostname);
+      if (is_reporting) {
+         write_json(writer, "time", now);
+         write_json(writer, "type", "acct");
+      }
 
-   DRETURN(ret);
+      // the following attributes can be used for filtering in qacct
+      write_json(writer, "job_number", job_id);
+      write_json(writer, "task_number", ja_task_id);
+
+      write_json(writer, "start_time", start_time);
+      write_json(writer, "end_time", end_time);
+
+      write_json(writer, "owner", lGetString(job, JB_owner));
+      write_json(writer, "group", lGetString(job, JB_group));
+      write_json(writer, "account", lGetString(job, JB_account));
+
+      write_json(writer, "qname", qname);
+      write_json(writer, "hostname", hostname);
+
+      write_json(writer, "project", lGetString(job, JB_project));
+      write_json(writer, "department", lGetString(job, JB_department));
+      write_json(writer, "granted_pe", granted_pe);
+
+      if (ar != nullptr) {
+         write_json(writer, "arid", lGetUlong(job, JB_ar));
+      }
+
+      // further attributes
+      write_json(writer, "job_name", lGetString(job, JB_job_name));
+      write_json(writer, "priority", usage_list_get_ulong_usage(usage_list, "priority", 0));
+
+      write_json(writer, "submission_time", submission_time);
+      if (ar != nullptr) {
+         write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+      }
+
+      write_json(writer, "pe_taskid", pe_task_id);
+      write_json(writer, "category", category_str);
+
+      write_json(writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
+      write_json(writer, "exit_status", exit_status);
+
+      write_json(writer, "ru_maxrss", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                     ja_task, "ru_maxrss", "ru_maxrss", 0));
+      write_json(writer, "ru_ixrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                   ja_task, "ru_ixrss", "ru_ixrss", 0));
+      write_json(writer, "ru_ismrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_ismrss", "ru_ismrss", 0));
+      write_json(writer, "ru_idrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                   ja_task, "ru_idrss", "ru_idrss", 0));
+      write_json(writer, "ru_isrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                   ja_task, "ru_isrss", "ru_isrss", 0));
+      write_json(writer, "ru_minflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_minflt", "ru_minflt", 0));
+      write_json(writer, "ru_majflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_majflt", "ru_majflt", 0));
+      write_json(writer, "ru_nswap", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                   ja_task, "ru_nswap", "ru_nswap", 0));
+      write_json(writer, "ru_inblock", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                      ja_task, "ru_inblock", "ru_inblock", 0));
+      write_json(writer, "ru_oublock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                     ja_task, "ru_oublock", "ru_oublock", 0));
+      write_json(writer, "ru_msgsnd", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_msgsnd", "ru_msgsnd", 0));
+      write_json(writer, "ru_msgrcv", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_msgrcv", "ru_msgrcv", 0));
+      write_json(writer, "ru_nsignals", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                      ja_task, "ru_nsignals", "ru_nsignals", 0));
+      write_json(writer, "ru_nvcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                   ja_task, "ru_nvcsw", "ru_nvcsw", 0));
+      write_json(writer, "ru_nivcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_nivcsw", "ru_nivcsw", 0));
+
+      write_json(writer, "slots", sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)));
+
+      write_json(writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                                        USAGE_ATTR_WALLCLOCK, USAGE_ATTR_WALLCLOCK, 0));
+      write_json(writer, USAGE_ATTR_CPU, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                     intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT, USAGE_ATTR_CPU, 0));
+      write_json(writer, USAGE_ATTR_MEM, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                     intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT, USAGE_ATTR_MEM, 0));
+      write_json(writer, USAGE_ATTR_IO, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                     intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT, USAGE_ATTR_IO, 0));
+      write_json(writer, USAGE_ATTR_IOW, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                     intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT, USAGE_ATTR_IOW, 0));
+      write_json(writer, USAGE_ATTR_MAXVMEM, reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
+                                     intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0));
+      write_json(writer, USAGE_ATTR_RSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                                        USAGE_ATTR_RSS, USAGE_ATTR_RSS, 0));
+      write_json(writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                                              USAGE_ATTR_MAXRSS, USAGE_ATTR_MAXRSS, 0));
+
+      // @todo arbitrary usage values, e.g. GPU usage - configure somewhere what shall be reported?
+
+      writer->EndObject();
+   }
+
+   DRETURN(true);
 }
 

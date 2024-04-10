@@ -192,6 +192,8 @@ static bool do_reporting          = false;
 static bool do_joblog             = false;
 static int reporting_flush_time   = 15;
 static int accounting_flush_time  = -1;
+static bool old_accounting = true;
+static bool old_reporting = true;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
 
@@ -856,6 +858,8 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       do_joblog = false;
       reporting_flush_time = 15;
       accounting_flush_time = -1;
+      old_accounting = true;
+      old_reporting = true;
       sharelog_time = 0;
       log_consumables = false;
       enable_addgrp_kill = false;
@@ -1044,6 +1048,12 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                accounting_flush_time = -1;
             }
             
+            continue;
+         }
+         if (parse_bool_param(s, "old_accounting", &old_accounting)) {
+            continue;
+         }
+         if (parse_bool_param(s, "old_reporting", &old_reporting)) {
             continue;
          }
          if (parse_int_param(s, "sharelog", &sharelog_time, TYPE_TIM)) {
@@ -2374,8 +2384,8 @@ int mconf_get_accounting_flush_time(void) {
    if (accounting_flush_time >= 0) {
       ret = accounting_flush_time;
    }
-   /* If the accounting_flush_time is not set, use the reporting_flush_time
-    * instead. */
+      /* If the accounting_flush_time is not set, use the reporting_flush_time
+       * instead. */
    else {
       DPRINTF("accounting_flush_time unset; using flush_time\n");
       ret = reporting_flush_time;
@@ -2383,7 +2393,30 @@ int mconf_get_accounting_flush_time(void) {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
+}
 
+bool mconf_get_old_accounting(void) {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = old_accounting;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_old_reporting(void) {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = old_reporting;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
 }
 
 int mconf_get_sharelog_time(void) {

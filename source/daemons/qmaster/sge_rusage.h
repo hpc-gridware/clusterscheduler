@@ -36,6 +36,9 @@
  Structures for architecture depended data
  ****************************************************************/
 
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
 #include "uti/sge_dstring.h"
 
 struct all_drsuage {
@@ -160,6 +163,7 @@ typedef struct drusage sge_rusage_type;
  */
 #define INTERMEDIATE_MIN_RUNTIME 60
 
-const char *
-sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
-                 const char delimiter, bool intermediate);
+bool
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer,
+                 lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
+                 const char delimiter, bool intermediate, bool is_reporting);

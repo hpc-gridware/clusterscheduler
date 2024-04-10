@@ -34,6 +34,8 @@
 #include "uti/sge_time.h"
 
 #include "oge_ReportingFileWriter.h"
+#include "oge_JsonAccountingFileWriter.h"
+#include "oge_JsonReportingFileWriter.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_rusage.h"
 
@@ -53,10 +55,21 @@ namespace oge {
     * reporting params (@see ReportingFileWriter::update_config())
     */
    void ReportingFileWriter::initialize() {
-      writers[CLASSIC_ACCOUNTING] = new ClassicAccountingFileWriter;
-      if (mconf_get_do_reporting()) {
-         writers[CLASSIC_REPORTING] = new ClassicReportingFileWriter;
+      // create the Writers
+      if (mconf_get_old_accounting()) {
+         writers[CLASSIC_ACCOUNTING] = new ClassicAccountingFileWriter;
+      } else {
+         writers[JSON_ACCOUNTING] = new JsonAccountingFileWriter;
       }
+      if (mconf_get_do_reporting()) {
+         if (mconf_get_old_reporting()) {
+            writers[CLASSIC_REPORTING] = new ClassicReportingFileWriter;
+         } else {
+            writers[JSON_REPORTING] = new JsonReportingFileWriter;
+         }
+      }
+
+      // make Writers read their configuration
       for (auto w: writers) {
          if (w != nullptr) {
             w->update_config();
@@ -128,24 +141,72 @@ namespace oge {
       if (current_reporting_params != reporting_params) {
          reporting_params = current_reporting_params;
 
-         if (mconf_get_do_reporting()) {
-            if (writers[CLASSIC_REPORTING] == nullptr) {
-               // reporting has been enabled
-               writers[CLASSIC_REPORTING] = new ClassicReportingFileWriter;
+         // if we switched accounting type, update the writers
+         if (mconf_get_old_accounting()) {
+            // we might have switched accounting type to classic
+            if (writers[CLASSIC_ACCOUNTING] == nullptr) {
+               writers[CLASSIC_ACCOUNTING] = new ClassicAccountingFileWriter;
+            }
+            if (writers[JSON_ACCOUNTING] != nullptr) {
+               delete writers[JSON_ACCOUNTING];
+               writers[JSON_ACCOUNTING] = nullptr;
             }
          } else {
-            if (writers[CLASSIC_REPORTING] == nullptr) {
+            // we might have switched accounting type to json
+            if (writers[JSON_ACCOUNTING] == nullptr) {
+               writers[JSON_ACCOUNTING] = new JsonAccountingFileWriter;
+            }
+            if (writers[CLASSIC_ACCOUNTING] != nullptr) {
+               delete writers[CLASSIC_ACCOUNTING];
+               writers[CLASSIC_ACCOUNTING] = nullptr;
+            }
+         }
+
+         if (mconf_get_do_reporting()) {
+            if (mconf_get_old_reporting()) {
+               if (writers[CLASSIC_REPORTING] == nullptr) {
+                  // reporting has been enabled
+                  writers[CLASSIC_REPORTING] = new ClassicReportingFileWriter;
+               }
+               if (writers[JSON_REPORTING] != nullptr) {
+                  // reporting has been disabled
+                  delete writers[JSON_REPORTING];
+                  writers[JSON_REPORTING] = nullptr;
+               }
+            } else {
+               if (writers[JSON_REPORTING] == nullptr) {
+                  // reporting has been enabled
+                  writers[JSON_REPORTING] = new JsonReportingFileWriter;
+               }
+               if (writers[CLASSIC_REPORTING] != nullptr) {
+                  // reporting has been disabled
+                  delete writers[CLASSIC_REPORTING];
+                  writers[CLASSIC_REPORTING] = nullptr;
+               }
+            }
+         } else {
+            if (writers[CLASSIC_REPORTING] != nullptr) {
                // reporting has been disabled
                delete writers[CLASSIC_REPORTING];
                writers[CLASSIC_REPORTING] = nullptr;
             }
+            if (writers[JSON_REPORTING] != nullptr) {
+               // reporting has been disabled
+               delete writers[JSON_REPORTING];
+               writers[JSON_REPORTING] = nullptr;
+            }
          }
 
+         // now configure all active Writers
          for (auto w: writers) {
             if (w != nullptr) {
                w->update_config();
             }
          }
+
+         // delete the existing timer and set up a new immediate one
+         // which will update the next trigger time
+         reporting_reinitialize_timed_event();
       }
    }
 
@@ -495,5 +556,19 @@ namespace oge {
       return next_flush_time;
    }
 
+   void ReportingFileWriter::update_config() {
+      // if the flush_time changed, need to re-calculate the next_flush_time
+      auto new_config_flush_time = mconf_get_reporting_flush_time();
+      update_config_flush_time(new_config_flush_time);
+   }
+
+   void ReportingFileWriter::update_config_flush_time(u_long32 new_flush_time) {
+      if (new_flush_time != config_flush_time) {
+         if (next_flush_time != 0) {
+            next_flush_time = next_flush_time - config_flush_time + new_flush_time;
+         }
+         config_flush_time = new_flush_time;
+      }
+   }
 } // namespace oge
 

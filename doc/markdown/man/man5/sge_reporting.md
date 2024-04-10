@@ -423,7 +423,7 @@ A new_ar record contains information about advance reservation objects.
 Entries of this type will be added if an advance reservation is created.
 It contains the following information:
 
-submission_time  
+ar_submission_time  
 The time (GMT unix time stamp) when the advance reservation was created.
 
 ar_number  
@@ -441,7 +441,7 @@ changed. It has following fields.
 event_time  
 The time (GMT unix time stamp) when the event was generated.
 
-submission_time  
+ar_submission_time  
 The time (GMT unix time stamp) when the advance reservation was created.
 
 ar_number  
@@ -476,7 +476,7 @@ ar_state_change_time
 The time (GMT unix time stamp) when the event occurred which caused a
 state change.
 
-submission_time  
+ar_submission_time  
 The time (GMT unix time stamp) when the advance reservation was created.
 
 ar_number  
@@ -500,7 +500,7 @@ reservation accounting records comprise following fields.
 ar_termination_time  
 The time (GMT unix time stamp) when the advance reservation terminated.
 
-submission_time  
+ar_submission_time  
 The time (GMT unix time stamp) when the advance reservation was created.
 
 ar_number  

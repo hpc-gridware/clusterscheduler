@@ -24,6 +24,10 @@ add_executable(
       configuration_qmaster.cc
       job_exit.cc
       job_report_qmaster.cc
+      oge_BaseAccountingFileWriter.cc
+      oge_BaseReportingFileWriter.cc
+      oge_JsonAccountingFileWriter.cc
+      oge_JsonReportingFileWriter.cc
       oge_MirrorDataStore.cc
       oge_MirrorReaderDataStore.cc
       oge_MirrorListenerDataStore.cc

@@ -37,6 +37,8 @@ namespace oge {
       enum {
          CLASSIC_ACCOUNTING = 0,
          CLASSIC_REPORTING,
+         JSON_ACCOUNTING,
+         JSON_REPORTING,
          NUM_WRITERS
       };
 
@@ -114,7 +116,8 @@ namespace oge {
       // Object methods
       virtual bool flush();
       virtual u_long32 trigger(monitoring_t *monitor);
-      virtual void update_config() = 0;
+      virtual void update_config();
+      void update_config_flush_time(u_long32 new_flush_time);
 
       virtual bool
       create_new_job_record(lList **answer_list, const lListElem *job) { return true; }

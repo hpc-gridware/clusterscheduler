@@ -46,7 +46,6 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_ja_task.h"
@@ -116,7 +115,6 @@
 *******************************************************************************/
 void
 reporting_initialize() {
-   te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -128,7 +126,15 @@ reporting_initialize() {
    /* we always have the reporting trigger for flushing reporting files and
     * checking for new reporting configuration
     */
-   ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
+   te_event_t ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
+   te_add_event(ev);
+   te_free_event(&ev);
+}
+
+void
+reporting_reinitialize_timed_event() {
+   te_delete_all_one_time_events(TYPE_REPORTING_TRIGGER);
+   te_event_t ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 }
@@ -244,10 +250,6 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
 
 // object methods
 
-void oge::ClassicAccountingFileWriter::update_config() {
-   config_flush_time = mconf_get_accounting_flush_time();
-}
-
 bool
 oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                                                 lListElem *ja_task, bool intermediate) {
@@ -270,16 +272,12 @@ oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
       category_string = sge_dstring_get_string(&category_dstring);
 
       dstring job_dstring = DSTRING_INIT;
-      const char *job_string;
-      job_string = sge_write_rusage(&job_dstring, job_report, job, ja_task,
-                                    category_string, REPORTING_DELIMITER,
-                                    false);
-      if (job_string == nullptr) {
-         ret = false;
-      } else {
+      ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
+                                    category_string, REPORTING_DELIMITER, false, false);
+      if (ret) {
          /* write accounting file */
          sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
-         buffer += job_string;
+         buffer += sge_dstring_get_string(&job_dstring);
          sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
       }
 
@@ -292,35 +290,6 @@ oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
    }
 
    DRETURN(ret);
-}
-
-u_long32 oge::ClassicReportingFileWriter::trigger(monitoring_t *monitor) {
-   u_long32 now = sge_get_gmt();
-   u_long32 next_trigger = U_LONG32_MAX;
-
-   // trigger sharelog
-   if (sharelog_interval > 0) {
-      if (next_sharelog <= now) {
-         create_sharelog_record(monitor);
-         next_sharelog = now + sharelog_interval;
-      }
-      next_trigger = next_sharelog;
-   }
-
-   // trigger
-   u_long32 base_trigger = ReportingFileWriter::trigger(monitor);
-   if (base_trigger < next_trigger) {
-      next_trigger = base_trigger;
-   }
-
-   return next_trigger;
-}
-
-void oge::ClassicReportingFileWriter::update_config() {
-   config_flush_time = mconf_get_reporting_flush_time();
-   do_joblog = mconf_get_do_joblog();
-   log_consumables = mconf_get_log_consumables();
-   sharelog_interval = mconf_get_sharelog_time();
 }
 
 void
@@ -399,14 +368,11 @@ oge::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
    bool do_intermediate = (intermediate_written || intermediate);
 
    dstring job_dstring = DSTRING_INIT;
-   const char *job_string;
-   job_string = sge_write_rusage(&job_dstring, job_report, job, ja_task,
+   ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
                                  category_string, REPORTING_DELIMITER,
-                                 do_intermediate);
-   if (job_string == nullptr) {
-      ret = false;
-   } else {
-      create_record("acct", job_string);
+                                 do_intermediate, false);
+   if (ret) {
+      create_record("acct", sge_dstring_get_string(&job_dstring));
    }
 
    sge_dstring_free(&job_dstring);
@@ -947,12 +913,12 @@ oge::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
          format.str_format = "%s";
          format.field_names = nullptr;
          format.format_times = false;
-         format.line_prefix = sge_dstring_get_string(&prefix_dstring);
+         format.line_prefix = "sharelog";
 
          /* dump the sharetree data */
          MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-         sge_sharetree_print(&data_dstring, master_stree_list, master_user_list, master_project_list,
+         sge_sharetree_print(&data_dstring, nullptr, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,
                              true, false, nullptr, &format);
 

@@ -43,7 +43,6 @@
 
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_usage.h"
 
 #include "sge_support.h"
@@ -99,7 +98,7 @@ static const int items = sizeof(item) / sizeof(item_t);
 
 /* ------------- static functions ---------------- */
 
-static int
+static void
 calculate_share_percents(lListElem *node, double parent_percent, double sibling_shares)
 {
    lListElem *child;
@@ -125,11 +124,8 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
    }
 
    for_each_rw(child, lGetList(node, STN_children)) {
-      calculate_share_percents(child, lGetDouble(node, STN_adjusted_proportion),
-			       sum_shares);
+      calculate_share_percents(child, lGetDouble(node, STN_adjusted_proportion), sum_shares);
    }
-
-   return 0;
 }
 
 static double
@@ -146,26 +142,37 @@ get_usage_value(const lList *usage, const char *name)
 }
 
 static void
-print_field(dstring *out, const item_t *item, const format_t *format)
+print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, const item_t *field,
+            const format_t *format)
 {
-   if (format->name_format) {
-      sge_dstring_sprintf_append(out, "%s=", item->name);
-   }   
+   // print item name (key in case of json)
+   if (out != nullptr && format->name_format) {
+      sge_dstring_sprintf_append(out, "%s=", field->name);
+   }
+   if (writer != nullptr) {
+      writer->Key(field->name);
+   }
 
-   switch(item->type) {
+   // print item data
+   switch (field->type) {
       case ULONG_T:
-         sge_dstring_sprintf_append(out, sge_U32CFormat, *(u_long32 *)item->val);
+         if (out != nullptr) {
+            sge_dstring_sprintf_append(out, sge_U32CFormat, *(u_long32 *) field->val);
+         }
+         if (writer != nullptr) {
+            writer->Uint64(*(u_long32 *) field->val);
+         }
          break;
-      case DATE_T:
-         {
-            u_long32 t = *(u_long32 *)item->val;
+      case DATE_T: {
+         u_long32 t = *(u_long32 *) field->val;
+         if (out != nullptr) {
             if (t && format->format_times) {
                char tc_buffer[100];
                dstring tc_dstring;
                char *tc;
-               
+
                sge_dstring_init(&tc_dstring, tc_buffer, sizeof(tc_buffer));
-               tc = (char *)sge_ctime32(&t, &tc_dstring);
+               tc = (char *) sge_ctime32(&t, &tc_dstring);
                if (tc != nullptr && *tc != '\0') {
                   /* remove trailing linefeed */
                   tc[sge_dstring_strlen(&tc_dstring) - 1] = '\0';
@@ -175,30 +182,51 @@ print_field(dstring *out, const item_t *item, const format_t *format)
                sge_dstring_sprintf_append(out, sge_U32CFormat, t);
             }
          }
+         if (writer != nullptr) {
+            writer->Uint64(t);
+         }
+      }
          break;
       case DOUBLE_T:
-         sge_dstring_sprintf_append(out, "%f", *(double *)item->val);
+         if (out != nullptr) {
+            sge_dstring_sprintf_append(out, "%f", *(double *) field->val);
+         }
+         if (writer != nullptr) {
+            writer->Double(*(double *) field->val);
+         }
          break;
       case STRING_T:
-         sge_dstring_sprintf_append(out, format->str_format, 
-                                    *(char **)item->val);
+         if (out != nullptr) {
+            sge_dstring_sprintf_append(out, format->str_format, *(char **) field->val);
+         }
+         if (writer != nullptr) {
+            writer->String(*(char **) field->val);
+         }
          break;
    }
 
-   sge_dstring_sprintf_append(out, "%s", format->delim);
+   if (out) {
+      sge_dstring_sprintf_append(out, "%s", format->delim);
+   }
 }
 
-
 static void
-print_node(dstring *out, const lListElem *node, 
-           const lListElem *user, const lListElem *project, 
-           const char **names, const format_t *format,
+print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node,
+           const lListElem *user, const lListElem *project, const char **names, const format_t *format,
            const lListElem *parent, const char *parent_node_names)
 {
    if (node != nullptr) {
       const lList *usage=nullptr, *ltusage=nullptr;
       int i, fields_printed=0;
       dstring node_name_dstring = DSTRING_INIT;
+      rapidjson::Writer<rapidjson::StringBuffer> *writer = nullptr;
+      if (jsonBuffer != nullptr) {
+         // we write multiple lines into the buffer, start a new line
+         if (jsonBuffer->GetLength() > 0) {
+            jsonBuffer->Put('\n');
+         }
+         writer = new rapidjson::Writer<rapidjson::StringBuffer>(*jsonBuffer);
+      }
 
       current_time = sge_get_gmt();
       time_stamp = user ? lGetUlong(user, UU_usage_time_stamp) : 0;
@@ -245,7 +273,7 @@ print_node(dstring *out, const lListElem *node,
          ltusage = lGetList(project, PR_long_term_usage);
       }
 
-      if (usage) {
+      if (usage != nullptr) {
          cpu = get_usage_value(usage, USAGE_ATTR_CPU);
          mem = get_usage_value(usage, USAGE_ATTR_MEM);
          io  = get_usage_value(usage, USAGE_ATTR_IO);
@@ -253,7 +281,7 @@ print_node(dstring *out, const lListElem *node,
          cpu = mem = io = 0;
       }
 
-      if (ltusage) {
+      if (ltusage != nullptr) {
          ltcpu = get_usage_value(ltusage, USAGE_ATTR_CPU);
          ltmem = get_usage_value(ltusage, USAGE_ATTR_MEM);
          ltio  = get_usage_value(ltusage, USAGE_ATTR_IO);
@@ -278,18 +306,27 @@ print_node(dstring *out, const lListElem *node,
 
       /* print line prefix */
       if (format->line_prefix != nullptr) {
-         sge_dstring_append(out, format->line_prefix);
+         if (out != nullptr) {
+            sge_dstring_append(out, format->line_prefix);
+         }
+         if (writer != nullptr) {
+            writer->StartObject();
+            writer->Key("time");
+            writer->Uint64(sge_get_gmt());
+            writer->Key("type");
+            writer->String(format->line_prefix);
+         }
       }
 
-      if (format->field_names) {
+      if (format->field_names != nullptr) {
          struct saved_vars_s *context = nullptr;
          char *field;
 
          field = sge_strtok_r(format->field_names, ",", &context);
          while (field) {
-            for (i=0; i<items; i++) {
-               if (strcmp(field, item[i].name)==0) {
-                  print_field(out, &item[i], format);
+            for (i = 0; i < items; i++) {
+               if (strcmp(field, item[i].name) == 0) {
+                  print_field(out, writer, &item[i], format);
                   fields_printed++;
                   break;
                }
@@ -298,25 +335,33 @@ print_node(dstring *out, const lListElem *node,
          }
          sge_free_saved_vars(context);
       } else {
-         for (i=0; i<items; i++) {
-            print_field(out, &item[i], format);
+         for (i = 0; i < items; i++) {
+            print_field(out, writer, &item[i], format);
             fields_printed++;
-         }   
+         }
       }
 
       if (fields_printed) {
-         sge_dstring_sprintf_append(out, "%s", format->line_delim);
-      }   
+         if (out != nullptr) {
+            sge_dstring_sprintf_append(out, "%s", format->line_delim);
+         }
+         if (writer != nullptr) {
+            writer->EndObject();
+         }
+      }
 
       sge_dstring_free(&node_name_dstring);
+      if (writer != nullptr) {
+         delete writer;
+      }
    }
 }
 
 
 static void
-print_nodes(dstring *out, const lListElem *node, const lListElem *parent,
-            const lListElem *project, const lList *users, const lList *projects,
-	         bool group_nodes, const char **names, const format_t *format, const char *parent_node_names)
+print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node, const lListElem *parent,
+            const lListElem *project, const lList *users, const lList *projects, bool group_nodes, const char **names,
+            const format_t *format, const char *parent_node_names)
 {
    const lListElem *user, *child;
    const lList *children = lGetList(node, STN_children);
@@ -333,7 +378,7 @@ print_nodes(dstring *out, const lListElem *node, const lListElem *parent,
    }
 
    if (group_nodes || (children == nullptr)) {
-      print_node(out, node, user, project, names, format, parent, parent_node_names);
+      print_node(out, jsonBuffer, node, user, project, names, format, parent, parent_node_names);
    }
 
    for_each_ep(child, children) {
@@ -343,7 +388,7 @@ print_nodes(dstring *out, const lListElem *node, const lListElem *parent,
       } else {
          sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, lGetString(node, STN_name));
       }
-      print_nodes(out, child, node, project, users, projects, 
+      print_nodes(out, jsonBuffer, child, node, project, users, projects,
                   group_nodes, names, format, sge_dstring_get_string(&node_name_dstring));
    }
 
@@ -450,10 +495,9 @@ print_hdr(dstring *out, const format_t *format)
 *     sge_sharetree_printing/print_hdr()
 *******************************************************************************/
 void
-sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users, 
-                    const lList *projects, const lList *usersets,
-                    bool group_nodes, bool decay_usage, 
-                    const char **names, const format_t *format)
+sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
+                    const lList *users, const lList *projects, const lList *usersets, bool group_nodes,
+                    bool decay_usage, const char **names, const format_t *format)
 {
 
    lListElem *root;
@@ -489,7 +533,7 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
 
    _sge_calc_share_tree_proportions(sharetree, users, projects, nullptr, curr_time);
 
-   print_nodes(out, root, nullptr, nullptr, users, projects, group_nodes, names, format, "");
+   print_nodes(out, jsonBuffer, root, nullptr, nullptr, users, projects, group_nodes, names, format, "");
 
    sge_mutex_unlock("sharetree_printing", __func__, __LINE__, &mtx);
 

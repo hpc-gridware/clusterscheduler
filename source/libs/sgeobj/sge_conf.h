@@ -141,6 +141,8 @@ bool mconf_get_do_reporting(void);
 bool mconf_get_do_joblog(void);
 int mconf_get_reporting_flush_time(void);
 int mconf_get_accounting_flush_time(void);
+bool mconf_get_old_accounting();
+bool mconf_get_old_reporting();
 int mconf_get_sharelog_time(void);
 int mconf_get_log_consumables(void);
 bool mconf_get_enable_forced_qdel(void);

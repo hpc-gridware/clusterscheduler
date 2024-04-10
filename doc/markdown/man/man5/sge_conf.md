@@ -1324,7 +1324,7 @@ status and consumables and sharetree configuration and usage. Attention:
 Depending on the size and load of the cluster, the reporting file can
 become quite large. Only activate the reporting file if you have a
 process running that will consume the reporting file! See
-*reporting*(5) for further information about format and contents of the
+*sge_reporting*(5) for further information about format and contents of the
 reporting file.
 
 <!-- -->
@@ -1355,7 +1355,7 @@ default to the value of the *flush_time* parameter.
 
 joblog  
 If this parameter is set to true, the reporting file will contain job
-logging information. See *reporting*(5) for more information about job
+logging information. See *sge_reporting*(5) for more information about job
 logging.
 
 <!-- -->
@@ -1366,7 +1366,7 @@ configuration and use to the reporting file. The parameter *sharelog*
 sets an interval in which sharetree information will be dumped. It is
 set in the format HH:MM:SS. A value of 00:00:00 configures qmaster not
 to dump sharetree information. Intervals of several minutes up to hours
-are sensible values for this parameter. See *reporting*(5) for further
+are sensible values for this parameter. See *sge_reporting*(5) for further
 information about sharelog.
 
 <!-- -->
@@ -1383,6 +1383,31 @@ that are configured in the **report_variables in the exec host
 configuration** and whose definition or value actually changed. This
 parameter is deprecated and will get removed in the next major release.
 See *host_conf*(5) for further information about **report_variables.**
+
+<!-- -->
+
+old_accounting  
+This parameter controls the output format of the accounting file.
+If not specified or set to default (**false**) then the new one line JSON
+file format is used formatting each accounting record as JSON structure
+in one line. If it is set to **true** then the old file format is used
+having one line per accounting record with attributes separated by colon.
+The old file format is kept for compatibility reasons. Please note that
+extensions to the accounting attributes are only made in the new format and
+that the old format is considered deprecated and will eventually be removed in a future version.
+
+<!-- -->
+
+old_reporting  
+This parameter controls the output format of the reporting file.
+If not specified or set to default (**false**) then the new one line JSON
+file format is used formatting each reporting record as JSON structure
+in one line. If it is set to **true** then the old file format is used
+having one line per reporting record with attributes separated by colon.
+The old file format is kept for compatibility reasons. Please note that
+extensions to the accounting and reporting attributes are only made in the new format and
+that the old format is considered deprecated and will eventually be removed in a future version.
+
 
 ## **finished_jobs**
 
