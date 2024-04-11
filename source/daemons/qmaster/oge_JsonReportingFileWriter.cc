@@ -652,5 +652,5 @@ namespace oge {
       }
 
       DRETURN(consumables_initialized);
-   };
+   }
 }
