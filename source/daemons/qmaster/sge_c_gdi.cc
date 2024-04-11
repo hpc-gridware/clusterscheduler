@@ -299,7 +299,7 @@ sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class
 bool
 sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                                      monitoring_t *monitor) {
-   DENTER(TET_ERROR);
+   DENTER(TOP_LAYER);
    int operation = SGE_GDI_GET_OPERATION(task->command);
    switch (operation) {
       case SGE_GDI_GET:
@@ -1340,6 +1340,7 @@ sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user) {
       case SGE_USER_MAPPING_LIST:
       case SGE_HGRP_LIST:
       case SGE_RQS_LIST:
+      case SGE_MASTER_EVENT:
          /* user must be a manager */
          if (!manop_is_manager(user, master_manager_list)) {
             ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, user);
@@ -1424,6 +1425,7 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
       case SGE_USER_MAPPING_LIST:
       case SGE_HGRP_LIST:
       case SGE_RQS_LIST:
+      case SGE_MASTER_EVENT:
 
          /* host must be SGE_AH_LIST */
          if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host)) {

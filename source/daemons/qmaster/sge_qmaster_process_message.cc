@@ -250,6 +250,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // handle GDI request limits
    if (local_ret) {
+      DTRACE;
       // TODO handle gdi request limits
    }
 
@@ -257,6 +258,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    //    - manager/operator permissions
    //    - admin/submit/exec host
    if (local_ret) {
+      DTRACE;
       sge_gdi_task_class_t *task = packet->first_task;
       while(task) {
          local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
@@ -269,6 +271,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
+      DTRACE;
       sge_gdi_task_class_t *task = packet->first_task;
 
       init_packbuffer(&packet->pb, 0, 0);
@@ -292,6 +295,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    // execute request in listener or store it in a queue for the workers
    thread_type_t type = get_gdi_executor_thread_type(packet);
    if (type == LISTENER_THREAD) {
+      DTRACE;
       // prepare packbuffer for the clients answer
       init_packbuffer(&(packet->pb), 0, 0);
 
@@ -299,6 +303,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       SGE_LOCK(LOCK_LISTENER, LOCK_READ);
       sge_gdi_task_class_t *task = packet->first_task;
       while (task != nullptr) {
+         DTRACE;
          sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
 
          task = task->next;
@@ -312,6 +317,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       clear_packbuffer(&(packet->pb));
       sge_gdi_packet_free(&packet);
    } else {
+      DTRACE;
       // add to the worker request queue
       sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
    }
