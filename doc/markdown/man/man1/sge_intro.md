@@ -145,3 +145,6 @@ qrdel(1), qresub(1), qrls(1), qrsh(1), qrstat(1), qrsub(1), qselect(1), qsh(1), 
 Copyright: 2008 by Sun Microsystems, Inc.
 
 Parts of the manual page texts are Copyright 2011 Univa Corporation.
+
+Parts of the manual page texts are Copyright 2024 HPC-Gridware GmbH.
+
