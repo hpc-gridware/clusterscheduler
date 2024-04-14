@@ -38,6 +38,9 @@
 #include <ctime>
 #include <fnmatch.h>
 #include <cerrno>
+#include <filesystem>
+
+#include "rapidjson/document.h"
 
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
@@ -193,6 +196,7 @@ int main(int argc, char **argv)
    int is_path_setup = 0;   
    u_long32 line = 0;
    const char *acct_file = nullptr;
+   std::string filename{};
    lList *alp = nullptr;
 
    char szLine[MAX_STRING_SIZE * 10];
@@ -520,26 +524,35 @@ int main(int argc, char **argv)
    } /* end for */
 
    /*
-   ** Note that this has to be a file on a local disk or an nfs
+   ** Note that this has to be a file on a local disk or a nfs
    ** mounted directory.
    */
    if (acct_file == nullptr) {
-      acct_file = bootstrap_get_acct_file();
-      DPRINTF("acct_file: %s\n", (acct_file ? acct_file : "(nullptr)"));
-     
-      sge_setup_sig_handlers(QACCT);
-      is_path_setup = 1;
-   }
-
-   {
-      SGE_STRUCT_STAT buf;
- 
-      if (SGE_STAT(acct_file, &buf)) {
-         perror(acct_file); 
-         printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
+      // no filename given with the -f switch
+      // look for accounting.jsonl first, if it doesn't exist, look for accounting
+      filename = bootstrap_get_acct_file();
+      filename += ".jsonl";
+      if (std::filesystem::exists(filename)) {
+         acct_file = filename.c_str();
+      } else {
+         acct_file = bootstrap_get_acct_file();
+         if (!std::filesystem::exists(acct_file)) {
+            printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
+            goto QACCT_EXIT;
+         }
+      }
+   } else {
+      if (!std::filesystem::exists(acct_file)) {
+         perror(acct_file);
          goto QACCT_EXIT;
       }
    }
+
+   DPRINTF("acct_file: %s\n", (acct_file ? acct_file : "(nullptr)"));
+
+   sge_setup_sig_handlers(QACCT);
+   is_path_setup = 1;
+
    /*
    ** evaluation time period
    ** begin and end are evaluated later, so these
@@ -1581,29 +1594,68 @@ static void free_qacct_lists(lList **ppcentries, lList **ppqueues, lList **ppexe
    lFreeList(hgrp_l);
 }
 
-static int 
-sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size) 
-{
-   char  *pc;
-   int len;
+static int
+sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *options);
 
+static int
+sge_read_rusage_json(char *line, sge_rusage_type *d, sge_qacct_options *options);
+
+static int
+sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size) {
    DENTER(TOP_LAYER);
+
+   int ret = 0;
+   char *pc;
+   int len;
 
    do {
       pc = fgets(szLine, size, f);
       if (pc == nullptr) {
          DRETURN(2);
-      }   
+      }
       len = strlen(szLine);
       if (szLine[len] == '\n') {
          szLine[len] = '\0';
-      }   
-   } while (len <= 1 || szLine[0] == COMMENT_CHAR); 
-   
+      }
+   } while (len <= 1 || szLine[0] == COMMENT_CHAR);
+
    /*
     * qname
     */
-   pc = strtok(szLine, ":");
+   if (*pc == '{') {
+      // JSON @todo we could determine this once
+      ret = sge_read_rusage_json(szLine, d, options);
+   } else {
+      // old colon separated file
+      ret = sge_read_rusage_classic(szLine, d, options);
+   }
+
+   DRETURN(ret);
+}
+
+static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_list) {
+   bool ret = false;
+
+   DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+   const char *qinstance;
+   qinstance = sge_dstring_sprintf(&dstr, "%s@%s", d->qname, d->hostname);
+
+   const lListElem *ep;
+   for_each_ep(ep, queue_name_list) {
+      if (fnmatch(lGetString(ep, QR_name), qinstance, 0) == 0) {
+         ret = true;
+         break;
+      }
+   }
+
+   return ret;
+}
+
+static int
+sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *options) {
+   DENTER(TOP_LAYER);
+
+   char *pc = strtok(line, ":");
    if (!pc) {
       DRETURN(-1);
    }
@@ -1621,26 +1673,10 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
       DRETURN(-2);
    }
 
-   if (options->queue_name_list){
-      dstring qi = DSTRING_INIT;
-      const lListElem *elem = nullptr;
-      const char *queue;
-      bool found = false;
-
-      queue = sge_dstring_sprintf(&qi,"%s@%s", d->qname, d->hostname);
-
-      for_each_ep(elem, options->queue_name_list) {
-         if (fnmatch(lGetString(elem, QR_name), queue, 0) == 0) {
-            found = true;
-            break;
-         }
-      }
-
-      sge_dstring_free(&qi);
-      
-      if (!found){
+   if (options->queue_name_list != nullptr) {
+      if (!matches_queue_name_list(d, options->queue_name_list)) {
          DRETURN(-2);
-      }  
+      }
    }
 
    /*
@@ -2031,4 +2067,171 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
 
    DRETURN(0);
 }
+
+static u_long32
+read_json(rapidjson::Value &json, const char *name, u_long32 default_value) {
+   if (json.HasMember(name)) {
+      return json[name].GetUint();
+   }
+
+   return default_value;
+}
+
+static double
+read_json(rapidjson::Value &json, const char *name, double default_value) {
+   if (json.HasMember(name)) {
+      return json[name].GetDouble();
+   }
+
+   return default_value;
+}
+
+static const char *
+read_json(rapidjson::Value &json, const char *name, const char *default_value) {
+   if (json.HasMember(name)) {
+      return json[name].GetString();
+   }
+
+   return default_value;
+}
+
+static int
+sge_read_rusage_json(char *line, sge_rusage_type *d, sge_qacct_options *options) {
+   DENTER(TOP_LAYER);
+
+   rapidjson::Document document;
+   document.Parse(line);
+
+   if (document.IsObject()) {
+      // parse the JSON document, do filtering and store values in sge_rusage_type *d
+      d->job_name = (char *) read_json(document, "job_name", nullptr);
+      d->job_number = read_json(document, "job_number", (u_long32)0);
+      if (!options->jobflag && (options->job_number || options->job_name != nullptr)) {
+         if (((d->job_number != options->job_number) && sge_patternnullcmp(d->job_name, options->job_name))) {
+            DRETURN(-2);
+         }
+      }
+
+      d->task_number = read_json(document, "task_number", (u_long32)0);
+      if (!options->jobflag) {
+         if (options->taskstart && options->taskend && options->taskstep) {
+            if (d->task_number < options->taskstart || d->task_number > options->taskend ||
+                !(((d->task_number - options->taskstart) % options->taskstep) == 0)) {
+               DRETURN(-2);
+            }
+         }
+      }
+
+      d->start_time = read_json(document, "start_time", (u_long32)0);
+      /*
+      ** skipping jobs that never ran
+      */
+      if ((d->start_time == 0) && options->complexflag) {
+         DPRINTF("skipping job that never ran\n");
+         DRETURN(-2);
+      }
+      if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) {
+         DRETURN(-2);
+      }
+      if ((options->end_time != -1) && ((time_t) d->start_time > options->end_time)) {
+         DRETURN(-2);
+      }
+      d->end_time = read_json(document, "end_time", (u_long32)0);
+
+      d->owner = (char *) read_json(document, "owner", nullptr);
+      if (options->owner != nullptr && sge_strnullcmp(options->owner, d->owner)) {
+         DRETURN(-2);
+      }
+
+      d->group = (char *) read_json(document, "group", nullptr);
+      if (options->group != nullptr && sge_strnullcmp(options->group, d->group)) {
+         DRETURN(-2);
+      }
+
+      d->account = (char *) read_json(document, "account", nullptr);
+      if (options->accountflag && sge_strnullcmp(options->account, d->account)) {
+         DRETURN(-2);
+      }
+
+      d->qname = (char *) read_json(document, "qname", nullptr);
+      d->hostname = (char *) read_json(document, "hostname", nullptr);
+      if (options->host != nullptr && sge_hostcmp(options->host, d->hostname) != 0) {
+         DRETURN(-2);
+      }
+      if (options->queue_name_list != nullptr) {
+         if (!matches_queue_name_list(d, options->queue_name_list)) {
+            DRETURN(-2);
+         }
+      }
+
+      d->project = (char *) read_json(document, "project", NONE_STR);
+      if (options->project != nullptr && sge_strnullcmp(options->project, d->project)) {
+         DRETURN(-2);
+      }
+
+      d->department = (char *) read_json(document, "department", nullptr);
+      if (options->department != nullptr && sge_strnullcmp(options->department, d->department)) {
+         DRETURN(-2);
+      }
+
+      d->granted_pe = (char *) read_json(document, "granted_pe", NONE_STR);
+      if (options->granted_pe != nullptr && sge_strnullcmp(options->granted_pe, d->granted_pe)) {
+         DRETURN(-2);
+      }
+
+      d->slots = read_json(document, "slots", (u_long32)0);
+      if ((options->slots > 0) && (options->slots != d->slots)) {
+         DRETURN(-2);
+      }
+
+      d->ar = read_json(document, "arid", (u_long32)0);
+      if ((options->ar_number > 0) && (options->ar_number != d->ar)) {
+         DRETURN(-2);
+      }
+
+      d->priority = read_json(document, "priority", (u_long32)0);
+      d->submission_time = read_json(document, "submission_time", (u_long32)0);
+      //d->ar_submission_time = read_json(document, "ar_submission_time", (u_long32)0);
+
+      //d->category = read_json(document, "category", NONE_STR);
+
+      d->failed = read_json(document, "failed", (u_long32)0);
+      d->exit_status = read_json(document, "exit_status", (u_long32)0);
+
+      d->ru_wallclock = read_json(document, "ru_wallclock", (u_long32)0);
+      d->ru_utime = read_json(document, "ru_utime", 0.0);
+      d->ru_stime = read_json(document, "ru_stime", 0.0);
+      d->ru_maxrss = read_json(document, "ru_maxrss", (u_long32)0);
+      d->ru_ixrss = read_json(document, "ru_ixrss", (u_long32)0);
+      d->ru_ismrss = read_json(document, "ru_ismrss", (u_long32)0);
+      d->ru_idrss = read_json(document, "ru_idrss", (u_long32)0);
+      d->ru_isrss = read_json(document, "ru_isrss", (u_long32)0);
+      d->ru_minflt = read_json(document, "ru_minflt", (u_long32)0);
+      d->ru_majflt = read_json(document, "ru_majflt", (u_long32)0);
+      d->ru_nswap = read_json(document, "ru_nswap", (u_long32)0);
+      d->ru_inblock = read_json(document, "ru_inblock", (u_long32)0);
+      d->ru_oublock = read_json(document, "ru_oublock", (u_long32)0);
+      d->ru_msgsnd = read_json(document, "ru_msgsnd", (u_long32)0);
+      d->ru_msgrcv = read_json(document, "ru_msgrcv", (u_long32)0);
+      d->ru_nsignals = read_json(document, "ru_nsignals", (u_long32)0);
+      d->ru_nvcsw = read_json(document, "ru_nvcsw", (u_long32)0);
+      d->ru_nivcsw = read_json(document, "ru_nivcsw", (u_long32)0);
+
+
+      d->cpu = read_json(document, "cpu", 0.0);
+      d->mem = read_json(document, "mem", 0.0);
+      d->io = read_json(document, "io", 0.0);
+      d->iow = read_json(document, "iow", 0.0);
+      d->maxvmem = read_json(document, "maxvmem", 0.0);
+      //d->rss = read_json(document, "rss", 0.0);
+      //d->maxrss = read_json(document, "maxrss", 0.0);
+
+      //d->pe_taskid = read_json(document, "pe_taskid", nullptr);
+      // if we got here then we found at least one matching job
+      options->jobfound = 1;
+   }
+
+   DRETURN(0);
+}
+
 

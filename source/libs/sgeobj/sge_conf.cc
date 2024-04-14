@@ -192,8 +192,8 @@ static bool do_reporting          = false;
 static bool do_joblog             = false;
 static int reporting_flush_time   = 15;
 static int accounting_flush_time  = -1;
-static bool old_accounting = true;
-static bool old_reporting = true;
+static bool old_accounting = false;
+static bool old_reporting = false;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
 
@@ -858,8 +858,8 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       do_joblog = false;
       reporting_flush_time = 15;
       accounting_flush_time = -1;
-      old_accounting = true;
-      old_reporting = true;
+      old_accounting = false;
+      old_reporting = false;
       sharelog_time = 0;
       log_consumables = false;
       enable_addgrp_kill = false;

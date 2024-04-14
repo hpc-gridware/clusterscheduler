@@ -651,6 +651,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(writer, "project", lGetString(job, JB_project));
       write_json(writer, "department", lGetString(job, JB_department));
       write_json(writer, "granted_pe", granted_pe);
+      write_json(writer, "slots", sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)));
 
       if (ar != nullptr) {
          write_json(writer, "arid", lGetUlong(job, JB_ar));
@@ -671,8 +672,13 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
       write_json(writer, "exit_status", exit_status);
 
-      write_json(writer, "ru_maxrss", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
-                                                                     ja_task, "ru_maxrss", "ru_maxrss", 0));
+      write_json(writer, "ru_wallclock", usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0));
+      write_json(writer, "ru_utime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                             ja_task, "ru_utime", "ru_utime", 0));
+      write_json(writer, "ru_stime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                             ja_task, "ru_stime", "ru_stime", 0));
+      write_json(writer, "ru_maxrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+                                                                    ja_task, "ru_maxrss", "ru_maxrss", 0));
       write_json(writer, "ru_ixrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_ixrss", "ru_ixrss", 0));
       write_json(writer, "ru_ismrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
@@ -687,7 +693,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                     ja_task, "ru_majflt", "ru_majflt", 0));
       write_json(writer, "ru_nswap", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_nswap", "ru_nswap", 0));
-      write_json(writer, "ru_inblock", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(writer, "ru_inblock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                       ja_task, "ru_inblock", "ru_inblock", 0));
       write_json(writer, "ru_oublock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                      ja_task, "ru_oublock", "ru_oublock", 0));
@@ -701,8 +707,6 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                    ja_task, "ru_nvcsw", "ru_nvcsw", 0));
       write_json(writer, "ru_nivcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_nivcsw", "ru_nivcsw", 0));
-
-      write_json(writer, "slots", sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)));
 
       write_json(writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                                         USAGE_ATTR_WALLCLOCK, USAGE_ATTR_WALLCLOCK, 0));
