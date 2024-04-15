@@ -140,6 +140,10 @@ Array job task index number.
 
 The cpu time usage in seconds.
 
+## **wallclock**
+
+Only wish JSONL accounting format: The wallclock time usage in seconds.
+
 ## **mem**
 
 The integral memory usage in Gbytes cpu seconds.
@@ -164,6 +168,10 @@ passed to xxQS_NAMExx via the qrsh -inherit interface.
 ## **maxvmem**
 
 The maximum vmem size in bytes.
+
+## **maxrss**
+
+Only wish JSONL accounting format: The maximum rss size in bytes.
 
 ## **arid**
 

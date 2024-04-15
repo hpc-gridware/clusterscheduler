@@ -56,6 +56,7 @@
 #define MSG_HISTORY_SHOWJOB_JOBNAME          "jobname"
 #define MSG_HISTORY_SHOWJOB_JOBNUMBER        "jobnumber"
 #define MSG_HISTORY_SHOWJOB_TASKID           "taskid"
+#define MSG_HISTORY_SHOWJOB_PE_TASKID        "pe_taskid"
 #define MSG_HISTORY_SHOWJOB_ACCOUNT          "account"
 #define MSG_HISTORY_SHOWJOB_PRIORITY         "priority"
 #define MSG_HISTORY_SHOWJOB_QSUBTIME         "qsub_time"
@@ -84,11 +85,13 @@
 #define MSG_HISTORY_SHOWJOB_RUNSIGNALS       "ru_nsignals"
 #define MSG_HISTORY_SHOWJOB_RUNVCSW          "ru_nvcsw"
 #define MSG_HISTORY_SHOWJOB_RUNIVCSW         "ru_nivcsw"
+#define MSG_HISTORY_SHOWJOB_WALLCLOCK        "wallclock"
 #define MSG_HISTORY_SHOWJOB_CPU              "cpu"
 #define MSG_HISTORY_SHOWJOB_MEM              "mem"
 #define MSG_HISTORY_SHOWJOB_IO               "io"
 #define MSG_HISTORY_SHOWJOB_IOW              "iow"
 #define MSG_HISTORY_SHOWJOB_MAXVMEM          "maxvmem"
+#define MSG_HISTORY_SHOWJOB_MAXRSS           "maxrss"
 #define MSG_HISTORY_SHOWJOB_ARID             "arid"
 
 #define MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP         _MESSAGE(25066, _("no jobs running since startup"))

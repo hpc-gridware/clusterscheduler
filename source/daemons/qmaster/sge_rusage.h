@@ -100,6 +100,8 @@ struct drusage {
                                  abnormaly */
    u_long32 priority;         /* priority of job */
    u_long32 job_number;
+   u_long32 task_number;      /* job-array task number */
+   const char *pe_taskid;     /* in case of tasks of a parallel job: the pe_taskid, else nullptr */
    u_long32 submission_time;
    u_long32 start_time;
    u_long32 end_time;
@@ -128,12 +130,13 @@ struct drusage {
    u_long32 slots;
    char *hard_resources_list;
    char *hard_queue_list;
-   u_long32 task_number;   /* job-array task number */
+   double wallclock;
    double cpu;
    double mem;
    double io;
    double iow;
    double maxvmem;
+   double maxrss;
    u_long32 ar;
    sge_all_rusage_type *arch_dep_usage;/* pointer to a structure with
                                           architecture dependend usage

@@ -241,6 +241,9 @@ The number of slots which were dispatched to the job by the scheduler.
 task_number  
 Array job task index number.
 
+wallclock  
+Only with JSONL reporting format: The wallclock time usage in seconds.
+
 cpu  
 The cpu time usage in seconds.
 
@@ -262,6 +265,9 @@ passed to xxQS_NAMExx via the qrsh -inherit interface.
 
 maxvmem  
 The maximum vmem size in bytes.
+
+maxvmem  
+Only with JSONL reporting format: The maximum rss size in bytes.
 
 arid  
 Advance reservation identifier. If the job used resources of an advance

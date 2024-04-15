@@ -455,7 +455,7 @@ int main(int argc, char **argv)
             if (*(argv[ii+1]) == '-') {
                options.slotsflag = 1;
             } else {
-               options.slots = atol(argv[++ii]);
+               options.slots = SGE_STRTOU_LONG32(argv[++ii]);
             }
          } else {
             options.slotsflag = 1;
@@ -1376,11 +1376,17 @@ sge_rusage_type *dusage
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_DEPARTMENT, (dusage->department ? dusage->department : MSG_HISTORY_SHOWJOB_NULL));
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_JOBNAME, (dusage->job_name ? dusage->job_name : MSG_HISTORY_SHOWJOB_NULL));
    printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_JOBNUMBER, dusage->job_number);
-   
-   if (dusage->task_number) {
+
+   if (dusage->task_number != 0) {
       printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_TASKID, dusage->task_number);              /* job-array task number */
    } else {
-      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_TASKID, "undefined");             
+      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_TASKID, "undefined");
+   }
+
+   if (dusage->pe_taskid != nullptr) {
+      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_PE_TASKID, dusage->pe_taskid);
+   } else {
+      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
    }
 
    printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
@@ -1422,6 +1428,7 @@ sge_rusage_type *dusage
    printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
    printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
 
+   printf("%-13.12s%-13.3f\n",   MSG_HISTORY_SHOWJOB_WALLCLOCK,      dusage->wallclock);
    printf("%-13.12s%-13.3f\n",   MSG_HISTORY_SHOWJOB_CPU,          dusage->cpu);
    printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MEM,          dusage->mem);
    printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_IO,           dusage->io);
@@ -1436,6 +1443,9 @@ sge_rusage_type *dusage
 #else
    printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
 #endif
+
+   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
+
    if (dusage->ar != 0) {
       printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
    } else {
@@ -1720,7 +1730,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-1);
    }
    
-   d->job_number = atol(pc);
+   d->job_number = SGE_STRTOU_LONG32(pc);
    if (!options->jobflag && (options->job_number || options->job_name != nullptr)) {
       if (((d->job_number != options->job_number) && sge_patternnullcmp(d->job_name, options->job_name))) {
          DRETURN(-2);
@@ -1746,7 +1756,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->priority = atol(pc);
+   d->priority = SGE_STRTOU_LONG32(pc);
 
    /*
     * submission_time
@@ -1755,7 +1765,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->submission_time = atol(pc);
+   d->submission_time = SGE_STRTOU_LONG32(pc);
 
    /*
     * start_time
@@ -1764,7 +1774,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->start_time = atol(pc);
+   d->start_time = SGE_STRTOU_LONG32(pc);
    /*
    ** skipping jobs that never ran
    */
@@ -1786,7 +1796,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->end_time = atol(pc);
+   d->end_time = SGE_STRTOU_LONG32(pc);
 
    /*
     * failed
@@ -1795,7 +1805,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->failed = atol(pc);
+   d->failed = SGE_STRTOU_LONG32(pc);
 
    /*
     * exit_status
@@ -1804,7 +1814,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->exit_status = atol(pc);
+   d->exit_status = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_wallclock
@@ -1813,7 +1823,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_wallclock = atol(pc); 
+   d->ru_wallclock = atof(pc);
 
    /*
     * ru_utime
@@ -1840,7 +1850,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_maxrss = atol(pc);
+   d->ru_maxrss = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_ixrss
@@ -1849,7 +1859,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_ixrss = atol(pc);
+   d->ru_ixrss = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_ismrss
@@ -1858,7 +1868,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_ismrss = atol(pc);
+   d->ru_ismrss = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_idrss
@@ -1867,7 +1877,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_idrss = atol(pc);
+   d->ru_idrss = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_isrss
@@ -1876,7 +1886,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_isrss = atol(pc);
+   d->ru_isrss = SGE_STRTOU_LONG32(pc);
    
    /*
     * ru_minflt
@@ -1885,7 +1895,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_minflt = atol(pc);
+   d->ru_minflt = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_majflt
@@ -1894,7 +1904,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_majflt = atol(pc);
+   d->ru_majflt = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_nswap
@@ -1903,7 +1913,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_nswap = atol(pc);
+   d->ru_nswap = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_inblock
@@ -1912,7 +1922,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_inblock = atol(pc);
+   d->ru_inblock = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_oublock
@@ -1921,7 +1931,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_oublock = atol(pc);
+   d->ru_oublock = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_msgsnd
@@ -1930,7 +1940,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_msgsnd = atol(pc);
+   d->ru_msgsnd = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_msgrcv
@@ -1939,7 +1949,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_msgrcv = atol(pc);
+   d->ru_msgrcv = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_nsignals
@@ -1948,7 +1958,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_nsignals = atol(pc);
+   d->ru_nsignals = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_nvcsw
@@ -1957,7 +1967,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_nvcsw = atol(pc);
+   d->ru_nvcsw = SGE_STRTOU_LONG32(pc);
 
    /*
     * ru_nivcsw
@@ -1966,7 +1976,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->ru_nivcsw = atol(pc);
+   d->ru_nivcsw = SGE_STRTOU_LONG32(pc);
 
    /*
     * project
@@ -2006,7 +2016,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    /* slots */
    pc = strtok(nullptr, ":");
    if (pc) {
-      d->slots = atol(pc);
+      d->slots = SGE_STRTOU_LONG32(pc);
    } else {
       d->slots = 0;
    }
@@ -2017,7 +2027,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    /* task number */
    pc = strtok(nullptr, ":");
    if (pc) {
-      d->task_number = atol(pc);
+      d->task_number = SGE_STRTOU_LONG32(pc);
    } else {
       d->task_number = 0;
    }
@@ -2057,10 +2067,13 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    pc=strtok(nullptr, ":");
 
    d->maxvmem = ((pc=strtok(nullptr, ":")))?atof(pc):0;
-   d->ar = ((pc=strtok(nullptr, ":")))?atol(pc):0;
+   d->ar = ((pc=strtok(nullptr, ":")))?SGE_STRTOU_LONG32(pc):0;
    if ((options->ar_number > 0) && (options->ar_number != d->ar)) {
       DRETURN(-2);
    }
+
+   // we do not have wallclock but ru_wallclock
+   d->wallclock = d->ru_wallclock;
 
    /* ... */ 
    options->jobfound=1;
@@ -2218,15 +2231,16 @@ sge_read_rusage_json(char *line, sge_rusage_type *d, sge_qacct_options *options)
       d->ru_nivcsw = read_json(document, "ru_nivcsw", (u_long32)0);
 
 
+      d->wallclock = read_json(document, "wallclock", 0.0);
       d->cpu = read_json(document, "cpu", 0.0);
       d->mem = read_json(document, "mem", 0.0);
       d->io = read_json(document, "io", 0.0);
       d->iow = read_json(document, "iow", 0.0);
       d->maxvmem = read_json(document, "maxvmem", 0.0);
-      //d->rss = read_json(document, "rss", 0.0);
-      //d->maxrss = read_json(document, "maxrss", 0.0);
+      d->maxrss = read_json(document, "maxrss", 0.0);
 
-      //d->pe_taskid = read_json(document, "pe_taskid", nullptr);
+      d->pe_taskid = read_json(document, "pe_taskid", nullptr);
+
       // if we got here then we found at least one matching job
       options->jobfound = 1;
    }
