@@ -317,8 +317,10 @@ lList
          lSetString(ep, OR_pe, s);
       }
 
-      /* RSMAP: copy from JAT_granted_resources_list */
-      lSwapList(ep, OR_granted_resources_list, (lListElem *)ja_task, JAT_granted_resources_list);
+      /* RSMAP: copy from JAT_granted_resources_list
+       * we can not lSwapList() it - it is still needed for debiting later
+       */
+      lSetList(ep, OR_granted_resources_list, lCopyList(nullptr, lGetList(ja_task, JAT_granted_resources_list)));
    }
 
    lAppendElem(or_list, ep);
