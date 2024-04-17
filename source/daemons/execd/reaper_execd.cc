@@ -1617,6 +1617,15 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
          convert_attribute(&cflp, jr, "ru_nivcsw",     0);
 
          build_derived_final_usage(jr, jobid, jataskid, pe_task_id);
+
+         // report whatever is remaining in the usage list
+         const lListElem *ep;
+         for_each_ep(ep, cflp) {
+            const char *name = lGetString(ep, CF_name);
+            const char *value = lGetString(ep, CF_value);
+            DEBUG("additional usage variable %s = %s", name, value);
+            add_usage(jr, name, value, 0.0);
+         }
          lFreeList(&cflp);
       } else {
          ERROR(MSG_SHEPHERD_CANTOPENUSAGEFILEXFORJOBYZX_SUUS, usage_file, sge_u32c(jobid), sge_u32c(jataskid), strerror(errno));
