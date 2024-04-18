@@ -548,6 +548,9 @@ sge_locker_t sge_locker_id() {
 static void lock_once_init() {
 #ifdef SGE_USE_LOCK_FIFO
    sge_fifo_lock_init(&Global_Lock);
+   sge_fifo_lock_init(&Scheduler_Lock);
+   sge_fifo_lock_init(&Reader_All_Lock);
+   sge_fifo_lock_init(&Reader_Auth_Lock);
    sge_fifo_lock_init(&Master_Conf_Lock);
 #else
    pthread_rwlock_init(&Global_Lock, nullptr);
