@@ -134,6 +134,10 @@ component_tl0_destroy(void *tl) {
 
 static void
 component_tl0_init(sge_component_tl0_t *tl) {
+   bool rmon_enabled = rmon_is_enabled();
+   if (rmon_enabled) {
+      rmon_disable();
+   }
    static bool already_shown = false;
    memset(tl, 0, sizeof(sge_component_tl0_t));
 
@@ -185,6 +189,10 @@ component_tl0_init(sge_component_tl0_t *tl) {
    if (!already_shown) {
       //component_component_log(tl);
       already_shown = true;
+   }
+
+   if (rmon_enabled) {
+      rmon_enable();
    }
 }
 

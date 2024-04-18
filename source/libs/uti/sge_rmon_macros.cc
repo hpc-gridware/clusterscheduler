@@ -186,6 +186,15 @@ int rmon_is_enabled() {
     return ((mtype == RMON_LOCAL) ? 1 : 0);
 }
 
+void rmon_disable() {
+   mtype = RMON_NONE;
+}
+
+void rmon_enable() {
+   mtype = RMON_LOCAL;
+}
+
+
 /****** rmon_macros/rmon_mopen() ***********************************************
 *  NAME
 *     rmon_mopen() -- Open, i.e. initialize monitoring. 

@@ -185,6 +185,8 @@ extern monitoring_level RMON_DEBUG_ON;
 int rmon_condition(int layer, int debug_class);
 
 int rmon_is_enabled();
+void rmon_disable();
+void rmon_enable();
 
 void rmon_mopen();
 
