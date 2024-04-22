@@ -771,7 +771,7 @@ PrintConf()
    $ECHO "xprojects              none"
    $ECHO "enforce_project        false"
    $ECHO "enforce_user           auto"
-   $ECHO "load_report_time       00:00:40"
+   $ECHO "load_report_time       00:00:15"
    $ECHO "max_unheard            00:05:00"
    $ECHO "reschedule_unknown     00:00:00"
    $ECHO "loglevel               log_warning"
@@ -788,7 +788,7 @@ PrintConf()
    $ECHO "shepherd_cmd           none"
    $ECHO "qmaster_params         none"
    $ECHO "execd_params           none"
-   $ECHO "reporting_params       accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
+   $ECHO "reporting_params       accounting=true reporting=false flush_time=00:00:1 joblog=false sharelog=00:00:00"
    $ECHO "finished_jobs          100"
    $ECHO "gid_range              $CFG_GID_RANGE"
    $ECHO "qlogin_command         $QLOGIN_COMMAND"
@@ -2079,62 +2079,14 @@ SetScheddConfig()
 {
    $CLEAR
 
-   $INFOTEXT -u "Scheduler Tuning"
+   $INFOTEXT -u "Scheduler Configuration"
    $INFOTEXT -n "\nThe details on the different options are described in the manual. \n"
-   done="false"
- 
-   while [ $done = "false" ]; do
-      $INFOTEXT -u "Configurations"
-      $INFOTEXT -n "1) Normal\n          Fixed interval scheduling, report limited scheduling information,\n" \
-                   "          actual + assumed load\n"
-      $INFOTEXT -n "2) High\n          Fixed interval scheduling, report limited scheduling information,\n" \
-                   "          actual load\n"
-      $INFOTEXT -n "3) Max\n          Immediate Scheduling, report no scheduling information,\n" \
-                   "          actual load\n"
 
-      $INFOTEXT -auto $AUTO -n "Enter the number of your preferred configuration and hit <RETURN>! \n" \
-                   "Default configuration is [1] >> "
-      SCHEDD=`Enter 1`
+   is_selected="default"
+   $INFOTEXT -n "Setting scheduler configuration to >%s< setting!\n " $is_selected
+   $SGE_BIN/qconf -Msconf ./util/install_modules/inst_schedd_default.conf
 
-      if [ $AUTO = "false" ]; then
-         SCHEDD_CONF=$SCHEDD
-      fi
-
-      if [ $SCHEDD_CONF = "1" ]; then
-         is_selected="Normal"
-      elif [ $SCHEDD_CONF = "2" ]; then
-         is_selected="High"
-      elif [ $SCHEDD_CONF = "3" ]; then
-         is_selected="Max"
-      else
-         SCHEDD_CONF=1
-         is_selected="Normal"
-      fi
-
-      $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nWe're configuring the scheduler with >%s< settings!\n Do you agree? (y/n) [y] >> " $is_selected
-      if [ $? = 0 ]; then
-         done="true"
-      fi
-   done
-
-   if [ $AUTO = "true" ]; then
-      $INFOTEXT -log "Setting scheduler configuration to >%s< setting! " $is_selected
-   fi
-
-   case $SCHEDD_CONF in
-
-   1)
-    $SGE_BIN/qconf -Msconf ./util/install_modules/inst_schedd_normal.conf
-    ;;
-
-   2)
-    $SGE_BIN/qconf -Msconf ./util/install_modules/inst_schedd_high.conf
-    ;;
-
-   3)
-    $SGE_BIN/qconf -Msconf ./util/install_modules/inst_schedd_max.conf
-    ;;
-   esac
+   $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
    $CLEAR
 }
 
