@@ -2852,7 +2852,7 @@ bool sconf_validate_config_(lList **answer_list)
          if (pos.c_params == nullptr) {
             pos.c_params = lCreateList("params", PARA_Type);
          }
-         for (s=sge_strtok_r(sparams, ",; ", &context); s; s=sge_strtok_r(nullptr, ",; ", &context)) {
+         for (s=sge_strtok_r(sparams, PARAMS_DELIMITER, &context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
             int i = 0;
             bool added = false;
             for(i=0; params[i].name ;i++ ){

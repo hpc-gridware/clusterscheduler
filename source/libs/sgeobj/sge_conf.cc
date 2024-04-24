@@ -681,7 +681,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       jsv_timeout= 10;
       enable_submit_lib_path = false;
 
-      for (s=sge_strtok_r(qmaster_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
             continue;
          }
@@ -872,7 +872,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       strcpy(s_locks, "UNDEFINED");
       strcpy(h_locks, "UNDEFINED");
 
-      for (s=sge_strtok_r(execd_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(execd_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "USE_QIDLE", &use_qidle)) {
             continue;
          }
@@ -1021,7 +1021,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
 
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       /* parse reporting parameters */
-      for (s=sge_strtok_r(reporting_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(reporting_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "accounting", &do_accounting)) {
             continue;
          }

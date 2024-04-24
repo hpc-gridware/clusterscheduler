@@ -185,3 +185,6 @@
 #define USER_DIR                  "users"
 #define USERSET_DIR               "usersets"
 #define PROJECT_DIR               "projects"
+
+/* delimiters for parsing params */
+#define PARAMS_DELIMITER ", "
