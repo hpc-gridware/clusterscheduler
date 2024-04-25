@@ -51,8 +51,8 @@ namespace oge {
          // get accounting data
          rapidjson::StringBuffer json_buffer;
          rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
-         ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, 0,
-                                             false, false);
+         ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, &usage_pattern_list, 0,
+                                false, false);
          if (ret) {
             // append data to buffer
             json_buffer.Put('\n');

@@ -35,18 +35,20 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/oge_DataStore.h"
-#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_object.h"
-#include "sgeobj/sge_advance_reservation.h"
 
 #include "sched/sge_job_schedd.h"
 
@@ -380,9 +382,9 @@ write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, 
 }
 
 bool
-sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer,
-                 lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
-                 const char delimiter, bool intermediate, bool is_reporting) {
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
+                 lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
+                 bool intermediate, bool is_reporting) {
    const lList *usage_list = nullptr; /* usage list of ja_task or pe_task */
    lList *reported_list = nullptr; /* already reported usage of ja_task or pe_task */
    char *qname = nullptr;
@@ -672,6 +674,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
       write_json(writer, "exit_status", exit_status);
 
+      writer->Key("usage");
+      writer->StartObject();
+      writer->Key("rusage");
+      writer->StartObject();
       write_json(writer, "ru_wallclock", usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0));
       write_json(writer, "ru_utime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
                                              ja_task, "ru_utime", "ru_utime", 0));
@@ -707,7 +713,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                    ja_task, "ru_nvcsw", "ru_nvcsw", 0));
       write_json(writer, "ru_nivcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_nivcsw", "ru_nivcsw", 0));
+      writer->EndObject();
 
+      writer->Key("usage");
+      writer->StartObject();
       write_json(writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                                         USAGE_ATTR_WALLCLOCK, USAGE_ATTR_WALLCLOCK, 0));
       write_json(writer, USAGE_ATTR_CPU, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
@@ -722,9 +731,33 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                      intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0));
       write_json(writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                                               USAGE_ATTR_MAXRSS, USAGE_ATTR_MAXRSS, 0));
+      writer->EndObject();
 
-      // @todo arbitrary usage values, e.g. GPU usage - configure somewhere what shall be reported?
+      // based on usage_patterns
+      if (usage_patterns != nullptr) {
+         for (const std::pair<std::string, std::string> &ppair : *usage_patterns) {
+            std::string pattern_name = ppair.first;
+            std::string pattern = ppair.second;
 
+            writer->Key(pattern_name.c_str());
+            writer->StartObject();
+
+            const lListElem *ep;
+            for_each_ep(ep, usage_list) {
+               const char *name = lGetString(ep, UA_name);
+               if (sge_eval_expression(TYPE_STR, pattern.c_str(), name, nullptr) == 0) {
+                  write_json(writer, name,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            name, name, 0));
+
+               }
+            }
+
+            writer->EndObject();
+         }
+      }
+
+      writer->EndObject(); // usage
       writer->EndObject();
    }
 

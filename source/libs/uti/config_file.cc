@@ -627,3 +627,39 @@ bool parse_int_param(const char *input, const char *variable,
 
    DRETURN(ret);
 }
+bool parse_string_param(const char *input, const char *variable, std::string &value) {
+   bool ret = false;
+
+   DENTER(BASIS_LAYER);
+
+   if (input != nullptr && variable != nullptr) {
+      int var_len = strlen(variable);
+
+      /* Test that 'variable' is the left side of the = in 'input.' */
+      /* We don't have to guard against an overrun in input[var_len] because we
+       * know that input is at least as long as var_len when we pass the
+       * strncasecmp(), so the worst that input[var_len] could be is \0. */
+      if ((strncasecmp(input, variable, var_len) == 0) &&
+          ((input[var_len] == '=') || (input[var_len] == '\0'))) {
+         const char *s;
+
+         /* yes, this variable is set */
+         ret = true;
+
+         /* search position of = */
+         s = strchr(input, '=');
+
+         // if there is a valid string, copy it
+         if (s != nullptr) {
+            /* skip = */
+            s++;
+            value = s;
+         }
+
+         DPRINTF("%s = %s\n", variable, value.c_str());
+      }
+   }
+
+   DRETURN(ret);
+}
+

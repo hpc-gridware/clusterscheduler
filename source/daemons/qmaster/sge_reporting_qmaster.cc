@@ -273,7 +273,7 @@ oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
 
       dstring job_dstring = DSTRING_INIT;
       ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
-                                    category_string, REPORTING_DELIMITER, false, false);
+                             category_string, nullptr, REPORTING_DELIMITER, false, false);
       if (ret) {
          /* write accounting file */
          sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
@@ -369,8 +369,8 @@ oge::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
 
    dstring job_dstring = DSTRING_INIT;
    ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
-                                 category_string, REPORTING_DELIMITER,
-                                 do_intermediate, false);
+                          category_string, nullptr, REPORTING_DELIMITER,
+                          do_intermediate, false);
    if (ret) {
       create_record("acct", sge_dstring_get_string(&job_dstring));
    }

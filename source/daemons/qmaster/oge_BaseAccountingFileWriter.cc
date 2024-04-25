@@ -22,6 +22,7 @@
 
 namespace oge {
    void BaseAccountingFileWriter::update_config() {
+      ReportingFileWriter::update_config();
       // if the flush_time changed, need to re-calculate the next_flush_time
       auto new_config_flush_time = mconf_get_accounting_flush_time();
       update_config_flush_time(new_config_flush_time);

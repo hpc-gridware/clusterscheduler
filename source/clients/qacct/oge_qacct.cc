@@ -1361,6 +1361,16 @@ static void qacct_usage(FILE *fp)
 ** DESCRIPTION
 **   detailed display of job accounting data
 */
+#define SHOWJOB_STRING         "%-35.34s%s\n"
+#define SHOWJOB_STRING_NO_DATA "%-35.34s-/-\n"
+#define SHOWJOB_STRING_20      "%-35.34s%-20s\n"
+#define SHOWJOB_STRING_20_NOLF "%-35.34s%-20s"
+#define SHOWJOB_U32_20         "%-35.34s%-20" sge_fu32 "\n"
+#define SHOWJOB_U32_FAILED     "%-35.34s%-3" sge_fu32" %s %s\n"
+#define SHOWJOB_FLOAT_0        "%-35.34s%-13.0f\n"
+#define SHOWJOB_FLOAT_3        "%-35.34s%-13.3f\n"
+#define SHOWJOB_FLOAT_18_0     "%-35.34s%-18.0f\n"
+#define SHOWJOB_FLOAT_18_3     "%-35.34s%-18.3f\n"
 static void showjob(
 sge_rusage_type *dusage 
 ) {
@@ -1368,89 +1378,98 @@ sge_rusage_type *dusage
    dstring *pdstr_buffer = &dstr_buffer;
 
    printf("==============================================================\n");
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_QNAME, (dusage->qname ? dusage->qname : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_HOSTNAME, (dusage->hostname ? dusage->hostname : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_GROUP, (dusage->group ? dusage->group : MSG_HISTORY_SHOWJOB_NULL));    
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_OWNER, (dusage->owner ? dusage->owner : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_PROJECT, (dusage->project ? dusage->project : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_DEPARTMENT, (dusage->department ? dusage->department : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_JOBNAME, (dusage->job_name ? dusage->job_name : MSG_HISTORY_SHOWJOB_NULL));
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_JOBNUMBER, dusage->job_number);
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QNAME, (dusage->qname ? dusage->qname : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_HOSTNAME, (dusage->hostname ? dusage->hostname : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_GROUP, (dusage->group ? dusage->group : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_OWNER, (dusage->owner ? dusage->owner : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_PROJECT, (dusage->project ? dusage->project : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_DEPARTMENT, (dusage->department ? dusage->department : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_JOBNAME, (dusage->job_name ? dusage->job_name : MSG_HISTORY_SHOWJOB_NULL));
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_JOBNUMBER, dusage->job_number);
 
    if (dusage->task_number != 0) {
-      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_TASKID, dusage->task_number);              /* job-array task number */
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_TASKID, dusage->task_number);              /* job-array task number */
    } else {
-      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_TASKID, "undefined");
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_TASKID, "undefined");
    }
 
    if (dusage->pe_taskid != nullptr) {
-      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_PE_TASKID, dusage->pe_taskid);
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, dusage->pe_taskid);
    } else {
-      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
    }
 
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
-   printf("%-13.12s%-20s",MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime32(&dusage->submission_time, pdstr_buffer));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
+   printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime32(&dusage->submission_time, pdstr_buffer));
 
    if (dusage->start_time)
-      printf("%-13.12s%-20s",MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime32(&dusage->start_time, pdstr_buffer));
+      printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime32(&dusage->start_time, pdstr_buffer));
    else
-      printf("%-13.12s-/-\n",MSG_HISTORY_SHOWJOB_STARTTIME);
+      printf(SHOWJOB_STRING_NO_DATA,MSG_HISTORY_SHOWJOB_STARTTIME);
 
    if (dusage->end_time)
-      printf("%-13.12s%-20s",MSG_HISTORY_SHOWJOB_ENDTIME, sge_ctime32(&dusage->end_time, pdstr_buffer));
+      printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_ENDTIME, sge_ctime32(&dusage->end_time, pdstr_buffer));
    else
-      printf("%-13.12s-/-\n",MSG_HISTORY_SHOWJOB_ENDTIME);
+      printf(SHOWJOB_STRING_NO_DATA,MSG_HISTORY_SHOWJOB_ENDTIME);
 
 
-   printf("%-13.12s%-20s\n",MSG_HISTORY_SHOWJOB_GRANTEDPE, dusage->granted_pe);
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_SLOTS, dusage->slots);
-   printf("%-13.12s%-3" sge_fu32" %s %s\n",MSG_HISTORY_SHOWJOB_FAILED, dusage->failed, (dusage->failed ? ":" : ""), get_sstate_description(dusage->failed));
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_EXITSTATUS, dusage->exit_status);
-   printf("%-13.12s%-13.0f\n",MSG_HISTORY_SHOWJOB_RUWALLCLOCK, dusage->ru_wallclock);  
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_GRANTEDPE, dusage->granted_pe);
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_SLOTS, dusage->slots);
+   printf(SHOWJOB_U32_FAILED,MSG_HISTORY_SHOWJOB_FAILED, dusage->failed, (dusage->failed ? ":" : ""), get_sstate_description(dusage->failed));
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_EXITSTATUS, dusage->exit_status);
+   printf(SHOWJOB_FLOAT_0,MSG_HISTORY_SHOWJOB_RUWALLCLOCK, dusage->ru_wallclock);
 
-   printf("%-13.12s%-13.3f\n",MSG_HISTORY_SHOWJOB_RUUTIME, dusage->ru_utime);    /* user time used */
-   printf("%-13.12s%-13.3f\n", MSG_HISTORY_SHOWJOB_RUSTIME, dusage->ru_stime);    /* system time used */
-      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAXRSS,  dusage->ru_maxrss);     /* maximum resident set size */
-      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIXRSS,  dusage->ru_ixrss);       /* integral shared text size */
-      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISMRSS,  dusage->ru_ismrss);     /* integral shared memory size*/
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUIDRSS,      dusage->ru_idrss);      /* integral unshared data "  */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUISRSS,      dusage->ru_isrss);      /* integral unshared stack "  */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMINFLT,     dusage->ru_minflt);     /* page reclaims */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMAJFLT,     dusage->ru_majflt);     /* page faults */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSWAP,      dusage->ru_nswap);      /* swaps */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUINBLOCK,    dusage->ru_inblock);    /* block input operations */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUOUBLOCK,    dusage->ru_oublock);    /* block output operations */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGSND,     dusage->ru_msgsnd);     /* messages sent */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUMSGRCV,     dusage->ru_msgrcv);     /* messages received */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNSIGNALS,   dusage->ru_nsignals);   /* signals received */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
-   printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
+   printf(SHOWJOB_FLOAT_3,MSG_HISTORY_SHOWJOB_RUUTIME, dusage->ru_utime);    /* user time used */
+   printf(SHOWJOB_FLOAT_3, MSG_HISTORY_SHOWJOB_RUSTIME, dusage->ru_stime);    /* system time used */
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUMAXRSS,  dusage->ru_maxrss);     /* maximum resident set size */
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUIXRSS,  dusage->ru_ixrss);       /* integral shared text size */
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUISMRSS,  dusage->ru_ismrss);     /* integral shared memory size*/
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUIDRSS,      dusage->ru_idrss);      /* integral unshared data "  */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUISRSS,      dusage->ru_isrss);      /* integral unshared stack "  */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUMINFLT,     dusage->ru_minflt);     /* page reclaims */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUMAJFLT,     dusage->ru_majflt);     /* page faults */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNSWAP,      dusage->ru_nswap);      /* swaps */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUINBLOCK,    dusage->ru_inblock);    /* block input operations */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUOUBLOCK,    dusage->ru_oublock);    /* block output operations */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUMSGSND,     dusage->ru_msgsnd);     /* messages sent */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUMSGRCV,     dusage->ru_msgrcv);     /* messages received */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNSIGNALS,   dusage->ru_nsignals);   /* signals received */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
+   printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
 
-   printf("%-13.12s%-13.3f\n",   MSG_HISTORY_SHOWJOB_WALLCLOCK,      dusage->wallclock);
-   printf("%-13.12s%-13.3f\n",   MSG_HISTORY_SHOWJOB_CPU,          dusage->cpu);
-   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MEM,          dusage->mem);
-   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_IO,           dusage->io);
-   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_IOW,          dusage->iow);
+   printf(SHOWJOB_FLOAT_3,   MSG_HISTORY_SHOWJOB_WALLCLOCK,      dusage->wallclock);
+   printf(SHOWJOB_FLOAT_3,   MSG_HISTORY_SHOWJOB_CPU,          dusage->cpu);
+   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_MEM,          dusage->mem);
+   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_IO,           dusage->io);
+   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_IOW,          dusage->iow);
 
-#if 1
+#if 0
    /* enable this to get unit of memory value (G,M,K) */
    /* CR TODO: create units for complete qacct output: IZ: #1047 */
    sge_dstring_clear(pdstr_buffer);
    double_print_memory_to_dstring(dusage->maxvmem, pdstr_buffer);
-   printf("%-13.12s%s\n",        MSG_HISTORY_SHOWJOB_MAXVMEM,      sge_dstring_get_string(pdstr_buffer));
+   printf(SHOWJOB_STRING,        MSG_HISTORY_SHOWJOB_MAXVMEM,      sge_dstring_get_string(pdstr_buffer));
 #else
-   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
+   printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
 #endif
 
-   printf("%-13.12s%-18.3f\n",   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
+   printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
 
    if (dusage->ar != 0) {
-      printf("%-13.12s%-20" sge_fu32"\n",MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
    } else {
-      printf("%-13.12s%s\n",MSG_HISTORY_SHOWJOB_ARID, "undefined");             
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_ARID, "undefined");
    }
+
+   // print further usage values
+   if (dusage->other_usage != nullptr) {
+      const lListElem *ep;
+      for_each_ep(ep, dusage->other_usage) {
+         printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+      }
+   }
+
    sge_dstring_free(pdstr_buffer);
 }
 
@@ -2082,7 +2101,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
 }
 
 static u_long32
-read_json(rapidjson::Value &json, const char *name, u_long32 default_value) {
+read_json(const rapidjson::Value &json, const char *name, u_long32 default_value) {
    if (json.HasMember(name)) {
       return json[name].GetUint();
    }
@@ -2091,7 +2110,7 @@ read_json(rapidjson::Value &json, const char *name, u_long32 default_value) {
 }
 
 static double
-read_json(rapidjson::Value &json, const char *name, double default_value) {
+read_json(const rapidjson::Value &json, const char *name, double default_value) {
    if (json.HasMember(name)) {
       return json[name].GetDouble();
    }
@@ -2100,7 +2119,7 @@ read_json(rapidjson::Value &json, const char *name, double default_value) {
 }
 
 static const char *
-read_json(rapidjson::Value &json, const char *name, const char *default_value) {
+read_json(const rapidjson::Value &json, const char *name, const char *default_value) {
    if (json.HasMember(name)) {
       return json[name].GetString();
    }
@@ -2211,33 +2230,54 @@ sge_read_rusage_json(char *line, sge_rusage_type *d, sge_qacct_options *options)
       d->failed = read_json(document, "failed", (u_long32)0);
       d->exit_status = read_json(document, "exit_status", (u_long32)0);
 
-      d->ru_wallclock = read_json(document, "ru_wallclock", (u_long32)0);
-      d->ru_utime = read_json(document, "ru_utime", 0.0);
-      d->ru_stime = read_json(document, "ru_stime", 0.0);
-      d->ru_maxrss = read_json(document, "ru_maxrss", (u_long32)0);
-      d->ru_ixrss = read_json(document, "ru_ixrss", (u_long32)0);
-      d->ru_ismrss = read_json(document, "ru_ismrss", (u_long32)0);
-      d->ru_idrss = read_json(document, "ru_idrss", (u_long32)0);
-      d->ru_isrss = read_json(document, "ru_isrss", (u_long32)0);
-      d->ru_minflt = read_json(document, "ru_minflt", (u_long32)0);
-      d->ru_majflt = read_json(document, "ru_majflt", (u_long32)0);
-      d->ru_nswap = read_json(document, "ru_nswap", (u_long32)0);
-      d->ru_inblock = read_json(document, "ru_inblock", (u_long32)0);
-      d->ru_oublock = read_json(document, "ru_oublock", (u_long32)0);
-      d->ru_msgsnd = read_json(document, "ru_msgsnd", (u_long32)0);
-      d->ru_msgrcv = read_json(document, "ru_msgrcv", (u_long32)0);
-      d->ru_nsignals = read_json(document, "ru_nsignals", (u_long32)0);
-      d->ru_nvcsw = read_json(document, "ru_nvcsw", (u_long32)0);
-      d->ru_nivcsw = read_json(document, "ru_nivcsw", (u_long32)0);
-
-
-      d->wallclock = read_json(document, "wallclock", 0.0);
-      d->cpu = read_json(document, "cpu", 0.0);
-      d->mem = read_json(document, "mem", 0.0);
-      d->io = read_json(document, "io", 0.0);
-      d->iow = read_json(document, "iow", 0.0);
-      d->maxvmem = read_json(document, "maxvmem", 0.0);
-      d->maxrss = read_json(document, "maxrss", 0.0);
+      if (document.HasMember("usage")) {
+         rapidjson::Value &json_usage_list = document["usage"].GetObject();
+         for (rapidjson::Value::ConstMemberIterator itr = json_usage_list.MemberBegin(); itr != json_usage_list.MemberEnd(); ++itr) {
+            if (sge_strnullcmp(itr->name.GetString(), "rusage") == 0) {
+               const rapidjson::Value &json_usage = itr->value;
+               d->ru_wallclock = read_json(json_usage, "ru_wallclock", (u_long32) 0);
+               d->ru_utime = read_json(json_usage, "ru_utime", 0.0);
+               d->ru_stime = read_json(json_usage, "ru_stime", 0.0);
+               d->ru_maxrss = read_json(json_usage, "ru_maxrss", (u_long32) 0);
+               d->ru_ixrss = read_json(json_usage, "ru_ixrss", (u_long32) 0);
+               d->ru_ismrss = read_json(json_usage, "ru_ismrss", (u_long32) 0);
+               d->ru_idrss = read_json(json_usage, "ru_idrss", (u_long32) 0);
+               d->ru_isrss = read_json(json_usage, "ru_isrss", (u_long32) 0);
+               d->ru_minflt = read_json(json_usage, "ru_minflt", (u_long32) 0);
+               d->ru_majflt = read_json(json_usage, "ru_majflt", (u_long32) 0);
+               d->ru_nswap = read_json(json_usage, "ru_nswap", (u_long32) 0);
+               d->ru_inblock = read_json(json_usage, "ru_inblock", (u_long32) 0);
+               d->ru_oublock = read_json(json_usage, "ru_oublock", (u_long32) 0);
+               d->ru_msgsnd = read_json(json_usage, "ru_msgsnd", (u_long32) 0);
+               d->ru_msgrcv = read_json(json_usage, "ru_msgrcv", (u_long32) 0);
+               d->ru_nsignals = read_json(json_usage, "ru_nsignals", (u_long32) 0);
+               d->ru_nvcsw = read_json(json_usage, "ru_nvcsw", (u_long32) 0);
+               d->ru_nivcsw = read_json(json_usage, "ru_nivcsw", (u_long32) 0);
+            } else if (sge_strnullcmp(itr->name.GetString(), "usage") == 0) {
+               const rapidjson::Value &json_usage = itr->value;
+               d->wallclock = read_json(json_usage, "wallclock", 0.0);
+               d->cpu = read_json(json_usage, "cpu", 0.0);
+               d->mem = read_json(json_usage, "mem", 0.0);
+               d->io = read_json(json_usage, "io", 0.0);
+               d->iow = read_json(json_usage, "iow", 0.0);
+               d->maxvmem = read_json(json_usage, "maxvmem", 0.0);
+               d->maxrss = read_json(json_usage, "maxrss", 0.0);
+            } else {
+               const rapidjson::Value &json_usage = itr->value;
+               for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {
+                  const char *name = usage_itr->name.GetString();
+                  double value = usage_itr->value.GetDouble();
+                  lListElem *ep = lGetElemStrRW(d->other_usage, UA_name, name);
+                  if (ep == nullptr) {
+                     ep = lAddElemStr(&(d->other_usage), UA_name, name, UA_Type);
+                     if (ep != nullptr) {
+                        lSetDouble(ep, UA_value, value);
+                     }
+                  }
+               }
+            }
+         }
+      }
 
       d->pe_taskid = read_json(document, "pe_taskid", nullptr);
 

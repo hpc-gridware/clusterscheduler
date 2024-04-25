@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <string>
 
 #ifdef LINUX
 #include <mcheck.h>
@@ -196,6 +197,7 @@ static bool old_accounting = false;
 static bool old_reporting = false;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
+static std::string usage_patterns;
 
 /* generally simulate all execd's */
 static bool simulate_execds = false;
@@ -271,7 +273,7 @@ typedef struct {
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg);
 static void setConfFromCull(lList *lpCfg);
 static tConfEntry *getConfEntry(const char *name, tConfEntry conf_entries[]);
-static void clean_conf(void);
+static void clean_conf();
 
 /*
  * This value is used to override the default value for time
@@ -862,6 +864,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       old_reporting = false;
       sharelog_time = 0;
       log_consumables = false;
+      usage_patterns.clear();
       enable_addgrp_kill = false;
       strcpy(s_descriptors, "UNDEFINED");
       strcpy(h_descriptors, "UNDEFINED");
@@ -1062,6 +1065,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "log_consumables", &log_consumables)) {
             continue;
          }
+         if (parse_string_param(s, "usage_patterns", usage_patterns)) {
+            continue;
+         }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
@@ -1179,13 +1185,13 @@ void sge_show_conf()
 *     clean_conf() -- frees the whole master configuration
 *
 *  SYNOPSIS
-*     static void clean_conf(void) 
+*     static void clean_conf()
 *
 *  NOTES
 *     MT-NOTE: clean_conf() is not MT safe, caller needs LOCK_MASTER_CONF as write lock 
 *
 *******************************************************************************/
-static void clean_conf(void) {
+static void clean_conf() {
 
    DENTER(BASIS_LAYER);
 
@@ -1281,7 +1287,7 @@ void conf_update_thread_profiling(const char *thread_name)
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_execd_spool_dir(void) {
+char* mconf_get_execd_spool_dir() {
    char* execd_spool_dir = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1294,7 +1300,7 @@ char* mconf_get_execd_spool_dir(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_mailer(void) {
+char* mconf_get_mailer() {
    char* mailer = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1307,7 +1313,7 @@ char* mconf_get_mailer(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_xterm(void) {
+char* mconf_get_xterm() {
    char* xterm = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1321,7 +1327,7 @@ char* mconf_get_xterm(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_load_sensor(void) {
+char* mconf_get_load_sensor() {
    char* load_sensor = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1334,7 +1340,7 @@ char* mconf_get_load_sensor(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_prolog(void) {
+char* mconf_get_prolog() {
    char* prolog = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1347,7 +1353,7 @@ char* mconf_get_prolog(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_epilog(void) {
+char* mconf_get_epilog() {
    char* epilog = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1360,7 +1366,7 @@ char* mconf_get_epilog(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_shell_start_mode(void) {
+char* mconf_get_shell_start_mode() {
    char* shell_start_mode = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1373,7 +1379,7 @@ char* mconf_get_shell_start_mode(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_login_shells(void) {
+char* mconf_get_login_shells() {
    char* login_shells = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1385,7 +1391,7 @@ char* mconf_get_login_shells(void) {
    DRETURN(login_shells);
 }
 
-u_long32 mconf_get_min_uid(void) {
+u_long32 mconf_get_min_uid() {
    u_long32 min_uid;
 
    DENTER(BASIS_LAYER);
@@ -1397,7 +1403,7 @@ u_long32 mconf_get_min_uid(void) {
    DRETURN(min_uid);
 }
 
-u_long32 mconf_get_min_gid(void) {
+u_long32 mconf_get_min_gid() {
    u_long32 min_gid;
 
    DENTER(BASIS_LAYER);
@@ -1409,7 +1415,7 @@ u_long32 mconf_get_min_gid(void) {
    DRETURN(min_gid);
 }
 
-u_long32 mconf_get_load_report_time(void) {
+u_long32 mconf_get_load_report_time() {
    u_long32 load_report_time;
 
    DENTER(BASIS_LAYER);
@@ -1421,7 +1427,7 @@ u_long32 mconf_get_load_report_time(void) {
    DRETURN(load_report_time);
 }
 
-u_long32 mconf_get_max_unheard(void) {
+u_long32 mconf_get_max_unheard() {
    u_long32 max_unheard;
 
    DENTER(BASIS_LAYER);
@@ -1433,7 +1439,7 @@ u_long32 mconf_get_max_unheard(void) {
    DRETURN(max_unheard);
 }
 
-u_long32 mconf_get_loglevel(void) {
+u_long32 mconf_get_loglevel() {
    u_long32 loglevel;
 
    DENTER(BASIS_LAYER);
@@ -1446,7 +1452,7 @@ u_long32 mconf_get_loglevel(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_enforce_project(void) {
+char* mconf_get_enforce_project() {
    char* enforce_project = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1459,7 +1465,7 @@ char* mconf_get_enforce_project(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_enforce_user(void) {
+char* mconf_get_enforce_user() {
    char* enforce_user = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1473,7 +1479,7 @@ char* mconf_get_enforce_user(void) {
 
 
 /* returned pointer needs to be freed */
-char* mconf_get_administrator_mail(void) {
+char* mconf_get_administrator_mail() {
    char* administrator_mail = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1486,7 +1492,7 @@ char* mconf_get_administrator_mail(void) {
 }
 
 /* returned pointer needs to be freed */
-lList* mconf_get_user_lists(void) {
+lList* mconf_get_user_lists() {
    lList* user_lists = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1499,7 +1505,7 @@ lList* mconf_get_user_lists(void) {
 }
 
 /* returned pointer needs to be freed */
-lList* mconf_get_xuser_lists(void) {
+lList* mconf_get_xuser_lists() {
    lList* xuser_lists = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1512,7 +1518,7 @@ lList* mconf_get_xuser_lists(void) {
 }
 
 /* returned pointer needs to be freed */
-lList* mconf_get_projects(void) {
+lList* mconf_get_projects() {
    lList* projects = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1525,7 +1531,7 @@ lList* mconf_get_projects(void) {
 }
 
 /* returned pointer needs to be freed */
-lList* mconf_get_xprojects(void) {
+lList* mconf_get_xprojects() {
    lList* xprojects = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1538,7 +1544,7 @@ lList* mconf_get_xprojects(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_set_token_cmd(void) {
+char* mconf_get_set_token_cmd() {
    char* set_token_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1551,7 +1557,7 @@ char* mconf_get_set_token_cmd(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_pag_cmd(void) {
+char* mconf_get_pag_cmd() {
    char* pag_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1563,7 +1569,7 @@ char* mconf_get_pag_cmd(void) {
    DRETURN(pag_cmd);
 }
 
-u_long32 mconf_get_token_extend_time(void) {
+u_long32 mconf_get_token_extend_time() {
    u_long32 token_extend_time;
 
    DENTER(BASIS_LAYER);
@@ -1576,7 +1582,7 @@ u_long32 mconf_get_token_extend_time(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_shepherd_cmd(void) {
+char* mconf_get_shepherd_cmd() {
    char* shepherd_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1589,7 +1595,7 @@ char* mconf_get_shepherd_cmd(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_qmaster_params(void) {
+char* mconf_get_qmaster_params() {
    char* qmaster_params = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1602,7 +1608,7 @@ char* mconf_get_qmaster_params(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_execd_params(void) {
+char* mconf_get_execd_params() {
    char* execd_params = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1615,7 +1621,7 @@ char* mconf_get_execd_params(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_reporting_params(void) {
+char* mconf_get_reporting_params() {
    char* reporting_params = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1628,7 +1634,7 @@ char* mconf_get_reporting_params(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_gid_range(void) {
+char* mconf_get_gid_range() {
    char* gid_range = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1640,7 +1646,7 @@ char* mconf_get_gid_range(void) {
    DRETURN(gid_range);
 }
 
-u_long32 mconf_get_zombie_jobs(void) {
+u_long32 mconf_get_zombie_jobs() {
    u_long32 zombie_jobs;
 
    DENTER(BASIS_LAYER);
@@ -1653,7 +1659,7 @@ u_long32 mconf_get_zombie_jobs(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_qlogin_daemon(void) {
+char* mconf_get_qlogin_daemon() {
    char* qlogin_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1666,7 +1672,7 @@ char* mconf_get_qlogin_daemon(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_qlogin_command(void) {
+char* mconf_get_qlogin_command() {
    char* qlogin_command = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1679,7 +1685,7 @@ char* mconf_get_qlogin_command(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_rsh_daemon(void) {
+char* mconf_get_rsh_daemon() {
    char* rsh_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1703,7 +1709,7 @@ void mconf_set_new_config(bool new_config)
 }
 
 /* make chached values from configuration invalid. */
-bool mconf_is_new_config(void) {
+bool mconf_is_new_config() {
    bool is;
 
    DENTER(BASIS_LAYER);
@@ -1716,7 +1722,7 @@ bool mconf_is_new_config(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_rsh_command(void) {
+char* mconf_get_rsh_command() {
    char* rsh_command = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1729,7 +1735,7 @@ char* mconf_get_rsh_command(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_jsv_url(void) {
+char* mconf_get_jsv_url() {
    char* jsv_url = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1743,7 +1749,7 @@ char* mconf_get_jsv_url(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_jsv_allowed_mod(void) {
+char* mconf_get_jsv_allowed_mod() {
    char* jsv_allowed_mod = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1757,7 +1763,7 @@ char* mconf_get_jsv_allowed_mod(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_rlogin_daemon(void) {
+char* mconf_get_rlogin_daemon() {
    char* rlogin_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1770,7 +1776,7 @@ char* mconf_get_rlogin_daemon(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_rlogin_command(void) {
+char* mconf_get_rlogin_command() {
    char* rlogin_command = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1782,7 +1788,7 @@ char* mconf_get_rlogin_command(void) {
    DRETURN(rlogin_command);
 }
 
-u_long32 mconf_get_reschedule_unknown(void) {
+u_long32 mconf_get_reschedule_unknown() {
    u_long32 reschedule_unknown;
 
    DENTER(BASIS_LAYER);
@@ -1794,7 +1800,7 @@ u_long32 mconf_get_reschedule_unknown(void) {
    DRETURN(reschedule_unknown);
 }
 
-u_long32 mconf_get_max_aj_instances(void) {
+u_long32 mconf_get_max_aj_instances() {
    u_long32 max_aj_instances;
 
    DENTER(BASIS_LAYER);
@@ -1806,7 +1812,7 @@ u_long32 mconf_get_max_aj_instances(void) {
    DRETURN(max_aj_instances);
 }
 
-u_long32 mconf_get_max_aj_tasks(void) {
+u_long32 mconf_get_max_aj_tasks() {
    u_long32 max_aj_tasks;
 
    DENTER(BASIS_LAYER);
@@ -1818,7 +1824,7 @@ u_long32 mconf_get_max_aj_tasks(void) {
    DRETURN(max_aj_tasks);
 }
 
-u_long32 mconf_get_max_u_jobs(void) {
+u_long32 mconf_get_max_u_jobs() {
    u_long32 max_u_jobs;
 
    DENTER(BASIS_LAYER);
@@ -1830,7 +1836,7 @@ u_long32 mconf_get_max_u_jobs(void) {
    DRETURN(max_u_jobs);
 }
 
-u_long32 mconf_get_max_jobs(void) {
+u_long32 mconf_get_max_jobs() {
    u_long32 max_jobs;
 
    DENTER(BASIS_LAYER);
@@ -1842,7 +1848,7 @@ u_long32 mconf_get_max_jobs(void) {
    DRETURN(max_jobs);
 }
 
-u_long32 mconf_get_max_advance_reservations(void) {
+u_long32 mconf_get_max_advance_reservations() {
    u_long32 max_advance_reservations;
 
    DENTER(BASIS_LAYER);
@@ -1854,7 +1860,7 @@ u_long32 mconf_get_max_advance_reservations(void) {
    DRETURN(max_advance_reservations);
 }
 
-u_long32 mconf_get_reprioritize(void) {
+u_long32 mconf_get_reprioritize() {
    u_long32 reprioritize;
 
    DENTER(BASIS_LAYER);
@@ -1866,7 +1872,7 @@ u_long32 mconf_get_reprioritize(void) {
    DRETURN(reprioritize);
 }
 
-u_long32 mconf_get_auto_user_fshare(void) {
+u_long32 mconf_get_auto_user_fshare() {
    u_long32 auto_user_fshare;
 
    DENTER(BASIS_LAYER);
@@ -1878,7 +1884,7 @@ u_long32 mconf_get_auto_user_fshare(void) {
    DRETURN(auto_user_fshare);
 }
 
-u_long32 mconf_get_auto_user_oticket(void) {
+u_long32 mconf_get_auto_user_oticket() {
    u_long32 auto_user_oticket;
 
    DENTER(BASIS_LAYER);
@@ -1891,7 +1897,7 @@ u_long32 mconf_get_auto_user_oticket(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_auto_user_default_project(void) {
+char* mconf_get_auto_user_default_project() {
    char* auto_user_default_project = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1903,7 +1909,7 @@ char* mconf_get_auto_user_default_project(void) {
    DRETURN(auto_user_default_project);
 }
 
-u_long32 mconf_get_auto_user_delete_time(void) {
+u_long32 mconf_get_auto_user_delete_time() {
    u_long32 auto_user_delete_time;
 
    DENTER(BASIS_LAYER);
@@ -1916,7 +1922,7 @@ u_long32 mconf_get_auto_user_delete_time(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_delegated_file_staging(void) {
+char* mconf_get_delegated_file_staging() {
    char* delegated_file_staging = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -1930,7 +1936,7 @@ char* mconf_get_delegated_file_staging(void) {
 
 
 /* params */
-bool mconf_is_monitor_message(void) {
+bool mconf_is_monitor_message() {
   bool is;
 
    DENTER(BASIS_LAYER);
@@ -1942,7 +1948,7 @@ bool mconf_is_monitor_message(void) {
    DRETURN(is);
 }
 
-bool mconf_get_use_qidle(void) {
+bool mconf_get_use_qidle() {
    bool idle;
 
    DENTER(BASIS_LAYER);
@@ -1954,7 +1960,7 @@ bool mconf_get_use_qidle(void) {
    DRETURN(idle);
 }
 
-bool mconf_get_forbid_reschedule(void) {
+bool mconf_get_forbid_reschedule() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -1966,7 +1972,7 @@ bool mconf_get_forbid_reschedule(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_forbid_apperror(void) {
+bool mconf_get_forbid_apperror() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -1978,7 +1984,7 @@ bool mconf_get_forbid_apperror(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_do_credentials(void) {
+bool mconf_get_do_credentials() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -1990,7 +1996,7 @@ bool mconf_get_do_credentials(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_do_authentication(void) {
+bool mconf_get_do_authentication() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2002,7 +2008,7 @@ bool mconf_get_do_authentication(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_acct_reserved_usage(void) {
+bool mconf_get_acct_reserved_usage() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2014,7 +2020,7 @@ bool mconf_get_acct_reserved_usage(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_sharetree_reserved_usage(void) {
+bool mconf_get_sharetree_reserved_usage() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2026,7 +2032,7 @@ bool mconf_get_sharetree_reserved_usage(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_keep_active(void) {
+bool mconf_get_keep_active() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2038,7 +2044,7 @@ bool mconf_get_keep_active(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_binding(void) {
+bool mconf_get_enable_binding() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2050,7 +2056,7 @@ bool mconf_get_enable_binding(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_addgrp_kill(void) {
+bool mconf_get_enable_addgrp_kill() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2061,7 +2067,7 @@ bool mconf_get_enable_addgrp_kill(void) {
    DRETURN(ret);
 }
 
-u_long32 mconf_get_pdc_interval(void) {
+u_long32 mconf_get_pdc_interval() {
    u_long32 ret;
 
    DENTER(BASIS_LAYER);
@@ -2072,7 +2078,7 @@ u_long32 mconf_get_pdc_interval(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_reschedule_kill(void) {
+bool mconf_get_enable_reschedule_kill() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2083,7 +2089,7 @@ bool mconf_get_enable_reschedule_kill(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_reschedule_slave(void) {
+bool mconf_get_enable_reschedule_slave() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2094,7 +2100,7 @@ bool mconf_get_enable_reschedule_slave(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_old_reschedule_behavior(void) {
+bool mconf_get_old_reschedule_behavior() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2105,7 +2111,7 @@ bool mconf_get_old_reschedule_behavior(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_old_reschedule_behavior_array_job(void) {
+bool mconf_get_old_reschedule_behavior_array_job() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2116,7 +2122,7 @@ bool mconf_get_old_reschedule_behavior_array_job(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_simulate_execds(void) {
+bool mconf_get_simulate_execds() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2128,7 +2134,7 @@ bool mconf_get_simulate_execds(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_simulate_jobs(void) {
+bool mconf_get_simulate_jobs() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2140,7 +2146,7 @@ bool mconf_get_simulate_jobs(void) {
    DRETURN(ret);
 }
 
-long mconf_get_ptf_max_priority(void) {
+long mconf_get_ptf_max_priority() {
    long ret;
 
    DENTER(BASIS_LAYER);
@@ -2152,7 +2158,7 @@ long mconf_get_ptf_max_priority(void) {
    DRETURN(ret);
 }
 
-long mconf_get_ptf_min_priority(void) {
+long mconf_get_ptf_min_priority() {
    long ret;
 
    DENTER(BASIS_LAYER);
@@ -2164,7 +2170,7 @@ long mconf_get_ptf_min_priority(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_use_qsub_gid(void) {
+bool mconf_get_use_qsub_gid() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2176,7 +2182,7 @@ bool mconf_get_use_qsub_gid(void) {
    DRETURN(ret);
 }
 
-int mconf_get_notify_susp_type(void) {
+int mconf_get_notify_susp_type() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2189,7 +2195,7 @@ int mconf_get_notify_susp_type(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_notify_susp(void) {
+char* mconf_get_notify_susp() {
    char* ret = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -2201,7 +2207,7 @@ char* mconf_get_notify_susp(void) {
    DRETURN(ret);
 }
 
-int mconf_get_notify_kill_type(void) {
+int mconf_get_notify_kill_type() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2214,7 +2220,7 @@ int mconf_get_notify_kill_type(void) {
 }
 
 /* returned pointer needs to be freed */
-char* mconf_get_notify_kill(void) {
+char* mconf_get_notify_kill() {
    char* ret = nullptr;
 
    DENTER(BASIS_LAYER);
@@ -2226,7 +2232,7 @@ char* mconf_get_notify_kill(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_disable_reschedule(void) {
+bool mconf_get_disable_reschedule() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2239,7 +2245,7 @@ bool mconf_get_disable_reschedule(void) {
 }
 
 
-int mconf_get_scheduler_timeout(void) {
+int mconf_get_scheduler_timeout() {
    int timeout;
 
    DENTER(BASIS_LAYER);
@@ -2262,7 +2268,7 @@ void mconf_set_max_dynamic_event_clients(int value) {
    DRETURN_VOID;
 }
 
-int mconf_get_max_dynamic_event_clients(void) {
+int mconf_get_max_dynamic_event_clients() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2274,7 +2280,7 @@ int mconf_get_max_dynamic_event_clients(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_set_lib_path(void) {
+bool mconf_get_set_lib_path() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2286,7 +2292,7 @@ bool mconf_get_set_lib_path(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_inherit_env(void) {
+bool mconf_get_inherit_env() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2298,7 +2304,7 @@ bool mconf_get_inherit_env(void) {
    DRETURN(ret);
 }
 
-int mconf_get_spool_time(void) {
+int mconf_get_spool_time() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2310,7 +2316,7 @@ int mconf_get_spool_time(void) {
    DRETURN(ret);
 }
 
-u_long32 mconf_get_monitor_time(void) {
+u_long32 mconf_get_monitor_time() {
    u_long32 monitor;
 
    DENTER(BASIS_LAYER);
@@ -2323,7 +2329,7 @@ u_long32 mconf_get_monitor_time(void) {
 
 }
 
-bool mconf_get_do_accounting(void) {
+bool mconf_get_do_accounting() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2336,7 +2342,7 @@ bool mconf_get_do_accounting(void) {
 
 }
 
-bool mconf_get_do_reporting(void) {
+bool mconf_get_do_reporting() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2349,7 +2355,7 @@ bool mconf_get_do_reporting(void) {
 
 }
 
-bool mconf_get_do_joblog(void) {
+bool mconf_get_do_joblog() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2362,7 +2368,7 @@ bool mconf_get_do_joblog(void) {
 
 }
 
-int mconf_get_reporting_flush_time(void) {
+int mconf_get_reporting_flush_time() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2375,7 +2381,7 @@ int mconf_get_reporting_flush_time(void) {
 
 }
 
-int mconf_get_accounting_flush_time(void) {
+int mconf_get_accounting_flush_time() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2395,7 +2401,7 @@ int mconf_get_accounting_flush_time(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_old_accounting(void) {
+bool mconf_get_old_accounting() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2407,7 +2413,7 @@ bool mconf_get_old_accounting(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_old_reporting(void) {
+bool mconf_get_old_reporting() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2419,7 +2425,7 @@ bool mconf_get_old_reporting(void) {
    DRETURN(ret);
 }
 
-int mconf_get_sharelog_time(void) {
+int mconf_get_sharelog_time() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2431,7 +2437,7 @@ int mconf_get_sharelog_time(void) {
    DRETURN(ret);
 }
 
-int mconf_get_log_consumables(void) {
+int mconf_get_log_consumables() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2443,7 +2449,19 @@ int mconf_get_log_consumables(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_forced_qdel(void) {
+std::string mconf_get_usage_patterns() {
+   std::string ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = usage_patterns;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_enable_forced_qdel() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2456,7 +2474,7 @@ bool mconf_get_enable_forced_qdel(void) {
 
 }
 
-bool mconf_get_enable_enforce_master_limit(void) {
+bool mconf_get_enable_enforce_master_limit() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2467,7 +2485,7 @@ bool mconf_get_enable_enforce_master_limit(void) {
 
 }
 
-bool mconf_get_enable_test_sleep_after_request(void) {
+bool mconf_get_enable_test_sleep_after_request() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2478,7 +2496,7 @@ bool mconf_get_enable_test_sleep_after_request(void) {
 
 }
 
-bool mconf_get_enable_forced_qdel_if_unknown(void) {
+bool mconf_get_enable_forced_qdel_if_unknown() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2488,7 +2506,7 @@ bool mconf_get_enable_forced_qdel_if_unknown(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_ignore_ngroups_max_limit(void) {
+bool mconf_get_ignore_ngroups_max_limit() {
    bool ret;
 
    DENTER(BASIS_LAYER);
@@ -2498,7 +2516,7 @@ bool mconf_get_ignore_ngroups_max_limit(void) {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_submit_lib_path(void) {
+bool mconf_get_enable_submit_lib_path() {
    int ret;
 
    DENTER(BASIS_LAYER);
@@ -2510,7 +2528,7 @@ bool mconf_get_enable_submit_lib_path(void) {
    DRETURN(ret);
 }
 
-int mconf_get_max_job_deletion_time(void) {
+int mconf_get_max_job_deletion_time() {
    int deletion_time;
 
    DENTER(BASIS_LAYER);
@@ -2602,7 +2620,7 @@ void mconf_get_s_locks(char **pret) {
    DRETURN_VOID;
 }
 
-int mconf_get_jsv_threshold(void) {
+int mconf_get_jsv_threshold() {
    int threshold;
 
    DENTER(BASIS_LAYER);
@@ -2614,7 +2632,7 @@ int mconf_get_jsv_threshold(void) {
    DRETURN(threshold);
 }
 
-int mconf_get_jsv_timeout(void) {
+int mconf_get_jsv_timeout() {
    int timeout;
 
    DENTER(BASIS_LAYER);

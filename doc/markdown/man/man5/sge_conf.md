@@ -1408,6 +1408,19 @@ The old file format is kept for compatibility reasons. Please note that
 extensions to the accounting and reporting attributes are only made in the new format and
 that the old format is considered deprecated and will eventually be removed in a future version.
 
+<!-- -->
+
+usage_patterns  
+This parameter allows to add arbitrary usage values to the accounting file and to accounting
+records in the reporting file.  
+The format is `<name>:<expression>[;<name>:<expression> [;...]]`.  
+`name` is an arbitrary name characterizing the usage values defined by `expression`.  
+For the semantics of expression (see *xxqs_name_sxx_types*(1) ).  
+Examples:  
+`usage_patterns=gpu:nvidia.*`  
+`usage_patterns=gpu:nvidia.*|amd.*`  
+`usage_patterns=gpu:nvidia.*;power:power-*`  
+
 
 ## **finished_jobs**
 

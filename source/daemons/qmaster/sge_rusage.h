@@ -36,6 +36,9 @@
  Structures for architecture depended data
  ****************************************************************/
 
+#include <string>
+#include <vector>
+
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
@@ -141,7 +144,7 @@ struct drusage {
    sge_all_rusage_type *arch_dep_usage;/* pointer to a structure with
                                           architecture dependend usage
                                           information */
-
+   lList *other_usage;
 };
 
 typedef struct drusage sge_rusage_type;
@@ -167,6 +170,6 @@ typedef struct drusage sge_rusage_type;
 #define INTERMEDIATE_MIN_RUNTIME 60
 
 bool
-sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer,
-                 lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
-                 const char delimiter, bool intermediate, bool is_reporting);
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
+                 lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
+                 bool intermediate, bool is_reporting);

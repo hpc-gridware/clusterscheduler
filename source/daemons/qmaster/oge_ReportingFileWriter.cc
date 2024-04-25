@@ -49,6 +49,8 @@ namespace oge {
    // static attributes
    std::array<ReportingFileWriter *, ReportingFileWriter::NUM_WRITERS> ReportingFileWriter::writers;
    std::string ReportingFileWriter::reporting_params;
+   std::string ReportingFileWriter::usage_patterns;
+   std::vector<std::pair<std::string, std::string>> ReportingFileWriter::usage_pattern_list;
 
    /**
     * initialize all configured writers and make them read their configuration from the
@@ -70,11 +72,7 @@ namespace oge {
       }
 
       // make Writers read their configuration
-      for (auto w: writers) {
-         if (w != nullptr) {
-            w->update_config();
-         }
-      }
+      update_config_all();
    }
 
    /**
@@ -195,6 +193,30 @@ namespace oge {
                delete writers[JSON_REPORTING];
                writers[JSON_REPORTING] = nullptr;
             }
+         }
+
+         // usage patterns for accounting
+         std::string new_usage_patterns = mconf_get_usage_patterns();
+         if (new_usage_patterns != usage_patterns) {
+            usage_patterns = new_usage_patterns;
+            usage_pattern_list.clear();
+            struct saved_vars_s *context = nullptr;
+            const char *pattern = sge_strtok_r(usage_patterns.c_str(), ";", &context);
+            while (pattern != nullptr) {
+               struct saved_vars_s *inner_context = nullptr;
+               const char *name = sge_strtok_r(pattern, ":", &inner_context);
+               if (name != nullptr) {
+                  const char *value = sge_strtok_r(nullptr, ":", &inner_context);
+                  if (value != nullptr) {
+                     usage_pattern_list.push_back({name, value});
+                  }
+               }
+               sge_free_saved_vars(inner_context);
+
+               // next pattern
+               pattern = sge_strtok_r(nullptr, ";", &context);
+            }
+            sge_free_saved_vars(context);
          }
 
          // now configure all active Writers

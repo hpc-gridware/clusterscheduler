@@ -19,10 +19,11 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <string>
-#include <utility>
 #include <array>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "cull/cull.h"
 
@@ -43,8 +44,10 @@ namespace oge {
       };
 
    private:
+      // @todo: do we need to use a mutex for accessing all these config values?
       static std::array<ReportingFileWriter *,NUM_WRITERS> writers;
       static std::string reporting_params;
+      static std::string usage_patterns;
 
    protected:
       std::string filename;
@@ -52,6 +55,7 @@ namespace oge {
       pthread_mutex_t mutex;
       u_long32 config_flush_time;
       u_long32 next_flush_time;
+      static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
 
    public:
       explicit ReportingFileWriter(std::string filename)
