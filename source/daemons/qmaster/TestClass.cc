@@ -28,6 +28,6 @@ oge::TestClass::TestClass(const std::string &name) {
 
 void
 oge::TestClass::method(const std::string &arg1) {
-   //std::cout << "method from gridengine repo was called" << std::endl;
+   //std::cout << "method from clusterscheduler repo was called" << std::endl;
    ;
 }

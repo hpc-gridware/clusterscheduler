@@ -95,7 +95,7 @@ static int xml_report_started(qhost_report_handler_t* handler, lList **alpp)
    DENTER(TOP_LAYER);
 
    printf("<?xml version='1.0'?>\n");
-   printf("<qhost xmlns:xsd=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">\n");
+   printf("<qhost xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">\n");
    
    DRETURN(QHOST_SUCCESS);
 }

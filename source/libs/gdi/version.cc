@@ -72,12 +72,12 @@ vdict_t GRM_GDI_VERSION_ARRAY[] =
       { 0, nullptr}
 };
 
-#ifdef ADD_UNIVA_COPYRIGHT
-const char GE_LONGNAME[] = "Univa Grid Engine";
-const char GE_SHORTNAME[] = "UGE";
+#ifdef ADD_GRIDWARE_COPYRIGHT
+const char GE_LONGNAME[] = "Gridware Cluster Scheduler";
+const char GE_SHORTNAME[] = "GCS";
 #else
-const char GE_LONGNAME[] = "Grid Engine";
-const char GE_SHORTNAME[] = "GE";
+const char GE_LONGNAME[] = "Open Cluster Scheduler";
+const char GE_SHORTNAME[] = "OCS";
 #endif
 
 #ifdef ADD_COPYRIGHT
@@ -86,7 +86,7 @@ const char GE_SHORTNAME[] = "GE";
 
 #if !(ADD_COPYRIGHT || ADD_UNIVA_COPYRIGHT)
 extern const char SFLN_ELN[] = "\n\
-   Grid Engine is based on code donated by Sun Microsystems.\n\
+   Cluster Scheduler is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
    It has been made available to the open source community under the SISSL license.\n\
    For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n";

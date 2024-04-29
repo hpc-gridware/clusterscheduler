@@ -81,7 +81,7 @@ static int destroy_xml_report_handler(report_handler_t** handler, lList **alpp);
 
 static int xml_report_started(report_handler_t* handler, lList **alpp) {
    printf("<?xml version='1.0'?>\n");
-   printf("<qquota_result xmlns=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qquota/qquota.xsd\">\n");
+   printf("<qquota_result xmlns=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qquota/qquota.xsd\">\n");
    return 0;
 }
 

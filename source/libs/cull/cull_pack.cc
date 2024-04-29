@@ -737,7 +737,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
        * descriptor and not that one that is stored in a packbuffer.
        *
        * As a result we are able to read "old" JB_Type objects from a previous
-       * GridEngine version although the JB_Type object has been incresed in the new
+       * Cluster Scheduler version although the JB_Type object has been incresed in the new
        * version.
        *
        * Note: Only JB_type objects will be handled correctly and only in the case 

@@ -64,7 +64,7 @@ static pthread_mutex_t language_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define SGE_ENABLE_MSG_ID "SGE_ENABLE_MSG_ID"
 #define PACKAGE "GRIDPACKAGE"
 #define LOCALEDIR "GRIDLOCALEDIR"
-#define SGE_DEFAULT_PACKAGE      "gridengine"
+#define SGE_DEFAULT_PACKAGE      "clusterscheduler"
 #define SGE_DEFAULT_LOCALEDIR    "locale"
 
 
@@ -119,7 +119,7 @@ static int sge_get_message_id_output_implementation(void);
 *     correct function pointers for gettext() setlocale() etc. etc. 
 *
 *  INPUTS
-*     char* package     -  package name like "gridengine" of binary 
+*     char* package     -  package name like "clusterscheduler" of binary 
 *                          package *.mo file. 
 *                          (if package is nullptr sge_init_language tries
 *                          to get the package name from the invironment 

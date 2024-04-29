@@ -250,7 +250,7 @@ qrstat_report_start(qrstat_report_handler_t* handler, lList **alpp)
    DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "<?xml version='1.0'?>\n");
-   sge_dstring_append(buffer, "<qrstat xmlns:xsd=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qrstat/qrstat.xsd\">\n");
+   sge_dstring_append(buffer, "<qrstat xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qrstat/qrstat.xsd\">\n");
 
    DRETURN(ret); 
 }
