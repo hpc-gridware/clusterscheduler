@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/man/man3
+# clusterscheduler/doc/markdown/man/man3
 
 # we have pages referencing
 # - drmaa_attributes.3

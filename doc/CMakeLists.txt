@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc
+# clusterscheduler/doc
 
 add_subdirectory(markdown)
 add_subdirectory(doxygen)

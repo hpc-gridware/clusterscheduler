@@ -16,19 +16,19 @@ TITLE=$5
 RELEASE=$6
 DATE=$7
 
-# Independent if INPUT_DIR is located in the gridengine or oge-extensions repository
-# common files for the manuals will be taken from the gridengine repository
-COMMON_DIR="../gridengine/doc/markdown/manual"
+# Independent if INPUT_DIR is located in the clusterscheduler or oge-extensions repository
+# common files for the manuals will be taken from the clusterscheduler repository
+COMMON_DIR="../clusterscheduler/doc/markdown/manual"
 SETTINGS_FILE="${SOURCE_DIR}/${COMMON_DIR}/head.tex"
 TITLE_PAGE="${SOURCE_DIR}/${COMMON_DIR}/titlepage.md"
 COPYRIGHT_PAGE="${SOURCE_DIR}/${COMMON_DIR}/copyright.md"
 DEFINITIONS_PAGE="${SOURCE_DIR}/${COMMON_DIR}/typographic_conventions.md"
 
-# Input files for the manual itself come from gridengine or oge-extensions repository
+# Input files for the manual itself come from clusterscheduler or oge-extensions repository
 MANUAL_FILES="${INPUT_DIR}/*.md"
 OUTPUT_FILE="${OUTPUT_DIR}/${MANUAL}.pdf"
 
-QSNAME="Open Grid Engine"
+QSNAME="Open Cluster Scheduler"
 QSPREFIX_LOWER="sge"
 QSPREFIX_UPPER="SGE"
 QSCOMPANYNAME="HPC-Gridware"

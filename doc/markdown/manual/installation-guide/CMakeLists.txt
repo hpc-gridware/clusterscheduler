@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/manual/installation-guide
+# clusterscheduler/doc/markdown/manual/installation-guide
 
 # build installation guide
 build_markdown_manual("installation-guide" "Installation and Upgrade Guide")

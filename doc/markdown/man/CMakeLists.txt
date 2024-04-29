@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/man
+# clusterscheduler/doc/markdown/man
 
 add_subdirectory(man1)
 add_subdirectory(man3)

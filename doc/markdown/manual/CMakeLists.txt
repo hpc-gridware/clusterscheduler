@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/manual
+# clusterscheduler/doc/markdown/manual
 add_subdirectory(development-guide)
 add_subdirectory(installation-guide)
 add_subdirectory(release-notes)

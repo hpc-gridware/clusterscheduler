@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/manual/release-notes
+# clusterscheduler/doc/markdown/manual/release-notes
 
 # build release notes
 build_markdown_manual("release-notes" "Release Notes")

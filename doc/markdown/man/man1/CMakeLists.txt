@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/man/man1
+# clusterscheduler/doc/markdown/man/man1
 
 # build special man pages including submit.md
 set(SUBMIT_PAGES qalter qlogin qresub qrsh qsh qsub submit)

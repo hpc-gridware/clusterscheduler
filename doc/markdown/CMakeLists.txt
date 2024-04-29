@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown
+# clusterscheduler/doc/markdown
 
 set(PANDOC "pandoc")
 

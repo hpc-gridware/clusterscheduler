@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/man/man8
+# clusterscheduler/doc/markdown/man/man8
 
 # build all man pages from section 8
 set(PAGES sge_execd sge_qmaster sge_shadowd sge_shepherd)

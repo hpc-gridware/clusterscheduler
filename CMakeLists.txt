@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine project root
+# clusterscheduler project root
 
 cmake_minimum_required(VERSION 3.0...3.27.0)
 
@@ -29,10 +29,10 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif ()
 
 project(
-      gridengine
+      clusterscheduler
       VERSION 9.0.0
-      DESCRIPTION "Open Grid Engine Workload Manager"
-      HOMEPAGE_URL "https://www.opengridengine.org"
+      DESCRIPTION "Open Cluster Scheduler Workload Manager"
+      HOMEPAGE_URL "https://www.openclusterscheduler.org"
       LANGUAGES C CXX)
 
 message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION}")
@@ -64,7 +64,7 @@ option(WITH_QMAKE "Enable build of qmake" ON)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
-set(PROJECT_FEATURES "gridengine" CACHE STRING "gridengine or oge-extensions")
+set(PROJECT_FEATURES "clusterscheduler" CACHE STRING "clusterscheduler or gcs-extensions")
 
 # INSTALL OPTIONS
 option(INSTALL_SGE_BIN "Install binaries" ON)
@@ -99,7 +99,7 @@ build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 # clients/common/show_job.c - daemons/qmaster, required for sge_sched_thread.h
 # in libs/sched/sge_urgency.h
 
-if (PROJECT_FEATURES MATCHES "oge-extensions")
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
    set(SGE_INCLUDES
          "../../../../${PROJECT_FEATURES}/source/common"
          "../../../../${PROJECT_FEATURES}/source/clients/common"
@@ -181,7 +181,7 @@ if (INSTALL_SGE_BIN OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
 endif ()
 
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")
-   add_subdirectory(${PROJECT_EXTENSIONS} "oge-extensions")
+   add_subdirectory(${PROJECT_EXTENSIONS} "gcs-extensions")
 endif ()
 
 # @todo: instead of library "dl" use ${CMAKE_DL_LIBS}? @todo: add virtual

@@ -14,9 +14,9 @@ SECTION=$6
 RELEASE=$7
 DATE=$8
 
-# Independent if INPUT_DIR is located in oge-extensions repository
+# Independent if INPUT_DIR is located in gcs-extensions repository
 # then template files will also be taken from oge-extensions
-COMMON_DIR="../oge-extensions/doc/markdown/manual"
+COMMON_DIR="../gcs-extensions/doc/markdown/manual"
 
 if [ $TEMPLATE = "NONE" ]; then
    TEMPLATE_FILE=""
@@ -27,7 +27,7 @@ fi
 PAGE_FILE="${INPUT_DIR}/${PAGE}.md"
 OUTPUT_FILE="${OUTPUT_DIR}/${PAGE}.${SECTION}"
 
-QSNAME="Open Grid Engine"
+QSNAME="Open Cluster Scheduler"
 QSPREFIX_LOWER="sge"
 QSPREFIX_UPPER="SGE"
 

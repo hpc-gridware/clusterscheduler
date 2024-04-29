@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/markdown/man/man5
+# clusterscheduler/doc/markdown/man/man5
 
 # build all man pages from section 5
 set(PAGES sge_access_list sge_accounting sge_aliases sge_bootstrap sge_calendar_conf sge_checkpoint sge_complex

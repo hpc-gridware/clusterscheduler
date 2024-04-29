@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# gridengine/doc/doxygen
+# clusterscheduler/doc/doxygen
 
 # check if Doxygen is installed
 find_package(Doxygen)

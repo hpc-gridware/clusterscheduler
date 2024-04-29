@@ -54,7 +54,7 @@ function(architecture_specific_settings)
    add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
 
    # defines if extensions are enabled
-   if (PROJECT_FEATURES MATCHES "oge-extensions")
+   if (PROJECT_FEATURES MATCHES "gcs-extensions")
       add_compile_definitions(OGE_WITH_EXTENSIONS=1)
       message("Build with extensions is enabled")
    endif()
