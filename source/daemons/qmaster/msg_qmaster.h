@@ -134,12 +134,12 @@
 #define MSG_GDI_KEYSTR_PERCENT         _MESSAGE(33103, _("Percent"))
 #define MSG_GDI_KEYSTR_ASTERISK        _MESSAGE(33104, _("Asterisk"))
 #define MSG_COM_ACK_S                  _MESSAGE(33105, _("ack event from " SFN))
-#define MSG_COM_ACKEVENTFORUNKOWNJOB_U _MESSAGE(33106, _("ack event for unknown job " sge_U32CFormat))
-#define MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU _MESSAGE(33107, _("ack event for unknown task " sge_U32CFormat " of job " sge_U32CFormat))
+#define MSG_COM_ACKEVENTFORUNKOWNJOB_SU _MESSAGE(33106, _("ack event from host " SFN " for unknown job " sge_U32CFormat))
+#define MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU _MESSAGE(33107, _("ack event from host " SFN " for unknown task " sge_U32CFormat " of job " sge_U32CFormat))
 #define MSG_COM_UNKNOWN_TAG            _MESSAGE(33108, _("received unknown ack tag " sge_U32CFormat))
 
-#define MSG_COM_ACK_QUEUE_S            _MESSAGE(33112, _("ack event for unknown queue " SFQ))
-#define MSG_COM_ACK_UNKNOWN            _MESSAGE(33113, _("unknown ack event"))
+#define MSG_COM_ACK_QUEUE_SS           _MESSAGE(33112, _("ack event from host " SFN " for unknown queue " SFQ))
+#define MSG_COM_ACK_UNKNOWN_S          _MESSAGE(33113, _("unknown ack event from host " SFN))
 
 #define MSG_GDI_WRONG_GDI_SSISS  _MESSAGE(33115, _("denied: client (" SFN "/" SFN "/%d) uses old GDI version " SFN " while qmaster uses newer version " SFN))
 #define MSG_GDI_WRONG_GDI_SSIUS  _MESSAGE(33116, _("denied: client (" SFN "/" SFN "/%d) uses newer GDI version 0x" sge_X32CFormat " while qmaster uses older version " SFN))

@@ -376,7 +376,7 @@ int do_ack(struct_msg_t *aMsg)
             break;
 
          default:
-            ERROR(SFNMAX, MSG_COM_ACK_UNKNOWN1);
+            ERROR(MSG_COM_ACK_UNKNOWN1_S, aMsg->snd_host);
             break;
       }
 

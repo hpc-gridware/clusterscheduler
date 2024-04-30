@@ -45,7 +45,7 @@
 #define MSG_MAIL_STARTSUBJECT_US      "Job " sge_U32CFormat " (" SFN ") Started"
 
 
-#define MSG_COM_ACK_UNKNOWN1                                _MESSAGE(29000, _("unknown ack event"))
+#define MSG_COM_ACK_UNKNOWN1_S                              _MESSAGE(29000, _("unknown ack event from host " SFN))
 #define MSG_FILE_RECURSIVERMDIR_SS                          _MESSAGE(29001, _("recursive rmdir(" SFN "): " SFN))
 
 #define MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU       _MESSAGE(29002, _(SFN " registering job \"" sge_U32CFormat "\" at ptf during startup"))

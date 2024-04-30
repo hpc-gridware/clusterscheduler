@@ -540,12 +540,12 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
-            ERROR(MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong));
+            ERROR(MSG_COM_ACKEVENTFORUNKOWNJOB_SU, host, sge_u32c(ack_ulong));
             DRETURN_VOID;
          }
          jatep = job_search_task(jep, nullptr, ack_ulong2);
          if (jatep == nullptr) {
-            ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU, sge_u32c(ack_ulong2), sge_u32c(ack_ulong));
+            ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU, host, sge_u32c(ack_ulong2), sge_u32c(ack_ulong));
             DRETURN_VOID;
          }
 
@@ -585,7 +585,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          sge_dstring_free(&host_domain);
 
          if (qinstance == nullptr) {
-            ERROR(MSG_COM_ACK_QUEUE_S, ack_str);
+            ERROR(MSG_COM_ACK_QUEUE_SS, host, ack_str);
             DRETURN_VOID;
          }
 
@@ -600,7 +600,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
       }
 
       default:
-         ERROR(SFNMAX, MSG_COM_ACK_UNKNOWN);
+         ERROR(MSG_COM_ACK_UNKNOWN_S, host);
    }
    DRETURN_VOID;
 }
