@@ -61,10 +61,6 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-static bool
-hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts, lList **occupant_groups);
-
 static void
 hgroup_commit(lListElem *hgroup);
 
@@ -149,7 +145,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 
          /*
           * Make sure that:
-          *   - added hosts where not already part the old hostlist
+          *   - added hosts were not already part the old hostlist
           *   - removed hosts are not part of the new hostlist
           */
          if (ret) {
@@ -304,7 +300,7 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
                                                        nullptr);
 
                   /*
-                   * !!! Modify master list temorarily 
+                   * !!! Modify master list temporarily
                    *     (find rollback below)
                    */
                   if (org_hgroup != nullptr) {

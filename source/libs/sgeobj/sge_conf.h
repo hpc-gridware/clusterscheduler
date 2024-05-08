@@ -169,4 +169,5 @@ int mconf_get_jsv_timeout();
 int mconf_get_jsv_threshold();
 bool mconf_get_ignore_ngroups_max_limit();
 bool mconf_get_enable_submit_lib_path();
+bool mconf_get_auto_execd_registration();
 u_long32 mconf_get_script_timeout();

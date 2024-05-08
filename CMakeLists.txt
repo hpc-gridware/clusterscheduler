@@ -100,6 +100,7 @@ build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 # in libs/sched/sge_urgency.h
 
 if (PROJECT_FEATURES MATCHES "gcs-extensions")
+   add_compile_definitions(ADD_GRIDWARE_COPYRIGHT)
    set(SGE_INCLUDES
          "../../../../${PROJECT_FEATURES}/source/common"
          "../../../../${PROJECT_FEATURES}/source/clients/common"

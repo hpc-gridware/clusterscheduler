@@ -83,6 +83,7 @@
 #include "sge_c_gdi.h"
 #include "mail.h"
 #include "sge_cqueue_qmaster.h"
+#include "sge_hgroup_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "reschedule.h"
@@ -92,6 +93,7 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_job_enforce_limit.h"
+#include "sge_hgroup.h"
 
 static void
 exec_host_change_queue_version(const char *exechost_name);
@@ -1192,44 +1194,98 @@ int
 sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
                     monitoring_t *monitor, bool is_restart) {
    lListElem *hep, *cqueue;
-   dstring ds;
-   char buffer[256];
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   DSTRING_STATIC(ds, 256);
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   if (!host || !ruser || !rhost) {
+   if (host == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
+   const char *username = component_get_username();
+   const char *qualified_hostname = component_get_qualified_hostname();
+
+   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    hep = host_list_locate(master_ehost_list, rhost);
-   if (!hep) {
-      if (sge_add_host_of_type(rhost, SGE_EH_LIST, monitor) < 0) {
+   if (hep == nullptr) {
+      lList *local_alp = nullptr;
+      lList *ppList = nullptr;
+      gdi_object_t *object = get_gdi_object(SGE_EH_LIST);
+      lSetHost(host, EH_name, rhost);
+      int ret = sge_gdi_add_mod_generic(&local_alp, host, 1, object, username,
+                                    qualified_hostname, 0, &ppList, monitor);
+      lFreeList(&local_alp);
+      lFreeList(&ppList);
+
+      if (ret != STATUS_OK) {
          ERROR(MSG_OBJ_INVALIDHOST_S, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
       }
 
       hep = host_list_locate(master_ehost_list, rhost);
-      if (!hep) {
+      if (hep == nullptr) {
          ERROR(MSG_OBJ_NOADDHOST_S, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
       }
    }
 
-   lSetUlong(hep, EH_featureset_id, lGetUlong(host, EH_featureset_id));
-   lSetUlong(hep, EH_report_seqno, 0);
+   // if it is an auto register host then add it to a host group
+   const lListElem *hgrp_ep = lGetSubStr(host, HL_name, LOAD_ATTR_AUTO_EH_HOSTGROUP, EH_load_list);
+   if (hgrp_ep != nullptr) {
+      const char *hgrp_name = lGetString(hgrp_ep, HL_value);
+      if (hgrp_name != nullptr) {
+         DPRINTF("adding new exec host " SFQ " to host group " SFQ "\n", rhost, hgrp_name);
+         lList *master_hgrp_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+         lListElem *old_hgrp = hgroup_list_locate(master_hgrp_list, hgrp_name);
+         bool add = false;
+         lList *href_list = nullptr;
+         if (old_hgrp == nullptr) {
+            DPRINTF("host group does not yet exist, adding it\n");
+            add = true;
+         } else {
+            DPRINTF("host group does already exist\n");
+            href_list = lCopyList(nullptr, lGetList(old_hgrp, HGRP_host_list));
+         }
+         // if the new host already exists in the host group's host list, we have nothing to do here
+         // otherwise we add it
+         if (lGetElemHost(href_list, HR_name, rhost) == nullptr) {
+            lAddElemHost(&href_list, HR_name, rhost, HR_Type);
+            lList *local_alp = nullptr;
+            lListElem *new_hgrp = hgroup_create(&local_alp, hgrp_name, href_list, true);
+            if (new_hgrp == nullptr) {
+               ERROR("error creating new host group"); // @todo I18N and name host group and host, auto add, ...
+               answer_list_output(&local_alp);
+            } else {
+               DPRINTF("adding/modifying host group\n");
+               lList *ppList = nullptr;
+               gdi_object_t *object = get_gdi_object(SGE_HGRP_LIST);
+               int ret = sge_gdi_add_mod_generic(&local_alp, new_hgrp, add, object, username,
+                                                 qualified_hostname, 0, &ppList, monitor);
+               lFreeList(&local_alp);
+               lFreeList(&ppList);
+               if (ret != STATUS_OK) {
+                  ERROR("adding/modifying host group failed"); // @todo I18N and name host group and host, auto add, ...
+                  // no error return - the host is already added
+                  // so it makes no sense to reject the execd registration
+                  // DRETURN(STATUS_DENIED);
+               }
+            }
+            lFreeElem(&new_hgrp);
+         } else {
+            INFO("host " SFQ " is already in host group " SFQ, rhost, hgrp_name);
+         }
+      }
+   }
 
    /*
     * reinit state of all qinstances at this host according to initial_state
     */
    if (!is_restart) {
+      lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
       for_each_rw (cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, rhost);

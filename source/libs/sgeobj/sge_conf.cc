@@ -247,6 +247,7 @@ static bool set_lib_path = false;
  * shepherd/builtin_starter.c:inherit_env(). */
 static bool inherit_env = true;
 static bool enable_submit_lib_path = false;
+static bool auto_execd_registration = false;
 
 /*
  * notify_kill_default and notify_susp_default
@@ -682,6 +683,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       jsv_threshold = 5000;
       jsv_timeout= 10;
       enable_submit_lib_path = false;
+      auto_execd_registration = false;
 
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
@@ -806,6 +808,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_SUBMIT_LIB_PATH", &enable_submit_lib_path)) {
+            continue;
+         }
+         if (parse_bool_param(s, "AUTO_EXECD_REGISTRATION", &auto_execd_registration)) {
             continue;
          }
       }
@@ -2523,6 +2528,18 @@ bool mconf_get_enable_submit_lib_path() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_submit_lib_path;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_auto_execd_registration() {
+   int ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = auto_execd_registration;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

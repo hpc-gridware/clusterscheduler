@@ -82,6 +82,8 @@
 #define LOAD_ATTR_THREADS        "m_thread"
 #define LOAD_ATTR_TOPOLOGY_INUSE "m_topology_inuse"
 
+#define LOAD_ATTR_AUTO_EH_HOSTGROUP "AUTO_EXECD_REGISTRATION_HOSTGROUP"
+
 bool host_is_referenced(const lListElem *host, lList **answer_list,
                         const lList *queue_list, const lList *hgrp_list);
 

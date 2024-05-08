@@ -33,10 +33,12 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
@@ -60,6 +62,7 @@
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "msg_execd.h"
+#include "execd.h"
 
 extern char execd_spool_dir[SGE_PATH_MAX];
 extern lList *jr_list;
@@ -67,12 +70,8 @@ extern lList *jr_list;
 static char execd_messages_file[SGE_PATH_MAX];
 
 /*-------------------------------------------------------------------*/
-void sge_setup_sge_execd(const char* tmp_err_file_name)
-{
+void sge_setup_sge_execd_before_register() {
    char err_str[MAX_STRING_SIZE];
-   int allowed_get_conf_errors     = 5;
-   char* spool_dir = nullptr;
-   const char *unqualified_hostname = component_get_unqualified_hostname();
    const char *admin_user = bootstrap_get_admin_user();
 
    DENTER(TOP_LAYER);
@@ -94,6 +93,96 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
       sge_exit(1);
    }
 
+   DRETURN_VOID;
+}
+
+void
+execd_reread_act_qmaster() {
+   static u_long32 last_qmaster_file_read = 0;
+
+   DENTER(TOP_LAYER);
+
+   u_long32 now = sge_get_gmt();
+   if (now - last_qmaster_file_read >= 30) {
+      gdi_get_act_master_host(true);
+      DPRINTF("re-read actual qmaster file\n");
+      last_qmaster_file_read = now;
+   }
+
+   DRETURN_VOID;
+}
+
+static int gdi_wait_for_conf(lList **conf_list) {
+   lListElem *global = nullptr;
+   lListElem *local = nullptr;
+   int ret_val;
+   int ret;
+   const char *qualified_hostname = component_get_qualified_hostname();
+   const char *cell_root = bootstrap_get_cell_root();
+   u_long32 progid = component_get_component_id();
+
+   /* TODO: move this function to execd */
+   DENTER(GDI_LAYER);
+   /*
+    * for better performance retrieve 2 configurations
+    * in one gdi call
+    */
+   DPRINTF("qualified hostname: %s\n", qualified_hostname);
+
+   while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
+      if (ret == -6 || ret == -7) {
+         /* confict: endpoint not unique or no permission to get config */
+         DRETURN(-1);
+      }
+
+      if (ret == -8) {
+         /* access denied */
+         sge_get_com_error_flag(progid, SGE_COM_ACCESS_DENIED, true);
+         sleep(30);
+      }
+
+      DTRACE;
+      cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+      ret_val = cl_commlib_trigger(handle, 1);
+      switch (ret_val) {
+         case CL_RETVAL_SELECT_TIMEOUT:
+            sleep(1);  /* If we could not establish the connection */
+            break;
+         case CL_RETVAL_OK:
+            break;
+         default:
+            sleep(1);  /* for other errors */
+            break;
+      }
+
+      execd_reread_act_qmaster();
+   }
+
+   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
+   if (ret) {
+      DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
+   }
+
+   /*
+    * we don't keep all information, just the name and the version
+    * the entries are freed
+    */
+   lSetList(global, CONF_entries, nullptr);
+   lSetList(local, CONF_entries, nullptr);
+   lFreeList(conf_list);
+   *conf_list = lCreateList("config list", CONF_Type);
+   lAppendElem(*conf_list, global);
+   lAppendElem(*conf_list, local);
+   DRETURN(0);
+}
+
+
+void sge_setup_execd_after_register(const char *tmp_err_file_name) {
+   int allowed_get_conf_errors = 5;
+   char *spool_dir = nullptr;
+   const char *unqualified_hostname = component_get_unqualified_hostname();
+
+   DENTER(TOP_LAYER);
    while (gdi_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL(SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT);
@@ -122,7 +211,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    sge_chdir_exit(unqualified_hostname, 1); 
    /* having passed the  previous statement we may 
       log messages into the ERR_FILE  */
-   if ( tmp_err_file_name != nullptr) {
+   if (tmp_err_file_name != nullptr) {
       sge_copy_append((char*)tmp_err_file_name, ERR_FILE, SGE_MODE_APPEND);
    }
    sge_switch2start_user();
@@ -140,9 +229,9 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    sge_mkdir(JOB_DIR, 0775, true, false);
    sge_mkdir(ACTIVE_DIR,  0775, true, false);
 
-#if defined(OGE_HWLOC) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(OGE_HWLOC)
    /* initialize processor topology */
-   if (initialize_topology() != true) {
+   if (!initialize_topology()) {
       DPRINTF("Couldn't initialize topology-----------------------\n");
    }
 #endif

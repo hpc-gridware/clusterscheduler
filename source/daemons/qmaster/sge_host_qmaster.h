@@ -75,8 +75,8 @@ void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_execd_startedup(lListElem *hep, lList **alpp, char *ruser, char *rhost,
-                    u_long32 target, monitoring_t *monitor, bool is_restart);
+sge_execd_startedup(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
+                    monitoring_t *monitor, bool is_restart);
 
 u_long32
 load_report_interval(lListElem *hep);

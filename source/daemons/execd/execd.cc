@@ -33,7 +33,6 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <sys/stat.h>
-#include <cerrno>
 #include <cstdlib>
 
 #include "uti/sge_log.h"
@@ -52,14 +51,13 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_feature.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_conf.h"
 
 #include "spool/classic/read_write_job.h"
-
-#include "gdi/msg_gdilib.h"
 
 #include "sge_load_sensor.h"
 #include "dispatcher.h"
@@ -68,7 +66,6 @@
 #include "setup_execd.h"
 #include "shutdown.h"
 #include "sig_handlers.h"
-#include "startprog.h"
 #include "usage.h"
 #include "execd.h"
 #include "sge.h"
@@ -77,7 +74,6 @@
 
 #ifdef COMPILE_DC
 #   include "ptf.h"
-#   include "sgedefs.h"
 #endif
 
 #if defined(SOLARIS)
@@ -87,6 +83,7 @@
 
 #if defined(LINUX)
 #  include "sge_proc.h"
+
 #endif
 
 
@@ -110,7 +107,7 @@ int main(int argc, char *argv[]);
 static u_long32 last_qmaster_registration_time = 0;
 
 
-u_long32 get_last_qmaster_register_time(void) {
+u_long32 get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
 
@@ -154,6 +151,32 @@ unsigned long sge_execd_application_status(char** info_message)
    return sge_monitor_status(info_message, 0);
 }
 
+int sge_execd_register_at_qmaster_try_forever() {
+   DENTER(TOP_LAYER);
+
+   int ret = 0;
+
+   // here we have to wait for qmaster registration
+   while (sge_execd_register_at_qmaster(false) != 0) {
+      if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true)) {
+         // This is no error
+         DPRINTF("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n");
+      }
+      if (sge_get_com_error_flag(EXECD, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
+         ret = SGE_COM_ENDPOINT_NOT_UNIQUE;
+         break;
+      }
+      if (shut_me_down != 0) {
+         break;
+      }
+      sleep(30);
+      execd_reread_act_qmaster();
+   }
+
+   DRETURN(ret);
+}
+
+
 /*-------------------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
@@ -164,8 +187,8 @@ int main(int argc, char **argv)
    int max_enroll_tries;
    static char tmp_err_file_name[SGE_PATH_MAX];
    time_t next_prof_output = 0;
-   int execd_exit_state = 0;
-   lList **master_job_list = nullptr;
+   int execd_exit_state;
+   lList **master_job_list;
    lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "execd");
@@ -285,12 +308,24 @@ int main(int argc, char **argv)
    }
    
    /* finalize daeamonize */
-   if (!getenv("SGE_ND")) {
+   if (getenv("SGE_ND") == nullptr) {
       sge_daemonize_finalize();
    }
 
-   /* daemonizes if qmaster is unreachable */   
-   sge_setup_sge_execd(tmp_err_file_name);
+   /* daemonizes if qmaster is unreachable */
+   sge_setup_sge_execd_before_register();
+
+   execd_exit_state = sge_execd_register_at_qmaster_try_forever();
+
+   /*
+    * Terminate on SIGTERM or hard communication error
+    */
+   if (execd_exit_state != 0 || shut_me_down != 0) {
+      sge_shutdown(execd_exit_state);
+      DRETURN(execd_exit_state);
+   }
+
+   sge_setup_execd_after_register(tmp_err_file_name);
 
    /* are we using qidle or not */
    sge_ls_qidle(mconf_get_use_qidle());
@@ -302,30 +337,6 @@ int main(int argc, char **argv)
    {
       lList *report_list = sge_build_load_report(component_get_qualified_hostname(), bootstrap_get_binary_path());
       lFreeList(&report_list);
-   }
-   
-   /* here we have to wait for qmaster registration */
-   while (sge_execd_register_at_qmaster(false) != 0) {
-      if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true)) {
-         /* This is no error */
-         DPRINTF("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n");
-      }
-      if (sge_get_com_error_flag(EXECD, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
-         execd_exit_state = SGE_COM_ENDPOINT_NOT_UNIQUE;
-         break;
-      }
-      if (shut_me_down != 0) {
-         break;
-      }
-      sleep(30);
-   }
-
-   /* 
-    * Terminate on SIGTERM or hard communication error
-    */
-   if (execd_exit_state != 0 || shut_me_down != 0) {
-      sge_shutdown(execd_exit_state);
-      DRETURN(execd_exit_state);
    }
 
    /*
@@ -486,23 +497,31 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
+
+      // here we can add information for an auto add
+      //lListElem *cep = lAddSubStr(hep, CE_name, "slots", EH_consumable_config_list, CE_Type);
+      //lSetString(cep, CE_stringval, "5");
+      //lSetDouble(cep, CE_doubleval, 5);
+      const char *hgrp = sge_getenv(LOAD_ATTR_AUTO_EH_HOSTGROUP);
+      if (hgrp != nullptr) {
+         lListElem *lep = lAddSubStr(hep, HL_name, LOAD_ATTR_AUTO_EH_HOSTGROUP, EH_load_list, HL_Type);
+         if (lep != nullptr) {
+            lSetString(lep, HL_value, hgrp);
+         }
+      }
+
       lAppendElem(hlp, hep);
 
       /* register at qmaster */
       DPRINTF("*****  Register at qmaster   *****\n");
-      if (!is_restart) {
-         /*
-          * This is a regular startup.
-          */
-         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
-      } else {
-         /*
-          * Indicate this is a restart to qmaster.
-          * This is used for the initial_state of queue_configuration implementation.
-          */
-         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
-                        &hlp, nullptr, nullptr);
+      // on a regular startup sge_execd registers at sge_qmaster by sending a
+      // GDI ADD EXECHOST request
+      u_long32 cmd = SGE_GDI_ADD;
+      if (is_restart) {
+         // in case of a restart the initial queue state will not be set
+         cmd |= SGE_GDI_EXECD_RESTART;
       }
+      alp = sge_gdi(SGE_EH_LIST, cmd, &hlp, nullptr, nullptr);
       lFreeList(&hlp);
    } else {
       DPRINTF("*****  Register at qmaster - qmaster not alive!  *****\n");

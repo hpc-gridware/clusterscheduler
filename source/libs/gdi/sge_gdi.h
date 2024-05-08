@@ -250,13 +250,9 @@ int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem *
 
 int gdi_get_merged_configuration(lList **conf_list);
 
-int gdi_wait_for_conf(lList **conf_list);
-
 int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron);
 
-
-
-/* 
+/*
 ** commlib handler functions 
 */
 #include "comm/lists/cl_list_types.h"

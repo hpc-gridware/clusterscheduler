@@ -1255,11 +1255,11 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
       }
       DPRINTF("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name));
 
-      if (sge_get_com_error_flag(me, SGE_COM_ACCESS_DENIED, false) == true) {
+      if (sge_get_com_error_flag(me, SGE_COM_ACCESS_DENIED, false)) {
          lFreeElem(&hep);
          DRETURN(-8);
       }
-      if (sge_get_com_error_flag(me, SGE_COM_ENDPOINT_NOT_UNIQUE, false) == true) {
+      if (sge_get_com_error_flag(me, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
          lFreeElem(&hep);
          DRETURN(-6);
       }
@@ -1340,76 +1340,6 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
    DRETURN(0);
 }
 
-
-int gdi_wait_for_conf(lList **conf_list) {
-   lListElem *global = nullptr;
-   lListElem *local = nullptr;
-   int ret_val;
-   int ret;
-   static u_long32 last_qmaster_file_read = 0;
-   const char *qualified_hostname = component_get_qualified_hostname();
-   const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = component_get_component_id();
-
-   /* TODO: move this function to execd */
-   DENTER(GDI_LAYER);
-   /*
-    * for better performance retrieve 2 configurations
-    * in one gdi call
-    */
-   DPRINTF("qualified hostname: %s\n", qualified_hostname);
-
-   while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
-      if (ret == -6 || ret == -7) {
-         /* confict: endpoint not unique or no permission to get config */
-         DRETURN(-1);
-      }
-
-      if (ret == -8) {
-         /* access denied */
-         sge_get_com_error_flag(progid, SGE_COM_ACCESS_DENIED, true);
-         sleep(30);
-      }
-
-      DTRACE;
-      cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
-      ret_val = cl_commlib_trigger(handle, 1);
-      switch (ret_val) {
-         case CL_RETVAL_SELECT_TIMEOUT:
-            sleep(1);  /* If we could not establish the connection */
-            break;
-         case CL_RETVAL_OK:
-            break;
-         default:
-            sleep(1);  /* for other errors */
-            break;
-      }
-
-      u_long32 now = sge_get_gmt();
-      if (now - last_qmaster_file_read >= 30) {
-         gdi_get_act_master_host(true);
-         DPRINTF("re-read actual qmaster file\n");
-         last_qmaster_file_read = now;
-      }
-   }
-
-   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
-   if (ret) {
-      DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
-   }
-
-   /*
-    * we don't keep all information, just the name and the version
-    * the entries are freed
-    */
-   lSetList(global, CONF_entries, nullptr);
-   lSetList(local, CONF_entries, nullptr);
-   lFreeList(conf_list);
-   *conf_list = lCreateList("config list", CONF_Type);
-   lAppendElem(*conf_list, global);
-   lAppendElem(*conf_list, local);
-   DRETURN(0);
-}
 
 /*-------------------------------------------------------------------------*
  * NAME
@@ -1834,7 +1764,7 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
    switch (error_type) {
       case SGE_COM_ACCESS_DENIED: {
          ret_val = sge_gdi_communication_error.com_access_denied;
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_access_denied = false;
          }
          break;
@@ -1845,14 +1775,14 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
          } else {
             ret_val = sge_gdi_communication_error.com_endpoint_not_unique;
          }
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_endpoint_not_unique = false;
          }
          break;
       }
       case SGE_COM_WAS_COMMUNICATION_ERROR: {
          ret_val = sge_gdi_communication_error.com_was_error;
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_was_error = false;  /* reset error flag */
          }
       }

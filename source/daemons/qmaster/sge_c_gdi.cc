@@ -680,7 +680,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                   break;
                }
 
-               if (task->target == SGE_EH_LIST && !strcmp(prognames[EXECD], packet->commproc)) {
+               if (task->target == SGE_EH_LIST && strcmp(prognames[EXECD], packet->commproc) == 0) {
                   bool is_restart = false;
 
                   if (sub_command == SGE_GDI_EXECD_RESTART) {
@@ -1437,11 +1437,15 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
 
       case SGE_EH_LIST:
 
-         /* host must be either admin host or exec host and execd */
+         /* host must be either admin host or exec host and execd
+          * or we have auto_execd_registration enabled, and it is an exechost (and in addition
+          * we could check if it is an EH_LIST ADD)
+          */
 
          if (!(host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) ||
                (host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), host) &&
-                !strcmp(commproc, prognames[EXECD])))) {
+                strcmp(commproc, prognames[EXECD]) == 0) ||
+               (mconf_get_auto_execd_registration() && strcmp(commproc, prognames[EXECD]) == 0))) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(false);
