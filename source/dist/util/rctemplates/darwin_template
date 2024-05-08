@@ -35,7 +35,7 @@
 
 StartService()
 {
-     ConsoleMessage "Starting SUN Grid Engine"
+     ConsoleMessage "Starting Cluster Scheduler"
      #GENBDBRC  > /dev/null 2>&1 < /dev/null
      #GENMASTERRC > /dev/null 2>&1 < /dev/null
      #GENEXECDRC  > /dev/null 2>&1 < /dev/null
@@ -43,7 +43,7 @@ StartService()
 
 StopService()
 {
-     ConsoleMessage "Stopping SUN Grid Engine services"
+     ConsoleMessage "Stopping Cluster Scheduler services"
      #GENEXECDRC  stop > /dev/null 2>&1 < /dev/null
      #GENMASTERRC stop > /dev/null 2>&1 < /dev/null
      #GENBDBRC  stop > /dev/null 2>&1 < /dev/null
@@ -51,7 +51,7 @@ StopService()
 
 RestartService()
 {
-     ConsoleMessage "Restarting SUN Grid Engine services"
+     ConsoleMessage "Restarting Cluster Scheduler services"
      #GENEXECDRC  stop > /dev/null 2>&1 < /dev/null
      #GENMASTERRC stop > /dev/null 2>&1 < /dev/null
      #GENBDBRC  stop  > /dev/null 2>&1 < /dev/null

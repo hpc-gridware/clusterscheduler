@@ -92,7 +92,7 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 *  FUNCTION
 *     The entirety of all information passed to this function describes
 *     the schedule that was created during a scheduling interval of a
-*     Grid Engine scheduler. To reflect multiple resource debitations 
+*     Cluster Scheduler scheduler. To reflect multiple resource debitations 
 *     of a job multiple calls to serf_record_entry() are required. For
 *     parallel jobs the serf_record_entry() is called one times with a
 *     'P' as level_char.

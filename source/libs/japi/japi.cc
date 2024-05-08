@@ -98,7 +98,7 @@
 
 /****** JAPI/--Job_API ********************************************************
 *  NAME
-*     Job_JAPI -- Grid Engine's API for job submission and control.
+*     Job_JAPI -- Cluster Scheduler's API for job submission and control.
 *
 *  FUNCTION
 *
@@ -2985,7 +2985,7 @@ enum {
 
 /****** JAPI/japi_sge_state_to_drmaa_state() ****************************************
 *  NAME
-*     japi_sge_state_to_drmaa_state() -- Map Grid Engine state into DRMAA state
+*     japi_sge_state_to_drmaa_state() -- Map Cluster Scheduler state into DRMAA state
 *
 *  SYNOPSIS
 *     static int japi_sge_state_to_drmaa_state(lListElem *job, 
@@ -2993,7 +2993,7 @@ enum {
 *     dstring *diag) 
 *
 *  FUNCTION
-*     All Grid Engine state information is used and combined into a DRMAA 
+*     All Cluster Scheduler state information is used and combined into a DRMAA 
 *     job state.
 *
 *  INPUTS

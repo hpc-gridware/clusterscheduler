@@ -43,7 +43,7 @@ import org.ggf.drmaa.Session;
 import org.ggf.drmaa.Version;
 
 /**
- * The SessionImpl class provides a DRMAA interface to Grid Engine.  This
+ * The SessionImpl class provides a DRMAA interface to Cluster Scheduler.  This
  * interface is built on top of the DRMAA C binding using JNI.  In order to keep
  * the native code as localized as possible, this class also provides native
  * DRMAA services to other classes, such as the JobTemplateImpl.
@@ -253,13 +253,13 @@ public class SessionImpl implements Session {
     }
     
     /**
-     * The init() method initializes the Grid Engine DRMAA API library for
+     * The init() method initializes the Cluster Scheduler DRMAA API library for
      * all threads of the process and creates a new DRMAA Session. This routine
      * must be called once before any other DRMAA call, except for
      * getDrmSystem(), getContact(), and getDrmaaImplementation().
      *
      * <p><i>contact</i> is an implementation dependent string which may be used
-     * to specify which Grid Engine cell to use.  The contact string is composed
+     * to specify which Cluster Scheduler cell to use.  The contact string is composed
      * of a series of name=value pairs separated by semicolons.  The supported
      * name=value pairs are:</p>
      *
@@ -269,7 +269,7 @@ public class SessionImpl implements Session {
      *    </li>
      * </ul>
      *
-     * <p>If <i>contact</i> is null or empty, the default Grid Engine cell will
+     * <p>If <i>contact</i> is null or empty, the default Cluster Scheduler cell will
      * be used.</p>
      *
      * <p>Except for the above listed methods, no DRMAA methods may be called
@@ -297,7 +297,7 @@ public class SessionImpl implements Session {
     private native void nativeInit(String contact) throws DrmaaException;
     
     /**
-     * The runBulkJobs() method submits a Grid Engine array job very much as
+     * The runBulkJobs() method submits a Cluster Scheduler array job very much as
      * if the qsub option `-t <i>start</i>-<i>end</i>:<i>incr</i>' had been used
      * with the corresponding attributes defined in the DRMAA JobTemplate,
      * <i>jt</i>.  The same constraints regarding qsub -t value ranges also
@@ -335,7 +335,7 @@ public class SessionImpl implements Session {
     private native String[] nativeRunBulkJobs(int jtId, int start, int end, int incr) throws DrmaaException;
     
     /**
-     * The runJob() method submits a Grid Engine job with attributes defined in
+     * The runJob() method submits a Cluster Scheduler job with attributes defined in
      * the DRMAA JobTemplate <i>jt</i>. On success, the job identifier is
      * returned.
      * @param jt {@inheritDoc}

@@ -11,29 +11,29 @@
 <body>
 
 <h2>
-<font color="#990000">Kerberized Grid Engine Release Notes</font></h2>
-Kerberized Grid Engine provides for the authentication of Grid Engine users
-and Grid Engine daemons to ensure a secure queueing environment. Kerberized
-Grid Engine also supports automatic forwarding and renewal of Kerberos
+<font color="#990000">Kerberized Cluster Scheduler Release Notes</font></h2>
+Kerberized Cluster Scheduler provides for the authentication of Cluster Scheduler users
+and Cluster Scheduler daemons to ensure a secure queueing environment. Kerberized
+Cluster Scheduler also supports automatic forwarding and renewal of Kerberos
 ticket granting tickets (TGTs) on behalf of the user to the execution hosts
 to ensure that users' jobs will have the proper Kerberos credentials to
 execute other kerberized applications (e.g. PVM).
 <h4>
-Installation Instructions for Kerberized Grid Engine</h4>
-Kerberized Grid Engine requires Kerberos 5, release 1.0pl1 or later to
-be installed on all Grid Engine qmaster, shadow, execution, and submit
+Installation Instructions for Kerberized Cluster Scheduler</h4>
+Kerberized Cluster Scheduler requires Kerberos 5, release 1.0pl1 or later to
+be installed on all Cluster Scheduler qmaster, shadow, execution, and submit
 hosts.
 <br>You must also define some kerberos principals and add them to the Kerberos
 database and add some keys to the default keytabs of the qmaster and execution
 hosts. Detailed instructions for setting up your Kerberos database to execute
-Kerberized Grid Engine are included below. The instructions below include
+Kerberized Cluster Scheduler are included below. The instructions below include
 examples.
 <br>In the examples, the Kerberos domain is HPC-TX.COM. The qmaster host
 is fritz.hpc-tx.com and the execution host is constitution.hpc-tx.com.
 <br>&nbsp;
 <ol>
 <li>
-Add a principal for the Grid Engine service for each qmaster and shadow
+Add a principal for the Cluster Scheduler service for each qmaster and shadow
 host. Specify the qmaster or shadow host as the host portion of the principal.</li>
 
 <br>&nbsp;
@@ -78,7 +78,7 @@ host portion of the principal.</li>
 <br>$
 <br>&nbsp;
 <li>
-Add the Grid Engine, sge_qmaster, and sge_schedd principals to the default keytab
+Add the Cluster Scheduler, sge_qmaster, and sge_schedd principals to the default keytab
 on the qmaster host and any shadow hosts. (You need to be root to write
 to the default keytab.)</li>
 
@@ -121,21 +121,21 @@ encryption type DES-CBC-CRC added to keytab WRFILE:/etc/krb5.keytab.
 <br>#
 <br>&nbsp;
 <li>
-Follow the usual instructions for installing Grid Engine.</li>
+Follow the usual instructions for installing Cluster Scheduler.</li>
 </ol>
 
 <ul>
 <li>
 Kerberos Error Logging</li>
 
-<br>Kerberos errors are logged in the usual Grid Engine messages files
+<br>Kerberos errors are logged in the usual Cluster Scheduler messages files
 as well as the Kerberos library log file. Each kerberos error includes
-a descriptive Kerberos error message as well as the Grid Engine context
+a descriptive Kerberos error message as well as the Cluster Scheduler context
 in which the error occurred. Authentication failures are logged as errors.
 <li>
 TGT Forwarding and TGT Renewal</li>
 
-<br>In order for Kerberized Grid Engine to automatically forward and renew
+<br>In order for Kerberized Cluster Scheduler to automatically forward and renew
 TGTs for a job submitted by a user, the user must have obtained a forwardable
 and renewable TGT. This can be done by using the -f and -r switches when
 the kinit command is issued. To request a forwardable TGT which can be

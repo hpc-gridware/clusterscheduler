@@ -78,7 +78,7 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 # Required-Stop:
 # Default-Start:  3 5
 # Default-Stop: 0 1 2 6
-# Description:  start Grid Engine qmaster, schedd, shadowd
+# Description:  start Cluster Scheduler qmaster, schedd, shadowd
 ### END INIT INFO
 #---------------------------------------------------------------------------
 
@@ -426,11 +426,11 @@ DetectSMFService()
 #---------------------------------------------------------------------------
 usage()
 {
-   echo "Grid Engine start/stop script. Valid parameters are:"
+   echo "Cluster Scheduler start/stop script. Valid parameters are:"
    echo ""
    echo "   (no parameters): start qmaster and shadow daemon if applicable"
    echo "   \"start\"        dto."
-   echo "   \"stop\"         shutdown local Grid Engine processes and jobs"
+   echo "   \"stop\"         shutdown local Cluster Scheduler processes and jobs"
    echo "   \"-qmaster\"     only start/stop qmaster (if applicable)"
    echo "   \"-shadowd\"     only start/stop shadowd (if applicable)"   
    echo "   \"-migrate\"     shutdown qmaster if it's running on another"
@@ -492,13 +492,13 @@ done
 
 bin_dir=`GetPathToBinaries`
 if [ "$bin_dir" = "none" ]; then
-   echo "can't determine path to Grid Engine binaries"
+   echo "can't determine path to Cluster Scheduler binaries"
    exit 1
 fi
 
 utilbin_dir=`GetPathToUtilbin`
 if [ "$utilbin_dir" = "none" ]; then
-   echo "can't determine path to Grid Engine utility binaries"
+   echo "can't determine path to Cluster Scheduler utility binaries"
    exit 1
 fi
 
@@ -721,7 +721,7 @@ if [ "$startup" = true ]; then
    fi
 else
    if [ $shadowd = true -a $shadow_host = true ]; then
-      echo "   shutting down Grid Engine shadowd"
+      echo "   shutting down Cluster Scheduler shadowd"
       DetectSMFService shadowd
       if [ \( -z "$SMF_FMRI" -o "$SMF_FMRI" != "$service" \) -a -n "$service" ]; then
          svcadm disable -st $service
@@ -737,7 +737,7 @@ else
 
    if [ $qmaster = true ]; then
       if [ `CheckIfQmasterHost $HOST` = true ]; then
-         echo "   shutting down Grid Engine qmaster"
+         echo "   shutting down Cluster Scheduler qmaster"
          DetectSMFService qmaster
          if [ \( -z "$SMF_FMRI" -o "$SMF_FMRI" != "$service" \) -a -n "$service" ]; then
             svcadm disable -st $service

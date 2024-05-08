@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Grid Engine configuration script (Installation/Uninstallation/Upgrade/Downgrade)
+# Cluster Scheduler configuration script (Installation/Uninstallation/Upgrade/Downgrade)
 # Scriptname: inst_sge
 #
 #___INFO__MARK_BEGIN__

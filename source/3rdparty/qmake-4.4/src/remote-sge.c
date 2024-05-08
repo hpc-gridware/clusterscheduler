@@ -49,7 +49,7 @@ Boston, MA 02111-1307, USA.  */
 *     qmake is implemented based on GNU make 3.78.1 using the remote stub
 *     mechanism of gmake.
 *     qmake will start a parallel job and run make tasks as task in the
-*     parallel job using the Grid Engine qrsh -inherit command.
+*     parallel job using the Cluster Scheduler qrsh -inherit command.
 *
 *  INPUTS
 *     sge options - all options that can be specified with qsub command
@@ -248,7 +248,7 @@ int dynamic_mode;
 
 static char *program_name = 0;
 
-const char *remote_description = "distributed make\nload balancing by Grid Engine\n";
+const char *remote_description = "distributed make\nload balancing by Cluster Scheduler\n";
 
 static char *localhost;
 
@@ -1818,11 +1818,11 @@ int start_remote_job_p (int first_p)
       if(be_verbose) {
          if (dynamic_mode) {
             fprintf(stdout,
-                    "enabling next task to be scheduled as Grid Engine "
+                    "enabling next task to be scheduled as Cluster Scheduler "
                     "job\n");
          } else {
             fprintf(stdout,
-                    "enabling next task to be executed as Grid Engine "
+                    "enabling next task to be executed as Cluster Scheduler "
                     "parallel task\n");
          }
       }

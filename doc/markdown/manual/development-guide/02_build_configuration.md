@@ -8,7 +8,7 @@ to have that directory on a non-shared filesystem. The recommended path is
 where \$SGE\_MASTER\_PORT is the sge\_qmaster port of the optional test system and where 
 \$SGE\_ARCH is the architecture string of xxQS_NAMExx build
 host (e.g */usr/local/testsuite/8004/build/lx-amd64*). Within this document this directory is referred
-to as *\$OGE\_BUILD*.
+to as *\$OCS\_BUILD*.
 
 ```
 cd $SGE_BUILD
@@ -18,25 +18,25 @@ cmake ...
 3rd-party components will be built in a separate directory to avoid the need for regular rebuilds.
 You can overwrite the default of *\$HOME/3rdparty* with *PROJECT\_3RDPARTY\_HOME*
 (e.g. /usr/local/testsuite/8004/build\_3rdparty). Within this document this directory is referred
-to as *$OGE\_BUILD\_3RDPARTY*
+to as *$OCS\_BUILD\_3RDPARTY*
 
 ```
-cmake -DPROJECT_3RDPARTY_HOME=$OGE_BUILD_3RDPARTY
+cmake -DPROJECT_3RDPARTY_HOME=$OCS_BUILD_3RDPARTY
 ```
 
 ## Define Source and Target Directories
 
-Use the `-S` option to point it to the gridengine repository:
+Use the `-S` option to point it to the clusterscheduler repository:
 ```
-cmake -S $OGE_BASE/gridengine
+cmake -S $OCS_BASE/clusterscheduler
 ```
 
 If closed source extensions shall be built as well, then specify the path to their root directory
-with *PROJECT_EXTENSIONS*. The *PROJECT_FEATURES* variable can then be set to "oge-extensions" to overwrite
-the default value of "gridengine" to enforce that the product is built with enterprise features.
+with *PROJECT_EXTENSIONS*. The *PROJECT_FEATURES* variable can then be set to "gcs-extensions" to overwrite
+the default value of "clusterscheduler" to enforce that the product is built with enterprise features.
 
 ```
-cmake ... -DPROJECT_EXTENSIONS=$OGE_BASE/oge-extensions -DPROJECT_FEATURES="oge-extension"
+cmake ... -DPROJECT_EXTENSIONS=$OCS_BASE/oge-extensions -DPROJECT_FEATURES="oge-extension"
 ```
 
 If you want to install to a different location than the default */opt/ge* specify *CMAKE_INSTALL_PREFIX*:
@@ -137,11 +137,11 @@ documentation.
 
 ```
 cd /usr/local/testsuite/8004/build/lx-amd64
-cmake -S /home/ebablick/OGE/ge2/gridengine \
+cmake -S /home/ebablick/OCS/ge2/clusterscheduler \
       -DPROJECT_3RDPARTY_HOME=/usr/local/testsuite/8004/build_3rdparty \
-      -DPROJECT_EXTENSIONS=/home/ebablick/OGE/ge2/oge-extensions \
+      -DPROJECT_EXTENSIONS=/home/ebablick/OCS/ge2/oge-extensions \
       -DPROJECT_FEATURES="oge-extension" \
-      -DCMAKE_INSTALL_PREFIX=/home/ebablick/OGE/ge2/inst \
+      -DCMAKE_INSTALL_PREFIX=/home/ebablick/OCS/ge2/inst \
       -DCMAKE_BUILD_TYPE=Debug \
       -DINSTALL_SGE_BIN=ON \
       -DINSTALL_SGE_COMMON=ON \
@@ -154,7 +154,7 @@ cmake -S /home/ebablick/OGE/ge2/gridengine \
 
 Here we use *CLion* as example because it provides full integration with CMake to build the source code.
 
-1) Open the $OGE\_BASE directory as *CLion* project. This is the directory in which you cloned all
+1) Open the $OCS\_BASE directory as *CLion* project. This is the directory in which you cloned all
    xxQS_NAMExx related repositories   
 2) Choose "CLion" => "Settings" to open the "Settings" Dialog
 3) Goto section "Build, Execution, Deployment" => "CMake"
@@ -164,7 +164,7 @@ Here we use *CLion* as example because it provides full integration with CMake t
    ![Clion's CMake Settings](file://__IMAGE_DIR__/clion_settings_cmake.png)
 
 5) In the *Project Browser* select the *CMakeLists.txt* file within the
-   *gridengine* folder, open the context menu and select "Load CMake Project". This step tells Clion the location of 
+   *clusterscheduler* folder, open the context menu and select "Load CMake Project". This step tells Clion the location of 
    the source code.
 6) Add make options as needed (e.g. `-j` for a parallel build or *VERBOSE=1* to see the individual build commands
    during the build step)

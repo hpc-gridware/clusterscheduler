@@ -372,7 +372,7 @@ This function must be called for the functions `jsv_show_envs`(), `jsv_is_env`()
 Job environments might become very big (10K and more). This will slow down the executing component (submit client 
 or master daemon thread). For this reason, job environment information is not passed to JSV scripts by default.
 
-Please note also that the data in the job environment can't be verified by Grid Engine and might therefore contain 
+Please note also that the data in the job environment can't be verified by xxQS_NAMExx and might therefore contain 
 data which could be misinterpreted in the script environment and cause security issues.
 
 ## jsv_main()

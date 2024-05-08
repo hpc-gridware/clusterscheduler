@@ -1,13 +1,13 @@
                                  MPI 
                                  ---
-                 Grid Engine Parallel Support for MPI
-                 ------------------------------------
+                 Cluster Scheduler Parallel Support for MPI
+                 ------------------------------------------
 
 Content
 -------
 
 1) Content of this directory hierarchy
-2) Integration package between Grid Engine and Sun HPC ClusterTools(TM)
+2) Integration package between Cluster Scheduler and Sun HPC ClusterTools(TM)
 3) mpi.template 
 4) mpich.template
 5) startmpi.sh
@@ -27,8 +27,8 @@ This directory contains the following files and directories:
    SunHPCT5/        integration package with Sun HPC ClusterTools 5
    startmpi.sh      startup script for MPI
    stopmpi.sh       shutdown script for MPI
-   mpi.template     a MPI PE template configuration for Grid Engine
-   mpich.template   a MPICH PE template configuration for Grid Engine
+   mpi.template     a MPI PE template configuration for Cluster Scheduler
+   mpich.template   a MPICH PE template configuration for Cluster Scheduler
                     (tight integration)
    mpi.sh           a sample MPI job
    mpi_cpi.sh       another MPI job
@@ -36,10 +36,10 @@ This directory contains the following files and directories:
 
 Please refer to the "Installation and Administration Guide" Chapter "Support
 of Parallel Environments" for a general introduction to the Parallel
-Environment Interface of Grid Engine.
+Environment Interface of Cluster Scheduler.
 
 
-2) Integration package between Grid Engine and Sun HPC ClusterTools(TM)
+2) Integration package between Cluster Scheduler and Sun HPC ClusterTools(TM)
 ------------------------------------------------------------------------
 
    In the directory
@@ -47,9 +47,9 @@ Environment Interface of Grid Engine.
       SunHPCT5/
 
    you find a package to create a tight integration between Sun HPC
-   ClusterTools (HPCT) 5 and Grid Engine.
+   ClusterTools (HPCT) 5 and Cluster Scheduler.
 
-   The setup to integrate HPCT und Grid Engine is explained in detail in
+   The setup to integrate HPCT und Cluster Scheduler is explained in detail in
    "Sun HPC ClusterTools 5 Software Administrator's Guide" (Part No. 
    817-0083-10). This information in this directory provides additional
    information which should be read in conjunction with the HPCT manual.
@@ -64,10 +64,10 @@ Environment Interface of Grid Engine.
    with the appropriate information. The PE then must be added to all queues
    in the "pe_list" line where it should be made available.
 
-   Grid Engine offers an additional interface which allows a tighter
+   Cluster Scheduler offers an additional interface which allows a tighter
    integration with public domain MPI (MPICH). Tighter integration means
    that all tasks of your MPICH application are under full control of
-   Grid Engine. This is precondition for some additional benefits:
+   Cluster Scheduler. This is precondition for some additional benefits:
 
    - full accounting also for all tasks of MPI jobs
    - resource limits are effective for all tasks
@@ -96,7 +96,7 @@ Environment Interface of Grid Engine.
    - can't trigger job finish if application finishes partially
 
    There are two samples included. You should use these samples to verify
-   that your integration of Grid Engine with MPI/MPICH works correctly.
+   that your integration of Cluster Scheduler with MPI/MPICH works correctly.
 
 
 5) startmpi.sh
@@ -109,7 +109,7 @@ Environment Interface of Grid Engine.
    machine file in $TMPDIR/machines to be passed to "mpirun" at job
    start.
 
-   $TMPDIR is a temporary directory created and removed by the Grid Engine
+   $TMPDIR is a temporary directory created and removed by the Cluster Scheduler
    execution daemon.
 
 
@@ -131,7 +131,7 @@ Environment Interface of Grid Engine.
       -np $NSLOTS
 
    to start the job with the correct number of slots ($NSLOTS is set by
-   Grid Engine). To pass information where to start the MPI tasks one has to
+   Cluster Scheduler). To pass information where to start the MPI tasks one has to
    pass
 
       -machinefile $TMPDIR/machines

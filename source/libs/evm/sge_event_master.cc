@@ -1231,7 +1231,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 *
 *  FUNCTION
 *     Adds an object to the list of events to deliver. Called, if an event 
-*     occurs to that object, e.g. it was added to Grid Engine, modified or 
+*     occurs to that object, e.g. it was added to Cluster Scheduler, modified or 
 *     deleted.
 *  
 *     Internally, a list with that single object is created and passed to 
@@ -2289,7 +2289,7 @@ flush_events(lListElem *event_client, int interval) {
 *  NOTES
 *     MT-NOTE: total_update() is MT safe, IF the function is invoked with
 *     MT-NOTE: 'LOCK_EVENT_CLIENT_LST' locked! This is in accordance with
-*     MT-NOTE: the acquire/release protocol as defined by the Grid Engine
+*     MT-NOTE: the acquire/release protocol as defined by the Cluster Scheduler
 *     MT-NOTE: Locking API.
 *     MT-NOTE: the method also locks the global lock. One has to make sure,
 *     MT-NOTE: that no calling method has that lock already.

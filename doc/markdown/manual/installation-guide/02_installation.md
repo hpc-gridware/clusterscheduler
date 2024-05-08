@@ -100,11 +100,11 @@ Here are the steps required to complete the installation.
 
    ```
    # ./install_qmaster
-   Welcome to the Grid Engine installation
-   ---------------------------------------
+   Welcome to the Cluster Scheduler installation
+   ---------------------------------------------
  
-   Grid Engine qmaster host installation
-   -------------------------------------
+   Cluster Scheduler qmaster host installation
+   -------------------------------------------
  
    Before you continue with the installation please read these hints:
  
@@ -123,8 +123,8 @@ Here are the steps required to complete the installation.
 4. Admin User: Either accept the suggested admin user or reject it. If you reject the suggestion then you can select a different one.
 
    ```
-   Grid Engine admin user account
-   ------------------------------ 
+   Cluster Scheduler admin user account
+   ------------------------------------ 
    
    The current directory
    
@@ -135,14 +135,14 @@ Here are the steps required to complete the installation.
       <admin_user>
    
    If user >root< does not have write permissions in this directory on *all*
-   of the machines where Grid Engine will be installed (NFS partitions not
+   of the machines where Cluster Scheduler will be installed (NFS partitions not
    exported for user >root< with read/write permissions) it is recommended to
-   install Grid Engine that all spool files will be created under the user id
+   install Cluster Scheduler that all spool files will be created under the user id
    of user >admin_user<.
 
    IMPORTANT NOTE: The daemons still have to be started by user >root<.
 
-   Do you want to install Grid Engine as admin user >admin_user< (y/n) [y] >> 
+   Do you want to install Cluster Scheduler as admin user >admin_user< (y/n) [y] >> 
    ```
    
 5. Installation Location: Specify the installation directory. The suggested default is the directory you set in installation step 2.
@@ -151,7 +151,7 @@ Here are the steps required to complete the installation.
    Checking $SGE_ROOT directory
    ---------------------------- 
    
-   The Grid Engine root directory is:
+   The Cluster Scheduler root directory is:
    
       $SGE_ROOT = <installation_directory>
    
@@ -163,8 +163,8 @@ Here are the steps required to complete the installation.
 6. Master Service Port: Specify which service port should be used for the master service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_qmaster` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
 
    ```
-   Grid Engine TCP/IP communication service
-   ----------------------------------------
+   Cluster Scheduler TCP/IP communication service
+   ----------------------------------------------
    
    The port for sge_qmaster is currently set as service.
    
@@ -178,7 +178,7 @@ Here are the steps required to complete the installation.
   
    to your services database and make sure to use an unused port number.
   
-   How do you want to configure the Grid Engine communication ports?
+   How do you want to configure the Cluster Scheduler communication ports?
    
    Using the >shell environment<:                           [1]
    
@@ -190,8 +190,8 @@ Here are the steps required to complete the installation.
 7. Execution Service Port: Specify which service port should be used for the execution service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_execd` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
 
    ```
-   Grid Engine TCP/IP communication service
-   ----------------------------------------
+   Cluster Scheduler TCP/IP communication service
+   ----------------------------------------------
    
    The port for sge_execd is currently set as service.
    
@@ -205,7 +205,7 @@ Here are the steps required to complete the installation.
   
    to your services database and make sure to use an unused port number.
   
-   How do you want to configure the Grid Engine communication ports?
+   How do you want to configure the Cluster Scheduler communication ports?
    
    Using the >shell environment<:                           [1]
    
@@ -217,13 +217,13 @@ Here are the steps required to complete the installation.
 8. Cluster Cell: Either confirm the *default* cell name for the cluster or specify a different name that does not collide with the cell names of other clusters that you might have installed previously.
 
    ```
-   Grid Engine cells
-   -----------------
+   Cluster Scheduler cells
+   -----------------------
    
-   Grid Engine supports multiple cells. 
+   Cluster Scheduler supports multiple cells. 
    
-   If you are not planning to run multiple Grid Engine clusters or if you don't
-   know yet what is a Grid Engine cell it is safe to keep the default cell name
+   If you are not planning to run multiple Cluster Scheduler clusters or if you don't
+   know yet what is a Cluster Scheduler cell it is safe to keep the default cell name
    
       default
    
@@ -233,7 +233,7 @@ Here are the steps required to complete the installation.
    
       $SGE_CELL=<your_cell_name>
    
-   will be set for all further Grid Engine commands.
+   will be set for all further Cluster Scheduler commands.
    
    Enter cell name [default] >> 
    ```
@@ -244,7 +244,7 @@ Here are the steps required to complete the installation.
    Unique cluster name
    -------------------
    
-   The cluster name uniquely identifies a specific Sun Grid Engine cluster.
+   The cluster name uniquely identifies a specific Cluster Scheduler cluster.
    The cluster name must be unique throughout your organization. The name 
    is not related to the SGE cell.
    
@@ -258,8 +258,8 @@ Here are the steps required to complete the installation.
 10. Master Spool Directory: Specify the spooling location for the master service. The suggested default will be a directory with your specified cell name within the installation directory.
 
     ```
-    Grid Engine qmaster spool directory
-    -----------------------------------
+    Cluster Scheduler qmaster spool directory
+    -----------------------------------------
     
     The qmaster spool directory is the place where the qmaster daemon stores
     the configuration and the state of the queuing system.
@@ -269,7 +269,7 @@ Here are the steps required to complete the installation.
     
     If you will install shadow master hosts or if you want to be able to start
     the qmaster daemon on other hosts (see the corresponding section in the
-    Grid Engine Installation and Administration Manual for details) the account
+    Cluster Scheduler Installation and Administration Manual for details) the account
     on the shadow master hosts also needs read/write access to this directory.
     
     Enter a qmaster spool directory [<installation_directory>/<cell_name>] >> 
@@ -278,8 +278,8 @@ Here are the steps required to complete the installation.
 11. Hostname Resolving: Specify if all hosts that should participate in the cluster are part of one single domain.
 
     ```
-    Select default Grid Engine hostname resolving method
-    ---------------------------------------------------- 
+    Select default Cluster Scheduler hostname resolving method
+    ---------------------------------------------------------- 
     
     Are all hosts of your cluster in one DNS domain? If this is
     the case the hostnames 
@@ -317,12 +317,12 @@ Here are the steps required to complete the installation.
 14. Job Observation via GID's: Specify an available group ID range.
 
     ```
-    Grid Engine group id range
-    --------------------------
+    Cluster Scheduler group id range
+    --------------------------------
   
-    When jobs are started under the control of Grid Engine an additional group id
+    When jobs are started under the control of Cluster Scheduler an additional group id
     is set on platforms which do not support jobs. This is done to provide maximum
-    control for Grid Engine jobs.
+    control for Cluster Scheduler jobs.
     
     This additional UNIX group id range must be unused group id's in your system.
     Each job will be assigned a unique id during the time it is running.
@@ -330,9 +330,9 @@ Here are the steps required to complete the installation.
     dynamically for jobs.
   
     The range must be big enough to provide enough numbers for the maximum number
-    of Grid Engine jobs running at a single moment on a single host. E.g. a range
-    like >20000-20100< means, that Grid Engine will use the group ids from
-    20000-20100 and provides a range for 100 Grid Engine jobs at the same time
+    of Cluster Scheduler jobs running at a single moment on a single host. E.g. a range
+    like >20000-20100< means, that Cluster Scheduler will use the group ids from
+    20000-20100 and provides a range for 100 Cluster Scheduler jobs at the same time
     on a single host.
   
     You can change at any time the group id range in your cluster configuration.
@@ -343,10 +343,10 @@ Here are the steps required to complete the installation.
 15. Execution Service Spooling Location: Specify a default spooling location that should be used by all execution nodes.
 
     ```
-    Grid Engine cluster configuration
-    ---------------------------------
+    Cluster Scheduler cluster configuration
+    ---------------------------------------
     
-    Please give the basic configuration parameters of your Grid Engine
+    Please give the basic configuration parameters of your Cluster Scheduler
     installation:
   
        <execd_spool_dir>
@@ -360,8 +360,8 @@ Here are the steps required to complete the installation.
 16. Administrator Mail: Specify the mail address that should receive administrator mail.
 
     ```
-    Grid Engine cluster configuration (continued)
-    --------------------------------------------- 
+    Cluster Scheduler cluster configuration (continued)
+    --------------------------------------------------- 
     
     <administrator_mail>
   
@@ -407,8 +407,8 @@ Here are the steps required to complete the installation.
 19. Service Start: Now the master service is started.
 
     ```
-    Grid Engine qmaster startup
-    --------------------------- 
+    Cluster Scheduler qmaster startup
+    --------------------------------- 
     
     Starting qmaster daemon. Please wait ...
        starting sge_qmaster
@@ -418,8 +418,8 @@ Here are the steps required to complete the installation.
 20. Host Permissions: Select the hosts that should later on run the execution service. Those host will be administration hosts and submit hosts automatically.
 
     ```
-    Adding Grid Engine hosts
-    ------------------------
+    Adding Cluster Scheduler hosts
+    ------------------------------
     
     Please now add the list of hosts, where you will later install your execution
     daemons. These hosts will be also added as valid submit hosts.
@@ -429,7 +429,7 @@ Here are the steps required to complete the installation.
     simply press <RETURN> without entering a name.
     
     You also may prepare a file with the hostnames of the machines where you plan
-    to install Grid Engine. This may be convenient if you are installing Grid
+    to install Cluster Scheduler. This may be convenient if you are installing Grid
     Engine on many hosts. 
     
     Do you want to use a file which contains the list of hosts (y/n) [n] >> 
@@ -444,7 +444,7 @@ Here are the steps required to complete the installation.
     Please enter a blank seperated list of hosts. 
     
     Stop by entering <RETURN>. You may repeat this step until you are
-    entering an empty list. You will see messages from Grid Engine
+    entering an empty list. You will see messages from Cluster Scheduler
     when the hosts are added.
     
     Host(s): 
@@ -453,8 +453,8 @@ Here are the steps required to complete the installation.
     Optionally you also add your shadow hosts now as administrative hosts:
  
     ```
-    Adding Grid Engine shadow hosts
-    -------------------------------
+    Adding Cluster Scheduler shadow hosts
+    -------------------------------------
     
     Please now add the list of hosts, where you will later install your shadow
     daemon. 
@@ -464,7 +464,7 @@ Here are the steps required to complete the installation.
     simply press <RETURN> without entering a name. 
     
     You also may prepare a file with the hostnames of the machines where you plan
-    to install Grid Engine. This may be convenient if you are installing Grid
+    to install Cluster Scheduler. This may be convenient if you are installing Grid
     Engine on many hosts. 
     
     Do you want to use a file which contains the list of hosts (y/n) [n] >> 
@@ -479,7 +479,7 @@ Here are the steps required to complete the installation.
     Please enter a blank seperated list of hosts.
     
     Stop by entering <RETURN>. You may repeat this step until you are
-    entering an empty list. You will see messages from Grid Engine
+    entering an empty list. You will see messages from Cluster Scheduler
     when the hosts are added.
     
     Host(s): 
@@ -526,8 +526,8 @@ Here are the steps required to complete the installation.
 23. Installation Summary
 
     ```
-    Using Grid Engine
-    -----------------
+    Using Cluster Scheduler
+    -----------------------
     
     You should now enter the command:
    
@@ -546,19 +546,19 @@ Here are the steps required to complete the installation.
        - $SGE_CLUSTER_NAME (always necessary)
        - $SGE_QMASTER_PORT (if you haven't added the service >sge_qmaster<)
        - $SGE_EXECD_PORT   (if you haven't added the service >sge_execd<)
-       - $PATH/$path       (to find the Grid Engine binaries)
+       - $PATH/$path       (to find the Cluster Scheduler binaries)
        - $MANPATH          (to access the manual pages)
   
-    Hit <RETURN> to see where Grid Engine logs messages >> 
+    Hit <RETURN> to see where Cluster Scheduler logs messages >> 
     ```
  
     Note down the details how you can prepare to use the cluster.
  
     ```
-    Grid Engine messages
-    --------------------
+    Cluster Scheduler messages
+    --------------------------
     
-    Grid Engine messages can be found at:
+    Cluster Scheduler messages can be found at:
     
        /tmp/qmaster_messages (during qmaster startup)
        /tmp/execd_messages   (during execution daemon startup)
@@ -569,22 +569,22 @@ Here are the steps required to complete the installation.
        Exec daemon: <execd_spool_dir>/<hostname>/messages
    
  
-    Grid Engine startup scripts
-    ---------------------------
+    Cluster Scheduler startup scripts
+    ---------------------------------
     
-    Grid Engine startup scripts can be found at:
+    Cluster Scheduler startup scripts can be found at:
     
        <install_dir>/<cell_name>/common/sgemaster (qmaster)
        <install_dir>/<cell_name>/common/sgeexecd (execd)
  
-    Do you want to see previous screen about using Grid Engine again (y/n) [n] >>
+    Do you want to see previous screen about using Cluster Scheduler again (y/n) [n] >>
     ```
    
     Should you have seen error messages during the installation then the mentioned message files will contain more details about them.
  
     ```
-    Your Grid Engine qmaster installation is now completed
-    ------------------------------------------------------ 
+    Your Cluster Scheduler qmaster installation is now completed
+    ------------------------------------------------------------ 
     
     Please now login to all hosts where you want to run an execution daemon
     and start the execution host installation procedure.
@@ -611,7 +611,7 @@ Here are the steps required to complete the installation.
 
 ## Backup and Restore
 
-## Upgrading Open Grid Engine
+## Upgrading Open Cluster Scheduler
 
 ## Testing the Installation/Upgrade
 

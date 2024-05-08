@@ -38,13 +38,13 @@
 /****** uti/sl/--SimpleList() **********************************************
 *
 *  NAME
-*     sl - A Simple List Implementation for Grid Engine
+*     sl - A Simple List Implementation for Cluster Scheduler
 *
 *  SYNOPSIS
 *
 *  FUNCTION
 *     This module provides a simple and thread safe list
-*     implementation for Grid Engine. Lists can be created, destroyed
+*     implementation for Cluster Scheduler. Lists can be created, destroyed
 *     and the number of the contained nodes can be retrieved. 
 *
 *        sge_sl_create()

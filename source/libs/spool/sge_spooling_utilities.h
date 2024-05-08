@@ -98,7 +98,7 @@
 *  NOTES
 *     May not allow really comprehensive output in all possible variations,
 *     but it seems to be sufficient for all spooling and output done in
-*     Grid Engine.
+*     Cluster Scheduler.
 *
 *  SEE ALSO
 *     spool/utilities/spool_get_fields_to_spool()

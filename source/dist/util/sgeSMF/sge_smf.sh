@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Sun Grid Engine SMF client
+# Cluster Scheduler SMF client
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################

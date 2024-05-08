@@ -79,7 +79,7 @@ typedef struct {
 *     delete a job.
 *
 *     It was created to allow an easier integration of the MAUI scheduler 
-*     into Grid Engine.
+*     into Cluster Scheduler.
 *
 *  SEE ALSO
 *     schedlib/ssi/sge_ssi_job_start()

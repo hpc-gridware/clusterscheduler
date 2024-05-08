@@ -42,7 +42,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "Open Grid Engine"
+PROJECT_NAME           = "Open Cluster Scheduler"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -950,8 +950,8 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 # Paths have to be relative to the doc/doxygen directory
-#INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../../../gridengine/source/  @CMAKE_CURRENT_SOURCE_DIR@/../../../oge-extensions/source/
-#INPUT                  = ./gridengine/source/ ./oge-extensions/source/
+#INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../../../clusterscheduler/source/  @CMAKE_CURRENT_SOURCE_DIR@/../../../oge-extensions/source/
+#INPUT                  = ./clusterscheduler/source/ ./oge-extensions/source/
 INPUT                  = ./oge-extensions/source/
 
 # This tag can be used to specify the character encoding of the source files

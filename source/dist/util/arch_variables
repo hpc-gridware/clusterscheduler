@@ -34,11 +34,11 @@
 ##########################################################################
 #___INFO__MARK_END__
 #
-# Get Grid Engine architecture and set architecture dependent variables.
+# Get Cluster Scheduler architecture and set architecture dependent variables.
 # This script is *sourced* by the installation procedure
 #
 # There are also a couple of shell functions defined which are used by other
-# Grid Engine utility script.
+# Cluster Scheduler utility script.
 #
 
 

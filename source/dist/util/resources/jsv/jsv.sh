@@ -65,7 +65,7 @@ PATH=/bin:/usr/bin
 #  NOTES
 #     By using jsv_send_env call the JSV scripts requests the 
 #     job environment for a job. The data contained in this
-#     environment is not verified by Grid Engine and might 
+#     environment is not verified by Cluster Scheduler and might 
 #     therefore contain data which could cause issues in JSV 
 #     scrips. Be carefull when you interprete or otherwise use 
 #     that information.

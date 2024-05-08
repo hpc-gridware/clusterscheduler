@@ -52,12 +52,12 @@ SGE_CELL=${SGE_CELL:-default}
 host=`hostname`
 
 if [ "$PE" = "" ]; then
-   print -u2 PE is not set, sge_mpirun must be issued from a Grid Engine parallel job
+   print -u2 PE is not set, sge_mpirun must be issued from a Cluster Scheduler parallel job
    exit 2
 fi
 
 if [ "$NSLOTS" = "" ]; then
-   print -u2 NSLOTS is not set, sge_mpirun must be issued from a Grid Engine parallel job
+   print -u2 NSLOTS is not set, sge_mpirun must be issued from a Cluster Scheduler parallel job
    exit 3
 fi
 

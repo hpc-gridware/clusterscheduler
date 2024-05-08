@@ -3,7 +3,7 @@
 	"summary":	"Complex Entry",
 	"description":	[{
 			"line":	"A complex entry contains a complex variable, both its definition as well as a possible current value"
-			}, { "line":	"A complex variable is used for defining all types of attributes in Grid Engine"
+			}, { "line":	"A complex variable is used for defining all types of attributes in Cluster Scheduler"
 			}, { "line":	"as well as defining fixed values of resources and the capacity of consumable resources."
 			}, { "line":	"@todo should be we better split definition and values into two objects?"
 		}],

@@ -27,7 +27,7 @@
  *   All Rights Reserved.
  * 
  ************************************************************************/
-/* scanner for Grid Engine ascii spool format
+/* scanner for Cluster Scheduler ascii spool format
  *
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * !! when you change this file, re-generate the c/c++ code of the scanner:                  !!

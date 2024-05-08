@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Set file permissions of Grid Engine distribution
+# Set file permissions of Cluster Scheduler distribution
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################
@@ -109,7 +109,7 @@ fi
 
 if [ $# -lt 1 ]; then
    echo
-   echo Set file permissions and owner of Grid Engine distribution in \$SGE_ROOT
+   echo Set file permissions and owner of Cluster Scheduler distribution in \$SGE_ROOT
    echo 
    echo "usage: $0 [-auto] <sge_root>"
    echo 
@@ -183,7 +183,7 @@ fi
 for f in $FILELIST; do
    if [ ! -f $f -a ! -d $f ]; then
       $ECHO
-      $ECHO "Obviously this is not a complete Grid Engine distribution or this"
+      $ECHO "Obviously this is not a complete Cluster Scheduler distribution or this"
       $ECHO "is not your \$SGE_ROOT directory."
       $ECHO
       $ECHO "Missing file or directory: $f"

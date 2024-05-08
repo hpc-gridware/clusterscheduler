@@ -11,7 +11,7 @@ that use the faster ATM connection instead of slow ethernet connections.
 MPI will automatically use ATM interconnections in case the MPI machinefile
 contains ATM hostnames instead of regular hostnames. The machine file is
 created by the startup script 'startmpi.sh' for MPI parallel environments
-according the decisions of the Grid Engine scheduler. The mapping from
+according the decisions of the Cluster Scheduler scheduler. The mapping from
 regular hostnames into ATM hostnames should be done by the startup script
 for MPI parallel environments.
 

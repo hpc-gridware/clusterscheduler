@@ -7,7 +7,7 @@ jsv_on_start()
 
 jsv_on_verify()
 {
-   jsv_reject_wait "Grid Engine is in maintainance mode and does not accept new jobs"
+   jsv_reject_wait "Cluster Scheduler is in maintainance mode and does not accept new jobs"
 }
 
 . ${SGE_ROOT}/util/resources/jsv/jsv_include.sh

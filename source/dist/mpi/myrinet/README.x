@@ -5,11 +5,11 @@ to MPICH-GM versions prior to the 1.2.4..8a release.
 
                                  MPI/Myrinet
                                  -----------
-                 Grid Engine Parallel Support for MPI/Myrinet
-                 --------------------------------------------
+                 Cluster Scheduler Parallel Support for MPI/Myrinet
+                 --------------------------------------------------
 
 This file describes how to setup a parallel environment integration
-which supports running distributed parallel MPI jobs under Grid Engine
+which supports running distributed parallel MPI jobs under Cluster Scheduler
 using the MPICH/GM software on clusters using Myrinet cards for
 communication.
 
@@ -37,9 +37,9 @@ This directory contains the following files and directories:
    README           this file 
    startmpi.sh      startup script for MPI/Myrinet
    stopmpi.sh       shutdown script for MPI/Myrinet
-   mpi.template     a MPICH/Myrinet PE template configuration for Grid Engine
+   mpi.template     a MPICH/Myrinet PE template configuration for Cluster Scheduler
                     (loose integration)
-   mpich.template   a MPICH/Myrinet PE template configuration for Grid Engine
+   mpich.template   a MPICH/Myrinet PE template configuration for Cluster Scheduler
                     (tight integration)
    gmps             utility program for reporting Myrinet port usage
    hostname         a wrapper for the hostname command
@@ -47,7 +47,7 @@ This directory contains the following files and directories:
 
 Please refer to the "Installation and Administration Guide" Chapter "Support
 of Parallel Environments" for a general introduction to the Parallel
-Environment Interface of Grid Engine.
+Environment Interface of Cluster Scheduler.
 
 
 2) mpi.template
@@ -60,10 +60,10 @@ Environment Interface of Grid Engine.
    and qmon(1) man pages for additional information on how to create parallel
    environments.
 
-   Grid Engine offers an additional interface which allows a tighter
+   Cluster Scheduler offers an additional interface which allows a tighter
    integration with public domain MPI which is ported for use with
    Myrinet cards (MPICH/GM). Tighter integration means that all tasks
-   of your MPICH application are under full control of Grid Engine.
+   of your MPICH application are under full control of Cluster Scheduler.
    This is necessary for these additional benefits:
 
    - full accounting for all tasks of MPI jobs
@@ -113,7 +113,7 @@ Environment Interface of Grid Engine.
    MPI machine file. On successful completion startmpi.sh creates a
    machine file in $TMPDIR/machines to be passed to "mpirun.ch_gm" at job
    start. $TMPDIR is a temporary directory created and removed by the
-   Grid Engine execution daemon.
+   Cluster Scheduler execution daemon.
    
    The second argument command line argument of the starter script should
    be the path of the MPICH/GM mpirun.ch_gm command.
@@ -131,15 +131,15 @@ Environment Interface of Grid Engine.
 
    The sge_mpirun command should be used in the user's job script to
    start the MPI program. The sge_mpirun command ensures that the right
-   number of tasks get started on the hosts scheduled by Grid Engine. The
+   number of tasks get started on the hosts scheduled by Cluster Scheduler. The
    sge_mpirun command is installed in $SGE_ROOT/mpi/myrinet.  You may
    want to create a link to it in $SGE_ROOT/bin/<arch>/sge_mpirun.
    The sge_mpirun command will then be in the user's PATH, if they
-   have sourced the Grid Engine settings file.
+   have sourced the Cluster Scheduler settings file.
 
    An alternative to using the sge_mpirun command is for the user
    to execute the MPICH/GM mpirun command and provide the machines
-   file created by Grid Engine.
+   file created by Cluster Scheduler.
 
       mpirun.ch_gm --gm-f $TMPDIR/machines --gm-kill 15 -np $NSLOTS a.out
 
@@ -149,12 +149,12 @@ Environment Interface of Grid Engine.
 
    A queue must be setup for each processor rather than each host.
    The "processors" queue attribute should contain a unique Myrinet port
-   number for each queue.  This allows Grid Engine to schedule MPI tasks to a
+   number for each queue.  This allows Cluster Scheduler to schedule MPI tasks to a
    particular processor rather than simply scheduling a certain number of
    MPI tasks to a host. The Myrinet MPICH software requires that each MPI task
    use a unique Myrinet port number. By default, the Myrinet MPICH software
    supports 8 ports on each Myrinet card, 6 of which can be used for MPI
-   communication (ports 2,3,4,5,6,7). Grid Engine must decide which port
+   communication (ports 2,3,4,5,6,7). Cluster Scheduler must decide which port
    should be used for each MPI task. This is implemented by using
    the "processors" queue attribute to identify the Myrinet port
    number for each queue. Therefore, the first queue should use Myrinet port
@@ -171,7 +171,7 @@ Environment Interface of Grid Engine.
    you can set the queue attribute tmpdir to /usr/var/tmp.
 
    For loose integrations, the terminate_method attribute on all the
-   parallel queues should be set to SIGTERM. This tells Grid Engine to
+   parallel queues should be set to SIGTERM. This tells Cluster Scheduler to
    terminate the MPI jobs using a SIGTERM signal instead of a SIGKILL.
    This allows the mpirun.ch_gm command to "clean up" all the MPI tasks
    by sending them a SIGTERM signal. The default SIGKILL will result in
@@ -197,14 +197,14 @@ Environment Interface of Grid Engine.
    The main reason for implementing the a queue-per-processor method is
    the simplicity and built-in fault tolerance of this design versus
    maintaining a port database which tracks which ports are in use.
-   Since the port numbers are allocated and cleaned up by Grid Engine
+   Since the port numbers are allocated and cleaned up by Cluster Scheduler
    itself rather than in the startmpi.sh/stopmpi.sh scripts, the design
    is less likely to have port cleanup problems due to the stopmpi.sh
    not running or when a host goes down.  Dealing with additional queues
    can be a pain, but hopefully the benefits of a simple, clean,
    fault-tolerant design will outweigh the hassle of multiple queues.
-   The Grid Engine developers have discussed an enhancement to consumable
-   resources which would allow Grid Engine to schedule and track particular
+   The Cluster Scheduler developers have discussed an enhancement to consumable
+   resources which would allow Cluster Scheduler to schedule and track particular
    resources (e.g. ports 1 and 2) rather than just tracking the amount of
    resources consumed. This would obviate the need for a queue per CPU,
    and is probably the best long term solution.
@@ -221,8 +221,8 @@ Environment Interface of Grid Engine.
    The Myrinet MPICH/GM software can be configured to use rsh or ssh
    or a specific path to rsh or ssh.  We recommend that you configure
    MPICH/GM using the default rsh.  This makes it easy for the integration
-   to override rsh and use Grid Engine's qrsh command to run the MPI tasks
-   under Grid Engine's control.
+   to override rsh and use Cluster Scheduler's qrsh command to run the MPI tasks
+   under Cluster Scheduler's control.
 
 11) Copyright
 -------------

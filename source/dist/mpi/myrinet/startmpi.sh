@@ -55,7 +55,7 @@ set +u
 PeHostfile2MachineFile()
 {
    #
-   # PeHostfile2MachineFile converts the Grid Engine hostfile to an
+   # PeHostfile2MachineFile converts the Cluster Scheduler hostfile to an
    # MPICH-GM machine file.
    #
 
@@ -90,7 +90,7 @@ PeHostfile2MachineFile()
 
 
 #
-# startup of MPI conforming with the Grid Engine
+# startup of MPI conforming with the Cluster Scheduler
 # Parallel Environment interface
 #
 # on success the job will find a machine-file in $TMPDIR/machines

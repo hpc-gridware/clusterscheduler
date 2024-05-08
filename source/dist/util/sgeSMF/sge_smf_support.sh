@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Sun Grid Engine SMF support script
+# Cluster Scheduler SMF support script
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################

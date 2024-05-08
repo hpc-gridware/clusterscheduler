@@ -65,7 +65,7 @@ PeHostfile2MachineFile()
 
 
 #
-# startup of MPI conforming with the Grid Engine
+# startup of MPI conforming with the Cluster Scheduler
 # Parallel Environment interface
 #
 # on success the job will find a machine-file in $TMPDIR/machines

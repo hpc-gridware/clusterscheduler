@@ -157,18 +157,18 @@ apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev libjemalloc2 libjemalloc-
 ## Clone the Required Repositories
 
 Create a directory that will hold all git repositories for xxQS_NAMExx. Within this document this directory is referred 
-to as *$OGE_BASE*. 
+to as *$OCS_BASE*. 
 
 ```
-cd $OGE_BASE
-git clone https://github.com/opengridengine/gridengine
-git clone https://github.com/opengridengine/testsuite
+cd $OCS_BASE
+git clone https://github.com/hpc-gridware/clusterscheduler
+git clone https://github.com/hpc-gridware/testsuite
 ```
 
 If you want to build with closed source extensions then additionally clone
 
 ```
-git clone https://github.com/opengridengine/oge-extensions
-git clone https://github.com/opengridengine/oge-testsuite
+git clone https://github.com/hpc-gridware/gcs-extensions
+git clone https://github.com/hpc-gridware/gcs-testsuite
 ```
 

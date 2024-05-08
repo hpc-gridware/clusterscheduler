@@ -1,6 +1,6 @@
 # Planning the Installation
 
-Open Grid Engine is a workload management system used in data centres to connect tens to tens of thousands of computers 
+xxQS_NAMExx is a workload management system used in data centres to connect tens to tens of thousands of computers 
 into a compute cluster. 
 It acts as the operating system of this cluster, connecting the underlying hardware according to user-configurable 
 policies, scheduling its use, and providing computing power.

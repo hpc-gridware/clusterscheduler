@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Set file permissions of Grid Engine distribution
+# Set file permissions of Cluster Scheduler distribution
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################
@@ -95,7 +95,7 @@ fi
 
 if [ $# -lt 2 ]; then
    echo
-   echo Create a set of Windows CSP certificates from Grid Engine 
+   echo Create a set of Windows CSP certificates from Cluster Scheduler 
    echo certificates installed in \$SGE_ROOT
    echo 
    echo "usage: $0 <sge_root> <sge_cell>"

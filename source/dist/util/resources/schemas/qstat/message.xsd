@@ -35,8 +35,8 @@
 ___INFO__MARK_END__-->
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-            targetNamespace="https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qstat/message.xsd"
-            xmlns="https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qstat/message.xsd">
+            targetNamespace="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/message.xsd"
+            xmlns="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/message.xsd">
    <xs:element name="message">
       <xs:complexType>
          <xs:annotation>

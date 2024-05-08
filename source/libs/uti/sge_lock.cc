@@ -59,10 +59,10 @@ static double writer_count[NUM_OF_LOCK_TYPES] = {0.0, 0.0};
 
 /****** sge_lock/Introduction ****************************************************
 *  NAME
-*     Grid Engine Locking API
+*     Cluster Scheduler Locking API
 *
 *  FUNCTION
-*     The Grid Engine Locking API is a mediator between a lock service provider
+*     The Cluster Scheduler Locking API is a mediator between a lock service provider
 *     and a lock client. A lock service provider offers a particular lock
 *     implementation by registering a set of callbacks. A lock client does acquire
 *     and release a lock using the respective API functions.

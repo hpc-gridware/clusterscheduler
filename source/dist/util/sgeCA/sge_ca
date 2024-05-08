@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Grid Engine CA framework script
+# Cluster Scheduler CA framework script
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################
@@ -1257,7 +1257,7 @@ RenewCert()
    ADMINRUN_NO_EXIT=true # ExecuteAsAdmin should not exit, 
                          # we need to cleanup the file permissions
 
-   # in the gridengine environment only root user is allowed
+   # in the Cluster Scheduler environment only root user is allowed
    # to renew certificates
    # for haithabu the admin user can also renew certificates
    if [ "$rootinstalls" != true -a $SGE_CNF = true ]; then

@@ -36,7 +36,7 @@ import org.ggf.drmaa.SessionFactory;
 
 /**
  * This class is used to create a SessionImpl instance.  In order to use the
- * Grid Engine binding, the $SGE_ROOT environment variable must be set, the
+ * Cluster Scheduler binding, the $SGE_ROOT environment variable must be set, the
  * $SGE_ROOT/lib/drmaa.jar file must in included in the CLASSPATH environment
  * variable, and the $SGE_ROOT/lib/$ARCH directory must be included in the
  * library path, e.g. LD_LIBRARY_PATH.

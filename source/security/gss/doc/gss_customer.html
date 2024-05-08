@@ -11,8 +11,8 @@
 <body>
 
 <h2>
-<font color="#660000">Grid Engine Kerberos/DCE Security Modules Overview</font></h2>
-The Kerberos / DCE security modules are designed to be called by Grid Engine
+<font color="#660000">Cluster Scheduler Kerberos/DCE Security Modules Overview</font></h2>
+The Kerberos / DCE security modules are designed to be called by Cluster Scheduler
 in order to do the following:
 <ul>
 <li>
@@ -26,10 +26,10 @@ DCE and Kerberos)</li>
 Authenticate the user</li>
 
 <li>
-Verify the authenticated user matches the Grid Engine user</li>
+Verify the authenticated user matches the Cluster Scheduler user</li>
 </ul>
 The security modules consist of several programs which are called by Grid
-Engine client programs and Grid Engine daemons.
+Engine client programs and Cluster Scheduler daemons.
 <ul>
 <li>
 get_cred</li>
@@ -43,7 +43,7 @@ host.
 put_cred</li>
 
 <br>This program accepts a tokenized security context from standard input,
-authenticates the user, verifies that the user is who Grid Engine thinks
+authenticates the user, verifies that the user is who Cluster Scheduler thinks
 he is, and creates the forwarded credentials for the user. The routine
 also checks to make sure the qsub request is not a replay (i.e. a qsub
 request which was "stolen" and resent by a hacker so he could impersonate
@@ -245,32 +245,32 @@ user is named joe.
 <br># delete_cred</ul>
 
 <h2>
-<font color="#660000">Grid Engine Configuration</font></h2>
-To use the security sub-programs with Grid Engine, you must switch on Kerberos
+<font color="#660000">Cluster Scheduler Configuration</font></h2>
+To use the security sub-programs with Cluster Scheduler, you must switch on Kerberos
 or DCE in $SGE_ROOT/{$SGE_CELL|default}/product_mode.
 <br>The string that must be in the product_mode file is either sge-dce
 or sgeee-dce for a DCE environment or sge-kerberos or sgeee-kerberos for
 a Kerberos environment. If one of these entries is present, the Kerberos/DCE
 security modules are active.
 <h2>
-<font color="#660000">Instructions for Grid Engine spool directories in
+<font color="#660000">Instructions for Cluster Scheduler spool directories in
 DFS</font></h2>
-If you would like to maintain the Grid Engine spool directories in DFS,
-then the Grid Engine deamons must run under a DCE identity. The best way
+If you would like to maintain the Cluster Scheduler spool directories in DFS,
+then the Cluster Scheduler deamons must run under a DCE identity. The best way
 to accomplish this is to create a unique DCE account (e.g. "sge_daemon")
 and put the key into the default keytab. To create the account, follow
 the DCE Instructions above substituting the DCE account name that you choose
 for "sge". Once the account is set up, you or the DCE administrator can
-create directories in DFS for use by Grid Engine. The final step is to
-modify the Grid Engine startup scripts. The lines which start the sge_qmaster,
+create directories in DFS for use by Cluster Scheduler. The final step is to
+modify the Cluster Scheduler startup scripts. The lines which start the sge_qmaster,
 sge_schedd, and sge_execd should be modified to use dce_login to start
 the daemons. For example,
 <p>Change:
-<br>/gridengine/test/bin/arch/sge_qmaster
+<br>/clusterscheduler/test/bin/arch/sge_qmaster
 <br>to:
-<br>dce_login sge_daemon -k /krb5/v5srvtab -e /gridengine/test/bin/arch/sge_qmaster
-<p>To install Grid Engine into a DFS directory, the user should be running
-as root and with the DCE Grid Engine daemon identity. The execution daemon
+<br>dce_login sge_daemon -k /krb5/v5srvtab -e /clusterscheduler/test/bin/arch/sge_qmaster
+<p>To install Cluster Scheduler into a DFS directory, the user should be running
+as root and with the DCE Cluster Scheduler daemon identity. The execution daemon
 spool directories should be stored on a local non-DFS file system.
 <br>&nbsp;
 <h2>
@@ -303,7 +303,7 @@ script included in the security distribution. In order for the script to
 automatically renew credentials, users must initially obtain renewable
 credentials. In Kerberos, this can be set up as the default, or users can
 use the "-r" option of the kinit command. The renew_cred script should
-be executed from the Grid Engine startup script.
+be executed from the Cluster Scheduler startup script.
 <br>&nbsp;
 <h2>
 <font color="#660000">Troubleshooting</font></h2>
@@ -335,10 +335,10 @@ user's account. Anyone with valid tickets for a principal in the file is
 allowed host access with the UID of the user in whose home directory the
 file resides. Suppose the user "janedoe" had a .k5login file in her home
 directory containing the following line: johndoe@FUBAR.ORG This would allow
-her husband "johndoe" to use Grid Engine to access her account. However,
+her husband "johndoe" to use Cluster Scheduler to access her account. However,
 in order for this to work, the .k5login file must be accessible by the
 qmaster deamon running on the qmaster host. If the qmaster host does not
-have access to the users home directories, then the Grid Engine manager
+have access to the users home directories, then the Cluster Scheduler manager
 has the option to create "dummy" home directories which simply contain
 the appropriate .k5login files for the appropriate users. The dummy home
 directories must be pointed to by the password file (or equivalent) on

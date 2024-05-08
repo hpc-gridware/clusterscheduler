@@ -33,7 +33,7 @@
 #
 # Credit should be given to Robert Manchek manchek@CS.UTK.EDU for creating
 # a similar aimk procedure for the PVM 3.x distribution, Jul 22 1991,
-# which inspired the Grid Engine aimk build scheme.
+# which inspired the Cluster Scheduler aimk build scheme.
 
 # Make sure to avoid confusion between shell variables and environment
 # variables

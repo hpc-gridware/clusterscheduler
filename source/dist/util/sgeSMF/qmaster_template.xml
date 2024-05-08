@@ -86,7 +86,7 @@ NOTE:  This service manifest is not editable. Make customizations in a different
         <template>
                 <common_name>
                         <loctext xml:lang='C'>
-                        Sun Grid Engine - QMaster service
+                        Cluster Scheduler - QMaster service
                         </loctext>
                 </common_name>
                 <documentation>

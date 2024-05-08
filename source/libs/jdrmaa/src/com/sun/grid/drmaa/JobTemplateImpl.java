@@ -128,7 +128,7 @@ import org.ggf.drmaa.UnsupportedAttributeException;
  *
  * <p><sup>*</sup> See the individual attribute setter description below</p>
  *
- * <p>The following attributes are unsupported by Grid Engine:</p>
+ * <p>The following attributes are unsupported by Cluster Scheduler:</p>
  *
  * <ul>
  * <li>deadlineTime</li>
@@ -424,7 +424,7 @@ public class JobTemplateImpl implements JobTemplate {
     
     /**
      * Specifies the DRMAA job category. The category string is used by
-     * Grid Engine as reference into the qtask file. Certain qsub options used
+     * Cluster Scheduler as reference into the qtask file. Certain qsub options used
      * in the referenced qtask file line are applied to the job template
      * before submission to allow site-specific resolving of resources and/or
      * policies.  The cluster qtask file, the local qtask file, and the user
@@ -620,7 +620,7 @@ public class JobTemplateImpl implements JobTemplate {
      * <code>[hostname]:file_path</code><br>
      * <p>When the transferFiles property is supported and the set
      * TranferFileMode instance's inputStream property is set to
-     * <code>true</code>, the input file will be fetched by Grid Engine
+     * <code>true</code>, the input file will be fetched by Cluster Scheduler
      * from the specified host or from the submit host if no hostname
      * is specified.  When the transferFiles property is unsupported or the set
      * TranferFileMode instance's inputStream property is not set or is set to
@@ -684,7 +684,7 @@ public class JobTemplateImpl implements JobTemplate {
      *
      * <p>When the transferFiles property is supported and the set
      * TranferFileMode instance's outputStream property is set to
-     * <code>true</code>, the output file will be transferred by Grid Engine
+     * <code>true</code>, the output file will be transferred by Cluster Scheduler
      * to the specified host or to the submit host if no hostname is specified.
      * When the transferFiles property is unsupported or the set
      * TranferFileMode instance's outputStream property is not set or is set to
@@ -748,7 +748,7 @@ public class JobTemplateImpl implements JobTemplate {
      *
      * <p>When the transferFiles property is supported and the set
      * TranferFileMode instance's errorStream property is set to
-     * <code>true</code>, the error file will be transferred by Grid Engine
+     * <code>true</code>, the error file will be transferred by Cluster Scheduler
      * to the specified host or to the submit host if no hostname is specified.
      * When the transferFiles property is unsupported or the set
      * TranferFileMode instance's errorStream property is not set or is set to

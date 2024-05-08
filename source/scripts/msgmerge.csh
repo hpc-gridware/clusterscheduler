@@ -43,10 +43,10 @@ set LOCALEDIR = "./dist/locale"
 #set LANGUAGES = "de en en_FW.MBE en_FW.ASCII"
 #set LANGUAGES = "de en fr ja zh"
 set LANGUAGES = ""
-set MSGPO = "gridengine.po"
-set MSGMO = "gridengine.mo"
-set MSGPOT = "gridengine.pot"
-set MSGPOTNOTUNIQ = "gridenginenotuniq.pot"
+set MSGPO = "clusterscheduler.po"
+set MSGMO = "clusterscheduler.mo"
+set MSGPOT = "clusterscheduler.pot"
+set MSGPOTNOTUNIQ = "clusterschedulernotuniq.pot"
 
 # uniq the pot file
 sed 's/charset=CHARSET/charset=ascii/' ${LOCALEDIR}/${MSGPOTNOTUNIQ} > /tmp/${MSGPOTNOTUNIQ}

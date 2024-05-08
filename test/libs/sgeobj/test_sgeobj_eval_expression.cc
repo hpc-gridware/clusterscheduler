@@ -36,7 +36,7 @@
  *
  * The litte test program matches an "attribute" against
  * a regular exression which follows the above grammar and the
- * regular expression from the Grid Engine sge_types(1) man page
+ * regular expression from the Cluster Scheduler sge_types(1) man page
  * and prints "TRUE" or "FALSE"
  * For Expect test returns 0 .. TRUE
  *                         1 .. FALSE

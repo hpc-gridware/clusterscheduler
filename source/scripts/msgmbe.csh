@@ -35,9 +35,9 @@ set ARCH = `./aimk -nomk`
 set MBEMSG = /usr/bin/mbemsg
 set MSGFMT = ./3rdparty/gettext-0.11/${ARCH}/bin/msgfmt
 set LOCALEDIR = "./dist/locale"
-set MSGPO = "gridengine.po"
-set MSGMO = "gridengine.mo"
-set MSGPOT = "gridengine.pot"
+set MSGPO = "clusterscheduler.po"
+set MSGMO = "clusterscheduler.mo"
+set MSGPOT = "clusterscheduler.pot"
 
 
 
@@ -63,22 +63,22 @@ endif
 
 
 unsetenv LANG
-echo "generating ascii gridengine.po file in ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/ ... "
-$MBEMSG -o ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/gridengine.po -g ${LOCALEDIR}/${MSGPOT}
+echo "generating ascii clusterscheduler.po file in ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/ ... "
+$MBEMSG -o ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/clusterscheduler.po -g ${LOCALEDIR}/${MSGPOT}
 echo "done. "
 
 setenv LANG en_FW.MBE
-echo "generating MBE gridengine.po file in ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/ ... "
-$MBEMSG -o ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/gridengine.po -g ${LOCALEDIR}/${MSGPOT}
+echo "generating MBE clusterscheduler.po file in ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/ ... "
+$MBEMSG -o ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/clusterscheduler.po -g ${LOCALEDIR}/${MSGPOT}
 echo "done. "
 
 
-echo "generating binary message file gridengine.mo in ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/ ... "
-$MSGFMT --output-file=${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/gridengine.mo ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/gridengine.po
+echo "generating binary message file clusterscheduler.mo in ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/ ... "
+$MSGFMT --output-file=${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/clusterscheduler.mo ${LOCALEDIR}/en_FW.ASCII/LC_MESSAGES/clusterscheduler.po
 echo "done."
 
-echo "generating binary message file gridengine.mo in ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/ ... "
-$MSGFMT --output-file=${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/gridengine.mo ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/gridengine.po 
+echo "generating binary message file clusterscheduler.mo in ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/ ... "
+$MSGFMT --output-file=${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/clusterscheduler.mo ${LOCALEDIR}/en_FW.MBE/LC_MESSAGES/clusterscheduler.po 
 echo "done."
 
 

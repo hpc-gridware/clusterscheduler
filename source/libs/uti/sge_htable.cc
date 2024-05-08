@@ -50,7 +50,7 @@
 
 /****** uti/htable/--Hashtable ***********************************************
 *  NAME
-*     htable -- A Hashtable Implementation for Grid Engine 
+*     htable -- A Hashtable Implementation for Cluster Scheduler 
 *
 *  SYNOPSIS
 *     htable sge_htable_create(int size, 
@@ -71,7 +71,7 @@
 *                              sge_htable_for_each_proc proc);
 *
 *  FUNCTION
-*     This module provides a hash table implementation for Grid Engine.
+*     This module provides a hash table implementation for Cluster Scheduler.
 *
 *     Hash tables are used to have very fast access to objects stored in 
 *     data structures like linked lists without having to traverse the 

@@ -90,8 +90,8 @@ get_sstate_description(int sstate) {
            {"accessing sgepasswd file",                          SSTATE_PASSWD_FILE_ERROR},
            {"entry is missing in password file",                 SSTATE_PASSWD_MISSING},
            {"wrong password",                                    SSTATE_PASSWD_WRONG},
-           {"communicating with Sun Grid Engine Helper Service", SSTATE_HELPER_SERVICE_ERROR},
-           {"before job in Sun Grid Engine Helper Service",      SSTATE_HELPER_SERVICE_BEFORE_JOB},
+           {"communicating with Cluster Scheduler Helper Service", SSTATE_HELPER_SERVICE_ERROR},
+           {"before job in Cluster Scheduler Helper Service",      SSTATE_HELPER_SERVICE_BEFORE_JOB},
            {"checking configured daemons",                       SSTATE_CHECK_DAEMON_CONFIG},
            {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT}
    };

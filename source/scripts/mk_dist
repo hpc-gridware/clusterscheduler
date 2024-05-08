@@ -138,9 +138,9 @@ SELECTED_ARCHS=""
 VENDOR="unknown"
 PACKAGER="unknown"
 COPYRIGHT="SISSL"
-PROVIDES="gridengine"
-SUMMARY="Grid Engine"
-DESCRIPTION="Grid Engine distributes computational workload"
+PROVIDES="clusterscheduler"
+SUMMARY="Cluster Scheduler"
+DESCRIPTION="Cluster Scheduler distributes computational workload"
 
 ARGC=$#
 while [ $ARGC -gt 0 ]; do

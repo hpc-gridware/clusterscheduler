@@ -63,7 +63,7 @@
 			"flags":	[]
 		}, {
 			"name":	"rel",
-			"summary":	"Related to Grid Engine Job",
+			"summary":	"Related to Cluster Scheduler Job",
 			"description":	[{
 					"line":	"Flag if this process belongs to a GE job."
 				}],

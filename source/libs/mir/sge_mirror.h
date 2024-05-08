@@ -50,7 +50,7 @@
 *
 *  FUNCTION
 *     The event mirror interface provides a means to easily implement 
-*     Grid Engine components that need to have access to the masters 
+*     Cluster Scheduler components that need to have access to the masters 
 *     object lists and therefore have to mirror them.
 *     
 *     Such components can be schedulers, proxies, monitoring tools etc.

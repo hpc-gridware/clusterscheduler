@@ -1807,7 +1807,7 @@ ProcessSGEClusterName()
       GetDefaultClusterName
       $CLEAR
       $INFOTEXT -u "\nUnique cluster name"
-      $INFOTEXT "\nThe cluster name uniquely identifies a specific Sun Cluster Scheduler cluster.\n" \
+      $INFOTEXT "\nThe cluster name uniquely identifies a specific Cluster Scheduler cluster.\n" \
                 "The cluster name must be unique throughout your organization. The name \n" \
                 " is not related to the SGE cell.\n\n" \
                 "The cluster name must start with a letter ([A-Za-z]), followed by letters, \n" \

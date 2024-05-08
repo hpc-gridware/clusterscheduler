@@ -90,12 +90,12 @@
 
 /****** DRMAA/--DRMAA_Job_API ********************************************************
 *  NAME
-*     DRMAA_Job_API -- Grid Engine's C/C++ binding for the DRMAA interface 
+*     DRMAA_Job_API -- Cluster Scheduler's C/C++ binding for the DRMAA interface 
 *
 *  FUNCTION
 *     This libary gives a C/C++ binding for the DRMAA interface specification. 
 *     The DRMAA interface is independed of a DRM system and thus can be implememted 
-*     by not only for Grid Engine. It's scope is job submission and control.
+*     by not only for Cluster Scheduler. It's scope is job submission and control.
 *     Refer to www.drmaa.org for more about this interface.
 *
 *  SEE ALSO
@@ -107,11 +107,11 @@
 
 /****** DRMAA/-DRMAA_Implementation *******************************************
 *  NAME
-*     DRMAA_Implementation -- Functions used to implement Grid Engine DRMAA
+*     DRMAA_Implementation -- Functions used to implement Cluster Scheduler DRMAA
 * 
 *  FUNCTION
 *     These functions are used to implement DRMAA functions. Most of the 
-*     functionality of DRMAA is derived from Grid Engine's Job API.
+*     functionality of DRMAA is derived from Cluster Scheduler's Job API.
 *   
 *  SEE ALSO
 *     DRMAA/drmaa_job2sge_job()
@@ -252,9 +252,9 @@ static const char *drmaa_supported_vector[] = {
 *     env var SGE_SESSION_KEY - dirty input/output interface to parametrize
 *                    without actually changing DRMAA library link interface. 
 *                    The string passed before drmaa_init() will be used as session
-*                    key for restarting the former Grid Engine JAPI session. After
+*                    key for restarting the former Cluster Scheduler JAPI session. After
 *                    drmaa_init() this env var contains the session key that is used
-*                    with this Grid Engine JAPI session.
+*                    with this Cluster Scheduler JAPI session.
 *                    
 *  RESULT
 *     int - DRMAA_ERRNO_SUCCESS on success otherwise 
@@ -1129,7 +1129,7 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
 
    sge_dstring_init(&jobid, job_id, job_id_len+1);
 
-   /* convert DRMAA job template into Grid Engine job template */
+   /* convert DRMAA job template into Cluster Scheduler job template */
    if ((drmaa_errno=drmaa_job2sge_job(&sge_job_template, jt, 
             0, 1, 1, 1, diagp))!=DRMAA_ERRNO_SUCCESS) {
       /* diag written by drmaa_job2sge_job() */
@@ -1209,7 +1209,7 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
       DRETURN(drmaa_errno);
    }
 
-   /* convert DRMAA job template into Grid Engine job template */
+   /* convert DRMAA job template into Cluster Scheduler job template */
    drmaa_errno = drmaa_job2sge_job(&sge_job_template, jt, 1, start, end, incr,
                                    diagp);
    if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
@@ -2457,7 +2457,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
       /* Only look for a hostname if the WD placeholder is being processed, i.e.
        * if we're processing a working directory path. */
       if (do_wd) {
-         /* substitute DRMAA placeholder with grid engine counterparts */
+         /* substitute DRMAA placeholder with Cluster Scheduler counterparts */
          p = strchr(value, ':');
 
          /* If there is a colon, skip past it */
@@ -2530,7 +2530,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 *     *drmaa_jt, int is_bulk, int start, int end, int step, dstring *diag) 
 *
 *  FUNCTION
-*     All DRMAA job template attributes are translated into Grid Engine 
+*     All DRMAA job template attributes are translated into Cluster Scheduler 
 *     job attributes.
 *
 *  INPUTS
@@ -2540,7 +2540,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 *     int end                        - end index for bulk jobs
 *     int step                       - increment for bulk jobs
 *     dstring *diag                  - diagnosis information
-*     lListElem **jtp                - returns Grid Engine JB_Type job 
+*     lListElem **jtp                - returns Cluster Scheduler JB_Type job 
 *
 *  RESULT
 *     static int - DRMAA error codes

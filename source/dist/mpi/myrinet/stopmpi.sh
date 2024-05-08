@@ -34,7 +34,7 @@
 #___INFO__MARK_END__
 
 #
-# shutdown of MPI conforming with the Grid Engine
+# shutdown of MPI conforming with the Cluster Scheduler
 # Parallel Environment interface
 #
 # Remove files created by startmpi.sh

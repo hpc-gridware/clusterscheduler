@@ -11,17 +11,17 @@
 <body>
 
 <h2>
-<font color="#990000">Grid Engine Kerberization Implementation</font></h2>
-Kerberos support is implemented in Grid Engine primarily through the use
+<font color="#990000">Cluster Scheduler Kerberization Implementation</font></h2>
+Kerberos support is implemented in Cluster Scheduler primarily through the use
 of a set of library routines. The source code for the library is in krb/krb_lib.c.
 <br>The header file is krb/krb_lib.h. There are two routines, krb_send_message()
 and krb_receive_message() which replace the normal send_message() and receive_message()
-routines used by all Grid Engine daemons and client processes.
+routines used by all Cluster Scheduler daemons and client processes.
 <br>The krb_send_message() and krb_receive_message() routines take care
 of authenticating and encrypting messages which are passed between processes.
 <br>The <a href="#Original Design Notes">original design</a> is outlined
 below.
-<br>To build a Kerberized version of Grid Engine proceed as follows:
+<br>To build a Kerberized version of Cluster Scheduler proceed as follows:
 <p>% aimk clean
 <br>check aimk.site and adapt the corresponding Kerberos V related paths
 (Kerberos can be obtained from <a href="http://www.crypto-publish.org">http://www.crypto-publish.org</a>)
@@ -30,9 +30,9 @@ below.
 the scope of this document. Additional hints can be found in the <a href="ReleaseNotes.html">ReleaseNotes</a>.
 <h2>
 <font color="#990000">Authentication</font></h2>
-Authentication of Grid Engine clients and daemons to the qmaster is accomplished
+Authentication of Cluster Scheduler clients and daemons to the qmaster is accomplished
 within the krb_send_message() and krb_receive_message() routines.
-<br>Each message sent from a Grid Engine client or daemon to the qmaster
+<br>Each message sent from a Cluster Scheduler client or daemon to the qmaster
 contains the necessary information for the qmaster to authenticate the
 sender of the message (i.e. a Kerberos AP_REQ packet).
 <br>The actual data in the message is also encrypted in the session key,
@@ -41,7 +41,7 @@ Engine client/daemon and the qmaster.
 <p>The message may also contain a forwarded TGT which is also encrypted
 in the session key.
 <br>A connection list is maintained by the library routines in the qmaster
-to track the state of each qmaster client (including the Grid Engine daemons).
+to track the state of each qmaster client (including the Cluster Scheduler daemons).
 <br>The connection list is keyed based on the client name, host name, and
 connection ID. Client connections are removed from the connection list
 after a period of inactivity in the krb_check_for_idle_clients() routine,
@@ -56,15 +56,15 @@ entry is looked up based on the client information, and if the user names
 do not match, then the GDI request is denied.
 <h2>
 <font color="#990000">Message Encryption</font></h2>
-All message data passed between a Grid Engine client or daemon and the
+All message data passed between a Cluster Scheduler client or daemon and the
 qmaster is encrypted in a session key which is private between the Grid
 Engine client or daemon and the qmaster.
 <h2>
 <font color="#990000">Forwarding TGTs</font></h2>
-Kerberized Grid Engine also automatically forwards ticket-granting-tickets
+Kerberized Cluster Scheduler also automatically forwards ticket-granting-tickets
 (TGTs) to the execution host. In order for TGT forwarding to work, the
 client must have requested "forwardable" tickets in the initial kinit(1)
-request. This allows jobs submitted using Grid Engine to automatically
+request. This allows jobs submitted using Cluster Scheduler to automatically
 have Kerberos tickets and to run kerberized applications without the user
 having to login to each execution host and execute a kinit(1).
 <p>When a job is submitted from qmon, qsub, or qsh, the sge_gdi_multi()
@@ -78,7 +78,7 @@ of the client process and the qmaster.
 <p>After sending the message, the sge_gdi_multi() routine calls krb_set_client_flags()
 to clear the KRB_FORWARD_TGT flag. When the message is received by the
 qmaster, the TGT is stored in the client connection entry maintained by
-the Grid Engine kerberos library routines.
+the Cluster Scheduler kerberos library routines.
 <br>When the job is added to the job list in the sge_gdi_add_job() routine
 (sge_job.c), the TGT is retrieved from the connection entry using krb_get_tgt()
 (krb_lib.c), and is then encrypted in the qmaster's private key using krb_encrypt_tgt_creds()
@@ -107,12 +107,12 @@ cleaned up, the credentials cache is destroyed by calling krb_destroy_forwarded_
 from clean_up_job() (reaper_execd.c).
 <h2>
 <font color="#990000">Renewing TGTs</font></h2>
-Kerberized Grid Engine automatically renews the kerberos ticket for the
-"sge" service which is required by the Grid Engine sge_schedd and sge_execd
-daemons to authenticate themselves to the Grid Engine qmaster. The ticket
+Kerberized Cluster Scheduler automatically renews the kerberos ticket for the
+"sge" service which is required by the Cluster Scheduler sge_schedd and sge_execd
+daemons to authenticate themselves to the Cluster Scheduler qmaster. The ticket
 is renewed by checking the credentials of the daemon to see if the ticket
 has expired or is about to expire before sending a message to the qmaster.
-<p>Kerberized Grid Engine also handles renewing TGTs on behalf of the client.
+<p>Kerberized Cluster Scheduler also handles renewing TGTs on behalf of the client.
 In order for TGTs to be renewed the client must have requested both <i>forwardable</i>
 and <i>renewable</i> <i>TGTs</i> in the initial kinit(1) request.
 <br>This allows long running jobs or jobs which are queued for a long period
@@ -134,10 +134,10 @@ applications running in the job.
 <h2>
 <a NAME="Original Design Notes"></a><font color="#990000">Original Design
 Notes</font></h2>
-In February 1997 an attempt was made to integrate Grid Engine into a Kerberos
+In February 1997 an attempt was made to integrate Cluster Scheduler into a Kerberos
 environment.
 <h2>
-<font color="#990000">Problems with Kerberizing Grid Engine</font></h2>
+<font color="#990000">Problems with Kerberizing Cluster Scheduler</font></h2>
 Once you have a good understanding of the basics of Kerberos and how the
 API library works, it appears from the sample client/server code that it
 would be very easy to kerberize an application. This is not really the
@@ -155,7 +155,7 @@ layer than the application code. This insulates the application code from
 having to deal with the specifics of the communication layer. This presents
 some real difficulties in implementing security, because the security protocol
 needs information from both levels.
-<p>Another significant problem with kerberizing Grid Engine deals with
+<p>Another significant problem with kerberizing Cluster Scheduler deals with
 tracking clients. In a typical client/server application using stream based
 sockets to pass messages between the client and the server, the server
 would initially authenticate the client either before or as part of the
@@ -167,8 +167,8 @@ read from. If a message comes across the socket, the server uses the secret
 key associated with the client to decrypt the message. If the socket goes
 down, this indicates that communications between the client and the server
 have been disrupted and the server can clean up any data structures that
-the client had. The design of Grid Engine introduces a different communication
-model. Instead of maintaining a socket per client, Grid Engine servers
+the client had. The design of Cluster Scheduler introduces a different communication
+model. Instead of maintaining a socket per client, Cluster Scheduler servers
 and clients communicate through a set of services that are part of a communication
 library. The client and server actually communicate through one or more
 communication daemons which dynamically manage socket connections. This
@@ -200,11 +200,11 @@ message after the first is decrypted using the secret client/server session
 key.
 <br>&nbsp;
 <h2>
-<font color="#990000">Grid Engine Kerberization Level of Effort Scope</font></h2>
-There are two levels of effort in Kerberizing Grid Engine. The first
-level of effort is the authentication of Grid Engine clients and servers.
-It turns out that the authentication of Grid Engine clients and the authentication
-between the Grid Engine servers are both actually accomplished with the
+<font color="#990000">Cluster Scheduler Kerberization Level of Effort Scope</font></h2>
+There are two levels of effort in Kerberizing Cluster Scheduler. The first
+level of effort is the authentication of Cluster Scheduler clients and servers.
+It turns out that the authentication of Cluster Scheduler clients and the authentication
+between the Cluster Scheduler servers are both actually accomplished with the
 same design and code. The basic design for this first level of effort was
 completed by Shannon Davidson and Andre Alefeld as part of the February
 8-13, 1997 trip to GENIAS. The second level of effort in kerberizing Grid
@@ -213,11 +213,11 @@ job on the execution host. This involves issues such as acquiring ticket-grantin
 on behalf of a client, handling/preventing ticket expirations, storing
 tickets for future use, and forwarding tickets to the execution host. There
 are also a number of design and performance related issues associated with
-the second level of kerberizing Grid Engine. Some of these issues were
+the second level of kerberizing Cluster Scheduler. Some of these issues were
 identified during the February 8-13 trip, but the actual design work has
 not yet been completed.
 <h2>
-<font color="#990000">Grid Engine Kerberization - First Level of Effort</font></h2>
+<font color="#990000">Cluster Scheduler Kerberization - First Level of Effort</font></h2>
 First Level Kerberization is handled by replacing the generic send_message
 and receive_message routines in the commd library with kerberized versions.
 The kerberized versions of the routines will maintain the state of the
@@ -226,14 +226,14 @@ and decrypting messages passed between clients and servers. Handling authenticat
 at this level means that any code using the standard commd library will
 automatically have authentication. These routines will ensure that a user
 is who he says he is. Higher level routines are responsible for determining
-if that user is actually an authorized user of Grid Engine. These routines
+if that user is actually an authorized user of Cluster Scheduler. These routines
 will behave differently when acting on behalf of a client or server. In
-this model, the qmaster acts as the server, and all other Grid Engine daemons
+this model, the qmaster acts as the server, and all other Cluster Scheduler daemons
 and client programs act as clients. When acting as a server, these routines
 will maintain a connection list which tracks the clients. When a client
 first connects to a server, the client will be authenticated. If authentication
 fails, a failure message will be sent back to the client indicating the
-failure. If the client is not a Grid Engine daemon the failure message
+failure. If the client is not a Cluster Scheduler daemon the failure message
 will be displayed on the screen. If the client is successfully authenticated,
 a connection entry will be created and added to the connection list. The
 connection entry contains enough information to uniquely identify the client
@@ -244,12 +244,12 @@ on the connection), the connection entry will be removed from the connection
 list. A specific routine will be written which will check for connections
 which have "timed-out" and "clean them up". This routine will be called
 from the send_message and/or receive_message routines and may also be called
-separately from within a chk_to_do routine in a Grid Engine daemon.
+separately from within a chk_to_do routine in a Cluster Scheduler daemon.
 <h4>
-Grid Engine Kerberization Level One Design</h4>
+Cluster Scheduler Kerberization Level One Design</h4>
 sec_krb_init
 <br>&nbsp;&nbsp;&nbsp; call krb5_init
-<br>&nbsp;&nbsp;&nbsp; if we are a grid engine daemon
+<br>&nbsp;&nbsp;&nbsp; if we are a Cluster Scheduler daemon
 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setup connection lists
 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; set internal is_sge_daemon
 flag
@@ -360,7 +360,7 @@ maintain certain information such as the sequence number, etc. in this
 data structure.
 <p>Q. Why is there a connection ID?
 <p>A. The connection ID is used to uniquely identify a client connection
-by the server. Since the Grid Engine communication mechanism is basically
+by the server. Since the Cluster Scheduler communication mechanism is basically
 connectionless there is nothing like a socket to uniquely identify a client.
 A client can be identified using the commd triple which consists of the
 host, process name, and ID, but this would not be unique for cycled processes.
@@ -394,23 +394,23 @@ handle cases where messages destined for the qmaster are spooled in the
 commd while the qmaster is down. Since each message would include authentication
 info, the messages would not have to be thrown away when the qmaster comes
 back up.
-<p>Q. What happens when other Grid Engine daemons are cycled?
-<p>A. When a Grid Engine daemon other than the qmaster is cycled and comes
+<p>Q. What happens when other Cluster Scheduler daemons are cycled?
+<p>A. When a Cluster Scheduler daemon other than the qmaster is cycled and comes
 back up, it will initially attempt to contact the qmaster. Any initial
 message sent to the qmaster will include the authentication info (AP_REQ).
 Any messages queued in the commd will be lost because they will have been
 encrypted with an old session key. (Is this a problem?)
 <p>Q. What happens when a client is cycled?
-<p>A. Same as Grid Engine daemon.
-<p>Q. Can the other Grid Engine daemons serve as server? This may be needed
+<p>A. Same as Cluster Scheduler daemon.
+<p>Q. Can the other Cluster Scheduler daemons serve as server? This may be needed
 for the plans that GENIAS has for enhanced parallel job support.
 <p>A. We will look into this further during implementation. If possible,
-we will construct the code such that any Grid Engine daemon can act as
+we will construct the code such that any Cluster Scheduler daemon can act as
 a client if a message is received with the authentication information (AP_REQ)
 attached.
 <p>Q. If a client receives a message that it cannot decrypt what should
 it do?
-<p>A. If the client is a Grid Engine the message should be thrown away
+<p>A. If the client is a Cluster Scheduler the message should be thrown away
 and an error message logged. If the client is a general purpose client
 acting on behalf of a user, an error message should be displayed to the
 user.
@@ -434,14 +434,14 @@ commproc, ID>. The routine would look up the user in the connection list,
 compare to the passed user ID, and return true or false.
 <br>&nbsp;
 <h2>
-<font color="#990000">Grid Engine Kerberization - Second Level of Effort</font></h2>
-Second level Grid Engine kerberization will affect a number of different
+<font color="#990000">Cluster Scheduler Kerberization - Second Level of Effort</font></h2>
+Second level Cluster Scheduler kerberization will affect a number of different
 pieces of code. It will probably involve changes in the job submittal client
 modules (qsub, qmon), the queue master (sge_qmaster), the execution daemon
 (sge_execd), and possibly the job shepherd process (sge_shepherd). It will
 also mean changes to, at a minimum, the job structure and the message data
 structures used to pass job information between the various modules.
-<p>A job submitted to Grid Engine needs to have a TGT on the execution
+<p>A job submitted to Cluster Scheduler needs to have a TGT on the execution
 host. This is necessary because certain applications that the job may need
 to access (such as PVM) will need valid Kerberos tickets in order to work.
 A valid TGT should be provided, since we don't know which services will
@@ -483,7 +483,7 @@ could use this wildcard TGT to get a specific TGT valid on the execution
 host and then destroy the original wild-card TGT.
 <br>&nbsp;
 <h4>
-Grid Engine Kerberization Level Two Design</h4>
+Cluster Scheduler Kerberization Level Two Design</h4>
 
 <h4>
 Data Structures</h4>
@@ -496,7 +496,7 @@ process such as the scheduler) will need to occasionally go through all
 of the job entries and look for TGTs which are about to expire and contact
 the KDC to request a new TGT for that job. Of course, contacting the KDC
 will impose some overhead and care should be taken that this does not cause
-performance problems. Grid Engine should also continue to keep the TGT
+performance problems. Cluster Scheduler should also continue to keep the TGT
 in the qmaster valid for as long as the job is executing, just in case
 we have to restart the job at a later time. It might also make sense that
 when the shepherd gets a TGT for the job that it gets a TGT which is valid

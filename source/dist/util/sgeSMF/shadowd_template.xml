@@ -84,7 +84,7 @@ NOTE:  This service manifest is not editable. Make customizations in a different
         <template>
                 <common_name>
                         <loctext xml:lang='C'>
-                        Sun Grid Engine - Shadow master service
+                        Cluster Scheduler - Shadow master service
                         </loctext>
                 </common_name>
                 <documentation>

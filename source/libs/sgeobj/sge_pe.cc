@@ -235,7 +235,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 *     lListElem *pep - the pe to check
 *     lList **alpp   - answer list pointer, if an answer shall be created, else
 *                      nullptr - errors will in any case be output using the
-*                      Grid Engine error logging macros.
+*                      Cluster Scheduler error logging macros.
 *     int startup    - are we in qmaster startup phase?
 *
 *  RESULT

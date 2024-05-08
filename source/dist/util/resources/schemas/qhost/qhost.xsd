@@ -33,8 +33,8 @@
  ************************************************************************/
 ___INFO__MARK_END__-->
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-   targetNamespace="https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
-            xmlns="https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
+   targetNamespace="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
+            xmlns="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
             elementFormDefault="qualified">
     
     <xsd:element name="qhost" type="QHostType"/>

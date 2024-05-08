@@ -12,9 +12,9 @@ The installation is performed as usual except that the install script is called 
 additional parameter -csp.
 In the following you see the installation steps 
 
-1. Unpack and install the Grid Engine distribution
+1. Unpack and install the Cluster Scheduler distribution
 
-2. Install Grid Engine
+2. Install Cluster Scheduler
    On the master machine type:
 
    Become superuser

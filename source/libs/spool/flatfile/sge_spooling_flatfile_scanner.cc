@@ -3194,7 +3194,7 @@ char *yytext;
  *   All Rights Reserved.
  * 
  ************************************************************************/
-/* scanner for Grid Engine ascii spool format
+/* scanner for Cluster Scheduler ascii spool format
  *
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * !! when you change this file                                         !!

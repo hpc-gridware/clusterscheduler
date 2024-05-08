@@ -38,7 +38,7 @@
  * The SGE Parallel Environment Queue Sort (PQS) API
  *
  * WARNING: This is NOT a generalized scheduler API which allows you
- * replace the Grid Engine scheduler. If that's what you're looking
+ * replace the Cluster Scheduler scheduler. If that's what you're looking
  * for you've come to the wrong place. This is an evolving API to
  * specifically choose (i.e. narrow down) and order the hosts for a
  * parallel job. Before even considering using this API, you should
@@ -54,12 +54,12 @@
  *
  * This programming interface allows a function from a dynamically
  * loaded library to specify the queues/hosts and order that should be used
- * to schedule a parallel job in Grid Engine. The input parameters include
+ * to schedule a parallel job in Cluster Scheduler. The input parameters include
  * the total number of requested execution slots and a list of queue/host
  * pairs which are candidates to schedule the job. The function should
  * determine which queue/hosts should be used for the job. This
  * is accomplished by specifying the sort order by setting a sequence
- * number in the passed pqs_queue_t structure. The Grid Engine scheduler
+ * number in the passed pqs_queue_t structure. The Cluster Scheduler scheduler
  * will sort the queue/host list according to the sequence number and
  * schedule the job to the available slots based on the sorted order.
  * When the job is dispatched, the $pe_hostfile described in sge_pe(5)
@@ -71,7 +71,7 @@
  * This API is intended to allow the scheduling of resources to jobs to
  * be extended beyond the capabilities provided by the sched_conf(5)
  * load_formula and queue_sort_method. This mechanism is not intended
- * to replace the resource management capabilities of Grid Engine such
+ * to replace the resource management capabilities of Cluster Scheduler such
  * as consumable resources or resource reservation. Instead, it is
  * integrated with these capabilities.
  *
@@ -99,7 +99,7 @@
  *
  *   PQS_NO_ASSIGNMENT_FOR_JOB_CATEGORY
  *     Jobs of this category can never be scheduled. This allows the
- *     Grid Engine scheduler to not bother with scheduling any more
+ *     Cluster Scheduler scheduler to not bother with scheduling any more
  *     jobs with the same resources requirements as the current job.
  *
  *   PQS_NO_ASSIGNMENT_FOR_JOB

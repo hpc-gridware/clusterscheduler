@@ -118,14 +118,14 @@ public class SessionImplTest extends TestCase {
          * In some rare cases the version strings can differ 
          * if some binaries are recompiled and others not.
          */
-        assertEquals("DRM version does not match Gridengine version", 
+        assertEquals("DRM version does not match Cluster Scheduler version", 
                 version, drmVersion);
                
         this.initSession();
         
         try {
             drmVersion = getVersionWithoutBuildNumber(session.getDrmSystem());        
-            assertEquals("Session version does not match Gridengine version", 
+            assertEquals("Session version does not match Cluster Scheduler version", 
                     version, drmVersion);
         } finally {
             this.exitSession();

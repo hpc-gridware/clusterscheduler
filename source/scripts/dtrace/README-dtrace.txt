@@ -1,4 +1,4 @@
-                Monitoring Grid Engine Masters with dtrace
+                Monitoring Cluster Scheduler Masters with dtrace
                 ------------------------------------------
 
 Content
@@ -22,9 +22,9 @@ Content
 
    Understanding the bottlenecks of distributed systems is crucial for 
    performance tuning. The script $SGE_ROOT/util/dtrace/monitor.sh allows 
-   a Grid Engine master be monitored, if Solaris 10 dtrace(1) can be used.
+   a Cluster Scheduler master be monitored, if Solaris 10 dtrace(1) can be used.
 
-   Monitor.sh measures throughput-relevant data of your running Grid Engine 
+   Monitor.sh measures throughput-relevant data of your running Cluster Scheduler 
    master and compiles this data into few indices that are printed in a 
    single-line view per interval with columns below.
 

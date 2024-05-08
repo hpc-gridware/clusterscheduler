@@ -74,7 +74,7 @@
 *     implementation) and XML format.
 *
 *  NOTES
-*     Older Grid Engine versions that had no version controll cannot 
+*     Older Grid Engine versions that had no version control cannot 
 *     properly handle messages with version information.
 *     Therefore the version information is preceeded by a 0 value
 *     4 byte integer, which will result in some sort of error handling

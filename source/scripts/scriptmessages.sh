@@ -32,9 +32,9 @@
 #___INFO__MARK_END__
 
 ARCH=`./aimk -nomk`
-MSGPO="gridengine.po"
-MSGMO="gridengine.mo"
-MSGPOT="gridengine.pot"
+MSGPO="clusterscheduler.po"
+MSGMO="clusterscheduler.mo"
+MSGPOT="clusterscheduler.pot"
 LOCALEDIR="./locale"
 XGETTEXT="/home/codine/gettext/${ARCH}/bin/xgettext --strict --foreign-user -j -o ${LOCALEDIR}/${MSGPOT}"
 MSGMERGE="/home/codine/gettext/${ARCH}/bin/msgmerge"

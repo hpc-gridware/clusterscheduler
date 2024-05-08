@@ -1,6 +1,6 @@
 Apache Hadoop is a distributed computation framework based on the Map/Reduce paper published by Google.  It is composed of two main parts: Map/Reduce and HDFS.  HDFS is a distributed file system where data is broken down into blocks of uniform size and replicated to multiple node in the cluster.  Map/Reduce is a framework for running jobs written in the Java[TM] language that process data stored in HDFS.  The Map/Reduce framework divides jobs into tasks such that each task can operate on a single data block.  The tasks can then be assigned to nodes that either host their associated data blocks or that are close to the data blocks, e.g. in the same rack.
 
-The Apache Hadoop Map/Reduce framework behaves very much like a classic parallel environment.  The integration components found in this directory will allow Apache Hadoop to be run from a Sun Grid Engine cluster as a parallel job.  This integration assumes that the HDFS cluster is statically configured and persistently available.  It attempts to assign nodes to Hadoop parallel jobs that offer the data blocks needed by the jobs.  Each Hadoop parallel job sets up its own Map/Reduce framework exclusively for the use of that job.  When the job ends, the Map/Reduce framework is taken down.
+The Apache Hadoop Map/Reduce framework behaves very much like a classic parallel environment.  The integration components found in this directory will allow Apache Hadoop to be run from a Cluster Scheduler cluster as a parallel job.  This integration assumes that the HDFS cluster is statically configured and persistently available.  It attempts to assign nodes to Hadoop parallel jobs that offer the data blocks needed by the jobs.  Each Hadoop parallel job sets up its own Map/Reduce framework exclusively for the use of that job.  When the job ends, the Map/Reduce framework is taken down.
 
 To configure this integration, follow these steps:
 
@@ -10,7 +10,7 @@ To configure this integration, follow these steps:
 
 3) Edit the env.sh file to contain the path to the Hadoop installation ($HADOOP_HOME) and the path to the Java Runtime Environment installation ($JAVA_HOME).  Note that the value of $JAVA_HOME must be valid on all execution nodes and must be at least the Java SE 6 platform.
 
-4) Source the Sun Grid Engine settings file.
+4) Source the Cluster Scheduler settings file.
 
 5) Run "./setup.pl -i" to configure the cluster for the Hadoop integration.  This step will create a new parallel environment and a number of new complexes, and it will install the Hadoop load sensor.
 

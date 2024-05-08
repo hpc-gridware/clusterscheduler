@@ -15,16 +15,16 @@ Content
 --------------
 
    Architecture strings are used as unique identifiers for operating system
-   brands and versions in various contexts in Grid Engine. Example uses are
+   brands and versions in various contexts in Cluster Scheduler. Example uses are
    for making the compilation process generic, for installing across
    different platforms via the same procedures and for locating the
    appropriate binaries.  The architecture string is generated and returned
    by the script 'dist/util/arch' by printing it to STDOUT.
 
    'aimk', for instance, uses the architecture string to define the names of
-   subdirectories where the binaries of a Grid Engine distribution later
+   subdirectories where the binaries of a Cluster Scheduler distribution later
    will be stored. Thus it is possible to easily create a distribution for a
-   heterogenous cluster of Grid engine hosts in a shared directory.  'aimk'
+   heterogenous cluster of Cluster Scheduler hosts in a shared directory.  'aimk'
    will map this lower case strings to upper case strings. The name of the
    upper case strings will be used to create subdirectories where the
    compilation will create object files and binaries for a single

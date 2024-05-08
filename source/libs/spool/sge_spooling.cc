@@ -202,7 +202,7 @@ spool_set_option(lList **answer_list, lListElem *context, const char *option)
 *
 *     If the parameter check is set to true, the startup callbacks
 *     check the data base, e.g. if the spooling database
-*     was created for the current Grid Engine version.
+*     was created for the current Cluster Scheduler version.
 *     This check shall be done for all operations, except when creating the
 *     database.
 *

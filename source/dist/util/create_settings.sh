@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# create Grid Engine settings.[c]sh file
+# create Cluster Scheduler settings.[c]sh file
 #
 #___INFO__MARK_BEGIN__
 ##########################################################################

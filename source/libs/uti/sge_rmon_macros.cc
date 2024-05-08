@@ -98,7 +98,7 @@ static void rmon_helper_key_destroy(void *ctx) {
 
 /****** rmon/Introduction ******************************************************
 *  NAME
-*     RMON - Grid Engine Monitoring Interface
+*     RMON - Cluster Scheduler Monitoring Interface
 *
 *  FUNCTION
 *     The RMON library is a set of functions, which do allow monitoring of 

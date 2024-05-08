@@ -1161,7 +1161,7 @@ jsv_sub_add_param()
 #     is not passed to JSV scripts by default.
 #
 #     Please note also that the data in the job environment can't be
-#     verified by Grid Engine and might therefore contain data which
+#     verified by Cluster Scheduler and might therefore contain data which
 #     could be misinterpreted in the script environment
 #     and cause security issues. 
 #     

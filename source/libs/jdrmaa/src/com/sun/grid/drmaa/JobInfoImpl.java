@@ -37,7 +37,7 @@ import java.util.Map;
 import org.ggf.drmaa.*;
 
 /**
- * This class provides information about a completed Grid Engine job.
+ * This class provides information about a completed Cluster Scheduler job.
  * @see org.ggf.drmaa.JobInfo
  * @author  dan.templeton@sun.com
  * @since 0.5
@@ -81,9 +81,9 @@ public class JobInfoImpl implements JobInfo {
     /**
      * If hasSignaled() returns true, this method returns a representation of
      * the signal that caused the termination of the job. For signals declared
-     * by POSIX or otherwise known to Grid Engine, the symbolic names are
+     * by POSIX or otherwise known to Cluster Scheduler, the symbolic names are
      * returned (e.g., SIGABRT, SIGALRM).<BR>
-     * For signals not known by Grid Engine, the string &quot;unknown
+     * For signals not known by Cluster Scheduler, the string &quot;unknown
      * signal&quot; is returned.
      * @return the name of the terminating signal
      */

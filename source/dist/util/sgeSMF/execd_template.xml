@@ -93,7 +93,7 @@ NOTE:  This service manifest is not editable; its contents will be
         <template>
                 <common_name>
                         <loctext xml:lang='C'>
-                        Sun Grid Engine - Execd service
+                        Cluster Scheduler - Execd service
                         </loctext>
                 </common_name>
                 <documentation>

@@ -63,11 +63,11 @@
 
 /****** Eventclient/--Event_Client_Interface **********************************
 *  NAME
-*     Evenclient -- The Grid Engine Event Client Interface
+*     Evenclient -- The Cluster Scheduler Event Client Interface
 *
 *  FUNCTION
-*     The Grid Engine Event Client Interface provides a means to connect 
-*     to the Grid Engine qmaster and receive information about objects 
+*     The Cluster Scheduler Event Client Interface provides a means to connect 
+*     to the Cluster Scheduler qmaster and receive information about objects 
 *     (actual object properties and changes).
 *
 *     It provides a subscribe/unsubscribe mechanism allowing fine grained
