@@ -43,7 +43,7 @@ WelcomeUninstall()
       return
    fi
 
-   $INFOTEXT -u "Grid Engine uninstallation"
+   $INFOTEXT -u "Cluster Scheduler uninstallation"
    if [ "$ALL_EXECDS" = true ]; then
       $INFOTEXT "\nYou are going to uninstall all execution hosts!\n" \
                 "If you are not sure what you are doing, than please stop\n" \

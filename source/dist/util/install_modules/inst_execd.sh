@@ -50,10 +50,10 @@ WelcomeTheUserExecHost()
       return
    fi
  
-   $INFOTEXT -u "\nWelcome to the Grid Engine execution host installation"
-   $INFOTEXT "\nIf you haven't installed the Grid Engine qmaster host yet, you must execute\n" \
+   $INFOTEXT -u "\nWelcome to the Cluster Scheduler execution host installation"
+   $INFOTEXT "\nIf you haven't installed the Cluster Scheduler qmaster host yet, you must execute\n" \
              "this step (with >install_qmaster<) prior the execution host installation.\n\n" \
-             "For a successful installation you need a running Grid Engine qmaster. It is\n" \
+             "For a successful installation you need a running Cluster Scheduler qmaster. It is\n" \
              "also neccesary that this host is an administrative host.\n\n" \
              "You can verify your current list of administrative hosts with\n" \
              "the command:\n\n" \
@@ -76,10 +76,10 @@ WelcomeTheUserSubmitHost()
       return
    fi
  
-   $INFOTEXT -u "\nWelcome to the Grid Engine submit host installation"
-   $INFOTEXT "\nIf you haven't installed the Grid Engine qmaster host yet, you must execute\n" \
+   $INFOTEXT -u "\nWelcome to the Cluster Scheduler submit host installation"
+   $INFOTEXT "\nIf you haven't installed the Cluster Scheduler qmaster host yet, you must execute\n" \
              "this step (with >install_qmaster<) prior the submit host installation.\n\n" \
-             "For a successful installation you need a running Grid Engine qmaster. It is\n" \
+             "For a successful installation you need a running Cluster Scheduler qmaster. It is\n" \
              "also necessary that this host is an administrative host.\n\n" \
              "The script will check this in a later step or use the following command:\n\n" \
              "   # qconf -sh\n\n" \
@@ -101,7 +101,7 @@ CheckQmasterInstallation()
     SGE_CELL=$CELL_NAME
    else
     $CLEAR
-    $INFOTEXT -u "\nGrid Engine cells"
+    $INFOTEXT -u "\nCluster Scheduler cells"
     if [ "$SGE_CELL" = "" ]; then
        SGE_CELL="default"
     fi
@@ -120,9 +120,9 @@ CheckQmasterInstallation()
 
    if [ ! -f $COMMONDIR/act_qmaster -o ! -f $COMMONDIR/bootstrap ]; then
       $INFOTEXT "\nObviously there was no qmaster installation yet!\nCall >install_qmaster<\n" \
-                  "on the machine which shall run the Grid Engine qmaster\n"
+                  "on the machine which shall run the Cluster Scheduler qmaster\n"
       $INFOTEXT -log "\nObviously there was no qmaster installation yet!\nCall >install_qmaster<\n" \
-                  "on the machine which shall run the Grid Engine qmaster\n"
+                  "on the machine which shall run the Cluster Scheduler qmaster\n"
 
       MoveLog
       exit 1
@@ -438,7 +438,7 @@ AddLocalConfiguration_With_Qconf()
 #
 StartExecd()
 {
-   $INFOTEXT -u "\nGrid Engine execution daemon startup"
+   $INFOTEXT -u "\nCluster Scheduler execution daemon startup"
    $INFOTEXT "\nStarting execution daemon. Please wait ..."
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
       if [ -z "$SGE_CLUSTER_NAME" ]; then

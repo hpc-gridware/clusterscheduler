@@ -51,7 +51,7 @@ GetCellRoot()
        $INFOTEXT -log "Using >%s< as SGE_CELL_ROOT." "$SGE_CELL_ROOT"
    else
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine cell root"
+      $INFOTEXT -u "\nCluster Scheduler cell root"
       $INFOTEXT -n "Enter the cell root <<<"
       INP=`Enter `
       eval SGE_CELL_ROOT=$INP
@@ -86,18 +86,18 @@ GetCell()
    else
    while [ $is_done = "false" ]; do 
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine cells"
+      $INFOTEXT -u "\nCluster Scheduler cells"
       if [ "$SGE_CELL" = "" ]; then
          SGE_CELL=default
       fi
-      $INFOTEXT -n "\nGrid Engine supports multiple cells.\n\n" \
-                   "If you are not planning to run multiple Grid Engine clusters or if you don't\n" \
-                   "know yet what is a Grid Engine cell it is safe to keep the default cell name\n\n" \
+      $INFOTEXT -n "\nCluster Scheduler supports multiple cells.\n\n" \
+                   "If you are not planning to run multiple Cluster Scheduler clusters or if you don't\n" \
+                   "know yet what is a Cluster Scheduler cell it is safe to keep the default cell name\n\n" \
                    "   default\n\n" \
                    "If you want to install multiple cells you can enter a cell name now.\n\n" \
                    "The environment variable\n\n" \
                    "   \$SGE_CELL=<your_cell_name>\n\n" \
-                   "will be set for all further Grid Engine commands.\n\n" \
+                   "will be set for all further Cluster Scheduler commands.\n\n" \
                    "Enter cell name [%s] >> " $SGE_CELL
       INP=`Enter $SGE_CELL`
       eval SGE_CELL=$INP
@@ -190,7 +190,7 @@ GetQmasterSpoolDir()
    done=false
    while [ $done = false ]; do
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine qmaster spool directory"
+      $INFOTEXT -u "\nCluster Scheduler qmaster spool directory"
       $INFOTEXT "\nThe qmaster spool directory is the place where the qmaster daemon stores\n" \
                 "the configuration and the state of the queuing system.\n\n"
 
@@ -209,7 +209,7 @@ GetQmasterSpoolDir()
 
       $INFOTEXT -n "If you will install shadow master hosts or if you want to be able to start\n" \
                    "the qmaster daemon on other hosts (see the corresponding section in the\n" \
-                   "Grid Engine Installation and Administration Manual for details) the account\n" \
+                   "Cluster Scheduler Installation and Administration Manual for details) the account\n" \
                    "on the shadow master hosts also needs read/write access to this directory.\n\n" \
                    "Enter a qmaster spool directory [%s] >> " "$SGE_ROOT_VAL/$SGE_CELL_VAL/spool/qmaster"
       QMDIR=`Enter "$SGE_ROOT_VAL/$SGE_CELL_VAL/spool/qmaster"`
@@ -289,7 +289,7 @@ SetPermissions()
    else
       $CLEAR
       $INFOTEXT -u "\nVerifying and setting file permissions"
-      $INFOTEXT "\nWe may now verify and set the file permissions of your Grid Engine\n" \
+      $INFOTEXT "\nWe may now verify and set the file permissions of your Cluster Scheduler\n" \
                 "distribution.\n\n" \
                  "This may be useful since due to unpacking and copying of your distribution\n" \
                  "your files may be unaccessible to other users.\n\n" \
@@ -584,7 +584,7 @@ SelectHostNameResolving()
      
    else
      $CLEAR
-     $INFOTEXT -u "\nSelect default Grid Engine hostname resolving method"
+     $INFOTEXT -u "\nSelect default Cluster Scheduler hostname resolving method"
      $INFOTEXT "\nAre all hosts of your cluster in one DNS domain? If this is\n" \
                "the case the hostnames\n\n" \
                "   >hostA< and >hostA.foo.com<\n\n" \
@@ -861,8 +861,8 @@ GetConfiguration()
    done=false
    while [ $done = false ]; do
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine cluster configuration"
-      $INFOTEXT "\nPlease give the basic configuration parameters of your Grid Engine\n" \
+      $INFOTEXT -u "\nCluster Scheduler cluster configuration"
+      $INFOTEXT "\nPlease give the basic configuration parameters of your Cluster Scheduler\n" \
                 "installation:\n\n   <execd_spool_dir>\n\n"
 
       if [ $ADMINUSER != default ]; then
@@ -892,7 +892,7 @@ GetConfiguration()
       else
          default_value="$2"
       fi
-      $INFOTEXT -u "\nGrid Engine cluster configuration (continued)"
+      $INFOTEXT -u "\nCluster Scheduler cluster configuration (continued)"
       $INFOTEXT -n "\n<administrator_mail>\n\n" \
                    "The email address of the administrator to whom problem reports are sent.\n\n" \
                    "It is recommended to configure this parameter. You may use >none<\n" \
@@ -930,18 +930,18 @@ GetGidRange()
    
    while [ $done = false ]; do
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine group id range"
-      $INFOTEXT "\nWhen jobs are started under the control of Grid Engine an additional group id\n" \
+      $INFOTEXT -u "\nCluster Scheduler group id range"
+      $INFOTEXT "\nWhen jobs are started under the control of Cluster Scheduler an additional group id\n" \
                 "is set on platforms which do not support jobs. This is done to provide maximum\n" \
-                "control for Grid Engine jobs.\n\n" \
+                "control for Cluster Scheduler jobs.\n\n" \
                 "This additional UNIX group id range must be unused group id's in your system.\n" \
                 "Each job will be assigned a unique id during the time it is running.\n" \
                 "Therefore you need to provide a range of id's which will be assigned\n" \
                 "dynamically for jobs.\n\n" \
                 "The range must be big enough to provide enough numbers for the maximum number\n" \
-                "of Grid Engine jobs running at a single moment on a single host. E.g. a range\n" \
-                "like >20000-20100< means, that Grid Engine will use the group ids from\n" \
-                "20000-20100 and provides a range for 100 Grid Engine jobs at the same time\n" \
+                "of Cluster Scheduler jobs running at a single moment on a single host. E.g. a range\n" \
+                "like >20000-20100< means, that Cluster Scheduler will use the group ids from\n" \
+                "20000-20100 and provides a range for 100 Cluster Scheduler jobs at the same time\n" \
                 "on a single host.\n\n" \
                 "You can change at any time the group id range in your cluster configuration.\n"
 
@@ -1101,7 +1101,7 @@ InitCA()
 #
 StartQmaster()
 {
-   $INFOTEXT -u "\nGrid Engine qmaster startup"
+   $INFOTEXT -u "\nCluster Scheduler qmaster startup"
    $INFOTEXT "\nStarting qmaster daemon. Please wait ..."
 
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
@@ -1187,14 +1187,14 @@ AddHosts()
       done
   
    else
-      $INFOTEXT -u "\nAdding Grid Engine hosts"
+      $INFOTEXT -u "\nAdding Cluster Scheduler hosts"
       $INFOTEXT "\nPlease now add the list of hosts, where you will later install your execution\n" \
                 "daemons. These hosts will be also added as valid submit hosts.\n\n" \
                 "Please enter a blank separated list of your execution hosts. You may\n" \
                 "press <RETURN> if the line is getting too long. Once you are finished\n" \
                 "simply press <RETURN> without entering a name.\n\n" \
                 "You also may prepare a file with the hostnames of the machines where you plan\n" \
-                "to install Grid Engine. This may be convenient if you are installing Grid\n" \
+                "to install Cluster Scheduler. This may be convenient if you are installing Grid\n" \
                 "Engine on many hosts.\n\n"
 
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
@@ -1224,14 +1224,14 @@ AddHosts()
       ret=$?
       if [ "$ret" = 0 ]; then
          $CLEAR
-         $INFOTEXT -u "\nAdding Grid Engine shadow hosts"
+         $INFOTEXT -u "\nAdding Cluster Scheduler shadow hosts"
          $INFOTEXT "\nPlease now add the list of hosts, where you will later install your shadow\n" \
                    "daemon.\n\n" \
                    "Please enter a blank separated list of your execution hosts. You may\n" \
                    "press <RETURN> if the line is getting too long. Once you are finished\n" \
                    "simply press <RETURN> without entering a name.\n\n" \
                    "You also may prepare a file with the hostnames of the machines where you plan\n" \
-                   "to install Grid Engine. This may be convenient if you are installing Grid\n" \
+                   "to install Cluster Scheduler. This may be convenient if you are installing Grid\n" \
                    "Engine on many hosts.\n\n"
 
          $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
@@ -1313,13 +1313,13 @@ AddSubmitHosts()
         fi
       done  
    else
-      $INFOTEXT -u "\nAdding Grid Engine submit hosts"
+      $INFOTEXT -u "\nAdding Cluster Scheduler submit hosts"
       $INFOTEXT "\nPlease now add the list of hosts, which should become submit hosts.\n" \
                 "Please enter a blank separated list of your submit hosts. You may\n" \
                 "press <RETURN> if the line is getting too long. Once you are finished\n" \
                 "simply press <RETURN> without entering a name.\n\n" \
                 "You also may prepare a file with the hostnames of the machines where you plan\n" \
-                "to install Grid Engine. This may be convenient if you are installing Grid\n" \
+                "to install Cluster Scheduler. This may be convenient if you are installing Grid\n" \
                 "Engine on many hosts.\n\n"
 
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
@@ -1407,7 +1407,7 @@ AddHostsFromTerminal()
       fi
       $INFOTEXT "\nPlease enter a blank seperated list of hosts.\n\n" \
                 "Stop by entering <RETURN>. You may repeat this step until you are\n" \
-                "entering an empty list. You will see messages from Grid Engine\n" \
+                "entering an empty list. You will see messages from Cluster Scheduler\n" \
                 "when the hosts are added.\n"
 
       $INFOTEXT -n "Host(s): "
@@ -1462,7 +1462,7 @@ GetQmasterPort()
     PortSourceSelect $SGE_QMASTER_SRV
 
    if [ "$SGE_QMASTER_PORT" != "" -a "$port_source" != "db" ]; then
-      $INFOTEXT -u "\nGrid Engine TCP/IP communication service"
+      $INFOTEXT -u "\nCluster Scheduler TCP/IP communication service"
 
       if [ $SGE_QMASTER_PORT -ge 1 -a $SGE_QMASTER_PORT -le $comm_port_max ]; then
          $INFOTEXT "\nUsing the environment variable\n\n" \
@@ -1491,7 +1491,7 @@ GetQmasterPort()
                    "the installation or configure the service >sge_qmaster<." $SGE_QMASTER_PORT $comm_port_max
       fi
    fi
-   $INFOTEXT -u "\nGrid Engine TCP/IP service >sge_qmaster<"
+   $INFOTEXT -u "\nCluster Scheduler TCP/IP service >sge_qmaster<"
    if [ "$port_source" = "env" ]; then
       EnterPortAndCheck $SGE_QMASTER_SRV
       $CLEAR
@@ -1500,7 +1500,7 @@ GetQmasterPort()
       if [ "$port_source" = "db" ]; then
          $INFOTEXT "\nUsing the service\n\n" \
                    "   sge_qmaster\n\n" \
-                   "for communication with Grid Engine.\n"
+                   "for communication with Cluster Scheduler.\n"
          qmaster_service="true"
       fi
       $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
@@ -1530,7 +1530,7 @@ EnterServiceOrPortAndCheck()
             $INFOTEXT -n "\nIf you have just added the service it may take a while until the service\n" \
                          "propagates in your network. If this is true we can again check for\n" \
                          "the service >%s<. If you don't want to add this service or if\n" \
-                         "you want to install Grid Engine just for testing purposes you can enter\n" \
+                         "you want to install Cluster Scheduler just for testing purposes you can enter\n" \
                          "a port number.\n" $service_name
 
               if [ $AUTO != "true" ]; then
@@ -1612,7 +1612,7 @@ SelectedPortOutput()
 
 EnterAndValidatePortNumber()
 {
-   $INFOTEXT -u "\nGrid Engine TCP/IP service >%s<\n" $service_name
+   $INFOTEXT -u "\nCluster Scheduler TCP/IP service >%s<\n" $service_name
    $INFOTEXT -n "\n"
 
    port_ok="false"
@@ -1969,7 +1969,7 @@ GetExecdPort()
     PortCollision $SGE_EXECD_SRV
     PortSourceSelect $SGE_EXECD_SRV
     if [ "$SGE_EXECD_PORT" != "" -a "$port_source" != "db" ]; then
-      $INFOTEXT -u "\nGrid Engine TCP/IP communication service"
+      $INFOTEXT -u "\nCluster Scheduler TCP/IP communication service"
 
       if [ $SGE_EXECD_PORT -ge 1 -a $SGE_EXECD_PORT -le $comm_port_max ]; then
          $INFOTEXT "\nUsing the environment variable\n\n" \
@@ -1998,7 +1998,7 @@ GetExecdPort()
                    "the installation or configure the service >sge_execd<." $SGE_EXECD_PORT $comm_port_max
       fi
    fi         
-      $INFOTEXT -u "\nGrid Engine TCP/IP communication service "
+      $INFOTEXT -u "\nCluster Scheduler TCP/IP communication service "
    if [ "$port_source" = "env" ]; then
 
          $INFOTEXT "Make sure to use a different port number for the execution host\n" \
@@ -2021,7 +2021,7 @@ GetExecdPort()
       if [ "$service_available" = "true" ]; then
          $INFOTEXT "\nUsing the service\n\n" \
                    "   sge_execd\n\n" \
-                   "for communication with Grid Engine.\n"
+                   "for communication with Cluster Scheduler.\n"
          execd_service="true"
       fi
       $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
@@ -2116,7 +2116,7 @@ PortCollision()
    CheckPortsCollision $service
 
    #$ECHO "collision_flag is $collision_flag \n"
-   $INFOTEXT -u "\nGrid Engine TCP/IP communication service"
+   $INFOTEXT -u "\nCluster Scheduler TCP/IP communication service"
 
    case "$collision_flag" in
 
@@ -2168,7 +2168,7 @@ PortSourceSelect()
    $INFOTEXT "\nNow you have the possibility to set/change the communication ports by using the\n>shell environment< or you may configure it via a network service, configured\nin local >/etc/service<, >NIS< or >NIS+<, adding an entry in the form\n\n"
    $INFOTEXT "    %s <port_number>/tcp\n\n" $1
    $INFOTEXT "to your services database and make sure to use an unused port number.\n\n"
-   $INFOTEXT -n "How do you want to configure the Grid Engine communication ports?\n\n"
+   $INFOTEXT -n "How do you want to configure the Cluster Scheduler communication ports?\n\n"
    $INFOTEXT "Using the >shell environment<:                           [1]\n"
    $INFOTEXT -n "Using a network service like >/etc/service<, >NIS/NIS+<: [2]\n\n(default: %s) >> " $INP
    #INP will be set in function: PortCollision, we need this as default value for auto install

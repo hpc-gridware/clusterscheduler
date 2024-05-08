@@ -424,7 +424,7 @@ CheckBinaries()
    done
 
    if [ $missing = true ]; then
-      $INFOTEXT "\nMissing Grid Engine binaries!\n\n" \
+      $INFOTEXT "\nMissing Cluster Scheduler binaries!\n\n" \
       "A complete installation needs the following binaries in >%s<:\n\n" \
       "qacct           qlogin          qrsh            sge_shepherd\n" \
       "qalter          qmake           qselect         sge_coshepherd\n" \
@@ -440,7 +440,7 @@ CheckBinaries()
       "filestat       getservbyname  qrsh_starter   \n\n" \
       "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
 
-      $INFOTEXT -log "\nMissing Grid Engine binaries!\n\n" \
+      $INFOTEXT -log "\nMissing Cluster Scheduler binaries!\n\n" \
       "A complete installation needs the following binaries in >%s<:\n\n" \
       "qacct           qlogin          qrsh            sge_shepherd\n" \
       "qalter          qmake           qselect         sge_coshepherd\n" \
@@ -1188,8 +1188,8 @@ WelcomeTheUser()
       return
    fi
 
-   $INFOTEXT -u "\nWelcome to the Grid Engine installation"
-   $INFOTEXT -u "\nGrid Engine qmaster host installation"
+   $INFOTEXT -u "\nWelcome to the Cluster Scheduler installation"
+   $INFOTEXT -u "\nCluster Scheduler qmaster host installation"
    $INFOTEXT "\nBefore you continue with the installation please read these hints:\n\n" \
              "   - Your terminal window should have a size of at least\n" \
              "     80x24 characters\n\n" \
@@ -1218,12 +1218,12 @@ CheckWhoInstallsSGE()
       if [ $BERKELEY = "install" ]; then
          $INFOTEXT -u "\nBerkeley DB - test installation"
       else
-         $INFOTEXT -u "\nGrid Engine - test installation"
+         $INFOTEXT -u "\nCluster Scheduler - test installation"
       fi
 
       $INFOTEXT "\nYou are installing not as user >root<!\n\n" \
-                  "This will allow you to run Grid Engine only under your user id for testing\n" \
-                  "a limited functionality of Grid Engine.\n"
+                  "This will allow you to run Cluster Scheduler only under your user id for testing\n" \
+                  "a limited functionality of Cluster Scheduler.\n"
 
       ADMINUSER=`whoami`
       #ADMINUSER="none"
@@ -1244,30 +1244,30 @@ CheckWhoInstallsSGE()
 
    if [ $this_dir_user != root ]; then
       $CLEAR
-      $INFOTEXT -u "\nGrid Engine admin user account"
+      $INFOTEXT -u "\nCluster Scheduler admin user account"
 
       $INFOTEXT "\nThe current directory\n\n" \
                 "   %s\n\n" \
                 "is owned by user\n\n" \
                 "   %s\n\n" \
                 "If user >root< does not have write permissions in this directory on *all*\n" \
-                "of the machines where Grid Engine will be installed (NFS partitions not\n" \
+                "of the machines where Cluster Scheduler will be installed (NFS partitions not\n" \
                 "exported for user >root< with read/write permissions) it is recommended to\n" \
-                "install Grid Engine that all spool files will be created under the user id\n" \
+                "install Cluster Scheduler that all spool files will be created under the user id\n" \
                 "of user >%s<.\n\n" \
                 "IMPORTANT NOTE: The daemons still have to be started by user >root<.\n" \
                 `pwd` $this_dir_user $this_dir_user
 
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
-                "Do you want to install Grid Engine as admin user >%s< (y/n) [y] >> " $this_dir_user
+                "Do you want to install Cluster Scheduler as admin user >%s< (y/n) [y] >> " $this_dir_user
                 ret=$?
       if [ "$AUTO" = "true" -a "$ADMIN_USER" != "" ]; then
          ret=1
       fi
 
       if [ "$ret" = 0 ]; then
-         $INFOTEXT "Installing Grid Engine as admin user >%s<" "$this_dir_user"
-         $INFOTEXT -log "Installing Grid Engine as admin user >%s<" "$this_dir_user"
+         $INFOTEXT "Installing Cluster Scheduler as admin user >%s<" "$this_dir_user"
+         $INFOTEXT -log "Installing Cluster Scheduler as admin user >%s<" "$this_dir_user"
          ADMINUSER=$this_dir_user
          $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
          $CLEAR
@@ -1276,24 +1276,24 @@ CheckWhoInstallsSGE()
          $CLEAR
       fi
    fi
-   $INFOTEXT -u "\nChoosing Grid Engine admin user account"
+   $INFOTEXT -u "\nChoosing Cluster Scheduler admin user account"
 
-   $INFOTEXT "\nYou may install Grid Engine that all files are created with the user id of an\n" \
+   $INFOTEXT "\nYou may install Cluster Scheduler that all files are created with the user id of an\n" \
              "unprivileged user.\n\n" \
-             "This will make it possible to install and run Grid Engine in directories\n" \
+             "This will make it possible to install and run Cluster Scheduler in directories\n" \
              "where user >root< has no permissions to create and write files and directories.\n\n" \
-             "   - Grid Engine still has to be started by user >root<\n\n" \
-             "   - this directory should be owned by the Grid Engine administrator\n"
+             "   - Cluster Scheduler still has to be started by user >root<\n\n" \
+             "   - this directory should be owned by the Cluster Scheduler administrator\n"
 
    $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
-             "Do you want to install Grid Engine\n" \
+             "Do you want to install Cluster Scheduler\n" \
              "under an user ID other than >root< (y/n) [y] >> "
 
    if [ $? = 0 ]; then
       done=false
       while [ $done = false ]; do
          $CLEAR
-         $INFOTEXT -u "\nChoosing a Grid Engine admin user name"
+         $INFOTEXT -u "\nChoosing a Cluster Scheduler admin user name"
          $INFOTEXT -n "\nPlease enter a valid user name >> "
          INP=`Enter ""`
          if [ "$AUTO" = "true" ]; then
@@ -1311,8 +1311,8 @@ CheckWhoInstallsSGE()
                $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
                $CLEAR
             else
-               $INFOTEXT "\nInstalling Grid Engine as admin user >%s<\n" $INP
-               $INFOTEXT -log "Installing Grid Engine as user >%s<" $INP
+               $INFOTEXT "\nInstalling Cluster Scheduler as admin user >%s<\n" $INP
+               $INFOTEXT -log "Installing Cluster Scheduler as user >%s<" $INP
                ADMINUSER=$INP
                if [ $ADMINUSER = root ]; then
                   ADMINUSER=default
@@ -1324,8 +1324,8 @@ CheckWhoInstallsSGE()
          fi
       done
    else
-      $INFOTEXT "\nInstalling Grid Engine as user >root<\n"
-      $INFOTEXT -log "Installing Grid Engine as user >root<"
+      $INFOTEXT "\nInstalling Cluster Scheduler as user >root<\n"
+      $INFOTEXT -log "Installing Cluster Scheduler as user >root<"
       ADMINUSER=default
       $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
       $CLEAR
@@ -1355,7 +1355,7 @@ CheckForLocalHostResolving()
       $INFOTEXT "\nThe current hostname is resolved as follows:\n\n"
       $SGE_UTILBIN/gethostname
       $INFOTEXT -wait -auto $AUTO -n \
-                "\nIt is not supported for a Grid Engine installation that the local hostname\n" \
+                "\nIt is not supported for a Cluster Scheduler installation that the local hostname\n" \
                 "contains the hostname \"localhost\" and/or the IP address \"127.0.x.x\" of the\n" \
                 "loopback interface.\n" \
                 "The \"localhost\" hostname should be reserved for the loopback interface\n" \
@@ -1366,7 +1366,7 @@ CheckForLocalHostResolving()
       $INFOTEXT -log "\nThe current hostname is resolved as follows:\n\n"
       $SGE_UTILBIN/gethostname
       $INFOTEXT -log -wait -auto $AUTO -n \
-                "\nIt is not supported for a Grid Engine installation that the local hostname\n" \
+                "\nIt is not supported for a Cluster Scheduler installation that the local hostname\n" \
                 "contains the hostname \"localhost\" and/or the IP address \"127.0.x.x\" of the\n" \
                 "loopback interface.\n" \
                 "The \"localhost\" hostname should be reserved for the loopback interface\n" \
@@ -1395,7 +1395,7 @@ ProcessSGERoot()
             $INFOTEXT -u "\nChecking \$SGE_ROOT directory"
             $ECHO
             eval SGE_ROOT=`pwd | sed 's/\/tmp_mnt//'`
-            $INFOTEXT -n "The Grid Engine root directory is not set!\n" \
+            $INFOTEXT -n "The Cluster Scheduler root directory is not set!\n" \
                          "Please enter a correct path for SGE_ROOT.\n" 
             $INFOTEXT -n "If this directory is not correct (e.g. it may contain an automounter\n" \
                          "prefix) enter the correct path to this directory or hit <RETURN>\n" \
@@ -1410,7 +1410,7 @@ ProcessSGERoot()
          $ECHO
          SGE_ROOT_VAL=`eval echo $SGE_ROOT`
 
-         $INFOTEXT -n "The Grid Engine root directory is:\n\n" \
+         $INFOTEXT -n "The Cluster Scheduler root directory is:\n\n" \
                       "   \$SGE_ROOT = %s\n\n" \
                       "If this directory is not correct (e.g. it may contain an automounter\n" \
                       "prefix) enter the correct path to this directory or hit <RETURN>\n" \
@@ -1807,7 +1807,7 @@ ProcessSGEClusterName()
       GetDefaultClusterName
       $CLEAR
       $INFOTEXT -u "\nUnique cluster name"
-      $INFOTEXT "\nThe cluster name uniquely identifies a specific Sun Grid Engine cluster.\n" \
+      $INFOTEXT "\nThe cluster name uniquely identifies a specific Sun Cluster Scheduler cluster.\n" \
                 "The cluster name must be unique throughout your organization. The name \n" \
                 " is not related to the SGE cell.\n\n" \
                 "The cluster name must start with a letter ([A-Za-z]), followed by letters, \n" \
@@ -1932,7 +1932,7 @@ GiveHints()
    done=false
    while [ $done = false ]; do
       $CLEAR
-      $INFOTEXT -u "\nUsing Grid Engine"
+      $INFOTEXT -u "\nUsing Cluster Scheduler"
       $INFOTEXT "\nYou should now enter the command:\n\n" \
                 "   source %s\n\n" \
                 "if you are a csh/tcsh user or\n\n" \
@@ -1944,25 +1944,25 @@ GiveHints()
                 "   - \$SGE_CLUSTER_NAME (always necessary)\n" \
                 "   - \$SGE_QMASTER_PORT (if you haven't added the service >sge_qmaster<)\n" \
                 "   - \$SGE_EXECD_PORT   (if you haven't added the service >sge_execd<)\n" \
-                "   - \$PATH/\$path       (to find the Grid Engine binaries)\n" \
+                "   - \$PATH/\$path       (to find the Cluster Scheduler binaries)\n" \
                 "   - \$MANPATH          (to access the manual pages)\n" \
                 $SGE_ROOT_VAL/$SGE_CELL_VAL/common/settings.csh \
                 $SGE_ROOT_VAL/$SGE_CELL_VAL/common/settings.sh
 
-      $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to see where Grid Engine logs messages >> "
+      $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to see where Cluster Scheduler logs messages >> "
       $CLEAR
 
       tmp_spool=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep qmaster_spool_dir | awk '{ print $2 }'`
       master_spool=`dirname $tmp_spool`
 
-      $INFOTEXT -u "\nGrid Engine messages"
+      $INFOTEXT -u "\nCluster Scheduler messages"
       if [ "$SGE_ENABLE_SMF" = true ]; then
-         $INFOTEXT "\nGrid Engine messages can be found at:\n\n" \
+         $INFOTEXT "\nCluster Scheduler messages can be found at:\n\n" \
                    "   Startup messages can be found in SMF service log files.\n" \
                    "   You can get the name of the log file by calling svcs -l <SERVICE_NAME> \n" \
                    "   E.g.: svcs -l svc:/application/sge/qmaster:%s\n\n" $SGE_CLUSTER_NAME
       else
-         $INFOTEXT "\nGrid Engine messages can be found at:\n\n" \
+         $INFOTEXT "\nCluster Scheduler messages can be found at:\n\n" \
                    "   /tmp/qmaster_messages (during qmaster startup)\n" \
                    "   /tmp/execd_messages   (during execution daemon startup)\n\n"
       fi
@@ -1970,13 +1970,13 @@ GiveHints()
                 "   Qmaster:     %s\n" \
                 "   Exec daemon: <execd_spool_dir>/<hostname>/messages\n" $master_spool/qmaster/messages
 
-      $INFOTEXT -u "\nGrid Engine startup scripts"
-      $INFOTEXT "\nGrid Engine startup scripts can be found at:\n\n" \
+      $INFOTEXT -u "\nCluster Scheduler startup scripts"
+      $INFOTEXT "\nCluster Scheduler startup scripts can be found at:\n\n" \
                 "   %s (qmaster)\n" \
                 "   %s (execd)\n" $SGE_ROOT/$SGE_CELL/common/sgemaster $SGE_ROOT/$SGE_CELL/common/sgeexecd
 
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
-                "Do you want to see previous screen about using Grid Engine again (y/n) [n] >> "
+                "Do you want to see previous screen about using Cluster Scheduler again (y/n) [n] >> "
       if [ $? = 0 ]; then
          :
       else
@@ -1986,7 +1986,7 @@ GiveHints()
 
    if [ $QMASTER = install ]; then
       $CLEAR
-      $INFOTEXT -u "\nYour Grid Engine qmaster installation is now completed"
+      $INFOTEXT -u "\nYour Cluster Scheduler qmaster installation is now completed"
       $INFOTEXT   "\nPlease now login to all hosts where you want to run an execution daemon\n" \
                   "and start the execution host installation procedure.\n\n" \
                   "If you want to run an execution daemon on this host, please do not forget\n" \
@@ -2312,16 +2312,16 @@ InstallRcScript()
 
 cat << PLIST > "$RC_PREFIX/$RC_DIR/StartupParameters.plist"
 {
-   Description = "SUN Grid Engine";
+   Description = "Cluster Scheduler";
    Provides = ("SGE");
    Requires = ("Disks", "NFS", "Resolver");
    Uses = ("NetworkExtensions");
    OrderPreference = "Late";
    Messages =
    {
-     start = "Starting SUN Grid Engine";
-     stop = "Stopping SUN Grid Engine";
-     restart = "Restarting SUN Grid Engine";
+     start = "Starting Cluster Scheduler";
+     stop = "Stopping Cluster Scheduler";
+     restart = "Restarting Cluster Scheduler";
    };
 }
 PLIST
@@ -2361,7 +2361,7 @@ PLIST
          # Add the procedure
          #------------------
          $ECHO "" >> $RC_FILE
-         $ECHO "# Grid Engine start up" >> $RC_FILE
+         $ECHO "# Cluster Scheduler start up" >> $RC_FILE
          $ECHO "#-$LINE---------" >> $RC_FILE
          $ECHO $SGE_STARTUP_FILE >> $RC_FILE
          $ECHO "exit 0" >> $RC_FILE
@@ -3172,7 +3172,7 @@ RemoveRcScript()
          mv $RC_FILE.sge_uninst.1 $RC_FILE.sge_uninst.2
          mv $RC_FILE.sge_uninst $RC_FILE.sge_uninst.1
 
-         cat $RC_FILE | sed -e "s/# Grid Engine start up//g" | sed -e "s/$SGE_STARTUP_FILE//g"  > $RC_FILE.new.1 2>/dev/null
+         cat $RC_FILE | sed -e "s/# Cluster Scheduler start up//g" | sed -e "s/$SGE_STARTUP_FILE//g"  > $RC_FILE.new.1 2>/dev/null
          cp $RC_FILE $RC_FILE.sge_uninst
          cp $RC_FILE.new.1 $RC_FILE
          $INFOTEXT "Application removed from %s" $RC_FILE
