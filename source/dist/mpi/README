@@ -7,14 +7,13 @@ Content
 -------
 
 1) Content of this directory hierarchy
-2) Integration package between Cluster Scheduler and Sun HPC ClusterTools(TM)
-3) mpi.template 
-4) mpich.template
-5) startmpi.sh
-6) stopmpi.sh
-7) 'mpi.sh' job example
-8) 'cpi' wrapper for MPICH
-9) Copyright
+2) mpi.template 
+3) mpich.template
+4) startmpi.sh
+5) stopmpi.sh
+6) 'mpi.sh' job example
+7) 'cpi' wrapper for MPICH
+8) Copyright
 
 
 1) Content of this directory hierarchy
@@ -24,7 +23,6 @@ This directory contains the following files and directories:
 
    README           this file 
    README.atm       desribes how to run MPI jobs over ATM
-   SunHPCT5/        integration package with Sun HPC ClusterTools 5
    startmpi.sh      startup script for MPI
    stopmpi.sh       shutdown script for MPI
    mpi.template     a MPI PE template configuration for Cluster Scheduler
@@ -39,23 +37,7 @@ of Parallel Environments" for a general introduction to the Parallel
 Environment Interface of Cluster Scheduler.
 
 
-2) Integration package between Cluster Scheduler and Sun HPC ClusterTools(TM)
-------------------------------------------------------------------------
-
-   In the directory
-
-      SunHPCT5/
-
-   you find a package to create a tight integration between Sun HPC
-   ClusterTools (HPCT) 5 and Cluster Scheduler.
-
-   The setup to integrate HPCT und Cluster Scheduler is explained in detail in
-   "Sun HPC ClusterTools 5 Software Administrator's Guide" (Part No. 
-   817-0083-10). This information in this directory provides additional
-   information which should be read in conjunction with the HPCT manual.
-
-
-3) mpi.template
+2) mpi.template
 ---------------
 
    Use this template as a starting point when establishing a parallel
@@ -75,7 +57,7 @@ Environment Interface of Cluster Scheduler.
      configured as 'priority' in the queues configuration
 
 
-4) mpich.template
+3) mpich.template
 -----------------
 
    Use this template as a starting point when establishing a parallel
@@ -99,7 +81,7 @@ Environment Interface of Cluster Scheduler.
    that your integration of Cluster Scheduler with MPI/MPICH works correctly.
 
 
-5) startmpi.sh
+4) startmpi.sh
 --------------
 
    The starter script 'startmpi.sh' needs some command line arguments, to 
@@ -113,13 +95,13 @@ Environment Interface of Cluster Scheduler.
    execution daemon.
 
 
-6) stopmpi.sh
+5) stopmpi.sh
 -------------
 
    The stopper 'stopmpi.sh' just removes $TMPDIR/machines.  
 
 
-7) 'mpi.sh' job example
+6) 'mpi.sh' job example
 -----------------------
 
    The first job example 'mpi.sh' starts the 'life' program from the mpich
@@ -139,14 +121,14 @@ Environment Interface of Cluster Scheduler.
    as the second argument.  
   
 
-8) 'cpi' wrapper for MPICH
+7) 'cpi' wrapper for MPICH
 --------------------------
 
    The second example is a wrapper to start 'cpi' from the mpich
    distribution.
 
 
-9) Copyright
+8) Copyright
 ------------
 ___INFO__MARK_BEGIN__
 
@@ -176,4 +158,7 @@ The Initial Developer of the Original Code is: Sun Microsystems, Inc.
 Copyright: 2001 by Sun Microsystems, Inc.
 
 All Rights Reserved.
+
+Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+
 ___INFO__MARK_END__
