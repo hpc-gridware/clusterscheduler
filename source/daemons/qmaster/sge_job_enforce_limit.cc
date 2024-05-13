@@ -77,7 +77,7 @@ is_module_enabled(void) {
    /*
     * if new setting is false and old one is true then delete old one-time events
     */
-   if (ret == false && old_setting) {
+   if (!ret && old_setting) {
       te_delete_all_one_time_events(TYPE_ENFORCE_LIMIT_EVENT);
    }
    old_setting = ret;
@@ -428,7 +428,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                      lListElem *pe_task;
 
                      for_each_rw (pe_task, pe_task_list) {
-                        if (lGetBool(pe_task, PET_do_contact) == false) {
+                        if (!lGetBool(pe_task, PET_do_contact)) {
                            lListElem *dummy_jr = lCreateElem(JR_Type);
 
                            job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
@@ -660,7 +660,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                /*
                 * find the smallest queue limit where the job is running 
                 */
-               if (has_rt_limit == false) {
+               if (!has_rt_limit) {
                   const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
                   u_long32 current_qi_h_rt = U_LONG32_MAX;
                   const lListElem *gdil_ep;

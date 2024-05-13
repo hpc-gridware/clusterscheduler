@@ -398,7 +398,7 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
          } else {
             local_ret = sge_gdi_packet_execute_external(alpp, packet);
          }
-         if (local_ret == false) {
+         if (!local_ret) {
             /* answer has been written in ctx->sge_gdi_packet_execute() */
             sge_gdi_packet_free(&packet);
             state->packet = nullptr;
@@ -468,7 +468,7 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 *                                        SGE_JB_LIST, SGE_GDI_GET, nullptr,
 *                                        where_job, what_job, &state, true);
 *        if (cqueue_request_id != -1 && job_request_id != -1 &&
-*            answer_list_has_error(&local_answer_list) == false) {
+*            !answer_list_has_error(&local_answer_list)) {
 *           lList *multi_answer_list = nullptr;
 *           lList *list_cqueue = nullptr;
 *           lList *list_job = nullptr;
@@ -482,7 +482,7 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 *           gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
 *                                  job_request_id, multi_answer_list, &list_job);
 *
-*           if (local_ret == false || answer_list_has_error(&answer_cqueue) || 
+*           if (!local_ret || answer_list_has_error(&answer_cqueue) || 
 *               answer_list_has_error(&answer_job) || answer_list_has_error(&local_answer_list)) {
 *              ERROR("GDI multi request failed");
 *           } else {
@@ -1682,7 +1682,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
             break;
          }
          case CL_RETVAL_ACCESS_DENIED: {
-            if (sge_gdi_communication_error.com_access_denied == false) {
+            if (!sge_gdi_communication_error.com_access_denied) {
                /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
                /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 access denied */
                gettimeofday(&now, nullptr);
@@ -1707,7 +1707,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
             break;
          }
          case CL_RETVAL_ENDPOINT_NOT_UNIQUE: {
-            if (sge_gdi_communication_error.com_endpoint_not_unique == false) {
+            if (!sge_gdi_communication_error.com_endpoint_not_unique) {
                /* counts endpoint not unique errors (TODO: workaround for BT: 6350264, IZ: 1893) */
                /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 endpoint not unique */
                DPRINTF("got endpint not unique");
@@ -1744,7 +1744,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
        * now log the error if not already reported the 
        * least CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT seconds
        */
-      if (commlib_error->cl_already_logged == false &&
+      if (!commlib_error->cl_already_logged &&
           sge_gdi_communication_error.com_last_error != sge_gdi_communication_error.com_error) {
 
          /*  never log the same messages again and again (commlib

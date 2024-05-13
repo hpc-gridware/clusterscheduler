@@ -117,7 +117,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
    DENTER(TOP_LAYER);
    
    have_lists = get_all_lists(alpp, &ql, &jl, &cl, &ehl, &pel, host_list, user_list, show);
-   if (have_lists == false) {
+   if (!have_lists) {
       free_all_lists(&ql, &jl, &cl, &ehl, &pel);
       DRETURN(QHOST_ERROR);
    }

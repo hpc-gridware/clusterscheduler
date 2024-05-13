@@ -608,7 +608,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
       u = lGetString(ep, US_name);
       DPRINTF("added userset: \"%s\"\n", u);
       acl = lGetElemStrRW(master_userset_list, US_name, u);
-      if (acl && lGetBool(acl, US_consider_with_categories) == false) {
+      if (acl && !lGetBool(acl, US_consider_with_categories)) {
          lSetBool(acl, US_consider_with_categories, true);
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl);
       }

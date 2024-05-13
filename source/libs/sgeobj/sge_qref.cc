@@ -300,14 +300,14 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
 *     Examples:
 *
 *        <CQ-pattern> (e.g. "*")
-*           resolve_cqueue == false 
+*           resolve_cqueue is false 
 *              => cq1 cq2
 *           resolve_cqueue is true 
 *              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
 *                 cq2@hostA1 cq2@hostA2 cq2@hostB1 cq2@hostB2
 *
 *        <QD-pattern> (e.q "*@@hgrp*")
-*           resolve_qdomain == false
+*           resolve_qdomain is false
 *              => cq1@@hgrpA cq1@@hgrpB cq2@@hgrpA cq2@@hgrpB
 *           resolve_qdomain is true
 *              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
@@ -524,7 +524,7 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
 
    for_each_ep(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
-      if (qref_eh_rejected(name, hostname, hgroup_list)==false) {
+      if (!qref_eh_rejected(name, hostname, hgroup_list)) {
          DRETURN(false);
       }
    }
@@ -551,7 +551,7 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 
    for_each_ep(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
-      if (qref_cq_rejected(name, cqname, hostname, hgroup_list)==false) {
+      if (!qref_cq_rejected(name, cqname, hostname, hgroup_list)) {
          DRETURN(false);
       }
    }

@@ -256,7 +256,7 @@ static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
 
    printf("ACTIVE JOBS--------------------------\n");
    if (full) {
-      if (binding == false) {
+      if (!binding) {
          printf("JOBID     JOBNAME    USERNAME      STATE   CORE  HOST  QUEUE        REMAINING  STARTTIME\n");
          printf("==================================================================================================\n");
       } else {
@@ -264,7 +264,7 @@ static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
          printf("===============================================================================================================\n");
       }
    } else {
-      if (binding == false) {
+      if (!binding) {
          printf("JOBID     JOBNAME    USERNAME      STATE   CORE  REMAINING  STARTTIME\n");
          printf("================================================================================\n");
       } else {

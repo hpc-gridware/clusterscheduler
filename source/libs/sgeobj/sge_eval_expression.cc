@@ -230,11 +230,11 @@ static void ParseNonTerminal(s_token *token_p, bool skip)
 {
    char *index;
    token_p->tt = T_EXP;
-   if (skip==false) { /* expression is not in skip mode */
+   if (!skip) { /* expression is not in skip mode */
       token_p->has_patterns=false; /* the pattern detected */
       index = token_p->pattern; /* skip first test, allready tested */
       while (index==token_p->pattern || indexOfTerminal(token_p->s[0])==-1) {
-         if (token_p->has_patterns==false && is_pattern(token_p->s[0])) {
+         if (!token_p->has_patterns && is_pattern(token_p->s[0])) {
             token_p->has_patterns=true; /* the pattern detected */
          }
          switch (token_p->type){

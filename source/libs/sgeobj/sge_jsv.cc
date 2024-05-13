@@ -281,7 +281,7 @@ jsv_start(lListElem *jsv, lList **answer_list)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (jsv != nullptr && jsv_is_started(jsv) == false) {
+   if (jsv != nullptr && !jsv_is_started(jsv)) {
       const char *scriptfile = lGetString(jsv, JSV_command);
       const char *user = lGetString(jsv, JSV_user);
       pid_t pid = -1;
@@ -1026,7 +1026,7 @@ jsv_do_verify(const char *context, lListElem **job,
       while (ret && ((jsv = jsv_next) != nullptr)) {
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
-         if (jsv_is_started(jsv) == false) {
+         if (!jsv_is_started(jsv)) {
             DPRINTF("JSV is not started\n");
             ret &= jsv_start(jsv, answer_list);
          }

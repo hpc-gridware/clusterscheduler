@@ -1707,7 +1707,7 @@ int main(int argc, char **argv)
    ** in the job environment variable QRSH_PORT, so the qrsh_starter or the
    ** shepherd can parse it and establish a connection.
    */
-   if (g_new_interactive_job_support == false) {
+   if (!g_new_interactive_job_support) {
       /*
       ** open socket for qlogin communication and set host and port 
       ** in environment QRSH_PORT 
@@ -1801,7 +1801,7 @@ int main(int argc, char **argv)
       VERBOSE_LOG((stderr, MSG_QSH_SERVERDAEMONSUCCESSFULLYSTARTEDWITHTASKID_S, tid)); 
       VERBOSE_LOG((stderr, "\n"));
 
-      if (g_new_interactive_job_support == false) {
+      if (!g_new_interactive_job_support) {
          /* wait for a client to connect */
          if ((msgsock = wait_for_qrsh_socket(sock, QSH_SOCKET_FINAL_TIMEOUT)) == -1) {
             ERROR(MSG_QSH_CANNOTGETCONNECTIONTOQLOGIN_STARTER_SS,"shepherd", host);
@@ -1983,7 +1983,7 @@ int main(int argc, char **argv)
                                      1, false);
    
          if (is_qlogin) {
-            if (g_new_interactive_job_support == false) {
+            if (!g_new_interactive_job_support) {
                /* if qlogin_starter is used (qlogin, rsh, rlogin): wait for context */
                msgsock = wait_for_qrsh_socket(sock, random_poll); 
 
@@ -2182,7 +2182,7 @@ int main(int argc, char **argv)
             case JRUNNING:
             case JTRANSFERING:
                /* log this only once */
-               if (b_already_logged_job_was_scheduled == false) {
+               if (!b_already_logged_job_was_scheduled) {
                   VERBOSE_LOG((stderr, "\n")); 
                   VERBOSE_LOG((stderr, MSG_QSH_INTERACTIVEJOBHASBEENSCHEDULED_S, 
                                job_get_id_string(job_id, 0, nullptr, &id_dstring)));
@@ -2197,7 +2197,7 @@ int main(int argc, char **argv)
                 * If it was a qrsh with command, it's finished here even if the
                 * QMaster didn't already recognize it -> exit.
                 */
-               if ((g_new_interactive_job_support == false && is_qlogin)
+               if ((!g_new_interactive_job_support && is_qlogin)
                   || (g_new_interactive_job_support && is_qlogin && !is_rsh)) {
                   continue;
                } else {
@@ -2211,7 +2211,7 @@ int main(int argc, char **argv)
                 * - in the new IJS, a finished job is really finished,
                 * so exit qrsh/qlogin with real exit_status.
                 */
-               if (g_new_interactive_job_support == false) {
+               if (!g_new_interactive_job_support) {
                   WARNING(SFNMAX, MSG_QSH_CANTSTARTINTERACTIVEJOB);
                   do_exit = 1;
                   exit_status = 1;

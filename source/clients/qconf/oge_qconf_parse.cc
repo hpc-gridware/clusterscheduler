@@ -1910,7 +1910,7 @@ int sge_parse_qconf(char *argv[])
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         if (centry_list_modify(&answer_list) == false) {
+         if (!centry_list_modify(&answer_list)) {
             sge_parse_return = 1;
          }
          sge_parse_return |= show_answer_list(answer_list);

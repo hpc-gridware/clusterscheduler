@@ -1588,7 +1588,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    
    DENTER(TOP_LAYER);
 
-   if (ctx->header_printed == false) {
+   if (!ctx->header_printed) {
       char temp[20];
       ctx->header_printed = true;
       

@@ -216,7 +216,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
          }
 #endif
          ca_local_dir = CA_LOCAL_DIR; 
-         if (from_services == false) {
+         if (!from_services) {
             sge_dstring_sprintf(&ca_local_root, "%s/port%d/%s", ca_local_dir, qmaster_port, sge_get_default_cell());
          } else {
             sge_dstring_sprintf(&ca_local_root, "%s/%s/%s", ca_local_dir, SGE_COMMD_SERVICE, sge_get_default_cell());
@@ -316,7 +316,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
          sge_dstring_free(&crl_file);
          DRETURN(-1);
       }
-      if (from_services == false) {
+      if (!from_services) {
          sge_dstring_sprintf(&userdir, "%s/%s/port%d/%s", pw->pw_dir, SGESecPath, qmaster_port, sge_get_default_cell());
       } else {
          sge_dstring_sprintf(&userdir, "%s/%s/%s/%s", pw->pw_dir, SGESecPath, SGE_COMMD_SERVICE, sge_get_default_cell());
@@ -1569,7 +1569,7 @@ sge_security_verify_user(const char *host, const char *commproc, u_long32 id, co
    }
 
    const char *admin_user = bootstrap_get_admin_user();
-   if (is_daemon(commproc) && (strcmp(gdi_user, admin_user) != 0) && (sge_is_user_superuser(gdi_user) == false)) {
+   if (is_daemon(commproc) && strcmp(gdi_user, admin_user) != 0 && !sge_is_user_superuser(gdi_user)) {
       DRETURN(false);
    }
 
@@ -1625,7 +1625,7 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
 
       if (check_admin_user) {
          if (strcmp(unique_identifier, user) != 0 
-            && sge_is_user_superuser(unique_identifier) == false) { 
+            && !sge_is_user_superuser(unique_identifier)) { 
             DPRINTF(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             WARNING(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
             sge_free(&unique_identifier);

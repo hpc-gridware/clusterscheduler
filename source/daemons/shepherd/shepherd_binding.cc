@@ -158,7 +158,7 @@ namespace oge {
          }
 
          /* perform core binding on current process */
-         if (binding_set_linear_linux(socket, core, amount, 1, type) == false) {
+         if (!binding_set_linear_linux(socket, core, amount, 1, type)) {
             /* core binding was not successful */
             if (type == BINDING_TYPE_SET) {
                shepherd_trace("do_core_binding: linear binding was not successful");
@@ -361,7 +361,7 @@ namespace oge {
                /* start user rights (root) are required for creating processor sets */
                sge_switch2start_user();
 
-               if (bind_shepherd_to_pset(processor_set_id) == false) {
+               if (!bind_shepherd_to_pset(processor_set_id)) {
                   shepherd_trace("do_core_binding: couldn't bind to existing processor set!");
                } else {
                   shepherd_trace("do_core_binding: successfully bound to existing processor set!");

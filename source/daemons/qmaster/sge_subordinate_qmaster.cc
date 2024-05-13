@@ -481,9 +481,9 @@ is_ssos(bool only_ssos, lListElem *task) {
    if (task != nullptr) {
       state = lGetUlong(task, JAT_state);
       if (only_ssos) {
-         ret = (bool) (ISSET(state, JSUSPENDED) == false &&
-                       ISSET(state, JSUSPENDED_ON_THRESHOLD) == false &&
-                       ISSET(state, JSUSPENDED_ON_SUBORDINATE) == false &&
+         ret = (bool) (!ISSET(state, JSUSPENDED) &&
+                       !ISSET(state, JSUSPENDED_ON_THRESHOLD) &&
+                       !ISSET(state, JSUSPENDED_ON_SUBORDINATE) &&
                        ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE));
       } else {
          ret = (bool) ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE);
@@ -607,7 +607,7 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
       if (ssos_qinstance->depth == depth &&
           ssos_qinstance->tasks != nullptr &&
           ((suspend && ssos_qinstance->seq_no > extreme_seq_no) ||
-           (suspend == false && ssos_qinstance->seq_no < extreme_seq_no &&
+           (!suspend && ssos_qinstance->seq_no < extreme_seq_no &&
             has_ssos_task(only_slotwise_suspended, ssos_qinstance)))) {
          extreme_seq_no = ssos_qinstance->seq_no;
       }
@@ -628,7 +628,7 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
          /* If we have to unsuspend and if we would look for the youngest job
           * for suspend, we have to look for the oldest job to unsuspend.
           */
-         if (suspend == false) {
+         if (!suspend) {
             oldest = (bool) !oldest;
          }
 
@@ -637,15 +637,14 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
             ssos_task_t *ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
 
             if (suspend ||
-                (suspend == false &&
-                 is_ssos(only_slotwise_suspended, ssos_task->task))) {
+                (!suspend && is_ssos(only_slotwise_suspended, ssos_task->task))) {
                start_time = lGetUlong(ssos_task->task, JAT_start_time);
                if (oldest && start_time < oldest_start_time) {
                   oldest_start_time = start_time;
                   *ssos_task_to_x = ssos_task;
                   *ssos_qinstance_to_x = ssos_qinstance;
                }
-               if (oldest == false && start_time > youngest_start_time) {
+               if (!oldest && start_time > youngest_start_time) {
                   youngest_start_time = start_time;
                   *ssos_task_to_x = ssos_task;
                   *ssos_qinstance_to_x = ssos_qinstance;
@@ -889,13 +888,13 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                status = lGetUlong(task, JAT_status);
 
                if (ISSET(state, JRUNNING) &&
-                   ISSET(state, JSUSPENDED) == false &&
-                   ISSET(state, JSUSPENDED_ON_THRESHOLD) == false &&
-                   ISSET(state, JSUSPENDED_ON_SUBORDINATE) == false &&
-                   ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) == false &&
-                   ISSET(state, JDELETED) == false &&
-                   ISSET(status, JEXITING) == false &&
-                   ISSET(status, JFINISHED) == false) {
+                   !ISSET(state, JSUSPENDED) &&
+                   !ISSET(state, JSUSPENDED_ON_THRESHOLD) &&
+                   !ISSET(state, JSUSPENDED_ON_SUBORDINATE) &&
+                   !ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) &&
+                   !ISSET(state, JDELETED) &&
+                   !ISSET(status, JEXITING) &&
+                   !ISSET(status, JFINISHED)) {
                   /* The current task is in state JRUNNING and not suspended in
                    * any way. 
                    * Check if the qinstance name where the current task is
@@ -928,10 +927,10 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                         }
                      }
                   }
-               } else if (suspend == false &&
+               } else if (!suspend &&
                           ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) &&
-                          ISSET(state, JDELETED) == false &&
-                          ISSET(status, JEXITING) == false) {
+                          !ISSET(state, JDELETED) &&
+                          !ISSET(status, JEXITING)) {
 
                   /* We have to remember all tasks that are slotwise suspended,
                    * even if they are also manually or by threshold or queue
@@ -1100,7 +1099,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
                   }
                }
             }
-            if (success == false) {
+            if (!success) {
                break;
             }
          }
@@ -1152,7 +1151,7 @@ do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool chec
    u_long32 running_jobs = 0;
    u_long32 slots_sum = 0;
 
-   if (check_subtree_only == false) {
+   if (!check_subtree_only) {
       if (suspend) {
          /* Always check a sub tree from a tree node, don't do checking from 
           * a leaf node.
@@ -1191,7 +1190,7 @@ do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool chec
    /* count the number and store informations about all running tasks in the list */
    running_jobs = count_running_jobs_in_slotwise_sos_tree(qinstances_in_slotwise_sos_tree, suspend);
    if ((suspend && running_jobs > slots_sum) ||
-       (suspend == false && running_jobs < slots_sum)) {
+       (!suspend && running_jobs < slots_sum)) {
       bool ret = false;
       int diff = 0;
       /* we have to (un)suspend as many running/suspended jobs as new jobs
@@ -1206,7 +1205,7 @@ do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool chec
    }
    sge_sl_destroy(&qinstances_in_slotwise_sos_tree, (sge_sl_destroy_f) destroy_slotwise_sos_tree_elem);
 
-   if (suspend && check_subtree_only == false) {
+   if (suspend && !check_subtree_only) {
       /* Walk the tree from the leaves to the root */
       super_super = get_slotwise_sos_super_qinstance(super_qinstance);
       if (super_super != nullptr) {
@@ -1271,7 +1270,7 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
    }
 
    /* find all queues that are in the new list but weren't in the old list */
-   if (ret == false) {
+   if (!ret) {
       for_each_ep(new_so, new_so_list) {
          old_so = lGetElemStr(old_so_list, SO_name, lGetString(new_so, SO_name));
          if (old_so == nullptr) {
@@ -1342,7 +1341,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
                 *    no sos after job gone from this queue AND
                 *    sos since job is on this queue
                 */
-               if (tst_sos(slots_used - slots_granted, slots, so) == false &&
+               if (!tst_sos(slots_used - slots_granted, slots, so) &&
                    tst_sos(slots_used, slots, so)) {
                   lListElem *so_queue =
                           cqueue_list_locate_qinstance(master_cqueue_list, so_queue_name);

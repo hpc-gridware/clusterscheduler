@@ -253,7 +253,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
    remove_immediate_jobs(*(splitted_job_lists[SPLIT_PENDING]),
                          *(splitted_job_lists[SPLIT_RUNNING]), &orders);
 
-   if (sge_thread_has_shutdown_started() == false) {
+   if (!sge_thread_has_shutdown_started()) {
       sge_schedd_send_orders(&orders, &(orders.configOrderList), nullptr, "C: config orders");
       sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), nullptr, "C: job start orders");
       sge_schedd_send_orders(&orders, &(orders.pendingOrderList), nullptr, "C: pending ticket orders");

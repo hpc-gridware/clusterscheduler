@@ -78,7 +78,7 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
             break;
          }
       } else {
-         if (sge_thread_has_shutdown_started() == false) {
+         if (!sge_thread_has_shutdown_started()) {
             fprintf(stderr, "got nullptr from queue although thread was not terminated\n");
             break;
          }

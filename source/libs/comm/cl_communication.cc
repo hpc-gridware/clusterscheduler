@@ -1756,13 +1756,13 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
       case CL_SHORT:
          if ((the_dot = strchr((char *)source, '.')) != nullptr) {
             int size = the_dot - source;
-            if (is_static_buffer == false) {
+            if (!is_static_buffer) {
                *host_dest = sge_malloc(sizeof(char) * (size + 1));
             }
             sge_strlcpy(*host_dest, source, size);
             (*host_dest)[size] = '\0';
          } else {
-            if (is_static_buffer == false) {
+            if (!is_static_buffer) {
                *host_dest = strdup(source);
             } else {
                *host_dest = strcpy(*host_dest, source);
@@ -1778,7 +1778,7 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
             if (domain == nullptr) {
                CL_LOG(CL_LOG_ERROR, "can't dup host with domain name without default domain");
                /* error copy host without domain name , host is short */
-               if (is_static_buffer == false) {
+               if (!is_static_buffer) {
                   *host_dest = (char *) sge_malloc(sizeof(char) * (hostlen + 1));
                   if (*host_dest == nullptr) {
                      return CL_RETVAL_MALLOC;
@@ -1793,7 +1793,7 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
                unsigned long domain_counter = 0;
                unsigned long counter = 0;
                /* we have a short hostname, add the default domain */
-               if (is_static_buffer == false) {
+               if (!is_static_buffer) {
                   *host_dest = (char *) sge_malloc(sizeof(char) * (length + 1));
                   if (*host_dest == nullptr) {
                      return CL_RETVAL_MALLOC;
@@ -1810,7 +1810,7 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
             }
          } else {
             /* we have a long hostname, return original name */
-            if (is_static_buffer == false) {
+            if (!is_static_buffer) {
                *host_dest = (char *) sge_malloc(sizeof(char) * (hostlen + 1));
                if (*host_dest == nullptr) {
                   return CL_RETVAL_MALLOC;

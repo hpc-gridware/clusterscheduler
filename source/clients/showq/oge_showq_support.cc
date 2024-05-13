@@ -851,7 +851,7 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
       
    }
    
-   if (binding_of_first_task_found == false) {
+   if (!binding_of_first_task_found) {
       sge_dstring_append(corebinding, "-");
    }
 

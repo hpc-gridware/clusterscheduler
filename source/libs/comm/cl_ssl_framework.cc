@@ -691,7 +691,7 @@ static int ssl_callback_SSLVerify_CRL(int ok, X509_STORE_CTX *ctx, cl_com_ssl_pr
        }    
 
        /* free store on in error case */
-       if (is_ok == false && com_private->ssl_crl_data->store != nullptr) {
+       if (!is_ok && com_private->ssl_crl_data->store != nullptr) {
           cl_com_ssl_func__X509_STORE_free(com_private->ssl_crl_data->store);
           com_private->ssl_crl_data->store=nullptr;
        }
@@ -716,14 +716,14 @@ static int ssl_callback_SSLVerify_CRL(int ok, X509_STORE_CTX *ctx, cl_com_ssl_pr
              is_ok = false;
           }
        }
-       if (is_ok == false) {
+       if (!is_ok) {
            err = cl_com_ssl_func__X509_STORE_CTX_get_error(verify_ctx);
            cl_com_ssl_func__X509_STORE_CTX_set_error(ctx, err);
        }
        cl_com_ssl_func__X509_STORE_CTX_cleanup(verify_ctx);
        //@todo cl_com_ssl_func__X509_STORE_CTX_free(verify_ctx);
    } else {
-      if (is_ok == false) {
+      if (!is_ok) {
          CL_LOG(CL_LOG_ERROR,"X509 store is not valid");
       }
       if (cert == nullptr) {
@@ -2095,7 +2095,7 @@ static int cl_com_ssl_log_ssl_errors(const char* function_name) {
       had_errors = true;
    }
 
-   if (had_errors == false) {
+   if (!had_errors) {
       CL_LOG(CL_LOG_INFO, "no SSL errors available");
    }
 
@@ -2212,7 +2212,7 @@ static int cl_com_ssl_setup_context(cl_com_connection_t* connection, bool is_ser
 
    }
 
-   if (is_server == false) {
+   if (!is_server) {
       CL_LOG(CL_LOG_INFO, "setting up context as client");
    } else {
       CL_LOG(CL_LOG_INFO, "setting up context as server");
@@ -2610,7 +2610,7 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    } else {
       /* check if we have already initalized the global ssl functionality */
-      if (cl_com_ssl_global_config_object->ssl_initialized == false) {
+      if (!cl_com_ssl_global_config_object->ssl_initialized) {
          /* init ssl lib */
          CL_LOG(CL_LOG_INFO, "init ssl library ...");
          

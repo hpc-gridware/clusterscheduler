@@ -4139,10 +4139,9 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    cl_com_set_synchron_receive_timeout(cl_com_get_handle(component_get_component_name(), 0),ed_time*2);
 
    while (!stop_ec) {
-      int ec_get_ret = 0;
-
       /* read events and add relevant information into library session data */
-      if ((ec_get_ret = evc->ec_get(evc, &event_list, false)) == false) {
+      int ec_get_ret = evc->ec_get(evc, &event_list, false);
+      if (!ec_get_ret) {
          evc->ec_mark4registration(evc);
          
          DPRINTF (("Sleeping 10 seconds before trying to register again.\n"));

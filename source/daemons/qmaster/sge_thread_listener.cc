@@ -150,7 +150,7 @@ sge_listener_main(void *arg) {
    while (true) {
       int execute = 0;
 
-      if (sge_thread_has_shutdown_started() == false) {
+      if (!sge_thread_has_shutdown_started()) {
          thread_start_stop_profiling();
 
          sge_qmaster_process_message(&monitor);

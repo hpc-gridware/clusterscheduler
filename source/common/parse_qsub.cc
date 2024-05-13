@@ -1259,7 +1259,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         if (ulong_parse_priority(&answer, &priority, *sp) == false) {
+         if (!ulong_parse_priority(&answer, &priority, *sp)) {
             DRETURN(answer);
          }
 
@@ -1618,7 +1618,7 @@ DTRACE;
              DRETURN(answer);
          }
 
-         if (ulong_parse_task_concurrency(&answer, &number, *sp) == false) {
+         if (!ulong_parse_task_concurrency(&answer, &number, *sp)) {
             DRETURN(answer);
          }
 

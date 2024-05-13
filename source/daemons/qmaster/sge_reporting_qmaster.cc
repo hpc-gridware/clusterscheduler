@@ -567,7 +567,7 @@ oge::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
       bool log_variable = true;
 
       /*
-       * if log_consumables == false, lookup if the consumable shall be logged
+       * if log_consumables is false, lookup if the consumable shall be logged
        * due to reporting_variables in global/local host
        */
       if (!log_consumables) {

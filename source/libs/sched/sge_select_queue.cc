@@ -1617,7 +1617,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
     * is queue contained in hard queue list ?
     */
    if (hard_queue_list) {
-      if ((could_be_master == false) && qref_list_cq_rejected(hard_queue_list, lGetString(queue, QU_qname),
+      if (!could_be_master && qref_list_cq_rejected(hard_queue_list, lGetString(queue, QU_qname),
                      lGetHost(queue, QU_qhostname), a->hgrp_list)) {
          DPRINTF("Queue \"%s\" is not contained in the hard "
                  "queue list (-q) that was requested by job %d\n",
@@ -3221,7 +3221,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          if ((result = rqs_by_slots(a, cqname, eh_name, &tt_rqs, &is_global,
                   &rue_string, &limit_name, &rule_name, got_solution?tt_best:U_LONG32_MAX)) != DISPATCH_OK) {
             best_queue_result = find_best_result(result, best_queue_result);
-            if (is_global == false) {
+            if (!is_global) {
                DPRINTF("no match due to GLOBAL RQS\n", eh_name);
                continue;
             }
@@ -3229,7 +3229,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          }
          if (got_solution && is_not_better(a, violations_best, tt_best, 0, tt_rqs)) {
             DPRINTF("CUT TREE: Due to RQS for \"%s\"\n", qname);
-            if (is_global == false)
+            if (!is_global)
                continue;
             break;
          }

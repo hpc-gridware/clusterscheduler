@@ -185,7 +185,7 @@ sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet) {
    if (packet != nullptr) {
       sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
-      while (packet->is_handled == false) {
+      while (!packet->is_handled) {
          struct timespec ts{};
 
          DPRINTF("waiting for packet to be handling by worker\n");
@@ -590,7 +590,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
          /* only increment runs if retries != -1 (-1 means retry forever) */
       } while (retries == -1 || runs++ < retries);
       
-      if (ret == false) {
+      if (!ret) {
          commlib_error = gdi_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();

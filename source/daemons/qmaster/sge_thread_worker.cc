@@ -222,7 +222,7 @@ sge_worker_main(void *arg) {
          /*
           * prepare buffer for sending an answer 
           */
-         if (packet->is_intern_request == false && packet->is_gdi_request) {
+         if (!packet->is_intern_request && packet->is_gdi_request) {
             init_packbuffer(&(packet->pb), 0, 0);
          }
 
@@ -305,7 +305,7 @@ sge_worker_main(void *arg) {
             /*
              * Send the answer to the client
              */
-            if (packet->is_intern_request == false) {
+            if (!packet->is_intern_request) {
                MONITOR_MESSAGES_OUT(p_monitor);
                sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                          &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);

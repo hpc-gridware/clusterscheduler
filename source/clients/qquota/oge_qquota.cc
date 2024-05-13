@@ -244,7 +244,7 @@ int main(int argc, char **argv)
          sge_exit(1);
       }
    }
-   if (sge_parse_cmdline_qquota(argv, &pcmdline, &alp) == false) {
+   if (!sge_parse_cmdline_qquota(argv, &pcmdline, &alp)) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       sge_prof_cleanup();
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
    /*
    ** stage 2 of commandline parsing 
    */
-   if (sge_parse_qquota(&pcmdline, 
+   if (!sge_parse_qquota(&pcmdline, 
             &host_list,             /* -h host_list                  */
             &resource_match_list,   /* -l resource_request           */
             &user_list,             /* -u user_list                  */
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
             &project_list,          /* -P project_list               */
             &cqueue_list,           /* -q wc_queue_list              */
             &report_handler,
-            &alp) == false) {
+            &alp)) {
       /*
       ** low level parsing error! show answer list
       */
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
       report_handler->destroy(&report_handler, &alp);
    }
    
-   if (qquota_result == false) {
+   if (!qquota_result) {
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);

@@ -405,7 +405,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          }
       }
 
-      if (lGetBool(rqs, RQS_enabled) == false) {
+      if (!lGetBool(rqs, RQS_enabled)) {
          DRETURN(ret);
       }
 

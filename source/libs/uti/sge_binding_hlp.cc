@@ -198,7 +198,7 @@ bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
 
    } else if (strstr(parameter, "explicit") != nullptr) {
 
-      if (binding_explicit_has_correct_syntax(parameter, error) == false) {
+      if (!binding_explicit_has_correct_syntax(parameter, error)) {
          retval = false;
       } else {
          if (socketcorelist == nullptr) {
@@ -504,7 +504,7 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
    /* check if there are <socket,core> pairs requested multiple times */
    amount = get_explicit_amount(parameter, true);
 
-   if (check_explicit_binding_string(parameter, amount, true) == false) {
+   if (!check_explicit_binding_string(parameter, amount, true)) {
       sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_PAIRSNOTUNIQUE);
       return false;
    }
@@ -864,7 +864,7 @@ get_explicit_amount(const char *expl, bool with_explicit_prefix) {
       return amount;
    }
 
-   if (with_explicit_prefix == false) {
+   if (!with_explicit_prefix) {
       /* it begins with a pair */
       amount++;
    }

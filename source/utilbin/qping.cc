@@ -270,7 +270,7 @@ static void qping_convert_time(char* buffer, char* dest, size_t dest_size, bool 
 
 static void qping_general_communication_error(const cl_application_error_list_elem_t* commlib_error) {
    if (commlib_error != nullptr) {
-      if (commlib_error->cl_already_logged == false) {
+      if (!commlib_error->cl_already_logged) {
          if (commlib_error->cl_info != nullptr) {
             fprintf(stderr,"%s: %s\n", cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
          } else {

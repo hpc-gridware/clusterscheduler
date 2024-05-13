@@ -730,7 +730,7 @@ void project_update_categories(const lList *added, const lList *removed) {
       p = lGetString(ep, PR_name);
       DPRINTF("added project: \"%s\"\n", p);
       prj = lGetElemStrRW(*oge::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
-      if (prj && lGetBool(prj, PR_consider_with_categories) == false) {
+      if (prj && !lGetBool(prj, PR_consider_with_categories)) {
          lSetBool(prj, PR_consider_with_categories, true);
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj);
       }

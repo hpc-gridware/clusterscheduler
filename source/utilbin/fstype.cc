@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
          }
 
          fclose(fd);
-         if (found_line == false) { /*if type could not be detected via /etc/mtab, then we have to print out "nfs"*/
+         if (!found_line) { /*if type could not be detected via /etc/mtab, then we have to print out "nfs"*/
             printf("nfs\n");
          }
       }

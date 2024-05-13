@@ -264,7 +264,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
                }
             }
 
-            if (found == false) {
+            if (!found) {
                /* the load value is no longer reported, tag is as deleted and
                   add it to the report list */
                lListElem *del_report = lCopyElem(lr);     

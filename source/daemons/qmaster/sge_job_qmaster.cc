@@ -267,7 +267,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    spool_transaction(alpp, spool_get_default_context(), STC_begin);
    if (lGetString(*jep, JB_script_file) &&
        !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
-      if (spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep) == false) {
+      if (!spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep)) {
          spool_transaction(alpp, spool_get_default_context(), STC_rollback);
          ERROR(MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)), strerror(errno));
          answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
@@ -3441,7 +3441,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
 
    /* read script from old job and reuse it */
    if (lGetString(new_jep, JB_exec_file) && !JOB_TYPE_IS_BINARY(lGetUlong(new_jep, JB_type))) {
-      if (spool_read_script(alpp, seek_jid, new_jep) == false) {
+      if (!spool_read_script(alpp, seek_jid, new_jep)) {
          lFreeElem(&new_jep);
          DRETURN(STATUS_EUNKNOWN);
       }

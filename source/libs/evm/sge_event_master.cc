@@ -2520,8 +2520,7 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
          }
       }
    }
-   if ((subscription[event].subscription == EV_SUBSCRIBED) &&
-      (subscription[event].blocked == false)) {
+   if (subscription[event].subscription == EV_SUBSCRIBED && !subscription[event].blocked) {
       DRETURN(1);
    }
 

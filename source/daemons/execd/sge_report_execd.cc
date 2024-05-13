@@ -80,7 +80,7 @@ int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
                                &connect_time);
 
    if (get_last_qmaster_register_time() >= connect_time && connect_time != 0) {
-      if (sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false) == false) {
+      if (!sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
          const char *master_host = nullptr;
          lList *report_list = nullptr;
          int i = 0;

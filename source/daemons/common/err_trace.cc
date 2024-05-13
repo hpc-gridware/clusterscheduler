@@ -427,7 +427,7 @@ void shepherd_error(int do_exit, const char *format, ...)
       sge_switch2admin_user();
    }   
      
-   if (g_new_interactive_job_support == false && 
+   if (!g_new_interactive_job_support && 
       search_conf_val("qrsh_control_port") != nullptr) {
       char local_buffer[1024];
       snprintf(local_buffer, sizeof(local_buffer), "1:%s", sge_dstring_get_string(&message));
@@ -732,7 +732,7 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
   	 *  after changing into the jobs cwd we need an 
   	 *  absolute path to the error/trace file 
   	 */
-	if (called == false) {
+	if (!called) {
       if (getcwd(path, sizeof(path)) == nullptr) {
          sge_dstring_init(&ds, buffer, sizeof(buffer));
          sge_dstring_sprintf(&ds, "getcwd() failed: %s", strerror(errno));

@@ -446,8 +446,8 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
 
    /* we have the first current_socket and current_core */
    /* hence we get the processor_ids (more in case of chip multithreading) */
-   if (get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
-      current_core, &tmp_pid_list, &tmp_pid_list_length) == false) {
+   if (!get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
+      current_core, &tmp_pid_list, &tmp_pid_list_length)) {
       /* we got no Solaris processor id - abort */
       free_matrix(matrix, mlength);
       sge_free(&cores);
@@ -490,8 +490,8 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
       } /* end while getting the correct current_socket number */
       
       /* collect the processor_ids (more in case of chip multithreading) */
-      if (get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
-         current_core, &tmp_pid_list, &tmp_pid_list_length) == false) {
+      if (!get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
+         current_core, &tmp_pid_list, &tmp_pid_list_length)) {
          /* got no internal processor ids */
          free_matrix(matrix, mlength);
          sge_free(&cores);
@@ -627,8 +627,8 @@ int create_processor_set_explicit_solaris(const int* list_of_sockets,
    for (i = 0; i < samount; i++) {
       
       /* get the processor ids for the given socket and core */
-      if (get_processor_ids_solaris((const int**) matrix, length, list_of_sockets[i],
-         list_of_cores[i], &tmp_pid_list, &tmp_pid_list_length) == false) {
+      if (!get_processor_ids_solaris((const int**) matrix, length, list_of_sockets[i],
+         list_of_cores[i], &tmp_pid_list, &tmp_pid_list_length)) {
          /* we got no Solaris processor ID - abort */
          free_matrix(matrix, length);
          sge_free(&pid_list);
@@ -830,8 +830,8 @@ int create_processor_set_striding_solaris(const int first_socket,
 
    /* we have the first current_socket and current_core */
    /* hence we get the processor_ids (more in case of chip multithreading) */
-   if (get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
-         current_core, &tmp_pid_list, &tmp_pid_list_length) == false) {
+   if (!get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
+         current_core, &tmp_pid_list, &tmp_pid_list_length)) {
       /* we got no Solaris processor id - abort */
       free_matrix(matrix, mlength);
       sge_free(&cores);
@@ -875,8 +875,8 @@ int create_processor_set_striding_solaris(const int first_socket,
       } /* end while getting the correct current_socket number */
       
       /* collect the processor_ids (more in case of chip multithreading) */
-      if (get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
-         current_core, &tmp_pid_list, &tmp_pid_list_length) == false) {
+      if (!get_processor_ids_solaris((const int**) matrix, mlength, current_socket,
+         current_core, &tmp_pid_list, &tmp_pid_list_length)) {
          /* we got no Solaris processor id - abort */
          free_matrix(matrix, mlength);
          sge_free(&cores);
@@ -1325,14 +1325,14 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
    
    /* do accounting if all cores can be used */
    if (possible) {
-      if (account_job_on_topology(&logical_used_topology, logical_used_topology_length, 
-         *topo_used_by_job, *topo_used_by_job_length) == false) {
+      if (!account_job_on_topology(&logical_used_topology, logical_used_topology_length,
+         *topo_used_by_job, *topo_used_by_job_length)) {
          possible = false;
       }   
    }
 
    /* free memory when unsuccessful */
-   if (possible == false) {
+   if (!possible) {
       sge_free(topo_used_by_job);
       *topo_used_by_job_length = 0;
    }
@@ -1709,7 +1709,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
    }
    
    /* do free memory if there was an error */ 
-   if (success == false) {
+   if (!success) {
       int i = 0;
       /* in case we are out of memory for calloc we have a memory leak 
          of one integer - this should only occur once */
@@ -3041,7 +3041,7 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
             /* if we have a fixed start socket and a start core we do not retry 
                it with the next core available (when introducing T's this have to 
                be added there too) */
-            if (automatic == false) {
+            if (!automatic) {
                possible = false;
                break;
             }

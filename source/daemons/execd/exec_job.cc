@@ -2139,8 +2139,8 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
               when config binding element has prefix "pe_" */
            if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
               /* generate pe_hostfile input */ 
-              if (parse_job_accounting_and_create_logical_list(
-                     sge_dstring_get_string(&tmp_result), rankfileinput) == false) {
+              if (!parse_job_accounting_and_create_logical_list(
+                     sge_dstring_get_string(&tmp_result), rankfileinput)) {
                  WARNING("Core binding: Couldn't create input for pe_hostfile");
                  retval = false;
               }
@@ -2157,7 +2157,7 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
       retval = false;
    }
 
-   if (retval == false) {
+   if (!retval) {
       sge_dstring_clear(result);
       sge_dstring_append(result, "nullptr");
    }
@@ -2221,7 +2221,7 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
 
    /* check if first socket and first core have to be determined by execd or 
       not */
-   if (automatic == false) {
+   if (!automatic) {
       /* we have to retrieve socket,core to begin with when explicitly given */
       first_socket = (int) lGetUlong(binding_elem, BN_parameter_socket_offset);
       first_core = (int) lGetUlong(binding_elem, BN_parameter_core_offset);
@@ -2355,7 +2355,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
 
    DENTER(TOP_LAYER);
 
-   if (automatic == false) {
+   if (!automatic) {
 
       /* We have to determine the first socket and core to use for core binding 
          automatically. The rest of the cores are then implicitly given by the 
@@ -2451,8 +2451,8 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
    request = (char *) lGetString(binding_elem, BN_parameter_explicit);
 
    /* get the socket and core number lists */ 
-   if (binding_explicit_extract_sockets_cores(request, &socket_list, 
-      &socket_list_length, &core_list, &core_list_length) == false) {
+   if (!binding_explicit_extract_sockets_cores(request, &socket_list, 
+      &socket_list_length, &core_list, &core_list_length)) {
       /* problems while parsing the binding request */ 
       INFO("Couldn't extract socket and core lists out of string");
       sge_dstring_append(result, "nullptr");
@@ -2577,7 +2577,7 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    }
 
    /* in case no core binding is selected or any other error occured */
-   if (retval == false) {
+   if (!retval) {
       sge_dstring_append(result, "nullptr");
    } else {
       /* in case of -binding PE the string with the socket,core pairs 
@@ -2753,7 +2753,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
    type   = (binding_type_t) lGetUlong(binding_elem, BN_type);
 
-   if (do_linear == false) {
+   if (!do_linear) {
       step_size = (int) lGetUlong(binding_elem, BN_parameter_striding_step_size);
    } else {
       /* in case of "linear" binding the stepsize is one */
@@ -2762,7 +2762,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
 
    /* in automatic mode the socket,core pair which is bound first is determined 
       automatically */
-   if (automatic == false) {
+   if (!automatic) {
       /* get the start socket and start core which was a submission parameter */
       DPRINTF("Get user defined starting point for binding (socket, core)");
       first_socket = (int) lGetUlong(binding_elem, BN_parameter_socket_offset);
@@ -2780,7 +2780,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       
       /* check against errors: in automatic case the used first socket (and core) 
          must be the same than the first socket (and core) from user parameters */
-      if (automatic == false && (first_socket != used_first_socket 
+      if (!automatic && (first_socket != used_first_socket 
             || first_core != used_first_core)) {
          /* we've a bug */ 
          DPRINTF("The starting point for binding is not like the user specified!");
@@ -2891,8 +2891,8 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 
    INFO("request: %s", request);
 
-   if (binding_explicit_extract_sockets_cores(request, &socket_list, 
-            &socket_list_length, &core_list, &core_list_length) == false) {
+   if (!binding_explicit_extract_sockets_cores(request, &socket_list, 
+            &socket_list_length, &core_list, &core_list_length)) {
       /* problems while parsing the binding request */ 
       snprintf(err_str, err_length, "binding: couldn't parse explicit parameter");
       INFO("Couldn't parse binding explicit parameter");
@@ -3003,8 +3003,7 @@ static bool parse_job_accounting_and_create_logical_list(const char *binding_str
 
    /* convert job usage in terms of the topology string into 
       a list as string */ 
-   if (topology_string_to_socket_core_lists(pos, &sockets, &cores, 
-                                                &amount) == false) {
+   if (!topology_string_to_socket_core_lists(pos, &sockets, &cores, &amount)) {
       WARNING("Core binding: Couldn't parse job topology string! %s", pos);
       retval = false;
 

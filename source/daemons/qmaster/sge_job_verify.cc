@@ -219,12 +219,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       if (binding_elem == nullptr) {
          bool lret = job_init_binding_elem(jep);
 
-         if (lret == false) {
+         if (!lret) {
             ret = STATUS_EUNKNOWN;
          }
       } else {
          /* verify if binding parameters are consistent (bugster 6903956) */
-         if (check_binding_param_consistency(binding_elem) == false) {
+         if (!check_binding_param_consistency(binding_elem)) {
             /* TODO add to answer list */
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
@@ -816,7 +816,7 @@ check_binding_param_consistency(const lListElem *binding_elem) {
       expl = lGetString(binding_elem, BN_parameter_explicit);
       amount = get_explicit_amount(expl, false);
 
-      if (check_explicit_binding_string(expl, amount, false) == false) {
+      if (!check_explicit_binding_string(expl, amount, false)) {
          DRETURN(false);
       }
 

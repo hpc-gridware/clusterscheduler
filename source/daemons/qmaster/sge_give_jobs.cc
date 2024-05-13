@@ -519,7 +519,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    ** if exec_file is not set, then this is an interactive job
    */
    if (master && lGetString(tmpjep, JB_exec_file) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
-      if (spool_read_script(nullptr, lGetUlong(tmpjep, JB_job_number), tmpjep) == false) {
+      if (!spool_read_script(nullptr, lGetUlong(tmpjep, JB_job_number), tmpjep)) {
          lFreeElem(&tmpjep);
          DRETURN(-1);
       }
@@ -1144,8 +1144,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          if (mode == COMMIT_ST_USER_RESCHEDULED) {
             bool is_array_job = job_is_array(jep);
 
-            if ((is_array_job == false && mconf_get_old_reschedule_behavior() == false) ||
-                (is_array_job && mconf_get_old_reschedule_behavior_array_job() == false)) {
+            if ((!is_array_job && !mconf_get_old_reschedule_behavior()) ||
+                (is_array_job && !mconf_get_old_reschedule_behavior_array_job())) {
                lSetUlong(jep, JB_submission_time, now);
                sge_event_spool(&answer_list, now, sgeE_JOB_MOD, jobid, jataskid,
                                nullptr, nullptr, session, jep, jatep, nullptr, true, true);

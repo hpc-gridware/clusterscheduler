@@ -420,7 +420,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
          }
       }
 
-      if (created_list && ret == false) {
+      if (created_list && !ret) {
          lFreeList(this_list);
       }
    } 
@@ -542,7 +542,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                                              nullptr);
                tmp_href = href_list_locate(host_list, hostname);
                if (tmp_href != nullptr) {
-                  if (already_found == false) {
+                  if (!already_found) {
                      already_found = true;
                      object_get_any_type(href, value_nm, value_buffer);
                      *matching_host_or_group = href_name;
@@ -562,7 +562,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                lFreeList(&tmp_href_list);
             }
          }
-         if (ret == false) {
+         if (!ret) {
             lListElem *tmp_href = nullptr;
 
             /*

@@ -169,7 +169,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
          lListElem *rule = nullptr;
          int rule_count = 1;
 
-         if (lGetBool(rqs, RQS_enabled) == false) {
+         if (!lGetBool(rqs, RQS_enabled)) {
             continue;
          }
 

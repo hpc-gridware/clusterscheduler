@@ -470,7 +470,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                lFreeList(&old_value_copy);
                lFreeList(&new_value_copy);
 
-               if (valid_config == false) {
+               if (!valid_config) {
                   ret = false;
                   break;
                }
@@ -528,7 +528,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * This queue can't have any running jobs and thus can't
                 * subordinate anything if the queue was freshly added
                 */
-               if (initial_modify == false) {
+               if (!initial_modify) {
                   qinstance_find_suspended_subordinates(this_elem, answer_list, &unsuspended_so, master_cqueue_list);
                }
 
@@ -538,7 +538,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                lSetList(this_elem, attribute_name, lCopyList("", new_value));
                *has_changed_conf_attr = true;
 
-               if (initial_modify == false) {
+               if (!initial_modify) {
                   /*
                    * Find list of subordinates that have to be suspended after
                    * the modification of CQ_subordinate_list-sublist

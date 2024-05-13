@@ -139,7 +139,7 @@ extern int main(int argc, char **argv) {
       exit(1);
    }
 
-   if (do_all == false) {
+   if (!do_all) {
       issue = atol(argv[1]);
       i = 0;
       while (issue_list[i] != 0) {
@@ -150,7 +150,7 @@ extern int main(int argc, char **argv) {
          i++;
       }
 
-      if (issue_found == false) {
+      if (!issue_found) {
          printf("Issue test %ld not found!\n\n", issue);
          usage();
          exit(1);
@@ -169,7 +169,7 @@ extern int main(int argc, char **argv) {
    printf("commlib setup ...\n");
    cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
 
-   if (do_all == false) {
+   if (!do_all) {
       test_result = run_test(i);
    } else {
       i = 0;

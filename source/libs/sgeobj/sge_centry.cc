@@ -883,7 +883,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       /*
        * If no default value was specified then use TRUE
        */
-      if (check_value == false && value == nullptr) {
+      if (!check_value && value == nullptr) {
          value = (char*)TRUE_STR;
       } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
@@ -1504,7 +1504,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    }
 
    next_term = sge_strtok_r(load_formula, term_delim, &term_context);
-   while ((term = next_term) && ret == false) {
+   while ((term = next_term) && !ret) {
       const char *fact_delim = "*";
       const char *fact;
       struct saved_vars_s *fact_context = nullptr;

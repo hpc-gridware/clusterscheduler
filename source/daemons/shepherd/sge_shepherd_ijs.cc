@@ -589,7 +589,7 @@ static void* commlib_to_pty(void *t_conf)
                    * that the parent will exit soon to the child.
                    * "noshell" may be 0 or 1, everything else indicates an error.
                    */
-                  if (b_sent_to_child == false) {
+                  if (!b_sent_to_child) {
                      if (write(g_p_ijs_fds->pipe_to_child, "noshell = 9", 11) != 11) {
                         shepherd_trace("commlib_to_pty: error in communicating "
                            "with child -> exiting");

@@ -388,7 +388,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                   break;
                }
             }
-            if (one_matched == false) {
+            if (!one_matched) {
                continue;
             }
          } else {

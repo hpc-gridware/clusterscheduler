@@ -252,7 +252,7 @@ int cl_com_transformString2XML(const char *input, char **output) {
          *output = (char *)realloc(*output, malloced_size + 1);
       }
 
-      if (found == false) {
+      if (!found) {
          (*output)[used] = input[i];
       } else {
          sge_strlcpy((char *) &(*output)[used], cl_com_sequence_array[s].sequence, add_length);
@@ -435,7 +435,7 @@ int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com
                   buf_pointer++;
                   break;
                } else if (strcmp(charptr, "dl") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      dl_begin = buf_pointer + 1;
                   } else {
                      dl_end = buf_pointer - 1;
@@ -525,31 +525,31 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
                buffer[buf_pointer] = '\0';
 
                if (strncmp(charptr, "df", 2) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      df_begin = buf_pointer + 1;
                   } else {
                      df_end = buf_pointer - 4;
                   }
                } else if (strncmp(charptr, "ct", 2) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      ct_begin = buf_pointer + 1;
                   } else {
                      ct_end = buf_pointer - 4;
                   }
                } else if (strncmp(charptr, "port", 4) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      port_begin = buf_pointer + 1;
                   } else {
                      port_end = buf_pointer - 6;
                   }
                } else if (strncmp(charptr, "ac", 2) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      autoclose_begin = buf_pointer + 1;
                   } else {
                      autoclose_end = buf_pointer - 4;
                   }
                } else if (strncmp(charptr, "rdata", 5) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      if (rdata_begin == 0) {
                         rdata_begin = tag_begin;
                      }
@@ -557,7 +557,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
                      rdata_end = buf_pointer - 7;
                   }
                } else if (strncmp(charptr, "dst", 3) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      if (dst_begin == 0) {
                         dst_begin = tag_begin;
                      }
@@ -889,7 +889,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
                buffer[buf_pointer] = '\0';
 
                if (strncmp(charptr, "cs", 2) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      if (cs_begin == 0) {
                         cs_begin = tag_begin + 3;
                      }
@@ -897,7 +897,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
                      cs_end = buf_pointer - 5;
                   }
                } else if (strncmp(charptr, "rdata", 5) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      if (rdata_begin == 0) {
                         rdata_begin = tag_begin + 6;
                      }
@@ -905,7 +905,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
                      rdata_end = buf_pointer - 8;
                   }
                } else if (strncmp(charptr, "params", 6) == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      if (params_begin == 0) {
                         params_begin = tag_begin + 7;
                      }
@@ -1144,37 +1144,37 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
                buffer[buf_pointer] = '\0';
 
                if (strcmp(charptr, "mid") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      mid_begin = tag_end + 2;
                   } else {
                      mid_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "dl") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      dl_begin = tag_end + 2;
                   } else {
                      dl_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "df") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      df_begin = tag_end + 2;
                   } else {
                      df_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "mat") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      mat_begin = tag_end + 2;
                   } else {
                      mat_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "tag") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      mtag_begin = tag_end + 2;
                   } else {
                      mtag_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "rid") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      rid_begin = tag_end + 2;
                   } else {
                      rid_end = tag_begin - 1;
@@ -1345,49 +1345,49 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
                buffer[buf_pointer] = '\0';
 
                if (strcmp(charptr, "mid") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      mid_begin = tag_end + 2;
                   } else {
                      mid_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "starttime") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      starttime_begin = tag_end + 2;
                   } else {
                      starttime_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "runtime") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      runtime_begin = tag_end + 2;
                   } else {
                      runtime_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "brm") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      application_messages_brm_begin = tag_end + 2;
                   } else {
                      application_messages_brm_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "bwm") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      application_messages_bwm_begin = tag_end + 2;
                   } else {
                      application_messages_bwm_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "noc") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      application_connections_noc_begin = tag_end + 2;
                   } else {
                      application_connections_noc_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "status") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      application_status_begin = tag_end + 2;
                   } else {
                      application_status_end = tag_begin - 1;
                   }
                } else if (strcmp(charptr, "info") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      info_begin = tag_end + 2;
                   } else {
                      info_end = tag_begin - 1;
@@ -1520,7 +1520,7 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
                buffer[buf_pointer] = '\0';
 
                if (strcmp(charptr, "mid") == 0) {
-                  if (closing_tag == false) {
+                  if (!closing_tag) {
                      mid_begin = tag_end + 2;
                   } else {
                      mid_end = tag_begin - 2;

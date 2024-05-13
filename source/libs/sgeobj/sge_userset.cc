@@ -439,7 +439,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
       }
       sge_dstring_free(&group_entry);
    }
-   if (found == false && user != nullptr) {
+   if (!found && user != nullptr) {
       if (lGetElemStr(user_list, UE_name, user) != nullptr) {
          found = true;            
       } else if (sge_is_pattern(user)) {

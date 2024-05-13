@@ -1023,7 +1023,7 @@ int main(int argc, char **argv)
 
    if (search_conf_val("qrsh_control_port") != nullptr) {
       shepherd_write_shepherd_about_to_exit_file();
-      if (g_new_interactive_job_support == false) {
+      if (!g_new_interactive_job_support) {
          write_exit_code_to_qrsh(exit_status_for_qrsh);
       } else {
          shepherd_trace("writing exit status to qrsh: %d", exit_status_for_qrsh);
@@ -1116,7 +1116,7 @@ int ckpt_type
       pid = start_async_command("restart", rest_command);
    }
    else { /* not job or job and not checkpointing */
-      if (g_new_interactive_job_support == false || !is_interactive) {
+      if (!g_new_interactive_job_support || !is_interactive) {
          if (use_pty == YES && strcasecmp(script_file, JOB_TYPE_STR_QSH) != 0) {
             shepherd_trace("calling fork_pty()");
             pid = fork_pty(&fd_pty_master, fd_pipe_err, &dstr_error);
@@ -1164,7 +1164,7 @@ int ckpt_type
    }
 
    if (pid == -1) {
-      if (g_new_interactive_job_support == false || !is_interactive) {
+      if (!g_new_interactive_job_support || !is_interactive) {
          shepherd_error(1, "can't fork \"%s\"", childname);
       } else {
          shepherd_error(1, "can't fork \"%s\": %s", 
@@ -1227,7 +1227,7 @@ int ckpt_type
       shepherd_trace("parent: %s-pid: %d", childname, pid);
    }
 
-   if (g_new_interactive_job_support == false || !is_interactive) {
+   if (!g_new_interactive_job_support || !is_interactive) {
       /* Wait until child finishes ----------------------------------------*/
       status = wait_my_child(pid, childname, timeout, &ckpt_info, &rusage,
                              fd_pty_master, fd_pipe_err[0]);
@@ -1268,7 +1268,7 @@ int ckpt_type
    if (WIFSIGNALED(status)) {
       shepherd_trace("%s exited due to signal", childname);
 
-      if (ckpt_info.type != 0 && signalled_ckpt_job == false) {
+      if (ckpt_info.type != 0 && !signalled_ckpt_job) {
          unlink("checkpointed");
          shepherd_trace("%s exited due to signal but not due to checkpoint", childname);
          if (ISSET(ckpt_info.type, CKPT_KERNEL)) {
@@ -1301,7 +1301,7 @@ int ckpt_type
    } else {
       shepherd_trace("%s exited not due to signal", childname);
 
-      if (ckpt_info.type != 0 && signalled_ckpt_job == false) {
+      if (ckpt_info.type != 0 && !signalled_ckpt_job) {
          shepherd_trace("checkpointing job exited normally");
          unlink("checkpointed");
          if (ISSET(ckpt_info.type, CKPT_KERNEL)) {
@@ -1360,7 +1360,7 @@ int ckpt_type
        * The new interactive job support uses the qrsh_starter in case of
        * qrsh <with command> jobs.
        */
-      if (g_new_interactive_job_support == false ||
+      if (!g_new_interactive_job_support ||
           (g_new_interactive_job_support &&
            strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0)) {
          if (search_conf_val("rsh_daemon") != nullptr) {
@@ -2749,7 +2749,7 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
    }
    job_pid = get_conf_val("job_pid");
       
-   if (shepherd_write_job_pid_file(job_pid) == false) {
+   if (!shepherd_write_job_pid_file(job_pid)) {
       /* No use to go on further */
       shepherd_signal_job(pid, SIGKILL);
       shepherd_error(1, "can't write \"job_pid\" file");   
@@ -2926,7 +2926,7 @@ shepherd_signal_job(pid_t pid, int sig) {
         sge_switch2admin_user();
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-        if (first_kill == 0 || sig != SIGKILL || is_qrsh == false) {
+        if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
 #   if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 #      ifdef COMPILE_DC
             if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {

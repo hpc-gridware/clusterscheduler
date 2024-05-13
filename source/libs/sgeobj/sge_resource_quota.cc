@@ -414,12 +414,12 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
             queue_expand = lGetBool(filter, RQRF_expand) ? true : false;
          }
 
-         if (host_expand == false && queue_expand == false) {
+         if (!host_expand && !queue_expand) {
             lSetUlong(rule, RQR_level, RQR_GLOBAL);
-         } else if (host_expand && queue_expand == false) {
+         } else if (host_expand && !queue_expand) {
             /* per host */
             lSetUlong(rule, RQR_level, RQR_HOST);
-         } else if (host_expand == false && queue_expand) {
+         } else if (!host_expand && queue_expand) {
             /* per queue */
             lSetUlong(rule, RQR_level, RQR_CQUEUE);
          } else {
@@ -481,7 +481,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
                lFreeElem(&tmp_ce);
             }
          }
-         if (ret == false) {
+         if (!ret) {
             break;
          }
       }
@@ -1435,7 +1435,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
                      }
                   }
                }
-               if (scope != nullptr && found == false) {
+               if (scope != nullptr && !found) {
                   ret = false;
                }
             }

@@ -60,7 +60,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
       const lListElem *ar = nullptr;
 
       handler->report_start(handler, answer_list);
-      if (qrstat_env->is_summary == false &&
+      if (!qrstat_env->is_summary &&
           lGetNumberOfElem(qrstat_env->ar_list) == 0) {
 
           ret = false;
@@ -85,7 +85,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                                          ((time_t)lGetUlong(ar, AR_end_time)));
             handler->report_ar_node_duration(handler, answer_list, "duration", lGetUlong(ar, AR_duration));
 
-            if (qrstat_env->is_explain || handler->show_summary == false) {
+            if (qrstat_env->is_explain || !handler->show_summary) {
                const lListElem *qinstance;
                for_each_ep(qinstance, lGetList(ar, AR_reserved_queues)) {
                   const lListElem *qim = nullptr;
@@ -95,7 +95,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   }
                }
             }
-            if (handler->show_summary == false) {
+            if (!handler->show_summary) {
                handler->report_ar_node_time(handler, answer_list, "submission_time",
                                          ((time_t)lGetUlong(ar, AR_submission_time)));
                handler->report_ar_node_string(handler, answer_list, "group", lGetString(ar, AR_group));

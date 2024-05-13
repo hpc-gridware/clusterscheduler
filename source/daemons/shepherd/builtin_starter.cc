@@ -208,7 +208,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       }
       /* must force to run the qlogin starter as root, since it needs
          access to /dev/something */
-      if (g_new_interactive_job_support == false) {
+      if (!g_new_interactive_job_support) {
          target_user = "root";
       } else { /* g_new_interactive_job_support is true */
          /*
@@ -340,7 +340,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* --- switch to intermediate user */
    shepherd_trace("switching to intermediate/target user");
-   if(is_qlogin_starter && g_new_interactive_job_support == false) {
+   if(is_qlogin_starter && !g_new_interactive_job_support) {
       /* 
        * In the old IJS, we didn't have to set the additional group id,
        * because our custom rshd did it for us.
@@ -403,7 +403,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        * and/or the pipes.
        */
       if ((g_new_interactive_job_support && is_qlogin_starter)
-            || (g_new_interactive_job_support == false && pty == 1)) {
+            || (!g_new_interactive_job_support && pty == 1)) {
          i=3;
       } else {
          i=0;
@@ -1311,7 +1311,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[1] = get_conf_val(conf_name);
 
       if (check_configured_method(pre_args_ptr[1], conf_name, err_str, sizeof(err_str)) != 0
-          && g_new_interactive_job_support == false) {
+          && !g_new_interactive_job_support) {
          shepherd_state = SSTATE_CHECK_DAEMON_CONFIG;
          shepherd_error(1, err_str);
       }
@@ -1361,7 +1361,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
    }
 
    if(is_qlogin) { /* qlogin, qrsh (without command), qrsh <command> */
-      if (g_new_interactive_job_support == false) {
+      if (!g_new_interactive_job_support) {
          shepherd_trace("start qlogin");
          
          /* build trace string */
@@ -1378,7 +1378,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 #endif
          qlogin_starter(shepherd_job_dir, args[1], sge_get_environment());
       } else { /* g_new_interactive_job_support is true */
-         if (is_rsh == false) { /* qlogin, qrsh (without command) */
+         if (!is_rsh) { /* qlogin, qrsh (without command) */
             start_qlogin_job(shell_path);
          } else { /* qrsh <command> */
             start_qrsh_job();

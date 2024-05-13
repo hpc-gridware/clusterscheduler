@@ -2611,7 +2611,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                         handled = true;
                         ret &= commands[i].func(jsv, answer_list, &command, &sub_command, &args);
 
-                        if (ret == false || 
+                        if (!ret || 
                             lGetBool(jsv, JSV_restart) || 
                             lGetBool(jsv, JSV_accept)) {
                            lSetBool(jsv, JSV_done, true);
@@ -2651,7 +2651,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
                ret = false;
             }
-            if (!ret && lGetBool(jsv, JSV_done) == false) {
+            if (!ret && !lGetBool(jsv, JSV_done)) {
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                        "JSV stderr is - %s", input);
                lSetBool(jsv, JSV_restart, true);

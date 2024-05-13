@@ -145,7 +145,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
    ** makes qsub hang
    */
 
-   if (cl_com_setup_commlib_complete() == false) {
+   if (!cl_com_setup_commlib_complete()) {
       char *env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
       switch (component_get_component_id()) {
          case QMASTER:

@@ -262,7 +262,7 @@ qrstat_report_start_ar(qrstat_report_handler_t* handler, qrstat_env_t *qrstat_en
 
    DENTER(TOP_LAYER);
 
-   if (handler->show_summary == false) {
+   if (!handler->show_summary) {
       fprintf(out, "----------");
       fprintf(out, "----------");
       fprintf(out, "----------");

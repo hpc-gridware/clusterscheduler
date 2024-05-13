@@ -576,7 +576,7 @@ static int cull_unpack_cont(
        * (setup_qmaster)
        */
       ret = PACK_SUCCESS;
-   } else if (last_error != PACK_SUCCESS || only_at_bufferend == false) {
+   } else if (last_error != PACK_SUCCESS || !only_at_bufferend) {
       /*
        * If we are here then an error != PACK_FORMAT happened or
        * or a PACK_FORMAT occured but after it occured either

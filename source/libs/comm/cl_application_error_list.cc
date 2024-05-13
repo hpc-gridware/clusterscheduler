@@ -179,7 +179,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
    new_elem->cl_already_logged = false;
    new_elem->cl_err_type = cl_err_type;
 
-   if (do_log == false) {
+   if (!do_log) {
       /* This error was logged the least CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT seconds (= he is in
        * already logged list, so we set the cl_already_logged flag */
 

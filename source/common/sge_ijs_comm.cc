@@ -143,7 +143,7 @@ static void ijs_general_communication_error(
          break;
 
       case CL_RETVAL_ACCESS_DENIED:
-         if (ijs_communication_error.com_access_denied == false) {
+         if (!ijs_communication_error.com_access_denied) {
             /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
             /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 access denied */
             ijs_communication_error.com_access_denied =
@@ -153,7 +153,7 @@ static void ijs_general_communication_error(
          break;
 
       case CL_RETVAL_ENDPOINT_NOT_UNIQUE: 
-         if (ijs_communication_error.com_endpoint_not_unique == false) {
+         if (!ijs_communication_error.com_endpoint_not_unique) {
             /* counts endpoint not unique errors (TODO: workaround for BT: 6350264, IZ: 1893) */
             /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 endpoint not unique */
             DPRINTF("got endpint not unique");
@@ -172,7 +172,7 @@ static void ijs_general_communication_error(
     * now log the error if not already reported the 
     * least CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT seconds
     */
-   if (commlib_error->cl_already_logged == false && 
+   if (!commlib_error->cl_already_logged && 
       ijs_communication_error.com_last_error != ijs_communication_error.com_error) {
 
       /*  never log the same messages again and again (commlib
@@ -562,7 +562,7 @@ int comm_open_connection(bool        b_server,
          ret_val = COMM_CANT_SETUP_COMMLIB;
       } else {
          DPRINTF("trying to create commlib handle\n");
-         if (b_server == false) {
+         if (!b_server) {
             *handle = cl_com_create_handle(&commlib_error, 
                                           communication_framework, 
                                           connection_type, false, port, 
@@ -596,7 +596,7 @@ int comm_open_connection(bool        b_server,
     * Need to do this as SUPERUSER, because in csp mode we need the permissions
     * to load the job users keys.
     */
-   if (b_server == false) {
+   if (!b_server) {
       if (getuid() == SGE_SUPERUSER_UID) {
          old_euid = geteuid();
          seteuid(SGE_SUPERUSER_UID);
@@ -941,7 +941,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
     * 10 milliseconds and loop again.
     */
 
-   while (do_exit == false) {
+   while (!do_exit) {
       /* Let commlib update it's lists */
       ret2 = cl_commlib_trigger(handle, 0);
       /* Get list of all endpoints */

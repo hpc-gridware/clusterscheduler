@@ -257,7 +257,7 @@ sge_scheduler_initialize(lList **answer_list) {
 
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
-   if (Master_Scheduler.is_running == false) {
+   if (!Master_Scheduler.is_running) {
       bool start_thread = true;
 
       /* 
@@ -586,7 +586,7 @@ sge_scheduler_main(void *arg) {
          bool do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
 
          /* update mirror and free data */
-         if (do_shutdown == false && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
+         if (!do_shutdown && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
             handled_events = true;
             DPRINTF("events handled\n");
          } else {

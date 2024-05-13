@@ -405,8 +405,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
    bool ret = true;
    int pack_ret;
 
-   if ((task != nullptr) && (packet != nullptr)
-       && (packet->is_intern_request == false)) {
+   if (task != nullptr && packet != nullptr && !packet->is_intern_request) {
       sge_pack_gdi_info(task->command);
 
       /* ===> pack the prefix */

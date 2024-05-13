@@ -211,7 +211,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
     */
 #if defined(LINUX) || defined(SOLARIS)
    sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
-   if (mallinfo_initialized == false) {
+   if (!mallinfo_initialized) {
       const char *function_name = "mallinfo";
 
       mallinfo_initialized = true;
