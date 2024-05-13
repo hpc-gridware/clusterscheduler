@@ -629,7 +629,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    /* OUTPUT for RSMAP resources */
-   {
+   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
       const lListElem *jatep = nullptr;
 
       for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
