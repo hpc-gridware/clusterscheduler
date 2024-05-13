@@ -3710,7 +3710,7 @@ double sconf_get_decay_constant(void)
 void sconf_set_mes_schedd_info(bool newval)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   if (newval == true) {
+   if (newval) {
       if (sc_state->sme == nullptr || sc_state->tmp_sme == nullptr) {
          /* if one of the values is nullptr the messaging framework is initialized
             in this case just ignore the activate request */

@@ -858,7 +858,7 @@ do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList 
 
    exchange_conf_by_name(aConfName, anOldConf, aNewConf, anAnswer);
 
-   if (has_reschedule_unknown_change(old_entries, new_entries) == true) {
+   if (has_reschedule_unknown_change(old_entries, new_entries)) {
       update_reschedule_unknown_timout_values(aConfName);
    }
 

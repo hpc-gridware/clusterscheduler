@@ -208,7 +208,7 @@ extern int main(int argc, char **argv) {
    }
    cl_com_setup_commlib(CL_RW_THREAD, log_level, nullptr);
 
-   if (server_mode == true) {
+   if (server_mode) {
       handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, true, com_port, CL_TCP_DEFAULT, "server", 1, 1,
                                     0);
       cl_com_set_max_connection_close_mode(handle, CL_ON_MAX_COUNT_DISABLE_ACCEPT);
@@ -235,7 +235,7 @@ extern int main(int argc, char **argv) {
                   handle->local->comp_name,
                   handle->local->comp_id);
 
-   if (server_mode == true) {
+   if (server_mode) {
       int actual_issue = 0;
       int max_con_test_count = 2;
       unsigned long max_connection_count;

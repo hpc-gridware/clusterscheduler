@@ -246,7 +246,7 @@ int cl_com_add_debug_message(cl_com_connection_t *connection, const char *messag
          snprintf(commlib_time, 256, "%.6s", "-.-");
       }
    }
-   if (outgoing == true) {
+   if (outgoing) {
       direction = "->";
    }
    if (connection->local != nullptr) {
@@ -279,7 +279,7 @@ int cl_com_add_debug_message(cl_com_connection_t *connection, const char *messag
       CL_LOG(CL_LOG_INFO, "no message tag function set");
    }
 
-   if (handle->debug_client_setup->dc_dump_flag == true) {
+   if (handle->debug_client_setup->dc_dump_flag) {
       switch (ms->message_df) {
          case CL_MIH_DF_UNDEFINED:
             break;
@@ -1113,7 +1113,7 @@ void cl_com_ignore_timeouts(bool flag) {
 }
 
 bool cl_com_get_ignore_timeouts_flag(void) {
-   if (cl_ingore_timeout == true) {
+   if (cl_ingore_timeout) {
       CL_LOG(CL_LOG_WARNING, "ignoring all communication timeouts");
    }
    return cl_ingore_timeout;
@@ -1262,7 +1262,7 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
 
       /* check if connection count is reached */
       if (connection->handler != nullptr) {
-         if (connection->handler->max_connection_count_reached == true) {
+         if (connection->handler->max_connection_count_reached) {
             CL_LOG(CL_LOG_WARNING, cl_get_error_text(CL_RETVAL_MAX_CON_COUNT_REACHED));
             return CL_RETVAL_UNCOMPLETE_WRITE;  /* wait till connection count is ok */
          }
@@ -1627,7 +1627,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
    }
 
    /* check if the incoming hostname is an ip address string */
-   if (cl_com_is_ip_address_string(hostname_unresolved, &tmp_addr) == true) {
+   if (cl_com_is_ip_address_string(hostname_unresolved, &tmp_addr)) {
       cl_com_hostent_t *tmp_hostent = nullptr;
       CL_LOG(CL_LOG_INFO, "got ip address string as host name argument");
       ret_val = cl_com_gethostbyaddr(&tmp_addr, &tmp_hostent, nullptr);
@@ -1660,7 +1660,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
    hostent_p = (cl_com_hostent_t *) sge_malloc(sizeof(cl_com_hostent_t));
    if (hostent_p == nullptr) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_MALLOC));
-      if (do_free_host == true) {
+      if (do_free_host) {
          sge_free(&hostname);
       }
       return CL_RETVAL_MALLOC;          /* could not get memory */
@@ -1672,7 +1672,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
    if (he == nullptr) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKOWN_HOST_ERROR));
       cl_com_free_hostent(&hostent_p);       /* could not find host */
-      if (do_free_host == true) {
+      if (do_free_host) {
          sge_free(&hostname);
       }
       return CL_RETVAL_UNKOWN_HOST_ERROR;
@@ -1682,7 +1682,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
 
    if (hostent_p->he->h_addr == nullptr) {
       cl_com_free_hostent(&hostent_p);
-      if (do_free_host == true) {
+      if (do_free_host) {
          sge_free(&hostname);
       }
       return CL_RETVAL_IP_NOT_RESOLVED_ERROR;
@@ -1692,7 +1692,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
 #if CL_DO_COMMUNICATION_DEBUG
    cl_com_print_host_info(hostent_p);
 #endif
-   if (do_free_host == true) {
+   if (do_free_host) {
       sge_free(&hostname);
    }
    return CL_RETVAL_OK;
@@ -3157,13 +3157,13 @@ int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_ha
 
    /* as long as global CL_COMMLIB_DELAYED_LISTEN is enabled we don't want to
       do a select on the service connection */
-   if (cl_commlib_get_global_param(CL_COMMLIB_DELAYED_LISTEN) == true) {
+   if (cl_commlib_get_global_param(CL_COMMLIB_DELAYED_LISTEN)) {
       service_connection = nullptr;
    } else {
       /* for read select calls we have to check if max. conneciton count is reached or
          handle is going down ... */
       if (select_mode == CL_RW_SELECT || select_mode == CL_R_SELECT) {
-         if (handle->do_shutdown != 0 || handle->max_connection_count_reached == true) {
+         if (handle->do_shutdown != 0 || handle->max_connection_count_reached) {
             service_connection = nullptr;
          }
       }
@@ -3955,7 +3955,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                      CL_LOG(CL_LOG_ERROR, connection_status_text);
                   }
 
-                  if (client_ok == true) {
+                  if (client_ok) {
                      cl_com_handle_t *handler = nullptr;
 
                      /* enable debug message creation in handler */
@@ -4014,7 +4014,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
 #if 0
          /* This code is currently not used but should be used in the future, don't remove it */
                   if (connection->crm_state == CL_CRM_CS_CONNECTED) {
-                     if ( connection->handler != nullptr && connection->was_accepted == true ) {
+                     if ( connection->handler != nullptr && connection->was_accepted) {
                         /* TODO */
                         /* set check_allowed_host_list to 1 if the commlib should check the
                            allowed host list to enable cl_com_add_allowed_host() calls */
@@ -4465,7 +4465,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
             if (handler->local->comp_id == 0) {
                handler->local->comp_id = connection->local->comp_id;
                CL_LOG_INT(CL_LOG_INFO, "setting handler comp_id to reported client id:", (int) handler->local->comp_id);
-               if (handler->service_provider == true) {
+               if (handler->service_provider) {
                   CL_LOG_INT(CL_LOG_INFO, "setting service handle comp_id to reported client id:",
                              (int) connection->local->comp_id);
                   handler->service_handler->local->comp_id = connection->local->comp_id;

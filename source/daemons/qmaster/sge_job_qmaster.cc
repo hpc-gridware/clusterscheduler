@@ -1226,7 +1226,7 @@ int sge_gdi_mod_job(
                break;
             }
          }
-         if (all_finished == true) {
+         if (all_finished) {
             continue;
          }
       }
@@ -3184,7 +3184,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
    }
 
    /* can happen only from qalter -w ... */
-   if (is_modify == true && job_count_pending_tasks(jep, false) == 0) {
+   if (is_modify && job_count_pending_tasks(jep, false) == 0) {
       /* since we can rule out a finished jobs it can be running only */
       answer_list_add(alpp, MSG_JOB_VERIFYRUNNING, STATUS_OK, ANSWER_QUALITY_INFO);
       DRETURN(0);
@@ -3822,11 +3822,11 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                          * where the corresponding execution node can't be contacted so that a regular
                          * qdel will delete the job (code part of the qmaster<->execd protocol)
                          */
-                        if (qinstance_state_is_unknown(qinstance) == true) {
+                        if (qinstance_state_is_unknown(qinstance)) {
                            INFO(MSG_JOB_CHGFORCED_UU, sge_u32c(job_number), sge_u32c(task_number));
                            forced = true;
                         } else {
-                           if (job_is_tight_parallel(job, master_pe_list) == true) {
+                           if (job_is_tight_parallel(job, master_pe_list)) {
                               const lList *pe_task_list = lGetList(tmp_task, JAT_task_list);
                               lListElem *pe_task;
 
@@ -3838,7 +3838,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                                     qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                              lGetString(gdil_ep, JG_qname));
 
-                                    if (qinstance != nullptr && qinstance_state_is_unknown(qinstance) == true) {
+                                    if (qinstance != nullptr && qinstance_state_is_unknown(qinstance)) {
                                        lSetBool(pe_task, PET_do_contact, false);
                                     }
                                  }

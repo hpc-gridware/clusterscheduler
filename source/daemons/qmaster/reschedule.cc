@@ -363,8 +363,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       /*
        * We will skip current job if it is a
        *    - non-PE job and it is not running in queue/host
-       *    - PE job where the master task is not running in queue/host (RESCHEDULE_SLAVE == false)
-       *    - PE job where none of the tasks is running in queue/host (RESCHEDULE_SLAVE == true)
+       *    - PE job where the master task is not running in queue/host (RESCHEDULE_SLAVE is false)
+       *    - PE job where none of the tasks is running in queue/host (RESCHEDULE_SLAVE is true)
        */
       {
          const char *the_queuename = (qep != nullptr ? lGetString(qep, QU_full_name) : nullptr);
@@ -377,7 +377,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
           * otherwise
           *    PE jobs will only be rescheduled when the master task is effected 
           */
-         if (mconf_get_enable_reschedule_slave() == true) {
+         if (mconf_get_enable_reschedule_slave()) {
             const lListElem *granted_q;
             bool one_matched = false;
 

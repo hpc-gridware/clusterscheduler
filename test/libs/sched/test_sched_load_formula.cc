@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
      if (negativ_test[i].formula == nullptr) {
          break;
       }
-      if (validate_load_formula(negativ_test[i].formula, &answer_list, centry_list, "load_formula") == true) {
+      if (validate_load_formula(negativ_test[i].formula, &answer_list, centry_list, "load_formula")) {
          printf("load_formula \"%s\" returned no error\n", negativ_test[i].formula);
          neg_tests_failed++;
       }

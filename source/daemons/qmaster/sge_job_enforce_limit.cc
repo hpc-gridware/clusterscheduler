@@ -77,7 +77,7 @@ is_module_enabled(void) {
    /*
     * if new setting is false and old one is true then delete old one-time events
     */
-   if (ret == false && old_setting == true) {
+   if (ret == false && old_setting) {
       te_delete_all_one_time_events(TYPE_ENFORCE_LIMIT_EVENT);
    }
    old_setting = ret;
@@ -202,7 +202,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
                    * is master queue or at least one of the slave queues in unknown state?
                    */
                   if (qinstance != nullptr) {
-                     if (qinstance_state_is_unknown(qinstance) == true) {
+                     if (qinstance_state_is_unknown(qinstance)) {
                         do_action = true;
                      } else {
                         const lListElem *pe_task;
@@ -386,13 +386,13 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                 * is one of the queues still in unknown state where the job is running
                 */
                if (qinstance != nullptr) {
-                  if (qinstance_state_is_unknown(qinstance) == true) {
+                  if (qinstance_state_is_unknown(qinstance)) {
                      do_action = true;
                   } else {
                      /*
                       * Accounting for tight pe tasks running on unknown hosts
                       */
-                     if (job_is_tight_parallel(job, master_pe_list) == true) {
+                     if (job_is_tight_parallel(job, master_pe_list)) {
                         const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
                         const lListElem *pe_task;
 
@@ -407,7 +407,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                               qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                        lGetString(gdil_ep, JG_qname));
 
-                              if (qinstance != nullptr && qinstance_state_is_unknown(qinstance) == true) {
+                              if (qinstance != nullptr && qinstance_state_is_unknown(qinstance)) {
                                  do_action = true;
                                  break;
                               }
@@ -423,7 +423,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                   /*
                    * Accounting for tight pe tasks running on unknown hosts
                    */
-                  if (job_is_tight_parallel(job, master_pe_list) == true) {
+                  if (job_is_tight_parallel(job, master_pe_list)) {
                      const lList *pe_task_list = lGetList(ja_task, JAT_task_list);
                      lListElem *pe_task;
 
@@ -612,7 +612,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                if (gdil_ep != nullptr) {
                   qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
 
-                  if (qinstance != nullptr && qinstance_state_is_unknown(qinstance) == true) {
+                  if (qinstance != nullptr && qinstance_state_is_unknown(qinstance)) {
                      lSetBool(pe_task, PET_do_contact, false);
                   }
                }
@@ -764,7 +764,7 @@ sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id) {
                qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
 
                if (qinstance != nullptr) {
-                  if (qinstance_state_is_unknown(qinstance) == true) {
+                  if (qinstance_state_is_unknown(qinstance)) {
                      lSetBool(pe_task, PET_do_contact, false);
                      all_are_known = false;
                   } else {

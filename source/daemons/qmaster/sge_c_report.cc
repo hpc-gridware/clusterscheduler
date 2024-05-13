@@ -278,7 +278,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
       clear_packbuffer(&pb);
    }
 
-   if (send_tag_new_conf == true) {
+   if (send_tag_new_conf) {
       if (host_notify_about_new_conf(hep) != 0) {
          ERROR(MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, rhost);
       }

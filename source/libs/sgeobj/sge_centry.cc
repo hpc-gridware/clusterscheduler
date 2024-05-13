@@ -885,7 +885,7 @@ centry_list_parse_from_string(lList *complex_attributes,
        */
       if (check_value == false && value == nullptr) {
          value = (char*)TRUE_STR;
-      } else if (check_value == true && (value == nullptr || *value == '\0')) {
+      } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
          lFreeList(&complex_attributes);
          sge_free_saved_vars(context);
@@ -1403,13 +1403,13 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
    }
 
    /* Check complex attributes and type */
-   if (ret == true) {
+   if (ret) {
       const char *term_delim = "+-";
       const char *term, *next_term;
       struct saved_vars_s *term_context = nullptr;
 
       next_term = sge_strtok_r(load_formula, term_delim, &term_context);
-      while ((term = next_term) && ret == true) {
+      while ((term = next_term) && ret) {
          const char *fact_delim = "*";
          const char *fact, *next_fact, *end;
          const lListElem *cmplx_attr = nullptr;

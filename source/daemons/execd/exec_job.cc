@@ -899,7 +899,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
       /* for tightly integrated jobs, also set the rsh_command SGE_RSH_COMMAND */
       pe = lGetObject(jatep, JAT_pe_object);
-      if (pe != nullptr && lGetBool(pe, PE_control_slaves) == true) {
+      if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
          const char *mconf_string = mconf_get_rsh_command();
          if (mconf_string != nullptr && sge_strnullcasecmp(mconf_string, "none") != 0) {
             var_list_set_string(&environmentList, "SGE_RSH_COMMAND", mconf_string);
@@ -1052,7 +1052,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             lSetString(petep, PET_osjobid, str_id);
          }
 
-         if (mconf_get_ignore_ngroups_max_limit() == true) {
+         if (mconf_get_ignore_ngroups_max_limit()) {
          	fprintf(fp, "skip_ngroups_max_silently=yes\n");
          }
          
@@ -1086,7 +1086,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          lSetString(petep, PET_osjobid, str_id);
       }
 
-      if (mconf_get_ignore_ngroups_max_limit() == true) {
+      if (mconf_get_ignore_ngroups_max_limit()) {
          fprintf(fp, "skip_ngroups_max_silently=yes\n");
       }
 
@@ -2230,7 +2230,7 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
    /* check if the resources are free and binding could be performed from 
       shephered */
 
-   if (automatic == true) {
+   if (automatic) {
       /* user has not specified where to begin, this has now beeing 
          figured out automatically */
       int *list_of_sockets = nullptr;
@@ -2461,7 +2461,7 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
 
       /* check if cores are free */
       if (binding_explicit_check_and_account(socket_list, socket_list_length,
-                                             core_list, core_list_length, &topo_by_job, &topo_by_job_length) == true) {
+                                             core_list, core_list_length, &topo_by_job, &topo_by_job_length)) {
 
          /* was able to account core usage from job */
          sge_dstring_sprintf(result, "%s:%s",
@@ -2904,7 +2904,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 
       /* check if socket and core numbers are free */ 
       if (binding_explicit_check_and_account(socket_list, socket_list_length, 
-         core_list, core_list_length, &topo_by_job, &topo_by_job_length) == true) {
+         core_list, core_list_length, &topo_by_job, &topo_by_job_length)) {
          /* it is possible to bind to the given cores */
          
          /* create the processor set as user root */ 

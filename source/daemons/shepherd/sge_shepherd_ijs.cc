@@ -458,7 +458,7 @@ static void* pty_to_commlib(void *t_conf)
        * OR if we will exit the loop now and there is data in the stdout_buf
        */
       if (stdout_bytes >= 256 ||
-          (b_select_timeout == true && stdout_bytes > 0) ||
+          (b_select_timeout && stdout_bytes > 0) ||
           (do_exit == 1 && stdout_bytes > 0)) {
 #ifdef EXTENSIVE_TRACING
          shepherd_trace("pty_to_commlib: sending stdout buffer");

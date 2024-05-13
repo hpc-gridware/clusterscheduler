@@ -269,7 +269,7 @@ static int handle_io_file(const char* file, const char* owner, bool rw) {
       return -1;
    }
 
-   if (rw == true) {
+   if (rw) {
       /* create the given file with the credentials of the job-owner */
       fd = SGE_OPEN3(file, O_WRONLY | O_CREAT | O_APPEND, 0644);
       if (fd == -1) {
@@ -1152,7 +1152,7 @@ int ckpt_type
       } 
 
       if (pid==0) { /* child */
-         if (g_new_interactive_job_support == true && is_interactive) {
+         if (g_new_interactive_job_support && is_interactive) {
             ret = wait_until_parent_has_registered_to_server(fd_pipe_to_child);
             if (ret < 0) {
                return ret;
@@ -1231,7 +1231,7 @@ int ckpt_type
       /* Wait until child finishes ----------------------------------------*/
       status = wait_my_child(pid, childname, timeout, &ckpt_info, &rusage,
                              fd_pty_master, fd_pipe_err[0]);
-   } else { /* g_new_interactive_job_support == true && is_interactive */
+   } else { /* g_new_interactive_job_support is true && is_interactive */
       ijs_fds_t ijs_fds;
 
       ijs_fds.pty_master    = fd_pty_master;
@@ -1361,7 +1361,7 @@ int ckpt_type
        * qrsh <with command> jobs.
        */
       if (g_new_interactive_job_support == false ||
-          (g_new_interactive_job_support == true &&
+          (g_new_interactive_job_support &&
            strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0)) {
          if (search_conf_val("rsh_daemon") != nullptr) {
             int qrsh_exit_code = -1;

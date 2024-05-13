@@ -2226,7 +2226,7 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
 
    /* If we're synchronizing against all jobs, make a new job id list from the
     * running jobs in the master job list. */
-   if (sync_all == true) {
+   if (sync_all) {
       const lListElem *ep = nullptr;
       u_long32 id = 0;
       int count = 0;

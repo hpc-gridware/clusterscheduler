@@ -214,7 +214,7 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
 
    for_each_ep(usp, acl_list) {
       user = (char *) lGetString(usp, nm);
-      if (is_hgroup_name(user) == true){
+      if (is_hgroup_name(user)){
          user++;  /* jump ower the @ sign */
          if (!lGetElemStr(master_userset_list, US_name, user)) {
             ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>");

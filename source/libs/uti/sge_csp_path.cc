@@ -179,7 +179,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
       DRETURN(false);
    }
 
-   if (service_mode == true) {
+   if (service_mode) {
       switch (mode) {
          case CL_SSL_PEER_NAME: {
             DPRINTF("local service got certificate from peer \"%s\"\n", value);

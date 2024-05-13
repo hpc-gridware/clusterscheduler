@@ -542,7 +542,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
          }
       }
 
-      if (acl_changed == true) {
+      if (acl_changed) {
          lListElem *ar;
 
          for_each_rw(ar, master_ar_list) {

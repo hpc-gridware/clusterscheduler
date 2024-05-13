@@ -2178,7 +2178,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
 
       /* do we have to deliver events ? */
       if (now >= lGetUlong(event_client, EV_next_send_time)) {
-         if (!lGetUlong(event_client, EV_busy) || do_remove == true) {
+         if (!lGetUlong(event_client, EV_busy) || do_remove) {
             lList *lp = nullptr;
 
             /* put only pointer in report - dont copy */
@@ -2226,7 +2226,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
        * if we have to remove the event client because of timeout we do it now, because
        * sgeE_ACK_TIMEOUT event was delivered.
        */
-      if (do_remove == true) {
+      if (do_remove) {
          DPRINTF("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout);
          ERROR(MSG_COM_ACKTIMEOUT4EV_SIS, commproc, (int) commid, host);
          remove_event_client(&event_client, ec_id, false);

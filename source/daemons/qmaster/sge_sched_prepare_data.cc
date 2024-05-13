@@ -496,7 +496,7 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    switch (action) {
       case SGE_EMA_ADD:
-         if (new_ep != nullptr && lGetBool(new_ep, PR_consider_with_categories) == true) {
+         if (new_ep != nullptr && lGetBool(new_ep, PR_consider_with_categories)) {
             set_rebuild_categories(true);
             DPRINTF("callback before project event: rebuild categories due to SGE_EMA_ADD(%s)\n", p);
          }
@@ -509,7 +509,7 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
          }
          break;
       case SGE_EMA_DEL:
-         if (old_ep != nullptr && lGetBool(old_ep, PR_consider_with_categories) == true) {
+         if (old_ep != nullptr && lGetBool(old_ep, PR_consider_with_categories)) {
             set_rebuild_categories(true);
             DPRINTF("callback before project event: rebuild categories due to SGE_EMA_DEL(%s)\n", p);
          }
@@ -750,7 +750,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
 
    switch (action) {
       case SGE_EMA_ADD:
-         if (lGetBool(new_ep, US_consider_with_categories) == true) {
+         if (lGetBool(new_ep, US_consider_with_categories)) {
             set_rebuild_categories(true);
             DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_ADD(%s)\n", u);
          }
@@ -762,7 +762,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
                 and a change with users/groups occured */
 
          if ((lGetBool(new_ep, US_consider_with_categories) != lGetBool(old_ep, US_consider_with_categories))
-             || (lGetBool(old_ep, US_consider_with_categories) == true &&
+             || (lGetBool(old_ep, US_consider_with_categories) &&
                  object_list_has_differences(lGetList(old_ep, US_entries), nullptr, lGetList(new_ep, US_entries),
                                              false))) {
             set_rebuild_categories(true);
@@ -771,7 +771,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
 
          break;
       case SGE_EMA_DEL:
-         if (lGetBool(old_ep, US_consider_with_categories) == true) {
+         if (lGetBool(old_ep, US_consider_with_categories)) {
             set_rebuild_categories(true);
             DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_DEL(%s)\n", u);
          }

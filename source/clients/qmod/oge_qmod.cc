@@ -182,7 +182,7 @@ static bool answer_list_has_exit_code_error(lList **answer_list)
 
    DENTER(TOP_LAYER);
 
-   if (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL) == true) {
+   if (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL)) {
       ret = true;
    } else {
       const lListElem *answer;   /* AN_Type */

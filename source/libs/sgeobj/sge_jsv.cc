@@ -216,7 +216,7 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
       }
    }
 
-   if (ret == true) {
+   if (ret) {
       DPRINTF("JSV - fd is ready. Data can be sent\n");
    } else {
       DPRINTF("JSV - fd is NOT ready\n");
@@ -830,7 +830,7 @@ jsv_list_update(const char *name, const char *context,
 
          ret = true;
          jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
-         while ((ret == true) && ((jsv = jsv_next) != nullptr)) {
+         while (ret && ((jsv = jsv_next) != nullptr)) {
             dstring input = DSTRING_INIT;
             dstring type = DSTRING_INIT;
             dstring user = DSTRING_INIT;
@@ -1023,7 +1023,7 @@ jsv_do_verify(const char *context, lListElem **job,
        * execute JSV scripts for this thread
        */
       jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
-      while ((ret == true) && ((jsv = jsv_next) != nullptr)) {
+      while (ret && ((jsv = jsv_next) != nullptr)) {
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
          if (jsv_is_started(jsv) == false) {

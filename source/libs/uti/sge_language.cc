@@ -292,10 +292,10 @@ int sge_init_languagefunc(char *package, char *localeDir) {
    /* now startup the language package for gettext */
 /*   setlocale(LC_ALL, ""); */
 
-   if ((sge_language_functions.setlocale_func != nullptr) &&
-       (sge_language_functions.bindtextdomain_func != nullptr) &&
-       (sge_language_functions.textdomain_func != nullptr) &&
-       (sge_are_language_functions_installed == true)) {
+   if (sge_language_functions.setlocale_func != nullptr &&
+       sge_language_functions.bindtextdomain_func != nullptr &&
+       sge_language_functions.textdomain_func != nullptr &&
+       sge_are_language_functions_installed) {
       char *help1 = nullptr;
       help1 = sge_language_functions.setlocale_func(LC_MESSAGES, "");
       if (help1 != nullptr) {
@@ -326,7 +326,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
    sge_free(&language_var);
    sge_free(&pathName);
 
-   if (success == true) {
+   if (success) {
       sge_enable_msg_id = 1;
    }
 
@@ -352,7 +352,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       DPRINTF_("error id output     : enabled\n");
    }
 
-   if (success == true) {
+   if (success) {
       DPRINTF_("****** starting localization procedure ... success **\n");
    } else {
       DPRINTF_("****** starting localization procedure ... failed  **\n");
@@ -744,7 +744,7 @@ const char *sge_gettext__(const char *x) {
    DENTER_(BASIS_LAYER);
 
    if ((sge_language_functions.gettext_func != nullptr) &&
-       (sge_are_language_functions_installed == true)) {
+       (sge_are_language_functions_installed)) {
       z = sge_language_functions.gettext_func(x);
    } else {
       z = x;

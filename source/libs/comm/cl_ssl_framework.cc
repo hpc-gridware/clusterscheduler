@@ -670,22 +670,22 @@ static int ssl_callback_SSLVerify_CRL(int ok, X509_STORE_CTX *ctx, cl_com_ssl_pr
           is_ok = false;
        }   
 
-       if (is_ok == true) {
+       if (is_ok) {
           cl_com_ssl_func__X509_STORE_set_flags(com_private->ssl_crl_data->store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
        }
-       if (is_ok == true && (cl_com_ssl_func__X509_STORE_load_locations(com_private->ssl_crl_data->store, com_private->ssl_setup->ssl_CA_cert_pem_file, nullptr) != 1)) {
+       if (is_ok && (cl_com_ssl_func__X509_STORE_load_locations(com_private->ssl_crl_data->store, com_private->ssl_setup->ssl_CA_cert_pem_file, nullptr) != 1)) {
           CL_LOG(CL_LOG_ERROR, "Error loading the CA file or directory");
           is_ok = false;
        }   
-       if (is_ok == true && (cl_com_ssl_func__X509_STORE_set_default_paths(com_private->ssl_crl_data->store) != 1)) {
+       if (is_ok && (cl_com_ssl_func__X509_STORE_set_default_paths(com_private->ssl_crl_data->store) != 1)) {
           CL_LOG(CL_LOG_ERROR, "Error loading the system-wide CA certificates");
           is_ok = false;
        }   
-       if (is_ok == true && (!(lookup = cl_com_ssl_func__X509_STORE_add_lookup(com_private->ssl_crl_data->store, cl_com_ssl_func__X509_LOOKUP_file())))) {
+       if (is_ok && (!(lookup = cl_com_ssl_func__X509_STORE_add_lookup(com_private->ssl_crl_data->store, cl_com_ssl_func__X509_LOOKUP_file())))) {
           CL_LOG(CL_LOG_ERROR, "Error creating X509_LOOKUP object");
           is_ok = false;
        }    
-       if (is_ok == true && (cl_com_ssl_func__X509_load_crl_file(lookup, com_private->ssl_setup->ssl_crl_file, X509_FILETYPE_PEM) != 1)) {
+       if (is_ok && (cl_com_ssl_func__X509_load_crl_file(lookup, com_private->ssl_setup->ssl_crl_file, X509_FILETYPE_PEM) != 1)) {
           CL_LOG(CL_LOG_ERROR, "Error reading the CRL file");
           is_ok = false;
        }    
@@ -700,7 +700,7 @@ static int ssl_callback_SSLVerify_CRL(int ok, X509_STORE_CTX *ctx, cl_com_ssl_pr
    }
 
    cert = cl_com_ssl_func__X509_STORE_CTX_get_current_cert(ctx);
-   if (is_ok == true && cert != nullptr) {
+   if (is_ok && cert != nullptr) {
        verify_ctx = cl_com_ssl_func__X509_STORE_CTX_new();
        if (verify_ctx == nullptr) {
           CL_LOG(CL_LOG_INFO,"verify_ctx is nullptr");
@@ -2046,7 +2046,7 @@ static int cl_com_ssl_transform_ssl_error(unsigned long ssl_error, char* buffer,
    sge_free(&module);
    sge_free(&error_text);
 
-   if (do_ignore == true) {
+   if (do_ignore) {
       CL_LOG_STR_STR_INT(CL_LOG_WARNING, "will not report ssl error text to application:", buffer, "ssl id", (int) ssl_error);
       return CL_RETVAL_DO_IGNORE;
    }
@@ -2366,7 +2366,7 @@ int cl_com_ssl_framework_cleanup(void) {
    int counter = 0;
    pthread_mutex_lock(&cl_com_ssl_global_config_mutex);
    if (cl_com_ssl_global_config_object != nullptr) {
-      if (cl_com_ssl_global_config_object->ssl_initialized == true) {
+      if (cl_com_ssl_global_config_object->ssl_initialized) {
 
          CL_LOG(CL_LOG_INFO,"shutting down ssl framework ...");
          /* free error strings from ERR_load_crypto_strings() 
@@ -2934,7 +2934,7 @@ int cl_com_ssl_connection_complete_accept(cl_com_connection_t*  connection,
             {
                gettimeofday(&now,nullptr);
                if (connection->write_buffer_timeout_time <= now.tv_sec || 
-                   cl_com_get_ignore_timeouts_flag() == true) {
+                   cl_com_get_ignore_timeouts_flag()) {
 
                   /* we had an timeout */
                   CL_LOG(CL_LOG_ERROR,"ssl accept timeout error");
@@ -3157,7 +3157,7 @@ int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
             }
          }
       } 
-      if (connect_state == true) {
+      if (connect_state) {
          connection->write_buffer_timeout_time = 0;
          connection->connection_sub_state = CL_COM_OPEN_CONNECTED;
       }
@@ -3193,7 +3193,7 @@ int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
 
          gettimeofday(&now,nullptr);
          if (connection->write_buffer_timeout_time <= now.tv_sec || 
-             cl_com_get_ignore_timeouts_flag() == true) {
+             cl_com_get_ignore_timeouts_flag()) {
 
             /* we had an timeout */
             CL_LOG(CL_LOG_ERROR,"connect timeout error");
@@ -3301,7 +3301,7 @@ int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
             {
                gettimeofday(&now,nullptr);
                if (connection->write_buffer_timeout_time <= now.tv_sec || 
-                   cl_com_get_ignore_timeouts_flag() == true) {
+                   cl_com_get_ignore_timeouts_flag()) {
 
                   /* we had an timeout */
                   CL_LOG(CL_LOG_ERROR,"ssl connect timeout error");
@@ -3542,7 +3542,7 @@ int cl_com_ssl_connection_request_handler_setup(cl_com_connection_t* connection,
    /* if only_prepare_service is enabled we don't want to set the port into
       listen mode now, we have to do it later */
    com_private->pre_sockfd = sockfd;
-   if (only_prepare_service == true) {
+   if (only_prepare_service) {
       CL_LOG_INT(CL_LOG_INFO,"service socket prepared for listen, using sockfd=", sockfd);
       return CL_RETVAL_OK;
    }
@@ -4066,7 +4066,7 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_co
                ufds[ufds_index].events |= POLLIN|POLLPRI;
             }
             if(do_write_select == 1){
-               if (elem->data->ready_for_writing == true) {
+               if (elem->data->ready_for_writing) {
                   ufds[ufds_index].events |= POLLOUT;
                }
             }
@@ -4604,14 +4604,14 @@ static int cl_com_ssl_fill_private_from_peer_cert(cl_com_ssl_private_t *com_priv
         return CL_RETVAL_SSL_CERTIFICATE_ERROR;
       } 
 
-      if (is_server == true) {
+      if (is_server) {
         CL_LOG(CL_LOG_INFO, "Checking Client Authentication");
       } else {  
         CL_LOG(CL_LOG_INFO, "Checking Server Authentication");
       }  
       
       if (cl_com_ssl_func__SSL_get_verify_result(com_private->ssl_obj) != X509_V_OK) {
-         if (is_server == true) {
+         if (is_server) {
             CL_LOG(CL_LOG_ERROR,"client certificate doesn't verify");
             cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SSL_CERTIFICATE_ERROR, MSG_CL_COMMLIB_SSL_CLIENT_CERTIFICATE_ERROR);
          } else {   
@@ -4696,7 +4696,7 @@ static int cl_com_ssl_fill_private_from_peer_cert(cl_com_ssl_private_t *com_priv
          cl_com_ssl_func__X509_free(peer);
          peer = nullptr;
       } else {
-         if (is_server == true) {
+         if (is_server) {
             CL_LOG(CL_LOG_ERROR,"client did not send peer certificate");
             cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SSL_PEER_CERTIFICATE_ERROR, MSG_CL_COMMLIB_SSL_CLIENT_CERT_NOT_SENT_ERROR);
          } else {

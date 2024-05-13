@@ -1255,11 +1255,11 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
       }
       DPRINTF("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name));
 
-      if (sge_get_com_error_flag(me, SGE_COM_ACCESS_DENIED, false) == true) {
+      if (sge_get_com_error_flag(me, SGE_COM_ACCESS_DENIED, false)) {
          lFreeElem(&hep);
          DRETURN(-8);
       }
-      if (sge_get_com_error_flag(me, SGE_COM_ENDPOINT_NOT_UNIQUE, false) == true) {
+      if (sge_get_com_error_flag(me, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
          lFreeElem(&hep);
          DRETURN(-6);
       }
@@ -1834,7 +1834,7 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
    switch (error_type) {
       case SGE_COM_ACCESS_DENIED: {
          ret_val = sge_gdi_communication_error.com_access_denied;
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_access_denied = false;
          }
          break;
@@ -1845,14 +1845,14 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
          } else {
             ret_val = sge_gdi_communication_error.com_endpoint_not_unique;
          }
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_endpoint_not_unique = false;
          }
          break;
       }
       case SGE_COM_WAS_COMMUNICATION_ERROR: {
          ret_val = sge_gdi_communication_error.com_was_error;
-         if (reset_error_flag == true) {
+         if (reset_error_flag) {
             sge_gdi_communication_error.com_was_error = false;  /* reset error flag */
          }
       }

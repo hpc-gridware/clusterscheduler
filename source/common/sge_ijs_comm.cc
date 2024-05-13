@@ -231,12 +231,12 @@ int comm_get_application_error(dstring *err_msg)
    sge_mutex_lock("ijs_general_communication_error_mutex", 
                     __func__, __LINE__, &ijs_general_communication_error_mutex);
 
-   if (ijs_communication_error.com_endpoint_not_unique == true) {
+   if (ijs_communication_error.com_endpoint_not_unique) {
       sge_dstring_sprintf(err_msg, "%s", MSG_CL_RETVAL_ENDPOINT_NOT_UNIQUE);
       DPRINTF("%s", sge_dstring_get_string(err_msg));
       ret = COMM_ENDPOINT_NOT_UNIQUE;
    }
-   if (ijs_communication_error.com_access_denied == true) {
+   if (ijs_communication_error.com_access_denied) {
       sge_dstring_sprintf(err_msg, "%s", MSG_CL_RETVAL_ACCESS_DENIED);
       DPRINTF("%s", sge_dstring_get_string(err_msg));
       ret = COMM_ACCESS_DENIED;
@@ -451,7 +451,7 @@ int comm_cleanup_lib(dstring *err_msg)
 *     const char *other_component - The unique name of the other end of the
 *                                   connection.
 *     char       *remote_host     - Name of the host to connect to. Ignored if
-*                                   b_server == true.
+*                                   b_server is true.
 *     const char *user_name       - For secured connections: Name of the user
 *                                   whose certificates are to be used.
 *                                   Ignored for unsecured connections.
@@ -511,7 +511,7 @@ int comm_open_connection(bool        b_server,
       DRETURN(COMM_INVALID_PARAMETER);
    }
 
-   if (b_secure == true) {
+   if (b_secure) {
 #ifdef SECURE
       communication_framework = CL_CT_SSL;
 
@@ -766,7 +766,7 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
 
    DENTER(TOP_LAYER);
    
-   cl_com_ignore_timeouts(b_ignore==true ? true : false);
+   cl_com_ignore_timeouts(b_ignore);
    if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
          DPRINTF("cl_com_ignore_timeouts() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);

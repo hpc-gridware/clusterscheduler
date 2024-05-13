@@ -246,7 +246,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
    DEBUG("%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname());
    admin_user = bootstrap_get_admin_user();
 
-   if (switch_to_admin_user == true) {
+   if (switch_to_admin_user) {
       char str[MAX_STRING_SIZE];
       if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
          CRITICAL(SFNMAX, str);
@@ -594,7 +594,7 @@ communication_setup() {
    if (com_handle == nullptr) {
       ERROR("port " sge_u32" already bound\n", qmaster_port);
 
-      if (is_qmaster_already_running(qmaster_spool_dir) == true) {
+      if (is_qmaster_already_running(qmaster_spool_dir)) {
          char *host = nullptr;
          int res;
 

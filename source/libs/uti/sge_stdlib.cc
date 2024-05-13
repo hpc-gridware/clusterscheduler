@@ -306,7 +306,7 @@ void sge_unsetenv(const char *varName) {
          }
         
          /* At second we remove varName by copying varName+1 to varName */ 
-         if (found == true) {
+         if (found) {
             for (; i < ARG_MAX-1 && environ[i] != nullptr; i++) {
                environ[i] = environ[i+1];
             }

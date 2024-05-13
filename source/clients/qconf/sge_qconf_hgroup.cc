@@ -308,10 +308,10 @@ bool hgroup_modify(lList **answer_list, const char *name) {
                                  ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name);
          ret = false;
       }
-      if (ret == true) {
+      if (ret) {
          ret = hgroup_provide_modify_context(&hgroup, answer_list, false);
       }
-      if (ret == true) {
+      if (ret) {
          ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, SGE_GDI_MOD);
       }
       lFreeElem(&hgroup);

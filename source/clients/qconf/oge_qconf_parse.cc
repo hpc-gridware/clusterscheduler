@@ -3098,7 +3098,7 @@ int sge_parse_qconf(char *argv[])
       }
 
       parse_name_list_to_cull("attribute list", &lp, US_Type, US_name, attr);
-      if (cqueue_purge_host(cqueue, &alp, lp, hgroup_or_hostname) == true) {
+      if (cqueue_purge_host(cqueue, &alp, lp, hgroup_or_hostname)) {
          cqueue_add_del_mod_via_gdi(cqueue, &alp, SGE_GDI_MOD | SGE_GDI_SET_ALL);
       } else {
          WARNING(MSG_QCONF_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname);

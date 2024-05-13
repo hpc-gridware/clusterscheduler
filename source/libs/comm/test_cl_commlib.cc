@@ -113,7 +113,7 @@ static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, con
    if (user_name == nullptr) {
       user_name = "unexpected user name";
    }
-   if (service_mode == true) {
+   if (service_mode) {
       CL_LOG(CL_LOG_WARNING, "running in service mode");
       switch (mode) {
          case CL_SSL_PEER_NAME: {

@@ -158,7 +158,7 @@ sge_worker_terminate() {
     * ... in that case we would overwrite data which might have already
     * changed in the second instance of the master
     */
-   if (do_final_spooling == true) {
+   if (do_final_spooling) {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
       DPRINTF("job/ar counter were made persistent\n");
@@ -222,13 +222,13 @@ sge_worker_main(void *arg) {
          /*
           * prepare buffer for sending an answer 
           */
-         if (packet->is_intern_request == false && packet->is_gdi_request == true) {
+         if (packet->is_intern_request == false && packet->is_gdi_request) {
             init_packbuffer(&(packet->pb), 0, 0);
          }
 
          MONITOR_MESSAGES(p_monitor);
 
-         if (packet->is_gdi_request == true) {
+         if (packet->is_gdi_request) {
             /*
              * test if a write lock is necessary
              */
@@ -260,7 +260,7 @@ sge_worker_main(void *arg) {
          INFO("======================");
 #endif
 
-         if (packet->is_gdi_request == true) {
+         if (packet->is_gdi_request) {
             /*
              * do the GDI request
              */
@@ -301,7 +301,7 @@ sge_worker_main(void *arg) {
             SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          }
 
-         if (packet->is_gdi_request == true) {
+         if (packet->is_gdi_request) {
             /*
              * Send the answer to the client
              */
@@ -322,7 +322,7 @@ sge_worker_main(void *arg) {
                 * on fast qmaster hosts if testsuite is not fast enough to generate
                 * gdi requests.
                 */
-               if (mconf_get_enable_test_sleep_after_request() == true) {
+               if (mconf_get_enable_test_sleep_after_request()) {
                   sleep(5);
                }
             } else {

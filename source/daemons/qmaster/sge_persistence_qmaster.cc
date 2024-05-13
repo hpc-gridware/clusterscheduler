@@ -250,11 +250,11 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
             }
          }
 
-         if (do_sleep == true) {
+         if (do_sleep) {
             usleep(1000000);
             sleep_time--;
          }
-      } while (sleep_time > 0 && do_sleep == true);
+      } while (sleep_time > 0 && do_sleep);
    }
 
    switch (event) {

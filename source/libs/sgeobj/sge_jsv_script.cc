@@ -1712,7 +1712,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * PARAM j y | n 
     * optional; only available when -j y was specified
     */
-   if (lGetBool(old_job, JB_merge_stderr) == true) {
+   if (lGetBool(old_job, JB_merge_stderr)) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s j %c", prefix, lGetBool(old_job, JB_merge_stderr) ? 'y' : 'n');
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1827,7 +1827,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * -notify y|n 
     * PARAM notify y|n (optional; only available when -notify y was specified)
     */
-   if (lGetBool(old_job, JB_notify) == true) {
+   if (lGetBool(old_job, JB_notify)) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s notify %c", prefix, lGetBool(old_job, JB_notify) ? 'y' : 'n');
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -2291,7 +2291,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
       }
 
       /* send the varaibles to the JSV but only if it was requested */
-      if (lGetBool(jsv, JSV_send_env) == true) {
+      if (lGetBool(jsv, JSV_send_env)) {
          for_each_ep(env, env_list) {
             const char *value = lGetString(env, VA_value);
             const char *name = lGetString(env, VA_variable);
@@ -2612,8 +2612,8 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                         ret &= commands[i].func(jsv, answer_list, &command, &sub_command, &args);
 
                         if (ret == false || 
-                            lGetBool(jsv, JSV_restart) == true || 
-                            lGetBool(jsv, JSV_accept) == true) {
+                            lGetBool(jsv, JSV_restart) || 
+                            lGetBool(jsv, JSV_accept)) {
                            lSetBool(jsv, JSV_done, true);
                         }
                         break;

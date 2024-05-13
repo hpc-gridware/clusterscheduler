@@ -49,7 +49,7 @@ test_err_has_which_error(void) {
 
    DENTER(ERR_LAYER);
 
-   if (sge_err_has_error() == true) {
+   if (sge_err_has_error()) {
       fprintf(stderr, "in error state although no error occured in %s()\n", __func__);
       ret = false;
    }
@@ -100,7 +100,7 @@ int
 main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "test_err");
    bool ret = test_err_has_which_error();
-   DRETURN(ret == true ? 0 : 1);
+   DRETURN(ret ? 0 : 1);
 }
 
 

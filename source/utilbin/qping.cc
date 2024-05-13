@@ -259,7 +259,7 @@ static void qping_convert_time(char* buffer, char* dest, size_t dest_size, bool 
 #else
       tm = (struct tm *)localtime_r(&i, &tm_buffer);
 #endif
-      if (show_hour == true) {
+      if (show_hour) {
          snprintf(dest, dest_size, "%02d:%02d:%02d.%s", tm->tm_hour, tm->tm_min, tm->tm_sec, help2);
       } else {
          snprintf(dest, dest_size, "%02d:%02d.%s", tm->tm_min, tm->tm_sec, help2);

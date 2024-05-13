@@ -394,7 +394,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 
          gettimeofday(&now, nullptr);
          if (connection->write_buffer_timeout_time <= now.tv_sec ||
-             cl_com_get_ignore_timeouts_flag() == true) {
+             cl_com_get_ignore_timeouts_flag()) {
 
             /* we had an timeout */
             CL_LOG(CL_LOG_ERROR, "connect timeout error");
@@ -990,7 +990,7 @@ int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection,
    /* if only_prepare_service is enabled we don't want to set the port into
       listen mode now, we have to do it later */
    private_com->pre_sockfd = sockfd;
-   if (only_prepare_service == true) {
+   if (only_prepare_service) {
       CL_LOG_INT(CL_LOG_INFO, "service socket prepared for listen, using sockfd=", sockfd);
       return CL_RETVAL_OK;
    }
@@ -1572,7 +1572,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                ufds[ufds_index].events |= POLLIN | POLLPRI;
             }
             if (do_write_select == 1) {
-               if (elem->data->ready_for_writing == true) {
+               if (elem->data->ready_for_writing) {
                   ufds[ufds_index].events |= POLLOUT;
                }
             }

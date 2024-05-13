@@ -77,7 +77,7 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
    }
 
    /* create hashtable */
-   if (create_hash == true) {
+   if (create_hash) {
       ldata->ht = sge_htable_create(4, dup_func_string, hash_func_string, hash_compare_string);
       if (ldata->ht == nullptr) {
          cl_raw_list_cleanup(list_p);
@@ -193,7 +193,7 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
       elem->last_used = now.tv_sec;
       elem->service_port = service_port;
       elem->autoclose = autoclose;
-      if (elem->is_static == true && is_static == false) {
+      if (elem->is_static && is_static == false) {
          CL_LOG(CL_LOG_DEBUG, "can't set static element to non static");
       } else {
          elem->is_static = is_static;

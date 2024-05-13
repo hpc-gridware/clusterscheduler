@@ -471,7 +471,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    lList *alp = nullptr;
 
    /* 
-    * If it is a reconnect (is_restart == true) the act_qmaster file must be
+    * If it is a reconnect (is_restart is true) the act_qmaster file must be
     * re-read in order to update ctx qmaster cache when master migrates. 
     */
    const char *master_host = gdi_get_act_master_host(is_restart);

@@ -220,7 +220,7 @@ int cl_host_list_setup(cl_raw_list_t **list_p,
    }
 
    /* create hashtable */
-   if (create_hash == true) {
+   if (create_hash) {
       ldata->ht = sge_htable_create(4, dup_func_string, hash_func_string, hash_compare_string);
       if (ldata->ht == nullptr) {
          cl_raw_list_cleanup(list_p);

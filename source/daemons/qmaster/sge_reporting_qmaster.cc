@@ -170,7 +170,7 @@ reporting_shutdown(lList **answer_list, bool do_spool) {
 
    DENTER(TOP_LAYER);
 
-   if (do_spool == true) {
+   if (do_spool) {
       /* flush the last reporting values, suppress adding new timer */
       if (!oge::ReportingFileWriter::flush_all()) {
          answer_list_output(&alp);

@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
        *         -> normal deletion
        */
       if (force == 1) {
-         if (have_master_privileges == true) {
+         if (have_master_privileges) {
             delete_mode = 1;
          } else {
             delete_mode = 7;

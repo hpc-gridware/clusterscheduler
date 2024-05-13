@@ -392,7 +392,7 @@ static int MatchPattern(s_token *token_p, bool skip)
 {
    int match;
    /*printf("Match pattern %i: '%s'=='%s'\n", skip,token_p->pattern, token_p->value); */
-   if (skip==true){
+   if (skip) {
       return -1;
    }
    if (token_p->pattern==nullptr){

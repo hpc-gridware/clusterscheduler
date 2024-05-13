@@ -302,14 +302,14 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
 *        <CQ-pattern> (e.g. "*")
 *           resolve_cqueue == false 
 *              => cq1 cq2
-*           resolve_cqueue == true 
+*           resolve_cqueue is true 
 *              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
 *                 cq2@hostA1 cq2@hostA2 cq2@hostB1 cq2@hostB2
 *
 *        <QD-pattern> (e.q "*@@hgrp*")
 *           resolve_qdomain == false
 *              => cq1@@hgrpA cq1@@hgrpB cq2@@hgrpA cq2@@hgrpB
-*           resolve_qdomain == true
+*           resolve_qdomain is true
 *              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
 *                 cq2@hostA1 cq2@hostA2 cq2@hostB1 cq2@hostB2
 *

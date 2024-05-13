@@ -677,7 +677,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    
    DPRINTF("creating %s event client context\n", is_qmaster_internal ? "internal" : "external");
 
-   if (is_qmaster_internal == true) {
+   if (is_qmaster_internal) {
       ret->ec_register = ec2_register_local;
       ret->ec_deregister = ec2_deregister_local;
       ret->ec_commit = ec2_commit_local;

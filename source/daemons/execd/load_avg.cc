@@ -216,7 +216,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
       ** 1. load report
       */
       report = lCreateElem(REP_Type);
-      if (send_all == true) {
+      if (send_all) {
          lSetUlong(report, REP_type, NUM_REP_FULL_REPORT_LOAD);
       } else {
          lSetUlong(report, REP_type, NUM_REP_REPORT_LOAD);

@@ -616,8 +616,8 @@ bool answer_list_has_error(lList **answer_list)
    bool ret = false;
 
    DENTER(ANSWER_LAYER);
-   if ((answer_list_has_quality(answer_list, ANSWER_QUALITY_ERROR) == true) ||
-       (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL) == true)) {
+   if ((answer_list_has_quality(answer_list, ANSWER_QUALITY_ERROR)) ||
+       (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL))) {
        ret = true;
    }
    DRETURN(ret);

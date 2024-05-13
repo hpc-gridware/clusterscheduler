@@ -416,10 +416,10 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
 
          if (host_expand == false && queue_expand == false) {
             lSetUlong(rule, RQR_level, RQR_GLOBAL);
-         } else if (host_expand == true && queue_expand == false) {
+         } else if (host_expand && queue_expand == false) {
             /* per host */
             lSetUlong(rule, RQR_level, RQR_HOST);
-         } else if (host_expand == false && queue_expand == true) {
+         } else if (host_expand == false && queue_expand) {
             /* per queue */
             lSetUlong(rule, RQR_level, RQR_CQUEUE);
          } else {
@@ -727,35 +727,35 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
    sge_dstring_clear(name);
 
    if ((filter = lGetObject(rule, RQR_filter_users)) != nullptr) {
-      if (filter != nullptr && user != nullptr && lGetBool(filter, RQRF_expand) == true) {
+      if (filter != nullptr && user != nullptr && lGetBool(filter, RQRF_expand)) {
          sge_dstring_append(name, user); 
       }
    }
    sge_dstring_append(name, "/");
 
    if ((filter = lGetObject(rule, RQR_filter_projects)) != nullptr) {
-      if (filter != nullptr && project != nullptr && lGetBool(filter, RQRF_expand) == true) {
+      if (filter != nullptr && project != nullptr && lGetBool(filter, RQRF_expand)) {
          sge_dstring_append(name, project); 
       }
    }
    sge_dstring_append(name, "/");
 
    if ((filter = lGetObject(rule, RQR_filter_pes)) != nullptr) {
-      if (filter != nullptr && pe != nullptr && lGetBool(filter, RQRF_expand) == true) {
+      if (filter != nullptr && pe != nullptr && lGetBool(filter, RQRF_expand)) {
          sge_dstring_append(name, pe); 
       }
    }
    sge_dstring_append(name, "/");
 
    if ((filter = lGetObject(rule, RQR_filter_queues)) != nullptr) {
-      if (filter != nullptr && queue != nullptr && lGetBool(filter, RQRF_expand) == true) {
+      if (filter != nullptr && queue != nullptr && lGetBool(filter, RQRF_expand)) {
          sge_dstring_append(name, queue); 
       }
    }
    sge_dstring_append(name, "/");
 
    if ((filter = lGetObject(rule, RQR_filter_hosts)) != nullptr) {
-      if (filter != nullptr && host != nullptr && lGetBool(filter, RQRF_expand) == true) {
+      if (filter != nullptr && host != nullptr && lGetBool(filter, RQRF_expand)) {
          char buffer[10240];
          sge_hostcpy(buffer, host);
          sge_dstring_append(name, buffer); 
@@ -1080,7 +1080,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                            }
                         }
                      }
-                     if (found == true) {
+                     if (found) {
                         break;
                      }
                   }
@@ -1103,7 +1103,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                                  break;
                               }
                            }
-                           if (found == true) {
+                           if (found) {
                               break;
                            }
                         }
@@ -1126,7 +1126,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                                     break;
                                  }
                               }
-                              if (found == true) {
+                              if (found) {
                                  break;
                               }
                            }
@@ -1188,7 +1188,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                      }
                   }
                }
-               if (found == true) {
+               if (found) {
                   break;
                }
             } else {
@@ -1204,12 +1204,12 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                         }
                      }
                      lFreeList(&host_list);
-                     if (found == true) {
+                     if (found) {
                         break;
                      }
                   }
                }
-               if (found == true) {
+               if (found) {
                   break;
                }
             }
@@ -1377,7 +1377,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
             DPRINTF("matching hosts with %s\n", value);
             /* inverse logic because of xscope */
             ret = rqs_match_host_scope(xscope, value, master_hgroup_list, true) ? false: true;
-            if (ret == true && scope != nullptr) {
+            if (ret && scope != nullptr) {
                if (!rqs_match_host_scope(scope, value, master_hgroup_list, false)) {
                   ret = false;
                }
@@ -1389,7 +1389,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
             DPRINTF("matching users or hosts with %s\n", value);
             /* inverse logic because of xscope */
             ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, nullptr, group, true) ? false: true;
-            if (ret == true && scope != nullptr) {
+            if (ret && scope != nullptr) {
                if (!rqs_match_user_host_scope(scope, filter_type, value, master_userset_list, nullptr, group, false)) {
                   ret = false;
                }

@@ -597,7 +597,7 @@ static bool is_host_global(const lListElem *rule)
 static bool is_expand(const lListElem *rule, int nm)
 {
    lListElem *filter = lGetObject(rule, nm);
-   if (filter && lGetBool(filter, RQRF_expand) == true)
+   if (filter && lGetBool(filter, RQRF_expand))
       return true;
    else
       return false;
@@ -738,7 +738,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
          DRETURN(false);
       }
 
-      if (lGetBool(lGetObject(rule, RQR_filter_queues), RQRF_expand) == true) {
+      if (lGetBool(lGetObject(rule, RQR_filter_queues), RQRF_expand)) {
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, queue_name, CTI_Type);
          DPRINTF("QUEUE: resource quota set %s deny job execution in queue %s\n", sge_dstring_get_string(rule_name), queue_name);
       } else {
@@ -757,7 +757,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
          DRETURN(false);
       }
 
-      if (lGetBool(lGetObject(rule, RQR_filter_hosts), RQRF_expand) == true) {
+      if (lGetBool(lGetObject(rule, RQR_filter_hosts), RQRF_expand)) {
          lAddElemStr(&(a->skip_host_list), CTI_name, host_name, CTI_Type);
          DPRINTF("HOST: resource quota set %s deny job execution at host %s\n", sge_dstring_get_string(rule_name), host_name);
       } else {
@@ -843,7 +843,7 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
             break;
          }
       }
-      if (ret == true) {
+      if (ret) {
          break;
       }
    }
@@ -1328,7 +1328,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             lSetDouble(raw_centry, CE_doubleval, request);
             job_centry = raw_centry; 
             DPRINTF("using default request for %s!\n", lGetString(raw_centry, CE_name));
-         } else if (is_forced == true) {
+         } else if (is_forced) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                            SCHEDD_INFO_NOTREQFORCEDRES); 
             ret = DISPATCH_NEVER_CAT;

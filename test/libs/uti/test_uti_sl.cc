@@ -781,6 +781,6 @@ int main(int argc, char *argv[]) {
    ret &= test_dechain_before_after();
    ret &= test_for_each_ep();
    ret &= test_mt_support();
-   DRETURN(ret == true ? 0 : 1);
+   DRETURN(ret ? 0 : 1);
 }
 

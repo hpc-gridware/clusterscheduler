@@ -214,7 +214,7 @@ void *do_sleep(void *p) {
 
    dstring error = DSTRING_INIT;
 
-/*   if (thread_prof_active_by_id(pthread_self()) == true ) {*/
+/*   if (thread_prof_active_by_id(pthread_self())) {*/
 
    if (!prof_start(SGE_PROF_OTHER, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
@@ -267,7 +267,7 @@ void *do_sleep(void *p) {
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    printf("%s\n", prof_get_info_string(SGE_PROF_ALL, false, &error));
 
-   /*if (thread_prof_active_by_id(pthread_self()) == true ) {*/
+   /*if (thread_prof_active_by_id(pthread_self())) {*/
    if (!prof_stop(SGE_PROF_CUSTOM1, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
       fflush(stderr);
@@ -302,7 +302,7 @@ void *do_calc(void *p) {
    dstring error = DSTRING_INIT;
 
 
-   /*if (thread_prof_active_by_id(pthread_self()) == true ) {   */
+   /*if (thread_prof_active_by_id(pthread_self())) {   */
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
       fflush(stderr);
@@ -360,7 +360,7 @@ void *do_calc2(void *p) {
    int x, y;
    dstring error = DSTRING_INIT;
 
-   /*if (thread_prof_active_by_id(pthread_self()) == true ) {*/
+   /*if (thread_prof_active_by_id(pthread_self())) {*/
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
       fflush(stderr);
@@ -410,7 +410,7 @@ void *do_malloc(void *p) {
    int i;
    dstring error = DSTRING_INIT;
 
-   /*if (thread_prof_active_by_id(pthread_self()) == true ) {*/
+   /*if (thread_prof_active_by_id(pthread_self())) {*/
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
       fflush(stderr);

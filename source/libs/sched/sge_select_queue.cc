@@ -2358,7 +2358,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
 
          name = lGetString(tep, CE_name);
 
-         if ( first == true ) {
+         if (first) {
             first = false;
          } else {
             strncat(reason, "\n\t", reason_size);

@@ -1145,7 +1145,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             bool is_array_job = job_is_array(jep);
 
             if ((is_array_job == false && mconf_get_old_reschedule_behavior() == false) ||
-                (is_array_job == true && mconf_get_old_reschedule_behavior_array_job() == false)) {
+                (is_array_job && mconf_get_old_reschedule_behavior_array_job() == false)) {
                lSetUlong(jep, JB_submission_time, now);
                sge_event_spool(&answer_list, now, sgeE_JOB_MOD, jobid, jataskid,
                                nullptr, nullptr, session, jep, jatep, nullptr, true, true);

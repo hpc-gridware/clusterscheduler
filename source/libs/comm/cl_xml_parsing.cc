@@ -428,7 +428,7 @@ int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com
                }
 
                buffer[buf_pointer] = '\0';
-               if (closing_tag == true && strcmp(charptr, "gmsh") == 0) {
+               if (closing_tag && strcmp(charptr, "gmsh") == 0) {
                   if (*used_buffer_length == 0) {
                      *used_buffer_length = buf_pointer + 1;
                   }
@@ -501,7 +501,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -863,7 +863,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1119,7 +1119,7 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1320,7 +1320,7 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1495,7 +1495,7 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1579,7 +1579,7 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1641,7 +1641,7 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }
@@ -1704,7 +1704,7 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
          case '=':
             if (in_tag == 1) {
                if (version_begin == 0 &&
-                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length) == true) {
+                   cl_xml_parse_is_version((const char *) buffer, tag_begin, buffer_length)) {
                   version_begin = buf_pointer + 2;
                }
             }

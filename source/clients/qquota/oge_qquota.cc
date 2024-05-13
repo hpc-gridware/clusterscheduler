@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 
       /* arguments from SGE_ROOT/common/sge_qquota file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QQUOTA_FILE);
-      if (sge_parse_from_file_qquota(sge_dstring_get_string(&file), &pcmdline, &alp) == true) {
+      if (sge_parse_from_file_qquota(sge_dstring_get_string(&file), &pcmdline, &alp)) {
          /* arguments from $HOME/.qquota file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_QQUOTA_FILE, user, &alp)) {
             sge_parse_from_file_qquota(sge_dstring_get_string(&file), &pcmdline, &alp);

@@ -420,7 +420,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
          }
       }
 
-      if (created_list == true && ret == false) {
+      if (created_list && ret == false) {
          lFreeList(this_list);
       }
    } 

@@ -266,12 +266,12 @@ sge_scheduler_initialize(lList **answer_list) {
        * otherwise we have to start the thread due to a manual request through GDI.
        * There is no option. We have to start it.
        */
-      if (Master_Scheduler.use_bootstrap == true) {
+      if (Master_Scheduler.use_bootstrap) {
          start_thread = ((bootstrap_get_scheduler_thread_count() > 0) ? true : false);
          Master_Scheduler.use_bootstrap = false;
       }
 
-      if (start_thread == true) {
+      if (start_thread) {
          cl_thread_settings_t *dummy_thread_p = nullptr;
 
          /*
@@ -576,7 +576,7 @@ sge_scheduler_main(void *arg) {
       /* If we lost connection we have to register again */
       if (evc->ec_need_new_registration(evc)) {
          lFreeList(&event_list);
-         if (evc->ec_register(evc, false, nullptr) == true) {
+         if (evc->ec_register(evc, false, nullptr)) {
             DPRINTF("re-registered at event master!\n");
          }
       }
@@ -596,7 +596,7 @@ sge_scheduler_main(void *arg) {
       }
 
       /* if we actually got events, start the scheduling run and further event processing */
-      if (handled_events == true) {
+      if (handled_events) {
          lList *answer_list = nullptr;
          scheduler_all_data_t copy;
          const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);

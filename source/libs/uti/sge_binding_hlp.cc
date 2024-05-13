@@ -919,7 +919,7 @@ check_explicit_binding_string(const char *expl, int amount,
    }
 
    /* skip "explicit:" */
-   if (with_explicit_prefix == true) {
+   if (with_explicit_prefix) {
       pair = sge_strtok_r(expl, ":", &context);
       if (pair == nullptr) {
          success = false;
@@ -927,8 +927,8 @@ check_explicit_binding_string(const char *expl, int amount,
    }
 
    /* get pointer to first pair */
-   if (success == true) {
-      if (with_explicit_prefix == true) {
+   if (success) {
+      if (with_explicit_prefix) {
          pair = sge_strtok_r(nullptr, ":", &context);
       } else {
          pair = sge_strtok_r(expl, ":", &context);
@@ -939,13 +939,13 @@ check_explicit_binding_string(const char *expl, int amount,
    }
 
    /* store pointer to first <socket,core> pair */
-   if (success == true) {
+   if (success) {
       pairs[pair_number] = pair;
       pair_number++;
    }
 
    /* split string in <socket,core> pairs and store them */
-   while ((success == true) && (pair = sge_strtok_r(nullptr, ":", &context)) != nullptr) {
+   while (success && (pair = sge_strtok_r(nullptr, ":", &context)) != nullptr) {
       if (pair_number > amount) {
          /* found more pairs than expected */
          success = false;
@@ -957,14 +957,14 @@ check_explicit_binding_string(const char *expl, int amount,
    }
 
    /* check if amount of pairs did match */
-   if (success == true && pair_number != amount) {
+   if (success && pair_number != amount) {
       success = false;
    }
 
    /* check if there is a duplicate <socket,core> pair */
-   if (success == true) {
+   if (success) {
       int i, j;
-      for (i = 0; i < amount && success == true; i++) {
+      for (i = 0; i < amount && success; i++) {
          for (j = i + 1; j < amount; j++) {
             if (strcmp(pairs[i], pairs[j]) == 0) {
                /* identical <socket,core> pair found -> illegal */

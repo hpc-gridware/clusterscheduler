@@ -2419,7 +2419,7 @@ FF_DEBUG("detected record_start");
             continue;
          }
 FF_DEBUG("detected record_end");
-         if (instr->record_start_end_newline == true) {
+         if (instr->record_start_end_newline) {
             *token = spool_lex();
          }
          *token = spool_lex();

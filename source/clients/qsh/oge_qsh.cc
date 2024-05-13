@@ -1823,7 +1823,7 @@ int main(int argc, char **argv)
          /* start task via rsh on rshd */
          exit_status = start_client_program(client_name, opts_qrsh, host, port,
             job_dir, utilbin_dir, is_rsh, is_rlogin, nostdin, noshell, sock);
-      } else { /* g_new_interactive_job_support == true */
+      } else { /* g_new_interactive_job_support is true */
          int     ret;
          dstring err_msg = DSTRING_INIT;
 
@@ -2035,7 +2035,7 @@ int main(int argc, char **argv)
                } else {
                   DPRINTF("---- got NO valid socket! ----\n");
                }
-            } else { /* if (g_new_interactive_job_support == true) */
+            } else { /* if (g_new_interactive_job_support is true) */
                int     ret;
                dstring err_msg = DSTRING_INIT;
 
@@ -2198,7 +2198,7 @@ int main(int argc, char **argv)
                 * QMaster didn't already recognize it -> exit.
                 */
                if ((g_new_interactive_job_support == false && is_qlogin)
-                  || (g_new_interactive_job_support == true && is_qlogin && !is_rsh)) {
+                  || (g_new_interactive_job_support && is_qlogin && !is_rsh)) {
                   continue;
                } else {
                   /* qsh: xterm has been started -> exit */   
@@ -2232,7 +2232,7 @@ int main(int argc, char **argv)
             DPRINTF("polling_interval set to %d\n", polling_interval);
          }
       } /* end of while (1) polling */
-      if (g_new_interactive_job_support == true && comm_handle != nullptr) {
+      if (g_new_interactive_job_support && comm_handle != nullptr) {
          dstring err_msg = DSTRING_INIT;
 
          if (force_ijs_server_shutdown(&comm_handle, COMM_CLIENT, &err_msg) != 0) {

@@ -522,7 +522,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
    }
 
    /* after this point we do no longer need pb - free its resources */
-   if (pb_initialized == true) {
+   if (pb_initialized) {
       clear_packbuffer(&pb);
    }
 
@@ -566,7 +566,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
                if (handle != nullptr) {
                   DPRINTF("TEST_2372_OUTPUT: GDI_TIMEOUT=" sge_U32CFormat "\n", sge_u32c(handle->synchron_receive_timeout));
                }
-               if (do_ping == true) {
+               if (do_ping) {
                   DPRINTF("TEST_2372_OUTPUT: CL_PING=TRUE\n");
                   cl_commlib_get_endpoint_status(handle, rcv_host, rcv_commproc, id, &cl_endpoint_status);
                   if (cl_endpoint_status != nullptr) {

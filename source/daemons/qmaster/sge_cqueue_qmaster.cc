@@ -434,12 +434,12 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
              * There are two situations which make it absolutely necessary
              * to have a look on ALL attributes:
              *
-             * 1) refresh_all_values == true
+             * 1) refresh_all_values is true
              *    The hostlist of "cqueue" changed. As a result it
              *    might be possible that a value for an attribute is
              *    now ambiguous. 
              * 
-             * 2) is_ambiguous == true
+             * 2) is_ambiguous is true
              *    The qinstance is currently in the ambiguous state.
              *    It is not enough to test only modified attributes if
              *    they are nonambigous. It is also necesssary to check

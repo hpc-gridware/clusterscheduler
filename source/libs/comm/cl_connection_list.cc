@@ -62,7 +62,7 @@ int cl_connection_list_setup(cl_raw_list_t **list_p, const char *list_name, int 
    }
 
    /* create hashtable */
-   if (create_hash == true) {
+   if (create_hash) {
       ldata->r_ht = sge_htable_create(4, dup_func_string, hash_func_string, hash_compare_string);
       if (ldata->r_ht == nullptr) {
          cl_raw_list_cleanup(list_p);
@@ -277,7 +277,7 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
                connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                CL_LOG(CL_LOG_INFO, "setting connection state to close this connection");
             } else {
-               if (connection->connection_close_time.tv_sec <= now.tv_sec || timeout_flag == true) {
+               if (connection->connection_close_time.tv_sec <= now.tv_sec || timeout_flag) {
                   CL_LOG(CL_LOG_ERROR, "close connection timeout - shutdown of connection");
                   connection->connection_state = CL_CLOSING;
                   connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
@@ -298,7 +298,7 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
                case CL_CM_CT_MESSAGE: {
                   CL_LOG(CL_LOG_WARNING, "got connection transfer timeout ...");
                   if (connection->connection_state == CL_CONNECTED) {
-                     if (connection->was_opened == true) {
+                     if (connection->was_opened) {
                         CL_LOG(CL_LOG_WARNING, "client connection ignores connection transfer timeout");
                      } else {
                         CL_LOG_STR_STR_INT(CL_LOG_WARNING, "connection timeout! Shutdown connection to:",
@@ -355,7 +355,7 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
             ret_val = cl_com_connection_complete_shutdown(connection);
             if (ret_val != CL_RETVAL_OK) {
                if (connection->connection_close_time.tv_sec <= now.tv_sec ||
-                   timeout_flag == true) {
+                   timeout_flag) {
                   CL_LOG(CL_LOG_ERROR, "close connection timeout - skipping another connection shutdown");
                   connection->connection_sub_state = CL_COM_SHUTDOWN_DONE;
                } else {
@@ -371,7 +371,7 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
             connection->connection_sub_state = CL_COM_SHUTDOWN_DONE;
          }
 
-         if (connection->is_read_selected == true || connection->is_write_selected == true) {
+         if (connection->is_read_selected || connection->is_write_selected) {
             /* 
              * If a connection is in selected read/write mode we should not delete the
              * connection since some functions have a cached connection pointer to this 

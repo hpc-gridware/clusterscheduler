@@ -1309,7 +1309,7 @@ prof_get_info_string(prof_level level, bool with_sub, dstring *error) {
          utilization = busy > 0 ? (utime + stime) / busy * 100 : 0;
 
          for (i = SGE_PROF_OTHER; i < SGE_PROF_ALL; i++) {
-            if (theInfo[thread_num][i].name != nullptr && theInfo[thread_num][i].ever_started == true) {
+            if (theInfo[thread_num][i].name != nullptr && theInfo[thread_num][i].ever_started) {
                _prof_get_info_string((prof_level)i, &theInfo[thread_num][SGE_PROF_ALL].info_string, with_sub, error);
             }
          }

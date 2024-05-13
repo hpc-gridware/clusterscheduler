@@ -242,7 +242,7 @@ namespace oge {
 
          /* get <socket>,<core> pairs out of binding string */
          if (binding_explicit_extract_sockets_cores(binding, &sockets, &nr_of_sockets,
-                                                    &cores, &nr_of_cores) == true) {
+                                                    &cores, &nr_of_cores)) {
 
             if (nr_of_sockets == 0 && nr_of_cores == 0) {
                /* no cores and no sockets are found */
@@ -251,7 +251,7 @@ namespace oge {
                shepherd_trace("do_core_binding: explicit: unequal amount of specified sockets and cores");
             } else {
                /* do core binding according the <socket>,<core> tuples */
-               if (binding_explicit(sockets, nr_of_sockets, cores, nr_of_cores, type) == true) {
+               if (binding_explicit(sockets, nr_of_sockets, cores, nr_of_cores, type)) {
                   shepherd_trace("do_core_binding: explicit: binding done");
                } else {
                   shepherd_trace("do_core_binding: explicit: no core binding done");
@@ -619,7 +619,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       /* n := take every n-th core */
       bool bound = false;
 
-      if (topo_has_core_binding() == true) {
+      if (topo_has_core_binding()) {
          /* bitmask for processors to turn on and off */
          hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
@@ -823,7 +823,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       }
 
       /* do only on linux when we have core binding feature in kernel */
-      if (topo_has_core_binding() == true) {
+      if (topo_has_core_binding()) {
 
          if (topo_has_topology_information()) {
             /* bitmask for processors to turn on and off */

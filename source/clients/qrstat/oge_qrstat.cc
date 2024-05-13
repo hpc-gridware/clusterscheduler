@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
 
       /* arguments from SGE_ROOT/common/sge_qrstat file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QRSTAT_FILE);
-      if (sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, &answer_list) == true) {
+      if (sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, &answer_list)) {
          /* arguments from $HOME/.sge_qrstat file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_QRSTAT_FILE, user, &answer_list)) {
             sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, &answer_list);

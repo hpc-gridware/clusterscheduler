@@ -210,7 +210,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          access to /dev/something */
       if (g_new_interactive_job_support == false) {
          target_user = "root";
-      } else { /* g_new_interactive_job_support == true */
+      } else { /* g_new_interactive_job_support is true */
          /*
           * Make sure target_user is nullptr and will thus be
           * set to get_conf_val("job_owner") below.
@@ -349,7 +349,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        */
       ret = sge_set_uid_gid_addgrp(target_user, intermediate_user,
                0, 0, 0, err_str, sizeof(err_str), use_qsub_gid, gid, skip_silently);
-   } else { /* if (!is_qlogin_starter || g_new_interactive_job_support == true) */
+   } else { /* if (!is_qlogin_starter || g_new_interactive_job_support is true) */
       /*
        * In not-interactive jobs and in the new IJS we must set the 
        * additional group id here, because there is no custum rshd that will
@@ -402,7 +402,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        * stdout and stderr open, they are already connected to the pty 
        * and/or the pipes.
        */
-      if ((g_new_interactive_job_support == true && is_qlogin_starter)
+      if ((g_new_interactive_job_support && is_qlogin_starter)
             || (g_new_interactive_job_support == false && pty == 1)) {
          i=3;
       } else {
@@ -468,7 +468,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          }
       }
    } else { /* the job itself */
-      if (!is_rsh && g_new_interactive_job_support == true) {
+      if (!is_rsh && g_new_interactive_job_support) {
          shell_path = strdup(pw->pw_shell);
          sge_chdir(pw->pw_dir);
       } else {
@@ -1377,7 +1377,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          }
 #endif
          qlogin_starter(shepherd_job_dir, args[1], sge_get_environment());
-      } else { /* g_new_interactive_job_support == true */
+      } else { /* g_new_interactive_job_support is true */
          if (is_rsh == false) { /* qlogin, qrsh (without command) */
             start_qlogin_job(shell_path);
          } else { /* qrsh <command> */

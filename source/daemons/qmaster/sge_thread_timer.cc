@@ -343,7 +343,7 @@ sge_timer_main(void *arg) {
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),
                            mconf_is_monitor_message());
 
-         if ((Event_Control.next < te->when) || (Event_Control.deleted == true)) {
+         if ((Event_Control.next < te->when) || Event_Control.deleted) {
             DPRINTF("%s: event list changed - next:" sge_u32" --> start over\n", __func__, Event_Control.next);
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);

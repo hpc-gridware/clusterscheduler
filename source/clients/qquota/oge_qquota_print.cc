@@ -152,7 +152,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
 
    ret = get_all_lists(&rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 
-   if (ret == true) {
+   if (ret) {
       const lListElem *rqs = nullptr;
       printed_rules = lCreateList("rule_hash", ST_Type); 
       global_host = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
@@ -623,7 +623,7 @@ static bool qquota_print_out_rule(lListElem *rule, dstring rule_name, const char
    if (report_handler != nullptr) {
       report_handler->report_limit_rule_begin(report_handler, sge_dstring_get_string(&rule_name), alpp);
    } else {
-      if (printheader == true) {
+      if (printheader) {
          printheader = false;
          printf(HEAD_FORMAT, MSG_HEADER_RULE, MSG_HEADER_LIMIT, MSG_HEADER_FILTER);
          printf("--------------------------------------------------------------------------------\n");

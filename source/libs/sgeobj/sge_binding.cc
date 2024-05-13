@@ -244,13 +244,13 @@ bool get_execd_topology(char** topology, int* length)
    /* topology must be a nullptr pointer */
    if (topology != nullptr && (*topology) == nullptr) {
 #if defined(OGE_HWLOC)
-      if (oge::topo_get_topology(topology, length) == true) {
+      if (oge::topo_get_topology(topology, length)) {
          success = true;
       } else {
          success = false;
       }   
 #elif defined(BINDING_SOLARIS) 
-      if (get_topology_solaris(topology, length) == true) {
+      if (get_topology_solaris(topology, length)) {
          success = true;
       } else {
          success = false;
@@ -1040,7 +1040,7 @@ static bool create_pset(const processorid_t* plist, const int length,
       /* empty processor set was created */
    
       /* assign the selected processor to the set */ 
-      for (i = 0; i < length && successful == true; i++) {
+      for (i = 0; i < length && successful; i++) {
 
          /* try to assign processor id to the processor set */
          if (pset_assign(*pset_id, plist[i], nullptr) == -1) {
@@ -1759,7 +1759,7 @@ static int get_amount_of_sockets_from_matrix(const int** matrix, const int lengt
    int* chip_ids  = nullptr;
 
    /* we don't care about the actual chip_ids here */
-   if (get_chip_ids_from_matrix(matrix, length, &chip_ids, &amount) == true) {
+   if (get_chip_ids_from_matrix(matrix, length, &chip_ids, &amount)) {
       sge_free(&chip_ids);
    } else {
       amount = 0;
@@ -2625,7 +2625,7 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
 
    /* 1. Find all free sockets and try to fit the request on them     */
    if (get_free_sockets(tmp_topo_busy, logical_used_topology_length, &sockets, 
-         &sockets_size) == true) {
+         &sockets_size)) {
       
       /* there are free sockets: use them */
       for (i = 0; i < sockets_size && used_cores < amount; i++) {
@@ -2649,7 +2649,7 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
       while (needed_cores > 0) {
          /* get the socket with the most free cores */
          if (get_socket_with_most_free_cores(tmp_topo_busy, logical_used_topology_length,
-               &socket_free) == true) {
+               &socket_free)) {
             
             int accounted_cores = account_cores_on_socket(&tmp_topo_busy, 
                                     logical_used_topology_length, socket_free, 
@@ -2673,7 +2673,7 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
 
    }
 
-   if (possible == true) {
+   if (possible) {
       /* calculate the topology used by the job out of */ 
       create_topology_used_per_job(topo_by_job, topo_by_job_length, 
          logical_used_topology, tmp_topo_busy, logical_used_topology_length);
@@ -2873,7 +2873,7 @@ static bool get_free_sockets(const char* topology, const int topology_length,
          i = j;
 
          /* check if this socket had a core in use */ 
-         if (free == true) {
+         if (free) {
             /* this socket can be used completely */ 
             (*sockets) = (int *) realloc(*sockets, ((*sockets_size)+1)*sizeof(int));
             (*sockets)[(*sockets_size)] = socket_number;

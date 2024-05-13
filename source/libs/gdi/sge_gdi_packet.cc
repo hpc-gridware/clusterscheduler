@@ -456,7 +456,7 @@ sge_gdi_packet_create(lList **answer_list) {
 *     the list of tasks part of "packet". It will be initialized
 *     with the values given by "target" and "command". Pointer
 *     parameters like "lp", "a_list", "condition", and "enumeration"
-*     will either be copied ("do_copy" == true) or they will just be
+*     will either be copied ("do_copy" is true) or they will just be
 *     used as they are. In that case they will direct to nullptr after
 *     the function returns. The memory allocated by the provided
 *     pointer parameters will be released when the task is destroyed

@@ -1561,6 +1561,7 @@ spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
                               MSG_BERKELEY_RUNRECOVERY);
 
       spool_berkeleydb_error_close(info);
+      bdb_set_recover(info, true);
    }
 }
 

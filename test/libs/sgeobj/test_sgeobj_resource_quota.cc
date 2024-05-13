@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
          pos_tests_failed++;
       }
       lFreeElem(&rule);
-      if (positiv_test[i].last == true) {
+      if (positiv_test[i].last) {
          break;
       }
    }
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 
       lFreeElem(&rule);
 
-      if (negativ_test[i].last == true) {
+      if (negativ_test[i].last) {
          break;
       }
   }

@@ -283,7 +283,7 @@ namespace oge {
          if (evc->ec_need_new_registration(evc)) {
             DPRINTF("event mirror thread lost connection to event master thread\n");
             lFreeList(&event_list);
-            if (evc->ec_register(evc, false, nullptr) == true) {
+            if (evc->ec_register(evc, false, nullptr)) {
                DPRINTF("re-registered at event master!\n");
             }
          }
@@ -344,7 +344,7 @@ namespace oge {
             }
 
             // actions if events where processed
-            if (did_handle_events == true) {
+            if (did_handle_events) {
                thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
                sge_monitor_output(&monitor);
             }

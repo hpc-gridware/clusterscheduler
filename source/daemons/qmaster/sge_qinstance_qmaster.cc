@@ -506,7 +506,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                    * TODO: HP: Make sure these two lDiffListUlong() always
                    *           return the results we expect!
                    */
-                  if (do_slotwise_subordinate_lists_differ(old_value, new_value) == true) {
+                  if (do_slotwise_subordinate_lists_differ(old_value, new_value)) {
                      /*
                       * unsuspend all tasks in the whole subtree, new suspends will
                       * be calculated in cqueue_success().

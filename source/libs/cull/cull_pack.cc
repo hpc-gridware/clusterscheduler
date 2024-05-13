@@ -377,7 +377,7 @@ static int cull_unpack_descr(
          u_long32 l;
 
          for (l = 0; l <= n; l++) {
-            dp[l].mt |= (is_reduced == true) ? CULL_IS_REDUCED : 0;
+            dp[l].mt |= is_reduced ? CULL_IS_REDUCED : 0;
          }
       }
    }

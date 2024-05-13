@@ -239,6 +239,6 @@ test_mt_consumer_producer(void) {
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sl");
    bool ret = test_mt_consumer_producer();
-   DRETURN(ret == true ? 0 : 1);
+   DRETURN(ret ? 0 : 1);
 }
 

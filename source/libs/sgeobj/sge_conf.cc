@@ -818,7 +818,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          memory allocation/deallocation 
          requires MALLOC_TRACE in environment (see mtrace(3) under Linux) */
       if (enable_mtrace != mtrace_before) {
-         if (enable_mtrace == true) {
+         if (enable_mtrace) {
             DPRINTF("ENABLE_MTRACE=true ---> mtrace()\n");
             mtrace();
          } else {
