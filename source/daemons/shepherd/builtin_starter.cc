@@ -953,8 +953,7 @@ char** sge_get_environment()
     * optional. */
    if (!inherit_env()) {
       return shepherd_env;
-   }
-   else {
+   } else {
       return environ;
    }
 }
@@ -993,8 +992,7 @@ int sge_set_env_value(const char *name, const char* value)
 
       if (shepherd_env_index < 0) {
          setup_environment();
-      }
-      else if(shepherd_env_index < MAX_NUMBER_OF_ENV_VARS) {
+      } else if (shepherd_env_index < MAX_NUMBER_OF_ENV_VARS) {
          /* entry = name + value + '=' + '\0' */
          entry_size = strlen(name) + strlen(value) + 2;
          entry = sge_malloc(sizeof (char) * entry_size);
@@ -1058,8 +1056,7 @@ const char *sge_get_env_value(const char *name)
             }
          }
       }
-   }
-   else {
+   } else {
       ret = sge_getenv (name);
    }
    
@@ -1433,8 +1430,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
             environ = sge_get_environment();
             execvp(filename, args);
             environ = tmp;
-         }
-         else {
+         } else {
             execvp(filename, args);
          }
 
@@ -1653,9 +1649,8 @@ static bool inherit_env()
       char *inherit = search_conf_val("inherit_env");
       
       if (inherit != nullptr) {
-         inherit_environ = (strcmp(inherit, "1") == 0);
-      }
-      else {
+         inherit_environ = (strcmp(inherit, "1") == 0 ? 1 : 0);
+      } else {
          /* This should match the default set in sgeobj/sge_conf.c. */
          inherit_environ = true;
       }

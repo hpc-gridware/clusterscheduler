@@ -76,9 +76,8 @@ sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t uid, gi
     */
    /* Flawfinder: ignore */
    if (chown(tmpdir, uid, gid) != 0) {
-      dstring ds = DSTRING_INIT;
+      DSTRING_STATIC(ds, MAX_STRING_SIZE);
       ERROR(MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds));
-      sge_dstring_free(&ds);
       unlink(tmpdir);
       DRETURN(nullptr);
    }

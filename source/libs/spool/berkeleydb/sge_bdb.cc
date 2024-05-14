@@ -198,11 +198,9 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
 
    /* continue only, if env isn't initialized yet */
    if (ret && env == nullptr) {
-      int flags = 0;
-
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      dbret = db_env_create(&env, flags);
-      PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
+      dbret = db_env_create(&env, 0);
+      PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO)
       if (dbret != 0) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
@@ -233,6 +231,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
           * be atomic, isolated and the database will be consistent at any time.
           */
          if (ret) {
+            // @todo reason why shadowd_migrate fails for me on nfsv4?
             dbret = env->set_flags(env, DB_TXN_WRITE_NOSYNC, 1);
             if (dbret != 0) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -324,8 +323,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
          }
 
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-         dbret = env->open(env, path, flags,
-                           S_IRUSR | S_IWUSR);
+         dbret = env->open(env, path, flags, S_IRUSR | S_IWUSR);
          PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          if (dbret != 0){
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
