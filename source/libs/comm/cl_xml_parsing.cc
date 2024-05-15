@@ -252,10 +252,10 @@ int cl_com_transformString2XML(const char *input, char **output) {
          *output = (char *)realloc(*output, malloced_size + 1);
       }
 
-      if (!found) {
-         (*output)[used] = input[i];
+      if (found) {
+         sge_strlcpy((char *) &(*output)[used], cl_com_sequence_array[s].sequence, add_length + 1);
       } else {
-         sge_strlcpy((char *) &(*output)[used], cl_com_sequence_array[s].sequence, add_length);
+         (*output)[used] = input[i];
       }
       used += add_length;
    }

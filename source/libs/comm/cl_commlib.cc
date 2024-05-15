@@ -3456,7 +3456,7 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t *connection) {
                   cl_com_handle_t *handle = connection->handler;
                   const char *application_info = "not available";
 
-                  /* we force an statistic update for qping client */
+                  /* we force a statistic update for qping client */
                   if (connection->remote != nullptr && connection->remote->comp_name != nullptr) {
                      if (strcmp(connection->remote->comp_name, "qping") == 0) {
                         cl_commlib_calculate_statistic(handle, true, 0);

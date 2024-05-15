@@ -115,7 +115,6 @@ static void init_sig_action_and_mask();
 *******************************************************************************/
 unsigned long
 sge_qmaster_application_status(char **info_message) {
-
    return sge_monitor_status(info_message, mconf_get_monitor_time());
 }
 
