@@ -65,11 +65,9 @@
 
 #define MSG_BERKELEY_DATABASEDIRDOESNTEXIST_S         _MESSAGE(70101, _("database directory " SFN " doesn't exist"))
 #define MSG_BERKELEY_COULDNTCREATEENVIRONMENT_IS      _MESSAGE(70102, _("couldn't create database environment: (%d) " SFN))
-#define MSG_BERKELEY_COULDNTOPENENVIRONMENT_SSIS      _MESSAGE(70103, _("couldn't open database environment for server " SFQ ", directory " SFQ ": (%d) " SFN))
+#define MSG_BERKELEY_COULDNTOPENENVIRONMENT_SIS      _MESSAGE(70103, _("couldn't open database environment in directory " SFQ ": (%d) " SFN))
 #define MSG_BERKELEY_COULDNTCLOSEENVIRONMENT_SIS      _MESSAGE(70104, _("couldn't close database environment: " SFN ": (%d) " SFN))
 #define MSG_BERKELEY_COULDNTESETUPLOCKDETECTION_IS    _MESSAGE(70105, _("couldn't setup deadlock detection: (%d) " SFN))
-#define MSG_BERKELEY_COULDNTESETRPCSERVER_IS          _MESSAGE(70106, _("couldn't set rpc server in database environment: (%d) " SFN))
-#define MSG_BERKELEY_CONNECTION_LOST_SS               _MESSAGE(70107, _("connection to rpc server " SFQ ", database " SFQ " lost. Freeing all resources to prepare for a reconnect."))
 #define MSG_BERKELEY_RUNRECOVERY                      _MESSAGE(70108, _("Corrupted database detected. Freeing all resources to prepare for a reconnect with recovery."))
 #define MSG_BERKELEY_COULDNTSETLOCKERS_IS             _MESSAGE(70109, _("couldn't set maximum number of lockers: (%d) " SFN))
 #define MSG_BERKELEY_COULDNTSETOBJECTS_IS             _MESSAGE(70110, _("couldn't set maximum number of locked objects: (%d) " SFN))
@@ -77,7 +75,6 @@
 #define MSG_BERKELEY_CANNOTCREATECURSOR_IS            _MESSAGE(70112, _("cannot create database cursor: (%d) " SFN))
 #define MSG_BERKELEY_CANTSETENVFLAGS_IS               _MESSAGE(70113, _("cannot set environment flags: (%d) " SFN))
 #define MSG_BERKELEY_CANTSETENVCACHE_IS               _MESSAGE(70114, _("cannot set environment cache size: (%d) " SFN))
-#define MSG_BERKELEY_RPCSERVERLOSTHOME_SS             _MESSAGE(70115, _("rpc server " SFQ " reported lost databasedirectory " SFQ ". Freeing all resources to prepare for a reconnect."))
 
 #define MSG_BERKELEY_DBNOTINITIALIZED                 _MESSAGE(70200, _("database not initialized"))
 

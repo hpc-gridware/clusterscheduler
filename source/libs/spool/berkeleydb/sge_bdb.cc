@@ -328,8 +328,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
          if (dbret != 0){
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
-                                    MSG_BERKELEY_COULDNTOPENENVIRONMENT_SSIS,
-                                    "local spooling",
+                                    MSG_BERKELEY_COULDNTOPENENVIRONMENT_SIS,
                                     path, dbret, db_strerror(dbret));
             ret = false;
             env = nullptr;
@@ -492,8 +491,6 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
          /* close open database */
          db = bdb_get_db(info, (bdb_database)i);
          if (db != nullptr) {
-            int dbret;
-
             PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
             dbret = db->close(db, 0);
             PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
@@ -1527,33 +1524,7 @@ static void
 spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info, 
                                   int bdb_errno)
 {
-#if 0
-   /* we lost the connection to a RPC server */
-   if (bdb_errno == DB_NOSERVER || bdb_errno == DB_NOSERVER_ID) {
-      const char *server = bdb_get_server(info);
-      const char *path   = bdb_get_path(info);
-
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
-                              MSG_BERKELEY_CONNECTION_LOST_SS,
-                              server != nullptr ? server : "no server defined",
-                              path != nullptr ? path : "no database path defined");
-
-      spool_berkeleydb_error_close(info);
-   } else if (bdb_errno == DB_NOSERVER_HOME) {
-      const char *server = bdb_get_server(info);
-      const char *path   = bdb_get_path(info);
-
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
-                              MSG_BERKELEY_RPCSERVERLOSTHOME_SS,
-                              server != nullptr ? server : "no server defined",
-                              path != nullptr ? path : "no database path defined");
-
-      spool_berkeleydb_error_close(info);
-   } else
-#endif
-      if (bdb_errno == DB_RUNRECOVERY) {
+   if (bdb_errno == DB_RUNRECOVERY) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_BERKELEY_RUNRECOVERY);
