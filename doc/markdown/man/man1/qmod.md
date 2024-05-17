@@ -53,17 +53,17 @@ Prints a listing of all options.
 ## -r  
 **Note:** Deprecated, may be removed in future release. Please use the `-rj` or `-rq` switch instead.  
 If applied to queues, reschedules all jobs currently running in this queue. If applied to running jobs, 
-reschedules the jobs. Requires root or manager privileges. In order for a job to be rescheduled, it or the
+reschedules the jobs. Requires manager or operator privileges. In order for a job to be rescheduled, it or the
 queue in which it is executing must have the rerun flag activated (see `-r` option in the qsub(1) man page and 
 the *rerun* option in the xxqs_name_sxx_queue_conf(5) man page for more information). Additional restrictions
 apply for parallel and checkpointing jobs. (See the *reschedule_unknown* description in the xxqs_name_sxx_conf(5) 
 man page for details).
 
 ## -rj  
-If applied to running jobs, reschedules the jobs. Requires root/manager privileges.
+If applied to running jobs, reschedules the jobs. Requires manager/operator privileges.
 
 ## -rq  
-If applied to queues, reschedules all jobs currently running in this queue. Requires root/manager privileges.
+If applied to queues, reschedules all jobs currently running in this queue. Requires manager/operator privileges.
 
 ## -s  
 **Note:** Deprecated, may be removed in future release. Please use the`-sj` or `-sq` switch instead.  

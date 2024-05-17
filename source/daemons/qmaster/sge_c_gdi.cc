@@ -308,10 +308,34 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
       case SGE_GDI_MOD:
       case SGE_GDI_COPY:
       case SGE_GDI_REPLACE:
-      case SGE_GDI_TRIGGER:
       case SGE_GDI_DEL: {
          if (!sge_chck_mod_perm_user(&(task->answer_list), task->target, packet->user)) {
             DRETURN(false);
+         }
+         if (!sge_chck_mod_perm_host(&(task->answer_list), task->target, packet->host, packet->commproc)) {
+            DRETURN(false);
+         }
+         DRETURN(true);
+      }
+      case SGE_GDI_TRIGGER:
+      {
+         const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+         const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+
+         // operators are allowed to trigger rescheduling requests
+         // other trigger requests must have been initiated by a manager
+         if (task->target == SGE_CQ_LIST) {
+            if (!manop_is_operator(packet->user, master_manager_list, master_operator_list)) {
+               ERROR(MSG_SGETEXT_MUSTBEOPERATOR_S, packet->user);
+               answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
+               DRETURN(false);
+            }
+         } else {
+            if (!manop_is_manager(packet->user, master_manager_list)) {
+               ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
+               answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
+               DRETURN(false);
+            }
          }
          if (!sge_chck_mod_perm_host(&(task->answer_list), task->target, packet->host, packet->commproc)) {
             DRETURN(false);

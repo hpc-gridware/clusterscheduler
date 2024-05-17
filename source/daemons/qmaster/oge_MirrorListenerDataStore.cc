@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_userset.h"
 
 #include "mir/sge_mirror.h"
 
@@ -67,6 +68,14 @@ namespace oge {
       evc->ec_set_flush(evc, sgeE_EXECHOST_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_EXECHOST_MOD, true, 0);
       evc->ec_set_flush(evc, sgeE_EXECHOST_DEL, true, 0);
+
+      // We need the usernames of ACL lists and the ACL name itself to check if certain operations are allowed
+      lEnumeration *us_what = lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name);
+      sge_mirror_subscribe(evc, SGE_TYPE_USERSET, nullptr, nullptr, nullptr, nullptr, us_what);
+      evc->ec_set_flush(evc, sgeE_USERSET_LIST, true, 0);
+      evc->ec_set_flush(evc, sgeE_USERSET_ADD, true, 0);
+      evc->ec_set_flush(evc, sgeE_USERSET_MOD, true, 0);
+      evc->ec_set_flush(evc, sgeE_USERSET_DEL, true, 0);
 
       evc->ec_set_edtime(evc, 15);
       // no need to call evc->ec_commit(). This is done directly after this method returns.
