@@ -141,9 +141,6 @@ GetCell()
          else
             is_done="true"
          fi
-      elif [ "$BERKELEY" = "install" ]; then
-         SearchForExistingInstallations "bdb"
-         is_done="true"
       elif [ "$DBWRITER" = "install" ]; then
          SearchForExistingInstallations "dbwriter"
          is_done="true"
@@ -332,17 +329,15 @@ SetPermissions()
 
 
 #SetSpoolingOptionsBerkeleyDB()
-# $1 - new default spool_dir or BDB server
+# $1 - new default spool_dir
 SetSpoolingOptionsBerkeleyDB()
 {
    SPOOLING_METHOD=berkeleydb
    SPOOLING_LIB=libspoolb
-   SPOOLING_SERVER=none
    SPOOLING_DIR="spooldb"
    MKDIR="mkdir -p"
    params_ok=0
    if [ "$AUTO" = "true" ]; then
-      SPOOLING_SERVER=$DB_SPOOLING_SERVER
       SPOOLING_DIR="$DB_SPOOLING_DIR"
 
       if [ "$SPOOLING_DIR" = "" ]; then
@@ -351,13 +346,7 @@ SetSpoolingOptionsBerkeleyDB()
          exit 1
       fi
 
-      if [ "$SPOOLING_SERVER" = "" ]; then
-         $INFOTEXT -log "Please enter a Berkeley DB spooling server!"
-         MoveLog
-         exit 1
-      fi
-
-      if [ -d "$SPOOLING_DIR" -a \( "$SPOOLING_SERVER" = "none" -o "$SPOOLING_SERVER" = "" \) ]; then
+      if [ -d "$SPOOLING_DIR" ]; then
          $INFOTEXT -log "The spooling directory [%s] already exists! Exiting installation!" "$SPOOLING_DIR"
          MoveLog
          exit 1 
@@ -417,81 +406,12 @@ SetSpoolingOptionsBerkeleyDB()
           fi
 
       done
-       
-   else
-      if [ "$ARCH" = "darwin" ]; then
-         ret=`ps ax | grep "berkeley_db_svc" | wc -l` 
-      else
-         ret=`ps -efa | grep "berkeley_db_svc" | wc -l` 
-      fi
-      if [ $ret -gt 1 ]; then
-         $INFOTEXT -u "Berkeley DB RPC Server installation"
-         $INFOTEXT "\nWe found a running berkeley db server on this host!"
-         if [ "$AUTO" = "true" ]; then
-               if [ $SPOOLING_SERVER = "none" ]; then
-                  $ECHO
-                  Makedir $SPOOLING_DIR
-                  SPOOLING_ARGS="$SPOOLING_DIR"
-               else
-                  $INFOTEXT -log "We found a running berkeley db server on this host!"
-                  $INFOTEXT -log "Please, check this first! Exiting Installation!"
-                  MoveLog
-                  exit 1
-               fi
-         else                 # $AUTO != true
-            $INFOTEXT "The installation script does not support the configuration of more then one"
-            $INFOTEXT "Berkeley DB on one Berkeley DB RPC host. This has to be done manually."
-            $INFOTEXT "By adding your Berkeley DB spooling directory to the sgebdb rc-script"
-            $INFOTEXT "and restarting the service, your Berkeley DB Server will be able to manage" 
-            $INFOTEXT "more than one database.\n In your sgebdb rc-script you will find a line like: BDBHOMES=\"-h <spool_dir>\""
-            $INFOTEXT "To add your DB, you have to add <your spool_dir> to this line which should"
-            $INFOTEXT "look like this after edit: BDBHOMES=\"-h <spool_dir> -h <your spool_dir>\""
-            $INFOTEXT "... exiting installation now! "
-            exit 1
-         fi 
-      else
-         while [ $params_ok -eq 0 ]; do
-            do_loop="true"
-            while [ $do_loop = "true" ]; do
-               SpoolingQueryChange
-               if [ -d $SPOOLING_DIR ]; then
-                  $INFOTEXT -n -ask "y" "n" -def "n" -auto "$AUTO" "The spooling directory already exists! Do you want to delete it? (y/n) [n] >> "
-                  ret=$?               
-                  if [ "$AUTO" = true ]; then
-                     $INFOTEXT -log "The spooling directory already exists!\n Please remove it or choose any other spooling directory!"
-                     MoveLog
-                     exit 1
-                  fi
- 
-                  if [ $ret = 0 ]; then
-                        RM="rm -r"
-                        ExecuteAsAdmin $RM $SPOOLING_DIR
-                        if [ -d $SPOOLING_DIR ]; then
-                           $INFOTEXT "You are not the owner of this directory. You can't delete it!"
-                        else
-                           do_loop="false"
-                        fi
-                  else
-                     $INFOTEXT -wait "Please hit <ENTER>, to choose any other spooling directory!"
-                     SPOOLING_DIR="spooldb"
-                  fi
-                else
-                   do_loop="false"
-               fi
-            done
-            SpoolingCheckParams
-            params_ok=$?
-         done
-      fi
+
    fi
 
-   if [ "$SPOOLING_SERVER" = "none" ]; then
-      $ECHO
-      Makedir $SPOOLING_DIR
-      SPOOLING_ARGS="$SPOOLING_DIR"
-   else
-      SPOOLING_ARGS="$SPOOLING_SERVER:`basename $SPOOLING_DIR`"
-   fi
+   $ECHO
+   Makedir $SPOOLING_DIR
+   SPOOLING_ARGS="$SPOOLING_DIR"
 }
 
 SetSpoolingOptionsClassic()
@@ -514,15 +434,11 @@ SetSpoolingOptionsDynamic()
          SPOOLING_METHOD="berkeleydb"
       fi
    else
-      if [ "$BERKELEY" = "install" ]; then
-         SPOOLING_METHOD="berkeleydb"
-      else
-         $INFOTEXT -n "Your SGE binaries are compiled to link the spooling libraries\n" \
-                      "during runtime (dynamically). So you can choose between Berkeley DB \n" \
-                      "spooling and Classic spooling method."
-         $INFOTEXT -n "\nPlease choose a spooling method (berkeleydb|classic) [%s] >> " "$suggested_method"
-         SPOOLING_METHOD=`Enter $suggested_method`
-      fi
+      $INFOTEXT -n "Your SGE binaries are compiled to link the spooling libraries\n" \
+                   "during runtime (dynamically). So you can choose between Berkeley DB \n" \
+                   "spooling and Classic spooling method."
+      $INFOTEXT -n "\nPlease choose a spooling method (berkeleydb|classic) [%s] >> " "$suggested_method"
+      SPOOLING_METHOD=`Enter $suggested_method`
    fi
 
    $CLEAR
@@ -2090,18 +2006,6 @@ SetScheddConfig()
    $CLEAR
 }
 
-
-GiveBerkelyHints()
-{
-  $INFOTEXT "If you are using a Berkely DB Server, please add the bdb_checkpoint.sh\n" \
-            "script to your crontab. This script is used for transaction\n" \
-            "checkpointing and cleanup in SGE installations with a\n" \
-            "Berkeley DB RPC Server. You will find this script in:\n" \
-            "$SGE_ROOT/util/\n\n" \
-            "It must be added to the crontab of the user (%s), who runs the\n" \
-            "berkeley_db_svc on the server host. \n\n" \
-            "e.g. * * * * * <full path to scripts> <sge-root dir> <sge-cell> <bdb-dir>\n" $ADMINUSER
-}
 
 #-------------------------------------------------------------------------
 # PortCollision: Is there port collison for service, SGE_QMASTER or

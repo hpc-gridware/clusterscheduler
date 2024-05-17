@@ -90,7 +90,6 @@ START_CLUSTER="false"
 QMASTER="undef"
 EXECD="undef"
 SHADOW="undef"
-BERKELEY="undef"
 SUBMIT="undef"
 TAR="undef"
 FILE="undef"
@@ -181,18 +180,6 @@ while [ $ARGC != 0 ]; do
    -usm)
      SHADOW="uninstall"
      #echo uninstall Shadowhost
-     ;;
-   -db)
-     BERKELEY="install"
-     SPOOLING_SERVER=`hostname`
-     . ./util/install_modules/inst_qmaster.sh
-     . ./util/install_modules/inst_berkeley.sh
-     ;;
-   -udb)
-     BERKELEY="uninstall"
-     SPOOLING_SERVER=`hostname`
-     . ./util/install_modules/inst_qmaster.sh
-     . ./util/install_modules/inst_berkeley.sh
      ;;
    -s)
      #add a submit host and copy ca certs if needed
@@ -369,7 +356,6 @@ if [ "$START_CLUSTER" = "true" ]; then
       exit 2
    fi
    ALL_RC=true
-   ManipulateOneDaemonType "" bdb ""
    ManipulateOneDaemonType "" qmaster ""
    ManipulateOneDaemonType "" execd ""
    exit
@@ -380,7 +366,6 @@ if [ "$UPDATE" = true ]; then
    AUTO=false
    EXECD=undef
    SHADOW=undef
-   BERKELEY=undef
    DBWRITER=undef
    
    LicenseAgreement
@@ -588,11 +573,9 @@ if [ "$POST_UPDATE" = true ]; then
    #Remove all old RC scripts
    ManipulateOneDaemonType "" qmaster "61"
    ManipulateOneDaemonType "" execd "61"
-   ManipulateOneDaemonType "" bdb "61"
    REMOVE_RC=false
    ADD_RC=true
    #Add new rc scripts for whole cluster
-   ManipulateOneDaemonType "" bdb ""
    ManipulateOneDaemonType "" qmaster ""
    ManipulateOneDaemonType "" execd ""
    list=""
@@ -611,40 +594,7 @@ fi
 if [ "$UPDATE_RC" = true ]; then
    ManipulateOneDaemonType "" qmaster "61"
    ManipulateOneDaemonType "" execd "61"
-   ManipulateOneDaemonType "" bdb "61"
    exit
-fi
-
-if [ "$BERKELEY" = "install" ]; then
-
-   is_bdb="true"
-
-   if [ "$AUTO" = "true" ]; then
-      Stdout2Log
-      $INFOTEXT -log "Starting Berkeley DB installation!"
-   fi
-   
-   if [ "$DB_SPOOLING_SERVER" = "" -o "$HOST" = "$DB_SPOOLING_SERVER" -o "$NOREMOTE" = "true" ]; then
-      CheckWhoInstallsSGE
-      ProcessSGERoot
-      GetCell
-      COMMONDIR=$SGE_CELL/common
-      Makedir $SGE_CELL
-      Makedir $COMMONDIR
-      ProcessSGEClusterName "bdb"
-      SetSpoolingOptions
-      AddSGEStartUpScript $euid "bdb"
-      PrepareRPCServerStart
-      GiveBerkelyHints
-   else
-      $INFOTEXT -log "remote berkeley rpc server installation on host %s" $DB_SPOOLING_SERVER
-      echo "cd $SGE_ROOT && ./inst_sge -db -auto $FILE -noremote $SMF_FLAGS" | $SHELL_NAME $DB_SPOOLING_SERVER /bin/sh &
-      sleep 5
-   fi
-
-   MoveLog
-   BERKELEY="undef"
-   is_bdb=""
 fi
 
 if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
@@ -990,35 +940,6 @@ if [ "$EXECD" = "uninstall" ]; then
    fi
 
    exit $uninstall_ret
-fi
-
-if [ $BERKELEY = "uninstall" ]; then
-   is_bdb="true"
-   GetAdminUser
-   
-   if [ "$AUTO" = "true" ]; then
-      Stdout2Log
-      $INFOTEXT -log "Starting berkeley rpc uninstallation!"
-   fi
-   if [ "$DB_SPOOLING_SERVER" = "" -o "$HOST" = "$DB_SPOOLING_SERVER" -o "$NOREMOTE" = "true" ]; then
-      euid=`$SGE_UTILBIN/uidgid -euid`
-      ProcessSGERoot
-      GetCell
-      ADMINUSER=`$SGE_UTILBIN/filestat -owner . 2> /dev/null`
-      #SMF will stop the service on its own in RemoveRCScript
-      if [ "$SGE_ENABLE_SMF" != "true" ]; then
-         ExecuteRPCServerScript stop
-      fi
-      RemoveRcScript $HOST "bdb" $euid
-      DeleteSpoolingDir
-   else
-      $INFOTEXT -log "remote berkeley rpc server uninstallation on host %s" $DB_SPOOLING_SERVER
-      echo "cd $SGE_ROOT && ./inst_sge -udb -auto $FILE -noremote" | $SHELL_NAME $DB_SPOOLING_SERVER /bin/sh
-   fi
-   
-   MoveLog
-   BERKELEY="undef"
-   is_bdb=""
 fi
 
 if [ $QMASTER = "uninstall" ]; then

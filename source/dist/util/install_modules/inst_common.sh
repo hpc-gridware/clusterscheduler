@@ -481,8 +481,6 @@ ErrUsage()
              "   -sm        install shadow host\n" \
              "   -usm       uninstall shadow host\n" \
              "   -s         install submit host(s)\n" \
-             "   -db        install Berkeley DB on seperated spooling server\n" \
-             "   -udb       uninstall Berkeley DB RPC spooling server\n" \
              "   -bup       backup of your configuration\n" \
              "   -rst       restore configuration from backup\n" \
              "   -copycerts copy local certificates to given hosts\n" \
@@ -521,7 +519,6 @@ ErrUsage()
              "   inst_sge -ux -host hostname\n" \
              "                     Uninstalls execd on given execution host\n" \
              "   inst_sge -ux all  Uninstalls all registered execution hosts\n" \
-             "   inst_sge -db      Install a Berkeley DB Server on local host\n" \
              "   inst_sge -sm      Install a Shadow Master Host on local host\n" \
              "   inst_sge -copycerts host or inst_sge -copycerts \"host1 host2\"\n" $myname
 
@@ -746,7 +743,7 @@ AddChangedHost()
 CheckConfigFile()
 {
    CONFIG_FILE=$1
-   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_SERVER DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
+   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
    KNOWN_CONFIG_FILE_ENTRIES_BACKUP="SGE_ROOT SGE_CELL BACKUP_DIR TAR BACKUP_FILE"
    MAX_GID=2147483647 #unsigned int = 32bit - 1
    MIN_GID=100        #from 0 - 100 may be reserved GIDs
@@ -824,11 +821,6 @@ CheckConfigFile()
 
    #do hostname resolving. fetching hostname from config file, try to resolve and
    #and recreate the hostname lists
-   if [ "$DB_SPOOLING_SERVER" != "none" ]; then
-      $INFOTEXT -log "Resolving DB_SPOOLING_SERVER"
-      DB_SPOOLING_SERVER=`ResolveHosts $DB_SPOOLING_SERVER`
-   fi
-
    $INFOTEXT -log "Resolving ADMIN_HOST_LIST"
    ADMIN_HOST_LIST=`ResolveHosts $ADMIN_HOST_LIST`
 
@@ -874,7 +866,7 @@ CheckConfigFile()
    if [ "$QMASTER" = "install" ]; then
       # if we have a bdb server, the cell directory already exists - this is OK.
       # if we have no bdb server, and the cell directory exists, stop the installation.
-      if [ -d "$SGE_ROOT/$SGE_CELL" -a \( -z "$DB_SPOOLING_SERVER" -o "$DB_SPOOLING_SERVER" = "none" \) ]; then
+      if [ -d "$SGE_ROOT/$SGE_CELL" ]; then
          $INFOTEXT -e "Your >CELL_NAME< directory %s already exist!" $SGE_ROOT/$SGE_CELL
          $INFOTEXT -e "The automatic installation stops, if the >SGE_CELL< directory already exists"
          $INFOTEXT -e "to ensure, that existing installations are not overwritten!"
@@ -888,16 +880,11 @@ CheckConfigFile()
          $INFOTEXT -log "Your >SPOOLING_METHOD< entry is wrong, only >berkeleydb< or >classic< is allowed!"
          is_valid="false"
       fi
-      if [ "$SPOOLING_METHOD" = "berkeleydb" -a -z "$DB_SPOOLING_SERVER" ]; then
-         $INFOTEXT -e "Your >DB_SPOOLING_SERVER< entry is wrong, it has to contain the server hostname\nor >none<."
-         $INFOTEXT -log "Your >DB_SPOOLING_SERVER< entry is wrong, it has to contain the server hostname\nor >none<."
-         is_valid="false" 
-      fi
       if [ "$SPOOLING_METHOD" = "berkeleydb" -a -z "$DB_SPOOLING_DIR" ]; then
          $INFOTEXT -e "Your >DB_SPOOLING_DIR< is empty. You have to enter a directory!"
          $INFOTEXT -log "Your >DB_SPOOLING_DIR< is empty. You have to enter a directory!"
          is_valid="false"
-      elif [ "$SPOOLING_METHOD" = "berkeleydb" -a -d "$DB_SPOOLING_DIR" -a "$DB_SPOOLING_SERVER" = "none" ]; then
+      elif [ "$SPOOLING_METHOD" = "berkeleydb" -a -d "$DB_SPOOLING_DIR" ]; then
          $INFOTEXT -e "Your >DB_SPOOLING_DIR< already exists. Please check, if this directory is still"
          $INFOTEXT -e "in use. If you still need this directory, please choose any other!"
          $INFOTEXT -log "Your >DB_SPOOLING_DIR< already exists. Please check, if this directory is still"
@@ -1215,11 +1202,7 @@ CheckWhoInstallsSGE()
    euid=`$SGE_UTILBIN/uidgid -euid`
    if [ $euid != 0 ]; then
       $CLEAR
-      if [ $BERKELEY = "install" ]; then
-         $INFOTEXT -u "\nBerkeley DB - test installation"
-      else
-         $INFOTEXT -u "\nCluster Scheduler - test installation"
-      fi
+      $INFOTEXT -u "\nCluster Scheduler - test installation"
 
       $INFOTEXT "\nYou are installing not as user >root<!\n\n" \
                   "This will allow you to run Cluster Scheduler only under your user id for testing\n" \
@@ -2449,7 +2432,7 @@ MoveLog()
       loghosttype="execd"
    fi
 
-   if [ $EXECD = "uninstall" -o $QMASTER = "uninstall" -o $SHADOW = "uninstall" -o $BERKELEY = "uninstall" ]; then
+   if [ $EXECD = "uninstall" -o $QMASTER = "uninstall" -o $SHADOW = "uninstall" ]; then
       installtype="uninstall"
    else
       installtype="install"
