@@ -22,12 +22,6 @@
 
 cmake_minimum_required(VERSION 3.0...3.27.0)
 
-# adapt to your needs or specify -DCMAKE_INSTALL_PREFIX=<path> !!
-# CMAKE_INSTALL_PREFIX must be set BEFORE project!!
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-   set(CMAKE_INSTALL_PREFIX /opt/sge)
-endif ()
-
 project(
       clusterscheduler
       VERSION 9.0.0
@@ -44,6 +38,12 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# specify -DCMAKE_INSTALL_PREFIX=<path> to change the installation directory
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+   message(STATUS "setting default installation directory to /opt/cs")
+   set(CMAKE_INSTALL_PREFIX "/opt/cs" CACHE STRING "installation directory" FORCE)
+endif ()
 
 # if build type has not been specified then do a Debug build by default
 if (NOT CMAKE_BUILD_TYPE)
