@@ -48,14 +48,16 @@ RUN dnf install -y \
     cmake \
     openssl \
     openssl-devel \
-    jemalloc-devel \
-    hwloc \
-    hwloc-devel \
     && dnf clean all
 
-
+RUN dnf --enablerepo=devel install -y libtirpc-devel && dnf clean all
 RUN dnf --enablerepo=devel install -y doxygen && dnf clean all 
-RUN dnf --enablerepo=epel install -y libdb-devel && dnf clean all
+
+# for cmake -DWITH_OS_3RDPARTY=ON
+# which does not work on Rocky-9 as there is no static libjemalloc
+#RUN dnf install -y jemalloc-devel && dnf clean all
+#RUN dnf install -y hwloc hwloc-devel && dnf clean all
+#RUN dnf --enablerepo=epel install -y libdb-devel && dnf clean all
 
 # Install a specific version of cmake if it is necessary. Here, install cmake 3.27.9 manually if needed.
 # May need to download and compile from source if version is crucial
@@ -70,7 +72,9 @@ RUN cd /tmp && \
     rm -rf /tmp/cmake-3.27.9 /tmp/cmake-3.27.9.tar.gz
 
 # Set work directory
-WORKDIR /clusterscheduler
+WORKDIR /build
+# Mountpoint for source code
+RUN mkdir /clusterscheduler
 
 # Clone the required repositories (uncomment if you need to clone a specific repo)
 #RUN git clone https://github.com/hpc-gridware/clusterscheduler /clusterscheduler

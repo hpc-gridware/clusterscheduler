@@ -46,10 +46,16 @@ RUN zypper --non-interactive install pandoc cmake openssl && zypper clean --all
 RUN zypper --non-interactive install libopenssl-devel && zypper clean --all
 # Skip libdb-5_3-devel for now
 # RUN zypper --non-interactive install libdb-5_3-devel && zypper clean --all
-RUN zypper --non-interactive install jemalloc-devel && zypper clean --all
+RUN zypper --non-interactive install jemalloc-devel jemalloc-devel-static && zypper clean --all
 RUN zypper --non-interactive install hwloc && zypper clean --all
 RUN zypper --non-interactive install hwloc-devel && zypper clean --all
 RUN zypper --non-interactive install gzip && zypper clean --all
+RUN zypper --non-interactive install libtirpc-devel && zypper clean --all
+RUN zypper --non-interactive install rapidjson-devel && zypper clean --all
+RUN zypper --non-interactive install libdb-4_8 libdb-4_8-devel && zypper clean --all
+
+# there is no libudev.so
+RUN (cd /usr/lib64 ; ln -s libudev.so.1 libudev.so)
 
 # Set environment variables for C++ compiler
 ENV CC=gcc
@@ -67,7 +73,9 @@ RUN cd /tmp && \
     rm -rf /tmp/cmake-3.27.9 /tmp/cmake-3.27.9.tar.gz
 
 # Set work directory
-WORKDIR /clusterscheduler
+WORKDIR /build
+# Mountpoint for source code
+RUN mkdir /clusterscheduler
 
 # Define entrypoint for interactions
 ENTRYPOINT ["/bin/bash"]

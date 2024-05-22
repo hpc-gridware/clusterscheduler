@@ -222,7 +222,9 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
       rapidjson::Writer<rapidjson::StringBuffer> *writer = nullptr;
       if (jsonBuffer != nullptr) {
          // we write multiple lines into the buffer, start a new line
-         if (jsonBuffer->GetLength() > 0) {
+         // the current stable version of rapidjson (1.1.0) doesn't have GetLength().
+         // GetSize() gives us the size in characters (not bytes) which is OK as well here
+         if (jsonBuffer->GetSize() > 0) {
             jsonBuffer->Put('\n');
          }
          writer = new rapidjson::Writer<rapidjson::StringBuffer>(*jsonBuffer);

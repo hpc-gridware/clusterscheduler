@@ -70,11 +70,6 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       add_link_options(-pthread -rdynamic)
 
-      # Tumbleweed requires libtirp library only but has old default header
-      if (EXISTS /usr/lib64/libtirpc.so)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-      endif ()
-
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
@@ -110,7 +105,8 @@ function(architecture_specific_settings)
          add_compile_options(-Wno-deprecated-declarations)
       elseif ((OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10)
             OR (OS_ID STREQUAL "tuxedo" AND OS_VERSION EQUAL 22.04)
-            OR (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 22.04))
+            OR (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 22.04)
+            OR (OS_ID STREQUAL "rocky" AND OS_VERSION EQUAL 9.4))
          add_compile_options(-Wno-deprecated-declarations)
       endif ()
 
@@ -132,9 +128,10 @@ function(architecture_specific_settings)
       endif ()
 
       # newer Linuxes require libtirp header and library
-      if (EXISTS /usr/include/tirpc)
+      if (EXISTS /usr/include/tirpc OR EXISTS /usr/lib64/libtirpc.so)
          set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
          set(TIRPC_LIB tirpc PARENT_SCOPE)
+         message(STATUS "using libtirpc")
       endif ()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86")

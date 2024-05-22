@@ -29,6 +29,9 @@ set(SGE_PACKAGE_MANAGER none)
 function(build_third_party 3rdparty_build_path 3rdparty_install_path)
     if (NOT WITH_OS_3RDPARTY)
         include(cmake/CPM.cmake)
+        # cpmaddpackage("gh:Tencent/rapidjson#v1.1.0")
+        # OS-distributions of rapidjson-1.1.0 seem to contain patches - the original one doesn't work
+        # master branch has the required patches
         cpmaddpackage("gh:Tencent/rapidjson#master")
     endif ()
 

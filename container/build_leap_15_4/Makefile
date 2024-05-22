@@ -20,7 +20,7 @@
 
 IMAGE_NAME=clusterscheduler-image-leap-154
 CONTAINER_NAME=clusterscheduler-leap-154
-MOUNT_DIR=$(shell pwd)/../..
+MOUNT_DIR=$(shell pwd)/../../..
 
 .PHONY: build
 build:
@@ -31,6 +31,9 @@ build:
 .PHONY: run
 run:
 	@echo "Running Docker container with parent directory mounted..."
+	@echo "Build OCS: cmake -S /clusterscheduler/clusterscheduler"
+	@echo "Build GCS: cmake -S /clusterscheduler/clusterscheduler -DPROJECT_EXTENSIONS=/clusterscheduler/gcs-extensions"
+	@echo "           -DPROJECT_FEATURES=gcs-extensions"
 	docker run -it --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(IMAGE_NAME)
 
 .PHONY: clean
