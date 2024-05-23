@@ -18,24 +18,43 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
+DOCKER_USER=joga111
+IMAGE_VERSION=1.0
 IMAGE_NAME=clusterscheduler-image-rocky89
 CONTAINER_NAME=clusterscheduler-rocky89
 MOUNT_DIR=$(shell pwd)/../../..
+BUILD_AND_TEST=/clusterscheduler/clusterscheduler/container/build_and_test.sh
 
 .PHONY: build
 build:
 	@echo "Building Docker image..."
-	docker build -t $(IMAGE_NAME) .
+	docker build -t $(DOCKER_USER)/$(IMAGE_NAME) .
+	docker tag $(DOCKER_USER)/$(IMAGE_NAME) $(DOCKER_USER)/$(IMAGE_NAME):$(IMAGE_VERSION)
+	docker tag $(DOCKER_USER)/$(IMAGE_NAME) $(DOCKER_USER)/$(IMAGE_NAME):latest
 
-.PHONY: run
-run:
+.PHONY: push
+push:
+	@echo "Pushing Docker image..."
+	@echo "make sure to have done docker login"
+	docker push -a $(DOCKER_USER)/$(IMAGE_NAME)
+
+.PHONY: interactive
+interactive:
 	@echo "Running Docker container with parent directory mounted..."
 	@echo "Build OCS: cmake -S /clusterscheduler/clusterscheduler"
 	@echo "Build GCS: cmake -S /clusterscheduler/clusterscheduler -DPROJECT_EXTENSIONS=/clusterscheduler/gcs-extensions"
 	@echo "           -DPROJECT_FEATURES=gcs-extensions"
-	docker run -it --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(IMAGE_NAME)
+	docker run -it --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME):latest
+
+.PHONY: ocs
+ocs:
+	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) $(BUILD_AND_TEST) -bashrc
+
+.PHONY: gcs
+gcs:
+	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) $(BUILD_AND_TEST) -bashrc -gcs
 
 .PHONY: clean
 clean:
 	@echo "Removing Docker image..."
-	docker rmi $(IMAGE_NAME)
+	docker rmi $(DOCKER_USER)/$(IMAGE_NAME)

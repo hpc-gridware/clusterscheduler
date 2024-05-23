@@ -67,11 +67,12 @@ RUN cd /tmp && \
 
 # Set work directory
 WORKDIR /build
+
 # Mountpoint for source code
 RUN mkdir /clusterscheduler
 
 # set PATH to gcc-toolset
-RUN echo ". /opt/rh/gcc-toolset-13/enable" >> /root/.bashrc
+RUN echo ". /opt/rh/gcc-toolset-13/enable" >> /etc/bashrc
 
 # Clone the required repositories (uncomment if you need to clone a specific repo)
 #RUN git clone https://github.com/hpc-gridware/clusterscheduler /clusterscheduler
