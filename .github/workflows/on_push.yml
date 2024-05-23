@@ -1,0 +1,21 @@
+name: build-on-push
+run-name: build triggered by ${{ github.actor }}
+on: workflow_dispatch
+#  push:
+#    branches:
+#      - master
+#  pull_request:
+#    branches:
+#      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: joga111/clusterscheduler-image-rocky89:latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: find out our cwd
+        run: echo $PWD ; ls ; ls -l /
+      - name: run build and test script
+        shell: bash
+        run: echo container/build_rocky_8/build_and_test.sh
