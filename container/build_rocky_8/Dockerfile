@@ -40,8 +40,12 @@ RUN dnf install -y openssl-devel && dnf clean all
 RUN dnf install -y git autoconf automake gcc-toolset-13 systemd-devel patchelf && dnf clean all
 RUN dnf install -y libtirpc-devel  && dnf clean all
 
-# for building documentation
-RUN dnf --enablerepo=devel install -y doxygen graphviz pandoc && dnf clean all
+# building documentation
+RUN dnf --enablerepo=devel install -y pandoc texlive texlive-xetex \
+    texlive-ucharcat texlive-tcolorbox texlive-fancyvrb texlive-titlesec && dnf clean all
+
+# for building source code (doxygen) documentation
+RUN dnf --enablerepo=devel install -y doxygen graphviz && dnf clean all
 
 # for testing
 RUN dnf install -y expect tcl gnuplot xterm && dnf clean all

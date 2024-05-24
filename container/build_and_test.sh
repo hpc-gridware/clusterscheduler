@@ -5,6 +5,7 @@
 DO_SOURCE_BASHRC=0
 DO_GCS=0
 DO_BUILD=1
+DO_BUILD_DOC=0
 DO_TARGZ=1
 DO_UNITTEST=1
 DO_INSTALL=1
@@ -27,6 +28,7 @@ Usage()
    echo "   Options:"
    echo "   -h          print this help"
    echo "   -bashrc     source /root/.bashrc"
+   echo "   -doc        also build documentation"
    echo "   -gcs        build Cluster Scheduler with Gridware extensions"
    exit $1
 }
@@ -38,11 +40,14 @@ ParseArgs()
          -h)
             Usage 0
             ;;
-         -gcs)
-            DO_GCS=1
-            ;;
          -bashrc)
             DO_SOURCE_BASHRC=1
+            ;;
+         -doc)
+            DO_BUILD_DOC=1
+            ;;
+         -gcs)
+            DO_GCS=1
             ;;
           *)
             Usage 1
@@ -77,6 +82,11 @@ echo $CMAKE_OPTIONS
 
 if [ $DO_BUILD -ne 0 ]; then
    echo "Building Cluster Scheduler"
+
+   if [ $DO_BUILD_DOC -ne 0 ]; then
+      CMAKE_OPTIONS="$CMAKE_OPTIONS -DINSTALL_SGE_DOC=ON"
+   fi
+
    cd /build
    cmake $CMAKE_OPTIONS
    if [ $? -ne 0 ]; then
