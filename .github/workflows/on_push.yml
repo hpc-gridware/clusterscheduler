@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: joga111/clusterscheduler-image-rocky89:latest
+    container: hpcgridware/clusterscheduler-image-rocky89:latest
     steps:
       - name: checkout
         uses: actions/checkout@v4

@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-DOCKER_USER=joga111
+DOCKER_USER=hpcgridware
 IMAGE_VERSION=1.0
 IMAGE_NAME=clusterscheduler-image-rocky89
 CONTAINER_NAME=clusterscheduler-rocky89
