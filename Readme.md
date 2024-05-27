@@ -77,6 +77,17 @@ commercial support, then get in touch! We can't wait to hear from you!
 
 ## License
 
-SISSL v2 and Apache v2
+The original files contributed by Sun Microsystems are licensed under
+
+* [Sun Industry Standards Source License v1.2](https://github.com/hpc-gridware/clusterscheduler/blob/master/License_SISSL_v1-2.txt)
+
+Newer contributions from HPC-Gridware GmbH (and others like Univa Inc. or individual contributors) are licensed under
+
+* [Apache License v2.0](https://github.com/hpc-gridware/clusterscheduler/blob/master/License_APACHE_v2-0.txt)
+
+Distribution packages might contain support for 3rd-party tools and libraries. License Information for corresponding
+components is available under
+
+* [3rd Party License Information](https://github.com/hpc-gridware/clusterscheduler/blob/master/dist/3rd_party/3rd_party_licscopyrights.md)
 
 There is NO WARRANTY, to the extent permitted by law.
