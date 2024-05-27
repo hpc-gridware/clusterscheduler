@@ -22,7 +22,7 @@ multi-core CPUs, GPUs, NPUs, and FPGAs.
 
 ## Preparing for the Future
 
-Our immediate focus is on laying a robust foundation for the future of cluster schedulers. We’ll be:
+Our immediate focus is on laying a robust foundation for the future of Cluster Scheduler. We’ll be:
 
 * Convert the code base to C++ and CMake.
 * Support modern development environments (e.g. CLion).
@@ -34,8 +34,11 @@ will include:
 
 * RSMAPs for host-specific resource management, such as GPUs and other accelerators.
 * Integration with the hwloc library for hardware topology and architecture analysis.
-* Support for diverse computer architectures such as OpenPower (lx-ppc64le), RISC-V (lx-riscv64), 
-  Apple’s ARM-based CPUs (darwin-arm64), and FreeBSD for Intel/AMD64 (fbsd-amd64).
+* Support for diverse computer architectures such as Linux on Intel/AMD64 (lx-amd64),
+  AArch64 (lx-arm64), OpenPower (lx-ppc64le), RISC-V (lx-riscv64), 
+  Apple’s ARM-based CPUs (darwin-arm64),
+  Solaris on Intel/AMD64 (sol-amd64),
+  and FreeBSD for Intel/AMD64 (fbsd-amd64).
 * Enhanced online usage reporting and customizable accounting values.
 
 ## Streamlining the System
