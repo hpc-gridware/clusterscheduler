@@ -68,7 +68,7 @@ If you're ready to test the Gridware Cluster Scheduler, which is available with 
 commercial support, then get in touch! We can't wait to hear from you!
 
 * sales@hpc-gridware.com
-* [HPC-Gridware](https://hpc-gridware.com/)
+* [HPC-Gridware](https://www.hpc-gridware.com/)
 
 ## Other Documents
 
