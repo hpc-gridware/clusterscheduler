@@ -48,11 +48,13 @@ interactive:
 
 .PHONY: ocs
 ocs:
-	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) $(BUILD_AND_TEST) -bashrc -doc
+	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
+	$(BUILD_AND_TEST) -bashrc -doc -pkg
 
 .PHONY: gcs
 gcs:
-	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) $(BUILD_AND_TEST) -bashrc -gcs -doc
+	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
+	$(BUILD_AND_TEST) -bashrc -gcs -doc -pkg
 
 .PHONY: clean
 clean:

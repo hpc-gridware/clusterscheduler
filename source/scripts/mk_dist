@@ -133,7 +133,7 @@ makerpm=false
 target=file
 VDIR=""
 VERSION=""
-PRODUCT=ge
+PRODUCT=cs
 SELECTED_ARCHS=""
 VENDOR="unknown"
 PACKAGER="unknown"
@@ -214,6 +214,19 @@ while [ $ARGC -gt 0 ]; do
          . ./localext/$VDIR/mk_dist.private
       fi
       ARGC=$#
+      ;;
+   -product)
+      shift
+      ARGC=`expr $ARGC - 1`
+      if [ $ARGC -lt 1 ]; then
+         echo ""
+         echo "Error: Missing argument to -product switch!"
+         echo ""
+         ErrUsage
+      fi
+      PRODUCT=$1
+      shift
+      ARGC=`expr $ARGC - 1`
       ;;
    -version)
       shift
