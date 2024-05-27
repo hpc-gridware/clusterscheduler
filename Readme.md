@@ -88,6 +88,6 @@ Newer contributions from HPC-Gridware GmbH (and others like Univa Inc. or indivi
 Distribution packages might contain support for 3rd-party tools and libraries. License Information for corresponding
 components is available under
 
-* [3rd Party License Information](https://github.com/hpc-gridware/clusterscheduler/blob/master/dist/3rd_party/3rd_party_licscopyrights.md)
+* [3rd Party License Information](https://github.com/hpc-gridware/clusterscheduler/blob/master/source/dist/3rd_party/3rd_party_licscopyrights.md)
 
 There is NO WARRANTY, to the extent permitted by law.
