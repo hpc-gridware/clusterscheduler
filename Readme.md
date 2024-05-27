@@ -55,15 +55,20 @@ alternatives to these functionalities and commit to providing replacements in th
 
 ## Join the Conversations
 
-We invite you to share your questions, suggestions, or interest in contributing to this project. Feel free to reach 
-out to us either via Google Group: 
+We would love for you to join us in this exciting project! Please share your questions, suggestions, or interest in 
+contributing to this project. You can reach out to us via the public users Google Group. If you are just curious about 
+the project's progress, you can subscribe to the Git Google Group for our project.
 
-* user@openclusterscheduler.io
+* user+subscribe@clusterscheduler.org
+* git+subscribe@clusterscheduler.org
 
-or leave us a message wither via contact form or mail
+## Commercial Offering
 
-* ![HPC Gridware](https://www.hpc-gridware.com/contact/)
-* sales@hpc-gridware.com
+If you're ready to test the Gridware Cluster Scheduler, which is available with extensions and for which we provide 
+commercial support, then get in touch! We can't wait to hear from you!
+
+* ![sales@hpc-gridware.com](mailto:sales@hpc-gridware.com)
+* ![HPC-Gridware](https://hpc-gridware/)
 
 ## Other Documents
 
