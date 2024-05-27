@@ -67,13 +67,13 @@ the project's progress, you can subscribe to the Git Google Group for our projec
 If you're ready to test the Gridware Cluster Scheduler, which is available with extensions and for which we provide 
 commercial support, then get in touch! We can't wait to hear from you!
 
-* ![sales@hpc-gridware.com](mailto:sales@hpc-gridware.com)
-* ![HPC-Gridware](https://hpc-gridware/)
+* sales@hpc-gridware.com
+* [HPC-Gridware](https://hpc-gridware/)
 
 ## Other Documents
 
-* ![Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
-* ![Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
+* [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
+* [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
 
 ## License
 
