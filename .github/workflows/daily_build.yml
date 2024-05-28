@@ -17,7 +17,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: daily-build
-          path: ${{ github.workspace }}/packages/
+          path: ${{ env.RUNNER_WORKSPACE }}/packages/
           retention-days: 7
           compression-level: 0
       - name: output artifact url
