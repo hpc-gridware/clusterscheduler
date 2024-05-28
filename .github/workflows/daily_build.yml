@@ -7,8 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     container: hpcgridware/clusterscheduler-image-rocky89:latest
     steps:
+      - name: show workspace
+        run: echo "${{ github.workspace }}"
       - name: checkout
         uses: actions/checkout@v4
+      - name: show workspace after checkout
+        run: echo "${{ github.workspace }}"
       - name: run build and test script
         shell: bash
         run: container/build_and_test.sh -bashrc -pkg -doc
@@ -17,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: daily-build
-          path: ${{ env.RUNNER_WORKSPACE }}/packages/
+          path: ${{ github.workspace }}/../packages/
           retention-days: 7
           compression-level: 0
       - name: output artifact url
