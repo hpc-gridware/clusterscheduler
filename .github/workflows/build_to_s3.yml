@@ -1,0 +1,25 @@
+name: build and upload to S3
+run-name: package build and upload triggered by ${{ github.actor }}
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: hpcgridware/clusterscheduler-image-rocky89:latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: run build and test script
+        shell: bash
+        run: container/build_and_test.sh -bashrc -pkg -doc
+      - name: upload artifacts to s3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-north-1'   # optional: defaults to us-east-1
+          SOURCE_DIR: 'packages'      # optional: defaults to entire repository
+          DEST_DIR: '/'
