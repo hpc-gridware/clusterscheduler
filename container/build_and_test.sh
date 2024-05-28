@@ -23,7 +23,7 @@ else
    # running in github actions
    OCS_DIR="$RUNNER_WORKSPACE/clusterscheduler"
    GCS_DIR="$RUNNER_WORKSPACE/gcs-extensions"
-   PKG_DIR="$RUNNER_WORKSPACE/packages"
+   PKG_DIR="$RUNNER_WORKSPACE/clusterscheduler/packages"
 fi
 
 Usage()
