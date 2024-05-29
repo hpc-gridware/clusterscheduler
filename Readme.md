@@ -31,7 +31,8 @@ Our immediate focus is on laying a robust foundation for the future of cluster s
   Key enhancements planned for version 9.0.0 include:
 - **Resource Management**: Implement RSMAPs for host-specific resource management, such as GPUs and other accelerators.
 - **Hardware Integration**: Integrate with the hwloc library for hardware topology and architecture analysis.
-- **Architectural Support**: Extend support for diverse computer architectures, including OpenPower (lx-ppc64le), RISC-V (lx-riscv64), Apple’s ARM-based CPUs (darwin-arm64), and FreeBSD for Intel/AMD64 (fbsd-amd64).
+- **Architectural Support**: Extend support for diverse computer architectures, including Linux on Intel/AMD64 (lx-amd64),
+  AArch64 (lx-arm64), OpenPower (lx-ppc64le), RISC-V (lx-riscv64), Apple’s ARM-based CPUs (darwin-arm64), Solaris on Intel/AMD64 (sol-amd64), and FreeBSD for Intel/AMD64 (fbsd-amd64).
 - **Usage Reporting**: Enhance online usage reporting and introduce customizable accounting values.
 - **Security Measures**: Implement request limits to guard against denial-of-service attacks.
 - **Container Builds**: Facilitate container-based builds.
