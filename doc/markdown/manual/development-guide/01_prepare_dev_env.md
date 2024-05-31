@@ -111,7 +111,8 @@ apt-get install expect xterm gnuplot tdom
 ### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64)
 
 ```
-dnf install -y automake autoconf gcc-toolset-11 patchelf git libtirpc-devel systemd-devel
+dnf install -y automake autoconf patchelf git libtirpc-devel systemd-devel
+dnf install -y gcc-toolset-13 gcc-toolset-13-libasan-devel gcc-toolset-13-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 ```
