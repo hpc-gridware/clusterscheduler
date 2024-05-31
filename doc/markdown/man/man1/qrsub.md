@@ -156,7 +156,7 @@ user private defaults file
 # SEE ALSO
 
 qrdel(1), qrstat(1), qsub(1), xxqs_name_sxx_types(1), xxqs_name_sxx_checkpoint(5), xxqs_name_sxx_complex(5), 
-xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_pe(5), xxqs_name_sxx__resource_quota(5).
+xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_pe(5), xxqs_name_sxx_resource_quota(5).
 
 # COPYRIGHT
 

@@ -370,7 +370,7 @@ lList *sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnum
 
 int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
                    state_gdi_multi *state, bool do_copy) {
-   DENTER(GDI_LAYER);
+   DENTER(TOP_LAYER);
    int ret;
 
    /*

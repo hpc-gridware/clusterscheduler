@@ -8,11 +8,11 @@ date: __DATE__
 
 # NAME
 
-qstat - show the status of xxQS_NAMExx jobs and queues
+`qstat` - show the status of xxQS_NAMExx jobs and queues
 
 # SYNTAX
 
-`qstat**` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
+`qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
 \[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-ncb`\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
 \[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\] \[`-t`\] 
 \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
