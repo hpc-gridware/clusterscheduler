@@ -393,8 +393,8 @@ time_t last_time
    char buffer[BIGLINE];
    lListElem *pr = nullptr;
    SGE_STRUCT_STAT fst;
-   unsigned long utime, stime, vsize, pid;
-   long rss;
+   unsigned long utime = 0, stime = 0, vsize = 0, pid = 0;
+   long rss = 0;
    int pos_pid = lGetPosInDescr(PRO_Type, PRO_pid);
    int pos_utime = lGetPosInDescr(PRO_Type, PRO_utime);
    int pos_stime = lGetPosInDescr(PRO_Type, PRO_stime);

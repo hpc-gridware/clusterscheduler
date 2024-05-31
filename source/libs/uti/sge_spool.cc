@@ -594,7 +594,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    while (fgets(buf, sizeof(buf), fp)) {
       char *pos = nullptr;
 
-      /* set chrptr to the first non blank character
+      /* set chrptr to the first non-blank character
        * If line is empty continue with next line
        */
       if (!(cp = strtok_r(buf, " \t\n", &pos))) {
@@ -622,15 +622,18 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    }
    if (nmissing != 0) {
       for (i = 0; i < n; i++) {
-         if (!is_found[i] && name[i].is_required) {
-            if (error_dstring == nullptr) {
-               CRITICAL(MSG_UTI_CANNOTLOCATEATTRIBUTE_SS, name[i].name, fname);
-            } else {
-               sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS,
-                                   name[i].name, fname);
-            }
+         if (!is_found[i]) {
+            *value[i] = '\0';
+            if (name[i].is_required) {
+               if (error_dstring == nullptr) {
+                  CRITICAL(MSG_UTI_CANNOTLOCATEATTRIBUTE_SS, name[i].name, fname);
+               } else {
+                  sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS,
+                                      name[i].name, fname);
+               }
 
-            break;
+               break;
+            }
          }
       }
    }
@@ -639,7 +642,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    FCLOSE(fp);
    DRETURN(nmissing);
    FCLOSE_ERROR:
-DRETURN(0);
+   DRETURN(0);
 } /* sge_get_confval_array() */
 
 

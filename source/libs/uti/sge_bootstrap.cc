@@ -267,6 +267,10 @@ bootstrap_init_from_file() {
 
    DENTER(TOP_LAYER);
 
+   for (int i = 0; i < NUM_BOOTSTRAP; ++i) {
+      *value[i] = '\0';
+   }
+
    // early exist if we don't know where the bootstrap file is
    const char *bootstrap_file = bootstrap_get_bootstrap_file();
    if (bootstrap_file != nullptr) {

@@ -234,7 +234,7 @@ sge_csp_path_class_create(sge_error_class_t *eh)
    DENTER(TOP_LAYER);
 
    ret = (sge_csp_path_class_t *) sge_malloc(sizeof(sge_csp_path_class_t));
-   if (!ret) {
+   if (ret == nullptr) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       DRETURN(nullptr);
    }

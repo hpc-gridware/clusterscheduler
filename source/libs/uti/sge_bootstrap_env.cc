@@ -140,7 +140,7 @@ bootstrap_env_init_from_environment(sge_bootstrap_ts1_t *tl) {
    const char *sge_cell = getenv("SGE_CELL");
    set_sge_cell(tl, sge_cell != nullptr ? sge_cell : DEFAULT_CELL);
 
-   bool from_services;
+   bool from_services = false;
    set_sge_qmaster_port(tl, sge_get_qmaster_port(&from_services));
    set_from_services(tl, from_services);
 
