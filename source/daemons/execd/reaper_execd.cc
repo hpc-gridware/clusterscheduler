@@ -712,6 +712,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    case SSTATE_PROLOG_FAILED:
    case SSTATE_BEFORE_PESTART:
    case SSTATE_PESTART_FAILED:
+   case SSTATE_EXEC_FAILED:
       general_failure = GFSTATE_QUEUE;
       lSetUlong(jr, JR_general_failure, general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner);

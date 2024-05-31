@@ -91,9 +91,10 @@ get_sstate_description(int sstate) {
            {"entry is missing in password file",                 SSTATE_PASSWD_MISSING},
            {"wrong password",                                    SSTATE_PASSWD_WRONG},
            {"communicating with Cluster Scheduler Helper Service", SSTATE_HELPER_SERVICE_ERROR},
-           {"before job in Cluster Scheduler Helper Service",      SSTATE_HELPER_SERVICE_BEFORE_JOB},
+           {"before job in Cluster Scheduler Helper Service",    SSTATE_HELPER_SERVICE_BEFORE_JOB},
            {"checking configured daemons",                       SSTATE_CHECK_DAEMON_CONFIG},
-           {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT}
+           {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT},
+           {"execvp call failed, script or shell not found",     SSTATE_EXEC_FAILED}
    };
 
    for (i = 0; i < sizeof(state_message) / sizeof(struct _state_message); i++) {
