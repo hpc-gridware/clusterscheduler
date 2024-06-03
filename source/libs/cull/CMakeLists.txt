@@ -40,5 +40,8 @@ set(LIBRARY_SOURCES
         pack.cc)
 set(LIBRARY_INCLUDES "./")
 
+# on Ubuntu 24.04 the XDR related system header causes warnings
+# set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-changes-meaning -Wno-pedantic")
+
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
