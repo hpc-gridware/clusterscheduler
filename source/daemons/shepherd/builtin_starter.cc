@@ -1441,7 +1441,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 
             /* most of the problems here are related to the shell
                i.e. -S /etc/passwd */
-            shepherd_state = SSTATE_EXEC_FAILED;
+            shepherd_state = SSTATE_NO_SHELL;
             /* EXIT HERE IN CASE IF FAILURE */
             shepherd_error(1, failed_str);
          }
