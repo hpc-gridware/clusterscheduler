@@ -61,13 +61,13 @@ which suites a manual build but is not supported by the *CLion IDE 2023.3.2*.
 ### CentOS 7
 
 ```
-yum install centos-release-scl
-yum install devtoolset-11
-yum install numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel systemd-devel
-yum install epel-release
-yum install patchelf
-yum install git autoconf automake flex bison
-yum install libdb libdb-devel hwloc hwloc-devel openssl-devel
+yum install -y centos-release-scl
+yum install -y devtoolset-11
+yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel systemd-devel
+yum install -y epel-release
+yum install -y patchelf
+yum install -y git autoconf automake flex bison
+yum install -y libdb libdb-devel hwloc hwloc-devel openssl-devel
 ```
 
 ### Debian 12
@@ -113,8 +113,9 @@ apt-get install expect xterm gnuplot tdom
 ```
 dnf install -y automake autoconf patchelf git libtirpc-devel systemd-devel
 dnf install -y gcc-toolset-13 gcc-toolset-13-libasan-devel gcc-toolset-13-libubsan-devel
-dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env
+dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
+dnf install -y texlive*
 ```
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.20.
