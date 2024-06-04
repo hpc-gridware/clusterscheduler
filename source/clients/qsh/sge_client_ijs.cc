@@ -186,7 +186,9 @@ void signal_handler(int sig)
 *******************************************************************************/
 void set_signal_handlers(void)
 {
-  struct sigaction old_handler, new_handler;
+   struct sigaction old_handler, new_handler;
+   memset(&old_handler, 0, sizeof(old_handler));
+   memset(&new_handler, 0, sizeof(new_handler));
 
    /* Is SIGHUP necessary? 
     * Yes: termio(7I) says:
