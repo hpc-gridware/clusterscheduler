@@ -62,11 +62,10 @@ which suites a manual build but is not supported by the *CLion IDE 2023.3.2*.
 
 ```
 yum install -y centos-release-scl
-yum install -y devtoolset-11
+yum install -y devtoolset-11 git autoconf automake flex bison patchelf
 yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel systemd-devel
 yum install -y epel-release
-yum install -y patchelf
-yum install -y git autoconf automake flex bison
+yum install -y tcsh expect
 yum install -y libdb libdb-devel hwloc hwloc-devel openssl-devel
 ```
 
