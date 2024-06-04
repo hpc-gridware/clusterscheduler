@@ -143,11 +143,9 @@ const char *sge_jobname(const char *name) {
 
    DENTER(BASIS_LAYER);
    if (name && name[0] != '\0') {
-
       cp = sge_strtok(name, ";");
-      cp = sge_strtok(cp, " ");
+      cp = sge_strtok(cp, " "); // @todo CS-347 sge_strok strcpy to a static buffer - here strcpy's src and dst overlap!!
       cp = sge_basename(cp, '/');
-
    }
 
    DRETURN(cp);
