@@ -107,17 +107,23 @@ apt-get install expect xterm gnuplot tdom
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.18.
 
-### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64)
+### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64)
 
 ```
-dnf install -y automake autoconf patchelf git libtirpc-devel systemd-devel
-dnf install -y gcc-toolset-13 gcc-toolset-13-libasan-devel gcc-toolset-13-libubsan-devel
+dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel
+dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
 ```
 
-`cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.20.
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
+Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provides versions < 3.24
 
 ### Solaris 11 (default for sol-amd64)
 
@@ -136,7 +142,7 @@ pkg install pkg:/image/gnuplot
 ```
 
 ### SUSE Tumbleweed (default for lx-riscv64)
-
+3
 ```
 zypper install --type pattern devel_C_C++
 zypper install gdb cmake git patchelf 
