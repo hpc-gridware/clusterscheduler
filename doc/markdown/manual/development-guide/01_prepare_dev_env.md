@@ -90,6 +90,12 @@ pkg install hs-pandoc texlive-full tex-xetex
 ### macOS 14 (default for darwin-arm64)
 
 ```
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
 XCode
 XQuartz (for some testsuite tests)
 brew install cmake git autoconf automake gettext
@@ -110,17 +116,11 @@ apt-get install expect xterm gnuplot tdom
 ### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64)
 
 ```
-dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel
+dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
 dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
-```
-
-and only for lx-amd64
-
-```
-dnf install -y patchelf
 ```
 
 Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provides versions < 3.24
@@ -140,6 +140,18 @@ pkg install pkg:/developer/documentation-tool/doxygen
 pkg install pkg:/image/graphviz
 pkg install pkg:/image/gnuplot
 ```
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
 
 ### SUSE Tumbleweed (default for lx-riscv64)
 3
