@@ -30,16 +30,7 @@ Documentation is written in markdown. To be able to generate product man pages a
 
 * pandoc
 * texlive
-* texlive-xetex```
-dnf install -y patchelf
-```
-
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
+* texlive-xetex
 
 Source code documentation can be extracted via:
 
