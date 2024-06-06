@@ -90,12 +90,6 @@ pkg install hs-pandoc texlive-full tex-xetex
 ### macOS 14 (default for darwin-arm64)
 
 ```
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
 XCode
 XQuartz (for some testsuite tests)
 brew install cmake git autoconf automake gettext
@@ -104,7 +98,7 @@ brew install pandoc texlive
 brew install doxygen graphviz
 ```
 
-### Raspian 11 (default for lx-arm64)
+### Raspian 11
 
 ```
 apt-get install git autoconf automake gcc g++ patchelf libntirpc-dev libudev-dev
@@ -113,7 +107,18 @@ apt-get install expect xterm gnuplot tdom
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.18.
 
-### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64)
+### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
 
 ```
 dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
@@ -123,7 +128,7 @@ dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
 ```
 
-Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provides versions < 3.24
+Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
 
 ### Solaris 11 (default for sol-amd64)
 
@@ -140,18 +145,6 @@ pkg install pkg:/developer/documentation-tool/doxygen
 pkg install pkg:/image/graphviz
 pkg install pkg:/image/gnuplot
 ```
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
 
 ### SUSE Tumbleweed (default for lx-riscv64)
 3
