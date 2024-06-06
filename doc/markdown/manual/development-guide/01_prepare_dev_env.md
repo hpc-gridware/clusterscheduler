@@ -156,16 +156,7 @@ apt-get install -y doxygen graphviz pandoc
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y pandoc texlive*
-``````
-dnf install -y patchelf
 ```
-
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
 
 ## Clone the Required Repositories
 
