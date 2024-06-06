@@ -113,6 +113,7 @@ and only for lx-amd64
 dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
 dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
+dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
 ```
