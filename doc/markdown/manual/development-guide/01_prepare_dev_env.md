@@ -1,7 +1,6 @@
 # Prepare a Host as Development Machine
 
-In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites.
-Recommended build platform is Rocky Linux 8.x.
+In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites. Recommended build platform is CentOS Linux 8.x.
 
 ## Software Prerequisites
 
@@ -31,7 +30,16 @@ Documentation is written in markdown. To be able to generate product man pages a
 
 * pandoc
 * texlive
-* texlive-xetex
+* texlive-xetex```
+dnf install -y patchelf
+```
+
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
 
 Source code documentation can be extracted via:
 
@@ -58,7 +66,7 @@ If you want to use *CLion* as development environment on Linux or macOS and remo
 you need to downgrade the `cmake` version to *3.27.9* on FreeBSD. The default `cmake` package provides *3.28.1*
 which suites a manual build but is not supported by the *CLion IDE 2023.3.2*.
 
-### CentOS 7
+### CentOS 7 (default for ulx-amd64)
 
 ```
 yum install -y centos-release-scl
@@ -90,7 +98,7 @@ pkg install hs-pandoc texlive-full tex-xetex
 ### macOS 14 (default for darwin-arm64)
 
 ```
-XCode
+XCodeUpdate 01_prepare_dev_env.md
 XQuartz (for some testsuite tests)
 brew install cmake git autoconf automake gettext
 brew install expect tcl-tk gnuplot perl
@@ -109,16 +117,6 @@ apt-get install expect xterm gnuplot tdom
 
 ### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
 and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
-
-and only for lx-amd64
-
-```
-dnf install -y patchelf
-```
 
 ```
 dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
@@ -147,7 +145,7 @@ pkg install pkg:/image/gnuplot
 ```
 
 ### SUSE Tumbleweed (default for lx-riscv64)
-3
+
 ```
 zypper install --type pattern devel_C_C++
 zypper install gdb cmake git patchelf 
@@ -166,7 +164,16 @@ apt-get install -y doxygen graphviz pandoc
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y pandoc texlive*
+``````
+dnf install -y patchelf
 ```
+
+and only for lx-amd64
+
+```
+dnf install -y patchelf
+```
+
 
 ## Clone the Required Repositories
 
