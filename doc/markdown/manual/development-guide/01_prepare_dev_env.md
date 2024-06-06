@@ -164,13 +164,15 @@ zypper install tcl expect vim xterm mailx perl gnuplot
 zypper install texlive pandoc
 ```
 
-### Ubuntu 22
+### Ubuntu 20/22/24
 
 ```
 apt-get install -y git autoconf automake build-essential manpages-dev libudev-dev
 apt-get install -y expect tcl tdom gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
-apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
+apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y pandoc texlive*
 ```
 
 ## Clone the Required Repositories
