@@ -704,16 +704,16 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
             lSetUlong(jr, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0)); /* returned with exit(0) */
 
             ue = lAddSubStr(jr, UA_name, "submission_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, lGetUlong(jep, JB_submission_time));
+            lSetDouble(ue, UA_value, lGetUlong64(jep, JB_submission_time));
 
             ue = lAddSubStr(jr, UA_name, "start_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, lGetUlong(jatep, JAT_start_time));
+            lSetDouble(ue, UA_value, lGetUlong64(jatep, JAT_start_time));
 
             ue = lAddSubStr(jr, UA_name, "end_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, now);
+            lSetDouble(ue, UA_value, sge_gmt32_to_gmt64(now)); // @todo (Timestamp) make now 64bit
 
             ue = lAddSubStr(jr, UA_name, "ru_wallclock", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, runtime);
+            lSetDouble(ue, UA_value, runtime); // @todo (Timestamp)
 
             lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
             oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
@@ -772,7 +772,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
          pe = nullptr;
       }
 
-      if (lGetUlong(jatep, JAT_start_time)) {
+      if (lGetUlong64(jatep, JAT_start_time) > 0) {
          WARNING(MSG_JOB_DELIVER2Q_UUS, sge_u32c(jobid), sge_u32c(jataskid), lGetString(jatep, JAT_master_queue));
       }
 
@@ -780,7 +780,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_give_job(jep, jatep, mqep, pe, hep, monitor);
 
       /* reset timer */
-      lSetUlong(jatep, JAT_start_time, now);
+      lSetUlong64(jatep, JAT_start_time, sge_gmt32_to_gmt64(now)); // @todo (Timestamp)
 
       /* initialize resending of job if not acknowledged by execd */
       trigger_job_resend(now, hep, lGetUlong(jep, JB_job_number),
@@ -903,7 +903,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    int no_events = (commit_flags & COMMIT_NO_EVENTS);
    int unenrolled_task = (commit_flags & COMMIT_UNENROLLED_TASK);
    int handle_zombies = (mconf_get_zombie_jobs() > 0);
-   u_long32 now = 0;
+   u_long64 now = sge_get_gmt64();
    const char *session;
    lList *answer_list = nullptr;
    const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
@@ -919,7 +919,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    /* need hostname for job_log */
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *sge_root = bootstrap_get_sge_root();
-   u_long32 task_wallclock = U_LONG32_MAX;
+   u_long64 task_wallclock = U_LONG64_MAX;
    bool compute_qwallclock = false;
    u_long32 state = 0;
 
@@ -928,8 +928,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = jatep ? lGetUlong(jatep, JAT_task_number) : 0;
    session = lGetString(jep, JB_session);
-
-   now = sge_get_gmt();
 
    switch (mode) {
       case COMMIT_ST_SENT: {
@@ -970,18 +968,18 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   if (strcasecmp(limit, "infinity") != 0) {
                      u_long32 clock_val;
                      parse_ulong_val(nullptr, &clock_val, TYPE_TIM, limit, nullptr, 0);
-                     task_wallclock = MIN(task_wallclock, clock_val);
+                     task_wallclock = MIN(task_wallclock, sge_gmt32_to_gmt64(clock_val));
                   } else {
-                     task_wallclock = MIN(task_wallclock, U_LONG32_MAX);
+                     task_wallclock = MIN(task_wallclock, U_LONG64_MAX);
                   }
 
                   limit = lGetString(queue, QU_s_rt);
                   if (strcasecmp(limit, "infinity") != 0) {
                      u_long32 clock_val;
                      parse_ulong_val(nullptr, &clock_val, TYPE_TIM, limit, nullptr, 0);
-                     task_wallclock = MIN(task_wallclock, clock_val);
+                     task_wallclock = MIN(task_wallclock, sge_gmt32_to_gmt64(clock_val));
                   } else {
-                     task_wallclock = MIN(task_wallclock, U_LONG32_MAX);
+                     task_wallclock = MIN(task_wallclock, U_LONG64_MAX);
                   }
                }
 
@@ -1037,16 +1035,16 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             master_task = false;
          }
 
-         lSetUlong(jatep, JAT_wallclock_limit, task_wallclock);
+         lSetUlong64(jatep, JAT_wallclock_limit, task_wallclock);
 
          /*
           * Would be nice if we could use a more accurate start time that could be reported
           * by execd. However this would constrain time synchronization between qmaster and
           * execd host .. sigh!
           */
-         lSetUlong(jatep, JAT_start_time, now);
+         lSetUlong64(jatep, JAT_start_time, now);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
+         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true);
          answer_list_output(&answer_list);
          break;
@@ -1146,8 +1144,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
             if ((!is_array_job && !mconf_get_old_reschedule_behavior()) ||
                 (is_array_job && !mconf_get_old_reschedule_behavior_array_job())) {
-               lSetUlong(jep, JB_submission_time, now);
-               sge_event_spool(&answer_list, now, sgeE_JOB_MOD, jobid, jataskid,
+               lSetUlong64(jep, JB_submission_time, now);
+               sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JOB_MOD, jobid, jataskid,
                                nullptr, nullptr, session, jep, jatep, nullptr, true, true);
             }
          }
@@ -1167,11 +1165,11 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
                /* the usage container is not spooled */
                if (existing_container == nullptr) {
-                  sge_add_event(now, sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
+                  sge_add_event(sge_gmt64_to_gmt32(now), sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                 nullptr, session, container);
                   lListElem_clear_changed_info(container);
                } else {
-                  sge_add_list_event(now, sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
+                  sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                      nullptr, session, lGetListRW(container, PET_scaled_usage));
                   lList_clear_changed_info(lGetListRW(container, PET_scaled_usage));
                }
@@ -1189,7 +1187,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          sge_clear_granted_resources(jep, jatep, 1, monitor);
          ja_task_clear_finished_pe_tasks(jatep);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
+         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true);
 
          answer_list_output(&answer_list);
@@ -1227,14 +1225,14 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          sge_clear_granted_resources(jep, jatep, 1, monitor);
          job_enroll(jep, nullptr, jataskid);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
-            sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid,
+            sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_FINAL_USAGE, jobid,
                                jataskid,
                                lGetString(petask, PET_id),
                                nullptr, session,
                                lGetListRW(petask, PET_scaled_usage));
          }
 
-         sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
+         sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_FINAL_USAGE, jobid, jataskid,
                             nullptr, nullptr, session, lGetListRW(jatep, JAT_scaled_usage_list));
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -1285,7 +1283,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
          sge_clear_granted_resources(jep, jatep, 0, monitor);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
+         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid,
                          nullptr, nullptr, session, jep, jatep, nullptr, true, false);
          answer_list_output(&answer_list);
          break;

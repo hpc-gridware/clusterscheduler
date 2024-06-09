@@ -34,6 +34,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "uti/sge.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
@@ -50,22 +51,18 @@
 #include "load_correction.h"
 
 int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
-                  u_long32 decay_time, bool monitor_next_run) 
+                  u_long64 decay_time, bool monitor_next_run)
 {
-   lListElem *job = nullptr;
-   u_long32 now;
-   lListElem *global_host = nullptr;
-
-   
    DENTER(TOP_LAYER);
 
    if (queue_list == nullptr || host_list == nullptr) {
       DRETURN(1);
    }
 
-   global_host = host_list_locate(host_list, "global");
-   now = sge_get_gmt();
+   lListElem *global_host = host_list_locate(host_list, SGE_GLOBAL_NAME);
+   u_long64 now = sge_get_gmt();
 
+   lListElem *job;
    for_each_rw(job, running_jobs) {
       u_long32 job_id = lGetUlong(job, JB_job_number);
       lListElem *ja_task = nullptr;
@@ -73,13 +70,14 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
 
       for_each_rw(ja_task, lGetList(job, JB_ja_tasks)) {
          u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number); 
-         u_long32 running_time = now - lGetUlong(ja_task, JAT_start_time);
+         u_long64 running_time = now - lGetUlong64(ja_task, JAT_start_time);
          const lListElem *granted_queue = nullptr;
          const lList *granted_list = nullptr;
          double host_lcf = 0.0;
 
 #if 1
-         DPRINTF("JOB " sge_u32"." sge_u32" start_time = " sge_u32" running_time " sge_u32 " decay_time = " sge_u32"\n", job_id, ja_task_id, lGetUlong(ja_task, JAT_start_time), running_time, decay_time);
+         DPRINTF("JOB " sge_u32"." sge_u32" start_time = " sge_u64" running_time " sge_u64 " decay_time = " sge_u64"\n",
+                 job_id, ja_task_id, lGetUlong64(ja_task, JAT_start_time), running_time, decay_time);
 #endif
          if (running_time > decay_time) {
             continue;

@@ -368,6 +368,12 @@ write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, 
 }
 
 static void
+write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, u_long64 value) {
+   writer->Key(key);
+   writer->Uint64(value);
+}
+
+static void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, double value) {
    writer->Key(key);
    writer->Double(value);
@@ -390,10 +396,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    char *qname = nullptr;
    char *hostname = nullptr;
    lListElem *pe_task = nullptr;
-   u_long32 submission_time = 0;
-   u_long32 start_time = 0;
-   u_long32 end_time = 0;
-   u_long32 now = sge_get_gmt();
+   u_long64 submission_time = 0;
+   u_long64 start_time = 0;
+   u_long64 end_time = 0;
+   u_long64 now = sge_get_gmt64();
    u_long32 ar_id = 0;
    lListElem *ar = nullptr;
    u_long32 exit_status = 0;
@@ -467,10 +473,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * The LAST_INTERMEDIATE timestamp of the previous intermediate
        * record is the start_time of the current interval.
        */
-      start_time = usage_list_get_ulong_usage(reported_list, LAST_INTERMEDIATE, 0),
+      start_time = usage_list_get_ulong64_usage(reported_list, LAST_INTERMEDIATE, 0),
 
       /* now set actual time as time of last intermediate usage report */
-      usage_list_set_ulong_usage(reported_list, LAST_INTERMEDIATE, now);
+      usage_list_set_ulong64_usage(reported_list, LAST_INTERMEDIATE, now);
    }
 
    SET_STR_DEFAULT(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
@@ -489,8 +495,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    hostname = strdup(sge_dstring_get_string(&hname));
 
    /* get submission_time, start_time, end_time */
-   end_time = usage_list_get_ulong_usage(usage_list, "end_time", 0);
-   submission_time = usage_list_get_ulong_usage(usage_list, "submission_time", 0);
+   end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
+   submission_time = usage_list_get_ulong64_usage(usage_list, "submission_time", 0);
 
    if (intermediate) {
       /*
@@ -498,7 +504,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * before job exit 
        */
       if (job != nullptr && pe_task == nullptr) {
-         submission_time = lGetUlong(job, JB_submission_time);
+         submission_time = lGetUlong64(job, JB_submission_time);
       }
       /* 
        * For the first intermediate record, the start_time is the ja_task start time.
@@ -506,7 +512,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * previous intermediate record's end time.
        */
       if (start_time == 0 && ja_task != nullptr) {
-         start_time = lGetUlong(ja_task, JAT_start_time);
+         start_time = lGetUlong64(ja_task, JAT_start_time);
       }
 
       /*
@@ -526,7 +532,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        */
       exit_status = usage_list_get_ulong_usage(usage_list, "exit_status", -1);
    } else {
-      start_time = usage_list_get_ulong_usage(usage_list, "start_time", 0);
+      start_time = usage_list_get_ulong64_usage(usage_list, "start_time", 0);
       exit_status = usage_list_get_ulong_usage(usage_list, "exit_status", 0);
    }
 
@@ -554,9 +560,9 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                 lGetUlong(jr, JR_job_number), delimiter,
                                 lGetString(job, JB_account), delimiter,
                                 usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
-                                submission_time, delimiter,
-                                start_time, delimiter,
-                                end_time, delimiter,
+                                sge_gmt64_to_gmt32(submission_time), delimiter,
+                                sge_gmt64_to_gmt32(start_time), delimiter,
+                                sge_gmt64_to_gmt32(end_time), delimiter,
                                 lGetUlong(jr, JR_failed), delimiter,
                                 exit_status, delimiter,
                                 usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
@@ -626,7 +632,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                             : USAGE_ATTR_MAXVMEM_ACCT,
                                                                USAGE_ATTR_MAXVMEM, 0), delimiter,
                                 lGetUlong(job, JB_ar), delimiter,
-                                (ar != nullptr) ? lGetUlong(ar, AR_submission_time) : 0
+                                (ar != nullptr) ? sge_gmt64_to_gmt32(lGetUlong64(ar, AR_submission_time)) : 0
       );
    } else {
       writer->StartObject();
@@ -665,7 +671,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
       write_json(writer, "submission_time", submission_time);
       if (ar != nullptr) {
-         write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+         write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
       }
 
       write_json(writer, "pe_taskid", pe_task_id);

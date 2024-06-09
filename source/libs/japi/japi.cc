@@ -3158,7 +3158,7 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
           * not know these hold * conditions.
           */
          if ((ja_task_hold & (MINUS_H_TGT_OPERATOR|MINUS_H_TGT_SYSTEM|MINUS_H_TGT_JA_AD)) || 
-             (lGetUlong(job, JB_execution_time) > sge_get_gmt()) ||
+             (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) ||
              lGetList(job, JB_jid_predecessor_list))
             *remote_ps |= DRMAA_PS_SUBSTATE_SYSTEM_SUSP;
 
@@ -3201,7 +3201,7 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
    if (range_list_is_id_within(lGetList(job, JB_ja_s_h_ids), taskid) ||
        range_list_is_id_within(lGetList(job, JB_ja_o_h_ids), taskid) ||
        range_list_is_id_within(lGetList(job, JB_ja_a_h_ids), taskid)  ||
-       (lGetUlong(job, JB_execution_time) > sge_get_gmt()) || 
+       (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) ||
                     lGetList(job, JB_jid_predecessor_list)) {
       *remote_ps |= DRMAA_PS_SUBSTATE_SYSTEM_SUSP;
    }

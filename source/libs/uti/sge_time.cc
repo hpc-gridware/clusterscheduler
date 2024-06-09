@@ -35,11 +35,13 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <chrono>
 #include <sys/times.h>
 
 #include <sys/time.h>
 
 #include "uti/sge_dstring.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
@@ -121,6 +123,31 @@ u_long32 sge_get_gmt() {
    return (u_long32) now.tv_sec;
 }
 
+u_long64 sge_get_gmt64() {
+   const auto now = std::chrono::system_clock::now();
+   const auto epoch = now.time_since_epoch();
+   const auto us = duration_cast<std::chrono::microseconds>(epoch);
+   return us.count();
+}
+
+u_long32 sge_gmt64_to_gmt32(u_long64 timestamp) {
+   return timestamp / 1000000;
+}
+
+double sge_gmt64_to_gmt32_double(u_long64 timestamp) {
+   return timestamp / 1000000.0;
+}
+
+u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
+   return timestamp * 1000000;
+}
+
+
+const char *append_time(u_long64 timestamp, dstring *dstr, bool is_xml) {
+   DSTRING_STATIC(local_dstr, 100);
+   return sge_dstring_append(dstr, sge_ctime64(timestamp, &local_dstr, is_xml, true));
+}
+
 /****** uti/time/append_time() **************************************************
 *  NAME
 *     append_time() -- Convert time value into string 
@@ -146,7 +173,8 @@ u_long32 sge_get_gmt() {
 *     SHOULD BE REPLACED BY: sge_dstring_append_time()
 *
 ******************************************************************************/
-void append_time(time_t i, dstring *buffer, bool is_xml) {
+const char *append_time(time_t i, dstring *buffer, bool is_xml) {
+   const char *ret;
    struct tm *tm;
 
 #ifdef HAS_LOCALTIME_R
@@ -158,14 +186,16 @@ void append_time(time_t i, dstring *buffer, bool is_xml) {
 #endif
 
    if (is_xml) {
-      sge_dstring_sprintf_append(buffer, "%04d-%02d-%02dT%02d:%02d:%02d",
+      ret = sge_dstring_sprintf_append(buffer, "%04d-%02d-%02dT%02d:%02d:%02d",
                                  1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
                                  tm->tm_hour, tm->tm_min, tm->tm_sec);
    } else {
-      sge_dstring_sprintf_append(buffer, "%02d/%02d/%04d %02d:%02d:%02d",
+      ret = sge_dstring_sprintf_append(buffer, "%02d/%02d/%04d %02d:%02d:%02d",
                                  tm->tm_mon + 1, tm->tm_mday, 1900 + tm->tm_year,
                                  tm->tm_hour, tm->tm_min, tm->tm_sec);
    }
+
+   return ret;
 }
 
 /****** uti/time/sge_ctime() **************************************************
@@ -279,6 +309,47 @@ const char *sge_ctime32(u_long32 *i, dstring *buffer) {
       return nullptr;
    }
    return sge_dstring_copy_string(buffer, s);
+}
+
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr, bool is_xml, bool with_micro) {
+   const char *ret;
+   const std::chrono::microseconds us{timestamp};
+   const std::chrono::seconds s = duration_cast<std::chrono::seconds>(us);
+   time_t t = (time_t)s.count();
+   struct tm tm{};
+
+   if (localtime_r(&t, &tm) == nullptr) {
+      ret = sge_strerror(errno, dstr);
+   } else {
+      // we could call the 32bit version of append_time here
+      if (is_xml) {
+         ret = sge_dstring_sprintf(dstr, "%04d-%02d-%02dT%02d:%02d:%02d",
+                                   1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday,
+                                   tm.tm_hour, tm.tm_min, tm.tm_sec);
+      } else {
+         ret = sge_dstring_sprintf(dstr, "%04d-%02d-%02d %02d:%02d:%02d",
+                                   1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday,
+                                   tm.tm_hour, tm.tm_min, tm.tm_sec);
+      }
+      if (with_micro) {
+         long micro = us.count() % 1000000;
+         ret = sge_dstring_sprintf_append(dstr, ".%06ld", micro);
+      }
+   }
+
+   return ret;
+}
+
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr) {
+   return sge_ctime64(timestamp, dstr, false, true);
+}
+
+const char *sge_ctime64_short(u_long64 timestamp, dstring *dstr) {
+   return sge_ctime64(timestamp, dstr, false, false);
+}
+
+const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr) {
+   return sge_ctime64(timestamp, dstr, true, true);
 }
 
 /****** uti/time/sge_at_time() ************************************************
@@ -433,13 +504,13 @@ void sge_stopwatch_start(int i) {
 *  NOTES
 *     MT-NOTE: duration_add_offset() is not MT safe 
 *******************************************************************************/
-u_long32 duration_add_offset(u_long32 duration, u_long32 offset) {
-   if (duration == U_LONG32_MAX || offset == U_LONG32_MAX) {
-      return U_LONG32_MAX;
+u_long64 duration_add_offset(u_long64 duration, u_long64 offset) {
+   if (duration == U_LONG64_MAX || offset == U_LONG64_MAX) {
+      return U_LONG64_MAX;
    }
 
-   if ((U_LONG32_MAX - offset) < duration) {
-      duration = U_LONG32_MAX;
+   if ((U_LONG64_MAX - offset) < duration) {
+      duration = U_LONG64_MAX;
    } else {
       duration += offset;
    }

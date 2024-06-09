@@ -524,7 +524,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
 
    if (next_job) {
       u_long32 job_id = lGetUlong(next_job, JB_job_number);
-      u_long32 start_time_of_job1 = lGetUlong(next_job, JB_submission_time);
+      u_long64 start_time_of_job1 = lGetUlong64(next_job, JB_submission_time);
       const lListElem *tmp_task = lFirst(lGetList(next_job, JB_ja_tasks));
       lListElem *jep = nullptr;
       lListElem *insert_jep = nullptr;
@@ -587,7 +587,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
          lDechainElem(*job_list, next_job);
          prio = lGetDouble(tmp_task, JAT_prio);
          for_each_rw (jep, *job_list) {
-            u_long32 start_time_of_job2 = lGetUlong(jep, JB_submission_time);
+            u_long64 start_time_of_job2 = lGetUlong64(jep, JB_submission_time);
             u_long32 job_id2 = lGetUlong(jep, JB_job_number);
             const lListElem *tmp_task2 = lFirst(lGetList(jep, JB_ja_tasks));
             double prio2;
@@ -1829,8 +1829,8 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
                      break;
                   }   
                   else if (ref->tickets == jref->tickets){
-                     u_long32 ref_time = lGetUlong(ref->job, JB_submission_time);
-                     u_long32 jref_time = lGetUlong(jref->job, JB_submission_time);
+                     u_long64 ref_time = lGetUlong64(ref->job, JB_submission_time);
+                     u_long64 jref_time = lGetUlong64(jref->job, JB_submission_time);
                      u_long32 ref_jid = lGetUlong(ref->job, JB_job_number);
                      u_long32 jref_jid = lGetUlong(jref->job, JB_job_number);
 		     if (ref_time < jref_time ||
@@ -3092,7 +3092,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
             for(i=0; i<max; i++) {
                double ftickets, max_ftickets=-1;
                u_long32 jid, save_jid=0, save_tid=0;
-	            u_long32 submission_time = 0, save_submission_time = 0;
+	            u_long64 submission_time = 0, save_submission_time = 0;
                lListElem *current = nullptr;
                lListElem *max_current = nullptr;
 
@@ -3124,7 +3124,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                   /* controll, if the current job has the most tickets */
                   if(ftickets >= max_ftickets){
                      jid = lGetUlong(jref->job, JB_job_number);
-                     submission_time = lGetUlong(jref->job, JB_submission_time);
+                     submission_time = lGetUlong64(jref->job, JB_submission_time);
                      if (max_current == nullptr ||
                            (ftickets > max_ftickets) ||
 			   (submission_time < save_submission_time) ||
@@ -3132,7 +3132,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                            (jid == save_jid && REF_GET_JA_TASK_NUMBER(jref) < save_tid)) {
                         max_ftickets = ftickets;
                         save_jid = lGetUlong(jref->job, JB_job_number);
-                        save_submission_time = lGetUlong(jref->job, JB_submission_time);
+                        save_submission_time = lGetUlong64(jref->job, JB_submission_time);
                         save_tid = REF_GET_JA_TASK_NUMBER(jref);
                         sort_list[i] = jref;
                         max_current = current;
@@ -4589,11 +4589,11 @@ main(int argc, char **argv)
    lSetString(job, JB_owner, "davidson");
    lSetString(job, JB_project, "sgeee");
    lSetString(job, JB_department, "software");
-   lSetUlong(job, JB_submission_time, sge_get_gmt() - 60*2);
-   lSetUlong(job, JB_deadline, 0);
+   lSetUlong64(job, JB_submission_time, sge_get_gmt64() - sge_gmt32_to_gmt64(60*2));
+   lSetUlong64(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
-   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
+   lSetList(job, JB_scaled_usage_list, build_uJB_ownersage_list("jobusagelist", nullptr));
    for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
@@ -4603,8 +4603,8 @@ main(int argc, char **argv)
    lSetString(job, JB_owner, "davidson");
    lSetString(job, JB_project, "ms");
    lSetString(job, JB_department, "software");
-   lSetUlong(job, JB_submission_time, sge_get_gmt() - 60*2);
-   lSetUlong(job, JB_deadline, 0);
+   lSetUlong64(job, JB_submission_time, sge_get_gmt64() - sge_gmt32_to_64(60*2));
+   lSetUlong64(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
@@ -4618,8 +4618,8 @@ main(int argc, char **argv)
    lSetString(job, JB_owner, "stair");
    lSetString(job, JB_project, "sgeee");
    lSetString(job, JB_department, "hardware");
-   lSetUlong(job, JB_submission_time, sge_get_gmt() - 60*2);
-   lSetUlong(job, JB_deadline, 0);
+   lSetUlong64(job, JB_submission_time, sge_get_gmt64() - sge_gmt32_to_gmt64(60*2));
+   lSetUlong64(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
@@ -4632,8 +4632,8 @@ main(int argc, char **argv)
    lSetString(job, JB_owner, "garrenp");
    lSetString(job, JB_project, "sgeee");
    lSetString(job, JB_department, "software");
-   lSetUlong(job, JB_submission_time, sge_get_gmt() - 60*2);
-   lSetUlong(job, JB_deadline, sge_get_gmt() + 60*2);
+   lSetUlong64(job, JB_submission_time, sge_get_gmt64() - sge_gmt32_to_gmt64(60*2));
+   lSetUlong64(job, JB_deadline, sge_get_gmt64() + 60*2 * 1000000);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));

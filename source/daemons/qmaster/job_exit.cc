@@ -210,7 +210,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       /* JG: TODO: we need more information in the log message */
       oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JERRORSET);
-      lSetUlong(jatep, JAT_start_time, 0);
+      lSetUlong64(jatep, JAT_start_time, 0);
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FAILED_AND_ERROR, COMMIT_DEFAULT, monitor);
    }
@@ -226,7 +226,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
       oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
-      lSetUlong(jatep, JAT_start_time, 0);
+      lSetUlong64(jatep, JAT_start_time, 0);
    }
       /*
        * case 4: job being rescheduled because rerun specified or ckpt job
@@ -240,7 +240,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       /* JG: TODO: we need more information in the log message */
       oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JRERUNRESCHEDULE);
-      lSetUlong(jatep, JAT_start_time, 0);
+      lSetUlong64(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
       /*
@@ -254,7 +254,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JCKPTRESCHEDULE);
-      lSetUlong(jatep, JAT_start_time, 0);
+      lSetUlong64(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
       /*
@@ -267,7 +267,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       oge::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JNORESRESCHEDULE);
-      lSetUlong(jatep, JAT_start_time, 0);
+      lSetUlong64(jatep, JAT_start_time, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_USER_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
       /*

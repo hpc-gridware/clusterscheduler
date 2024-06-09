@@ -398,7 +398,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetUlong(new_job, JB_execution_time, timeval);
+               lSetUlong64(new_job, JB_execution_time, sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -509,7 +509,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetUlong(new_job, JB_deadline, timeval);
+               lSetUlong64(new_job, JB_deadline, sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -1391,7 +1391,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * PARAM a <date_time> (optional; <date_time> := CCYYMMDDhhmm.SS)
     */
    {
-      time_t clocks = (time_t) lGetUlong(old_job, JB_execution_time);
+      time_t clocks = (time_t) lGetUlong64(old_job, JB_execution_time) / 1000000;
 
       if (clocks > 0) {
          struct tm time_struct;
@@ -1549,7 +1549,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * optional
     */
    {
-      time_t clocks = (time_t) lGetUlong(old_job, JB_deadline);
+      time_t clocks = (time_t) lGetUlong64(old_job, JB_deadline) / 1000000;
 
       if (clocks > 0) {
          struct tm time_struct;

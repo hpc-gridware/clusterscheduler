@@ -183,10 +183,9 @@ struct job_summary_str {
    const char* project;
    const char* department;
    char state[8];
-   time_t submit_time;
-   time_t start_time;
-   time_t stop_initiate_time;
-   time_t deadline;
+   u_long64 submit_time;
+   u_long64 start_time;
+   u_long64 deadline;
    
    bool   has_cpu_usage;
    u_long32 cpu_usage;

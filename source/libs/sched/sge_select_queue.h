@@ -118,7 +118,7 @@ typedef struct {
    const char* project;           /* project name (JB_project)                      */
    const lListElem *ckpt;         /* the checkpoint interface (CK_Type)             */
    lListElem  *gep;               /* the global host (EH_Type)                      */
-   u_long32   duration;           /* jobs time of the assignment                    */
+   u_long64   duration;           /* jobs time of the assignment                    */
    lList      *load_adjustments;  /* shall load adjustmend be considered (CE_Type)  */
    lList      *host_list;         /* the hosts (EH_Type)                            */
    lList      *queue_list;        /* the queues (QU_Type)                           */
@@ -133,7 +133,7 @@ typedef struct {
    bool       is_job_verify;      /* true, if job verification (-w ev) (in qmaster) */
    bool       is_schedule_based;  /* true, if resource reservation is enabled       */
    bool       is_soft;            /* true, if job has soft requests                 */
-   u_long32   now;                /* now time for immediate jobs                    */
+   u_long64   now;                /* now time for immediate jobs                    */
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked any more (CTI_Type) */ 
@@ -143,7 +143,7 @@ typedef struct {
    const char* pe_name;           /* name of the PE                                 */
    lList      *gdil;              /* the resources (JG_Type)                        */
    int        slots;              /* total number of slots                          */
-   u_long32   start;              /* jobs start time                                */
+   u_long64   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */

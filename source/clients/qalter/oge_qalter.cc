@@ -303,7 +303,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    if (me_who != QRESUB) {
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-a"))) {
-         lSetUlong(job, JB_execution_time, lGetUlong(ep, SPA_argval_lUlongT));
+         lSetUlong64(job, JB_execution_time, lGetUlong64(ep, SPA_argval_lUlong64T));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_execution_time);
       }
@@ -387,7 +387,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
 
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dl"))) {
-         lSetUlong(job, JB_deadline, lGetUlong(ep, SPA_argval_lUlongT));
+         lSetUlong64(job, JB_deadline, lGetUlong64(ep, SPA_argval_lUlong64T));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_deadline);
       }

@@ -630,7 +630,7 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
    struct tm *end_tm;
    struct tm res;
    u_long32 start_time = (u_long32)mktime(&test->start_time);
-   time_t end_time = (time_t)duration_add_offset(start_time, test->duration);
+   time_t end_time = (time_t) sge_gmt64_to_gmt32(duration_add_offset(sge_gmt32_to_gmt64(start_time), sge_gmt32_to_gmt64(test->duration)));
 
    end_tm = localtime_r(&end_time, &res);
 

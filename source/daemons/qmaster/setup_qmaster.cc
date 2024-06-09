@@ -47,6 +47,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
@@ -307,7 +308,7 @@ sge_setup_job_resend() {
             qname = lGetString(granted_queue, JG_qname);
             qinstance = cqueue_list_locate_qinstance(*oge::DataStore::get_master_list(SGE_TYPE_CQUEUE), qname);
             host = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), lGetHost(qinstance, QU_qhostname));
-            when = lGetUlong(task, JAT_start_time);
+            when = sge_gmt64_to_gmt32(lGetUlong64(task, JAT_start_time));
             when += MAX(load_report_interval(host), MAX_JOB_DELIVER_TIME);
             ev = te_new_event((time_t) when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, job_num, task_num,
                               "job-resend_event");

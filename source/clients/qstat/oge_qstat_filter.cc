@@ -1561,7 +1561,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                ||
              ((qstat_env->full_listing & QSTAT_DISPLAY_JOBHOLD) && lGetList(jep, JB_jid_predecessor_list))
                ||
-             ((qstat_env->full_listing & QSTAT_DISPLAY_STARTTIMEHOLD) && lGetUlong(jep, JB_execution_time))
+             ((qstat_env->full_listing & QSTAT_DISPLAY_STARTTIMEHOLD) && lGetUlong64(jep, JB_execution_time))
                ||
              !(qstat_env->full_listing & QSTAT_DISPLAY_HOLD))
             ) {
@@ -1828,7 +1828,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
           ((qstat_env->full_listing & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state[i] & MINUS_H_TGT_OPERATOR)) ||
           ((qstat_env->full_listing & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state[i] & MINUS_H_TGT_SYSTEM)) ||
           ((qstat_env->full_listing & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state[i] & MINUS_H_TGT_JA_AD)) ||
-          ((qstat_env->full_listing & QSTAT_DISPLAY_STARTTIMEHOLD) && (lGetUlong(job, JB_execution_time) > 0)) ||
+          ((qstat_env->full_listing & QSTAT_DISPLAY_STARTTIMEHOLD) && (lGetUlong64(job, JB_execution_time) > 0)) ||
           ((qstat_env->full_listing & QSTAT_DISPLAY_JOBHOLD) && (lGetList(job, JB_jid_predecessor_list) != 0)) ||
           (!(qstat_env->full_listing & QSTAT_DISPLAY_HOLD))
          ) {
@@ -1983,8 +1983,8 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
 
    job_get_state_string(summary.state, jstate);
    if (sge_time) {
-      summary.submit_time = (time_t)lGetUlong(job, JB_submission_time);
-      summary.start_time = (time_t)lGetUlong(jatep, JAT_start_time);
+      summary.submit_time = lGetUlong64(job, JB_submission_time);
+      summary.start_time = lGetUlong64(jatep, JAT_start_time);
    }
    
    if (lGetUlong(jatep, JAT_status)==JRUNNING || lGetUlong(jatep, JAT_status)==JTRANSFERING) {
@@ -1994,7 +1994,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    }
 
    if (sge_urg) {
-      summary.deadline = (time_t)lGetUlong(job, JB_deadline);
+      summary.deadline = lGetUlong64(job, JB_deadline);
    }
    
    if (sge_ext) {

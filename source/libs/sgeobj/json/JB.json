@@ -235,9 +235,9 @@
 			"name":	"submission_time",
 			"summary":	"Submission Time",
 			"description":	[{
-					"line":	"timestamp in s since epoch"
+					"line":	"timestamp in microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}, {
@@ -249,9 +249,9 @@
 			"description":	[{
 					"line":	"When should the job start (\"qsub/qalter -a date_time\")"
             }, {
-               "line":  "timestamp in s since epoch"
+               "line":  "timestamp in microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
@@ -261,9 +261,9 @@
 			"description":	[{
 					"line":	"SGEEE. Deadline initiation time. (qsub -dl date_time)"
             }, {
-               "line":  "timestamp in s since epoch"
+               "line":  "timestamp in microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
@@ -888,9 +888,9 @@
 			"name":	"soft_wallclock_gmt",
 			"summary":	"Soft Wallclock GMT",
 			"description":	[{
-					"line":	"@todo the same as complex s_rt?"
+					"line":	"Timestamp (microseconds since epoch) when a soft wallclock limit will take effect"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_HIDDEN"
 				}, {
@@ -900,9 +900,9 @@
 			"name":	"hard_wallclock_gmt",
 			"summary":	"Hard Wallclock GMT",
 			"description":	[{
-					"line":	"@todo the same as complex s_rt?"
+				"line":	"Timestamp (microseconds since epoch) when a hard wallclock limit will take effect"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_HIDDEN"
 				}, {

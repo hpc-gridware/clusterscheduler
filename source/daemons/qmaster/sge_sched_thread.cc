@@ -433,8 +433,8 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * load_adjustment_decay_time is a configuration value.
     *---------------------------------------------------------------------*/
    {
-      u_long32 decay_time = sconf_get_load_adjustment_decay_time();
-      if (decay_time) {
+      u_long64 decay_time = sconf_get_load_adjustment_decay_time();
+      if (decay_time > 0) {
          correct_load(*(splitted_job_lists[SPLIT_RUNNING]),
                       lists->queue_list,
                       lists->host_list,

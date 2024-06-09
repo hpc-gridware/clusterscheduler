@@ -442,17 +442,17 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
 
    if (sge_time) {
       if (summary->is_running) {
-         xml_append_Attr_S(attribute_list, "JAT_start_time", sge_ctimeXML(summary->start_time, &ds));
+         xml_append_Attr_S(attribute_list, "JAT_start_time", sge_ctime64_xml(summary->start_time, &ds));
       }   
       else {
-         xml_append_Attr_S(attribute_list, "JB_submission_time", sge_ctimeXML(summary->submit_time, &ds));
+         xml_append_Attr_S(attribute_list, "JB_submission_time", sge_ctime64_xml(summary->submit_time, &ds));
       }
    }
 
    /* deadline time */
    if (sge_urg) {
       if (summary->deadline) {
-         xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctimeXML(summary->deadline, &ds));
+         xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64_xml(summary->deadline, &ds));
       }
    }
 

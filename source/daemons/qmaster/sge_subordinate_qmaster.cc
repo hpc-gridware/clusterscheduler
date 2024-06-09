@@ -595,8 +595,8 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
                        ssos_task_t **ssos_task_to_x) {
    sge_sl_elem_t *ssos_tree_elem = nullptr;
    u_long32 extreme_seq_no = suspend ? 0 : (u_long32) -1;
-   u_long32 oldest_start_time = (u_long32) -1;
-   u_long32 youngest_start_time = 0;
+   u_long64 oldest_start_time = (u_long64) -1;
+   u_long64 youngest_start_time = 0;
 
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
       ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
@@ -633,12 +633,12 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
          }
 
          for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-            u_long32 start_time = 0;
+            u_long64 start_time = 0;
             ssos_task_t *ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
 
             if (suspend ||
                 (!suspend && is_ssos(only_slotwise_suspended, ssos_task->task))) {
-               start_time = lGetUlong(ssos_task->task, JAT_start_time);
+               start_time = lGetUlong64(ssos_task->task, JAT_start_time);
                if (oldest && start_time < oldest_start_time) {
                   oldest_start_time = start_time;
                   *ssos_task_to_x = ssos_task;

@@ -44,21 +44,33 @@
 #include "sge_dstring.h"
 
 u_long32 sge_get_gmt();
+u_long64 sge_get_gmt64();
+
+// @todo make the following 3 functions const_expr or const_eval
+u_long32 sge_gmt64_to_gmt32(u_long64 timestamp);
+double sge_gmt64_to_gmt32_double(u_long64 timestamp);
+u_long64 sge_gmt32_to_gmt64(u_long32 timestamp);
 
 const char *sge_ctime(time_t, dstring *buffer);
 
 const char *sge_ctimeXML(time_t i, dstring *buffer);
 
 const char *sge_ctime32(u_long32 *, dstring *buffer);
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr, bool is_xml, bool with_micro);
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr);
+const char *sge_ctime64_short(u_long64 timestamp, dstring *dstr);
+const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr);
+
 
 const char *sge_at_time(time_t, dstring *buffer);
 
-void append_time(time_t i, dstring *buffer, bool is_xml);
+const char *append_time(u_long64 i, dstring *buffer, bool is_xml);
+const char *append_time(time_t i, dstring *buffer, bool is_xml);
 
 void sge_stopwatch_start(int);
 
 void sge_stopwatch_log(int, const char *);
 
-u_long32 duration_add_offset(u_long32 duration, u_long32 offset);
+u_long64 duration_add_offset(u_long64 duration, u_long64 offset);
 
 void sge_usleep(int);

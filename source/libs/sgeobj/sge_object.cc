@@ -2134,6 +2134,19 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
+bool
+object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm) {
+   bool ret = true;
+
+   if (lGetUlong(ep, nm) == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL,
+                              lNm2Str(nm));
+      ret = false;
+   }
+
+   return ret;
+}
+
 /****** sge_object/object_verify_ulong_null() ******************************
 *  NAME
 *     object_verify_ulong_null() -- verify ulong attribute null
@@ -2166,6 +2179,18 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) != 0) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
+      ret = false;
+   }
+
+   return ret;
+}
+
+bool
+object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
+   bool ret = true;
+
+   if (lGetUlong64(ep, nm) != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
       ret = false;
    }

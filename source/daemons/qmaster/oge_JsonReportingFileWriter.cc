@@ -89,6 +89,12 @@ namespace oge {
       writer.Uint64(value);
    }
 
+   static void
+   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, u_long64 value) {
+      writer.Key(key);
+      writer.Uint64(value);
+   }
+
 #if 0
    static void
    write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, double value) {
@@ -128,7 +134,7 @@ namespace oge {
          write_json(writer, "time", sge_get_gmt());
          write_json(writer, "type", "new_job");
 
-         write_json(writer, "submission_time", lGetUlong(job, JB_submission_time));
+         write_json(writer, "submission_time", lGetUlong64(job, JB_submission_time));
          write_json(writer, "job_number", lGetUlong(job, JB_job_number));
          // according to man page the following two fields should be there, but are not / cannot
          //write_json(writer, "task_number", );
@@ -210,7 +216,7 @@ namespace oge {
          write_json(writer, "user", user);
          write_json(writer, "host", host);
          // write_json(writer, "state_time", state_time); man page: reserved field for later
-         write_json(writer, "submission_time", lGetUlong(job, JB_submission_time));
+         write_json(writer, "submission_time", lGetUlong64(job, JB_submission_time));
          write_json(writer, "job_name", lGetString(job, JB_job_name));
          write_json(writer, "owner", lGetString(job, JB_owner));
          write_json(writer, "group", lGetString(job, JB_group));
@@ -380,7 +386,7 @@ namespace oge {
          write_json(writer, "time", sge_get_gmt());
          write_json(writer, "type", "new_ar");
 
-         write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+         write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
          write_json(writer, "ar_number", lGetUlong(ar, AR_id));
          write_json(writer, "ar_owner", lGetString(ar, AR_owner));
 
@@ -407,12 +413,12 @@ namespace oge {
          write_json(writer, "time", sge_get_gmt());
          write_json(writer, "type", "ar_attribute");
 
-         write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+         write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
          write_json(writer, "ar_number", lGetUlong(ar, AR_id));
          write_json(writer, "ar_name", lGetString(ar, AR_name));
          write_json(writer, "ar_account", lGetString(ar, AR_account));
-         write_json(writer, "ar_start_time", lGetUlong(ar, AR_start_time));
-         write_json(writer, "ar_end_time", lGetUlong(ar, AR_end_time));
+         write_json(writer, "ar_start_time", lGetUlong64(ar, AR_start_time));
+         write_json(writer, "ar_end_time", lGetUlong64(ar, AR_end_time));
          write_json(writer, "ar_granted_pe", lGetString(ar, AR_pe));
 
          writer.Key("ar_granted_resources");
@@ -448,7 +454,7 @@ namespace oge {
          write_json(writer, "type", "ar_log");
 
          write_json(writer, "ar_state_change_time", report_time);
-         write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+         write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
          write_json(writer, "ar_number", lGetUlong(ar, AR_id));
 
          DSTRING_STATIC(dstr_state, 10);
@@ -506,7 +512,7 @@ namespace oge {
       write_json(writer, "type", "ar_acct");
 
       write_json(writer, "ar_termination_time", report_time);
-      write_json(writer, "ar_submission_time", lGetUlong(ar, AR_submission_time));
+      write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
       write_json(writer, "ar_qname", cqueue_name);
       write_json(writer, "ar_hostname", hostname);
       write_json(writer, "ar_slots", slots);

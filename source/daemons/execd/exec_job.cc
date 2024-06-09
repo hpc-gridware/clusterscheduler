@@ -1429,9 +1429,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
    fprintf(fp, "account=%s\n", (lGetString(jep, JB_account) ? lGetString(jep, JB_account) : DEFAULT_ACCOUNT));
    if (petep != nullptr) {
-      fprintf(fp, "submission_time=" sge_u32 "\n", lGetUlong(petep, PET_submission_time));
+      fprintf(fp, "submission_time=" sge_u64 "\n", lGetUlong64(petep, PET_submission_time));
    } else {
-      fprintf(fp, "submission_time=" sge_u32 "\n", lGetUlong(jep, JB_submission_time));
+      fprintf(fp, "submission_time=" sge_u64 "\n", lGetUlong64(jep, JB_submission_time));
    }
 
    {
@@ -1795,7 +1795,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          dstring body = DSTRING_INIT;
          dstring ds = DSTRING_INIT;
 
-         sge_ctime((time_t) lGetUlong(jatep, JAT_start_time), &ds);
+         sge_ctime64(lGetUlong64(jatep, JAT_start_time), &ds);
 
          if (job_is_array(jep)) {
             sge_dstring_sprintf(&subject, MSG_MAIL_STARTSUBJECT_UUS, sge_u32c(job_id),
@@ -1872,10 +1872,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sigprocmask(SIG_SETMASK, &sigset_oset, nullptr);
 
       if (petep == nullptr) {
-         /* nothing to be done for petasks: We do not signal single petasks, but always the whole jatask */
-         lSetUlong(jep, JB_hard_wallclock_gmt, 0); /* in case we are restarting! */
+         /* nothing to be done for petasks: We do not signal individual petasks, but always the whole jatask */
+         lSetUlong64(jep, JB_hard_wallclock_gmt, 0); /* in case we are restarting! */
          lSetUlong(jatep, JAT_pending_signal, 0);
-         lSetUlong(jatep, JAT_pending_signal_delivery_time, 0);
+         lSetUlong64(jatep, JAT_pending_signal_delivery_time, 0);
       }
 
       if (chdir(execd_spool_dir))       /* go back */

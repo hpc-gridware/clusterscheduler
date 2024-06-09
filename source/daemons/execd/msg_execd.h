@@ -96,7 +96,7 @@
 #define MSG_SHEPHERD_CANTSTATXY_SS                          _MESSAGE(29050, _("can't stat " SFQ ": " SFN))
 #define MSG_FILE_XISNOTADIRECTORY_S                         _MESSAGE(29051, _(SFQ " is not a directory"))
 #define MSG_SHEPHERD_FOUNDDIROFJOBX_S                       _MESSAGE(29052, _("found directory of job " SFQ))
-#define MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSUS _MESSAGE(29053, _("can't read pid file " SFQ " of shepherd for job " SFQ " - starttime: " sge_U32CFormat " cleaning up: " SFN))
+#define MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSSS _MESSAGE(29053, _("can't read pid file " SFQ " of shepherd for job " SFQ " - starttime: " SFN " cleaning up: " SFN))
 #define MSG_SHEPHERD_MISSINGJOBXINJOBREPORTFOREXITINGJOB_U  _MESSAGE(29054, _("missing job \"" sge_U32CFormat "\" in job report for exiting job"))
 #define MSG_SHEPHERD_CANTREADPIDFROMPIDFILEXFORJOBY_SS      _MESSAGE(29055, _("can't read pid from pid file " SFQ " of shepherd for job " SFN))
 #define MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISZALIVE_SU   _MESSAGE(29056, _("shepherd for job " SFN " has pid \"" sge_U32CFormat "\" and is alive"))

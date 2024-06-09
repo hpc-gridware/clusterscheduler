@@ -44,6 +44,7 @@
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -236,6 +237,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    const lList          *req_queue_list = nullptr;
    u_long32        ultime;
    u_long32        time_limit = 0;
+   u_long64        time_limit64 = 0;
    int             remaining_time;
    u_long32        pe_range_max = 0;
    u_long32        unf_task_range_min = 0;
@@ -332,16 +334,17 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                /* times for an active job */
 
                /* first, get the start time */
-               ultime = lGetUlong(jatep, JAT_start_time);
-               lSetUlong(tmp_dj_job, TACCDJ_starttime, ultime);
+               time_limit64 = lGetUlong64(jatep, JAT_start_time);
+               lSetUlong(tmp_dj_job, TACCDJ_starttime, sge_gmt64_to_gmt32(time_limit));
+               ultime = sge_gmt64_to_gmt32(time_limit64);
 
                /* get submission time on job */
-               time_limit = lGetUlong(job, JB_submission_time);
-               lSetUlong(tmp_dj_job, TACCDJ_queuetime, time_limit);
+               time_limit64 = lGetUlong64(job, JB_submission_time);
+               lSetUlong(tmp_dj_job, TACCDJ_queuetime, sge_gmt64_to_gmt32(time_limit));
 
                /* get time limit on job (possibly zero) */
-               time_limit = lGetUlong(jatep, JAT_wallclock_limit);
-               lSetUlong(tmp_dj_job, TACCDJ_wclimit, time_limit);
+               time_limit64 = lGetUlong64(jatep, JAT_wallclock_limit);
+               lSetUlong(tmp_dj_job, TACCDJ_wclimit, sge_gmt64_to_gmt32(time_limit));
 
                /*
                 * if a time limit is set, compute remaining time - otherwise
@@ -349,7 +352,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                 */
                remaining_time = 0;
                if (time_limit) {
-                  killtime = (time_t) (ultime + time_limit);
+                  killtime = (time_t) (ultime + sge_gmt64_to_gmt32(time_limit64));
                   /* get current time */
                   current_time = time(nullptr);
                   remaining_time = (int) killtime - (int) current_time;
@@ -467,10 +470,10 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          /*
           * time_limit = lGetUlong(tmp_task,JAT_wallclock_limit);
           */
-         job_get_wallclock_limit(&time_limit, job);
-         lSetUlong(tmp_dj_job, TACCDJ_wclimit, time_limit);
-         time_limit = lGetUlong(job, JB_submission_time);
-         lSetUlong(tmp_dj_job, TACCDJ_queuetime, time_limit);
+         job_get_wallclock_limit(&time_limit64, job);
+         lSetUlong(tmp_dj_job, TACCDJ_wclimit, sge_gmt64_to_gmt32(time_limit64));
+         time_limit64 = lGetUlong64(job, JB_submission_time);
+         lSetUlong(tmp_dj_job, TACCDJ_queuetime, sge_gmt64_to_gmt32(time_limit64));
 
          lSetDouble(tmp_dj_job, TACCDJ_priority,
                     lGetDouble(tmp_task, JAT_prio));
@@ -549,14 +552,13 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          /*
           * time_limit = lGetUlong(tmp_task,JAT_wallclock_limit);
           */
-         job_get_wallclock_limit(&time_limit, job);
-         lSetUlong(tmp_dj_job, TACCDJ_wclimit, time_limit);
-         time_limit = lGetUlong(job, JB_submission_time);
-         lSetUlong(tmp_dj_job, TACCDJ_queuetime, time_limit);
+         job_get_wallclock_limit(&time_limit64, job);
+         lSetUlong(tmp_dj_job, TACCDJ_wclimit, sge_gmt64_to_gmt32(time_limit64));
+         time_limit64 = lGetUlong64(job, JB_submission_time);
+         lSetUlong(tmp_dj_job, TACCDJ_queuetime, sge_gmt64_to_gmt32(time_limit));
 
          /* set priority */
-         lSetDouble(tmp_dj_job, TACCDJ_priority,
-                    lGetDouble(tmp_task, JAT_prio));
+         lSetDouble(tmp_dj_job, TACCDJ_priority, lGetDouble(tmp_task, JAT_prio));
 
          /* core binding */
          {

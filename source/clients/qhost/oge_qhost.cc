@@ -83,7 +83,7 @@ static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const c
 static int xml_report_queue_finished(qhost_report_handler_t* handler, const char* qname, lList **alpp);
 static int xml_report_job_begin(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp);
 static int xml_report_job_string_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, const char *value, lList **alpp);
-static int xml_report_job_ulong_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long32 value, lList **alpp);
+static int xml_report_job_ulong64_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long64 value, lList **alpp);
 static int xml_report_job_double_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, double value, lList **alpp);
 static int xml_report_job_finished(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp);
 
@@ -150,7 +150,7 @@ static qhost_report_handler_t* xml_report_handler_create(lList **alpp)
    
    ret->report_job_begin = xml_report_job_begin;
    ret->report_job_string_value = xml_report_job_string_value;
-   ret->report_job_ulong_value = xml_report_job_ulong_value;
+   ret->report_job_ulong64_value = xml_report_job_ulong64_value;
    ret->report_job_double_value = xml_report_job_double_value;
    ret->report_job_finished = xml_report_job_finished;
 
@@ -321,7 +321,7 @@ static int xml_report_job_string_value(qhost_report_handler_t* handler, const ch
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_ulong_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long32 value, lList **alpp)
+static int xml_report_job_ulong64_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long64 value, lList **alpp)
 {
    DENTER(TOP_LAYER);
 

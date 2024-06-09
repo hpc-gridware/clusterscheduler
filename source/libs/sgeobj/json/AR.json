@@ -73,9 +73,9 @@
 			"name":	"submission_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
@@ -83,9 +83,9 @@
 			"name":	"start_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+				    "line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_CONF"
 				}, {
@@ -95,9 +95,9 @@
 			"name":	"end_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+				    "line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_CONF"
 				}, {
@@ -107,9 +107,9 @@
 			"name":	"duration",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
+				    "line":	"... microseconds"
+			}],
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_CONF"
 				}, {

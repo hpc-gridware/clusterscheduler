@@ -35,9 +35,9 @@
 			"name":	"start_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Start time of the array task in microseconds since epoch."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -45,9 +45,9 @@
 			"name":	"end_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"End time of the array task in microseconds since epoch."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -149,9 +149,9 @@
 			"name":	"pending_signal_delivery_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... in microseconds since epoch."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -335,9 +335,9 @@
 			"name":	"stop_initiate_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... in microseconds since epoch."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -361,9 +361,9 @@
 			"name":	"wallclock_limit",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... in microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]

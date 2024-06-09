@@ -662,11 +662,11 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
    u_long32 jataskid = 0;
    u_long32 jobid = 0;
    bool migrate_on_suspend = false;
-   u_long32 now;
+   u_long64 now64;
 
    DENTER(TOP_LAYER);
 
-   now = sge_get_gmt();
+   now64 = sge_get_gmt64();
 
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
@@ -712,8 +712,9 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
       CLEARBIT(JRUNNING, state);
       SETBIT(JSUSPENDED, state);
       lSetUlong(jatep, JAT_state, state);
-      if (migrate_on_suspend)
-         lSetUlong(jatep, JAT_stop_initiate_time, now);
+      if (migrate_on_suspend) {
+         lSetUlong64(jatep, JAT_stop_initiate_time, now64);
+      }
 
       sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                       jobid, jataskid, nullptr, nullptr, nullptr,
@@ -746,8 +747,9 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
          CLEARBIT(JRUNNING, state);
          SETBIT(JSUSPENDED, state);
          lSetUlong(jatep, JAT_state, state);
-         if (migrate_on_suspend)
-            lSetUlong(jatep, JAT_stop_initiate_time, now);
+         if (migrate_on_suspend) {
+            lSetUlong64(jatep, JAT_stop_initiate_time, now64);
+         }
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
                          jep, jatep, nullptr, true, true);
@@ -764,14 +766,15 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
             CLEARBIT(JRUNNING, state);
             SETBIT(JSUSPENDED, state);
             lSetUlong(jatep, JAT_state, state);
-            if (migrate_on_suspend)
-               lSetUlong(jatep, JAT_stop_initiate_time, now);
+            if (migrate_on_suspend) {
+               lSetUlong64(jatep, JAT_stop_initiate_time, now64);
+            }
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             jobid, jataskid, nullptr, nullptr, nullptr,
                             jep, jatep, nullptr, true, true);
          }
       }
-      oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+      oge::ReportingFileWriter::create_job_logs(nullptr, now64, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
    }
    DRETURN_VOID;
 }
@@ -925,7 +928,7 @@ rebuild_signal_events() {
    /* J O B */
    for_each_ep(jep, master_job_list) {
       for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-         time_t when = (time_t) lGetUlong(jatep, JAT_pending_signal_delivery_time);
+         time_t when = (time_t) sge_gmt32_to_gmt64(lGetUlong64(jatep, JAT_pending_signal_delivery_time));
 
          if (lGetUlong(jatep, JAT_pending_signal) && (when > 0)) {
             u_long32 key1 = lGetUlong(jep, JB_job_number);
@@ -1131,7 +1134,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
                            lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), nullptr);
          te_add_event(ev);
          te_free_event(&ev);
-         lSetUlong(jatep, JAT_pending_signal_delivery_time, next_delivery_time);
+         lSetUlong64(jatep, JAT_pending_signal_delivery_time, sge_gmt32_to_gmt64(next_delivery_time));
       }
    } else {
       te_event_t ev = nullptr;

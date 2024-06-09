@@ -65,7 +65,7 @@ struct qhost_report_handler_str {
    
    int (*report_job_begin)(qhost_report_handler_t* handler, const char *qname, const char* jname, lList **alpp);
    int (*report_job_string_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, const char *value, lList **alpp);
-   int (*report_job_ulong_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, u_long32 value, lList **alpp);
+   int (*report_job_ulong64_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, u_long64 value, lList **alpp);
    int (*report_job_double_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, double value, lList **alpp);
    int (*report_job_finished)(qhost_report_handler_t* handler, const char *qname, const char* jname, lList **alpp);
 

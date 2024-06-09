@@ -1060,7 +1060,7 @@ int ckpt_type
 ) {
    SGE_STRUCT_STAT buf;
    struct rusage rusage;
-   u_long32 start_time, end_time;
+   u_long64 start_time, end_time;
    u_long32 wait_status = 0;
    int pid, status, core_dumped, ret;
    int child_signal = 0;
@@ -1177,7 +1177,7 @@ int ckpt_type
 
    change_shepherd_signal_mask();
    
-   start_time = sge_get_gmt();
+   start_time = sge_get_gmt64();
 
    /* Write pid to job_pid file and set ckpt_pid to original job pid 
     * Kill job if we can't write job_pid file and exit with error
@@ -1251,7 +1251,7 @@ int ckpt_type
                   &ckpt_info, &ijs_fds, &rusage, &dstr_error);
    }
    alarm(0);
-   end_time = sge_get_gmt();
+   end_time = sge_get_gmt64();
 
    shepherd_trace("reaped \"%s\" with pid %d", childname, pid);
 

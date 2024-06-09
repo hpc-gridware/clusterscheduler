@@ -34,12 +34,12 @@
 
 #include <string>
 #include <cstring>
-#include <ctime>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/cull_parse_util.h"
@@ -68,7 +68,8 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
 
 void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    const char *delis[] = {nullptr, ",", "\n"};
-   time_t ultime; /* used to be u_long32, but problem w/ 64 bit times */
+   u_long64 ultime;
+   DSTRING_STATIC(dstr, 128);
 
    DENTER(TOP_LAYER);
 
@@ -88,13 +89,21 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("exec_file:                  %s\n", lGetString(job, JB_exec_file));
 
    if (lGetPosViaElem(job, JB_submission_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t) lGetUlong(job, JB_submission_time))) {
-         printf("submission_time:            %s", ctime((time_t *) &ultime));
+      if ((ultime = lGetUlong64(job, JB_submission_time))) {
+         printf("submission_time:            %s\n", sge_ctime64(ultime, &dstr));
       }
 
+#if 0
+   // @todo print for all running ja_tasks
+   if (lGetPosViaElem(ja_task, JAT_start_time, SGE_NO_ABORT) >= 0)
+      if ((ultime = lGetUlong64(ja_task, JAT_start_time))) {
+         printf("start_time:                 %s\n", sge_ctime64(ultime, &dstr));
+      }
+#endif
+
    if (lGetPosViaElem(job, JB_deadline, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t) lGetUlong(job, JB_deadline))) {
-         printf("deadline:                   %s", ctime((time_t *) &ultime));
+      if ((ultime = lGetUlong64(job, JB_deadline))) {
+         printf("deadline:                   %s\n", sge_ctime64(ultime, &dstr));
       }
 
    if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) >= 0) {
@@ -138,8 +147,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t) lGetUlong(job, JB_execution_time)))
-         printf("execution_time:             %s", ctime((time_t *) &ultime));
+      if ((ultime = lGetUlong64(job, JB_execution_time)))
+         printf("execution_time:             %s", sge_ctime64(ultime, &dstr));
 
    if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_account))
@@ -160,7 +169,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       if (lGetUlong(job, JB_checkpoint_interval)) {
          printf("checkpoint_interval:        ");
          printf("%d seconds\n", (int) lGetUlong(job, JB_checkpoint_interval));
-      }
+   }
 
    if (lGetPosViaElem(job, JB_cwd, SGE_NO_ABORT) >= 0) {
       if (lGetString(job, JB_cwd))
@@ -454,13 +463,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("verify_suitable_queues:     %d\n", (int) lGetUlong(job, JB_verify_suitable_queues));
 
    if (lGetPosViaElem(job, JB_soft_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t) lGetUlong(job, JB_soft_wallclock_gmt))) {
-         printf("soft_wallclock_gmt:         %s", ctime((time_t *) &ultime));
+      if ((ultime = lGetUlong64(job, JB_soft_wallclock_gmt))) {
+         printf("soft_wallclock_gmt:         %s", sge_ctime64(ultime, &dstr));
       }
 
    if (lGetPosViaElem(job, JB_hard_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = (time_t) lGetUlong(job, JB_hard_wallclock_gmt))) {
-         printf("hard_wallclock_gmt:         %s", ctime((time_t *) &ultime));
+      if ((ultime = lGetUlong64(job, JB_hard_wallclock_gmt))) {
+         printf("hard_wallclock_gmt:         %s", sge_ctime64(ultime, &dstr));
       }
 
    if (lGetPosViaElem(job, JB_version, SGE_NO_ABORT) >= 0)

@@ -54,11 +54,11 @@ struct qrstat_report_handler_str {
    bool (*report_ar_node_ulong_unknown)(qrstat_report_handler_t* handler, qrstat_env_t *qrstat_env, lList **alpp,
                                 const char *name, u_long32 value);
    bool (*report_ar_node_duration)(qrstat_report_handler_t* handler, lList **alpp,
-                                   const char *name, u_long32 value);
+                                   const char *name, u_long64 value);
    bool (*report_ar_node_string)(qrstat_report_handler_t* handler, lList **alpp,
                                  const char *name, const char *value);
    bool (*report_ar_node_time)(qrstat_report_handler_t* handler, lList **alpp,
-                               const char *name, time_t value);
+                               const char *name, u_long64 value);
    bool (*report_ar_node_state)(qrstat_report_handler_t* handler, lList **alpp,
                                 const char *name, u_long32 state);
 

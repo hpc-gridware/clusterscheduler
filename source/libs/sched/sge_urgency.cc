@@ -143,19 +143,19 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
 
    for_each_rw (jep, job_list) {
       lListElem *cat;
-      u_long32 deadline;
+      u_long64 deadline;
 
       rrc = dtc = 0.0;
 
       /* waiting time dependent contribution */
-      wtc = weight_waiting_time * (now - lGetUlong(jep, JB_submission_time));
+      wtc = weight_waiting_time * (now - lGetUlong64(jep, JB_submission_time) / 1000000); // @todo (Timestamp)
 
       /* job deadline dependent contribution */
-      if ((deadline=lGetUlong(jep, JB_deadline))) {
-          int time_left = deadline - now;
+      deadline = lGetUlong64(jep, JB_deadline);
+      if (deadline > 0) {
 /*           DPRINTF("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline); */
           /* might be too late for this job anyways we're optimistic and treat it high prior */
-          dtc = weight_deadline / MAX(time_left, 1);
+          dtc = weight_deadline / MAX(deadline / 1000000 - now, 1); // @todo (Timestamp)
       }
 
       /* we do category based caching when determining the resource request 

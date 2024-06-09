@@ -226,8 +226,9 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
          }
 
          /* select job that runs shortest time for suspension */
-         if (!shortest || lGetUlong(shortest, JAT_start_time) < 
-               lGetUlong(ja_task, JAT_start_time)) {
+         if (shortest == nullptr ||
+             // @todo: CS-353 the condition looks incorrect
+             lGetUlong64(shortest, JAT_start_time) < lGetUlong64(ja_task, JAT_start_time)) {
             shortest = ja_task;
             jshortest = jep;
          }
@@ -272,7 +273,8 @@ lListElem **ja_taskp
          }
          
          /* select task that runs longest time for unsuspension */
-         if (!longest ||lGetUlong(longest, JAT_start_time) > lGetUlong(ja_task, JAT_start_time)) {
+         if (longest == nullptr ||
+             lGetUlong64(longest, JAT_start_time) > lGetUlong64(ja_task, JAT_start_time)) {
             longest = ja_task;
             jlongest = jep;
          }

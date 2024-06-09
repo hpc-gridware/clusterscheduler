@@ -112,22 +112,22 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
                  const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
                  const lList *master_pe_list, const lList *master_userset_list)
 {
-   u_long32 start_time;
-   u_long32 end_time;
-   u_long32 duration;
-   u_long32 now = sge_get_gmt();
+   u_long64 start_time;
+   u_long64 end_time;
+   u_long64 duration;
+   u_long64 now64 = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
 
    /*   AR_start_time, SGE_ULONG        */
-   if ((start_time = lGetUlong(ar, AR_start_time)) == 0) {
-      start_time = now;
-      lSetUlong(ar, AR_start_time, start_time);
+   if ((start_time = lGetUlong64(ar, AR_start_time)) == 0) {
+      start_time = now64;
+      lSetUlong64(ar, AR_start_time, start_time);
    }
 
    /*   AR_end_time, SGE_ULONG        */
-   end_time = lGetUlong(ar, AR_end_time);
-   duration = lGetUlong(ar, AR_duration);
+   end_time = lGetUlong64(ar, AR_end_time);
+   duration = lGetUlong64(ar, AR_duration);
    
    if (end_time == 0 && duration == 0) {
       answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -136,11 +136,11 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    } else if (end_time == 0) {
       end_time = duration_add_offset(start_time, duration);
       duration = end_time  - start_time;
-      lSetUlong(ar, AR_end_time, end_time);
-      lSetUlong(ar, AR_duration, duration);
+      lSetUlong64(ar, AR_end_time, end_time);
+      lSetUlong64(ar, AR_duration, duration);
    } else if (duration == 0) {
       duration = end_time - start_time;
-      lSetUlong(ar, AR_duration, duration);
+      lSetUlong64(ar, AR_duration, duration);
    }
 
    if ((end_time - start_time) != duration) {
@@ -156,7 +156,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    }
    
    if (!is_spool) {
-      if (start_time < now) {
+      if (start_time < now64) {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_AR_START_IN_PAST);
          goto ERROR;

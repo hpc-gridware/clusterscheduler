@@ -41,8 +41,8 @@ shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
 
 bool
 shepherd_write_usage_file(u_long32 wait_status, int exit_status,
-                          int child_signal, u_long32 start_time,
-                          u_long32 end_time, struct rusage *rusage);
+                          int child_signal, u_long64 start_time,
+                          u_long64 end_time, struct rusage *rusage);
 
 bool
 shepherd_write_job_pid_file(const char *job_pid);

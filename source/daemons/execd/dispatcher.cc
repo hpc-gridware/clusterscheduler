@@ -64,7 +64,7 @@
 
 #define SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL 2*60
 #define SGE_EXECD_ALIVE_CHECK_DELAY 30
-#define DELAYED_FINISHED_JOB_REPORTING_INTERVAL 600
+#define DELAYED_FINISHED_JOB_REPORTING_INTERVAL sge_gmt32_to_gmt64(600)
 
 int sge_execd_process_messages()
 {
@@ -98,6 +98,7 @@ int sge_execd_process_messages()
 
    while (!terminate) {
       u_long32 now = sge_get_gmt();
+      u_long64 now64 = sge_get_gmt64();
       struct_msg_t msg;
       char* buffer     = nullptr;
       u_long32 buflen  = 0;
@@ -240,7 +241,7 @@ int sge_execd_process_messages()
                    * DELAYED_FINISHED_JOB_REPORTING_INTERVAL i.e
                    * now - qmaster_reconnect_time >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL
                    */ 
-                  sge_set_qmrestart_time(now);
+                  sge_set_qmrestart_time(now64);
                   sge_set_delay_job_reports_flag(true);
                   INFO(SFNMAX, MSG_EXECD_ENABLEDELEAYDJOBREPORTING);
 
@@ -264,7 +265,8 @@ int sge_execd_process_messages()
                last_heard = 0;
             }
 
-            if (sge_get_delay_job_reports_flag() && (now - sge_get_qmrestart_time() >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL)) {
+            if (sge_get_delay_job_reports_flag() &&
+                now64 - sge_get_qmrestart_time() >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL) {
                   sge_set_delay_job_reports_flag(false);
                   sge_set_qmrestart_time(0);
                   INFO(SFNMAX, MSG_EXECD_DISABLEDELEAYDJOBREPORTING);

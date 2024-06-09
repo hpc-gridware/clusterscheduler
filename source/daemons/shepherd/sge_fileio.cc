@@ -39,6 +39,7 @@
 
 #include "uti/config_file.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
 #include "basis_types.h"
@@ -117,8 +118,8 @@ FCLOSE_ERROR:
 
 bool
 shepherd_write_usage_file(u_long32 wait_status, int exit_status,
-                          int child_signal, u_long32 start_time,
-                          u_long32 end_time, struct rusage *rusage)
+                          int child_signal, u_long64 start_time,
+                          u_long64 end_time, struct rusage *rusage)
 {
    bool ret = true;
    const char *const filename = "usage";
@@ -136,9 +137,9 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
       FPRINTF((fp, "exit_status=%d\n", exit_status));
       FPRINTF((fp, "signal=%d\n", child_signal));
 
-      FPRINTF((fp, "start_time=%d\n", (int) start_time));
-      FPRINTF((fp, "end_time=%d\n", (int) end_time));
-      FPRINTF((fp, "ru_wallclock=" sge_u32"\n", (u_long32) end_time-start_time));
+      FPRINTF((fp, "start_time=" sge_u64 "\n", start_time));
+      FPRINTF((fp, "end_time=" sge_u64 "\n", end_time));
+      FPRINTF((fp, "ru_wallclock=" sge_u32"\n", sge_gmt64_to_gmt32(end_time - start_time)));
       FPRINTF((fp, "ru_utime=%f\n", (double)rusage->ru_utime.tv_sec + (double)rusage->ru_utime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_stime=%f\n", (double)rusage->ru_stime.tv_sec + (double)rusage->ru_stime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_maxrss=%ld\n", rusage->ru_maxrss));

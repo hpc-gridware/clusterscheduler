@@ -433,9 +433,9 @@ namespace oge {
        * "started a short time before"
        */
       if (pe_task != nullptr) {
-         start_time = (time_t) lGetUlong(pe_task, PET_start_time);
+         start_time = (time_t) sge_gmt64_to_gmt32(lGetUlong64(pe_task, PET_start_time));
       } else {
-         start_time = (time_t) lGetUlong(ja_task, JAT_start_time);
+         start_time = (time_t) sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time));
       }
 
       if ((now - start_time) < (INTERMEDIATE_MIN_RUNTIME + tm_now.tm_min * 60 + tm_now.tm_sec)) {

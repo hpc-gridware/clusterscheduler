@@ -43,6 +43,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/cull_parse_util.h"
@@ -161,8 +162,8 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         ep_opt = sge_add_arg(pcmdline, a_OPT, lUlongT, *(sp - 1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         ep_opt = sge_add_arg(pcmdline, a_OPT, lUlong64T, *(sp - 1), *sp);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -546,8 +547,8 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         ep_opt = sge_add_arg(pcmdline, d_OPT, lUlongT, *(sp-1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         ep_opt = sge_add_arg(pcmdline, d_OPT, lUlong64T, *(sp-1), *sp);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -640,7 +641,7 @@ u_long32 flags
          }
 
          ep_opt = sge_add_arg(pcmdline, dl_OPT, lUlongT, *(sp - 1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -676,8 +677,8 @@ u_long32 flags
                                        MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTOAOPTION_S, *sp);
                DRETURN(answer);
             }
-            ep_opt = sge_add_arg(pcmdline, e_OPT, lUlongT, *(sp-1), *sp);
-            lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+            ep_opt = sge_add_arg(pcmdline, e_OPT, lUlong64T, *(sp-1), *sp);
+            lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
          } else {
             /* next field is path_name */
             i_ret = cull_parse_path_list(&path_list, *sp);

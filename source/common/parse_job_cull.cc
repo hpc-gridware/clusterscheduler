@@ -273,7 +273,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    */ 
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-a"))) {
-      lSetUlong(*pjob, JB_execution_time, lGetUlong(ep, SPA_argval_lUlongT));
+      lSetUlong64(*pjob, JB_execution_time, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(cmdline, &ep);
    }
 
@@ -290,7 +290,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    }
    
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dl"))) {
-      lSetUlong(*pjob, JB_deadline, lGetUlong(ep, SPA_argval_lUlongT));
+      lSetUlong64(*pjob, JB_deadline, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(cmdline, &ep);
    }
    

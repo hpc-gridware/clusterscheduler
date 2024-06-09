@@ -307,7 +307,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
           * collect the exit status!
           */
          if (lGetString(jep, JB_session) && strncmp(lGetString(jep, JB_session), JAPI_SINGLE_SESSION_KEY, 8) != 0 && 
-               (is_qmaster_down || lGetUlong(jep, JB_submission_time) < sge_get_qmrestart_time())) {
+               (is_qmaster_down || lGetUlong64(jep, JB_submission_time) < sge_get_qmrestart_time())) {
             lSetBool(jr, JR_delay_report, true);
             INFO(MSG_EXECD_ENABLEDELEAYDREPORTINGFORJOB_U, sge_u32c(jobid));
          } else {
@@ -360,8 +360,8 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
       /* if the job was a 'short-runner' omit the warning */
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
          /* check if the job was a short-runner */  
-         u_long32 time_since_started = sge_get_gmt() - lGetUlong(ja_task, JAT_start_time);
-         if (time_since_started <= 2) {
+         u_long64 time_since_started = sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time);
+         if (time_since_started <= sge_gmt32_to_gmt64(2)) {
             /* the job was started <= 2 seconds before and ended already 
                hence no warning has to be printed because of bug CR 6326191 */ 
             DRETURN_VOID;
@@ -1359,8 +1359,9 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             2. a newly started job
                In this case the shepherd had not enough time 
                to write the pid file -> No Logging */
-      if (startup && startup_time >= lGetUlong(jatep, JAT_start_time)) {
-         ERROR(MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSUS, fname, dir, sge_u32c(lGetUlong(jatep, JAT_start_time)), strerror(errno));
+      if (startup && startup_time >= lGetUlong64(jatep, JAT_start_time) / 1000000) { // @todo (Timestamp)
+         DSTRING_STATIC(dstr, 100);
+         ERROR(MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSSS, fname, dir, sge_ctime64(lGetUlong64(jatep, JAT_start_time), &dstr), strerror(errno));
          /* seek job report for this job - it must be contained in job report
             If this is a newly started execd we can assume the execd was broken
             in the interval between making the jobs active directory and writing
@@ -1687,7 +1688,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
          double wallclock;
-         u_long32 end_time = usage_list_get_ulong_usage(usage_list, "end_time", 0);
+         u_long64 end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
          const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
          if (pe != nullptr && lGetBool(pe, PE_accounting_summary)) {
             accounting_summary = true;

@@ -624,21 +624,22 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    }
 
    if (sge_time) {
-      if (report_handler) {
-         if (!lGetUlong(jatep, JAT_start_time)) {
-            report_handler->report_job_ulong_value(report_handler, cqname, jobid, "submit_time",
-                                                   lGetUlong(job, JB_submission_time), alpp);
+      if (report_handler != nullptr) {
+         u_long64 jat_start_time = lGetUlong(jatep, JAT_start_time);
+         if (jat_start_time == 0) {
+            report_handler->report_job_ulong64_value(report_handler, cqname, jobid, "submit_time",
+                                                   lGetUlong64(job, JB_submission_time), alpp);
          } else {
-            report_handler->report_job_ulong_value(report_handler, cqname, jobid, "start_time",
-                                                   lGetUlong(jatep, JAT_start_time), alpp);
+            report_handler->report_job_ulong64_value(report_handler, cqname, jobid, "start_time",
+                                                   jat_start_time, alpp);
          }
       } else {
          if (print_jobid) {
             /* start/submit time */
-            if (!lGetUlong(jatep, JAT_start_time)) {
-               printf("%s ", sge_ctime((time_t)lGetUlong(job, JB_submission_time), &ds));
+            if (lGetUlong(jatep, JAT_start_time) == 0) {
+               printf("%s ", sge_ctime64_short(lGetUlong64(job, JB_submission_time), &ds));
             } else {
-               printf("%s ", sge_ctime((time_t)lGetUlong(jatep, JAT_start_time), &ds));
+               printf("%s ", sge_ctime64_short(lGetUlong64(jatep, JAT_start_time), &ds));
             }
          } else {
             printf("                    ");
@@ -652,10 +653,10 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    /* deadline time */
    if (sge_urg) {
       if (print_jobid) {
-         if (!lGetUlong(job, JB_deadline)) {
+         if (lGetUlong64(job, JB_deadline) == 0) {
             printf("                    ");
          } else {
-            printf("%s ", sge_ctime((time_t)lGetUlong(job, JB_deadline), &ds));
+            printf("%s ", sge_ctime64_short(lGetUlong64(job, JB_deadline), &ds));
          }
       } else {
          printf("                    ");

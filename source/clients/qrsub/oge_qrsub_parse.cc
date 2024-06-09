@@ -75,19 +75,19 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
 
    /*  -a date_time 	 start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-a"))) {
-      lSetUlong(*ar, AR_start_time, lGetUlong(ep, SPA_argval_lUlongT));
+      lSetUlong64(*ar, AR_start_time, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(pcmdline, &ep);
    }
 
    /*  -e date_time 	 end time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG*/
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-e"))) {
-      lSetUlong(*ar, AR_end_time, lGetUlong(ep, SPA_argval_lUlongT));
+      lSetUlong64(*ar, AR_end_time, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(pcmdline, &ep);
    }
 
    /*  -d time 	 duration in TIME format SGE_ULONG */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-d"))) {
-      lSetUlong(*ar, AR_duration, lGetUlong(ep, SPA_argval_lUlongT));
+      lSetUlong64(*ar, AR_duration, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(pcmdline, &ep);
    }
    
@@ -242,13 +242,13 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       DRETURN(false);
    }
 
-   if (lGetUlong(*ar, AR_start_time) == 0 && lGetUlong(*ar, AR_end_time) != 0 && lGetUlong(*ar, AR_duration) != 0) {
-      lSetUlong(*ar, AR_start_time, lGetUlong(*ar, AR_end_time) - lGetUlong(*ar, AR_duration));
-   } else if (lGetUlong(*ar, AR_start_time) != 0 && lGetUlong(*ar, AR_end_time) == 0 && lGetUlong(*ar, AR_duration) != 0) {
-      lSetUlong(*ar, AR_end_time, duration_add_offset(lGetUlong(*ar, AR_start_time), lGetUlong(*ar, AR_duration)));
-      lSetUlong(*ar, AR_duration, lGetUlong(*ar, AR_end_time) - lGetUlong(*ar, AR_start_time));
-   } else if (lGetUlong(*ar, AR_start_time) != 0 && lGetUlong(*ar, AR_end_time) != 0 && lGetUlong(*ar, AR_duration) == 0) {
-      lSetUlong(*ar, AR_duration, lGetUlong(*ar, AR_end_time) - lGetUlong(*ar, AR_start_time));
+   if (lGetUlong64(*ar, AR_start_time) == 0 && lGetUlong64(*ar, AR_end_time) != 0 && lGetUlong64(*ar, AR_duration) != 0) {
+      lSetUlong64(*ar, AR_start_time, lGetUlong64(*ar, AR_end_time) - lGetUlong64(*ar, AR_duration));
+   } else if (lGetUlong64(*ar, AR_start_time) != 0 && lGetUlong64(*ar, AR_end_time) == 0 && lGetUlong64(*ar, AR_duration) != 0) {
+      lSetUlong64(*ar, AR_end_time, duration_add_offset(lGetUlong64(*ar, AR_start_time), lGetUlong64(*ar, AR_duration)));
+      lSetUlong64(*ar, AR_duration, lGetUlong64(*ar, AR_end_time) - lGetUlong64(*ar, AR_start_time));
+   } else if (lGetUlong64(*ar, AR_start_time) != 0 && lGetUlong64(*ar, AR_end_time) != 0 && lGetUlong64(*ar, AR_duration) == 0) {
+      lSetUlong64(*ar, AR_duration, lGetUlong64(*ar, AR_end_time) - lGetUlong64(*ar, AR_start_time));
    }
 
    DRETURN(true);

@@ -158,7 +158,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    lSetUlong(petrep, PETR_jobid, jobid);
    lSetUlong(petrep, PETR_jataskid, jataskid);
    lSetString(petrep, PETR_owner, myname);
-   lSetUlong(petrep, PETR_submission_time, sge_get_gmt());
+   lSetUlong64(petrep, PETR_submission_time, sge_get_gmt64());
 
    if (cwd != nullptr) {
       lSetString(petrep, PETR_cwd, cwd);

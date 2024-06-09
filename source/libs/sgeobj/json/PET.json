@@ -119,9 +119,9 @@
 			"name":	"submission_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -129,9 +129,9 @@
 			"name":	"start_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]
@@ -139,9 +139,9 @@
 			"name":	"end_time",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"... microseconds since epoch"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"SPOOL_SUBLIST"
 				}]

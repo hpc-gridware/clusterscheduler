@@ -287,9 +287,13 @@ object_verify_cull(const lListElem *ep, const lDescr *descr);
 
 bool
 object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
+bool
+object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm);
 
 bool
 object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm);
+bool
+object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm);
 
 bool
 object_verify_double_null(const lListElem *ep, lList **answer_list, int nm);

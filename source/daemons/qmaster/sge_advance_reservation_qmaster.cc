@@ -117,7 +117,7 @@ sge_ar_send_mail(lListElem *ar, int type);
 void
 ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
    lListElem *ar, *next_ar;
-   u_long32 now = sge_get_gmt();
+   u_long64 now64 = sge_get_gmt();
 
    DENTER(TOP_LAYER);
 
@@ -130,19 +130,19 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
       next_ar = lNextRW(ar);
 
-      if (now < lGetUlong(ar, AR_start_time)) {
+      if (now64 < lGetUlong64(ar, AR_start_time)) {
          sge_ar_state_set_waiting(ar);
 
-         ev = te_new_event((time_t) lGetUlong(ar, AR_start_time), TYPE_AR_EVENT,
+         ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_start_time)), TYPE_AR_EVENT,
                            ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_RUNNING, nullptr);
          te_add_event(ev);
          te_add_event(ev);
          te_free_event(&ev);
 
-      } else if (now < lGetUlong(ar, AR_end_time)) {
+      } else if (now64 < lGetUlong64(ar, AR_end_time)) {
          sge_ar_state_set_running(ar);
 
-         ev = te_new_event((time_t) lGetUlong(ar, AR_end_time), TYPE_AR_EVENT,
+         ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_end_time)), TYPE_AR_EVENT,
                            ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_EXITED, nullptr);
          te_add_event(ev);
          te_free_event(&ev);
@@ -158,8 +158,8 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
          oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                         "end time of AR reached",
-                                        now);
-         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
+                                        now64);
+         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now64);
 
          sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
 
@@ -264,13 +264,13 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
    /*   AR_account, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_account, object->object_name);
    /*   AR_submission_time, SGE_ULONG */
-   lSetUlong(new_ar, AR_submission_time, sge_get_gmt());
+   lSetUlong64(new_ar, AR_submission_time, sge_get_gmt64());
    /*   AR_start_time, SGE_ULONG          required */
-   attr_mod_ulong(ar, new_ar, AR_start_time, object->object_name);
+   attr_mod_ulong64(ar, new_ar, AR_start_time, object->object_name);
    /*   AR_end_time, SGE_ULONG            required */
-   attr_mod_ulong(ar, new_ar, AR_end_time, object->object_name);
+   attr_mod_ulong64(ar, new_ar, AR_end_time, object->object_name);
    /*   AR_duration, SGE_ULONG */
-   attr_mod_ulong(ar, new_ar, AR_duration, object->object_name);
+   attr_mod_ulong64(ar, new_ar, AR_duration, object->object_name);
    /*   AR_verify, SGE_ULONG              just verify the reservation or final case */
    attr_mod_ulong(ar, new_ar, AR_verify, object->object_name);
    /*   AR_error_handling, SGE_ULONG      how to deal with soft and hard exceptions */
@@ -435,7 +435,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
    /*
    ** add the timer to trigger the state change
     */
-   ev = te_new_event((time_t) lGetUlong(ep, AR_start_time), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
+   ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ep, AR_start_time)), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
                      AR_RUNNING, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
@@ -960,7 +960,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       sge_ar_state_set_running(ar);
 
-      ev = te_new_event((time_t) lGetUlong(ar, AR_end_time), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
+      ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_end_time)), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
       te_add_event(ev);
       te_free_event(&ev);
 
@@ -1051,11 +1051,11 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
    a.acl_list = master_userset_list;
    a.hgrp_list = master_hgroup_list;
    a.gep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
-   a.start = lGetUlong(ar, AR_start_time);
-   a.duration = lGetUlong(ar, AR_duration);
+   a.start = lGetUlong64(ar, AR_start_time);
+   a.duration = lGetUlong64(ar, AR_duration);
    a.is_reservation = true;
    a.is_advance_reservation = true;
-   a.now = sge_get_gmt();
+   a.now = sge_get_gmt64();
 
    /* 
     * Current scheduler code expects all queue instances in a plain list. We use 
@@ -1127,7 +1127,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
          if ((cal_name = lGetString(qinstance, QU_calendar)) != nullptr) {
             const lListElem *cal_ep = lGetElemStrRW(master_cal_list, CAL_name, cal_name);
 
-            if (!calendar_open_in_time_frame(cal_ep, lGetUlong(ar, AR_start_time), lGetUlong(ar, AR_duration))) {
+            if (!calendar_open_in_time_frame(cal_ep, lGetUlong64(ar, AR_start_time), lGetUlong64(ar, AR_duration))) {
                /* skip queue */
                answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDISABLEDINTIMEFRAME,
                                        lGetString(qinstance, QU_full_name));
@@ -1176,8 +1176,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
    lFreeList(splitted_job_lists[SPLIT_RUNNING]);
    lFreeList(splitted_job_lists[SPLIT_SUSPENDED]);
 
-   lSetUlong(dummy_job, JB_execution_time, lGetUlong(ar, AR_start_time));
-   lSetUlong(dummy_job, JB_deadline, lGetUlong(ar, AR_end_time));
+   lSetUlong64(dummy_job, JB_execution_time, lGetUlong64(ar, AR_start_time));
+   lSetUlong64(dummy_job, JB_deadline, lGetUlong64(ar, AR_end_time));
    lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
    lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
    lSetList(dummy_job, JB_master_hard_queue_list, lCopyList("", lGetList(ar, AR_master_queue_list)));
@@ -1272,8 +1272,8 @@ ar_do_reservation(lListElem *ar, bool incslots) {
    int pe_slots = 0;
    int tmp_slots;
    const char *granted_pe = lGetString(ar, AR_granted_pe);
-   u_long32 start_time = lGetUlong(ar, AR_start_time);
-   u_long32 duration = lGetUlong(ar, AR_duration);
+   u_long64 start_time = lGetUlong64(ar, AR_start_time);
+   u_long64 duration = lGetUlong64(ar, AR_duration);
    const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -1635,7 +1635,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
       lSetString(queue, QU_qname, cqueue_name);
 
       sge_dstring_clear(&buffer);
-      double_print_time_to_dstring(lGetUlong(ar, AR_duration), &buffer);
+      double_print_time_to_dstring(lGetUlong64(ar, AR_duration), &buffer);
       lSetString(queue, QU_h_rt, sge_dstring_get_string(&buffer));
       lSetString(queue, QU_s_rt, sge_dstring_get_string(&buffer));
 
@@ -1866,8 +1866,8 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
 
    for_each_ep(ar, master_ar_list) {
       if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
-         u_long32 start_time = lGetUlong(ar, AR_start_time);
-         u_long32 duration = lGetUlong(ar, AR_duration);
+         u_long64 start_time = lGetUlong64(ar, AR_start_time);
+         u_long64 duration = lGetUlong64(ar, AR_duration);
 
          if (!calendar_open_in_time_frame(cal_ep, start_time, duration)) {
             ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id)));
@@ -2138,7 +2138,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
 
    switch (type) {
       case MAIL_AT_BEGINNING:
-         sge_ctime((time_t) lGetUlong(ar, AR_start_time), &buffer);
+         sge_ctime64(lGetUlong64(ar, AR_start_time), &buffer);
          sge_dstring_sprintf(&subject, MSG_MAIL_ARSTARTEDSUBJ_US,
                              sge_u32c(ar_id), ar_name ? ar_name : "none");
          sge_dstring_sprintf(&body, MSG_MAIL_ARSTARTBODY_USSS,
@@ -2156,7 +2156,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARDELETE;
          } else {
-            sge_ctime((time_t) lGetUlong(ar, AR_end_time), &buffer);
+            sge_ctime64(lGetUlong64(ar, AR_end_time), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AREXITEDSUBJ_US,
                                 sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AREXITBODY_USSS,

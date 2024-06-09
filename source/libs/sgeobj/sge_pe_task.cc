@@ -264,7 +264,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
     *    - verify PETR_cwd, if it is != nullptr
     *    - verify PETR_path_aliases, if they are != nullptr
     *    - verify PETR_environment, if it is != nullptr
-    *    - PETR_submission_time (currently unused)
+    *    - PETR_submission_time
     */
 
    if (ret) {

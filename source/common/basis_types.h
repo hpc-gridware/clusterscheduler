@@ -36,6 +36,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cerrno>
+#include <limits>
 #include <sys/types.h>
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
@@ -105,7 +106,9 @@
 #endif
 
 #define U_LONG32_MAX 4294967295UL
+#define U_LONG64_MAX std::numeric_limits<u_long64>::max()
 #define LONG32_MAX   2147483647
+
 
 /* set sge_u32 and sge_x32 for 64 or 32 bit machines */
 /* sge_uu32 for strictly unsigned, not nice, but did I use %d for an unsigned? */

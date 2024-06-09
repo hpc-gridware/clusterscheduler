@@ -2595,7 +2595,7 @@ bool calendar_open_in_time_frame(const lListElem *cep, u_long32 start_time, u_lo
    const lList *week_list = nullptr;
    time_t next_change;
    time_t start = (time_t)start_time;
-   time_t end = (time_t)duration_add_offset(start_time, duration);
+   time_t end = (time_t) sge_gmt64_to_gmt32(duration_add_offset(start_time, duration));
 
    DENTER(TOP_LAYER);
 

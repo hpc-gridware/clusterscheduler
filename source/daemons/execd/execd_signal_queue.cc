@@ -232,7 +232,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
       if (sig == SGE_SIGKILL) {
          lListElem *jr = nullptr;
          u_long32 jobid, jataskid;
-         u_long32 wallclock;
+         double wallclock;
 
          jobid = lGetUlong(jep, JB_job_number);
          jataskid = lGetUlong(jatep, JAT_task_number);
@@ -245,11 +245,11 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
          }
 
          lSetUlong(jr, JR_state, JEXITING);
-         lSetUlong(jatep, JAT_end_time, sge_get_gmt());
-         add_usage(jr, "submission_time", nullptr, lGetUlong(jep, JB_submission_time));
-         add_usage(jr, "start_time", nullptr, lGetUlong(jatep, JAT_start_time));
-         add_usage(jr, "end_time", nullptr, lGetUlong(jatep, JAT_end_time));
-         wallclock = lGetUlong(jatep, JAT_end_time) - lGetUlong(jatep, JAT_start_time);
+         lSetUlong64(jatep, JAT_end_time, sge_get_gmt64());
+         add_usage(jr, "submission_time", nullptr, lGetUlong64(jep, JB_submission_time));
+         add_usage(jr, "start_time", nullptr, lGetUlong64(jatep, JAT_start_time));
+         add_usage(jr, "end_time", nullptr, lGetUlong64(jatep, JAT_end_time));
+         wallclock = (lGetUlong64(jatep, JAT_end_time) - lGetUlong64(jatep, JAT_start_time)) / 1000000.0;
          add_usage(jr, "ru_wallclock", nullptr, wallclock);
          add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
          add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
@@ -337,8 +337,8 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
        u_long32 jobid         = 0;
        u_long32 taskid        = 0;
-       u_long32 job_sub_time  = 0;
-       u_long32 job_exec_time = 0; 
+       u_long64 job_sub_time  = 0;
+       u_long64 job_exec_time = 0;
 
        char mail_subject[MAX_STRING_SIZE]; 
        char mail_body[MAX_STRING_SIZE];
@@ -358,7 +358,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
        /* get values */       
        if (jep != nullptr) {
-          job_sub_time = lGetUlong(jep, JB_submission_time);
+          job_sub_time = lGetUlong64(jep, JB_submission_time);
           jobid        = lGetUlong(jep, JB_job_number);
           mail_users   = lGetList(jep, JB_mail_list);
           job_name     = lGetString(jep, JB_job_name);
@@ -366,8 +366,8 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
         }
 
        if (jatep != nullptr) {
-          job_exec_time    = lGetUlong(jatep, JAT_start_time );
-          taskid           = lGetUlong(jatep, JAT_task_number );
+          job_exec_time    = lGetUlong64(jatep, JAT_start_time);
+          taskid           = lGetUlong(jatep, JAT_task_number);
           job_master_queue = lGetString(jatep, JAT_master_queue);
        }
 
@@ -384,8 +384,8 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
 
        /* make human readable time format */
-       snprintf(job_sub_time_str, sizeof(job_sub_time_str), "%s", sge_ctime((time_t)job_sub_time, &ds));
-       snprintf(job_exec_time_str, sizeof(job_exec_time_str), "%s", sge_ctime((time_t)job_exec_time, &ds));
+       snprintf(job_sub_time_str, sizeof(job_sub_time_str), "%s", sge_ctime64(job_sub_time, &ds));
+       snprintf(job_exec_time_str, sizeof(job_exec_time_str), "%s", sge_ctime64(job_exec_time, &ds));
 
        if (signal == SGE_SIGSTOP) {
           /* suspended */

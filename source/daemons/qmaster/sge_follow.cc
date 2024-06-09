@@ -282,8 +282,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-2);
             }
-            lSetUlong(jatp, JAT_wallclock_limit,
-                      (lGetUlong(ar, AR_end_time) - sge_get_gmt() - sconf_get_duration_offset()));
+            lSetUlong64(jatp, JAT_wallclock_limit,
+                      lGetUlong64(ar, AR_end_time) - sge_get_gmt64() - sconf_get_duration_offset());
          }
 
          /* fill number of tickets into job */

@@ -119,7 +119,7 @@ void sconf_reset_new_config(void);
 
 bool sconf_is(void);
 
-u_long32 sconf_get_load_adjustment_decay_time(void);
+u_long64 sconf_get_load_adjustment_decay_time(void);
 
 lList *sconf_get_job_load_adjustments(void);
 
@@ -189,7 +189,7 @@ u_long32 sconf_get_max_reservations(void);
 double sconf_get_weight_priority(void);
 bool sconf_get_profiling(void);
 
-u_long32 sconf_get_default_duration(void);
+u_long64 sconf_get_default_duration(void);
 
 typedef enum {
    QS_STATE_EMPTY,
@@ -212,7 +212,7 @@ void sconf_set_host_order_changed(bool changed);
 int  sconf_get_last_dispatch_type(void);
 void sconf_set_last_dispatch_type(int changed);
 
-u_long32  sconf_get_duration_offset(void);
+u_long64  sconf_get_duration_offset(void);
 
 bool serf_get_active(void);
 

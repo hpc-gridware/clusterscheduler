@@ -334,7 +334,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
 
    /* do job logging */
    oge::ReportingFileWriter::create_new_job_records(nullptr, *jep);
-   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
+   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong64(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
                             *jep, nullptr, nullptr, MSG_LOG_NEWJOB);
 
    /*
@@ -1012,7 +1012,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
       }
    } else {
       if (force) {
-         u_long32 now = sge_get_gmt();
+         u_long64 now = sge_get_gmt64();
          const char *qualified_hostname = component_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
@@ -1065,7 +1065,7 @@ void job_mark_job_as_deleted(lListElem *j,
 
       SETBIT(JDELETED, state);
       lSetUlong(t, JAT_state, state);
-      lSetUlong(t, JAT_stop_initiate_time, sge_get_gmt());
+      lSetUlong64(t, JAT_stop_initiate_time, sge_get_gmt64());
       spool_write_object(&answer_list, spool_get_default_context(), j,
                          job_get_key(lGetUlong(j, JB_job_number), lGetUlong(t, JAT_task_number), nullptr, &buffer),
                          SGE_TYPE_JOB, true);
@@ -2062,7 +2062,7 @@ static int mod_job_attributes(
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       } else {
-         lSetUlong(new_job, JB_deadline, lGetUlong(jep, JB_deadline));
+         lSetUlong64(new_job, JB_deadline, lGetUlong64(jep, JB_deadline));
          *trigger |= MOD_EVENT;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_DEADLINETIME, sge_u32c(jobid));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2073,7 +2073,7 @@ static int mod_job_attributes(
    /* ---- JB_execution_time */
    if ((pos = lGetPosViaElem(jep, JB_execution_time, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_execution_time\n");
-      lSetUlong(new_job, JB_execution_time, lGetUlong(jep, JB_execution_time));
+      lSetUlong64(new_job, JB_execution_time, lGetUlong64(jep, JB_execution_time));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STARTTIME, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3855,7 +3855,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 */
                if ((lGetUlong(tmp_task, JAT_status) & JFINISHED) ||
                    (lGetUlong(tmp_task, JAT_state) & JDELETED &&
-                    lGetUlong(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt() &&
+                    lGetUlong64(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt64() &&
                     !forced)) {
                   INFO(MSG_JOB_ALREADYDELETED_U, sge_u32c(job_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

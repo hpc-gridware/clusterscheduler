@@ -46,6 +46,12 @@
 #  include <rpc/xdr.h>
 #endif
 
+#if defined(SOLARIS)
+#include <sys/byteorder.h>
+#define htobe64(x) BE_64(x)
+#define be64toh(x) BE_IN64(x)
+#endif
+
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
@@ -346,7 +352,7 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
       }
 
       /* copy in packing buffer */
-      J = htonl(i);
+      J = htobe64(i);
       memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), (INTSIZE * 2));
       pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);
    }
@@ -612,7 +618,7 @@ int unpackint64(sge_pack_buffer *pb, u_long64 *ip) {
    /* copy integer */
    memset(ip, 0, sizeof(u_long64));
    memcpy(((char *) ip) + INTOFF, pb->cur_ptr, (INTSIZE * 2));
-   *ip = ntohl(*ip);
+   *ip = be64toh(*ip);
 
    /* update cur_ptr & bytes_unpacked */
    pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);

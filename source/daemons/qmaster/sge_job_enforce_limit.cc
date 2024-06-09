@@ -376,7 +376,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
              */
             if (gdil_ep != nullptr) {
                bool do_action = false;
-               u_long32 now = sge_get_gmt();
+               u_long64 now = sge_get_gmt64();
                const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
                const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
                lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
@@ -581,7 +581,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
    DENTER(TOP_LAYER);
 
    /*
-    * is the limit enforcment enabled?
+    * is the limit enforcement enabled?
     */
    if (is_module_enabled()) {
 
@@ -626,7 +626,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
             u_long32 now = sge_get_gmt();
             u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
             u_long32 job_id = lGetUlong(job, JB_job_number);
-            u_long32 duration_offset = sconf_get_duration_offset();
+            u_long32 duration_offset = sge_gmt64_to_gmt32(sconf_get_duration_offset());
             u_long32 delta_seconds = 0;
             u_long32 already_running = 0;
             bool has_rt_limit = false;
@@ -682,7 +682,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                }
 
                max_running = MIN(qi_h_rt, job_h_rt);
-               already_running = now - lGetUlong(ja_task, JAT_start_time);
+               already_running = now - sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time)); // @todo (Timestamp)
                if (already_running <= max_running) {
                   delta_seconds = MAX(max_running - already_running, 0);
                }

@@ -1006,7 +1006,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 
          assignment_init(&a, jep, ja_task, false);
 
-         a.start = lGetUlong(ja_task, JAT_start_time);
+         a.start = sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time)); // @todo (Timestamp)
 
          task_get_duration(&a.duration, ja_task);
 

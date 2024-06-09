@@ -1153,7 +1153,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
             rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                    this_elem, centry_list, lGetUlong(gdil_ep, JG_slots),
                                    QU_consumable_config_list, QU_resource_utilization, name,
-                                   lGetUlong(ep, AR_start_time), lGetUlong(ep, AR_duration),
+                                   lGetUlong64(ep, AR_start_time), lGetUlong64(ep, AR_duration),
                                    QUEUE_TAG, false, is_master_task);
             lFreeElem(&dummy_job);
          }
