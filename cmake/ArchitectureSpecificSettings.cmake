@@ -70,6 +70,10 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       add_link_options(-pthread -rdynamic)
 
+      set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
+      set(TIRPC_LIB tirpc PARENT_SCOPE)
+      message(STATUS "using libtirpc")
+
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
