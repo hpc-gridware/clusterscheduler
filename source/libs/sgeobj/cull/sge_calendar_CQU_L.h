@@ -35,7 +35,7 @@
 *    SGE_ULONG(CQU_state) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(CQU_till) - @todo add summary
+*    SGE_ULONG64(CQU_till) - @todo add summary
 *    @todo add description
 *
 */
@@ -47,7 +47,7 @@ enum {
 
 LISTDEF(CQU_Type)
    SGE_ULONG(CQU_state, CULL_DEFAULT)
-   SGE_ULONG(CQU_till, CULL_DEFAULT)
+   SGE_ULONG64(CQU_till, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(CQUN)

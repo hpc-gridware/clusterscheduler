@@ -148,7 +148,7 @@ void monitor_dominance(char *str, u_long32 mask) {
 *******************************************************************************/
 lListElem* get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr, 
    const lList *centry_list, const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
-   bool zero_utilization, u_long32 start_time, u_long32 duration)
+   bool zero_utilization, u_long64 start_time, u_long64 duration)
 {
    const lListElem *actual_el=nullptr;
    const lListElem *load_el=nullptr;
@@ -1108,12 +1108,12 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    DRETURN(0);
 }
 
-/****** sge_select_queue/get_attribute_by_Name() *******************************
+/****** sge_select_queue/get_attribute_by_name() *******************************
 *  NAME
-*     get_attribute_by_Name() -- returns an attribut by name 
+*     get_attribute_by_name() -- returns an attribut by name
 *
 *  SYNOPSIS
-*     void lListElem* get_attribute_by_Name(lListElem* global, lListElem *host, 
+*     void lListElem* get_attribute_by_name(lListElem* global, lListElem *host,
 *     lListElem *queue, const char* attrname, lList *centry_list, char * 
 *     reason, int reason_size) 
 *
@@ -1136,7 +1136,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 *
 *******************************************************************************/
 lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host, const lListElem *queue, 
-    const char* attrname, const lList *centry_list, u_long32 start_time, u_long32 duration)
+    const char* attrname, const lList *centry_list, u_long64 start_time, u_long64 duration)
 {
    lListElem *global_el=nullptr;
    lListElem *host_el=nullptr;

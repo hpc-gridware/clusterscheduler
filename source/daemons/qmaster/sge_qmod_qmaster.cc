@@ -948,13 +948,13 @@ rebuild_signal_events() {
       const lListElem *qinstance;
 
       for_each_ep(qinstance, qinstance_list) {
-         time_t when = (time_t) lGetUlong(qinstance, QU_pending_signal_delivery_time);
+         u_long64 when = lGetUlong64(qinstance, QU_pending_signal_delivery_time);
 
-         if (lGetUlong(qinstance, QU_pending_signal) && (when > 0)) {
+         if (lGetUlong(qinstance, QU_pending_signal) && when > 0) {
             const char *str_key = lGetString(qinstance, QU_full_name);
             te_event_t ev = nullptr;
 
-            ev = te_new_event(when, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, str_key);
+            ev = te_new_event(sge_gmt64_to_gmt32(when), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, str_key);
             te_add_event(ev);
             te_free_event(&ev);
          }
@@ -1042,14 +1042,12 @@ sge_propagate_queue_suspension(const char *qnm, int how) {
 int
 sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
    int i;
-   u_long32 next_delivery_time = 60;
-   u_long32 now;
    sge_pack_buffer pb;
    int sent = 0;
 
    DENTER(TOP_LAYER);
 
-   now = sge_get_gmt();
+   u_long32 now = sge_get_gmt();
 
    DEBUG("queue_signal: %d, queue: %s, job: %d, jatask: %d", how, (qep ? lGetString(qep, QU_full_name) : "none"), (int) (jep ? lGetUlong(jep, JB_job_number) : -1), (int) (jatep ? lGetUlong(jatep, JAT_task_number) : -1) );
 
@@ -1091,7 +1089,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
          if (mconf_get_simulate_execds()) {
             i = CL_RETVAL_OK;
             if (jep && how == SGE_SIGKILL)
-               trigger_job_resend(sge_get_gmt(), nullptr, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
+               trigger_job_resend(sge_get_gmt64(), nullptr, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
                                   1);
          } else {
             if (pb_filled(&pb)) {
@@ -1114,7 +1112,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
       sent = 1;
    }
 
-   next_delivery_time += now;
+   u_long64 next_delivery_time = now + sge_gmt32_to_gmt64(60);
 
    /* If this is a operation on one job we enter the signal request in the
       job structure. If the operation is not acknowledged in time we can do
@@ -1122,7 +1120,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
    if (jep) {
       te_event_t ev = nullptr;
 
-      DPRINTF("JOB " sge_u32": %s signal %s (retry after " sge_u32" seconds) host: %s\n",
+      DPRINTF("JOB " sge_u32": %s signal %s (retry after " sge_u64" microseconds) host: %s\n",
               lGetUlong(jep, JB_job_number), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
               lGetHost(qep, QU_qhostname));
       te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, lGetUlong(jep, JB_job_number),
@@ -1130,27 +1128,27 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
 
       if (!mconf_get_simulate_execds()) {
          lSetUlong(jatep, JAT_pending_signal, how);
-         ev = te_new_event((time_t) next_delivery_time, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT,
+         ev = te_new_event(sge_gmt64_to_gmt32(next_delivery_time), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT,
                            lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), nullptr);
          te_add_event(ev);
          te_free_event(&ev);
-         lSetUlong64(jatep, JAT_pending_signal_delivery_time, sge_gmt32_to_gmt64(next_delivery_time));
+         lSetUlong64(jatep, JAT_pending_signal_delivery_time, next_delivery_time);
       }
    } else {
       te_event_t ev = nullptr;
 
-      DPRINTF("QUEUE %s: %s signal %s (retry after " sge_u32" seconds) host %s\n",
+      DPRINTF("QUEUE %s: %s signal %s (retry after " sge_u64" microseconds) host %s\n",
               lGetString(qep, QU_full_name), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
               lGetHost(qep, QU_qhostname));
       te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qep, QU_full_name));
 
       if (!mconf_get_simulate_execds()) {
          lSetUlong(qep, QU_pending_signal, how);
-         ev = te_new_event((time_t) next_delivery_time, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0,
+         ev = te_new_event(sge_gmt64_to_gmt32(next_delivery_time), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0,
                            lGetString(qep, QU_full_name));
          te_add_event(ev);
          te_free_event(&ev);
-         lSetUlong(qep, QU_pending_signal_delivery_time, next_delivery_time);
+         lSetUlong64(qep, QU_pending_signal_delivery_time, next_delivery_time);
       }
    }
 

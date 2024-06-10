@@ -58,8 +58,8 @@
 * 
 * 
 *
-*    SGE_ULONG(RDE_time) - Time
-*    Time stamp (seconds since epoch).
+*    SGE_ULONG64(RDE_time) - Time
+*    Time stamp (microseconds since epoch).
 *
 *    SGE_DOUBLE(RDE_amount) - Amount
 *    Amount of the resource which is used.
@@ -76,7 +76,7 @@ enum {
 };
 
 LISTDEF(RDE_Type)
-   SGE_ULONG(RDE_time, CULL_DEFAULT)
+   SGE_ULONG64(RDE_time, CULL_DEFAULT)
    SGE_DOUBLE(RDE_amount, CULL_DEFAULT)
    SGE_LIST(RDE_resource_map_list, RESL_Type, CULL_DEFAULT)
 LISTEND

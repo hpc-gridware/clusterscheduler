@@ -41,7 +41,7 @@
 *    SGE_HOST(KRB_host) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(KRB_timestamp) - @todo add summary
+*    SGE_ULONG64(KRB_timestamp) - @todo add summary
 *    @todo add description
 *
 *    SGE_STRING(KRB_auth_context) - @todo add summary
@@ -65,7 +65,7 @@ LISTDEF(KRB_Type)
    SGE_STRING(KRB_commproc, CULL_DEFAULT)
    SGE_ULONG(KRB_id, CULL_DEFAULT)
    SGE_HOST(KRB_host, CULL_DEFAULT)
-   SGE_ULONG(KRB_timestamp, CULL_DEFAULT)
+   SGE_ULONG64(KRB_timestamp, CULL_DEFAULT)
    SGE_STRING(KRB_auth_context, CULL_DEFAULT)
    SGE_LIST(KRB_tgt_list, KTGT_Type, CULL_DEFAULT)
 LISTEND

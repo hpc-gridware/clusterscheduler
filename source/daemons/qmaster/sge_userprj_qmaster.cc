@@ -154,8 +154,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
    if (user_flag) {
       /* ---- UU_delete_time */
       if ((pos = lGetPosViaElem(ep, UU_delete_time, SGE_NO_ABORT)) >= 0) {
-         uval = lGetPosUlong(ep, pos);
-         lSetUlong(modp, UU_delete_time, uval);
+         lSetUlong64(modp, UU_delete_time, lGetPosUlong64(ep, pos));
       }
    }
 
@@ -433,7 +432,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /*-------------------------------------------------------------------------*/
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
-   u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = mconf_get_auto_user_delete_time();
    const char *admin = bootstrap_get_admin_user();
    const char *qmaster_host = component_get_qualified_hostname();
 
@@ -442,8 +441,8 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    /* shall auto users be deleted again? */
    if (auto_user_delete_time > 0) {
       lListElem *user, *next;
-      u_long32 now = sge_get_gmt();
-      u_long32 next_delete = now + auto_user_delete_time;
+      u_long64 now = sge_get_gmt64();
+      u_long64 next_delete = now + auto_user_delete_time;
 
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
       lList **master_user_list = oge::DataStore::get_master_list_rw(SGE_TYPE_USER);
@@ -453,7 +452,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
        * because we are deleting entries.
        */
       for (user = lFirstRW(*master_user_list); user; user = next) {
-         u_long32 delete_time = lGetUlong(user, UU_delete_time);
+         u_long64 delete_time = lGetUlong64(user, UU_delete_time);
          next = lNextRW(user);
 
          /* 
@@ -465,7 +464,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 
             /* if the user has jobs, we increment the delete time */
             if (suser_get_job_counter(suser_list_find(*oge::DataStore::get_master_list(SGE_TYPE_SUSER), name)) > 0) {
-               lSetUlong(user, UU_delete_time, next_delete);
+               lSetUlong64(user, UU_delete_time, next_delete);
             } else {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
@@ -476,7 +475,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                       * if deleting the user failes (due to user being referenced
                       * in other objects, e.g. queue), regard him as non auto user
                       */
-                     lSetUlong(user, UU_delete_time, 0);
+                     lSetUlong64(user, UU_delete_time, 0);
                   }
                   /* output low level error messages */
                   answer_list_output(&answer_list);
@@ -498,7 +497,7 @@ int
 sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
    int status = STATUS_OK;
-   u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = mconf_get_auto_user_delete_time();
 
    DENTER(TOP_LAYER);
 
@@ -507,10 +506,10 @@ sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
    /* if the user already exists */
    if (uep != nullptr) {
       /* and is an auto user */
-      if (lGetUlong(uep, UU_delete_time) != 0) {
+      if (lGetUlong64(uep, UU_delete_time) != 0) {
          /* and we shall not keep auto users forever */
          if (auto_user_delete_time > 0) {
-            lSetUlong(uep, UU_delete_time, sge_get_gmt() + auto_user_delete_time);
+            lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
          }
       }
       /* and we are done */
@@ -528,9 +527,9 @@ sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
       lSetString(uep, UU_name, user);
 
       if (auto_user_delete_time > 0) {
-         lSetUlong(uep, UU_delete_time, sge_get_gmt() + auto_user_delete_time);
+         lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
       } else {
-         lSetUlong(uep, UU_delete_time, 0);
+         lSetUlong64(uep, UU_delete_time, 0);
       }
 
       lSetUlong(uep, UU_oticket, mconf_get_auto_user_oticket());

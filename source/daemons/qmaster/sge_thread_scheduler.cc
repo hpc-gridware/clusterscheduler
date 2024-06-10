@@ -103,7 +103,7 @@ schedd_set_serf_log_file() {
 
 /* MT-NOTE: schedd_serf_record_func() is not MT safe */
 static void
-schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, u_long32 start_time, u_long32 end_time,
+schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, u_long64 start_time, u_long64 end_time,
                         char level_char, const char *object_name, const char *name, double utilization) {
    FILE *fp;
 
@@ -114,8 +114,8 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
    }
 
    /* a new record */
-   fprintf(fp, sge_U32CFormat":" sge_U32CFormat ":%s:" sge_U32CFormat ":" sge_U32CFormat ":%c:%s:%s:%f\n", sge_u32c(job_id),
-           sge_u32c(ja_taskid), state, sge_u32c(start_time), sge_u32c(end_time - start_time), level_char, object_name,
+   fprintf(fp, sge_U32CFormat":" sge_U32CFormat ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", sge_u32c(job_id),
+           sge_u32c(ja_taskid), state, start_time, end_time - start_time, level_char, object_name,
            name, utilization);
    FCLOSE(fp);
 

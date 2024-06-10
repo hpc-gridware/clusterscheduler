@@ -40,9 +40,9 @@
 typedef struct sge_qeti_s sge_qeti_t;
 
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a);
-u_long32 sge_qeti_first(sge_qeti_t *qeti);
-void sge_qeti_next_before(sge_qeti_t *qeti, u_long32 start);
-u_long32 sge_qeti_next(sge_qeti_t *qeti);
+u_long64 sge_qeti_first(sge_qeti_t *qeti);
+void sge_qeti_next_before(sge_qeti_t *qeti, u_long64 start);
+u_long64 sge_qeti_next(sge_qeti_t *qeti);
 void sge_qeti_release(sge_qeti_t **qeti);
 
 sge_qeti_t *sge_qeti_allocate2(lList *cr_list);

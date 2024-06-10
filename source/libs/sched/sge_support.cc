@@ -97,9 +97,9 @@ decay_userprj_usage( lListElem *userprj,
                      bool is_user,
                      const lList *decay_list,
                      u_long seqno,
-                     u_long curr_time )
+                     u_long64 curr_time)
 {
-   u_long usage_time_stamp;
+   u_long64 usage_time_stamp;
    int obj_usage_seqno_POS;
    int obj_usage_time_stamp_POS;
    int obj_usage_POS;
@@ -128,7 +128,7 @@ decay_userprj_usage( lListElem *userprj,
     * the scheduling interval.
     *-------------------------------------------------------------*/
 
-      usage_time_stamp = lGetPosUlong(userprj, obj_usage_time_stamp_POS);
+      usage_time_stamp = lGetPosUlong64(userprj, obj_usage_time_stamp_POS);
 
       if (usage_time_stamp > 0 && (curr_time > usage_time_stamp)) {
          const lListElem *upp;
@@ -139,10 +139,9 @@ decay_userprj_usage( lListElem *userprj,
          for_each_ep(upp, lGetPosList(userprj, obj_project_POS)) {
             decay_usage(lGetPosList(upp, UPP_usage_POS), decay_list, interval);
          }
-
       }
 
-      lSetPosUlong(userprj, obj_usage_time_stamp_POS, curr_time);
+      lSetPosUlong64(userprj, obj_usage_time_stamp_POS, curr_time);
       if (seqno != (u_long) -1) {
       	lSetPosUlong(userprj, obj_usage_seqno_POS, seqno);
       }
@@ -271,7 +270,7 @@ sge_calc_node_usage( lListElem *node,
                      const lList *user_list,
                      const lList *project_list,
                      const lList *decay_list,
-                     u_long curr_time,
+                     u_long64 curr_time,
                      const char *projname,
                      u_long seqno )
 {
@@ -528,7 +527,7 @@ _sge_calc_share_tree_proportions(const lList *share_tree,
                                  const lList *user_list,
                                  const lList *project_list,
                                  const lList *decay_list,
-                                 u_long curr_time )
+                                 u_long64 curr_time )
 {
    lListElem *root;
    double total_usage;
@@ -562,7 +561,7 @@ sge_calc_share_tree_proportions( lList *share_tree,
                                  const lList *decay_list )
 {
    _sge_calc_share_tree_proportions(share_tree, user_list, project_list,
-                                    decay_list, sge_get_gmt());
+                                    decay_list, sge_get_gmt64());
    return;
 }
 

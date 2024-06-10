@@ -41,7 +41,7 @@
 *    SGE_ULONG(UU_fshare) - Functional Shares
 *    Configured functional shares.
 *
-*    SGE_ULONG(UU_delete_time) - Delete Time
+*    SGE_ULONG64(UU_delete_time) - Delete Time
 *    If an user submits a job for whom no user object exists, a user object is created.
 *    This user object will automatically be deleted at the delete time.
 *    Whenever a user submits a job the delete time is updated.
@@ -56,7 +56,7 @@
 *    SGE_LIST(UU_usage) - Usage
 *    List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user.
 *
-*    SGE_ULONG(UU_usage_time_stamp) - Usage Time Stamp
+*    SGE_ULONG64(UU_usage_time_stamp) - Usage Time Stamp
 *    Time stamp of last decay. Set when usage changes.
 *
 *    SGE_ULONG(UU_usage_seqno) - Usage Sequence Number
@@ -105,11 +105,11 @@ LISTDEF(UU_Type)
    SGE_STRING(UU_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL | CULL_SUBLIST)
    SGE_ULONG(UU_oticket, CULL_SPOOL)
    SGE_ULONG(UU_fshare, CULL_SPOOL)
-   SGE_ULONG(UU_delete_time, CULL_SPOOL)
+   SGE_ULONG64(UU_delete_time, CULL_SPOOL)
    SGE_ULONG(UU_job_cnt, CULL_DEFAULT)
    SGE_ULONG(UU_pending_job_cnt, CULL_DEFAULT)
    SGE_LIST(UU_usage, UA_Type, CULL_SPOOL)
-   SGE_ULONG(UU_usage_time_stamp, CULL_SPOOL)
+   SGE_ULONG64(UU_usage_time_stamp, CULL_SPOOL)
    SGE_ULONG(UU_usage_seqno, CULL_DEFAULT)
    SGE_LIST(UU_long_term_usage, UA_Type, CULL_SPOOL)
    SGE_LIST(UU_project, UPP_Type, CULL_SPOOL)

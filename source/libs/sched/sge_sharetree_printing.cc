@@ -69,7 +69,8 @@ static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static double mem, cpu, io, ltmem, ltcpu, ltio, level, total,
        lt_share, st_share, actual_share, combined_usage;
-static lUlong current_time, time_stamp, shares, job_count;
+static u_long64 current_time, time_stamp;
+static lUlong shares, job_count;
 static const char *node_name, *user_name, *project_name;
 
 static const item_t item[] = {
@@ -230,8 +231,8 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          writer = new rapidjson::Writer<rapidjson::StringBuffer>(*jsonBuffer);
       }
 
-      current_time = sge_get_gmt();
-      time_stamp = user ? lGetUlong(user, UU_usage_time_stamp) : 0;
+      current_time = sge_get_gmt64();
+      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) : 0; // @todo (Timestamp) never used?
 
       /*
        * we want to name the Root node simply /, instead of /Root 
@@ -314,7 +315,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          if (writer != nullptr) {
             writer->StartObject();
             writer->Key("time");
-            writer->Uint64(sge_get_gmt());
+            writer->Uint64(current_time);
             writer->Key("type");
             writer->String(format->line_prefix);
          }
@@ -503,7 +504,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
 {
 
    lListElem *root;
-   u_long32 curr_time = 0;
+   u_long64 curr_time = 0;
    lList *sharetree;
 
    DENTER(TOP_LAYER);
@@ -530,7 +531,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
    calculate_share_percents(root, 1.0, lGetUlong(root, STN_shares));
 
    if (decay_usage) {
-      curr_time = sge_get_gmt();
+      curr_time = sge_get_gmt64();
    }
 
    _sge_calc_share_tree_proportions(sharetree, users, projects, nullptr, curr_time);

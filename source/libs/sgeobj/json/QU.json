@@ -63,7 +63,7 @@
 			"description":	[{
 					"line":	"scheduling code only"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
@@ -719,7 +719,7 @@
 			"description":	[{
 					"line":	"@todo add description"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}, {

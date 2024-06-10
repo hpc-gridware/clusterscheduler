@@ -125,7 +125,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
                     lList *acl_list, lList **user_list, lList **group_list, order_t *orders,
                     double *total_running_job_tickets, int *sort_hostlist, bool is_start,
                     bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list,
-                    lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now);
+                    lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long64 now);
 
 void
 st_set_flag_new_global_conf(bool new_value) {
@@ -170,7 +170,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
-   serf_new_interval(sge_get_gmt());
+   serf_new_interval(sge_get_gmt64());
    orders.pendingOrderList = *order;
    *order = nullptr;
 
@@ -416,7 +416,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    u_long32 nr_pending_jobs = 0;
    int max_reserve = sconf_get_max_reservations();
    bool is_schedule_based = (max_reserve > 0) ? true : false;
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
 
@@ -838,6 +838,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                /* do not send job start orders inbetween, if we have an immediate array
                   job. */
                if (!is_immediate_array_job && (lGetNumberOfElem(orders->jobStartOrderList) > 10)) {
+                  // @todo (Timestamp) should work but re-write with sge_get_gmt64()
                   gettimeofday(&later, nullptr);
                   time = later.tv_usec - tnow.tv_usec;
                   time = (time / 1000000.0) + (later.tv_sec - tnow.tv_sec);
@@ -1020,7 +1021,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
                     lList **user_list, lList **group_list, order_t *orders, double *total_running_job_tickets,
                     int *sort_hostlist, bool is_start, bool is_reserve, bool is_schedule_based, lList **load_list,
                     const lList *hgrp_list,
-                    lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now) {
+                    lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long64 now) {
    lListElem *granted_el;
    dispatch_t result = DISPATCH_NOT_AT_TIME;
    const char *pe_name, *ckpt_name;

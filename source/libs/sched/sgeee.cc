@@ -172,7 +172,7 @@ static lList *sge_sort_pending_job_nodes(lListElem *root, lListElem *node,
                            double total_share_tree_tickets);
 static int sge_calc_node_targets(lListElem *root, lListElem *node, scheduler_all_data_t *lists);
 static int sge_calc_sharetree_targets(lListElem *root, scheduler_all_data_t *lists,
-                           lList *decay_list, u_long curr_time,
+                           lList *decay_list, u_long64 curr_time,
                            u_long seqno);
 static int sge_init_share_tree_node_fields( lListElem *node, void *ptr );
 static int sge_init_share_tree_nodes( lListElem *root );
@@ -1248,7 +1248,7 @@ static void
 decay_and_sum_usage( sge_ref_t *ref,
                      lList *decay_list,
                      u_long seqno,
-                     u_long curr_time )
+                     u_long64 curr_time)
 {
    lList *job_usage_list=nullptr,
          *old_usage_list=nullptr,
@@ -2523,7 +2523,6 @@ sge_calc_tickets( scheduler_all_data_t *lists,
           sum_of_pending_tickets = 0,
           sum_of_active_override_tickets = 0;
 
-   u_long curr_time;
    u_long32 num_jobs, num_queued_jobs, job_ndx;
 
    u_long32 num_unenrolled_tasks = 0;
@@ -2550,7 +2549,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
    all_lists = lists;
 
-   curr_time = sge_get_gmt();
+   u_long64 curr_time = sge_get_gmt64();
 
    sge_scheduling_run++;
    { 
@@ -3453,7 +3452,7 @@ static int
 sge_calc_sharetree_targets( lListElem *root,
                             scheduler_all_data_t *lists,
                             lList *decay_list,
-                            u_long curr_time,
+                            u_long64 curr_time,
                             u_long seqno )
 {
 

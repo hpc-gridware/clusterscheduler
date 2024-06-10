@@ -38,7 +38,7 @@
 *    SGE_STRING(HL_value) - value of the load variable
 *    value of the load variable as string
 *
-*    SGE_ULONG(HL_last_update) - date/time of last update
+*    SGE_ULONG64(HL_last_update) - date/time of last update
 *    timestamp (seconds since epoch) when the load value was last updated
 *
 *    SGE_BOOL(HL_is_static) - is it a static load value?
@@ -61,7 +61,7 @@ enum {
 LISTDEF(HL_Type)
    SGE_STRING(HL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
    SGE_STRING(HL_value, CULL_SUBLIST)
-   SGE_ULONG(HL_last_update, CULL_DEFAULT)
+   SGE_ULONG64(HL_last_update, CULL_DEFAULT)
    SGE_BOOL(HL_is_static, CULL_DEFAULT)
 LISTEND
 

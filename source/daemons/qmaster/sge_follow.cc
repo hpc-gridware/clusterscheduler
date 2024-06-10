@@ -1150,7 +1150,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
 
                if ((pos = lGetPosViaElem(up_order, PR_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong(up, PR_usage_time_stamp, lGetPosUlong(up_order, pos));
+                  lSetUlong64(up, PR_usage_time_stamp, lGetPosUlong64(up_order, pos));
 
                if ((pos = lGetPosViaElem(up_order, PR_usage, SGE_NO_ABORT)) >= 0) {
                   lSwapList(up_order, PR_usage, up, PR_usage);
@@ -1285,7 +1285,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
 
                if ((pos = lGetPosViaElem(up_order, UU_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong(up, UU_usage_time_stamp, lGetPosUlong(up_order, pos));
+                  lSetUlong64(up, UU_usage_time_stamp, lGetPosUlong64(up_order, pos));
 
                if ((pos = lGetPosViaElem(up_order, UU_usage, SGE_NO_ABORT)) >= 0) {
                   lSwapList(up_order, UU_usage, up, UU_usage);

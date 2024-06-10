@@ -44,13 +44,13 @@
 #include "sge_qeti.h"
 
 typedef struct {
-   u_long32 start_time;
-   u_long32 duration;
+   u_long64 start_time;
+   u_long64 duration;
    double uti;
 } test_array_t;
 
 static int do_utilization_test(lListElem *cr, test_array_t *ta);
-static int do_qeti_test(lListElem *cr, u_long32 *qeti_expected_result);
+static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result);
 
 static int test_normal_utilization(void);
 static int test_extensive_utilization(void);
@@ -82,23 +82,23 @@ static int do_utilization_test(lListElem *cr, test_array_t *ta)
    for (i = 0; ta[i].start_time != 0; i++) {
       uti = utilization_max(cr, ta[i].start_time, ta[i].duration, false);
       if (uti != ta[i].uti) {
-         printf("failed: utilization(cr, " sge_U32CFormat ", " sge_U32CFormat ") returned %f, expected %f\n",
-                sge_u32c(ta[i].start_time), sge_u32c(ta[i].duration), uti, ta[i].uti);
+         printf("failed: utilization(cr, " sge_u64 ", " sge_u64 ") returned %f, expected %f\n",
+                ta[i].start_time, ta[i].duration, uti, ta[i].uti);
          ret++;
       } else {
-         printf("success: utilization(cr, " sge_U32CFormat ", " sge_U32CFormat ") returned %f\n",
-                sge_u32c(ta[i].start_time), sge_u32c(ta[i].duration), uti);
+         printf("success: utilization(cr, " sge_u64 ", " sge_u64 ") returned %f\n",
+                ta[i].start_time, ta[i].duration, uti);
       }
    }
 
    return ret;
 }
 
-static int do_qeti_test(lListElem *cr, u_long32 *qeti_expected_result)
+static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result)
 {
    lList *cr_list;
    sge_qeti_t *iter;
-   u_long32 pe_time;
+   u_long64 pe_time;
    int ret = 0;
    int i = 0;
 
@@ -110,13 +110,13 @@ static int do_qeti_test(lListElem *cr, u_long32 *qeti_expected_result)
    /* sge_qeti_first() */
    for (pe_time = sge_qeti_first(iter), i=0; pe_time; pe_time = sge_qeti_next(iter), i++) {
       if (qeti_expected_result == nullptr) {
-         printf("failed: qeti returned " sge_U32CFormat ", expected no iteration\n", sge_u32c(pe_time));
+         printf("failed: qeti returned " sge_u64 ", expected no iteration\n", pe_time);
          ret++;
       } else if (qeti_expected_result[i] != pe_time) {
-         printf("failed: qeti returned " sge_U32CFormat ", expected " sge_U32CFormat "\n", sge_u32c(pe_time), sge_u32c(qeti_expected_result[i]));
+         printf("failed: qeti returned " sge_u64 ", expected " sge_u64 "\n", pe_time, qeti_expected_result[i]);
          ret++;
       } else {
-         printf("success: QETI returned " sge_U32CFormat "\n", sge_u32c(pe_time));
+         printf("success: QETI returned " sge_u64 "\n", pe_time);
       }
    }
 
@@ -140,7 +140,7 @@ static int test_normal_utilization(void)
     */
    int ret = 0;
 
-   static u_long32 qeti_expected_result[] = {
+   static u_long64 qeti_expected_result[] = {
       1200,
       1100,
       1000,
@@ -195,8 +195,8 @@ static int test_extensive_utilization(void) {
        *              800     1000          2000
        */
 
-      static u_long32 qeti_expected_result[] = {
-         U_LONG32_MAX,
+      static u_long64 qeti_expected_result[] = {
+         U_LONG64_MAX,
          2000,
          1000,
          800
@@ -204,8 +204,8 @@ static int test_extensive_utilization(void) {
 
       test_array_t test_array[] = {
       {1000, 100, 4},
-      {1200, U_LONG32_MAX, 8},
-      {200, U_LONG32_MAX, 8},
+      {1200, U_LONG64_MAX, 8},
+      {200, U_LONG64_MAX, 8},
       {700, 150, 8},
       {700, 100, 0},
       {3600, 150, 8},
@@ -222,10 +222,10 @@ static int test_extensive_utilization(void) {
       utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING", false, false);
 
       printf("adding a unlimited reservation of 4 starting at 1100\n");
-      utilization_add(cr, 1100, U_LONG32_MAX, 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
+      utilization_add(cr, 1100, U_LONG64_MAX, 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
 
       printf("adding a unlimited reservation of 4 starting at 2000\n");
-      utilization_add(cr, 2000, U_LONG32_MAX, 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
+      utilization_add(cr, 2000, U_LONG64_MAX, 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, qeti_expected_result);
@@ -242,8 +242,8 @@ static int test_extensive_utilization(void) {
        *              800     1000          2000
        */
 
-      static u_long32 qeti_expected_result[] = {
-         U_LONG32_MAX,
+      static u_long64 qeti_expected_result[] = {
+         U_LONG64_MAX,
          2000,
          1000,
          800
@@ -251,8 +251,8 @@ static int test_extensive_utilization(void) {
 
       test_array_t test_array[] = {
       {1000, 100, 0},
-      {1200, U_LONG32_MAX, 4},
-      {200, U_LONG32_MAX, 8},
+      {1200, U_LONG64_MAX, 4},
+      {200, U_LONG64_MAX, 8},
       {700, 150, 8},
       {700, 100, 0},
       {3600, 150, 4},
@@ -266,7 +266,7 @@ static int test_extensive_utilization(void) {
       utilization_add(cr, 1000, 100, -4, 101, 1, PE_TAG, "pe_slots", "STARTING", false, false);
 
       printf("removing a unlimited reservation of 4 starting at 1100\n");
-      utilization_add(cr, 1100, U_LONG32_MAX, -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
+      utilization_add(cr, 1100, U_LONG64_MAX, -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, qeti_expected_result);
@@ -275,8 +275,8 @@ static int test_extensive_utilization(void) {
    {
       test_array_t test_array[] = {
       {1000, 100, 0},
-      {1200, U_LONG32_MAX, 0},
-      {200, U_LONG32_MAX, 0},
+      {1200, U_LONG64_MAX, 0},
+      {200, U_LONG64_MAX, 0},
       {700, 150, 0},
       {700, 100, 0},
       {3600, 150, 0},
@@ -290,7 +290,7 @@ static int test_extensive_utilization(void) {
       utilization_add(cr, 800, 200, -8, 100, 1, PE_TAG, "pe_slots", "STARTING", false, false);
 
       printf("removing a unlimited reservation of 4 starting at 2000\n");
-      utilization_add(cr, 2000, U_LONG32_MAX, -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
+      utilization_add(cr, 2000, U_LONG64_MAX, -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, nullptr);

@@ -38,7 +38,7 @@
 *    SGE_INT(RQL_result) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(RQL_time) - @todo add summary
+*    SGE_ULONG64(RQL_time) - @todo add summary
 *    @todo add description
 *
 *    SGE_INT(RQL_slots) - @todo add summary
@@ -64,7 +64,7 @@ enum {
 LISTDEF(RQL_Type)
    SGE_STRING(RQL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
    SGE_INT(RQL_result, CULL_DEFAULT)
-   SGE_ULONG(RQL_time, CULL_DEFAULT)
+   SGE_ULONG64(RQL_time, CULL_DEFAULT)
    SGE_INT(RQL_slots, CULL_DEFAULT)
    SGE_INT(RQL_slots_qend, CULL_DEFAULT)
    SGE_ULONG(RQL_tagged4schedule, CULL_DEFAULT)

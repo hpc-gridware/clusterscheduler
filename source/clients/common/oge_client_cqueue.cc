@@ -699,7 +699,7 @@ int qinstance_slots_reserved_now(const lListElem *this_elem) {
    int ret = 0;
    const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != nullptr) {
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
       ret = utilization_max(slots, now, 0, false);
    }
    DRETURN(ret);

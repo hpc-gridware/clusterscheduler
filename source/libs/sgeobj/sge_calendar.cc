@@ -666,14 +666,14 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
    state_change = lCreateElem(CQU_Type);
    
    lSetUlong(state_change, CQU_state, state0);
-   lSetUlong(state_change,  CQU_till, *when);
+   lSetUlong64(state_change,  CQU_till, *when);
    lAppendElem(*state_changes_list, state_change);
       
    /* extend queue state change list */
    if (*when != 0) {
       state_change = lCreateElem(CQU_Type);
       lSetUlong(state_change,  CQU_state,state1);
-      lSetUlong(state_change,  CQU_till, when1);
+      lSetUlong64(state_change,  CQU_till, when1);
       lAppendElem(*state_changes_list, state_change);
    }
    

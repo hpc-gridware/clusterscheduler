@@ -325,7 +325,7 @@ static int test_state_change(lListElem *stateObject, u_long32 state, struct tm *
    }
    else {
       time_t now  = mktime(time);
-      time_t result = (time_t) lGetUlong(stateObject, CQU_till);
+      time_t result = (time_t) sge_gmt64_to_gmt32(lGetUlong64(stateObject, CQU_till));
       if (result != now) {
          ret = 1;
          printf("state list elem %d: ", elemNr);

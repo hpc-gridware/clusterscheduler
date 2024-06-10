@@ -689,7 +689,6 @@ sge_mark_unheard(lListElem *hep) {
 */
 void
 sge_update_load_values(const char *rhost, lList *lp) {
-   u_long32 now;
    lListElem *ep, **hepp = nullptr;
    lListElem *lep;
    lListElem *global_ep = nullptr;
@@ -704,7 +703,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
    /* JG: TODO: this time should better come with the report.
     *           it is the time when the reported values were valid.
     */
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    host_ep = lGetElemHostRW(master_ehost_list, EH_name, rhost);
    if (host_ep == nullptr) {
@@ -790,7 +789,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
 
          /* copy value */
          lSetString(lep, HL_value, value);
-         lSetUlong(lep, HL_last_update, now);
+         lSetUlong64(lep, HL_last_update, now);
          lSetBool(lep, HL_is_static, is_static);
       }
    }

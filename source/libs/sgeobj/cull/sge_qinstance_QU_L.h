@@ -44,7 +44,7 @@
 *    SGE_ULONG(QU_tag) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(QU_available_at) - @todo add summary
+*    SGE_ULONG64(QU_available_at) - @todo add summary
 *    scheduling code only
 *
 *    SGE_ULONG(QU_seq_no) - @todo add summary
@@ -207,7 +207,7 @@
 *    SGE_ULONG(QU_pending_signal) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(QU_pending_signal_delivery_time) - @todo add summary
+*    SGE_ULONG64(QU_pending_signal_delivery_time) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(QU_version) - @todo add summary
@@ -322,7 +322,7 @@ LISTDEF(QU_Type)
    SGE_STRING(QU_qname, CULL_SPOOL)
    SGE_STRING(QU_full_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(QU_tag, CULL_DEFAULT)
-   SGE_ULONG(QU_available_at, CULL_DEFAULT)
+   SGE_ULONG64(QU_available_at, CULL_DEFAULT)
    SGE_ULONG(QU_seq_no, CULL_CONFIGURE)
    SGE_ULONG(QU_nsuspend, CULL_CONFIGURE)
    SGE_ULONG(QU_qtype, CULL_CONFIGURE)
@@ -375,7 +375,7 @@ LISTDEF(QU_Type)
    SGE_ULONG(QU_tagged4schedule, CULL_DEFAULT)
    SGE_ULONG(QU_cache_version, CULL_DEFAULT)
    SGE_ULONG(QU_pending_signal, CULL_SPOOL)
-   SGE_ULONG(QU_pending_signal_delivery_time, CULL_SPOOL)
+   SGE_ULONG64(QU_pending_signal_delivery_time, CULL_SPOOL)
    SGE_ULONG(QU_version, CULL_SPOOL)
    SGE_ULONG(QU_suspended_on_subordinate, CULL_DEFAULT)
    SGE_ULONG(QU_last_suspend_threshold_ckeck, CULL_DEFAULT)

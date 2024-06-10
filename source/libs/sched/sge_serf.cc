@@ -131,13 +131,13 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 *     MT-NOTE:     MT safety of registered recording function
 *******************************************************************************/
 void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
-      const char *type, u_long32 start_time, u_long32 end_time, char level_char,
+      const char *type, u_long64 start_time, u_long64 end_time, char level_char,
       const char *object_name, const char *name, double utilization)
 {
    DENTER(TOP_LAYER);
 
-   /* human readable format */
-   DPRINTF("J=" sge_U32CFormat "." sge_U32CFormat " T=%s S=" sge_U32CFormat " E=" sge_U32CFormat " L=%c O=%s R=%s U=%f\n",
+   /* human-readable format */
+   DPRINTF("J=" sge_U32CFormat "." sge_U32CFormat " T=%s S=" sge_u64 " E=" sge_u64 " L=%c O=%s R=%s U=%f\n",
            job_id, ja_taskid, type, start_time, end_time, level_char, object_name, name, utilization);
 
    if (current_serf.record_schedule_entry && serf_get_active()) {
@@ -161,7 +161,7 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
 *     records to different schedule runs.
 *
 *  INPUTS
-*     u_long32 time - The time when the schedule run was started.
+*     u_long64 time - The time when the schedule run was started.
 *
 *  NOTES
 *     MT-NOTE: (1) serf_new_interval() is MT safe if no recording function
@@ -169,7 +169,7 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
 *     MT-NOTE: (2) Otherwise MT safety of serf_new_interval() depends on 
 *     MT-NOTE:     MT safety of registered recording function
 *******************************************************************************/
-void serf_new_interval(u_long32 time)
+void serf_new_interval(u_long64 time)
 {
    DENTER(TOP_LAYER);
 
