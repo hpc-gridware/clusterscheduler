@@ -121,9 +121,6 @@ Linux)
    armv7*)
       lxmachine=arm7
       ;;
-   aarch64)
-      lxmachine=arm64
-      ;;
    alpha)
       lxmachine=alpha
       ;;
@@ -137,7 +134,19 @@ Linux)
       lxmachine=amd64
       ;;
    aarch64)
-      lxmachine=arm64
+      osarch=""
+      type dpkg 1>/dev/null 2>&1
+      if [ $? -eq 0 ]; then
+         osarch=`dpkg --print-architecture`
+      fi
+      case $osarch in
+      armhf)
+         lxmachine=armhf
+         ;;
+      *)
+         lxmachine=arm64
+         ;;
+      esac
       ;;
    ia64)
       lxmachine=ia64
