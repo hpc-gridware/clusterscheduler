@@ -659,7 +659,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    const lListElem *mqep;
    lList *jatasks;
    const char *qnm, *hnm;
-   time_t now;
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
    lList **master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
@@ -673,7 +672,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    jep = lGetElemUlongRW(*master_job_list, JB_job_number, jobid);
    jatep = job_search_task(jep, nullptr, jataskid);
-   now = (time_t) sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    if (jep == nullptr || jatep == nullptr) {
       WARNING(MSG_COM_RESENDUNKNOWNJOB_UU, sge_u32c(jobid), sge_u32c(jataskid));
@@ -710,7 +709,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
             lSetDouble(ue, UA_value, lGetUlong64(jatep, JAT_start_time));
 
             ue = lAddSubStr(jr, UA_name, "end_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, sge_gmt32_to_gmt64(now)); // @todo (Timestamp) make now 64bit
+            lSetDouble(ue, UA_value, now);
 
             ue = lAddSubStr(jr, UA_name, "ru_wallclock", JR_usage, UA_Type);
             lSetDouble(ue, UA_value, runtime); // @todo (Timestamp)
@@ -780,7 +779,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_give_job(jep, jatep, mqep, pe, hep, monitor);
 
       /* reset timer */
-      lSetUlong64(jatep, JAT_start_time, sge_gmt32_to_gmt64(now)); // @todo (Timestamp)
+      lSetUlong64(jatep, JAT_start_time, now);
 
       /* initialize resending of job if not acknowledged by execd */
       trigger_job_resend(now, hep, lGetUlong(jep, JB_job_number),
@@ -806,7 +805,7 @@ cancel_job_resend(u_long32 jid, u_long32 ja_task_id) {
  * if hep equals to nullptr resend is triggered immediatelly
  */
 void
-trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 ja_task_id, int delta) {
+trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 ja_task_id, int delta) {
    u_long32 seconds;
    time_t when = 0;
    te_event_t ev = nullptr;
@@ -820,7 +819,7 @@ trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 ja_task_
    }
    DPRINTF("TRIGGER JOB RESEND " sge_u32"/" sge_u32" in %d seconds\n", jid, ja_task_id, seconds);
 
-   when = (time_t) (now + seconds);
+   when = (time_t) (sge_gmt64_to_gmt32(now) + seconds);
    ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, jid, ja_task_id, "job-resend_event");
    te_add_event(ev);
    te_free_event(&ev);
@@ -1044,7 +1043,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
           */
          lSetUlong64(jatep, JAT_start_time, now);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
+         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true);
          answer_list_output(&answer_list);
          break;
@@ -1145,7 +1144,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             if ((!is_array_job && !mconf_get_old_reschedule_behavior()) ||
                 (is_array_job && !mconf_get_old_reschedule_behavior_array_job())) {
                lSetUlong64(jep, JB_submission_time, now);
-               sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JOB_MOD, jobid, jataskid,
+               sge_event_spool(&answer_list, now, sgeE_JOB_MOD, jobid, jataskid,
                                nullptr, nullptr, session, jep, jatep, nullptr, true, true);
             }
          }
@@ -1187,7 +1186,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          sge_clear_granted_resources(jep, jatep, 1, monitor);
          ja_task_clear_finished_pe_tasks(jatep);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
+         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true);
 
          answer_list_output(&answer_list);
@@ -1283,7 +1282,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
          sge_clear_granted_resources(jep, jatep, 0, monitor);
          job_enroll(jep, nullptr, jataskid);
-         sge_event_spool(&answer_list, sge_gmt64_to_gmt32(now), sgeE_JATASK_MOD, jobid, jataskid,
+         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
                          nullptr, nullptr, session, jep, jatep, nullptr, true, false);
          answer_list_output(&answer_list);
          break;
@@ -1499,7 +1498,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
    const lListElem *ep;
    lList *answer_list = nullptr;
-   u_long32 now;
    const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -1519,7 +1517,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
       DRETURN_VOID;
    }
 
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    /* unsuspend queues on subordinate */
    cqueue_list_x_on_subordinate_gdil(master_cqueue_list, false, gdi_list, monitor);

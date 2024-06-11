@@ -131,7 +131,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "new_job");
 
          write_json(writer, "submission_time", lGetUlong64(job, JB_submission_time));
@@ -155,7 +155,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_job_log(lList **answer_list, u_long32 event_time, job_log_t type, const char *user,
+   JsonReportingFileWriter::create_job_log(lList **answer_list, u_long64 event_time, job_log_t type, const char *user,
                                            const char *host,
                                            const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                                            const lListElem *pe_task, const char *message) {
@@ -204,7 +204,7 @@ namespace oge {
          }
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "job_log");
 
          write_json(writer, "event_time", event_time);
@@ -234,7 +234,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time) {
+   JsonReportingFileWriter::create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -244,7 +244,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "host");
 
          write_json(writer, "hostname", lGetHost(host, EH_name));
@@ -266,7 +266,7 @@ namespace oge {
    bool
    JsonReportingFileWriter::create_host_consumable_record(lList **answer_list, const lListElem *host,
                                                           const lListElem *job,
-                                                          u_long32 report_time) {
+                                                          u_long64 report_time) {
 
       bool ret = true;
 
@@ -277,7 +277,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "host_consumable");
 
          write_json(writer, "hostname", lGetHost(host, EH_name));
@@ -298,7 +298,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time) {
+   JsonReportingFileWriter::create_queue_record(lList **answer_list, const lListElem *queue, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -310,7 +310,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "queue");
 
          write_json(writer, "qname", lGetString(queue, QU_qname));
@@ -333,7 +333,7 @@ namespace oge {
    bool
    JsonReportingFileWriter::create_queue_consumable_record(lList **answer_list, const lListElem *host,
                                                            const lListElem *queue,
-                                                           const lListElem *job, u_long32 report_time) {
+                                                           const lListElem *job, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -345,7 +345,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "queue_consumable");
 
          write_json(writer, "qname", lGetString(queue, QU_qname));
@@ -371,7 +371,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -383,7 +383,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "new_ar");
 
          write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
@@ -398,7 +398,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -410,7 +410,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "ar_attribute");
 
          write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
@@ -438,7 +438,7 @@ namespace oge {
 
    bool
    JsonReportingFileWriter::create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t event,
-                                                 const char *ar_description, u_long32 report_time) {
+                                                 const char *ar_description, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -450,7 +450,7 @@ namespace oge {
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
          writer.StartObject();
-         write_json(writer, "time", sge_get_gmt());
+         write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "ar_log");
 
          write_json(writer, "ar_state_change_time", report_time);
@@ -472,7 +472,7 @@ namespace oge {
    }
 
    bool
-   JsonReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   JsonReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       DENTER(TOP_LAYER);
@@ -502,13 +502,13 @@ namespace oge {
 
    void
    oge::JsonReportingFileWriter::create_single_ar_acct_record(const lListElem *ar, const char *cqueue_name,
-                                const char *hostname, u_long32 slots, u_long32 report_time) {
+                                const char *hostname, u_long32 slots, u_long64 report_time) {
 
       rapidjson::StringBuffer stringBuffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
       writer.StartObject();
-      write_json(writer, "time", sge_get_gmt());
+      write_json(writer, "time", sge_get_gmt64());
       write_json(writer, "type", "ar_acct");
 
       write_json(writer, "ar_termination_time", report_time);

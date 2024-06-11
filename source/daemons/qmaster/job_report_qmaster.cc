@@ -477,7 +477,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            DPRINTF("trigger retry of job delivery to master execd\n");
                            lSetUlong64(jatep, JAT_start_time, 0);
                            cancel_job_resend(jobid, jataskid);
-                           trigger_job_resend(sge_get_gmt(), nullptr, jobid, jataskid, 0);
+                           trigger_job_resend(sge_get_gmt64(), nullptr, jobid, jataskid, 0);
                         }
                      }
                   } else {

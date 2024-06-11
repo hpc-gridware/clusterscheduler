@@ -3746,7 +3746,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
 
             (*deleted_tasks)++;
 
-            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED,
+            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
                                      ruser, rhost, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
             sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -3875,7 +3875,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                   DRETURN(njobs);
                }
 
-               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
+               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
                                         MSG_LOG_DELETED);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {

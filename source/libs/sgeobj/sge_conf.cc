@@ -1148,7 +1148,7 @@ void sge_show_conf()
    DPRINTF("conf.auto_user_oticket      >%u<\n", Master_Config.auto_user_oticket);
    DPRINTF("conf.auto_user_fshare       >%u<\n", Master_Config.auto_user_fshare);
    DPRINTF("conf.auto_user_default_project >%s<\n", Master_Config.auto_user_default_project);
-   DPRINTF("conf.auto_user_delete_time  >%u<\n", Master_Config.auto_user_delete_time);
+   DPRINTF("conf.auto_user_delete_time  >" sge_u64 "<\n", Master_Config.auto_user_delete_time);
    DPRINTF("conf.delegated_file_staging >%s<\n", Master_Config.delegated_file_staging);
    DPRINTF("conf.libjvm_path >%s<\n", Master_Config.libjvm_path);
    DPRINTF("conf.additional_jvm_args >%s<\n", Master_Config.additional_jvm_args);
@@ -2304,6 +2304,7 @@ bool mconf_get_inherit_env() {
    DRETURN(ret);
 }
 
+// spooling interval in seconds
 int mconf_get_spool_time() {
    int ret;
 

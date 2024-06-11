@@ -130,8 +130,8 @@ typedef struct {
    u_long32 taskstart;
    u_long32 taskend;
    u_long32 taskstep;
-   time_t begin_time;
-   time_t end_time;
+   u_long64 begin_time;
+   u_long64 end_time;
    lList *queue_name_list;
 } sge_qacct_options;
 
@@ -213,8 +213,8 @@ int main(int argc, char **argv)
 
    memset(&totals, 0, sizeof(totals));
    memset(&options, 0, sizeof(options));
-   options.begin_time = -1;
-   options.end_time = -1;
+   options.begin_time = U_LONG64_MAX;
+   options.end_time = U_LONG64_MAX;
 
    column_sizes.host       = strlen(MSG_HISTORY_HOST)+1;
    column_sizes.queue      = strlen(MSG_HISTORY_QUEUE)+1;
@@ -369,8 +369,8 @@ int main(int argc, char **argv)
                */
                qacct_usage(stderr);
             }
-            options.begin_time = (time_t)tmp_begin_time;
-            DPRINTF("begin is: %ld\n", options.begin_time);
+            options.begin_time = sge_gmt32_to_gmt64(tmp_begin_time);
+            DPRINTF("begin is: " sge_u64 "\n", options.begin_time);
             beginflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -389,8 +389,8 @@ int main(int argc, char **argv)
                */
                qacct_usage(stderr);
             }
-            options.end_time = (time_t)tmp_end_time;
-            DPRINTF("end is: %ld\n", options.end_time);
+            options.end_time = sge_gmt32_to_gmt64(tmp_end_time);
+            DPRINTF("end is: " sge_u64 "\n", options.end_time);
             endflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -566,22 +566,26 @@ int main(int argc, char **argv)
    */
    if (!endflag) {
       if (daysflag && beginflag) {
-         options.end_time = options.begin_time + (time_t)(days*24*3600);
+         options.end_time = options.begin_time + sge_gmt32_to_gmt64(days*24*3600);
       } else {
-         options.end_time = -1; /* infty */
+         options.end_time = U_LONG64_MAX;
       }
    }
    if (!beginflag) {
       if (endflag && daysflag) {
-         options.begin_time = options.end_time - (time_t)(days*24*3600);
+         options.begin_time = options.end_time - sge_gmt32_to_gmt64(days*24*3600);
       } else if (daysflag) {
-         options.begin_time = time(nullptr) - (time_t)(days*24*3600);
+         options.begin_time = sge_get_gmt64() - sge_gmt32_to_gmt64(days*24*3600);
       } else {
-         options.begin_time = -1; /* minus infty */
+         options.begin_time = U_LONG64_MAX;
       }
    }
-   DPRINTF(" begin_time: %s", ctime(&options.begin_time));
-   DPRINTF(" end_time:   %s", ctime(&options.end_time));
+
+   if (rmon_condition(xaybzc, INFOPRINT)) {
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF(" begin_time: %s\n", sge_ctime64(options.begin_time, &dstr));
+      DPRINTF(" end_time:   %s\n", sge_ctime64(options.end_time, &dstr));
+   }
 
    {
       dstring cqueue_name = DSTRING_INIT;
@@ -1799,10 +1803,10 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DPRINTF("skipping job that never ran\n");
       DRETURN(-2);
    }
-   if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) { 
+   if (options->begin_time != U_LONG64_MAX && d->start_time < options->begin_time) {
       DRETURN(-2);
    }
-   if ((options->end_time != -1) && ((time_t) d->start_time > options->end_time)) {
+   if (options->end_time != U_LONG64_MAX && d->start_time > options->end_time) {
       DRETURN(-2);
    }
 
@@ -2169,10 +2173,10 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          DPRINTF("skipping job that never ran\n");
          DRETURN(-2);
       }
-      if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) {
+      if (options->begin_time != U_LONG64_MAX && d->start_time < options->begin_time) {
          DRETURN(-2);
       }
-      if ((options->end_time != -1) && ((time_t) d->start_time > options->end_time)) {
+      if (options->end_time != U_LONG64_MAX && d->start_time > options->end_time) {
          DRETURN(-2);
       }
       d->end_time = read_json(document, "end_time", (u_long64)0);

@@ -35,6 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -176,7 +177,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *
 *  SYNOPSIS
 *     bool 
-*     sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, 
+*     sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event,
 *                     u_long32 intkey1, u_long32 intkey2, const char *strkey, 
 *                     const char *strkey2, const char *session,
 *                     lListElem *object, lListElem *sub_object1, 
@@ -190,7 +191,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *
 *  INPUTS
 *     lList **answer_list    - to return error messages
-*     u_long32 timestamp     - timestamp of object change, if 0 is passed,
+*     u_long64 timestamp     - timestamp of object change, if 0 is passed,
 *                              use current date/time
 *     ev_event event         - the event to send
 *     u_long32 intkey1       - an integer key (job_id)
@@ -218,7 +219,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *     
 *******************************************************************************/
 bool
-sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long32 intkey1,
+sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long32 intkey1,
                 u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
    bool ret = true;
@@ -579,7 +580,7 @@ sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long3
    /* send event only, if spooling succeeded */
    if (ret) {
       if (send_event) {
-         sge_add_event(timestamp, event,
+         sge_add_event(sge_gmt64_to_gmt32(timestamp), event,
                        intkey1, intkey2, strkey, strkey2,
                        session, element);
       }

@@ -165,22 +165,16 @@ print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, co
          }
          break;
       case DATE_T: {
-         u_long32 t = *(u_long32 *) field->val;
+         u_long64 t = *(u_long64 *) field->val;
          if (out != nullptr) {
             if (t && format->format_times) {
-               char tc_buffer[100];
-               dstring tc_dstring;
-               char *tc;
+               DSTRING_STATIC(tc_dstr, 64);
+               const char *tc_str;
 
-               sge_dstring_init(&tc_dstring, tc_buffer, sizeof(tc_buffer));
-               tc = (char *) sge_ctime32(&t, &tc_dstring);
-               if (tc != nullptr && *tc != '\0') {
-                  /* remove trailing linefeed */
-                  tc[sge_dstring_strlen(&tc_dstring) - 1] = '\0';
-               }
-               sge_dstring_sprintf_append(out, format->str_format, tc);
+               tc_str = sge_ctime64(t, &tc_dstr);
+               sge_dstring_sprintf_append(out, format->str_format, tc_str);
             } else {
-               sge_dstring_sprintf_append(out, sge_U32CFormat, t);
+               sge_dstring_sprintf_append(out, sge_u64, t);
             }
          }
          if (writer != nullptr) {

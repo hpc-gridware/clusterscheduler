@@ -78,7 +78,7 @@ namespace oge {
       create_new_job_records(lList **answer_list, const lListElem *job);
 
       static bool
-      create_job_logs(lList **answer_list, u_long32 event_time, job_log_t, const char *user, const char *host,
+      create_job_logs(lList **answer_list, u_long64 event_time, job_log_t, const char *user, const char *host,
                       const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                       const lListElem *pe_task, const char *message);
 
@@ -87,31 +87,31 @@ namespace oge {
                           lListElem *ja_task, bool intermediate);
 
       static bool
-      create_host_records(lList **answer_list, const lListElem *host, u_long32 report_time);
+      create_host_records(lList **answer_list, const lListElem *host, u_long64 report_time);
 
       static bool
       create_host_consumable_records(lList **answer_list, const lListElem *host, const lListElem *job,
-                                     u_long32 report_time);
+                                     u_long64 report_time);
 
       static bool
-      create_queue_records(lList **answer_list, const lListElem *queue, u_long32 report_time);
+      create_queue_records(lList **answer_list, const lListElem *queue, u_long64 report_time);
 
       static bool
       create_queue_consumable_records(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                      const lListElem *job, u_long32 report_time);
+                                      const lListElem *job, u_long64 report_time);
 
       static bool
-      create_new_ar_records(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      create_new_ar_records(lList **answer_list, const lListElem *ar, u_long64 report_time);
 
       static bool
-      create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long64 report_time);
 
       static bool
       create_ar_log_records(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                            const char *ar_description, u_long32 report_time);
+                            const char *ar_description, u_long64 report_time);
 
       static bool
-      create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time);
+      create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long64 report_time);
 
       static bool
       is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task);
@@ -127,7 +127,7 @@ namespace oge {
       create_new_job_record(lList **answer_list, const lListElem *job) { return true; }
 
       virtual bool
-      create_job_log(lList **answer_list, u_long32 event_time, const job_log_t, const char *user, const char *host,
+      create_job_log(lList **answer_list, u_long64 event_time, const job_log_t, const char *user, const char *host,
                      const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                      const lListElem *pe_task, const char *message) { return true; }
 
@@ -136,30 +136,30 @@ namespace oge {
                          lListElem *ja_task, bool intermediate) = 0;
 
       virtual bool
-      create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time) { return true; }
+      create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) { return true; }
 
       virtual bool
       create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
-                                    u_long32 report_time) { return true; }
+                                    u_long64 report_time) { return true; }
 
       virtual bool
-      create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time) { return true; }
+      create_queue_record(lList **answer_list, const lListElem *queue, u_long64 report_time) { return true; }
 
       virtual bool
       create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                     const lListElem *job, u_long32 report_time) { return true; }
+                                     const lListElem *job, u_long64 report_time) { return true; }
 
       virtual bool
-      create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time) { return true; }
+      create_new_ar_record(lList **answer_list, const lListElem *ar, u_long64 report_time) { return true; }
 
       virtual bool
-      create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time) { return true; }
+      create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long64 report_time) { return true; }
 
       virtual bool
       create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                           const char *ar_description, u_long32 report_time) { return true; }
+                           const char *ar_description, u_long64 report_time) { return true; }
 
       virtual bool
-      create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long32 report_time) { return true; }
+      create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) { return true; }
    };
 }

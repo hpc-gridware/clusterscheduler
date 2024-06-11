@@ -135,11 +135,13 @@ u_long32 sge_gmt64_to_gmt32(u_long64 timestamp) {
 }
 
 double sge_gmt64_to_gmt32_double(u_long64 timestamp) {
-   return timestamp / 1000000.0;
+   auto ret = (double)timestamp;
+   return ret / 1000000.0;
 }
 
 u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
-   return timestamp * 1000000;
+   u_long64 ret = timestamp;
+   return ret * 1000000;
 }
 
 

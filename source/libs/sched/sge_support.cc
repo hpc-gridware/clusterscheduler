@@ -66,6 +66,7 @@ static const long sge_usage_interval = SGE_USAGE_INTERVAL;
  * decay_usage - decay usage for the passed usage list
  *--------------------------------------------------------------------*/
 
+// interval in seconds
 static void decay_usage(lList *usage_list, const lList *decay_list, double interval)
 {
    lListElem *usage = nullptr;
@@ -132,7 +133,7 @@ decay_userprj_usage( lListElem *userprj,
 
       if (usage_time_stamp > 0 && (curr_time > usage_time_stamp)) {
          const lListElem *upp;
-         double interval = curr_time - usage_time_stamp;
+         double interval = sge_gmt64_to_gmt32_double(curr_time - usage_time_stamp);
 
          decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
 

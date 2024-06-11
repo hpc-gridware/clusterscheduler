@@ -245,7 +245,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_job_logs(lList **answer_list, u_long32 event_time, const job_log_t type,
+   bool ReportingFileWriter::create_job_logs(lList **answer_list, u_long64 event_time, const job_log_t type,
                                              const char *user, const char *host, const lListElem *job_report,
                                              const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                              const char *message) {
@@ -275,7 +275,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, u_long32 report_time) {
+   bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -289,7 +289,7 @@ namespace oge {
 
    bool
    ReportingFileWriter::create_host_consumable_records(lList **answer_list, const lListElem *host, const lListElem *job,
-                                                       u_long32 report_time) {
+                                                       u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -301,7 +301,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, u_long32 report_time) {
+   bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -315,7 +315,7 @@ namespace oge {
 
    bool ReportingFileWriter::create_queue_consumable_records(lList **answer_list, const lListElem *host,
                                                              const lListElem *queue, const lListElem *job,
-                                                             u_long32 report_time) {
+                                                             u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -327,7 +327,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -340,7 +340,7 @@ namespace oge {
    }
 
    bool
-   ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -353,7 +353,7 @@ namespace oge {
    }
 
    bool ReportingFileWriter::create_ar_log_records(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                                                   const char *ar_description, u_long32 report_time) {
+                                                   const char *ar_description, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -365,7 +365,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {

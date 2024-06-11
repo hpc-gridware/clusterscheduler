@@ -82,7 +82,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    const char *hostname = MSG_OBJ_UNKNOWNHOST;
    u_long32 jobid, jataskid;
    const lListElem *hep = nullptr;
-   u_long32 timestamp;
    u_long32 failed, general_failure;
    lList *saved_gdil;
 
@@ -93,7 +92,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    DENTER(TOP_LAYER);
 
    /* JG: TODO: we'd prefer some more precise timestamp, e.g. from jr */
-   timestamp = sge_get_gmt();
+   u_long64 timestamp = sge_get_gmt64();
 
    qname = lGetString(jr, JR_queue_name);
    if (qname == nullptr) {

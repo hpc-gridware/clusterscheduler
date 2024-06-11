@@ -67,20 +67,17 @@ sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
       int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
       if (fd  >= 0) {
          // initialize static dstring
-         char msg2log[4 * MAX_STRING_SIZE];
-         dstring msg_string;
-         sge_dstring_init(&msg_string, msg2log, sizeof(msg2log));
+         DSTRING_STATIC(msg_dstr, 4 * MAX_STRING_SIZE);
 
          // write log message to dstring
-         append_time((time_t) sge_get_gmt(), &msg_string, false);
-         sge_dstring_sprintf_append(&msg_string, "|%12.12s|%02d|%s|%c|%s\n", prog_or_thread_name, thread_id, unqualified_hostname, level, msg);
+         append_time(sge_get_gmt64(), &msg_dstr, false);
+         const char *msg_str = sge_dstring_sprintf_append(&msg_dstr, "|%12.12s|%02d|%s|%c|%s\n", prog_or_thread_name, thread_id, unqualified_hostname, level, msg);
 
          // write the buffer to file
-         ssize_t len = strlen(msg2log);
-         if (write(fd, msg2log, len) != len) {
-
+         ssize_t len = sge_dstring_strlen(&msg_dstr);
+         if (write(fd, msg_str, len) != len) {
             // write to stderr if logging failed
-            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_string));
+            fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_dstr));
          }
          close(fd);
       }

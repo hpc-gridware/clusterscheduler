@@ -94,9 +94,9 @@ typedef enum {
 
 typedef struct {
    pthread_mutex_t last_update_mutex; /* guards the last_update access */
-   u_long32 last_update;               /* used to store the last time, when the usage was stored */
+   u_long64 last_update;               /* used to store the last time, when the usage was stored */
    spool_type is_spooling;             /* identifies, if spooling should happen */
-   u_long32 now;                     /* stores the time of the last spool computation */
+   u_long64 now;                       /* stores the time of the last spool computation */
    order_pos_t *cull_order_pos;        /* stores cull positions in the job, ja-task, and order structure */
 } sge_follow_t;
 
@@ -132,17 +132,18 @@ static int ticket_orders_field[] = {OR_job_number,
 *     sge_follow_order
 *******************************************************************************/
 void
-sge_set_next_spooling_time(void) {
+sge_set_next_spooling_time() {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
    if (Follow_Control.is_spooling != NOT_DEFINED) {
-      if ((Follow_Control.now + mconf_get_spool_time()) < Follow_Control.last_update) {
+      u_long64 spool_interval = sge_gmt32_to_gmt64(mconf_get_spool_time());
+      if ((Follow_Control.now + spool_interval) < Follow_Control.last_update) {
          Follow_Control.last_update = Follow_Control.now;
       } else if (Follow_Control.is_spooling == DO_SPOOL) {
-         Follow_Control.last_update = Follow_Control.now + mconf_get_spool_time();
-         DPRINTF("next spooling now:%ld next: %ld time:%d\n\n", Follow_Control.now, Follow_Control.last_update, mconf_get_spool_time());
+         Follow_Control.last_update = Follow_Control.now + spool_interval;
+         DPRINTF("next spooling now: " sge_u64 " next: " sge_u64 " interval: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update, spool_interval);
       }
 
       Follow_Control.now = 0;
@@ -548,18 +549,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          /* now send events and spool the job */
          {
             lList *answer_list = nullptr;
-            u_long32 now = sge_get_gmt();
             const char *session = lGetString(jep, JB_session);
 
             /* spool job and ja_task in one transaction, send job mod event */
-            sge_event_spool(&answer_list, now, sgeE_JOB_MOD,
+            sge_event_spool(&answer_list, 0, sgeE_JOB_MOD,
                             job_number, task_number, nullptr, nullptr, session,
                             jep, jatp, nullptr, true, true);
             answer_list_output(&answer_list);
          }
 
          /* set timeout for job resend */
-         trigger_job_resend(sge_get_gmt(), master_host, job_number, task_number, 5);
+         trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 5);
 
          if (pe) {
             pe_debit_slots(pe, pe_slots, job_number);
@@ -1095,7 +1095,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long32 now = 0;
+            u_long64 now = 0;
             bool is_spool = false;
             const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
@@ -1103,9 +1103,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             if (Follow_Control.is_spooling == NOT_DEFINED) {
 
-               now = Follow_Control.now = sge_get_gmt();
+               now = Follow_Control.now = sge_get_gmt64();
 
-               DPRINTF(">>next spooling now: %ld next: %ld\n", Follow_Control.now, Follow_Control.last_update);
+               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
 
                if (now >= Follow_Control.last_update) {
                   Follow_Control.is_spooling = DO_SPOOL;
@@ -1230,7 +1230,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long32 now = 0;
+            u_long64 now = 0;
             bool is_spool = false;
             const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
 
@@ -1238,9 +1238,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             if (Follow_Control.is_spooling == NOT_DEFINED) {
 
-               now = Follow_Control.now = sge_get_gmt();
+               now = Follow_Control.now = sge_get_gmt64();
 
-               DPRINTF(">>next spooling now:%ld next: %ld\n", Follow_Control.now, Follow_Control.last_update);
+               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
 
                if (now >= Follow_Control.last_update) {
                   Follow_Control.is_spooling = DO_SPOOL;

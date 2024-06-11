@@ -432,7 +432,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /*-------------------------------------------------------------------------*/
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
-   u_long64 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
    const char *admin = bootstrap_get_admin_user();
    const char *qmaster_host = component_get_qualified_hostname();
 
@@ -497,7 +497,7 @@ int
 sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
    int status = STATUS_OK;
-   u_long64 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
 
    DENTER(TOP_LAYER);
 
@@ -619,7 +619,7 @@ void sge_userprj_spool() {
    lListElem *elem = nullptr;
    lList *answer_list = nullptr;
    const char *name = nullptr;
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
 
