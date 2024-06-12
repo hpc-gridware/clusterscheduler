@@ -523,7 +523,7 @@ u_long32 flags
 /*----------------------------------------------------------------------------*/
       /* "-d time */
       if (!strcmp("-d", *sp)) {
-         double timeval;
+         u_long32 timeval;
          char tmp[1000];
 
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
@@ -541,7 +541,7 @@ u_long32 flags
 
          DPRINTF("\"-d %s\"\n", *sp);
 
-         if (!parse_ulong_val(&timeval, nullptr, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
+         if (!parse_ulong_val(nullptr, &timeval, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTODOPTION_S, *sp);
             DRETURN(answer);

@@ -144,6 +144,18 @@ u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
    return ret * 1000000;
 }
 
+#if 0
+u_long64 sge_gmt32_to_gmt64(int timestamp) {
+   u_long64 ret = timestamp;
+   return ret * 1000000;
+}
+#endif
+
+u_long64 sge_time_t_to_gmt64(time_t timestamp) {
+   u_long64 ret = timestamp;
+   return ret * 1000000;
+}
+
 void sge_gmt64_to_timespec(u_long64 timestamp, struct timespec &ts) {
    ts.tv_sec = (time_t)(timestamp / 1000000);
    ts.tv_nsec = (long)(timestamp % 1000000) * 1000;

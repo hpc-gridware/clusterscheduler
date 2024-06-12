@@ -261,7 +261,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;
    u_long32 state;
-   time_t when = 0;
+   u_long64 when = 0;
    DENTER(TOP_LAYER);
 
    if (lListElem_is_changed(cep)) {
@@ -276,10 +276,10 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
 
    lFreeList(&state_changes_list);
 
-   if (when) {
+   if (when != 0) {
       te_event_t ev;
 
-      ev = te_new_event(sge_gmt32_to_gmt64(when), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
+      ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
       te_add_event(ev);
       te_free_event(&ev);
    }

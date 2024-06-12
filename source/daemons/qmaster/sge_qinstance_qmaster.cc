@@ -803,7 +803,7 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
    if (this_elem != nullptr && calendar != nullptr) {
       lList *state_changes_list = nullptr;
       u_long32 state;
-      time_t when = 0;
+      u_long64 when = 0;
 
       state = calender_state_changes(calendar, &state_changes_list, &when, nullptr);
 

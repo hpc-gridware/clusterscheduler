@@ -89,21 +89,19 @@ bool double_print_time_to_dstring(double value, dstring *string)
          const u_long32 day_in_seconds = hour_in_seconds * 24;
          int seconds, minutes, hours, days;
 
-         u_long64 value64 = value;
-         u_long32 value32 = sge_gmt64_to_gmt32(value64);
-         int microseconds = value64 % 1000000;
-         days = value32 / day_in_seconds;
-         seconds = value32 - days * day_in_seconds;
+         days = value / day_in_seconds;
+         seconds = value - days * day_in_seconds;
          hours = seconds / hour_in_seconds;
          seconds -= hours * hour_in_seconds;
          minutes = seconds / minute_in_seconds;
          seconds -= minutes * minute_in_seconds;
+         int microseconds = floor(value) * 1000000;
 
          if (days > 0) {
-            sge_dstring_sprintf_append(string, "%d:%02d:%02d:%02d.06d",
+            sge_dstring_sprintf_append(string, "%d:%02d:%02d:%02d.%06d",
                                        days, hours, minutes, seconds, microseconds);
          } else {
-            sge_dstring_sprintf_append(string, "%2.2d:%2.2d:%2.2d.06d",
+            sge_dstring_sprintf_append(string, "%2.2d:%2.2d:%2.2d.%06d",
                                        hours, minutes, seconds, microseconds);
          } 
       }

@@ -223,12 +223,11 @@ void te_wait_next(te_event_t te, u_long64 now) {
    DENTER(EVENT_LAYER);
 
    struct timespec ts{};
-   sge_gmt64_to_timespec(now, ts);
+   sge_gmt64_to_timespec(te->when, ts);
 
-   while (Event_Control.next == te->when) { // @todo really ==? not >= ?
+   while (Event_Control.next == te->when) {
       int res = 0;
 
-      DPRINTF("%s: time:" sge_u64" next:" sge_u64" --> will wait\n", __func__, now, Event_Control.next);
       res = pthread_cond_timedwait(&Event_Control.cond_var, &Event_Control.mutex, &ts);
       if (ETIMEDOUT == res) { break; }
    }

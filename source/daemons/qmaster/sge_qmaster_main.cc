@@ -151,7 +151,7 @@ sge_qmaster_application_status(char **info_message) {
 int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
-   u_long32 start_time = sge_get_gmt();
+   u_long64 start_time = sge_get_gmt64();
    monitoring_t monitor;
    lList *alp = nullptr;
 
@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
    sge_listener_initialize();
    sge_scheduler_initialize(nullptr);
 
-   INFO("qmaster startup took " sge_u32" seconds", sge_get_gmt() - start_time);
+   INFO("qmaster startup took %f seconds", sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time));
 
    /*
     * Block till signal from signal thread arrives us

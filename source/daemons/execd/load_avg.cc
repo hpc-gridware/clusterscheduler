@@ -699,20 +699,20 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    loads = sge_getloadavg(avg, 3);
    nprocs = sge_nprocs();
    if (loads == -1) {
-      static u_long32 next_log = 0;
-      u_long32 now;
+      // log warning only every 2 hours
+      static u_long64 next_log = 0;
+      u_long64 now = sge_get_gmt64();
 
-      now = sge_get_gmt();
       if (now >= next_log) {
          WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
-         next_log = now + 7200;
+         next_log = now + sge_gmt32_to_gmt64(7200);
       }
    } else if (loads == -2) {
       static bool logged_at_startup = false;
       if (!logged_at_startup) {
          logged_at_startup = true;
          WARNING(MSG_LS_USE_EXTERNAL_LS_S, sge_get_arch());
-   }
+      }
    }
 
    /* build a list of load values */
@@ -783,12 +783,12 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
       if (sge_getcpuload(&cpu_percentage) != -1) {
          sge_add_double2load_report(lpp, "cpu", cpu_percentage, qualified_hostname, nullptr);
       } else {
-         static u_long32 next_log2 = 0;
+         static u_long64 next_log2 = 0;
 
-         u_long32 now = sge_get_gmt();
+         u_long64 now = sge_get_gmt64();
          if (now >= next_log2) {
             WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
-            next_log2 = now + 7200;
+            next_log2 = now + sge_gmt32_to_gmt64(7200);
          }
       }
    }

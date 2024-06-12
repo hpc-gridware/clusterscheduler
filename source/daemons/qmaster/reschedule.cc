@@ -947,8 +947,7 @@ update_reschedule_unknown_timeout(lListElem *host) {
       const char *hostname = lGetHost(host, EH_name);
       u_long32 timeout = lGetUlong(host, EH_reschedule_unknown);
 
-      conf_entry = sge_get_configuration_entry_by_name(hostname,
-                                                       "reschedule_unknown");
+      conf_entry = sge_get_configuration_entry_by_name(hostname, "reschedule_unknown");
       if (conf_entry != nullptr) {
          const char *value = lGetString(conf_entry, CF_value);
 

@@ -580,7 +580,7 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
 *
 *  SYNOPSIS
 *     u_long32 calender_state_changes(const lListElem *cep, lList 
-*     **state_changes_list, time_t *when) 
+*     **state_changes_list, u_long64 *when)
 *
 *  FUNCTION
 *   Computes the current state and generates a calendar state list. Right now it
@@ -594,8 +594,8 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
 *  INPUTS
 *     const lListElem *cep       - (in) calendar (CAL_Type)
 *     lList **state_changes_list - (out) a pointer to a list pointer (CQU_Type)
-*     time_t *when               - (out) when will the next change be, or 0
-*     time_t *now                - (in) should be nullptr, or the current time
+*     u_long64 *when               - (out) when will the next change be, or 0
+*     u_long64 *now                - (in) should be nullptr, or the current time
 *                                  (only for the test programm)
 *
 *  RESULT
@@ -605,7 +605,7 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
 *     MT-NOTE: calender_state_changes() is MT safe 
 *
 *******************************************************************************/
-u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list, time_t *when, time_t *now) {
+u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list, u_long64 *when64, u_long64 *now64) {
    time_t temp_when = 0;
    time_t temp_now= 0;
    time_t when1 = 0;
@@ -613,14 +613,23 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
    u_long32 state1 = 0;
    u_long32 state2 = 0; 
    lListElem *state_change = nullptr;
+   time_t now = 0;
+   if (now64 != nullptr) {
+      now = sge_gmt64_to_gmt32(*now64);
+   } else {
+      now = sge_gmt64_to_gmt32(sge_get_gmt64());
+   }
 
    if (cep == nullptr || state_changes_list == nullptr) {
       return 0;
    }
 
    /* build queue state change list */
-   state0 = calendar_get_current_state_and_end(cep, &temp_when, now);
-   *when = temp_when;   
+   state0 = calendar_get_current_state_and_end(cep, &temp_when, &now);
+   *when64 = sge_time_t_to_gmt64(temp_when);
+   if (now64 != nullptr) {
+      *now64 = sge_time_t_to_gmt64(now);
+   }
 
    /* calculate the next state shift. */
    if (temp_when != 0) {
@@ -636,14 +645,14 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
         calendar_get_current_state_and_end function does not return the correct state switch
         (overlapping calendar configurations), therefor we have to run it multiple times. */
       do {
-         *when = temp_when;
+         *when64 = sge_time_t_to_gmt64(temp_when);
          temp_now = temp_when + 1;
          state1 = calendar_get_current_state_and_end(cep, &temp_when, &temp_now);
          state_changes++;
       } while ((temp_when != 0) && (state0 == state1) && (state_changes < max_state_changes));
 
       if (state0 == state1) {
-         *when = temp_when;
+         *when64 = sge_time_t_to_gmt64(temp_when);
       }
 
       when1 = temp_when;
@@ -666,14 +675,14 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
    state_change = lCreateElem(CQU_Type);
    
    lSetUlong(state_change, CQU_state, state0);
-   lSetUlong64(state_change,  CQU_till, *when);
+   lSetUlong64(state_change,  CQU_till, *when64);
    lAppendElem(*state_changes_list, state_change);
       
    /* extend queue state change list */
-   if (*when != 0) {
+   if (*when64 != 0) {
       state_change = lCreateElem(CQU_Type);
       lSetUlong(state_change,  CQU_state,state1);
-      lSetUlong64(state_change,  CQU_till, when1);
+      lSetUlong64(state_change,  CQU_till, sge_time_t_to_gmt64(when1));
       lAppendElem(*state_changes_list, state_change);
    }
    
@@ -2568,8 +2577,8 @@ lListElem* sge_generic_cal(char *cal_name) {
 *     frame
 *
 *  SYNOPSIS
-*     bool calendar_open_in_time_frame(const lListElem *cep, u_long32 
-*     start_time, u_long32 duration) 
+*     bool calendar_open_in_time_frame(const lListElem *cep, u_long64
+*     start_time, u_long64 duration)
 *
 *  FUNCTION
 *     Returns the state (only open or closed) of a calendar in a given time
@@ -2577,8 +2586,8 @@ lListElem* sge_generic_cal(char *cal_name) {
 *
 *  INPUTS
 *     const lListElem *cep - calendar object (CAL_Type)
-*     u_long32 start_time  - time frame start
-*     u_long32 duration    - time frame duration
+*     u_long64 start_time  - time frame start
+*     u_long64 duration    - time frame duration
 *
 *  RESULT
 *     bool - true if open
@@ -2587,15 +2596,15 @@ lListElem* sge_generic_cal(char *cal_name) {
 *  NOTES
 *     MT-NOTE: calendar_open_in_time_frame() is MT safe 
 *******************************************************************************/
-bool calendar_open_in_time_frame(const lListElem *cep, u_long32 start_time, u_long32 duration)
+bool calendar_open_in_time_frame(const lListElem *cep, u_long64 start_time, u_long64 duration)
 {
    bool ret = true;
    u_long32 state;
    const lList *year_list = nullptr;
    const lList *week_list = nullptr;
    time_t next_change;
-   time_t start = (time_t)start_time;
-   time_t end = (time_t) sge_gmt64_to_gmt32(duration_add_offset(start_time, duration));
+   time_t start = sge_gmt64_to_gmt32(start_time);
+   time_t end = sge_gmt64_to_gmt32(duration_add_offset(start_time, duration));
 
    DENTER(TOP_LAYER);
 

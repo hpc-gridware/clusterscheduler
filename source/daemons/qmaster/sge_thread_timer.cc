@@ -69,6 +69,7 @@
 #include "sge_qmod_qmaster.h"
 #include "reschedule.h"
 #include "sge_job_qmaster.h"
+#include "sge_log.h"
 
 static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
@@ -317,7 +318,6 @@ sge_timer_main(void *arg) {
 
    while (true) {
       int execute = 0;
-
       thread_start_stop_profiling();
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -338,7 +338,6 @@ sge_timer_main(void *arg) {
       now = Event_Control.next = sge_get_gmt64();
 
       if (te->when > now) {
-
          Event_Control.next = te->when;
          Event_Control.deleted = false;
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),

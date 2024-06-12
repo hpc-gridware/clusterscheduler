@@ -163,7 +163,7 @@ int main(int argc, char **argv)
    int printed_points = 0;
    int max_enroll_tries;
    static char tmp_err_file_name[SGE_PATH_MAX];
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
    lList *alp = nullptr;
@@ -400,12 +400,12 @@ int main(int argc, char **argv)
 
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    if (prof_is_active(SGE_PROF_ALL)) {
-     time_t now = (time_t)sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "profiling summary:\n");
          prof_reset(SGE_PROF_ALL,nullptr);
-         next_prof_output = now + 60;
+         next_prof_output = now + sge_gmt32_to_gmt64(60);
       }
    }
    sge_prof_cleanup();

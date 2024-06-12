@@ -287,7 +287,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 #endif
 
 static u_long64
-execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list, int limit_nm, u_long64 now64)
+execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list, int limit_nm, u_long64 now)
 {
    u_long64 ret = U_LONG64_MAX;
    const lListElem *gdil;
@@ -318,7 +318,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    }
 
    if (ret != U_LONG64_MAX) {
-      ret += now64;
+      ret += now;
    }
 
    return ret;
@@ -371,14 +371,13 @@ update_wallclock_usage(u_long64 now, const lListElem *job, const lListElem *ja_t
 #define OLD_JOB_INTERVAL 60
 
 int do_ck_to_do(bool is_qmaster_down) {
-   u_long32 now;    // @todo (Timestamp) get rid of the 32bit timestamp
-   u_long64 now64;
-   u_long32 pdc_interval = U_LONG32_MAX;
-   static u_long next_pdc = 0;
-   static u_long next_signal = 0;
-   static u_long next_old_job = 0;
-   static u_long next_report = 0;
-   static u_long last_report_send = 0;
+   u_long64 now;
+   u_long64 pdc_interval = U_LONG64_MAX;
+   static u_long64 next_pdc = 0;
+   static u_long64 next_signal = 0;
+   static u_long64 next_old_job = 0;
+   static u_long64 next_report = 0;
+   static u_long64 last_report_send = 0;
    lListElem *jep, *jatep;
    int return_value = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -389,8 +388,7 @@ int do_ck_to_do(bool is_qmaster_down) {
     *  get current time (now)
     *  ( don't update the now time inside this function )
     */
-   now = sge_get_gmt();
-   now64 = sge_get_gmt64();
+   now = sge_get_gmt64();
 
 #ifdef KERBEROS
    krb_renew_tgts(Master_Job_List);
@@ -411,9 +409,9 @@ int do_ck_to_do(bool is_qmaster_down) {
     * jobs/tasks on this execution host and if it isn't
     * disabled by the execd_param PDC_INTERVAL set to NEVER. 
     */
-   pdc_interval = mconf_get_pdc_interval();
+   pdc_interval = sge_gmt32_to_gmt64(mconf_get_pdc_interval());
    if (lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 &&
-       pdc_interval != U_LONG32_MAX &&
+       pdc_interval != U_LONG64_MAX &&
        next_pdc <= now ) {
       next_pdc = now + pdc_interval;
 
@@ -440,7 +438,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
 
    if (next_signal <= now) {
-      next_signal = now + SIGNAL_RESEND_INTERVAL;
+      next_signal = now + sge_gmt32_to_gmt64(SIGNAL_RESEND_INTERVAL);
       /* resend signals to shepherds */
       for_each_rw (jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
@@ -454,20 +452,20 @@ int do_ck_to_do(bool is_qmaster_down) {
             // update wallclock usage
             // @todo is this the right place? Currently we come here once a second, which is OK as long as
             //       the time resolution is 1s
-            update_wallclock_usage(now64, jep, jatep);
+            update_wallclock_usage(now, jep, jatep);
 
             if (lGetUlong64(jep, JB_hard_wallclock_gmt) == 0) {
                u_long64 task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
                const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
 
                lSetUlong64(jep, JB_soft_wallclock_gmt,
-                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, now64));
+                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, now));
                lSetUlong64(jep, JB_hard_wallclock_gmt,
-                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, now64));
+                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, now));
 
                if (task_wallclock_limit != 0) {
                   lSetUlong64(jep, JB_hard_wallclock_gmt,
-                              MIN(lGetUlong64(jep, JB_hard_wallclock_gmt), duration_add_offset(now64, task_wallclock_limit)));
+                              MIN(lGetUlong64(jep, JB_hard_wallclock_gmt), duration_add_offset(now, task_wallclock_limit)));
                }
                if (!mconf_get_simulate_jobs()) {
                   job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
@@ -475,9 +473,9 @@ int do_ck_to_do(bool is_qmaster_down) {
                }
             }
             
-            if (now64 >= lGetUlong64(jep, JB_hard_wallclock_gmt)) {
+            if (now >= lGetUlong64(jep, JB_hard_wallclock_gmt)) {
                if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
-                   now64 > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
+                   now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
                   WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
@@ -488,14 +486,14 @@ int do_ck_to_do(bool is_qmaster_down) {
                               lGetUlong(jatep, JAT_task_number),
                               nullptr);
                   }
-                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now64 + sge_gmt32_to_gmt64(90));
+                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
                }    
                continue;
             }
 
-            if (now64 >= lGetUlong64(jep, JB_soft_wallclock_gmt)) {
+            if (now >= lGetUlong64(jep, JB_soft_wallclock_gmt)) {
                if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
-                   now64 > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
+                   now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
                   WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
@@ -506,7 +504,7 @@ int do_ck_to_do(bool is_qmaster_down) {
                               lGetUlong(jatep, JAT_task_number),
                               nullptr);
                   }
-                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now64 + sge_gmt32_to_gmt64(90));
+                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
                }
                continue;
             }
@@ -515,7 +513,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
 
    if (next_old_job <= now) {
-      next_old_job = now + OLD_JOB_INTERVAL;
+      next_old_job = now + sge_gmt32_to_gmt64(OLD_JOB_INTERVAL);
       clean_up_old_jobs(0);
    }
 
@@ -523,7 +521,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    if (mconf_get_simulate_jobs()) {
       for_each_rw(jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-            if (lGetUlong64(jatep, JAT_end_time) <= now64) {
+            if (lGetUlong64(jatep, JAT_end_time) <= now) {
                lListElem *jr = nullptr;
                u_long32 jobid, jataskid;
                double wallclock;
@@ -560,7 +558,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    /* do timeout calculation */
    if (sge_get_flush_jr_flag() || next_report <= now || sge_get_flush_lr_flag()) {
       if (next_report <= now) {
-         next_report = now + mconf_get_load_report_time();
+         next_report = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
          /* if pdc_interval is equals load_report time syncronize both calls to
             make the online usage acurate as possible */
@@ -570,6 +568,7 @@ int do_ck_to_do(bool is_qmaster_down) {
       }
 
       /* send only 1 load report per second, unequal because system time could be set back */
+      // @todo (Timestamp)
       if (last_report_send != now) {
          last_report_send = now;
 
@@ -707,8 +706,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 {
    char err_str[256];
    int pid;
-   u_long32 now; // @todo (Timestamp) get rid of the 32bit timestamp
-   u_long64 now64;
+   u_long64 now;
    u_long32 job_id, ja_task_id;
    const char *pe_task_id = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -736,10 +734,9 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       if (status != JIDLE) {
          DRETURN(0);
       }
-   }   
+   }
 
-   now = sge_get_gmt();
-   now64 = sge_get_gmt64();
+   now = sge_get_gmt64();
 
    /* JG: TODO: make a function simulate_start_job_or_task() */
    if (mconf_get_simulate_jobs()) {
@@ -747,7 +744,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       u_long32 duration = 60;
 
       DPRINTF("Simulating job " sge_u32"." sge_u32"\n", job_id, ja_task_id);
-      lSetUlong64(jatep, JAT_start_time, now64);
+      lSetUlong64(jatep, JAT_start_time, now);
       lSetUlong(jatep, JAT_status, JRUNNING);
 
       /* set time when job shall be reported as finished */
@@ -768,12 +765,12 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
          }   
       }
 
-      lSetUlong64(jatep, JAT_end_time, now64 + sge_gmt32_to_gmt64(duration));
+      lSetUlong64(jatep, JAT_end_time, now + sge_gmt32_to_gmt64(duration));
       DRETURN(1);
    }
 
    if (petep != nullptr) {
-      lSetUlong64(petep, PET_start_time, now64);
+      lSetUlong64(petep, PET_start_time, now);
 #ifdef COMPILE_DC
       lSetUlong(petep, PET_status, JWAITING4OSJID);
       waiting4osjid = 1;
@@ -781,7 +778,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       lSetUlong(petep, PET_status, JRUNNING);
 #endif
    } else {
-      lSetUlong64(jatep, JAT_start_time, now64);
+      lSetUlong64(jatep, JAT_start_time, now);
 #ifdef COMPILE_DC
       lSetUlong(jatep, JAT_status, JWAITING4OSJID);
       waiting4osjid = 1;
@@ -814,7 +811,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       }
       DRETURN(0);
    }
-   DPRINTF("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n", sge_get_gmt()-now);
+   DPRINTF("TIME IN EXECD FOR STARTING THE JOB: " sge_u64 "\n", sge_get_gmt64() - now);
    
    if (petep != nullptr) {
       lSetUlong(petep, PET_pid, pid);
