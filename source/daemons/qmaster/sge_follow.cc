@@ -284,7 +284,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-2);
             }
             lSetUlong64(jatp, JAT_wallclock_limit,
-                      lGetUlong64(ar, AR_end_time) - sge_get_gmt64() - sconf_get_duration_offset());
+                      lGetUlong64(ar, AR_end_time) - sge_get_gmt64() - sge_gmt32_to_gmt64(sconf_get_duration_offset()));
          }
 
          /* fill number of tickets into job */

@@ -192,7 +192,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter);
 static int
 sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                             lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
-                            const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long32 start_time,
+                            const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long64 start_time,
                             monitoring_t *monitor, int forced, bool *deletion_time_reached);
 
 
@@ -371,7 +371,6 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    u_long32 step = 0;
    int alltasks = 1;
    lListElem *nxt, *job = nullptr;
-   u_long32 start_time;
    bool forced = false;
    const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
@@ -463,7 +462,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    job_list_filter(user_list_flag ? user_list : nullptr,
                    jid_flag ? jid_str : nullptr, &job_where);
 
-   start_time = sge_get_gmt();
+   u_long64 start_time = sge_get_gmt64();
    nxt = lFirstRW(master_job_list);
    while ((job = nxt)) {
       u_long32 job_number = 0;
@@ -3600,7 +3599,7 @@ bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
 static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                                        lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                                        const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks,
-                                       u_long32 start_time, monitoring_t *monitor, int forced,
+                                       u_long64 start_time, monitoring_t *monitor, int forced,
                                        bool *deletion_time_reached) {
    int njobs = 0;
    const lListElem *rn;
@@ -3629,7 +3628,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
     */
    rn = lFirst(ja_structure);
    do {
-      u_long32 max_job_deletion_time = mconf_get_max_job_deletion_time();
+      u_long64 max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
       int showmessage = 0;
       u_long32 enrolled_start = 0;
       u_long32 enrolled_end = 0;
@@ -3866,7 +3865,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 * of jobs is greater than MAX_JOB_DELETION_TIME, break out of
                 * qdel and delete remaining jobs later
                 */
-               if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
+               if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
                   INFO(MSG_JOB_DISCONTTASKTRANS_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
                   *deletion_time_reached = true;
@@ -3916,7 +3915,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
-      if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
+      if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
          INFO(MSG_JOB_DISCONTINUEDTRANS_SU, ruser, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
          *deletion_time_reached = true;

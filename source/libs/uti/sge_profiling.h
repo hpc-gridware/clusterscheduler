@@ -218,4 +218,4 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info);
 
 void thread_start_stop_profiling();
 
-void thread_output_profiling(const char *title, time_t *next_prof_output);
+void thread_output_profiling(const char *title, u_long64 *next_prof_output);

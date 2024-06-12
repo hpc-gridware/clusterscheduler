@@ -126,7 +126,7 @@ reporting_initialize() {
    /* we always have the reporting trigger for flushing reporting files and
     * checking for new reporting configuration
     */
-   te_event_t ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
+   te_event_t ev = te_new_event(sge_get_gmt64(), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 }
@@ -134,7 +134,7 @@ reporting_initialize() {
 void
 reporting_reinitialize_timed_event() {
    te_delete_all_one_time_events(TYPE_REPORTING_TRIGGER);
-   te_event_t ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
+   te_event_t ev = te_new_event(sge_get_gmt64(), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 }
@@ -208,7 +208,7 @@ void
 reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   u_long32 next_flush = oge::ReportingFileWriter::trigger_all(monitor);
+   u_long64 next_flush = oge::ReportingFileWriter::trigger_all(monitor);
    te_event_t ev = te_new_event(next_flush, te_get_type(anEvent), ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);

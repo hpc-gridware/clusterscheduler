@@ -470,7 +470,7 @@ sge_scheduler_terminate(lList **answer_list) {
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
    monitoring_t monitor;
    sge_evc_class_t *evc = nullptr;
    lList *alp = nullptr;

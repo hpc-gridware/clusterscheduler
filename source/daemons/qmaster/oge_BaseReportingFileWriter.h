@@ -28,14 +28,14 @@ namespace oge {
    protected:
       bool do_joblog;
       bool log_consumables;
-      u_long32 sharelog_interval;
-      u_long32 next_sharelog;
+      u_long64 sharelog_interval;
+      u_long64 next_sharelog;
    public:
       explicit BaseReportingFileWriter(std::string filename) : ReportingFileWriter(std::move(filename)),
          do_joblog(false), log_consumables(false), sharelog_interval(0), next_sharelog(0) {
       }
 
-      u_long32
+      u_long64
       trigger(monitoring_t *monitor) override;
 
       void update_config() override;

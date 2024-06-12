@@ -433,7 +433,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * load_adjustment_decay_time is a configuration value.
     *---------------------------------------------------------------------*/
    {
-      u_long64 decay_time = sconf_get_load_adjustment_decay_time();
+      u_long64 decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
       if (decay_time > 0) {
          correct_load(*(splitted_job_lists[SPLIT_RUNNING]),
                       lists->queue_list,
@@ -1054,7 +1054,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       lAppendList(*queue_list, *dis_queue_list);
    }
 
-   a.duration = duration_add_offset(a.duration, sconf_get_duration_offset());
+   a.duration = duration_add_offset(a.duration, sge_gmt32_to_gmt64(sconf_get_duration_offset()));
    a.is_schedule_based = is_schedule_based;
 
    /*------------------------------------------------------------------ 

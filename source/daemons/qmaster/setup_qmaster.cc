@@ -300,7 +300,8 @@ sge_setup_job_resend() {
             const lListElem *granted_queue, *qinstance;
             lListElem *host;
             const char *qname;
-            u_long32 task_num, when;
+            u_long32 task_num;
+            u_long64 when;
             te_event_t ev;
 
             task_num = lGetUlong(task, JAT_task_number);
@@ -308,14 +309,14 @@ sge_setup_job_resend() {
             qname = lGetString(granted_queue, JG_qname);
             qinstance = cqueue_list_locate_qinstance(*oge::DataStore::get_master_list(SGE_TYPE_CQUEUE), qname);
             host = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), lGetHost(qinstance, QU_qhostname));
-            when = sge_gmt64_to_gmt32(lGetUlong64(task, JAT_start_time));
-            when += MAX(load_report_interval(host), MAX_JOB_DELIVER_TIME);
-            ev = te_new_event((time_t) when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, job_num, task_num,
+            when = lGetUlong64(task, JAT_start_time);
+            when += sge_gmt32_to_gmt64(MAX(load_report_interval(host), MAX_JOB_DELIVER_TIME));
+            ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, job_num, task_num,
                               "job-resend_event");
             te_add_event(ev);
             te_free_event(&ev);
 
-            DPRINTF("Did add job resend for " sge_u32 "/" sge_u32 " at %d\n", job_num, task_num, when);
+            DPRINTF("Did add job resend for " sge_u32 "/" sge_u32 " at " sge_u64 "\n", job_num, task_num, when);
          }
 
          task = lNext(task);

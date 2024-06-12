@@ -116,25 +116,25 @@
 			"name":	"last_heard_from",
 			"summary":	"last heard from",
 			"description":	[{
-					"line":	"Timestamp (seconds since epoch) of the last communication between event client and event master."
+					"line":	"Timestamp (microseconds since epoch) of the last communication between event client and event master."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"last_send_time",
 			"summary":	"last send time",
 			"description":	[{
-					"line":	"Timestamp (seconds since epoch) when the last event package was sent to the event client."
+					"line":	"Timestamp (microseconds since epoch) when the last event package was sent to the event client."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"next_send_time",
 			"summary":	"next send time",
 			"description":	[{
-					"line":	"Timestamp (seconds since epoch) when the next event package shall be sent to the event client."
+					"line":	"Timestamp (microseconds since epoch) when the next event package shall be sent to the event client."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"next_number",

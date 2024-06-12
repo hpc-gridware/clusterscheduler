@@ -238,7 +238,7 @@ namespace oge {
       DPRINTF("registered at profiling module\n");
 
       // set profiling parameters
-      time_t next_prof_output = 0;
+      u_long64 next_prof_output = 0;
       prof_set_level_name(SGE_PROF_CUSTOM0, "main", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM1, "wait", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM2, "mirror", nullptr);

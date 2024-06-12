@@ -1005,11 +1005,11 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 
          assignment_init(&a, jep, ja_task, false);
 
-         a.start = sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time)); // @todo (Timestamp)
+         a.start = lGetUlong64(ja_task, JAT_start_time);
 
          task_get_duration(&a.duration, ja_task);
 
-         a.duration = duration_add_offset(a.duration, sconf_get_duration_offset());
+         a.duration = duration_add_offset(a.duration, sge_gmt32_to_gmt64(sconf_get_duration_offset()));
 
          /* Prevent jobs that exceed their prospective duration are not reflected 
             in the resource schedules. Note duration enforcement is domain of 

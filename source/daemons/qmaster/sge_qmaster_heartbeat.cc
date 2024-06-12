@@ -36,10 +36,11 @@
 
 #include "gdi/qm_name.h"
 
+#include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_bootstrap_files.h"
+#include "uti/sge_time.h"
 
 #include "qmaster_heartbeat.h"
 #include "sge_qmaster_heartbeat.h"
@@ -76,14 +77,14 @@ heartbeat_initialize(void)
    DENTER(TOP_LAYER);
 
    te_register_event_handler(increment_heartbeat, TYPE_HEARTBEAT_EVENT);
-   ev = te_new_event(HEARTBEAT_INTERVAL, TYPE_HEARTBEAT_EVENT, RECURRING_EVENT, 
+   ev = te_new_event(sge_gmt32_to_gmt64(HEARTBEAT_INTERVAL), TYPE_HEARTBEAT_EVENT, RECURRING_EVENT,
                      0, 0, "heartbeat-event");
    te_add_event(ev);
    te_free_event(&ev);
 
    /* this is for testsuite shadowd test */
    if (getenv("SGE_TEST_HEARTBEAT_TIMEOUT") != nullptr) {
-      time_t test_timeout = atoi(getenv("SGE_TEST_HEARTBEAT_TIMEOUT"));
+      u_long32 test_timeout = SGE_STRTOU_LONG32(getenv("SGE_TEST_HEARTBEAT_TIMEOUT"));
       set_inc_qmaster_heartbeat_test_mode(test_timeout);
       DPRINTF("heartbeat timeout test enabled (timeout=" sge_U32CFormat ")\n", sge_u32c(test_timeout));
    }

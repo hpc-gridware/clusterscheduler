@@ -32,7 +32,7 @@
 *
 * @todo add description
 *
-*    SGE_ULONG(TE_when) - @todo add summary
+*    SGE_ULONG64(TE_when) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(TE_type) - @todo add summary
@@ -41,7 +41,7 @@
 *    SGE_ULONG(TE_mode) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(TE_interval) - @todo add summary
+*    SGE_ULONG64(TE_interval) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(TE_uval0) - @todo add summary
@@ -70,10 +70,10 @@ enum {
 };
 
 LISTDEF(TE_Type)
-   SGE_ULONG(TE_when, CULL_DEFAULT)
+   SGE_ULONG64(TE_when, CULL_DEFAULT)
    SGE_ULONG(TE_type, CULL_DEFAULT)
    SGE_ULONG(TE_mode, CULL_DEFAULT)
-   SGE_ULONG(TE_interval, CULL_DEFAULT)
+   SGE_ULONG64(TE_interval, CULL_DEFAULT)
    SGE_ULONG(TE_uval0, CULL_DEFAULT)
    SGE_ULONG(TE_uval1, CULL_DEFAULT)
    SGE_STRING(TE_sval, CULL_DEFAULT)

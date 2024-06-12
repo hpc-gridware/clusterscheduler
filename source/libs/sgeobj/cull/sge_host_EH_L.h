@@ -50,7 +50,7 @@
 *    SGE_LIST(EH_load_list) - list of load values
 *    list of load values (e.g. load_avg) reported by the execution host
 *
-*    SGE_ULONG(EH_lt_heard_from) - last heard from
+*    SGE_ULONG64(EH_lt_heard_from) - last heard from
 *    timestamp when the sge_execd on the host last communicated with sge_qmaster
 *
 *    SGE_ULONG(EH_processors) - number of processors
@@ -191,7 +191,7 @@ LISTDEF(EH_Type)
    SGE_LIST(EH_consumable_config_list, CE_Type, CULL_SPOOL)
    SGE_LIST(EH_usage_scaling_list, HS_Type, CULL_SPOOL)
    SGE_LIST(EH_load_list, HL_Type, CULL_SPOOL)
-   SGE_ULONG(EH_lt_heard_from, CULL_DEFAULT)
+   SGE_ULONG64(EH_lt_heard_from, CULL_DEFAULT)
    SGE_ULONG(EH_processors, CULL_SPOOL)
    SGE_LIST(EH_acl, US_Type, CULL_SPOOL)
    SGE_LIST(EH_xacl, US_Type, CULL_SPOOL)

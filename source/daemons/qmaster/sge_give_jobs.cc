@@ -807,7 +807,6 @@ cancel_job_resend(u_long32 jid, u_long32 ja_task_id) {
 void
 trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 ja_task_id, int delta) {
    u_long32 seconds;
-   time_t when = 0;
    te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
@@ -819,7 +818,7 @@ trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 ja_task_
    }
    DPRINTF("TRIGGER JOB RESEND " sge_u32"/" sge_u32" in %d seconds\n", jid, ja_task_id, seconds);
 
-   when = (time_t) (sge_gmt64_to_gmt32(now) + seconds);
+   u_long64 when = now + sge_gmt32_to_gmt64(seconds);
    ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, jid, ja_task_id, "job-resend_event");
    te_add_event(ev);
    te_free_event(&ev);
@@ -1164,11 +1163,11 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
                /* the usage container is not spooled */
                if (existing_container == nullptr) {
-                  sge_add_event(sge_gmt64_to_gmt32(now), sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
+                  sge_add_event(now, sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                 nullptr, session, container);
                   lListElem_clear_changed_info(container);
                } else {
-                  sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
+                  sge_add_list_event(now, sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                      nullptr, session, lGetListRW(container, PET_scaled_usage));
                   lList_clear_changed_info(lGetListRW(container, PET_scaled_usage));
                }
@@ -1224,14 +1223,14 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          sge_clear_granted_resources(jep, jatep, 1, monitor);
          job_enroll(jep, nullptr, jataskid);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
-            sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_FINAL_USAGE, jobid,
+            sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid,
                                jataskid,
                                lGetString(petask, PET_id),
                                nullptr, session,
                                lGetListRW(petask, PET_scaled_usage));
          }
 
-         sge_add_list_event(sge_gmt64_to_gmt32(now), sgeE_JOB_FINAL_USAGE, jobid, jataskid,
+         sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
                             nullptr, nullptr, session, lGetListRW(jatep, JAT_scaled_usage_list));
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_begin);

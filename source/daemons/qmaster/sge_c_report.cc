@@ -192,7 +192,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
          case NUM_REP_FULL_REPORT_LOAD:
             MONITOR_ELOAD(monitor);
             /* Now handle execds load reports */
-            if (lGetUlong(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
+            if (lGetUlong64(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
                host_notify_about_full_load_report(hep);
             } else {
                if (!is_pb_used) {

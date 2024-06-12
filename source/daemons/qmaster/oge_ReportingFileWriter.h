@@ -53,8 +53,8 @@ namespace oge {
       std::string filename;
       std::string buffer;
       pthread_mutex_t mutex;
-      u_long32 config_flush_time;
-      u_long32 next_flush_time;
+      u_long64 config_flush_time;
+      u_long64 next_flush_time;
       static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
 
    public:
@@ -71,7 +71,7 @@ namespace oge {
       static void initialize();
       static void shutdown();
       static bool flush_all();
-      static u_long32 trigger_all(monitoring_t *monitor);
+      static u_long64 trigger_all(monitoring_t *monitor);
       static void update_config_all();
 
       static bool
@@ -119,9 +119,9 @@ namespace oge {
 
       // Object methods
       virtual bool flush();
-      virtual u_long32 trigger(monitoring_t *monitor);
+      virtual u_long64 trigger(monitoring_t *monitor);
       virtual void update_config();
-      void update_config_flush_time(u_long32 new_flush_time);
+      void update_config_flush_time(u_long64 new_flush_time);
 
       virtual bool
       create_new_job_record(lList **answer_list, const lListElem *job) { return true; }

@@ -37,6 +37,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -274,7 +275,7 @@ static int debit_job_from_hosts(
    const char *hnm = nullptr;
    const char *load_formula = nullptr;
    lList *job_load_adjustments = sconf_get_job_load_adjustments();
-   u_long64 load_adjustment_decay_time = sconf_get_load_adjustment_decay_time();
+   u_long64 load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
    bool master_task = true;
 
    double old_sort_value, new_sort_value;

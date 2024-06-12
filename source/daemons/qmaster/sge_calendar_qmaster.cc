@@ -279,7 +279,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
    if (when) {
       te_event_t ev;
 
-      ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
+      ev = te_new_event(sge_gmt32_to_gmt64(when), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
       te_add_event(ev);
       te_free_event(&ev);
    }

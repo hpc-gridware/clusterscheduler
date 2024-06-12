@@ -66,7 +66,7 @@
 #include "sge_give_jobs.h"
 #include "msg_qmaster.h"
 
-u_long32 add_time = 0;
+u_long64 add_time = 0;
 
 static u_long32
 reschedule_unknown_timeout(lListElem *hep);
@@ -116,10 +116,9 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    lList *answer_list = nullptr; /* AN_Type */
    lListElem *hep;            /* EH_Type */
    const lList *master_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   u_long32 new_timeout = 0;
-   u_long32 timeout = te_get_first_numeric_key(anEvent);
+   u_long64 timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
+   u_long64 new_timeout;
    char *hostname = te_get_alphanumeric_key(anEvent);
-
 
    DENTER(TOP_LAYER);
 
@@ -144,18 +143,16 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    /*
     * Did someone change the timeout value?
     */
-   new_timeout = reschedule_unknown_timeout(hep);
+   new_timeout = sge_gmt32_to_gmt64(reschedule_unknown_timeout(hep));
    if (new_timeout == 0) {
       INFO(MSG_RU_CANCELED_S, hostname);
       DTRACE;
       goto Error;
    } else if (new_timeout + add_time > timeout) {
-      u_long32 when, delta = 0;
       te_event_t ev = nullptr;
-
-      delta = new_timeout + add_time;
-      when = time(nullptr) + (delta - timeout);
-      ev = te_new_event((time_t) when, TYPE_RESCHEDULE_UNKNOWN_EVENT, ONE_TIME_EVENT, delta, 0, hostname);
+      u_long64 delta = new_timeout + add_time;
+      u_long64 when = sge_get_gmt64() + delta - timeout;
+      ev = te_new_event(when, TYPE_RESCHEDULE_UNKNOWN_EVENT, ONE_TIME_EVENT, delta, 0, hostname);
       te_add_event(ev);
       te_free_event(&ev);
       DTRACE;
@@ -1045,20 +1042,20 @@ reschedule_unknown_timeout(lListElem *hep) {
 ******************************************************************************/
 void
 reschedule_unknown_trigger(lListElem *hep) {
-   u_long32 timeout;
+   u_long64 timeout;
 
    DENTER(TOP_LAYER);
 
-   timeout = reschedule_unknown_timeout(hep);
+   timeout = sge_gmt32_to_gmt64(reschedule_unknown_timeout(hep));
 
    if (timeout) {
       const char *host = lGetHost(hep, EH_name);
-      u_long32 when = time(nullptr) + timeout + add_time;
+      u_long64 when = sge_get_gmt64() + timeout + add_time;
       te_event_t ev = nullptr;
 
-      DPRINTF("RU: Autorescheduling enabled for host " SFN ". (" sge_u32 " sec)\n", host, timeout + add_time);
+      DPRINTF("RU: Autorescheduling enabled for host " SFN ". (" sge_u64 " µsec)\n", host, timeout + add_time);
 
-      ev = te_new_event((time_t) when, TYPE_RESCHEDULE_UNKNOWN_EVENT, ONE_TIME_EVENT, timeout, 0, host);
+      ev = te_new_event(when, TYPE_RESCHEDULE_UNKNOWN_EVENT, ONE_TIME_EVENT, timeout, 0, host);
       te_add_event(ev);
       te_free_event(&ev);
    }
@@ -1081,7 +1078,7 @@ reschedule_unknown_trigger(lListElem *hep) {
 *     u_long32 time - time in seconds
 ******************************************************************************/
 void
-reschedule_add_additional_time(u_long32 time) {
+reschedule_add_additional_time(u_long64 time) {
    DENTER(TOP_LAYER);
    add_time = time;
    DRETURN_VOID;

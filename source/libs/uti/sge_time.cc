@@ -144,6 +144,10 @@ u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
    return ret * 1000000;
 }
 
+void sge_gmt64_to_timespec(u_long64 timestamp, struct timespec &ts) {
+   ts.tv_sec = (time_t)(timestamp / 1000000);
+   ts.tv_nsec = (long)(timestamp % 1000000) * 1000;
+}
 
 const char *append_time(u_long64 timestamp, dstring *dstr, bool is_xml) {
    DSTRING_STATIC(local_dstr, 100);

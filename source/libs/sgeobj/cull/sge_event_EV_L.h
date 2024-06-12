@@ -71,14 +71,14 @@
 *    SGE_STRING(EV_session) - session key
 *    Session key used tfor filtering subscribed events, used with job submission via the DRMAA interface
 *
-*    SGE_ULONG(EV_last_heard_from) - last heard from
-*    Timestamp (seconds since epoch) of the last communication between event client and event master.
+*    SGE_ULONG64(EV_last_heard_from) - last heard from
+*    Timestamp (microseconds since epoch) of the last communication between event client and event master.
 *
-*    SGE_ULONG(EV_last_send_time) - last send time
-*    Timestamp (seconds since epoch) when the last event package was sent to the event client.
+*    SGE_ULONG64(EV_last_send_time) - last send time
+*    Timestamp (microseconds since epoch) when the last event package was sent to the event client.
 *
-*    SGE_ULONG(EV_next_send_time) - next send time
-*    Timestamp (seconds since epoch) when the next event package shall be sent to the event client.
+*    SGE_ULONG64(EV_next_send_time) - next send time
+*    Timestamp (microseconds since epoch) when the next event package shall be sent to the event client.
 *
 *    SGE_ULONG(EV_next_number) - next event serial number
 *    Serial number of the next event which will be sent to the event client.
@@ -143,9 +143,9 @@ LISTDEF(EV_Type)
    SGE_BOOL(EV_changed, CULL_DEFAULT)
    SGE_ULONG(EV_busy_handling, CULL_DEFAULT)
    SGE_STRING(EV_session, CULL_DEFAULT)
-   SGE_ULONG(EV_last_heard_from, CULL_DEFAULT)
-   SGE_ULONG(EV_last_send_time, CULL_DEFAULT)
-   SGE_ULONG(EV_next_send_time, CULL_DEFAULT)
+   SGE_ULONG64(EV_last_heard_from, CULL_DEFAULT)
+   SGE_ULONG64(EV_last_send_time, CULL_DEFAULT)
+   SGE_ULONG64(EV_next_send_time, CULL_DEFAULT)
    SGE_ULONG(EV_next_number, CULL_DEFAULT)
    SGE_ULONG(EV_busy, CULL_DEFAULT)
    SGE_LIST(EV_events, ET_Type, CULL_DEFAULT)

@@ -337,13 +337,13 @@
 *        information about handling of busy states
 *        (see Eventclient/-Busy-state)
 *     
-*     SGE_ULONG(EV_last_heard_from)
+*     SGE_ULONG64(EV_last_heard_from)
 *        time when qmaster heard from the event client for the last time
 *
-*     SGE_ULONG(EV_last_send_time)
+*     SGE_ULONG64(EV_last_send_time)
 *        time of the last delivery of events
 *
-*     SGE_ULONG(EV_next_send_time)
+*     SGE_ULONG64(EV_next_send_time)
 *        next time scheduled for the delivery of events
 *
 *     SGE_ULONG(EV_next_number)
@@ -1290,10 +1290,8 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
       pthread_cond_signal(&(evco->cond_var));
 #ifdef EVC_DEBUG      
       {
-      dstring dsbuf;
-      char buf[1024];
-      sge_dstring_init(&dsbuf, buf, sizeof(buf));
-      printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
+      DSTRING_STATIC(dsbuf, 64);
+      printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &dsbuf));
       }
 #endif
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
@@ -1344,9 +1342,9 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      lSetUlong(sge_evc->ec, EV_last_heard_from, 0);
-      lSetUlong(sge_evc->ec, EV_last_send_time, 0);
-      lSetUlong(sge_evc->ec, EV_next_send_time, 0);
+      lSetUlong64(sge_evc->ec, EV_last_heard_from, 0);
+      lSetUlong64(sge_evc->ec, EV_last_send_time, 0);
+      lSetUlong64(sge_evc->ec, EV_next_send_time, 0);
       lSetUlong(sge_evc->ec, EV_next_number, 0);
 
       /*
@@ -1450,9 +1448,9 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
       lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      lSetUlong(sge_evc->ec, EV_last_heard_from, 0);
-      lSetUlong(sge_evc->ec, EV_last_send_time, 0);
-      lSetUlong(sge_evc->ec, EV_next_send_time, 0);
+      lSetUlong64(sge_evc->ec, EV_last_heard_from, 0);
+      lSetUlong64(sge_evc->ec, EV_last_send_time, 0);
+      lSetUlong64(sge_evc->ec, EV_next_send_time, 0);
       lSetUlong(sge_evc->ec, EV_next_number, 0);
 
       lp = lCreateList("registration", EV_Type);
@@ -2720,28 +2718,33 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
     *   event delivery time and flush time to intervals greater than 1 second.
     */
    if (ret) {
-      static time_t last_fetch_time = 0;
-      static time_t last_fetch_ok_time = 0;
+      static u_long64 last_fetch_time = 0;
+      static u_long64 last_fetch_ok_time = 0;
       int commlib_error = CL_RETVAL_UNKNOWN;
-      time_t now;
 
       bool done = false;
       bool fetch_ok = false;
       int max_fetch;
       int sync = 1;
 
-      now = (time_t)sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       /* initialize last_fetch_ok_time */
+      // this doesn't make sense, last_fetch_ok_time is a timestamp (big number), ed_time is just a few seconds
+#if 0
       if (last_fetch_ok_time == 0) {
          last_fetch_ok_time = thiz->ec_get_edtime(thiz);
       }
+#endif
 
-      /* initialize the maximum number of fetches */
+      /* initialize the maximum number of fetches
+       * - based on ed_time which is the event delivery interval in seconds (??)
+       * - assuming that we try one fetch per second (??)
+       */
       if (last_fetch_time == 0) {
          max_fetch = thiz->ec_get_edtime(thiz);
       } else {
-         max_fetch = now - last_fetch_time;
+         max_fetch = sge_gmt64_to_gmt32(now - last_fetch_time);
       }
 
       last_fetch_time = now;
@@ -2797,7 +2800,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 
       /* if first synchronous get_event_list failed, return error */
       if (sync && !fetch_ok) {
-         time_t timeout = thiz->ec_get_edtime(thiz) * 10;
+         u_long64 timeout = sge_gmt32_to_gmt64(thiz->ec_get_edtime(thiz) * 10);
 
          DPRINTF("first syncronous get_event_list failed\n");
 
@@ -2811,7 +2814,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
             DPRINTF("SGE_EM_TIMEOUT reached\n");
             ret = false;
          } else {
-            DPRINTF("SGE_EM_TIMEOUT in " sge_U32CFormat " seconds\n", sge_u32c(last_fetch_ok_time + timeout - now) );
+            DPRINTF("SGE_EM_TIMEOUT in " sge_u64 " microseconds\n", last_fetch_ok_time + timeout - now);
          }
 
          /* check for communicaton error */
@@ -2828,7 +2831,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          }
       } else {
          /* set last_fetch_ok_time, because we had success */
-         last_fetch_ok_time = (time_t)sge_get_gmt();
+         last_fetch_ok_time = sge_get_gmt64();
 
          /* send an ack to the qmaster for all received events */
          if (sge_send_ack_to_qmaster(ACK_EVENT_DELIVERY, sge_evc->next_event - 1,
@@ -3084,10 +3087,7 @@ static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
 static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down) {
    DENTER(EVC_LAYER);
    struct timespec ts{};
-   dstring ds_buffer;
-   char buffer[1024];
-
-   sge_dstring_init(&ds_buffer, buffer, sizeof(buffer));
+   DSTRING_STATIC(ds_buffer, 64);
 
    if (thiz == nullptr) {
       DRETURN(false);
@@ -3105,18 +3105,19 @@ static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qma
 
    sge_mutex_lock("evco_event_thread_cond_mutex", __func__, __LINE__, &(evco->mutex));
 
-   u_long32 current_time = sge_get_gmt();
+   u_long64 current_time = sge_get_gmt64();
+   u_long64 timeout = sge_gmt32_to_gmt64(EC_TIMEOUT_S);
    while (!evco->triggered && !evco->exit &&
-          ((sge_get_gmt() - current_time) < EC_TIMEOUT_S)){
-      ts.tv_sec = (long) current_time + EC_TIMEOUT_S;
+          ((sge_get_gmt64() - current_time) < timeout)){
+      ts.tv_sec = sge_gmt64_to_gmt32(current_time + timeout);
       ts.tv_nsec = EC_TIMEOUT_N;
 #ifdef EVC_DEBUG      
-printf("EVENT_CLIENT %d beginning to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
+printf("EVENT_CLIENT %d beginning to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
 #endif
       pthread_cond_timedwait(&(evco->cond_var),
                              &(evco->mutex), &ts);
 #ifdef EVC_DEBUG      
-printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
+printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
 #endif
    }
 
@@ -3125,7 +3126,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
    evco->new_events = nullptr;
    evco->triggered = false;
 
-   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &ds_buffer));
+   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
 
    sge_mutex_unlock("evco_event_thread_cond_mutex", __func__, __LINE__,
                     &(evco->mutex));
@@ -3187,10 +3188,8 @@ ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
       pthread_cond_broadcast(&(evco->cond_var));
 #ifdef EVC_DEBUG      
 {
-dstring dsbuf;
-char buf[1024];
-sge_dstring_init(&dsbuf, buf, sizeof(buf));
-printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
+DSTRING_STATIC(dsbuf, 64);
+printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &dsbuf));
 }
 #endif
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));

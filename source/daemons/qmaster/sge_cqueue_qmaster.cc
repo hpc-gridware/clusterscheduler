@@ -1273,7 +1273,7 @@ qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost
    lListElem *host = host_list_locate(master_exechost_list, hostname);
 
    if (host != nullptr) {
-      u_long32 last_heard = lGetUlong(host, EH_lt_heard_from);
+      u_long64 last_heard = lGetUlong64(host, EH_lt_heard_from);
 
       if (last_heard != 0) {
          sge_qmaster_qinstance_state_set_unknown(this_elem, false);

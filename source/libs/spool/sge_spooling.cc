@@ -457,7 +457,7 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
 
 bool
 spool_trigger_context(lList **answer_list, const lListElem *context,
-                      time_t trigger, time_t *next_trigger)
+                      u_long64 trigger, u_long64 *next_trigger)
 {
    bool ret = true;
 

@@ -50,8 +50,8 @@
 *    (up to a specific event represented by the serial number)
 *    and also to detect inconsistencies in the event protocol, e.g. a missing event.
 *
-*    SGE_ULONG(ET_timestamp) - event generation time
-*    Date and time (seconds since epoch) when the event was generated.
+*    SGE_ULONG64(ET_timestamp) - event generation time
+*    Date and time (microseconds since epoch) when the event was generated.
 *
 *    SGE_ULONG(ET_type) - event type
 *    The type of the event. Values of enumeration type ev_event (libs/sgeobj/sge_event.h), e.g.
@@ -96,7 +96,7 @@ enum {
 LISTDEF(ET_Type)
    SGE_ULONG64(ET_unique_id, CULL_PRIMARY_KEY)
    SGE_ULONG(ET_number, CULL_DEFAULT)
-   SGE_ULONG(ET_timestamp, CULL_DEFAULT)
+   SGE_ULONG64(ET_timestamp, CULL_DEFAULT)
    SGE_ULONG(ET_type, CULL_DEFAULT)
    SGE_ULONG(ET_intkey, CULL_DEFAULT)
    SGE_ULONG(ET_intkey2, CULL_DEFAULT)

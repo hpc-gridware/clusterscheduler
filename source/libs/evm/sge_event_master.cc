@@ -354,8 +354,8 @@ static void       check_send_new_subscribed_list(const subscription_t*,
 static int        eventclient_subscribed(const lListElem *, ev_event, const char*);
 static int        purge_event_list(lList* aList, u_long32 event_number); 
 
-static lListElem* sge_create_event(u_long32, u_long32, ev_event, u_long32, u_long32, const char*, const char*, lList*);
-static bool       add_list_event_for_client(u_long32, u_long32, ev_event, u_long32, u_long32, const char*, const char*, const char*, lList*);
+static lListElem* sge_create_event(u_long32, u_long64, ev_event, u_long32, u_long32, const char*, const char*, lList*);
+static bool       add_list_event_for_client(u_long32, u_long64, ev_event, u_long32, u_long32, const char*, const char*, const char*, lList*);
 static void       add_list_event_direct(lListElem *event_client, lListElem *event, bool copy_event);
 static void       total_update_event(lListElem *event_client, ev_event type, bool new_subscription);
 static bool       list_select(subscription_t*, int, lList**, lList*, const lCondition*, const lEnumeration*, const lDescr*, bool);
@@ -430,7 +430,6 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
                          void *update_func_arg)
 {
    lListElem *ep = nullptr;
-   u_long32 now;
    u_long32 id;
    u_long32 ed_time;
    const char *name;
@@ -551,10 +550,10 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    lSetUlong(ep, EV_next_number, 1);
 
    /* register this contact */
-   now = sge_get_gmt();
-   lSetUlong(ep, EV_last_send_time, 0);
-   lSetUlong(ep, EV_next_send_time, now + lGetUlong(ep, EV_d_time));
-   lSetUlong(ep, EV_last_heard_from, now);
+   u_long64 now = sge_get_gmt64();
+   lSetUlong64(ep, EV_last_send_time, 0);
+   lSetUlong64(ep, EV_next_send_time, now + sge_gmt32_to_gmt64(lGetUlong(ep, EV_d_time)));
+   lSetUlong64(ep, EV_last_heard_from, now);
    lSetUlong(ep, EV_state, EV_connected);
 
    /* return new event client object to internal event client */
@@ -633,7 +632,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 
    evr = lCreateElem(EVR_Type);
    lSetUlong(evr, EVR_operation, EVR_MOD_EVC);
-   lSetUlong(evr, EVR_timestamp, sge_get_gmt());
+   lSetUlong64(evr, EVR_timestamp, sge_get_gmt64());
    lSetObject(evr, EVR_event_client, lCopyElem(clio));
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
@@ -735,9 +734,9 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
     * next_delivery_time - old_interval + new_interval
     */
    if (ev_d_time != lGetUlong(event_client, EV_d_time)) {
-      lSetUlong(event_client, EV_next_send_time,
-                lGetUlong(event_client, EV_next_send_time) -
-                lGetUlong(event_client, EV_d_time) + ev_d_time);
+      lSetUlong64(event_client, EV_next_send_time,
+                lGetUlong64(event_client, EV_next_send_time) -
+                        sge_gmt32_to_gmt64(lGetUlong(event_client, EV_d_time) + ev_d_time));
       lSetUlong(event_client, EV_d_time, ev_d_time);
    }
 
@@ -1224,7 +1223,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 *     #include "evm/sge_event_master.h"
 *
 *     void 
-*     sge_add_event(u_long32 timestamp, ev_event type,
+*     sge_add_event(u_long64 timestamp, ev_event type,
 *                   u_long32 intkey, u_long32 intkey2,
 *                   const char *strkey, const char *strkey2,
 *                   const char *session, lListElem *element) 
@@ -1238,7 +1237,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 *     sge_add_list_event().
 *
 *  INPUTS
-*     u_long32 timestamp      - event creation time, 0 -> use current time
+*     u_long64 timestamp      - event creation time, 0 -> use current time
 *     ev_event type           - the event id
 *     u_long32 intkey         - additional data
 *     u_long32 intkey2        - additional data
@@ -1252,7 +1251,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 *
 *******************************************************************************/
 bool 
-sge_add_event(u_long32 timestamp, ev_event type, 
+sge_add_event(u_long64 timestamp, ev_event type,
               u_long32 intkey, u_long32 intkey2,
               const char *strkey, const char *strkey2, 
               const char *session, lListElem *element) 
@@ -1265,7 +1264,7 @@ sge_add_event(u_long32 timestamp, ev_event type,
 *
 *  SYNOPSIS
 *     bool
-*     sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_event type,
+*     sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_event type,
 *                              u_long32 intkey, u_long32 intkey2,
 *                              const char *strkey, const char *strkey2,
 *                              const char *session, lListElem *element)
@@ -1275,7 +1274,7 @@ sge_add_event(u_long32 timestamp, ev_event type,
 *
 *  INPUTS
 *     u_long32 event_client_id   - event client id
-*     u_long32 timestamp         - event creation time, 0 -> use current time
+*     u_long64 timestamp         - event creation time, 0 -> use current time
 *     ev_event type              - event id
 *     u_long32 intkey            - 1st numeric key
 *     u_long32 intkey2           - 2nd numeric key
@@ -1288,7 +1287,7 @@ sge_add_event(u_long32 timestamp, ev_event type,
 *     MT-NOTE: sge_add_event_for_client() is MT safe
 *
 *******************************************************************************/
-bool sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_event type,
+bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_event type,
                               u_long32 intkey, u_long32 intkey2,
                               const char *strkey, const char *strkey2, 
                               const char *session, lListElem *element)
@@ -1339,7 +1338,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_e
 *     #include "evm/sge_event_master.h"
 *
 *     void 
-*     sge_add_list_event(u_long32 timestamp, ev_event type, 
+*     sge_add_list_event(u_long64 timestamp, ev_event type,
 *                        u_long32 intkey, u_long32 intkey2,
 *                        const char *strkey, const char *strkey2,
 *                        const char *session, lList *list) 
@@ -1349,7 +1348,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_e
 *     sgeE*_LIST events.
 *
 *  INPUTS
-*     u_long32 timestamp      - event creation time, 0 -> use current time
+*     u_long64 timestamp      - event creation time, 0 -> use current time
 *     ev_event type           - the event id
 *     u_long32 intkey         - additional data
 *     u_long32 intkey2        - additional data
@@ -1362,7 +1361,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_e
 *     MT-NOTE: sge_add_list_event() is MT safe.
 *
 *******************************************************************************/
-bool sge_add_list_event(u_long32 timestamp, ev_event type,
+bool sge_add_list_event(u_long64 timestamp, ev_event type,
                         u_long32 intkey, u_long32 intkey2,
                         const char *strkey, const char *strkey2,
                         const char *session, lList *list)
@@ -1418,7 +1417,7 @@ bool sge_add_list_event(u_long32 timestamp, ev_event type,
 *
 *     static lListElem* sge_create_event(u_long32    event_client_id,
 *                                        u_long32    number,
-*                                        u_long32    timestamp,
+*                                        u_long64    timestamp,
 *                                        ev_event    type,
 *                                        u_long32    intkey,
 *                                        u_long32    intkey2,
@@ -1434,7 +1433,7 @@ bool sge_add_list_event(u_long32 timestamp, ev_event type,
 *  INPUTS
 *     u_long32 event_client_id - event client id
 *     u_long32    number       - the event number
-*     u_long32 timestamp       - event creation time, 0 -> use current time
+*     u_long64 timestamp       - event creation time, 0 -> use current time
 *     ev_event type            - the event id
 *     u_long32 intkey          - additional data
 *     u_long32 intkey2         - additional data
@@ -1448,7 +1447,7 @@ bool sge_add_list_event(u_long32 timestamp, ev_event type,
 *
 *******************************************************************************/
 static lListElem*
-sge_create_event(u_long32 number, u_long32 timestamp, ev_event type, u_long32 intkey, u_long32 intkey2,
+sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 intkey, u_long32 intkey2,
                  const char *strkey, const char *strkey2, lList *list) {
    lListElem *etp = nullptr;        /* event object */
 
@@ -1456,14 +1455,14 @@ sge_create_event(u_long32 number, u_long32 timestamp, ev_event type, u_long32 in
 
    /* an event needs a timestamp */
    if (timestamp == 0) {
-      timestamp = sge_get_gmt();
+      timestamp = sge_get_gmt64();
    }
 
    etp = lCreateElem(ET_Type);
    lSetUlong64(etp, ET_unique_id, oge_get_next_unique_event_id());
    lSetUlong(etp, ET_number, number);
    lSetUlong(etp, ET_type, type);
-   lSetUlong(etp, ET_timestamp, timestamp);
+   lSetUlong64(etp, ET_timestamp, timestamp);
    lSetUlong(etp, ET_intkey, intkey);
    lSetUlong(etp, ET_intkey2, intkey2);
    lSetString(etp, ET_strkey, strkey);
@@ -1481,7 +1480,7 @@ sge_create_event(u_long32 number, u_long32 timestamp, ev_event type, u_long32 in
 *     #include "evm/sge_event_master.h"
 *
 *     void 
-*     add_list_event_for_client(u_long32 event_client_id, u_long32 timestamp,
+*     add_list_event_for_client(u_long32 event_client_id, u_long64 timestamp,
 *                               ev_event type, u_long32 intkey,
 *                               u_long32 intkey2, const char *strkey,
 *                               const char *session, lList *list) 
@@ -1494,7 +1493,7 @@ sge_create_event(u_long32 number, u_long32 timestamp, ev_event type, u_long32 in
 *
 *  INPUTS
 *     u_long32 event_client_id      - the id of the recipient
-*     u_long32 timestamp      - time stamp in gmt for the even; if 0 is passed,
+*     u_long64 timestamp      - time stamp in gmt for the even; if 0 is passed,
 *                               sge_add_list_event will insert the actual time
 *     ev_event type           - the event id
 *     u_long32 intkey         - additional data
@@ -1511,7 +1510,7 @@ sge_create_event(u_long32 number, u_long32 timestamp, ev_event type, u_long32 in
 *
 *******************************************************************************/
 static bool add_list_event_for_client(u_long32    event_client_id,
-                                      u_long32    timestamp,
+                                      u_long64    timestamp,
                                       ev_event    type,
                                       u_long32    intkey,
                                       u_long32    intkey2,
@@ -1528,12 +1527,12 @@ static bool add_list_event_for_client(u_long32    event_client_id,
  
    /* an event needs a timestamp */
    if (timestamp == 0) {
-      timestamp = sge_get_gmt();
+      timestamp = sge_get_gmt64();
    }
 
    evr = lCreateElem(EVR_Type);
    lSetUlong(evr, EVR_operation, EVR_ADD_EVENT);
-   lSetUlong(evr, EVR_timestamp, timestamp);
+   lSetUlong64(evr, EVR_timestamp, timestamp);
    lSetUlong(evr, EVR_event_client_id, event_client_id);
    lSetString(evr, EVR_session, session);
 
@@ -1689,7 +1688,7 @@ sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number)
 
    evr = lCreateElem(EVR_Type);
    lSetUlong(evr, EVR_operation, EVR_ACK_EVENT);
-   lSetUlong(evr, EVR_timestamp, sge_get_gmt());
+   lSetUlong64(evr, EVR_timestamp, sge_get_gmt64());
    lSetUlong(evr, EVR_event_client_id, event_client_id);
    lSetUlong(evr, EVR_event_number, event_number);
 
@@ -1719,7 +1718,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "process acknowledgements");
    } else {
       u_long32 event_number = lGetUlong(request, EVR_event_number);
-      u_long32 timestamp = lGetUlong(request, EVR_timestamp);
+      u_long64 timestamp = lGetUlong64(request, EVR_timestamp);
       lList *list = lGetListRW(client, EV_events);
       int res = purge_event_list(list, event_number);
 
@@ -1728,7 +1727,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
          DPRINTF("%s: purged %d acknowledged events\n", __func__, res);
       }
 
-      lSetUlong(client, EV_last_heard_from, timestamp); /* note time of ack */
+      lSetUlong64(client, EV_last_heard_from, timestamp); /* note time of ack */
 
       switch (lGetUlong(client, EV_busy_handling)) {
          case EV_BUSY_UNTIL_ACK:
@@ -1938,13 +1937,12 @@ init_send_events(void) {
 void
 sge_event_master_wait_next()
 {
-
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
 
    if (!Event_Master_Control.delivery_signaled) {
-      u_long32 current_time = sge_get_gmt();
+      u_long32 current_time = sge_gmt64_to_gmt32(sge_get_gmt64());
       struct timespec ts;
       ts.tv_sec = (time_t)(current_time + EVENT_DELIVERY_INTERVAL_S);
       ts.tv_nsec = EVENT_DELIVERY_INTERVAL_N;
@@ -2065,7 +2063,6 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
    int ret;
    int commid; 
    int deliver_interval;
-   u_long32 now;
    u_long32 ec_id = 0;
    event_client_update_func_t update_func = nullptr;
    void *update_func_arg = nullptr;
@@ -2074,7 +2071,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    event_client = lFirstRW(Event_Master_Control.clients);
    while (event_client != nullptr) {
       const char *host = nullptr;
@@ -2110,12 +2107,12 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
       busy_handling = lGetUlong(event_client, EV_busy_handling);
 
       /* someone turned the clock back */
-      if (lGetUlong(event_client, EV_last_heard_from) > now) {
-         WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)(now - lGetUlong(event_client, EV_last_heard_from)));
-         lSetUlong(event_client, EV_last_heard_from, now);
-         lSetUlong(event_client, EV_next_send_time, now + deliver_interval);
-      } else if (lGetUlong(event_client, EV_last_send_time)  > now) {
-         lSetUlong(event_client, EV_last_send_time, now);
+      if (lGetUlong64(event_client, EV_last_heard_from) > now) {
+         WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)sge_gmt64_to_gmt32(now - lGetUlong64(event_client, EV_last_heard_from)));
+         lSetUlong64(event_client, EV_last_heard_from, now);
+         lSetUlong64(event_client, EV_next_send_time, now + sge_gmt32_to_gmt64(deliver_interval));
+      } else if (lGetUlong64(event_client, EV_last_send_time) > now) {
+         lSetUlong64(event_client, EV_last_send_time, now);
       }
   
       /* if set, use qmaster_params SCHEDULER_TIMEOUT */
@@ -2137,7 +2134,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
        * Flush event sgeE_ACK_TIMEOUT for out-timed clients. Clients might re-connect
        * when getting sgeE_ACK_TIMEOUT event. 
        */
-      if (now > (lGetUlong(event_client, EV_last_heard_from) + timeout)) {
+      if (now > (lGetUlong64(event_client, EV_last_heard_from) + sge_gmt32_to_gmt64(timeout))) {
          lListElem *new_event = nullptr;
          lList* tmp_event_list = nullptr;
          lUlong tmp_cur_event_nr = 0;
@@ -2173,11 +2170,11 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
          DPRINTF("%d %s\n", ec_id, event_text(new_event, &buffer_wrapper));
 
          /* Set next send time to now, we want to deliver it */
-         lSetUlong(event_client, EV_next_send_time, (lUlong) now);
+         lSetUlong64(event_client, EV_next_send_time, now);
       }
 
       /* do we have to deliver events ? */
-      if (now >= lGetUlong(event_client, EV_next_send_time)) {
+      if (now >= lGetUlong64(event_client, EV_next_send_time)) {
          if (!lGetUlong(event_client, EV_busy) || do_remove) {
             lList *lp = nullptr;
 
@@ -2195,7 +2192,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
 
             /* on failure retry is triggered automatically */
             if (ret == CL_RETVAL_OK) {
-               now = (time_t)sge_get_gmt();
+               now = sge_get_gmt64();
 
                switch (busy_handling) {
                   case EV_BUSY_UNTIL_RELEASED:
@@ -2207,12 +2204,12 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
                      break;
                }
 
-               lSetUlong(event_client, EV_last_send_time, now);
+               lSetUlong64(event_client, EV_last_send_time, now);
             }
 
             /* We reset this time even if the report list send failed because we
              * want to give failed clients a break before trying them again. */
-            lSetUlong(event_client, EV_next_send_time, now + deliver_interval);
+            lSetUlong64(event_client, EV_next_send_time, now + sge_gmt32_to_gmt64(deliver_interval));
 
             /* don't delete sent events - deletion is triggerd by ack's */
             lXchgList(report, REP_list, &lp);
@@ -2241,23 +2238,23 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
  
 static void
 flush_events(lListElem *event_client, int interval) {
-   u_long32 next_send = 0;
-   u_long32 now = sge_get_gmt();
+   u_long64 next_send = 0;
+   u_long64 now = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
 
    SGE_ASSERT(event_client != nullptr);
 
-   next_send = lGetUlong(event_client, EV_next_send_time);
-   next_send = MIN(next_send, now + interval);
+   next_send = lGetUlong64(event_client, EV_next_send_time);
+   next_send = MIN(next_send, now + sge_gmt32_to_gmt64(interval));
 
-   lSetUlong(event_client, EV_next_send_time, next_send);
+   lSetUlong64(event_client, EV_next_send_time, next_send);
 
    if (now >= next_send) {
       set_flush();
    }
 
-   DPRINTF("%s: %s %d\tNOW: %d NEXT FLUSH: %d (%s,%s,%d)\n",
+   DPRINTF("%s: %s %d\tNOW: " sge_u64 " NEXT FLUSH: " sge_u64 " (%s,%s,%d)\n",
            __func__,
            ((lGetString(event_client, EV_name) != nullptr) ? lGetString(event_client, EV_name) : "<null>"),
            lGetUlong(event_client, EV_id),

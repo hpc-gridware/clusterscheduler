@@ -111,7 +111,7 @@
  * not all defaults are defined here :-)
  */
 #define DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME "0:7:30"
-#define _DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME sge_gmt32_to_gmt64(7*60+30)
+#define _DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME 7*60+30
 #define DEFAULT_LOAD_FORMULA                "np_load_avg"
 #define SCHEDULE_TIME                       "0:0:15"
 #define _SCHEDULE_TIME                      15
@@ -120,9 +120,9 @@
 #define MAXUJOBS                            0
 #define MAXGJOBS                            0
 #define SCHEDD_JOB_INFO                     "true"
-#define DEFAULT_DURATION                    "INFINITY"              // the default_duration and default_duration_I have to be
-#define DEFAULT_DURATION_I                  sge_gmt32_to_gmt64(600) // in sync. On is the string version of the other (based on seconds)
-#define DEFAULT_DURATION_OFFSET             sge_gmt32_to_gmt64(60)
+#define DEFAULT_DURATION                    "INFINITY"     // the default_duration and default_duration_I have to be
+#define DEFAULT_DURATION_I                  600            // in sync. On is the string version of the other (based on seconds)
+#define DEFAULT_DURATION_OFFSET             60
 
 /**
  * multithreading support, thread local
@@ -294,11 +294,11 @@ typedef struct{
    int default_duration;
 
    int c_is_schedd_job_info;       /* cached configuration */
-   u_long64 s_duration_offset;
+   u_long32 s_duration_offset;
    lList *c_schedd_job_info_range;
    lList *c_halflife_decay_list;   
    lList *c_params;
-   u_long64 c_default_duration;
+   u_long32 c_default_duration;
 
    bool new_config;     /* identifies an update in the configuration */
 }config_pos_type;
@@ -817,7 +817,7 @@ static const char * get_load_adjustment_decay_time_str()
 *  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
 *
 *******************************************************************************/
-u_long64 sconf_get_load_adjustment_decay_time()
+u_long32 sconf_get_load_adjustment_decay_time()
 {
    u_long32 uval;
    const char *time = nullptr;
@@ -831,7 +831,7 @@ u_long64 sconf_get_load_adjustment_decay_time()
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return sge_gmt32_to_gmt64(uval);
+   return uval;
 }
 
 /****** sge_schedd_conf/sconf_get_job_load_adjustments() ***********************
@@ -3059,7 +3059,7 @@ bool sconf_validate_config_(lList **answer_list)
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);      
             ret = false; 
          } else {
-            pos.c_default_duration = sge_gmt32_to_gmt64(uval);
+            pos.c_default_duration = uval;
          }
       }
    }
@@ -3587,7 +3587,7 @@ static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_lis
       pos.s_duration_offset = DEFAULT_DURATION_OFFSET; 
       return false;
    }
-   pos.s_duration_offset = sge_gmt32_to_gmt64(uval);
+   pos.s_duration_offset = uval;
 
    return true;
 }
@@ -3665,7 +3665,7 @@ bool sconf_get_global_load_correction(void)
    return sc_state->global_load_correction;
 }
 
-u_long64 sconf_get_default_duration(void)
+u_long32 sconf_get_default_duration(void)
 {
    return pos.c_default_duration;
 }
@@ -3754,9 +3754,9 @@ void sconf_set_tmp_sme(lListElem *sme) {
    sc_state->tmp_sme = sme;
 }
 
-u_long64 sconf_get_duration_offset(void)
+u_long32 sconf_get_duration_offset(void)
 {
-   u_long64 offset = 0;
+   u_long32 offset = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    

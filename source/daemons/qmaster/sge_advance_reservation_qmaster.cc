@@ -133,7 +133,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
       if (now < lGetUlong64(ar, AR_start_time)) {
          sge_ar_state_set_waiting(ar);
 
-         ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_start_time)), TYPE_AR_EVENT,
+         ev = te_new_event(lGetUlong64(ar, AR_start_time), TYPE_AR_EVENT,
                            ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_RUNNING, nullptr);
          te_add_event(ev);
          te_add_event(ev);
@@ -142,7 +142,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
       } else if (now < lGetUlong64(ar, AR_end_time)) {
          sge_ar_state_set_running(ar);
 
-         ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_end_time)), TYPE_AR_EVENT,
+         ev = te_new_event(lGetUlong64(ar, AR_end_time), TYPE_AR_EVENT,
                            ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_EXITED, nullptr);
          te_add_event(ev);
          te_free_event(&ev);
@@ -435,7 +435,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
    /*
    ** add the timer to trigger the state change
     */
-   ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ep, AR_start_time)), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
+   ev = te_new_event(lGetUlong64(ep, AR_start_time), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
                      AR_RUNNING, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
@@ -949,7 +949,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       /* remove the AR itself */
       DPRINTF("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer));
       lRemoveElem(master_ar_list, &ar);
-      sge_event_spool(nullptr, 0, sgeE_AR_DEL,
+      sge_event_spool(nullptr, timestamp, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                       nullptr, nullptr, nullptr, true, true);
 
@@ -959,7 +959,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       sge_ar_state_set_running(ar);
 
-      ev = te_new_event((time_t) sge_gmt64_to_gmt32(lGetUlong64(ar, AR_end_time)), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
+      ev = te_new_event(lGetUlong64(ar, AR_end_time), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
       te_add_event(ev);
       te_free_event(&ev);
 

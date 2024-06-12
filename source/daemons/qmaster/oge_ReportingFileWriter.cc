@@ -114,11 +114,11 @@ namespace oge {
     * (for writing the sharelog)
     * @return timestamp of the next trigger operation
     */
-   u_long32 ReportingFileWriter::trigger_all(monitoring_t *monitor) {
-      u_long32 next_trigger = U_LONG32_MAX;
+   u_long64 ReportingFileWriter::trigger_all(monitoring_t *monitor) {
+      u_long64 next_trigger = U_LONG64_MAX;
       for (auto w: writers) {
          if (w != nullptr) {
-            u_long32 next = w->trigger(monitor);
+            u_long64 next = w->trigger(monitor);
             if (next < next_trigger) {
                next_trigger = next;
             }
@@ -567,9 +567,9 @@ namespace oge {
     * @param monitor not used here but trigger functions of derived classes need it
     * @return the timestamp of the next flush time
     */
-   u_long32 ReportingFileWriter::trigger(monitoring_t *monitor) {
+   u_long64 ReportingFileWriter::trigger(monitoring_t *monitor) {
       // trigger for flushing the data are the same for all accounting/reporting classes
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
       if (next_flush_time <= now) {
          flush();
          next_flush_time = now + config_flush_time;
@@ -584,7 +584,7 @@ namespace oge {
       update_config_flush_time(new_config_flush_time);
    }
 
-   void ReportingFileWriter::update_config_flush_time(u_long32 new_flush_time) {
+   void ReportingFileWriter::update_config_flush_time(u_long64 new_flush_time) {
       if (new_flush_time != config_flush_time) {
          if (next_flush_time != 0) {
             next_flush_time = next_flush_time - config_flush_time + new_flush_time;

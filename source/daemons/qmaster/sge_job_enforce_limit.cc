@@ -279,7 +279,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 void
 sge_add_check_limit_trigger(void) {
    const lList *master_host_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    u_long32 max_time = 0;
    u_long32 reconnect_timeout = EXECD_MAX_RECONNECT_TIMEOUT;
    lListElem *host;
@@ -291,7 +291,7 @@ sge_add_check_limit_trigger(void) {
       max_time = MAX(max_time, 2 * load_report_interval(host));
    }
 
-   ev = te_new_event((time_t) (now + max_time + reconnect_timeout),
+   ev = te_new_event(now + sge_gmt32_to_gmt64(max_time + reconnect_timeout),
                      TYPE_ENFORCE_LIMIT_EVENT, ONE_TIME_EVENT,
                      0, 0, nullptr);
 
@@ -623,10 +623,10 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
           * add the trigger
           */
          {
-            u_long32 now = sge_get_gmt();
+            u_long64 now = sge_get_gmt64();
             u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
             u_long32 job_id = lGetUlong(job, JB_job_number);
-            u_long32 duration_offset = sge_gmt64_to_gmt32(sconf_get_duration_offset());
+            u_long32 duration_offset = sconf_get_duration_offset();
             u_long32 delta_seconds = 0;
             u_long32 already_running = 0;
             bool has_rt_limit = false;
@@ -682,7 +682,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                }
 
                max_running = MIN(qi_h_rt, job_h_rt);
-               already_running = now - sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time)); // @todo (Timestamp)
+               already_running = sge_gmt64_to_gmt32(now - lGetUlong64(ja_task, JAT_start_time));
                if (already_running <= max_running) {
                   delta_seconds = MAX(max_running - already_running, 0);
                }
@@ -692,7 +692,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
              * add the event to the timed event thread if there was a limit defined in queue or job
              */
             if (has_rt_limit) {
-               te_event_t ev = te_new_event((time_t) (now + delta_seconds + duration_offset),
+               te_event_t ev = te_new_event(now + sge_gmt32_to_gmt64(delta_seconds + duration_offset),
                                             TYPE_ENFORCE_LIMIT_EVENT, ONE_TIME_EVENT,
                                             job_id, ja_task_id, nullptr);
                te_add_event(ev);

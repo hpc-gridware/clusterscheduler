@@ -35,7 +35,7 @@
 *    SGE_ULONG(EVR_operation) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(EVR_timestamp) - @todo add summary
+*    SGE_ULONG64(EVR_timestamp) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(EVR_event_client_id) - @todo add summary
@@ -67,7 +67,7 @@ enum {
 
 LISTDEF(EVR_Type)
    SGE_ULONG(EVR_operation, CULL_DEFAULT)
-   SGE_ULONG(EVR_timestamp, CULL_DEFAULT)
+   SGE_ULONG64(EVR_timestamp, CULL_DEFAULT)
    SGE_ULONG(EVR_event_client_id, CULL_DEFAULT)
    SGE_ULONG(EVR_event_number, CULL_DEFAULT)
    SGE_STRING(EVR_session, CULL_DEFAULT)

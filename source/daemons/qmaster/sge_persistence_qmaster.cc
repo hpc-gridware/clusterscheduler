@@ -100,7 +100,7 @@ sge_initialize_persistance_timer() {
 
    te_register_event_handler(spooling_trigger_handler, TYPE_SPOOLING_TRIGGER);
 
-   ev = te_new_event(time(nullptr), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, nullptr);
+   ev = te_new_event(sge_get_gmt64(), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -110,7 +110,7 @@ sge_initialize_persistance_timer() {
 bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
-   time_t time = 0;
+   u_long64 time = 0;
    lList *alp = nullptr;
    lListElem *context;
 
@@ -144,8 +144,7 @@ sge_shutdown_persistence(lList **answer_list) {
 
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
-   time_t next_trigger = 0;
-   time_t now;
+   u_long64 next_trigger = 0;
    lList *answer_list = nullptr;
    te_event_t ev = nullptr;
 
@@ -158,9 +157,9 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* validate next_trigger. If it is invalid, set it to one minute after now */
-   now = time(nullptr);
+   u_long64 now = sge_get_gmt64();
    if (next_trigger <= now) {
-      next_trigger = now + 60;
+      next_trigger = now + sge_gmt32_to_gmt64(60);
    }
 
    /* set timerevent for next trigger */
@@ -580,7 +579,7 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
    /* send event only, if spooling succeeded */
    if (ret) {
       if (send_event) {
-         sge_add_event(sge_gmt64_to_gmt32(timestamp), event,
+         sge_add_event(timestamp, event,
                        intkey1, intkey2, strkey, strkey2,
                        session, element);
       }

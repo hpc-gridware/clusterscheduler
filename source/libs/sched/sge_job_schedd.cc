@@ -61,7 +61,7 @@
 *     job_get_duration() -- Determine a jobs runtime duration
 *
 *  SYNOPSIS
-*     bool job_get_duration(u_long32 *duration, const lListElem *jep) 
+*     bool job_get_duration(u_long64 *duration, const lListElem *jep)
 *
 *  FUNCTION
 *     The minimum of the time values the user specified with -l h_rt=<time> 
@@ -69,7 +69,7 @@
 *     time values were specified the default duration is used.
 *
 *  INPUTS
-*     u_long32 *duration   - Returns duration on success
+*     u_long64 *duration   - Returns duration on success
 *     const lListElem *jep - The job (JB_Type)
 *
 *  RESULT
@@ -83,7 +83,7 @@ bool job_get_duration(u_long64 *duration, const lListElem *jep)
    DENTER(TOP_LAYER);
 
    if (!job_get_wallclock_limit(duration, jep)) {
-      *duration = sconf_get_default_duration();
+      *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
    }
 
    DRETURN(true);
@@ -117,10 +117,10 @@ bool task_get_duration(u_long64 *duration, const lListElem *ja_task) {
    if (ja_task != nullptr) {
       *duration = lGetUlong64(ja_task, JAT_wallclock_limit);
       if (*duration == U_LONG64_MAX) {
-         *duration = sconf_get_default_duration();
+         *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
       }
    } else {
-      *duration = sconf_get_default_duration();
+      *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
    }
 
    DRETURN(true);
