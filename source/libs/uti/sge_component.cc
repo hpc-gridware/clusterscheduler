@@ -31,7 +31,7 @@
 
 #define MAX_LOG_BUFFER (8*1024)
 #define MAX_COMP_NAME 32
-#define MAX_USER_GROUP 128
+#define MAX_USER_GROUP 512
 #define MAX_HOSTNAME (2*1024)
 
 typedef struct {

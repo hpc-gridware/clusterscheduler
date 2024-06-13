@@ -116,7 +116,7 @@ namespace oge {
     */
    void
    MirrorDataStore::wait_for_event(lList **event_list) {
-      int pthread_ret;
+      int pthread_ret = 0;
       bool do_ack = false;
 
       DENTER(TOP_LAYER);
