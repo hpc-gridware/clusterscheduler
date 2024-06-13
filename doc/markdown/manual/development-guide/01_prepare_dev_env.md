@@ -1,7 +1,6 @@
 # Prepare a Host as Development Machine
 
-In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites.
-Recommended build platform is Rocky Linux 8.x.
+In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites. Recommended build platform is CentOS Linux 8.x.
 
 ## Software Prerequisites
 
@@ -58,7 +57,7 @@ If you want to use *CLion* as development environment on Linux or macOS and remo
 you need to downgrade the `cmake` version to *3.27.9* on FreeBSD. The default `cmake` package provides *3.28.1*
 which suites a manual build but is not supported by the *CLion IDE 2023.3.2*.
 
-### CentOS 7
+### CentOS 7 (default for ulx-amd64)
 
 ```
 yum install -y centos-release-scl
@@ -90,7 +89,7 @@ pkg install hs-pandoc texlive-full tex-xetex
 ### macOS 14 (default for darwin-arm64)
 
 ```
-XCode
+XCodeUpdate 01_prepare_dev_env.md
 XQuartz (for some testsuite tests)
 brew install cmake git autoconf automake gettext
 brew install expect tcl-tk gnuplot perl
@@ -98,7 +97,7 @@ brew install pandoc texlive
 brew install doxygen graphviz
 ```
 
-### Raspian 11 (default for lx-arm64)
+### Raspian 11
 
 ```
 apt-get install git autoconf automake gcc g++ patchelf libntirpc-dev libudev-dev
@@ -107,17 +106,19 @@ apt-get install expect xterm gnuplot tdom
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.18.
 
-### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64)
+### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
+and only for lx-amd64
 
 ```
-dnf install -y automake autoconf patchelf git libtirpc-devel systemd-devel
-dnf install -y gcc-toolset-13 gcc-toolset-13-libasan-devel gcc-toolset-13-libubsan-devel
+dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
+dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
+dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
 ```
 
-`cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.20.
+Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
 
 ### Solaris 11 (default for sol-amd64)
 
@@ -146,13 +147,15 @@ zypper install tcl expect vim xterm mailx perl gnuplot
 zypper install texlive pandoc
 ```
 
-### Ubuntu 22
+### Ubuntu 20/22/24
 
 ```
 apt-get install -y git autoconf automake build-essential manpages-dev libudev-dev
 apt-get install -y expect tcl tdom gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
-apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
+apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y pandoc texlive*
 ```
 
 ## Clone the Required Repositories

@@ -20,6 +20,8 @@
 
 function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
+   message(STATUS "Build for Version: ${CMAKE_BUILD_ID}")
+
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
 
    # Find the OGE architecture string
@@ -51,7 +53,7 @@ function(architecture_specific_settings)
    set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # defines for all architectures
-   add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
+   add_compile_definitions(CMAKE_BUILD_ID="${CMAKE_BUILD_ID}" SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
 
    # defines if extensions are enabled
    if (PROJECT_FEATURES MATCHES "gcs-extensions")
@@ -69,6 +71,10 @@ function(architecture_specific_settings)
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
       add_link_options(-pthread -rdynamic)
+
+      set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
+      set(TIRPC_LIB tirpc PARENT_SCOPE)
+      message(STATUS "using libtirpc")
 
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)

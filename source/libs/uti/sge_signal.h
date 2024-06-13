@@ -76,7 +76,7 @@
 /* Not all systems have all signals. Fill this in if not known. */
 #define SIGUNKNOWN                         0
 
-#if defined(FREEBSD) || defined(LINUXRISCV64) || defined(LINUXAMD64)
+#if defined(FREEBSD) || defined(LINUXRISCV64) || defined(LINUXAMD64) || defined(LINUXARM64)
 #  define SIGIGNORE(x) signal(x,SIG_IGN)
 #else
 #  define SIGIGNORE(x) sigignore(x)
