@@ -118,6 +118,9 @@ Linux)
    armv6*)
       lxmachine=arm6
       ;;
+   armv7l)
+      lxmachine=armhf
+      ;;
    armv7*)
       lxmachine=arm7
       ;;
@@ -141,9 +144,11 @@ Linux)
       fi
       case $osarch in
       armhf)
+         # e.g. Raspberry Pi 3 with Bullseye (32 bit with hardware floating point)
          lxmachine=armhf
          ;;
       *)
+         # e.g. Raspberry Pi 3 with Bookworm (64 bit)
          lxmachine=arm64
          ;;
       esac
