@@ -2789,7 +2789,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
              * Start Time Hold 
              */
             if ((show & QSTAT_DISPLAY_STARTTIMEHOLD) == QSTAT_DISPLAY_STARTTIMEHOLD) {
-               tmp_nw = lWhere("%T(%I > %u)", JB_Type, JB_execution_time, 0);
+               tmp_nw = lWhere("%T(%I > %lu)", JB_Type, JB_execution_time, 0);
                if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
