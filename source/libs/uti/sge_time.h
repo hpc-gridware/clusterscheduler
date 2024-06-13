@@ -34,18 +34,14 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
+#include <unistd.h>
 
-#ifndef __BASIS_TYPES_H
-
-#   include "basis_types.h"
-
-#endif
-
-#include "sge_dstring.h"
+#include "basis_types.h"
+#include "uti/sge_dstring.h"
 
 u_long64 sge_get_gmt64();
 
-// @todo make the following 3 functions const_expr or const_eval
+// @todo make the following 5 functions const_expr or const_eval
 u_long32 sge_gmt64_to_gmt32(u_long64 timestamp);
 double sge_gmt64_to_gmt32_double(u_long64 timestamp);
 u_long64 sge_gmt32_to_gmt64(u_long32 timestamp);
@@ -59,10 +55,6 @@ const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr);
 
 const char *append_time(u_long64 i, dstring *buffer, bool is_xml);
 const char *append_time(time_t i, dstring *buffer, bool is_xml);
-
-void sge_stopwatch_start(int);
-
-void sge_stopwatch_log(int, const char *);
 
 u_long64 duration_add_offset(u_long64 duration, u_long64 offset);
 

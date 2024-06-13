@@ -432,8 +432,6 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
    
    centry_list_init_double(qstat_env->centry_list);
 
-   sge_stopwatch_log(0, "Time for getting all lists");
-   
    if (getenv("MORE_INFO")) {
       if (qstat_env->global_showjobs) {
          lWriteListTo(qstat_env->job_list, stdout);

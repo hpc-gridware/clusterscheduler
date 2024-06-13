@@ -32,8 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdlib>
-#include <cstdio>
 #include <ctime>
 #include <chrono>
 #include <sys/times.h>
@@ -43,56 +41,6 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
-
-#define NESTLEVEL 5
-
-/* MT-NOTE: stopwatch profiling used in qmaster, qstat and qmon only */
-/* MT-NOTE: stopwatch is phased out and will be replaced by libs/uti/sge_profiling */
-static struct tms begin[NESTLEVEL];
-static struct tms end[NESTLEVEL];
-
-static time_t wtot[NESTLEVEL];
-static time_t wbegin[NESTLEVEL];
-static time_t wprev[NESTLEVEL];
-static time_t wdiff[NESTLEVEL];
-
-static int clock_tick;
-static int time_log_interval[NESTLEVEL] = {-1, -1, -1, -1, -1};
-
-#ifdef TIMES_RETURNS_ZERO
-static time_t inittime;
-#endif
-
-static void sge_stopwatch_stop(int i);
-
-/* MT-NOTE: sge_stopwatch_stop() is not MT safe due to access to global variables */
-static void sge_stopwatch_stop(int i) {
-   time_t wend;
-
-   if (i < 0 || i >= NESTLEVEL) {
-      return;
-   }
-   if (time_log_interval[i] == -1) {
-      return;
-   }
-   wend = times(&end[i]);
-
-#ifdef TIMES_RETURNS_ZERO
-   /* times() returns 0 on these machines */
-   wend = (time(nullptr) - inittime) * clock_tick;
-#endif
-
-   end[i].tms_utime = end[i].tms_utime - begin[i].tms_utime;
-   end[i].tms_stime = end[i].tms_stime - begin[i].tms_stime;
-   end[i].tms_cutime = end[i].tms_cutime - begin[i].tms_cutime;
-   end[i].tms_cstime = end[i].tms_cstime - begin[i].tms_cstime;
-
-   wtot[i] = wend - wbegin[i];
-   wdiff[i] = wend - wprev[i];
-   wprev[i] = wend;
-}
 
 u_long64 sge_get_gmt64() {
    const auto now = std::chrono::system_clock::now();
@@ -313,97 +261,6 @@ const char *sge_at_time(time_t i, dstring *buffer) {
                               tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 #endif
-
-/****** uti/time/sge_stopwatch_log() ******************************************
-*  NAME
-*     sge_stopwatch_log() -- ??? 
-*
-*  SYNOPSIS
-*     void sge_stopwatch_log(int i, const char *str) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     int i           - ??? 
-*     const char *str - ??? 
-*
-*  NOTES
-*     MT-NOTE: sge_stopwatch_log() is not MT safe due to access to global variables
-*
-*  SEE ALSO
-*     uti/time/sge_stopwatch_start() 
-******************************************************************************/
-void sge_stopwatch_log(int i, const char *str) {
-   if (i < 0 || i >= NESTLEVEL) {
-      return;
-   }
-   if (time_log_interval[i] == -1) {
-      return;
-   }
-
-   sge_stopwatch_stop(i);
-
-   if ((wdiff[i] * 1000) / clock_tick >= time_log_interval[i]) {
-      WARNING("%-30s: %d/%d/%d", str, (int) ((wtot[i] * 1000) / clock_tick), (int) ((end[i].tms_utime * 1000) / clock_tick), (int) ((end[i].tms_stime * 1000) / clock_tick));
-   }
-}
-
-/****** uti/time/sge_stopwatch_start() ****************************************
-*  NAME
-*     sge_stopwatch_start() -- ??? 
-*
-*  SYNOPSIS
-*     void sge_stopwatch_start(int i) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     int i - ??? 
-*
-*  NOTES
-*     MT-NOTE: sge_stopwatch_start() is not MT safe due to access to global variables
-*
-*  SEE ALSO
-*     uti/time/sge_stopwatch_log() 
-******************************************************************************/
-void sge_stopwatch_start(int i) {
-   static int first = 1;
-   int j;
-   char *cp;
-
-   if (first) {
-      char buf[24];
-
-      clock_tick = sysconf(_SC_CLK_TCK);
-      for (j = 0; j < NESTLEVEL; j++) {
-         wtot[j] = wbegin[j] = wprev[j] = wdiff[j] = 0;
-         snprintf(buf, sizeof(buf), "SGE_TIMELOG%d", j);
-         if ((cp = getenv(buf)) && (atoi(cp) >= 0)) {
-            time_log_interval[j] = atoi(cp);
-         } else {
-            time_log_interval[j] = -1;
-         }
-      }
-      first = 0;
-   }
-
-   if (i < 0 || i >= NESTLEVEL) {
-      return;
-   }
-   if (time_log_interval[i] == -1) {
-      return;
-   }
-   wbegin[i] = times(&begin[i]);
-
-#ifdef TIMES_RETURNS_ZERO
-   /* times() return 0 on these machines */
-   wbegin[i] = (time(nullptr) - inittime) * clock_tick;
-#endif
-
-   wprev[i] = wbegin[i];
-}
 
 /****** uti/time/duration_add_offset() ****************************************
 *  NAME
