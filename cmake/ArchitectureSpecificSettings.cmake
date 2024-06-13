@@ -20,6 +20,8 @@
 
 function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
+   message(STATUS "Build for Version: ${CMAKE_BUILD_ID}")
+
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
 
    # Find the OGE architecture string
@@ -51,7 +53,7 @@ function(architecture_specific_settings)
    set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # defines for all architectures
-   add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
+   add_compile_definitions(CMAKE_BUILD_ID="${CMAKE_BUILD_ID}" SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
 
    # defines if extensions are enabled
    if (PROJECT_FEATURES MATCHES "gcs-extensions")

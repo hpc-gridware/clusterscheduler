@@ -511,8 +511,10 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
          ret = short_name;
          break;
    }
-#ifdef DAILY_BUILD_NUMBER
-   sge_dstring_sprintf_append(buffer, " (build %d)", DAILY_BUILD_NUMBER);
+#ifdef CMAKE_BUILD_ID
+   if (CMAKE_BUILD_ID != NULL && strlen(CMAKE_BUILD_ID) > 0) {
+      sge_dstring_sprintf_append(buffer, " (%s)", CMAKE_BUILD_ID);
+   }
 #endif
 
    DRETURN(ret);
