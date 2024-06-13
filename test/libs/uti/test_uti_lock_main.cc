@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
    int i;
    int j;
    int thrd_count;
-   u_long32 before, after, time_new;
+   u_long64 before, after, time_new;
    int ret = 0;
 
    DENTER_MAIN(TOP_LAYER, "main");
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
       set_thread_count(i);
 
-      before = sge_get_gmt();
+      before = sge_get_gmt64();
 
       printf("\n%s Create %d threads\n\n", __func__, i);
 
@@ -97,11 +97,11 @@ int main(int argc, char *argv[]) {
          pthread_join(t[j], nullptr);
       }
 
-      after = sge_get_gmt();
+      after = sge_get_gmt64();
       time_new = after - before;
 
       ret = validate(i);
-      printf("the test took " sge_U32CFormat "s and was %s\n", time_new, ret == 0 ? "successful" : "unsuccessful");
+      printf("the test took " sge_u64 " µs and was %s\n", time_new, ret == 0 ? "successful" : "unsuccessful");
       if (ret != 0) {
          break;
       }

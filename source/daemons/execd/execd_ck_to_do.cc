@@ -567,9 +567,13 @@ int do_ck_to_do(bool is_qmaster_down) {
          }
       }
 
-      /* send only 1 load report per second, unequal because system time could be set back */
-      // @todo (Timestamp)
-      if (last_report_send != now) {
+      // clock turned back?
+      if (last_report_send > now) {
+         last_report_send = now;
+      }
+
+      // send only 1 load report per second
+      if (last_report_send + sge_gmt32_to_gmt64(1) <= now) {
          last_report_send = now;
 
          update_job_usage(qualified_hostname);

@@ -43,6 +43,6 @@
 #define MSG_CONFIG_NODIRECTORY_S                      _MESSAGE(61003, _(SFQ " is no directory - skipping the entry"))
 #define MSG_CONFIG_CANTFINDSCRIPTFILE_U               _MESSAGE(61004, _("can't find script file for job " sge_U32CFormat " - deleting"))
 #define MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U _MESSAGE(61005, _("job file \"" sge_U32CFormat "\" has wrong file name - deleting"))
-#define MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUI           _MESSAGE(61006, _("spooling job " sge_U32CFormat "." sge_U32CFormat " took %d seconds"))
+#define MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF           _MESSAGE(61006, _("spooling job " sge_U32CFormat "." sge_U32CFormat " took %f seconds"))
 
 // clang-format on

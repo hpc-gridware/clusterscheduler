@@ -38,8 +38,10 @@
 bool 
 double_print_infinity_to_dstring(double value, dstring *string);
 
-bool 
+bool
 double_print_time_to_dstring(double value, dstring *string);
+bool
+double_print_time_to_dstring(double value, dstring *string, bool with_microseconds);
 
 bool 
 double_print_memory_to_dstring(double value, dstring *string);

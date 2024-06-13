@@ -148,7 +148,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) >= 0)
       if ((ultime = lGetUlong64(job, JB_execution_time)))
-         printf("execution_time:             %s", sge_ctime64(ultime, &dstr));
+         printf("execution_time:             %s\n", sge_ctime64(ultime, &dstr));
 
    if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_account))
@@ -585,8 +585,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             dstring rss_string = DSTRING_INIT;
             dstring maxrss_string = DSTRING_INIT;
 
-            double_print_time_to_dstring(wallclock, &wallclock_string);
-            double_print_time_to_dstring(cpu, &cpu_string);
+            double_print_time_to_dstring(wallclock, &wallclock_string, true);
+            double_print_time_to_dstring(cpu, &cpu_string, true);
             double_print_memory_to_dstring(vmem, &vmem_string);
             double_print_memory_to_dstring(maxvmem, &maxvmem_string);
             double_print_memory_to_dstring(rss, &rss_string);

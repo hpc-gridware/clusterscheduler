@@ -211,7 +211,7 @@ static double Master_min_tix = 0.0;     /* thread local */
 static double Master_max_tix = 0.0;     /* thread local */
 static u_long32 halflife = 0;                /* stores the last used halflife time to detect changes  thread_local*/
 static int last_seqno = 0;              /* stores the last used seqno for the orders  thread_local*/
-static u_long32 past = 0;               /* stores the last re-order send time thread local */
+static u_long64 past = 0;               /* stores the last re-order send time thread local */
 static lEnumeration *user_usage_what = nullptr; /* thread local */
 static lEnumeration *prj_usage_what = nullptr; /* thread local */
 static lEnumeration *share_tree_what = nullptr; /* thread local */
@@ -4076,7 +4076,7 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
                lList *pending_jobs,
                order_t *orders)
 {
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    int seqno;
    lListElem *job;
    double min_tix  = 0;
@@ -4160,8 +4160,8 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    }   
 
    {
-      u_long32 reprioritize_interval = sconf_get_reprioritize_interval(); 
-      bool update_execd = (reprioritize_interval == 0 || (now >= (past + reprioritize_interval))) ? true : false; 
+      u_long64 reprioritize_interval = sge_gmt32_to_gmt64(sconf_get_reprioritize_interval());
+      bool update_execd = (reprioritize_interval == 0 || (now >= (past + reprioritize_interval))) ? true : false;
       if (update_execd){
          past = now;
       } 

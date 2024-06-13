@@ -59,20 +59,18 @@ static int select4unsuspension(lList *job_list, lListElem *queues, lListElem **j
 void 
 suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders) 
 {
-   u_long32 now;
    int i, found;
    lListElem *jep = nullptr, *ja_task = nullptr;
    lListElem *qep;
 
    DENTER(TOP_LAYER);
 
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    for_each_rw (qep, susp_queues) {
       u_long32 interval;      
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(nullptr, &interval, TYPE_TIM,
-                  lGetString(qep, QU_suspend_interval), nullptr, 0);
+      parse_ulong_val(nullptr, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), nullptr, 0);
 
       if (interval == 0
           || !lGetUlong(qep, QU_nsuspend)
@@ -81,8 +79,8 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
       } 
 
       /* check time stamp */
-      if (lGetUlong(qep, QU_last_suspend_threshold_ckeck) && 
-         (lGetUlong(qep, QU_last_suspend_threshold_ckeck) + interval> now)) {
+      if (lGetUlong64(qep, QU_last_suspend_threshold_ckeck) &&
+         (lGetUlong64(qep, QU_last_suspend_threshold_ckeck) + sge_gmt32_to_gmt64(interval) > now)) {
          continue;
       }
 
@@ -120,24 +118,18 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
 void 
 unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders) 
 {
-   u_long32 now;
    int i, found;
    lListElem *jep = nullptr, *ja_task = nullptr;
    lListElem *qep;
 
    DENTER(TOP_LAYER);
 
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    for_each_rw (qep, queue_list) {
       u_long32 interval;
-      dstring ds;
-      char buffer[128];
-
-      sge_dstring_init(&ds, buffer, sizeof(buffer));
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(nullptr, &interval, TYPE_TIM,
-                  lGetString(qep, QU_suspend_interval), nullptr, 0);
+      parse_ulong_val(nullptr, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), nullptr, 0);
 
        if (interval == 0
            || !lGetUlong(qep, QU_nsuspend)
@@ -146,13 +138,15 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
        } 
 
       /* check time stamp */
-      if (lGetUlong(qep, QU_last_suspend_threshold_ckeck) && 
-         (lGetUlong(qep, QU_last_suspend_threshold_ckeck) + 
-         interval> now)) {
-         char tmp[128];
-         strcpy(tmp, sge_ctime((time_t)lGetUlong(qep, QU_last_suspend_threshold_ckeck), &ds));
-         DPRINTF("queue was last checked at %s (interval = %s, now = %s)\n",
-                 tmp, lGetString(qep, QU_suspend_interval), sge_ctime((time_t)now, &ds));
+      if (lGetUlong64(qep, QU_last_suspend_threshold_ckeck) &&
+         (lGetUlong64(qep, QU_last_suspend_threshold_ckeck) + sge_gmt32_to_gmt64(interval) > now)) {
+         if (DPRINTF_IS_ACTIVE) {
+            DSTRING_STATIC(dstr1, 64);
+            DSTRING_STATIC(dstr2, 64);
+            DPRINTF("queue was last checked at %s (interval = %s, now = %s)\n",
+                    sge_ctime64(lGetUlong64(qep, QU_last_suspend_threshold_ckeck), &dstr1),
+                    lGetString(qep, QU_suspend_interval), sge_ctime64(now, &dstr2));
+         }
          continue;
       }
 

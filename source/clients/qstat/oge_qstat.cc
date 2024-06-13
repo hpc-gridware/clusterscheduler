@@ -1144,8 +1144,7 @@ static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, 
    if (summary->has_cpu_usage) {
       dstring resource_string = DSTRING_INIT;
 
-      double_print_time_to_dstring(summary->cpu_usage,
-                                   &resource_string);
+      double_print_time_to_dstring(summary->cpu_usage, &resource_string, true);
       printf("%s ", sge_dstring_get_string(&resource_string));
       sge_dstring_free(&resource_string);
    } else {

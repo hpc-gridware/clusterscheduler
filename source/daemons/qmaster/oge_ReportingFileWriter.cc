@@ -420,7 +420,7 @@ namespace oge {
       /*
        * optimization: only do the following actions "shortly after midnight"
        */
-      now = (time_t) sge_get_gmt();
+      now = (time_t) time(nullptr);
       localtime_r(&now, &tm_now);
 #if 1
       if (tm_now.tm_hour != 0 || tm_now.tm_min > INTERMEDIATE_ACCT_WINDOW) {

@@ -1634,7 +1634,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
       lSetString(queue, QU_qname, cqueue_name);
 
       sge_dstring_clear(&buffer);
-      double_print_time_to_dstring(lGetUlong64(ar, AR_duration), &buffer);
+      double_print_time_to_dstring(sge_gmt64_to_gmt32_double(lGetUlong64(ar, AR_duration)), &buffer);
       lSetString(queue, QU_h_rt, sge_dstring_get_string(&buffer));
       lSetString(queue, QU_s_rt, sge_dstring_get_string(&buffer));
 
@@ -2147,7 +2147,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
          break;
       case MAIL_AT_EXIT:
          if (lGetUlong(ar, AR_state) == AR_DELETED) {
-            sge_ctime((time_t) sge_get_gmt(), &buffer);
+            sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARDELETEDSUBJ_US,
                                 sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARDELETETBODY_USSS,
@@ -2166,7 +2166,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
          break;
       case MAIL_AT_ABORT:
          if (lGetUlong(ar, AR_state) == AR_ERROR) {
-            sge_ctime((time_t) sge_get_gmt(), &buffer);
+            sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARERRORSUBJ_US,
                                 sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARERRORBODY_USSS,
@@ -2174,7 +2174,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARERROR;
          } else {
-            sge_ctime((time_t) sge_get_gmt(), &buffer);
+            sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AROKSUBJ_US,
                                 sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AROKBODY_USSS,

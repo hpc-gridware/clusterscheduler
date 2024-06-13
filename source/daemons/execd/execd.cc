@@ -107,10 +107,10 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
 
 int main(int argc, char *argv[]);
-static u_long32 last_qmaster_registration_time = 0;
+static u_long64 last_qmaster_registration_time = 0;
 
 
-u_long32 get_last_qmaster_register_time(void) {
+u_long64 get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
 
@@ -528,7 +528,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    if (return_value == 0) {
       sge_last_register_error_flag = 0;
       INFO(MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:"");
-      last_qmaster_registration_time = sge_get_gmt();
+      last_qmaster_registration_time = sge_get_gmt64();
    }
    lFreeList(&alp);
    DRETURN(return_value);

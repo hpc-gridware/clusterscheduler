@@ -1431,7 +1431,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             /* update queues time stamp in schedd */
-            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt());
+            lSetUlong64(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
          }
       }
@@ -1480,7 +1480,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                answer_list_output(&answer_list);
             }
             /* update queues time stamp in schedd */
-            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt());
+            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
          }
       }
@@ -1527,7 +1527,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
  * MT-NOTE: distribute_ticket_orders() is NOT MT safe
  */
 int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
    const lListElem *ep;
@@ -1546,7 +1546,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
          cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
                                           (char *) host_name, (char *) prognames[EXECD], 1, &last_heard_from);
       }
-      if (hep && last_heard_from + 10 * mconf_get_load_report_time() > now) {
+      if (hep &&sge_gmt32_to_gmt64(last_heard_from + 10 * mconf_get_load_report_time()) > now) {
          sge_pack_buffer pb;
 
          if (init_packbuffer(&pb, sizeof(u_long32) * 3 * n, 0) == PACK_SUCCESS) {

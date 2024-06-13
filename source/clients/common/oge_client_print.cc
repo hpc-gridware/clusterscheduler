@@ -143,7 +143,7 @@ static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
       } else {
          dstring resource_string = DSTRING_INIT;
 
-         double_print_time_to_dstring(lGetDouble(up, UA_value), &resource_string);
+         double_print_time_to_dstring(lGetDouble(up, UA_value), &resource_string, true);
          printf("%s ", sge_dstring_get_string(&resource_string));
          sge_dstring_free(&resource_string);
       }

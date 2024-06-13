@@ -2500,7 +2500,7 @@ static u_long32 calendar_get_current_state_and_end(const lListElem *cep, time_t 
    }
    
    if (now == nullptr) {
-      new_state = state_at((time_t)sge_get_gmt(), year_list, week_list, then);
+      new_state = state_at(time(nullptr), year_list, week_list, then);
    } else {
       new_state = state_at(*now, year_list, week_list, then);
    }

@@ -838,7 +838,6 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                /* do not send job start orders inbetween, if we have an immediate array
                   job. */
                if (!is_immediate_array_job && (lGetNumberOfElem(orders->jobStartOrderList) > 10)) {
-                  // @todo (Timestamp) should work but re-write with sge_get_gmt64()
                   gettimeofday(&later, nullptr);
                   time = later.tv_usec - tnow.tv_usec;
                   time = (time / 1000000.0) + (later.tv_sec - tnow.tv_sec);

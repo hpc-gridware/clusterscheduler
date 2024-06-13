@@ -226,7 +226,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
       }
 
       current_time = sge_get_gmt64();
-      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) : 0; // @todo (Timestamp) never used?
+      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) : 0;
 
       /*
        * we want to name the Root node simply /, instead of /Root 

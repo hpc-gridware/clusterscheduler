@@ -81,7 +81,7 @@ static void sge_stopwatch_stop(int i) {
 
 #ifdef TIMES_RETURNS_ZERO
    /* times() returns 0 on these machines */
-   wend = (sge_get_gmt() - inittime) * clock_tick;
+   wend = (time(nullptr) - inittime) * clock_tick;
 #endif
 
    end[i].tms_utime = end[i].tms_utime - begin[i].tms_utime;
@@ -92,35 +92,6 @@ static void sge_stopwatch_stop(int i) {
    wtot[i] = wend - wbegin[i];
    wdiff[i] = wend - wprev[i];
    wprev[i] = wend;
-}
-
-/****** uti/time/sge_get_gmt() ************************************************
-*  NAME
-*     sge_get_gmt() -- Return current time 
-*
-*  SYNOPSIS
-*     u_long32 sge_get_gmt() 
-*
-*  FUNCTION
-*     Return current time 
-*
-*  NOTES
-*     MT-NOTE: sge_get_gmt() is MT safe
-*
-*  RESULT
-*     u_long32 - 32 bit time value
-******************************************************************************/
-u_long32 sge_get_gmt() {
-   struct timeval now{};
-
-#ifdef SOLARIS
-   gettimeofday(&now, nullptr);
-#else
-   struct timezone tzp{};
-   gettimeofday(&now, &tzp);
-#endif
-
-   return (u_long32) now.tv_sec;
 }
 
 u_long64 sge_get_gmt64() {
@@ -143,13 +114,6 @@ u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
    u_long64 ret = timestamp;
    return ret * 1000000;
 }
-
-#if 0
-u_long64 sge_gmt32_to_gmt64(int timestamp) {
-   u_long64 ret = timestamp;
-   return ret * 1000000;
-}
-#endif
 
 u_long64 sge_time_t_to_gmt64(time_t timestamp) {
    u_long64 ret = timestamp;
@@ -216,6 +180,7 @@ const char *append_time(time_t i, dstring *buffer, bool is_xml) {
    return ret;
 }
 
+#if 0
 /****** uti/time/sge_ctime() **************************************************
 *  NAME
 *     sge_ctime() -- Convert time value into string 
@@ -246,7 +211,7 @@ const char *sge_ctime(time_t i, dstring *buffer) {
    struct tm *tm;
 
    if (!i)
-      i = (time_t) sge_get_gmt();
+      i = time(nullptr);
 #ifndef HAS_LOCALTIME_R
    tm = localtime(&i);
 #else
@@ -258,79 +223,15 @@ const char *sge_ctime(time_t i, dstring *buffer) {
 
    return sge_dstring_get_string(buffer);
 }
-
-/* TODO: should be replaced by sge_dstring_append_time() */
-const char *sge_ctimeXML(time_t i, dstring *buffer) {
-#ifdef HAS_LOCALTIME_R
-   struct tm tm_buffer;
 #endif
-   struct tm *tm;
-
-   if (!i)
-      i = (time_t) sge_get_gmt();
-#ifndef HAS_LOCALTIME_R
-   tm = localtime(&i);
-#else
-   tm = (struct tm *) localtime_r(&i, &tm_buffer);
-#endif
-   sge_dstring_sprintf(buffer, "%04d-%02d-%02dT%02d:%02d:%02d",
-                       1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-                       tm->tm_hour, tm->tm_min, tm->tm_sec);
-
-   return sge_dstring_get_string(buffer);
-}
-
-
-/****** uti/time/sge_ctime32() ************************************************
-*  NAME
-*     sge_ctime32() -- Convert time value into string (64 bit time_t) 
-*
-*  SYNOPSIS
-*     const char* sge_ctime32(u_long32 *i, dstring *buffer) 
-*
-*  FUNCTION
-*     Convert time value into string. This function is needed for 
-*     systems with a 64 bit time_t because the ctime function would
-*     otherwise try to interpret the u_long32 value as 
-*     a 64 bit value => $&&%$?$%!
-*
-*  INPUTS
-*     u_long32 *i - 0 or time value 
-*     dstring *buffer - buffer provided by caller
-*
-*  RESULT
-*     const char* - time string (current time if 'i' was 0)
-* 
-*  NOTE
-*     MT-NOTE: if ctime_r() is not available sge_ctime32() is not MT safe
-*
-*  SEE ALSO
-*     uti/time/sge_ctime()
-******************************************************************************/
-const char *sge_ctime32(u_long32 *i, dstring *buffer) {
-   const char *s;
-#ifdef HAS_CTIME_R
-   char str[128];
-#endif
-#if SOLARIS64
-   volatile
-#endif
-   time_t temp = (time_t) *i;
-
-#ifndef HAS_CTIME_R
-   /* if ctime_r() does not exist a mutex must be used to guard *all* ctime() calls */
-   s = ctime((time_t *)&temp);
-#else
-   s = (const char *) ctime_r((time_t *) &temp, str);
-#endif
-   if (s == nullptr) {
-      return nullptr;
-   }
-   return sge_dstring_copy_string(buffer, s);
-}
 
 const char *sge_ctime64(u_long64 timestamp, dstring *dstr, bool is_xml, bool with_micro) {
    const char *ret;
+
+   if (timestamp == 0) {
+      timestamp = sge_get_gmt64();
+   }
+
    const std::chrono::microseconds us{timestamp};
    const std::chrono::seconds s = duration_cast<std::chrono::seconds>(us);
    time_t t = (time_t)s.count();
@@ -370,6 +271,7 @@ const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr) {
    return sge_ctime64(timestamp, dstr, true, true);
 }
 
+#if 0
 /****** uti/time/sge_at_time() ************************************************
 *  NAME
 *     sge_at_time() -- ??? 
@@ -400,7 +302,7 @@ const char *sge_at_time(time_t i, dstring *buffer) {
    struct tm *tm;
 
    if (!i)
-      i = (time_t) sge_get_gmt();
+      i = time(nullptr);
 #ifndef HAS_LOCALTIME_R
    tm = localtime(&i);
 #else
@@ -410,6 +312,7 @@ const char *sge_at_time(time_t i, dstring *buffer) {
                               tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
                               tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
+#endif
 
 /****** uti/time/sge_stopwatch_log() ******************************************
 *  NAME
@@ -496,7 +399,7 @@ void sge_stopwatch_start(int i) {
 
 #ifdef TIMES_RETURNS_ZERO
    /* times() return 0 on these machines */
-   wbegin[i] = (sge_get_gmt() - inittime) * clock_tick;
+   wbegin[i] = (time(nullptr) - inittime) * clock_tick;
 #endif
 
    wprev[i] = wbegin[i];

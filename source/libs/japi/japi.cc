@@ -824,7 +824,7 @@ static int japi_open_session(const char *username, const char* unqualified_hostn
       unsigned int id = 0;
 
       /* seed random function */
-      id = sge_get_gmt();
+      id = sge_gmt64_to_gmt32(sge_get_gmt64());
 
       sge_dstring_init(&tmp_session_key, tmp_session_key_buffer, sizeof(tmp_session_key_buffer));  
 
@@ -883,7 +883,7 @@ int japi_exit(int flag, dstring *diag)
 
    DENTER(TOP_LAYER);
 
-   DPRINTF("entering japi_exit() at " sge_u32"\n", sge_get_gmt());
+   DPRINTF("entering japi_exit() at " sge_u64"\n", sge_get_gmt64());
 
    JAPI_LOCK_SESSION();   
    if (japi_session != JAPI_SESSION_ACTIVE) {

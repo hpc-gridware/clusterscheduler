@@ -1004,12 +1004,12 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 #endif            
             break;
          case TYPE_TIM:
-            double_print_time_to_dstring(src_dl, &resource_string);
+            double_print_time_to_dstring(src_dl, &resource_string, true);
 #if 0            
             {
                dstring request_string = DSTRING_INIT;
 
-               double_print_time_to_dstring(req_dl, &request_string);
+               double_print_time_to_dstring(req_dl, &request_string, true);
                DPRINTF("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
                        slots, name, sge_dstring_get_string(&request_string),
                        dom_str, name, map_op2str(used_relop),
@@ -1065,12 +1065,12 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 #endif            
             break;
          case TYPE_TIM:
-            double_print_time_to_dstring(src_dl, &resource_string);
+            double_print_time_to_dstring(src_dl, &resource_string, true);
 #if 0            
             {
                dstring request_string = DSTRING_INIT;
 
-               double_print_time_to_dstring(req_dl, &request_string);
+               double_print_time_to_dstring(req_dl, &request_string, true);
                DPRINTF("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
                        name, sge_dstring_get_string(&request_string),
                        dom_str, name, map_op2str(used_relop),

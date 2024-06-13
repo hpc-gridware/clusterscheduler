@@ -77,8 +77,11 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
 * NOTES
 *     MT-NOTE: double_print_time_to_dstring() is MT safe
 */
-bool double_print_time_to_dstring(double value, dstring *string) 
-{
+bool double_print_time_to_dstring(double value, dstring *string) {
+   return double_print_time_to_dstring(value, string, false);
+}
+
+bool double_print_time_to_dstring(double value, dstring *string, bool with_microseconds) {
    bool ret = true;
 
    DENTER(ULONG_LAYER);
@@ -95,15 +98,19 @@ bool double_print_time_to_dstring(double value, dstring *string)
          seconds -= hours * hour_in_seconds;
          minutes = seconds / minute_in_seconds;
          seconds -= minutes * minute_in_seconds;
-         int microseconds = floor(value) * 1000000;
 
          if (days > 0) {
-            sge_dstring_sprintf_append(string, "%d:%02d:%02d:%02d.%06d",
-                                       days, hours, minutes, seconds, microseconds);
+            sge_dstring_sprintf_append(string, "%d:%02d:%02d:%02d",
+                                       days, hours, minutes, seconds);
          } else {
-            sge_dstring_sprintf_append(string, "%2.2d:%2.2d:%2.2d.%06d",
-                                       hours, minutes, seconds, microseconds);
-         } 
+            sge_dstring_sprintf_append(string, "%2.2d:%2.2d:%2.2d",
+                                       hours, minutes, seconds);
+         }
+
+         if (with_microseconds) {
+            int microseconds = floor(value) * 1000000;
+            sge_dstring_sprintf_append(string, ".%06d", microseconds);
+         }
       }
    }
    DRETURN(ret); 
@@ -351,7 +358,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
       }
       non_seconds+=year_fieldlen;
    } else {
-      gmt_secs=(time_t)sge_get_gmt();
+      gmt_secs = time(nullptr);
       tmp_timeptr=localtime_r(&gmt_secs, &res);
       timeptr.tm_year=tmp_timeptr->tm_year;
    }

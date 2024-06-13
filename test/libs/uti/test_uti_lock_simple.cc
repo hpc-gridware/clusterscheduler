@@ -90,7 +90,8 @@ static void *thread_function(void *anArg) {
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
 #if 1
-   DPRINTF("Thread %u sleeping at %d\n", sge_locker_id(), sge_get_gmt());
+   DSTRING_STATIC(dstr, 64);
+   DPRINTF("Thread %u sleeping at %s\n", sge_locker_id(), sge_ctime64(0, &dstr));
 #endif
    sleep(5);
 

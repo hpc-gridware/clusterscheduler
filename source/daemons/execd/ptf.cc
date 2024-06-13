@@ -1360,8 +1360,8 @@ void ptf_update_job_usage()
 
 int ptf_adjust_job_priorities(void)
 {
-   static u_long32 next = 0;
-   u_long32 now;
+   static u_long64 next = 0;
+   u_long64 now = sge_get_gmt64();
    lList *job_list;
    const lList *pid_list;
    lListElem *job, *osjob;
@@ -1377,7 +1377,7 @@ int ptf_adjust_job_priorities(void)
 
    DENTER(TOP_LAYER);
 
-   if ((now = sge_get_gmt()) < next) {
+   if (now < next) {
       DRETURN(0);
    }
 
@@ -1461,7 +1461,7 @@ int ptf_adjust_job_priorities(void)
    ptf_set_OS_scheduling_parameters(job_list, min_share, max_share,
                                     max_ticket_share);
    
-   next = now + PTF_SCHEDULE_TIME;
+   next = now + sge_gmt32_to_gmt64(PTF_SCHEDULE_TIME);
 
    DRETURN(0);
 }

@@ -60,7 +60,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
    }
 
    lListElem *global_host = host_list_locate(host_list, SGE_GLOBAL_NAME);
-   u_long64 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    lListElem *job;
    for_each_rw(job, running_jobs) {

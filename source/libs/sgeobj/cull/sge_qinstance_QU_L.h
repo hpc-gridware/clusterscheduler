@@ -216,7 +216,7 @@
 *    SGE_ULONG(QU_suspended_on_subordinate) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(QU_last_suspend_threshold_ckeck) - @todo add summary
+*    SGE_ULONG64(QU_last_suspend_threshold_ckeck) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(QU_job_cnt) - @todo add summary
@@ -378,7 +378,7 @@ LISTDEF(QU_Type)
    SGE_ULONG64(QU_pending_signal_delivery_time, CULL_SPOOL)
    SGE_ULONG(QU_version, CULL_SPOOL)
    SGE_ULONG(QU_suspended_on_subordinate, CULL_DEFAULT)
-   SGE_ULONG(QU_last_suspend_threshold_ckeck, CULL_DEFAULT)
+   SGE_ULONG64(QU_last_suspend_threshold_ckeck, CULL_DEFAULT)
    SGE_ULONG(QU_job_cnt, CULL_DEFAULT)
    SGE_ULONG(QU_pending_job_cnt, CULL_DEFAULT)
    SGE_ULONG(QU_soft_violation, CULL_DEFAULT)

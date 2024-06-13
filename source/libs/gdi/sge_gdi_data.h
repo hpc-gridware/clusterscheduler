@@ -50,11 +50,11 @@ gdi_data_is_setup();
 void
 gdi_data_set_setup(bool is_setup);
 
-u_long32
+u_long64
 gdi_data_get_timestamp_qmaster_file();
 
 void
-gdi_data_set_timestamp_qmaster_file(u_long32 timestamp_qmaster_file);
+gdi_data_set_timestamp_qmaster_file(u_long64 timestamp_qmaster_file);
 
 sge_error_class_t *
 gdi_data_get_error_handle();

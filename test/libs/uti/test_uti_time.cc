@@ -22,7 +22,7 @@ basic_functions() {
    }
 
    // c way
-   time_t time_t_now = time(0);
+   time_t time_t_now = time(nullptr);
 
    // c++ way
    const auto now = std::chrono::system_clock::now(); // timepoint
@@ -66,8 +66,8 @@ bool test_64bit() {
    u_long64 time64 = sge_get_gmt64();
    std::cout << "sge_get_gmt64(): " << time64 << std::endl;
 
-   u_long32 time32 = sge_get_gmt();
-   std::cout << "sge_get_gmt():   " << time32 << std::endl;
+   u_long32 time32 = time(nullptr);
+   std::cout << "time(0):         " << time32 << std::endl;
 
    if (labs(sge_gmt64_to_gmt32(time64) - time32) > 1) {
       std::cerr << "64bit timestamp as seconds (" << sge_gmt64_to_gmt32(time64) <<

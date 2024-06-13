@@ -581,7 +581,7 @@ int main(int argc, char **argv)
       }
    }
 
-   if (rmon_condition(xaybzc, INFOPRINT)) {
+   if (DPRINTF_IS_ACTIVE) {
       DSTRING_STATIC(dstr, 64);
       DPRINTF(" begin_time: %s\n", sge_ctime64(options.begin_time, &dstr));
       DPRINTF(" end_time:   %s\n", sge_ctime64(options.end_time, &dstr));

@@ -4133,7 +4133,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
       *available_slots = accu_host_slots;
 
-      if (rmon_condition(xaybzc, INFOPRINT)) {
+      if (DPRINTF_IS_ACTIVE) {
          switch (best_result) {
          case DISPATCH_OK:
             DPRINTF("COMPREHSENSIVE ASSIGNMENT(%d) returns " sge_u32"\n", a->slots, a->start);

@@ -318,7 +318,7 @@ int shepherd_trace(const char *format, ...)
    if (shepherd_trace_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
+      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime64(0, &ds), geteuid(), getpid());
      
       if (format != nullptr) {
          va_list     ap;
@@ -398,7 +398,7 @@ void shepherd_error(int do_exit, const char *format, ...)
 	}
 	if (shepherd_error_fp != nullptr) {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
-      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime(0, &ds), geteuid(), getpid());
+      snprintf(header_str, sizeof(header_str), "%s [" uid_t_fmt ":" pid_t_fmt "]: ", sge_ctime64(0, &ds), geteuid(), getpid());
 
       sh_str2file(header_str, sge_dstring_get_string(&message), shepherd_error_fp);
    }
@@ -856,7 +856,7 @@ static void shepherd_panic(const char *s)
 
       sge_dstring_init(&ds, buffer, sizeof(buffer));
       fprintf(panic_fp, "%s [" uid_t_fmt ":" uid_t_fmt " " pid_t_fmt "]: PANIC: %s\n",
-           sge_ctime(0, &ds), getuid(), geteuid(), getpid(), s);
+           sge_ctime64(0, &ds), getuid(), geteuid(), getpid(), s);
       FCLOSE(panic_fp);
    }
 FCLOSE_ERROR:

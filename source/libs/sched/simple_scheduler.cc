@@ -551,12 +551,12 @@ static void delete_some_jobs(sge_evc_class_t *evc)
     * to test the sge_ssi_job_cancel function 
     */
    lListElem *job; 
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       lListElem *ja_task;
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
-         if((sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time)) + 120) < now) {
+         if((lGetUlong64(ja_task, JAT_start_time) + sge_gmt32_to_gmt64(120)) < now) {
             char id[100];
             sprintf(id, sge_U32CFormat"." sge_U32CFormat,
                     sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));

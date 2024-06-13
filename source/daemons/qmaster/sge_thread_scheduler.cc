@@ -171,8 +171,8 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 
    if (!Scheduler_Control.triggered) {
       struct timespec ts{};
-      u_long32 current_time = sge_get_gmt();
-      ts.tv_sec = (long) current_time + SCHEDULER_TIMEOUT_S;
+      time_t current_time = time(nullptr);
+      ts.tv_sec = current_time + SCHEDULER_TIMEOUT_S;
       ts.tv_nsec = SCHEDULER_TIMEOUT_N;
 
       wait_ret = pthread_cond_timedwait(&Scheduler_Control.cond_var, &Scheduler_Control.mutex, &ts);
@@ -621,12 +621,12 @@ sge_scheduler_main(void *arg) {
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM6);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
-         if (rmon_condition(TOP_LAYER, INFOPRINT)) {
+         if (DPRINTF_IS_ACTIVE) {
             dstring ds;
             char buffer[128];
 
             sge_dstring_init(&ds, buffer, sizeof(buffer));
-            DPRINTF("================[SCHEDULING-EPOCH %s]==================\n", sge_at_time(0, &ds));
+            DPRINTF("================[SCHEDULING-EPOCH %s]==================\n", sge_ctime64(0, &ds));
             sge_dstring_free(&ds);
          }
 

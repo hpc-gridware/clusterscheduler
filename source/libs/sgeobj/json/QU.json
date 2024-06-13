@@ -753,7 +753,7 @@
 			"description":	[{
 					"line":	"@todo add description"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]

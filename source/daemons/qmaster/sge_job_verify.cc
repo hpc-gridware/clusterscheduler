@@ -603,7 +603,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          }
 
          /* to be sure the execution time is NOT before AR start time */
-         if (job_execution_time < ar_start_time) {   // @todo (Timestamp)
+         if (job_execution_time < ar_start_time) {
             job_execution_time = ar_start_time;
          }
 

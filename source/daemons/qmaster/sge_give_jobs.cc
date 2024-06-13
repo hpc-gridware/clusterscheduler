@@ -419,7 +419,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          /* do ask_commproc() only if we are missing load reports */
          cl_commlib_get_last_message_time(cl_com_get_handle(prognames[QMASTER], 0),
                                           hostname, prognames[EXECD], 1, &last_heard_from);
-         if (last_heard_from + mconf_get_max_unheard() <= sge_get_gmt()) {
+         if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= sge_get_gmt64()) {
 
             ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], hostname, sge_u32c( lGetUlong(jep, JB_job_number)));
             sge_mark_unheard(hep);
@@ -482,7 +482,6 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
 static int
 send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *pe, lListElem *hep, int master) {
    int failed;
-   u_long32 now;
    sge_pack_buffer pb;
    lListElem *tmpjep, *qep, *tmpjatep = nullptr;
    lListElem *gdil_ep;
@@ -500,8 +499,8 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    if (!simulate_execd) {
       cl_commlib_get_last_message_time(cl_com_get_handle(myprogname, 0), (char *) rhost, prognames[EXECD], 1,
                                        &last_heard_from);
-      now = sge_get_gmt();
-      if (last_heard_from + mconf_get_max_unheard() <= now) {
+      u_long64 now = sge_get_gmt64();
+      if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= now) {
          ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost, sge_u32c( lGetUlong(jep, JB_job_number)));
          sge_mark_unheard(hep);
          DRETURN(-1);
@@ -712,7 +711,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
             lSetDouble(ue, UA_value, now);
 
             ue = lAddSubStr(jr, UA_name, "ru_wallclock", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, runtime); // @todo (Timestamp)
+            lSetDouble(ue, UA_value, runtime);
 
             lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
             oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);

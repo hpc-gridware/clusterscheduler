@@ -1319,14 +1319,10 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    char err_str[1024];
    u_long32 jobid, jataskid;
    const char *pe_task_id_str = nullptr;
-   static u_long32 startup_time = 0;
+   static u_long64 startup_time = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
    
-   if (!startup_time) {
-      startup_time = sge_get_gmt();
-   }   
-
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
    if (petep != nullptr) {
@@ -1359,7 +1355,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             2. a newly started job
                In this case the shepherd had not enough time 
                to write the pid file -> No Logging */
-      if (startup && startup_time >= lGetUlong64(jatep, JAT_start_time) / 1000000) { // @todo (Timestamp)
+      if (startup && startup_time >= lGetUlong64(jatep, JAT_start_time)) {
          DSTRING_STATIC(dstr, 100);
          ERROR(MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSSS, fname, dir, sge_ctime64(lGetUlong64(jatep, JAT_start_time), &dstr), strerror(errno));
          /* seek job report for this job - it must be contained in job report
@@ -1858,12 +1854,12 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
     */
 
    if ((ep=lGetSubStr(jr, UA_name, "start_time", JR_usage)))
-      strcpy(sge_mail_start, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds));
+      strcpy(sge_mail_start, sge_ctime64(lGetDouble(ep, UA_value), &ds));
    else   
       strcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME);
 
    if ((ep=lGetSubStr(jr, UA_name, "end_time", JR_usage)))
-      strcpy(sge_mail_end, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds));
+      strcpy(sge_mail_end, sge_ctime64(lGetDouble(ep, UA_value), &ds));
    else   
       strcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME);
 
@@ -1895,7 +1891,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    if ((ep=lGetSubStr(jr, UA_name, "exit_status", JR_usage)))
       exit_status = (int)lGetDouble(ep, UA_value);
    
-   double_print_time_to_dstring(ru_cpu, &cpu_string);
+   double_print_time_to_dstring(ru_cpu, &cpu_string, true);
    double_print_memory_to_dstring(ru_maxvmem, &maxvmem_string);
 
 	/* send job exit mail only for master task */ 
@@ -1905,9 +1901,9 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
       dstring wtime_string = DSTRING_INIT;
 
       DPRINTF("mail VALID at EXIT\n");
-      double_print_time_to_dstring(ru_utime, &utime_string);
-      double_print_time_to_dstring(ru_stime, &stime_string);
-      double_print_time_to_dstring(ru_wallclock, &wtime_string);
+      double_print_time_to_dstring(ru_utime, &utime_string, true);
+      double_print_time_to_dstring(ru_stime, &stime_string, true);
+      double_print_time_to_dstring(ru_wallclock, &wtime_string, true);
       if (job_is_array(jep)) {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_JA_TASK_COMP_UUS,
                   sge_u32c(jobid), sge_u32c(taskid), lGetString(jep, JB_job_name));

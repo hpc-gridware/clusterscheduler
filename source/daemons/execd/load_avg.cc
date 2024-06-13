@@ -87,13 +87,13 @@
 static void 
 get_reserved_usage(const char*qualified_hostname, lList **job_usage_list);
 static int 
-execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_conf_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_license_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_job_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
 sge_get_loadavg(const char *qualified_hostname, lList **lpp);
 
@@ -194,7 +194,7 @@ void execd_trash_load_report(void) {
 }
 
 static int 
-execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* binary_path = bootstrap_get_binary_path();
@@ -206,7 +206,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
       lListElem *report;
       lList *tmp_lr_list;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
       sge_set_flush_lr_flag(false);
 
       /*
@@ -289,7 +289,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
 
 
 static int 
-execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_conf_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    const char* qualified_hostname = component_get_qualified_hostname();
 
@@ -297,7 +297,7 @@ execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
    if (*next_send <= now) {
       lListElem *report;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
       /*
       ** 2. report about the configuration versions
@@ -318,14 +318,14 @@ execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
 }
 
 static int 
-execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_license_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
       lListElem *report;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
       /*
       ** 3. license report
@@ -356,11 +356,11 @@ execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
 }
 
 static int 
-execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_job_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    bool do_send = false;
    bool only_flush = false;
-   static u_long32 last_send = 0;
+   static u_long64 last_send = 0;
    const char* qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
@@ -372,7 +372,7 @@ execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
 
    /* if report interval expired: send all reports */
    if (*next_send <= now) {
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
       do_send = true;
    } else if (sge_get_flush_jr_flag()) {
       /* if we shall flush reports: send only reports marked to flush */

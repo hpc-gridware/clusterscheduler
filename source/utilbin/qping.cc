@@ -1307,19 +1307,18 @@ int main(int argc, char *argv[]) {
                dstring ds;
                sge_dstring_init(&ds, buffer, sizeof(buffer));
    
-               printf("%s", sge_ctime(0, &ds));
+               printf("%s", sge_ctime64(0, &ds));
    
                if (option_info == 0 && option_f == 0) {
                   printf(" endpoint %s/%s/%d at port %d is up since %ld seconds\n", 
                          resolved_comp_host, comp_name, comp_id, comp_port,
                          status->runtime);  
                } else {
-                  time_t starttime;
-                  starttime = (time_t)status->starttime;
+                  u_long64 starttime = sge_gmt32_to_gmt64(status->starttime);
                   
                   printf(":\nSIRM version:             %s\n",           status->version );
                   printf("SIRM message id:          " sge_U32CFormat "\n", sge_u32c(status->mid) );
-                  printf("start time:               %s (" sge_U32CFormat ")\n", sge_ctime(starttime, &ds),sge_u32c(status->starttime));
+                  printf("start time:               %s (" sge_u64 ")\n", sge_ctime64(starttime, &ds),starttime);
                   printf("run time [s]:             " sge_U32CFormat "\n", sge_u32c(status->runtime) );
                   printf("messages in read buffer:  " sge_U32CFormat "\n", sge_u32c(status->application_messages_brm) );
                   printf("messages in write buffer: " sge_U32CFormat "\n", sge_u32c(status->application_messages_bwm) );

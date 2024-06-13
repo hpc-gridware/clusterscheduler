@@ -1045,7 +1045,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
 
    DENTER(TOP_LAYER);
 
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    DEBUG("queue_signal: %d, queue: %s, job: %d, jatask: %d", how, (qep ? lGetString(qep, QU_full_name) : "none"), (int) (jep ? lGetUlong(jep, JB_job_number) : -1), (int) (jatep ? lGetUlong(jatep, JAT_task_number) : -1) );
 

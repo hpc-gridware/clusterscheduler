@@ -372,8 +372,6 @@ struct hostent *sge_gethostbyname_retry(
 *******************************************************************************/
 struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
    struct hostent *he = nullptr;
-   time_t now;
-   time_t time;
    int l_errno = 0;
 
    DENTER(GDI_LAYER);
@@ -385,7 +383,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
     * so that's probably ok.  If it's not ok, the interface can be changed
     * later. */
 
-   now = (time_t) sge_get_gmt();
+   time_t now = time(nullptr);
    gethostbyname_calls++;       /* profiling */
 
 #ifdef GETHOSTBYNAME_R6
@@ -477,12 +475,12 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
 #error "no sge_gethostbyname() definition for this architecture."
 #endif
 
-   time = (time_t) sge_get_gmt() - now;
-   gethostbyname_sec += time;   /* profiling */
+   time_t duration = time(nullptr) - now;
+   gethostbyname_sec += duration;   /* profiling */
 
    /* warn about blocking gethostbyname() calls */
-   if (time > MAX_RESOLVER_BLOCKING) {
-      WARNING("gethostbyname(%s) took %d seconds and returns %s\n", name, (int) time, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
+   if (duration > MAX_RESOLVER_BLOCKING) {
+      WARNING("gethostbyname(%s) took %d seconds and returns %s\n", name, (int) duration, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
    }
    if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;
@@ -599,8 +597,6 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
 *******************************************************************************/
 struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_retval) {
    struct hostent *he = nullptr;
-   time_t now;
-   time_t time;
    int l_errno;
 
    DENTER(TOP_LAYER);
@@ -613,7 +609,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
     * later. */
 
    gethostbyaddr_calls++;      /* profiling */
-   now = (time_t) sge_get_gmt();
+   time_t now = time(nullptr);
 
 #ifdef GETHOSTBYADDR_R8
 #define SGE_GETHOSTBYADDR_FOUND
@@ -710,12 +706,12 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 #ifndef SGE_GETHOSTBYADDR_FOUND
 #error "no sge_gethostbyaddr() definition for this architecture."
 #endif
-   time = (time_t) sge_get_gmt() - now;
-   gethostbyaddr_sec += time;   /* profiling */
+   time_t duration = time(nullptr) - now;
+   gethostbyaddr_sec += duration;   /* profiling */
 
    /* warn about blocking gethostbyaddr() calls */
-   if (time > MAX_RESOLVER_BLOCKING) {
-      WARNING("gethostbyaddr() took %d seconds and returns %s\n", (int) time, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
+   if (duration > MAX_RESOLVER_BLOCKING) {
+      WARNING("gethostbyaddr() took %d seconds and returns %s\n", (int) duration, he ? "success" : (l_errno == HOST_NOT_FOUND) ? "HOST_NOT_FOUND" : (l_errno == TRY_AGAIN) ? "TRY_AGAIN" : (l_errno == NO_RECOVERY) ? "NO_RECOVERY" : (l_errno == NO_DATA) ? "NO_DATA" : (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>");
    }
    if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;

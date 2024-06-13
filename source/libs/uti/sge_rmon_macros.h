@@ -136,6 +136,8 @@
       rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1);                    \
    }
 
+#define DPRINTF_IS_ACTIVE rmon_condition(xaybzc, INFOPRINT)
+
 #define DPRINTF(...) \
    if (rmon_condition(xaybzc, INFOPRINT)) { \
       rmon_helper_t *helper = rmon_get_helper(); \

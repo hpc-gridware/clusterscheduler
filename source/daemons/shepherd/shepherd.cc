@@ -2891,7 +2891,7 @@ shepherd_signal_job(pid_t pid, int sig) {
     */
    {
       static int first_kill = 1;
-      static u_long32 first_kill_ts = 0;
+      static time_t first_kill_ts = 0;
       static bool is_qrsh = false;
    
       if (first_kill == 1 || sig != SIGKILL) {
@@ -2919,7 +2919,7 @@ shepherd_signal_job(pid_t pid, int sig) {
       * qrsh -d is killed in the same time as the qrsh_starter child and so no
       * qrsh_exit_code file is written (see Issue: 1679)
       */
-      if ((first_kill == 1) || (sge_get_gmt() - first_kill_ts > 10) || (sig != SIGKILL)) {
+      if ((first_kill == 1) || (time(nullptr) - first_kill_ts > 10) || (sig != SIGKILL)) {
         shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
         sge_switch2start_user();
         kill(pid, sig);
@@ -2954,7 +2954,7 @@ shepherd_signal_job(pid_t pid, int sig) {
 
       if (sig == SIGKILL) {
         first_kill = 0;
-        first_kill_ts = sge_get_gmt();
+        first_kill_ts = time(nullptr);
       }
    }
 }

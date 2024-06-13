@@ -164,7 +164,7 @@ int startprog(int out, int err,
          exit(8);
       }
       fprintf(stderr, "######################\n");
-      fprintf(stderr, " %s\n", sge_ctime(0, &ds));
+      fprintf(stderr, " %s\n", sge_ctime64(0, &ds));
       fprintf(stderr, "######################\n");
    }
    execvp(prog_path, argv);

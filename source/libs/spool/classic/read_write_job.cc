@@ -340,12 +340,12 @@ int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
 {
    int ret = 0;
    int report_long_delays = flags & SPOOL_WITHIN_EXECD;
-   u_long32 start = 0;
+   u_long64 start = 0;
    
    DENTER(TOP_LAYER);
 
    if (report_long_delays) {
-      start = sge_get_gmt();
+      start = sge_get_gmt64();
    }
 
    if (job_has_to_spool_one_file(job, *oge::DataStore::get_master_list(SGE_TYPE_PE), flags)) {
@@ -360,10 +360,11 @@ int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
    }
 
    if (report_long_delays) {
-      u_long32 time = sge_get_gmt() - start;
-      if (time > 30) {
+      u_long64 duration = sge_get_gmt64() - start;
+      if (duration > sge_gmt32_to_gmt64(30)) {
          /* administrators need to be aware of suspicious spooling delays */
-         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUI, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(ja_taskid), (int)time);
+         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(ja_taskid),
+                 sge_gmt64_to_gmt32_double(duration));
       }
    }
 

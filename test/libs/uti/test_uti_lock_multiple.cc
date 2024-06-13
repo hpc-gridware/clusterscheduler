@@ -88,12 +88,12 @@ static int threads = MAX_THREADS;
 
 static sge_control_t Control = {PTHREAD_MUTEX_INITIALIZER, MAX_THREADS, 0.0, PTHREAD_COND_INITIALIZER};
 
-static void has_finished(const char *str, double time) {
+static void has_finished(const char *str, double time_in) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("has_finished", __func__, __LINE__, &Control.mutex);
    Control.working--;
-   Control.time += time;
+   Control.time += time_in;
 
    if (Control.working == 0) {
       Control.working = threads;
@@ -104,7 +104,7 @@ static void has_finished(const char *str, double time) {
 
    } else {
       struct timespec ts;
-      ts.tv_sec = (long) (sge_get_gmt() + 180);
+      ts.tv_sec = time(nullptr) + 180;
       ts.tv_nsec = 0;
       pthread_cond_timedwait(&Control.cond_var,
                              &Control.mutex, &ts);
