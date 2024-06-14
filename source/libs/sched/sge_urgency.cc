@@ -154,9 +154,13 @@ static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
       /* job deadline dependent contribution */
       deadline = lGetUlong64(jep, JB_deadline);
       if (deadline > 0) {
+         if (deadline >= now) {
+            dtc = weight_deadline / MAX(sge_gmt64_to_gmt32_double(deadline - now), 1.0);
+         } else {
+            dtc = weight_deadline;
+         }
 /*           DPRINTF("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline); */
           /* might be too late for this job anyways we're optimistic and treat it high prior */
-          dtc = weight_deadline / sge_gmt64_to_gmt32(MAX(deadline - now, 1));
       }
 
       /* we do category based caching when determining the resource request 

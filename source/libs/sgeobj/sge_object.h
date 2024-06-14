@@ -226,6 +226,9 @@ bool
 object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
+object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+
+bool
 object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool

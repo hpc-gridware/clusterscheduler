@@ -625,7 +625,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
 
    if (sge_time) {
       if (report_handler != nullptr) {
-         u_long64 jat_start_time = lGetUlong(jatep, JAT_start_time);
+         u_long64 jat_start_time = lGetUlong64(jatep, JAT_start_time);
          if (jat_start_time == 0) {
             report_handler->report_job_ulong64_value(report_handler, cqname, jobid, "submit_time",
                                                    lGetUlong64(job, JB_submission_time), alpp);
@@ -636,7 +636,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       } else {
          if (print_jobid) {
             /* start/submit time */
-            if (lGetUlong(jatep, JAT_start_time) == 0) {
+            if (lGetUlong64(jatep, JAT_start_time) == 0) {
                printf("%s ", sge_ctime64_short(lGetUlong64(job, JB_submission_time), &ds));
             } else {
                printf("%s ", sge_ctime64_short(lGetUlong64(jatep, JAT_start_time), &ds));

@@ -182,6 +182,9 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
          case lUlongT:
             result = sge_dstring_sprintf_append(buffer, sge_U32CFormat, lGetPosUlong(object, pos));
             break;
+         case lUlong64T:
+            result = sge_dstring_sprintf_append(buffer, sge_u64, lGetPosUlong64(object, pos));
+            break;
          case lLongT:
             result = sge_dstring_sprintf_append(buffer, "%ld", lGetPosLong(object, pos));
             break;
@@ -291,6 +294,9 @@ object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const
             break;
          case lUlongT:
             ret = object_parse_ulong32_from_string(object, answer_list, nm, value);
+            break;
+         case lUlong64T:
+            ret = object_parse_ulong64_from_string(object, answer_list, nm, value);
             break;
          case lLongT:
             ret = object_parse_long_from_string(object, answer_list, nm, value);
@@ -1509,6 +1515,52 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int 
             ret = false;
          } else if (end_ptr != nullptr && *end_ptr == '\0') {
             lSetPosUlong(this_elem, pos, ulong_value);
+         } else {
+            /*
+             * Not a number or
+             * garbage after number
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
+                                    string);
+            ret = false;
+         }
+      }
+   } else {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+bool
+object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+   bool ret = true;
+
+   if (this_elem != nullptr && string != nullptr) {
+      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
+
+      if (strlen(string) == 0) {
+         /*
+          * Empty string will be parsed as '0'
+          */
+         lSetPosUlong64(this_elem, pos, 0);
+      } else {
+         const double epsilon = 1.0E-12;
+         char *end_ptr = nullptr;
+         double dbl_value = strtod(string, &end_ptr);
+         u_long64 ulong_value = dbl_value;
+
+         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
+            /*
+             * value to big for u_long32 variable
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
+                                    string);
+            ret = false;
+         } else if (end_ptr != nullptr && *end_ptr == '\0') {
+            lSetPosUlong64(this_elem, pos, ulong_value);
          } else {
             /*
              * Not a number or

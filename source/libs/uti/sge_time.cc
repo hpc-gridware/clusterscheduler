@@ -50,17 +50,16 @@ u_long64 sge_get_gmt64() {
 }
 
 u_long32 sge_gmt64_to_gmt32(u_long64 timestamp) {
-   return timestamp / 1000000;
+   u_long64 ret = timestamp / 1000000;
+   if (ret > U_LONG32_MAX) {
+      ret = U_LONG32_MAX;
+   }
+   return (u_long32)ret;
 }
 
 double sge_gmt64_to_gmt32_double(u_long64 timestamp) {
    auto ret = (double)timestamp;
    return ret / 1000000.0;
-}
-
-u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
-   u_long64 ret = timestamp;
-   return ret * 1000000;
 }
 
 u_long64 sge_time_t_to_gmt64(time_t timestamp) {

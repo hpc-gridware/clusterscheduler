@@ -375,11 +375,18 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
                   fprintf(fp, "%d", lGetPosInt(ep, i));
                }
                break;
-            case lUlongT:
+               case lUlongT:
+                  if (!fp) {
+                     DPRINTF( sge_u32, lGetPosUlong(ep, i));
+                  } else {
+                     fprintf(fp, sge_u32, lGetPosUlong(ep, i));
+                  }
+                  break;
+            case lUlong64T:
                if (!fp) {
-                  DPRINTF( sge_u32, lGetPosUlong(ep, i));
+                  DPRINTF( sge_u64, lGetPosUlong64(ep, i));
                } else {
-                  fprintf(fp, sge_u32, lGetPosUlong(ep, i));
+                  fprintf(fp, sge_u64, lGetPosUlong64(ep, i));
                }
                break;
             case lStringT:
