@@ -411,7 +411,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   if (!jr) {
+   if (jr == nullptr) {
       CRITICAL(SFNMAX, MSG_JOB_CLEANUPJOBCALLEDWITHINVALIDPARAMETERS);
       DRETURN(-1);
    }
@@ -425,6 +425,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 #ifdef COMPILE_DC
    unregister_from_ptf(job_id, ja_task_id, pe_task_id, jr);
 #else
+   lDelSubStr(jr, UA_name, USAGE_ATTR_WALLCLOCK, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_CPU, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_MEM, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_IO, JR_usage);
@@ -450,8 +451,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    }
 
    /* read config written by exec_job */
-   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, 
-                                "config");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "config");
    if (read_config(sge_dstring_get_string(&fname))) {
       /* This should happen very rarely. exec_job() should avoid this 
          condition as far as possible. One possibility for this case is, 
@@ -482,8 +482,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
     * look for exit status of shepherd This is the last file the shepherd
     * creates. So if we can find this shepherd terminated normal.
     */
-   sge_get_active_job_file_path(&fname,
-                                job_id, ja_task_id, pe_task_id, "exit_status");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "exit_status");
    if (!(fp = fopen(sge_dstring_get_string(&fname), "r"))) {
       /* 
        * we trust the exit status of the shepherd if it exited regularly
@@ -1672,7 +1671,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    DENTER(TOP_LAYER);
 
    usage_list = lGetList(jr, JR_usage);
-   
+
    /* cpu    = MAX(sum of "ru_utime" and "ru_stime" , PDC "cpu" usage) */
    ru_cpu = usage_list_get_double_usage(usage_list, "ru_utime", 0) +
             usage_list_get_double_usage(usage_list, "ru_stime", 0);
@@ -1681,9 +1680,10 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
    /* build reserved usage if required */ 
    r_cpu = r_mem = r_maxvmem = 0.0;
-   if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
-      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
-         double wallclock;
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
+      double wallclock;
+      if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
+         // reserved usage
          u_long64 end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
          const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
          if (pe != nullptr && lGetBool(pe, PE_accounting_summary)) {
@@ -1695,7 +1695,11 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          }
 
          build_reserved_usage(end_time, ja_task, pe_task, &wallclock, &r_cpu, &r_mem, &r_maxvmem);
+      } else {
+         // non reserved usage, need to calculate wallclock
+         wallclock = sge_gmt64_to_gmt32_double(sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time));
       }
+      add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
    }
 
    /* mem    = PDC "mem" usage or zero */

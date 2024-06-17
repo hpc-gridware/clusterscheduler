@@ -454,6 +454,8 @@ int do_ck_to_do(bool is_qmaster_down) {
             //       the time resolution is 1s
             update_wallclock_usage(now, jep, jatep);
 
+            // limit has not yet been set
+            // @todo shouldn't we better do this when receiving / starting a new job?
             if (lGetUlong64(jep, JB_hard_wallclock_gmt) == 0) {
                u_long64 task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
                const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
