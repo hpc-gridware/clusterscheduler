@@ -27,6 +27,8 @@
 #
 #  Copyright: 2001 by Sun Microsystems, Inc.
 #
+#  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+#
 #  All Rights Reserved.
 #
 ##########################################################################
@@ -324,6 +326,11 @@ if [ $makedoc = true ]; then
       CreateRpm doc noarch $DOC_PACKAGE
    else
       cd $VDIR
+
+      # copy release notes into package directory
+      cp doc/pdf/release-notes.pdf $BASEDIR/${PRODUCT}-${VERSION}-release-notes.pdf
+
+      # create the doc package
       filename=$BASEDIR/${PRODUCT}-${VERSION}-doc.tar.gz
       echo Command: $TAR cvzf $filename $DOC_PACKAGE
                     $TAR cvzf $filename $DOC_PACKAGE
@@ -372,6 +379,14 @@ if [ $makebin = true ]; then
       done
       cd ..
    fi
+fi
+
+if [ -x /usr/bin/md5sum ]; then
+   cd $BASEDIR
+   /usr/bin/md5sum *.tar.gz *.pdf *.rpm >"$BASEDIR/${PRODUCT}-${VERSION}-md5sum.txt"
+else
+   echo "unable to create file with md5 checksums"
+   exit 1
 fi
 
 exit 0
