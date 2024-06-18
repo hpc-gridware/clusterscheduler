@@ -35,6 +35,7 @@
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -137,8 +138,13 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
    DENTER(TOP_LAYER);
 
    /* human-readable format */
-   DPRINTF("J=" sge_U32CFormat "." sge_U32CFormat " T=%s S=" sge_u64 " E=" sge_u64 " L=%c O=%s R=%s U=%f\n",
-           job_id, ja_taskid, type, start_time, end_time, level_char, object_name, name, utilization);
+   if (DPRINTF_IS_ACTIVE) {
+      DSTRING_STATIC(dstr_s, 64);
+      DSTRING_STATIC(dstr_e, 64);
+      DPRINTF("J=" sge_U32CFormat "." sge_U32CFormat " T=%s S=%s E=%s L=%c O=%s R=%s U=%f\n",
+              job_id, ja_taskid, type, sge_ctime64(start_time, &dstr_s), sge_ctime64(end_time, &dstr_e),
+              level_char, object_name, name, utilization);
+   }
 
    if (current_serf.record_schedule_entry && serf_get_active()) {
       (current_serf.record_schedule_entry)(job_id, ja_taskid, type, start_time, end_time, 

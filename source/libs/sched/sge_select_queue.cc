@@ -1395,7 +1395,7 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
          case DISPATCH_OK : /* a match was found */
                if (*start_time == DISPATCH_TIME_QUEUE_END) {
                   DPRINTF("%s: explicit request \"%s\" delays start time from " sge_u64
-                          "to " sge_u64 "\n", object_name, attr_name, latest_time, MAX(latest_time, tmp_start));
+                          " to " sge_u64 "\n", object_name, attr_name, latest_time, MAX(latest_time, tmp_start));
                   latest_time = MAX(latest_time, tmp_start);
                }
                if (lGetUlong(attr, CE_tagged) < tag && tag != RQS_TAG) {
@@ -3153,7 +3153,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
    lListElem *qep;
    lListElem *best_qep = nullptr;
    u_long32 best_qep_violations = U_LONG32_MAX;
-   u_long32 best_qep_tt = U_LONG32_MAX;
+   u_long64 best_qep_tt = U_LONG64_MAX;
 
    DENTER(TOP_LAYER);
 
@@ -3395,7 +3395,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       }
 
       if (result == DISPATCH_OK) {
-         u_long32 this_tt = 0, this_violations = 0;
+         u_long64 this_tt = 0, this_violations = 0;
          lSetUlong(qep, QU_tag, 1); /* tag number of slots per queue and time when it will be available */
 
 
@@ -3407,7 +3407,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          if (a->is_soft) {
             this_violations = lGetUlong(qep, QU_soft_violation);
          }
-         DPRINTF("    set Q: %s number=1 when=" sge_u32" violations=" sge_u32"\n", qname, this_tt, this_violations);
+         DPRINTF("    set Q: %s number=1 when=" sge_u64" violations=" sge_u32"\n", qname, this_tt, this_violations);
          best_queue_result = DISPATCH_OK;
 
          if (!a->is_reservation) {
@@ -4134,9 +4134,10 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       *available_slots = accu_host_slots;
 
       if (DPRINTF_IS_ACTIVE) {
+         DSTRING_STATIC(dstr, 64);
          switch (best_result) {
          case DISPATCH_OK:
-            DPRINTF("COMPREHSENSIVE ASSIGNMENT(%d) returns " sge_u32"\n", a->slots, a->start);
+            DPRINTF("COMPREHSENSIVE ASSIGNMENT(%d) returns %s\n", a->slots, sge_ctime64(a->start, &dstr));
             break;
          case DISPATCH_NOT_AT_TIME:
             DPRINTF("COMPREHSENSIVE ASSIGNMENT(%d) returns <later>\n", a->slots);
@@ -4784,23 +4785,28 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
       }
    }
 
-   switch (result) {
-   case DISPATCH_OK:
-      DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <time> " sge_u32"\n", a->job_id, a->ja_task_id, a->start);
-      break;
-   case DISPATCH_NOT_AT_TIME:
-      DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <later>\n", a->job_id, a->ja_task_id);
-      break;
-   case DISPATCH_NEVER_CAT:
-      DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <category_never>\n", a->job_id, a->ja_task_id);
-      break;
-   case DISPATCH_NEVER_JOB:
-      DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <job_never>\n", a->job_id, a->ja_task_id);
-      break;
-   case DISPATCH_MISSING_ATTR:
-   default:
-      DPRINTF("!!!!!!!! SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns unexpected %d\n", a->job_id, a->ja_task_id, result);
-      break;
+   if (DPRINTF_IS_ACTIVE) {
+      DSTRING_STATIC(dstr, 64);
+      switch (result) {
+         case DISPATCH_OK:
+         DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <time> %s\n", a->job_id, a->ja_task_id,
+                 sge_ctime64(a->start, &dstr));
+            break;
+         case DISPATCH_NOT_AT_TIME:
+         DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <later>\n", a->job_id, a->ja_task_id);
+            break;
+         case DISPATCH_NEVER_CAT:
+         DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <category_never>\n", a->job_id, a->ja_task_id);
+            break;
+         case DISPATCH_NEVER_JOB:
+         DPRINTF("SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns <job_never>\n", a->job_id, a->ja_task_id);
+            break;
+         case DISPATCH_MISSING_ATTR:
+         default:
+         DPRINTF("!!!!!!!! SEQUENTIAL ASSIGNMENT(" sge_u32"." sge_u32") returns unexpected %d\n", a->job_id,
+                 a->ja_task_id, result);
+            break;
+      }
    }
 
    if (a->is_reservation && !a->is_advance_reservation) {

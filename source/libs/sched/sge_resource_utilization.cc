@@ -86,13 +86,7 @@ static void set_utilization(lList *uti_list, u_long64 from, u_long64 till, doubl
 
 static lListElem *newResourceElem(u_long64 time, double amount);
 
-#if 0
-#define DEBUG_RESOURCE_UTILIZATION
-#endif
-
-#ifdef DEBUG_RESOURCE_UTILIZATION
-static void utilization_print_all(const lList* pe_list, lList *host_list, const lList *queue_list, const lList *ar_list);
-#endif
+static bool print_resource_utilization = getenv("SGE_PRINT_RESOURCE_UTILIZATION") == nullptr ? false : true;
 
 /****** sge_resource_utilization/utilization_print_to_dstring() ****************
 *  NAME
@@ -125,10 +119,9 @@ bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
 }
 
 
-#ifdef DEBUG_RESOURCE_UTILIZATION
 static void utilization_print_all(const lList* pe_list, lList *host_list, const lList *queue_list, const lList *ar_list)
 {
-   lListElem *ep, *cr;
+   const lListElem *ep, *cr;
    const char *name;
 
    DENTER(TOP_LAYER);
@@ -146,7 +139,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    /* global */
    if ((ep=host_list_locate(host_list, SGE_GLOBAL_NAME))) {
       DPRINTF("-------------------------------------------\n");
-      DPRINTF("GLOBL HOST RESOURCES\n");
+      DPRINTF("GLOBAL HOST RESOURCES\n");
       for_each_ep(cr, lGetList(ep, EH_resource_utilization)) {
          utilization_print(cr, SGE_GLOBAL_NAME);
       }
@@ -167,7 +160,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    /* queue instances */
    for_each_ep(ep, queue_list) {
       name = lGetString(ep, QU_full_name);
-      if (strcmp(name, SGE_TEMPLATE_NAME)) {
+      if (strcmp(name, SGE_TEMPLATE_NAME) != 0) {
          DPRINTF("-------------------------------------------\n");
          DPRINTF("QUEUE \"%s\"\n", name);
          for_each_ep(cr, lGetList(ep, QU_resource_utilization)) {
@@ -180,7 +173,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    /* advance reservations */
    for_each_ep(ep, ar_list) {
       u_long32 ar_id = lGetUlong(ep, AR_id);
-      lListElem *queue;
+      const lListElem *queue;
 
       for_each_ep(queue, lGetList(ep, AR_reserved_queues)) {
          name = lGetString(queue, QU_full_name);
@@ -197,24 +190,25 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    
    DRETURN_VOID;
 }
-#endif
 
 void utilization_print(const lListElem *cr, const char *object_name) 
-{ 
-   const lListElem *rde;
+{
    DENTER(TOP_LAYER);
+
+   const lListElem *rde;
+   DSTRING_STATIC(dstr, 64);
 
    DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
            object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
            lGetDouble(cr, RUE_utilized_now));
    for_each_ep(rde, lGetList(cr, RUE_utilized)) {
-      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+      DPRINTF("\t%s  %f\n", sge_ctime64(lGetUlong64(rde, RDE_time), &dstr), lGetDouble(rde, RDE_amount));
    }
    DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
            object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
            lGetDouble(cr, RUE_utilized_now_nonexclusive));
    for_each_ep(rde, lGetList(cr, RUE_utilized_nonexclusive)) {
-      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+      DPRINTF("\t%s  %f\n", sge_ctime64(lGetUlong64(rde, RDE_time), &dstr), lGetDouble(rde, RDE_amount));
    }
 
    DRETURN_VOID;
@@ -1046,9 +1040,13 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
          a.ar_list = ar_list;
          a.gep     = gep;
 
-         DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
-                 sge_U32CFormat" duration " sge_U32CFormat "\n", lGetUlong(jep, JB_job_number),
-                 lGetUlong(ja_task, JAT_task_number), a.start, a.duration);
+         if (DPRINTF_IS_ACTIVE) {
+            DSTRING_STATIC(dstr, 64);
+            DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
+                    "%s duration %.0f\n",
+                    lGetUlong(jep, JB_job_number),
+                    lGetUlong(ja_task, JAT_task_number), sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
+         }
 
          /* only update resource utilization schedule  
             RUE_utililized_now is already set through events */
@@ -1103,11 +1101,11 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
    add_job_list_to_schedule(suspended_jobs, true, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
                             ar_list, for_job_scheduling, now);
-   add_calendar_to_schedule(queue_list, now); 
+   add_calendar_to_schedule(queue_list, now);
 
-#ifdef DEBUG_RESOURCE_UTILIZATION  /* just for information purposes... */
-   utilization_print_all(pe_list, host_list, queue_list, ar_list); 
-#endif   
+   if (print_resource_utilization) {
+      utilization_print_all(pe_list, host_list, queue_list, ar_list);
+   }
 
    DRETURN_VOID;
 }

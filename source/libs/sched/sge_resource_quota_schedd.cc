@@ -1506,8 +1506,9 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
    }
 
-   if (!rqs) 
+   if (!rqs) {
       result = DISPATCH_OK;
+   }
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> " sge_u64 "\n", queue, host, tt_rqs_all);

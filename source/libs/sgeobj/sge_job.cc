@@ -44,6 +44,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "comm/commlib.h"
 
@@ -3509,7 +3510,7 @@ bool job_get_wallclock_limit(u_long64 *limit, const lListElem *jep) {
       if (d_ret > (double)U_LONG32_MAX) {
          *limit = U_LONG64_MAX;
       } else {
-         *limit = d_ret;
+         *limit = sge_gmt32_to_gmt64(d_ret);
       }
    } else {
       *limit = U_LONG64_MAX;

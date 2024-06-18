@@ -452,10 +452,12 @@ int do_ck_to_do(bool is_qmaster_down) {
             // update wallclock usage
             // @todo is this the right place? Currently we come here once a second, which is OK as long as
             //       the time resolution is 1s
+            //       in average do_ck_to_do() is executed once a second, probably we are waiting in commlib
+            //       with a timeout of 1s, which should be shortened
             update_wallclock_usage(now, jep, jatep);
 
             // limit has not yet been set
-            // @todo shouldn't we better do this when receiving / starting a new job?
+            // @todo shouldn't we better do this already when receiving / starting a new job?
             if (lGetUlong64(jep, JB_hard_wallclock_gmt) == 0) {
                u_long64 task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
                const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
