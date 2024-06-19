@@ -1248,9 +1248,9 @@ set_utilization(lList *uti_list, u_long64 from, u_long64 till, double uti)
          }
       }
 
-      if (is_from_added) { /* searc for the endpoint */
+      if (is_from_added) { /* search for the endpoint */
           while (uti_elem_next != nullptr) {
-             u_long64 rde_time = lGetUlong(uti_elem_next, RDE_time);
+             u_long64 rde_time = lGetUlong64(uti_elem_next, RDE_time);
             if (rde_time > till) { /*insert before this elem */
                lInsertElem(uti_list, lPrevRW(uti_elem_next), newResourceElem(till, past_uti));
                is_till_added = true; 
