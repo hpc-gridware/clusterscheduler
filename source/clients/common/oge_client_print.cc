@@ -441,7 +441,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             const char *part1 = "%s%-7.7s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
             const char *part3 = ".";
             const char *part5 = "s %s %s%s%s%s%s%s";
-            size_t part6_size = strlen(part1) + strlen(part3) + strlen(part5) + 20;
+            size_t part6_size = strlen(part1) + strlen(part3) + strlen(part5) + 256;
             char *part6 = sge_malloc(part6_size);
             {
                int i;

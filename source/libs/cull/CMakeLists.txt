@@ -40,6 +40,11 @@ set(LIBRARY_SOURCES
         pack.cc)
 set(LIBRARY_INCLUDES "./")
 
+if (SGE_ARCH MATCHES "lx-arm.*")
+   # Raspians gcc 10.2 compiler shows incorrect warnings for memcpy calls
+   set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-array-bounds -Wno-stringop-overflow")
+endif()
+
 # on Ubuntu 24.04 the XDR related system header causes warnings
 # set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-changes-meaning -Wno-pedantic")
 
