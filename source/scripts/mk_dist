@@ -128,6 +128,7 @@ CreateRpm() # Arguments: package arch files
 
 makearco=false
 makebin=false
+maketestbin=false
 makecommon=false
 makedoc=false
 makesgeee=false
@@ -163,6 +164,12 @@ while [ $ARGC -gt 0 ]; do
    -bin)
       echo "Creating tar file(s) of binaries in bin/ utilbin/ examples/jobsbin"
       makebin=true
+      shift
+      ARGC=`expr $ARGC - 1`
+      ;;
+   -testbin)
+      echo "Creating tar file(s) of test binaries in testbin/"
+      maketestbin=true
       shift
       ARGC=`expr $ARGC - 1`
       ;;
@@ -379,6 +386,28 @@ if [ $makebin = true ]; then
       done
       cd ..
    fi
+fi
+
+if [ $maketestbin = true ]; then
+   if [ "$SELECTED_ARCHS" = "" ]; then
+      ErrUsage
+   fi
+
+   # do any necessary postprocessing of the "testbin" package here
+   if [ -f localext/$VDIR/mk_dist.private.bin ]; then
+      echo executing commands from mk_dist.private.bin
+      . ./localext/$VDIR/mk_dist.private.bin
+   fi
+
+   cd $VDIR
+   echo creating testbin tar.gz files for $SELECTED_ARCHS
+   for i in $SELECTED_ARCHS; do
+      ADIR="testbin/$i"
+      filename=$BASEDIR/${PRODUCT}-${VERSION}-testbin-${i}.tar.gz
+      echo Command: $TAR cvzf $filename $ADIR
+                    $TAR cvzf $filename $ADIR
+   done
+   cd ..
 fi
 
 if [ -x /usr/bin/md5sum ]; then
