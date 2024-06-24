@@ -56,9 +56,9 @@
 #include "msg_qmaster.h"
 
 #define ACTFILE_FPRINTF_FORMAT \
-"%s%c%s%c%s%c%s%c%s%c" sge_u32"%c%s%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" \
+"%s%c%s%c%s%c%s%c%s%c" sge_u32"%c%s%c" sge_u32"%c" sge_u64"%c" sge_u64"%c" sge_u64"%c" sge_u32"%c" sge_u32"%c" \
 sge_u32"%c%f%c%f%c%f%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%f%c" \
-sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s%c%d%c" sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32"%c" sge_u32"" \
+sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s%c%d%c" sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32"%c" sge_u64"" \
 "\n"
 
 #define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
@@ -560,9 +560,9 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                 lGetUlong(jr, JR_job_number), delimiter,
                                 lGetString(job, JB_account), delimiter,
                                 usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
-                                sge_gmt64_to_gmt32(submission_time), delimiter,
-                                sge_gmt64_to_gmt32(start_time), delimiter,
-                                sge_gmt64_to_gmt32(end_time), delimiter,
+                                (u_long64)sge_gmt64_to_time_t(submission_time), delimiter,
+                                (u_long64)sge_gmt64_to_time_t(start_time), delimiter,
+                                (u_long64)sge_gmt64_to_time_t(end_time), delimiter,
                                 lGetUlong(jr, JR_failed), delimiter,
                                 exit_status, delimiter,
                                 usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
@@ -632,7 +632,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                             : USAGE_ATTR_MAXVMEM_ACCT,
                                                                USAGE_ATTR_MAXVMEM, 0), delimiter,
                                 lGetUlong(job, JB_ar), delimiter,
-                                (ar != nullptr) ? sge_gmt64_to_gmt32(lGetUlong64(ar, AR_submission_time)) : 0
+                                (ar != nullptr) ? (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)) : 0
       );
    } else {
       writer->StartObject();

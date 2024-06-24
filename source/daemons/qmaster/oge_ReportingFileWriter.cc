@@ -420,7 +420,7 @@ namespace oge {
       /*
        * optimization: only do the following actions "shortly after midnight"
        */
-      now = (time_t) time(nullptr);
+      now = time(nullptr);
       localtime_r(&now, &tm_now);
 #if 1
       if (tm_now.tm_hour != 0 || tm_now.tm_min > INTERMEDIATE_ACCT_WINDOW) {
@@ -433,9 +433,9 @@ namespace oge {
        * "started a short time before"
        */
       if (pe_task != nullptr) {
-         start_time = (time_t) sge_gmt64_to_gmt32(lGetUlong64(pe_task, PET_start_time));
+         start_time = sge_gmt64_to_time_t(lGetUlong64(pe_task, PET_start_time));
       } else {
-         start_time = (time_t) sge_gmt64_to_gmt32(lGetUlong64(ja_task, JAT_start_time));
+         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
       }
 
       if ((now - start_time) < (INTERMEDIATE_MIN_RUNTIME + tm_now.tm_min * 60 + tm_now.tm_sec)) {

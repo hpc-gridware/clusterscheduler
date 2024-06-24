@@ -66,8 +66,15 @@ bool test_64bit() {
    u_long64 time64 = sge_get_gmt64();
    std::cout << "sge_get_gmt64(): " << time64 << std::endl;
 
-   u_long32 time32 = time(nullptr);
-   std::cout << "time(0):         " << time32 << std::endl;
+   time_t timestamp = time(nullptr);
+   u_long32 time32 = (u_long32)timestamp;
+   std::cout << "time(nullptr):   " << timestamp << " = " << time32 << std::endl;
+
+   if (labs(sge_gmt64_to_gmt32(time64) - timestamp) > 1) {
+      std::cerr << "64bit timestamp as seconds (" << sge_gmt64_to_gmt32(time64) <<
+                ") should be about the same as the time_t timestamp (" << timestamp << ")" << std::endl;
+      ret = false;
+   }
 
    if (labs(sge_gmt64_to_gmt32(time64) - time32) > 1) {
       std::cerr << "64bit timestamp as seconds (" << sge_gmt64_to_gmt32(time64) <<

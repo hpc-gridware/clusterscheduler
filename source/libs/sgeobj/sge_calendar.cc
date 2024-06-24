@@ -615,9 +615,9 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
    lListElem *state_change = nullptr;
    time_t now = 0;
    if (now64 != nullptr) {
-      now = sge_gmt64_to_gmt32(*now64);
+      now = sge_gmt64_to_time_t(*now64);
    } else {
-      now = sge_gmt64_to_gmt32(sge_get_gmt64());
+      now = sge_gmt64_to_time_t(sge_get_gmt64());
    }
 
    if (cep == nullptr || state_changes_list == nullptr) {
@@ -2603,8 +2603,8 @@ bool calendar_open_in_time_frame(const lListElem *cep, u_long64 start_time, u_lo
    const lList *year_list = nullptr;
    const lList *week_list = nullptr;
    time_t next_change;
-   time_t start = sge_gmt64_to_gmt32(start_time);
-   time_t end = sge_gmt64_to_gmt32(duration_add_offset(start_time, duration));
+   time_t start = sge_gmt64_to_time_t(start_time);
+   time_t end = sge_gmt64_to_time_t(duration_add_offset(start_time, duration));
 
    DENTER(TOP_LAYER);
 

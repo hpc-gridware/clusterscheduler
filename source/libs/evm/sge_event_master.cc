@@ -1942,9 +1942,9 @@ sge_event_master_wait_next()
    sge_mutex_lock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
 
    if (!Event_Master_Control.delivery_signaled) {
-      u_long32 current_time = sge_gmt64_to_gmt32(sge_get_gmt64());
+      time_t current_time = sge_gmt64_to_time_t(sge_get_gmt64());
       struct timespec ts;
-      ts.tv_sec = (time_t)(current_time + EVENT_DELIVERY_INTERVAL_S);
+      ts.tv_sec = current_time + EVENT_DELIVERY_INTERVAL_S;
       ts.tv_nsec = EVENT_DELIVERY_INTERVAL_N;
       pthread_cond_timedwait(&Event_Master_Control.cond_var, &Event_Master_Control.cond_mutex, &ts);
    }

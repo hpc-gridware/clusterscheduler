@@ -3109,7 +3109,7 @@ static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qma
    u_long64 timeout = sge_gmt32_to_gmt64(EC_TIMEOUT_S);
    while (!evco->triggered && !evco->exit &&
           ((sge_get_gmt64() - current_time) < timeout)){
-      ts.tv_sec = sge_gmt64_to_gmt32(current_time + timeout);
+      ts.tv_sec = sge_gmt64_to_time_t(current_time + timeout);
       ts.tv_nsec = EC_TIMEOUT_N;
 #ifdef EVC_DEBUG      
 printf("EVENT_CLIENT %d beginning to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));

@@ -324,7 +324,7 @@ static int test_state_change(lListElem *stateObject, u_long32 state, struct tm *
    }
    else {
       time_t now  = mktime(time);
-      time_t result = (time_t) sge_gmt64_to_gmt32(lGetUlong64(stateObject, CQU_till));
+      time_t result = sge_gmt64_to_time_t(lGetUlong64(stateObject, CQU_till));
       if (result != now) {
          ret = 1;
          printf("state list elem %d: ", elemNr);
@@ -547,7 +547,7 @@ static int test(date_entry_t *test, cal_entry_t *calendar, int test_nr)
       u_long64 when64 = sge_time_t_to_gmt64(when);
       u_long64 now64 = sge_time_t_to_gmt64(now);
       if (test->state1 == (int)(current_state = calender_state_changes(destCal, &state_changes_list, &when64, &now64))) {
-         when = sge_gmt64_to_gmt32(when64);
+         when = sge_gmt64_to_time_t(when64);
          if (when == mktime(&test->result1)) {
             if ((ret = test_state_change_list(test, state_changes_list)) == 0) {
                printf("==> Test is okay\n");
@@ -632,7 +632,7 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
    struct tm *end_tm;
    struct tm res;
    u_long64 start_time = sge_time_t_to_gmt64(mktime(&test->start_time));
-   time_t end_time = (time_t) sge_gmt64_to_gmt32(duration_add_offset(start_time, sge_gmt32_to_gmt64(test->duration)));
+   time_t end_time = sge_gmt64_to_time_t(duration_add_offset(start_time, sge_gmt32_to_gmt64(test->duration)));
 
    end_tm = localtime_r(&end_time, &res);
 
