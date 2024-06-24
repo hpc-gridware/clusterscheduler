@@ -211,7 +211,7 @@ static void get_workload_info()
          u_long32 ja_task_id;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
-         start_time = sge_gmt64_to_time_t(lGetUlong(ja_task, JAT_start_time));
+         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
          if(lGetUlong(ja_task, JAT_status) != JFINISHED) {
             printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
