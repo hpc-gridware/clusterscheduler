@@ -122,8 +122,7 @@ calendar_mod(lList **alpp, lListElem *new_cal, lListElem *cep, int add,
          for_each_ep(queue, lGetList(cqueue, CQ_qinstances)) {
             const char *q_cal = lGetString(queue, QU_calendar);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp,
-                                                       lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
+               if (sge_ar_list_conflicts_with_calendar(alpp, lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
                   goto ERROR;
                }
             }
