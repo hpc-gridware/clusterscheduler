@@ -84,7 +84,7 @@ add_executable(test_qmaster_calendar
       ../../../source/common/usage.cc)
 target_include_directories(test_qmaster_calendar PRIVATE "./")
 target_link_libraries(test_qmaster_calendar PRIVATE daemonscommon ${SPOOLING_LIBS}
-      sched mir evc evm sgeobj gdi cull comm uti commlists ${SGE_TOPO_LIB} ${SGE_LIBS})
+      sched mir evc evm sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 
 if (INSTALL_SGE_TEST)

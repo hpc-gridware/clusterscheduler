@@ -38,7 +38,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <math.h>
 
 #include "basis_types.h"
 
@@ -61,13 +60,13 @@
 /* functions related to get load values for execd (see load_avg.c) */
 
 /* get the amount of cores available on the execution host */ 
-int get_execd_amount_of_cores(void);
+int get_execd_amount_of_cores();
 
 /* get the amount of sockets of the execution host */
-int get_execd_amount_of_sockets(void);
+int get_execd_amount_of_sockets();
 
 /* get the amount of hardware supported threads for the specific exec host */
-int get_execd_amount_of_threads(void);
+int get_execd_amount_of_threads();
 
 /* get the topology string with all cores installed on the system */
 bool get_execd_topology(char** topology, int* length);
@@ -98,16 +97,10 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
 
 /* functions related to get load values for execd (see load_avg.c) */
 /* get the amount of cores available on the execution host */ 
-int getExecdAmountOfCores(void);
+int getExecdAmountOfCores();
 
 /* get the amount of sockets of the execution host */
-int getExecdAmountOfSockets(void);
-
-/* get the topology string with all cores installed on the system */
-bool get_execd_topology(char** topology, int* length);
-
-/* get the topology string where all cores currently in use are marked */
-bool get_execd_topology_in_use(char** topology);
+int getExecdAmountOfSockets();
 
 /* function for determining the binding */
 bool get_striding_first_socket_first_core_and_account(const int amount, const int stepsize,
@@ -116,13 +109,10 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
    char** accounted_topology, int* accounted_topology_length);
 
 /* for initializing used topology on execution daemon side */
-bool initialize_topology(void);
+bool initialize_topology();
 
 /* check if core can be used */
 bool topology_is_in_use(const int socket, const int core);
-
-/* for initializing used topology on execution daemon side */
-bool initialize_topology(void);
 
 /* free cores on execution host which were used by a job */
 bool free_topology(const char* topology, const int topology_length);
@@ -146,11 +136,3 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length);
 void free_matrix(int** matrix, const int length);
 #endif
 
-bool
-binding_print_to_string(const lListElem *this_list, dstring * string);
-
-bool
-binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string);
-
-bool
-binding_type_to_string(binding_type_t type, dstring *string);

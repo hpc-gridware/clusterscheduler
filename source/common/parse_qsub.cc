@@ -52,7 +52,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_binding_io.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"

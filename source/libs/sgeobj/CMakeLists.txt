@@ -31,6 +31,7 @@ set(LIBRARY_SOURCES
       sge_answer.cc
       sge_attr.cc
       sge_binding.cc
+        ocs_binding_io.cc
       sge_calendar.cc
       sge_centry.cc
       sge_centry_rsmap.cc

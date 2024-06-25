@@ -43,7 +43,6 @@ target_link_libraries(
       comm
       commlists
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

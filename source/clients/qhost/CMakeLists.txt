@@ -38,7 +38,6 @@ target_link_libraries(
       sgeobj
       cull
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

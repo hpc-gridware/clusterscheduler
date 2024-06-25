@@ -43,13 +43,6 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 
-#if defined(OGE_HWLOC)
-
-#  include <hwloc.h>
-#  include <dlfcn.h> // @todo still required?
-
-#endif
-
 /* functions related for parsing command line (see parse_qsub.c) */
 /* shepherd also needs them */
 bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
@@ -82,3 +75,4 @@ const char *binding_get_topology_for_job(const char *binding_result);
 
 bool topology_string_to_socket_core_lists(const char *topology, int **sockets,
                                           int **cores, int *amount);
+

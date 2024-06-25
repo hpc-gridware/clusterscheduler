@@ -105,7 +105,6 @@ target_link_libraries(
       comm
       commlists
       uti
-      ${SGE_TOPO_LIB}
       PRIVATE
       ${SGE_LIBS}
       ${SPOOLING_LIBS}

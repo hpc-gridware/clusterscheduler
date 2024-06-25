@@ -49,8 +49,7 @@ target_link_libraries(${DRMAA_LIB_NAME} PRIVATE
 # test binaries
 add_executable(test_drmaa ../../../test/libs/drmaa/test_drmaa.cc)
 target_include_directories(test_drmaa PRIVATE "./")
-# @todo need to get rid of the plpa dependency (SGE_TOPO_LIB) !!
-target_link_libraries(test_drmaa PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
+target_link_libraries(test_drmaa PRIVATE drmaa ${SGE_LIBS})
 
 
 if (INSTALL_SGE_COMMON)

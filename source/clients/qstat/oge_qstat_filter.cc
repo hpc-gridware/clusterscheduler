@@ -52,7 +52,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_conf.h" 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_binding_io.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
