@@ -40,7 +40,7 @@ basic_functions() {
    std::cout << asctime(&tm);
 
    // having a time stamp in ms as u_long64
-   u_long64 cull_time_stamp = 1717508158535;
+   u_long64 cull_time_stamp = (u_long64)1717508158535;
 
    // make it a time_t as we want to call localtime_r for output
    std::chrono::milliseconds xms{cull_time_stamp};
@@ -55,7 +55,7 @@ basic_functions() {
 #if not defined(TARGET_32BIT)
    // can it handle time stamps after 2038?
    // probably not on 32bit as time_t is just a long
-   const time_t xxt{U_LONG32_MAX};
+   const time_t xxt = (time_t)U_LONG32_MAX;
    localtime_r(&xxt, &tm);
    std::cout << asctime(&tm); // should print Sun Feb  7 07:28:15 2106
 #endif
@@ -70,13 +70,13 @@ bool test_64bit() {
    u_long32 time32 = (u_long32)timestamp;
    std::cout << "time(nullptr):   " << timestamp << " = " << time32 << std::endl;
 
-   if (labs(sge_gmt64_to_gmt32(time64) - timestamp) > 1) {
+   if (labs((long)(sge_gmt64_to_gmt32(time64) - timestamp)) > 1) {
       std::cerr << "64bit timestamp as seconds (" << sge_gmt64_to_gmt32(time64) <<
                 ") should be about the same as the time_t timestamp (" << timestamp << ")" << std::endl;
       ret = false;
    }
 
-   if (labs(sge_gmt64_to_gmt32(time64) - time32) > 1) {
+   if (labs((long)(sge_gmt64_to_gmt32(time64) - time32)) > 1) {
       std::cerr << "64bit timestamp as seconds (" << sge_gmt64_to_gmt32(time64) <<
                    ") should be about the same as the 32bit timestamp (" << time32 << ")" << std::endl;
       ret = false;

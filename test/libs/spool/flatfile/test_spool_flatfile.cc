@@ -920,7 +920,7 @@ static int UU_test(void) {
    lSetString(user, UU_name, "Test_Name");
    lSetUlong(user, UU_oticket, 100);
    lSetUlong(user, UU_fshare, 50);
-   lSetUlong64(user, UU_delete_time, 123456789000000);
+   lSetUlong64(user, UU_delete_time, (u_long64)123456789000000);
    lSetString(user, UU_default_project, "default_project");
 
    lSetUlong64(user, UU_usage_time_stamp, 987654321);
