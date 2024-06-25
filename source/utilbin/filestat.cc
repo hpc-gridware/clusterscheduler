@@ -43,7 +43,7 @@
 #include "msg_utilbin.h"
 
 /*-------------------------------------------*/
- void usage(void)
+ void usage()
 {
    fprintf(stderr, "%s filestat -uid|-gid|-mode|-atime|-mtime|-ctime|-owner file\n", MSG_UTILBIN_USAGE );
    exit(1);

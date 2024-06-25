@@ -51,10 +51,10 @@ void
 sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size);
 
 u_long32
-sge_err_get_errors(void);
+sge_err_get_errors();
 
 bool
-sge_err_has_error(void);
+sge_err_has_error();
 
 void
-sge_err_clear(void); 
+sge_err_clear(); 

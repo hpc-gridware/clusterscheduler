@@ -134,7 +134,7 @@ pthread_once_t libcontractcontrol = PTHREAD_ONCE_INIT;
 /* LIBSCF */
 static void* scf_lib = nullptr;
 /* Used libscf function pointers */
-static scf_error_t (*shared_scf_func__scf_error)(void);
+static scf_error_t (*shared_scf_func__scf_error)();
 static const char *(*shared_scf_func__scf_strerror)(scf_error_t);
 static scf_simple_prop_t *(*shared_scf_func__scf_simple_prop_get)(scf_handle_t *handle,
      const char *instance, const char *pgname, const char *propname);
@@ -228,7 +228,7 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
 *    init_scf_lib() -- initialize shared SCF library
 *
 *  SYNOPSIS
-*    static void init_scf_lib(void)
+*    static void init_scf_lib()
 *
 *  FUNCTION
 *    Stores the required SCF library functions to the appropriate function
@@ -247,7 +247,7 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
 *  SEE ALSO
 *     once_libscf_init()
 *******************************************************************************/
-static void init_scf_lib(void)
+static void init_scf_lib()
 {
  const char *func_name[] = {
      "scf_error",
@@ -286,7 +286,7 @@ static void init_scf_lib(void)
 *    once_libscf_init() -- initialize shared SCF library
 *
 *  SYNOPSIS
-*    static int once_libscf_init(void)
+*    static int once_libscf_init()
 *
 *  FUNCTION
 *    Stores the required SCF library functions to the appropriate function
@@ -307,7 +307,7 @@ static void init_scf_lib(void)
 *     sge_smf_init_libs()
 *     sge_smf_temporary_disable_instance()
 *******************************************************************************/
-static int once_libscf_init(void)
+static int once_libscf_init()
 {
  DENTER(TOP_LAYER);
  /* Init scf lib ONCE */
@@ -326,7 +326,7 @@ static int once_libscf_init(void)
 *    init_contract_lib() -- initialize shared CONTRACT library
 *
 *  SYNOPSIS
-*    static void init_contract_lib(void)
+*    static void init_contract_lib()
 *
 *  FUNCTION
 *    Stores the required CONTRACT library functions to the appropriate function
@@ -344,7 +344,7 @@ static int once_libscf_init(void)
 *  SEE ALSO
 *     sge_smf_init_libs()
 *******************************************************************************/
-static void init_contract_lib(void)
+static void init_contract_lib()
 {
  const char *func_name[] = {
      "ct_tmpl_activate",
@@ -389,7 +389,7 @@ static void init_contract_lib(void)
 *    init_smf_libs() -- initialize shared SCF library
 *
 *  SYNOPSIS
-*    static void init_smf_libs(void)
+*    static void init_smf_libs()
 *
 *  FUNCTION
 *    Stores the required SCF library functions to the appropriate function
@@ -407,7 +407,7 @@ static void init_contract_lib(void)
 *  SEE ALSO
 *     sge_smf_init_libs()
 *******************************************************************************/
-static void init_smf_libs(void)
+static void init_smf_libs()
 {
  DENTER(TOP_LAYER);
  /* Init shared libs ONCE */
@@ -427,7 +427,7 @@ static void init_smf_libs(void)
 *    sge_smf_init_libs() -- initialize SCF and CONTRACT shared libraries
 *
 *  SYNOPSIS
-*    int sge_smf_init_libs(void)
+*    int sge_smf_init_libs()
 *
 *  FUNCTION
 *    Try once to initialize SCF and CONTRACT shared libraries
@@ -448,7 +448,7 @@ static void init_smf_libs(void)
 *     sge_smf_init_libs()
 *     sge_smf_temporary_disable_instance()
 *******************************************************************************/
-int sge_smf_init_libs(void)
+int sge_smf_init_libs()
 {
  DENTER(TOP_LAYER);
  /* Init shared libs ONCE */
@@ -506,7 +506,7 @@ static int is_valid_sge_fmri(char *fmri)
 *    init_fmri() -- initialize shared SCF library
 *
 *  SYNOPSIS
-*    static void init_fmri(void)
+*    static void init_fmri()
 *
 *  FUNCTION
 *    Detects service FMRI if process was started over SMF and stores the name
@@ -524,7 +524,7 @@ static int is_valid_sge_fmri(char *fmri)
 *  SEE ALSO
 *     get_fmri()
 *******************************************************************************/
-static void init_fmri(void)
+static void init_fmri()
 {
  DENTER(TOP_LAYER);
  /* Will be set is started over SMF */
@@ -543,7 +543,7 @@ static void init_fmri(void)
 *    get_fmri() -- initialize fmri and return the value
 *
 *  SYNOPSIS
-*    static char *get_fmri(void)
+*    static char *get_fmri()
 *
 *  FUNCTION
 *    Once initializes service fmri and always returns the initialized value.
@@ -562,7 +562,7 @@ static void init_fmri(void)
 *  SEE ALSO
 *     init_use_smf()
 *******************************************************************************/
-static char *get_fmri(void)
+static char *get_fmri()
 {
  DENTER(TOP_LAYER);
  if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
@@ -578,7 +578,7 @@ static char *get_fmri(void)
 *    init_use_smf() -- initialize useSMF variable
 *
 *  SYNOPSIS
-*    static void init_use_smf(void)
+*    static void init_use_smf()
 *
 *  FUNCTION
 *    Initialize useSMF variable. Set to 1 only if system is SMF capable and
@@ -596,7 +596,7 @@ static char *get_fmri(void)
 *  SEE ALSO
 *     sge_smf_used()
 *******************************************************************************/
-static void init_use_smf(void)
+static void init_use_smf()
 {
  struct stat buff;
  int fd, status;
@@ -638,7 +638,7 @@ static void init_use_smf(void)
 *    sge_smf_used() -- once initialize useSMF ad return it's value
 *
 *  SYNOPSIS
-*    int sge_smf_used(void)
+*    int sge_smf_used()
 *
 *  FUNCTION
 *    Once initialize useSMF ad return it's value
@@ -658,7 +658,7 @@ static void init_use_smf(void)
 *  SEE ALSO
 *     sge_smf_contract_fork()
 *******************************************************************************/
-int sge_smf_used(void)
+int sge_smf_used()
 {
  DENTER(TOP_LAYER);
  if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
@@ -674,7 +674,7 @@ int sge_smf_used(void)
 *    contracts_pre_fork() -- initialize contract template
 *
 *  SYNOPSIS
-*    static int contracts_pre_fork(void)
+*    static int contracts_pre_fork()
 *
 *  FUNCTION
 *    Initialize contract template
@@ -693,7 +693,7 @@ int sge_smf_used(void)
 *  SEE ALSO
 *     sge_smf_contract_fork()
 *******************************************************************************/
-static int contracts_pre_fork(void)
+static int contracts_pre_fork()
 {
 int fd;
 int err = 0;
@@ -839,7 +839,7 @@ if ((cfd = open64(path, O_WRONLY)) == -1) {
 if (shared_contract_func__ct_ctl_abandon(cfd)) {
    snprintf(err_str, err_length, MSG_SMF_CONTRACT_ABANDON_FAILED_US,
             cfd, strerror(errno));
-   (void) close(cfd);
+   close(cfd);
    return -2;
 }
 close(cfd);
@@ -929,7 +929,7 @@ return pid;
 *    sge_smf_temporary_disable_instance() -- temporary disable smf instance
 *
 *  SYNOPSIS
-*    void sge_smf_temporary_disable_instance(void)
+*    void sge_smf_temporary_disable_instance()
 *
 *  FUNCTION
 *    Temporary disable this service instance in smf
@@ -951,7 +951,7 @@ return pid;
 *  SEE ALSO
 *     execd/execd_exit_func()
 *******************************************************************************/
-void sge_smf_temporary_disable_instance(void)
+void sge_smf_temporary_disable_instance()
 {
  uid_t old_euid = 0;
  int change_user = 1;
@@ -985,7 +985,7 @@ void sge_smf_temporary_disable_instance(void)
 *    sge_smf_get_instance_state() -- get instance state
 *
 *  SYNOPSIS
-*    char *sge_smf_get_instance_state(void)
+*    char *sge_smf_get_instance_state()
 *
 *  FUNCTION
 *    Get this instance state from SMF.
@@ -1002,7 +1002,7 @@ void sge_smf_temporary_disable_instance(void)
 *  SEE ALSO
 *     sge_smf_get_instance_next_state()
 *******************************************************************************/
-char *sge_smf_get_instance_state(void) {
+char *sge_smf_get_instance_state() {
  return shared_scf_func__smf_get_state(FMRI);
 }
 
@@ -1012,7 +1012,7 @@ char *sge_smf_get_instance_state(void) {
 *    sge_smf_get_instance_next_state() -- get instance state
 *
 *  SYNOPSIS
-*    char *sge_smf_get_instance_next_state(void)
+*    char *sge_smf_get_instance_next_state()
 *
 *  FUNCTION
 *    Get this instance state from SMF.
@@ -1057,7 +1057,7 @@ char *sge_smf_get_instance_next_state()
 
 #else
 
-void dummy(void) {
+void dummy() {
    /* Just a dummy function */
    void();
 }

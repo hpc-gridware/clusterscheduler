@@ -44,19 +44,19 @@ extern "C" {
 #define	SCF_STATE_STRING_NONE		((const char *)"none")
 #define	SCF_STATE_STRING_ONLINE		((const char *)"online")
 
-int sge_smf_used(void);
+int sge_smf_used();
 
-int sge_smf_init_libs(void);
+int sge_smf_init_libs();
 
 int sge_smf_contract_fork(char *err_str, int err_length);
 
-void sge_smf_temporary_disable_instance(void);
+void sge_smf_temporary_disable_instance();
 
-char *sge_smf_get_instance_state(void);
+char *sge_smf_get_instance_state();
 
-char *sge_smf_get_instance_next_state(void);
+char *sge_smf_get_instance_next_state();
 #else
-void dummy(void);
+void dummy();
 #endif
 #ifdef __cplusplus
 }

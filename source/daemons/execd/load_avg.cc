@@ -122,7 +122,7 @@ extern lList *jr_list;
 
 static bool flush_lr = false;
 
-u_long64 sge_get_qmrestart_time(void)
+u_long64 sge_get_qmrestart_time()
 {
    return qmrestart_time;
 }
@@ -133,7 +133,7 @@ void sge_set_qmrestart_time(u_long64 qmr)
    qmrestart_time = qmr;
 }
 
-bool sge_get_delay_job_reports_flag(void)
+bool sge_get_delay_job_reports_flag()
 {
    return delay_job_reports;
 }
@@ -143,7 +143,7 @@ void sge_set_delay_job_reports_flag(bool new_val)
    delay_job_reports = new_val;
 }
 
-bool sge_get_flush_lr_flag(void)
+bool sge_get_flush_lr_flag()
 {
    return flush_lr;
 }
@@ -189,7 +189,7 @@ void execd_merge_load_report(u_long32 seqno)
    lFreeElem(&last_lr);
 }
 
-void execd_trash_load_report(void) {
+void execd_trash_load_report() {
    send_all = true;
 }
 

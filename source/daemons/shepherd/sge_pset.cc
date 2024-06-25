@@ -66,7 +66,7 @@ static int free_processor_set(char *err_str);
 static int set_processor_range(char *crange, int proc_set_num, char *err_str);
 #endif
 
-void sge_pset_create_processor_set(void) 
+void sge_pset_create_processor_set() 
 {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
    char err_str[2*SGE_PATH_MAX+128];
@@ -95,7 +95,7 @@ void sge_pset_create_processor_set(void)
 
 }
 
-void sge_pset_free_processor_set(void)
+void sge_pset_free_processor_set()
 {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
    /* processor set stuff */

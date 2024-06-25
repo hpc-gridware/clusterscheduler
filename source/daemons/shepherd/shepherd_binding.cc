@@ -85,7 +85,7 @@ namespace oge {
 *     do_core_binding() -- Performs the core binding task for the Linux OS. 
 *
 *  SYNOPSIS
-*     int do_core_binding(void) 
+*     int do_core_binding() 
 *
 *  FUNCTION
 *     Performs core binding on shepherd side. All information required for  
@@ -109,7 +109,7 @@ namespace oge {
 *     MT-NOTE: do_core_binding() is not MT safe 
 *
 *******************************************************************************/
-   int do_core_binding(void) {
+   int do_core_binding() {
       /* Check if "binding" parameter in 'config' file
        * is available and not set to "binding=no_job_binding".
        * If so, we do an early abortion.
@@ -292,7 +292,7 @@ namespace oge {
    *     do_core_binding() -- Performs the core binding task for the Solaris OS.
    *
    *  SYNOPSIS
-   *     int do_core_binding(void)
+   *     int do_core_binding()
    *
    *  FUNCTION
    *     Performs core binding on shepherd side. All information required for
@@ -310,7 +310,7 @@ namespace oge {
    *     MT-NOTE: do_core_binding() is not MT safe
    *
    *******************************************************************************/
-   int do_core_binding(void)
+   int do_core_binding()
    {
       int retval = 0;
 

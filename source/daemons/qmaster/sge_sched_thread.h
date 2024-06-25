@@ -74,7 +74,7 @@ void
 st_set_flag_new_global_conf(bool new_value);
 
 bool
-st_get_flag_new_global_conf(void);
+st_get_flag_new_global_conf();
 
 int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);

@@ -46,7 +46,7 @@ void *my_thread(void *t_conf);
 
 void *my_thread_test(void *t_conf);
 
-extern int main(void) {
+extern int main() {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
 

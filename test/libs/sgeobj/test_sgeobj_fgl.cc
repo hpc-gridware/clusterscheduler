@@ -67,7 +67,7 @@ static long request = 0;
       }                                                                      \
    } 
 
-void simulate_job_add(void) {
+void simulate_job_add() {
    DENTER(TOP_LAYER);
    fgl_lock();
 

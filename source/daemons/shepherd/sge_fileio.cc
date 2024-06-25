@@ -262,7 +262,7 @@ FCLOSE_ERROR:
 }
 
 bool 
-shepherd_write_shepherd_about_to_exit_file(void)
+shepherd_write_shepherd_about_to_exit_file()
 {
    bool ret = true;
    const char *const filename = "shepherd_about_to_exit";
@@ -394,7 +394,7 @@ FCLOSE_ERROR:
 }
 
 int 
-checkpointed_file_exists(void)
+checkpointed_file_exists()
 {
    SGE_STRUCT_STAT buf;
    return !SGE_STAT("checkpointed", &buf);

@@ -151,13 +151,13 @@
 
 
 /* ssl function wrappers set by dlopen() */
-static void                 (*cl_com_ssl_func__CRYPTO_set_id_callback)              (unsigned long (*id_function)(void));
+static void                 (*cl_com_ssl_func__CRYPTO_set_id_callback)              (unsigned long (*id_function)());
 static void                 (*cl_com_ssl_func__CRYPTO_set_locking_callback)         (void (*locking_function)(int mode, int n, const char *file, int line));
-static int                  (*cl_com_ssl_func__CRYPTO_num_locks)                    (void);
-static unsigned long        (*cl_com_ssl_func__ERR_get_error)                       (void);
+static int                  (*cl_com_ssl_func__CRYPTO_num_locks)                    ();
+static unsigned long        (*cl_com_ssl_func__ERR_get_error)                       ();
 static void                 (*cl_com_ssl_func__ERR_error_string_n)                  (unsigned long e, char *buf, size_t len);
-static void                 (*cl_com_ssl_func__ERR_free_strings)                    (void);
-static void                 (*cl_com_ssl_func__ERR_clear_error)                     (void);
+static void                 (*cl_com_ssl_func__ERR_free_strings)                    ();
+static void                 (*cl_com_ssl_func__ERR_clear_error)                     ();
 static int                  (*cl_com_ssl_func__BIO_free)                            (BIO *a);
 /* not used */ static BIO*                 (*cl_com_ssl_func__BIO_new_fp)                          (FILE *stream, int flags);
 static BIO*                 (*cl_com_ssl_func__BIO_new_socket)                      (int sock, int close_flag);
@@ -167,14 +167,14 @@ static void                 (*cl_com_ssl_func__SSL_set_bio)                     
 static int                  (*cl_com_ssl_func__SSL_accept)                          (SSL *ssl);
 static void                 (*cl_com_ssl_func__SSL_CTX_free)                        (SSL_CTX *);
 static SSL_CTX*             (*cl_com_ssl_func__SSL_CTX_new)                         (SSL_METHOD *meth);
-static SSL_METHOD*          (*cl_com_ssl_func__SSLv23_method)                       (void);
+static SSL_METHOD*          (*cl_com_ssl_func__SSLv23_method)                       ();
 static int                  (*cl_com_ssl_func__SSL_CTX_use_certificate_chain_file)  (SSL_CTX *ctx, const char *file);
 static int                  (*cl_com_ssl_func__SSL_CTX_use_certificate)             (SSL_CTX *ctx, X509 *cert);
 static int                  (*cl_com_ssl_func__SSL_CTX_use_PrivateKey_file)         (SSL_CTX *ctx, const char *file, int type);
 static int                  (*cl_com_ssl_func__SSL_CTX_use_PrivateKey)              (SSL_CTX *ctx, EVP_PKEY *pkey);
 static int                  (*cl_com_ssl_func__SSL_CTX_load_verify_locations)       (SSL_CTX *ctx, const char *CAfile, const char *CApath);
-static int                  (*cl_com_ssl_func__SSL_library_init)                    (void);
-static void                 (*cl_com_ssl_func__SSL_load_error_strings)              (void);
+static int                  (*cl_com_ssl_func__SSL_library_init)                    ();
+static void                 (*cl_com_ssl_func__SSL_load_error_strings)              ();
 static SSL*                 (*cl_com_ssl_func__SSL_new)                             (SSL_CTX *ctx);
 static int                  (*cl_com_ssl_func__SSL_connect)                         (SSL *ssl);
 static int                  (*cl_com_ssl_func__SSL_shutdown)                        (SSL *s);
@@ -193,7 +193,7 @@ static ASN1_OBJECT*         (*cl_com_ssl_func__OBJ_nid2obj)                     
 static void                 (*cl_com_ssl_func__X509_free)                           (X509 *a);
 static long                 (*cl_com_ssl_func__SSL_CTX_ctrl)                        (SSL_CTX *ctx, int cmd, long larg, void *parg);
 static long                 (*cl_com_ssl_func__SSL_ctrl)                            (SSL *ssl, int cmd, long larg, void *parg);
-static int                  (*cl_com_ssl_func__RAND_status)                         (void);
+static int                  (*cl_com_ssl_func__RAND_status)                         ();
 static int                  (*cl_com_ssl_func__RAND_load_file)                      (const char *filename, long max_bytes);
 static const char*          (*cl_com_ssl_func__SSL_get_cipher_list)                 (SSL *ssl, int priority);
 static int                  (*cl_com_ssl_func__SSL_CTX_set_cipher_list)             (SSL_CTX *,const char *str);
@@ -215,26 +215,26 @@ static void *               (*cl_com_ssl_func__PEM_ASN1_read)                   
 static X509_CRL*            (*cl_com_ssl_func__d2i_X509_CRL)                        (X509_CRL **a, const unsigned char **pp, long length);
 static int                  (*cl_com_ssl_func__X509_STORE_set_flags)                (X509_STORE *ctx, unsigned long flags);
 static X509*                (*cl_com_ssl_func__X509_STORE_CTX_get_current_cert)     (X509_STORE_CTX *ctx);
-static X509_STORE*          (*cl_com_ssl_func__X509_STORE_new)                      (void);
+static X509_STORE*          (*cl_com_ssl_func__X509_STORE_new)                      ();
 static X509_NAME*           (*cl_com_ssl_func__X509_get_subject_name)               (X509 *a);
 /* not used */ static X509_NAME*           (*cl_com_ssl_func__X509_get_issuer_name)                (X509 *a);
 static X509_LOOKUP*         (*cl_com_ssl_func__X509_STORE_add_lookup)               (X509_STORE *v, X509_LOOKUP_METHOD *m);
 static int                  (*cl_com_ssl_func__X509_load_crl_file)                  (X509_LOOKUP *ctx, const char *file, int type);
-static X509_STORE_CTX*      (*cl_com_ssl_func__X509_STORE_CTX_new)                  (void);
+static X509_STORE_CTX*      (*cl_com_ssl_func__X509_STORE_CTX_new)                  ();
 static int                  (*cl_com_ssl_func__X509_STORE_CTX_init)                 (X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509, STACK_OF(X509) *chain);
 static void                 (*cl_com_ssl_func__X509_STORE_CTX_cleanup)              (X509_STORE_CTX *ctx);
 static int                  (*cl_com_ssl_func__X509_verify_cert)                    (X509_STORE_CTX *ctx);
 static int                  (*cl_com_ssl_func__X509_STORE_CTX_get_error)            (X509_STORE_CTX *ctx);
 /* not used */ static void                 (*cl_com_ssl_func__ERR_print_errors_fp)                 (FILE *fp);
 
-static X509_LOOKUP_METHOD*  (*cl_com_ssl_func__X509_LOOKUP_file)                    (void);
+static X509_LOOKUP_METHOD*  (*cl_com_ssl_func__X509_LOOKUP_file)                    ();
 static void*                (*cl_com_ssl_func__X509_STORE_CTX_get_ex_data)          (X509_STORE_CTX *ctx,int idx);
 static SSL_CTX*             (*cl_com_ssl_func__SSL_get_SSL_CTX)                     (SSL *ssl);
 /* not used */ static int                  (*cl_com_ssl_func__X509_STORE_CTX_get_error_depth)      (X509_STORE_CTX *ctx);
 static char*                (*cl_com_ssl_func__X509_NAME_oneline)                   (X509_NAME *a,char *buf,int size);
 static void                 (*cl_com_ssl_func__CRYPTO_free)                         (void *);
 static const char*          (*cl_com_ssl_func__X509_verify_cert_error_string)       (long n);
-static int                  (*cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_idx)  (void);
+static int                  (*cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_idx)  ();
 static void*                (*cl_com_ssl_func__SSL_CTX_get_ex_data)                 (SSL_CTX *ssl,int idx);
 static int                  (*cl_com_ssl_func__SSL_CTX_set_ex_data)                 (SSL_CTX *ssl,int idx,void *data);
 /* not used */ static int                  (*cl_com_ssl_func__X509_STORE_get_by_subject)           (X509_STORE_CTX *vs,int type,X509_NAME *name, X509_OBJECT *ret);
@@ -351,10 +351,10 @@ static int                   cl_com_ssl_transform_ssl_error(unsigned long ssl_er
 static int                   cl_com_ssl_log_ssl_errors(const char* function_name);
 static const char*           cl_com_ssl_get_error_text(int ssl_error);
 
-static int                   cl_com_ssl_build_symbol_table(void);
-static int                   cl_com_ssl_destroy_symbol_table(void);
+static int                   cl_com_ssl_build_symbol_table();
+static int                   cl_com_ssl_destroy_symbol_table();
 
-static unsigned long         cl_com_ssl_get_thread_id(void);
+static unsigned long         cl_com_ssl_get_thread_id();
 static void                  cl_com_ssl_locking_callback(int mode, int type, const char *file, int line);
 
 static int                   cl_com_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx); /* callback for verify clients certificate */
@@ -860,11 +860,11 @@ static void cl_com_ssl_locking_callback(int mode, int type, const char *file, in
    }
 }
 
-static unsigned long cl_com_ssl_get_thread_id(void) {
+static unsigned long cl_com_ssl_get_thread_id() {
    return (unsigned long) pthread_self();  
 }
 
-static int cl_com_ssl_destroy_symbol_table(void) {
+static int cl_com_ssl_destroy_symbol_table() {
 #ifdef LOAD_OPENSSL
    {
       CL_LOG(CL_LOG_INFO,"shutting down ssl library symbol table ...");
@@ -997,7 +997,7 @@ static int cl_com_ssl_destroy_symbol_table(void) {
 #endif
 }
 
-static int cl_com_ssl_build_symbol_table(void) {
+static int cl_com_ssl_build_symbol_table() {
    
 #ifdef LOAD_OPENSSL
    {
@@ -1070,7 +1070,7 @@ static int cl_com_ssl_build_symbol_table(void) {
 
       /* setting up crypto function pointers */
       func_name = "CRYPTO_set_id_callback";
-      cl_com_ssl_func__CRYPTO_set_id_callback = (void (*)(unsigned long (*)(void)))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__CRYPTO_set_id_callback = (void (*)(unsigned long (*)()))dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__CRYPTO_set_id_callback == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1084,14 +1084,14 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "CRYPTO_num_locks";
-      cl_com_ssl_func__CRYPTO_num_locks = (int (*) (void))   dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__CRYPTO_num_locks = (int (*) ())   dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__CRYPTO_num_locks == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
       }
 
       func_name = "ERR_get_error";
-      cl_com_ssl_func__ERR_get_error = (unsigned long (*)(void)) dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__ERR_get_error = (unsigned long (*)()) dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__ERR_get_error == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1105,14 +1105,14 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "ERR_free_strings";
-      cl_com_ssl_func__ERR_free_strings = (void (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__ERR_free_strings = (void (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__ERR_free_strings == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
       }
 
       func_name = "ERR_clear_error";
-      cl_com_ssl_func__ERR_clear_error = (void (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__ERR_clear_error = (void (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__ERR_clear_error == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1182,7 +1182,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "SSLv23_method";
-      cl_com_ssl_func__SSLv23_method = (SSL_METHOD* (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__SSLv23_method = (SSL_METHOD* (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__SSLv23_method == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1224,14 +1224,14 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "SSL_library_init";
-      cl_com_ssl_func__SSL_library_init = (int (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__SSL_library_init = (int (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__SSL_library_init == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
       }
 
       func_name = "SSL_load_error_strings";
-      cl_com_ssl_func__SSL_load_error_strings = (void (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__SSL_load_error_strings = (void (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__SSL_load_error_strings == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1385,7 +1385,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "RAND_status";
-      cl_com_ssl_func__RAND_status = (int (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__RAND_status = (int (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__RAND_status == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1526,7 +1526,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "X509_STORE_new";
-      cl_com_ssl_func__X509_STORE_new = (X509_STORE*(*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__X509_STORE_new = (X509_STORE*(*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__X509_STORE_new == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1560,7 +1560,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "X509_STORE_CTX_new";
-      cl_com_ssl_func__X509_STORE_CTX_new = (X509_STORE_CTX*(*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__X509_STORE_CTX_new = (X509_STORE_CTX*(*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__X509_STORE_CTX_new == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1602,7 +1602,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "X509_LOOKUP_file";
-      cl_com_ssl_func__X509_LOOKUP_file = (X509_LOOKUP_METHOD* (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__X509_LOOKUP_file = (X509_LOOKUP_METHOD* (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__X509_LOOKUP_file == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -1651,7 +1651,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "SSL_get_ex_data_X509_STORE_CTX_idx";
-      cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_idx = (int (*)(void))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_idx = (int (*)())dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_idx == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;
@@ -2343,7 +2343,7 @@ static cl_com_ssl_private_t* cl_com_ssl_get_private(cl_com_connection_t* connect
    return nullptr;
 }
 
-int cl_com_ssl_framework_setup(void) {
+int cl_com_ssl_framework_setup() {
    int ret_val = CL_RETVAL_OK;
    pthread_mutex_lock(&cl_com_ssl_global_config_mutex);
    if (cl_com_ssl_global_config_object == nullptr) {
@@ -2361,7 +2361,7 @@ int cl_com_ssl_framework_setup(void) {
    return ret_val;
 }
 
-int cl_com_ssl_framework_cleanup(void) {
+int cl_com_ssl_framework_cleanup() {
    int ret_val = CL_RETVAL_OK;
    int counter = 0;
    pthread_mutex_lock(&cl_com_ssl_global_config_mutex);
@@ -4735,11 +4735,11 @@ static int cl_com_ssl_fill_private_from_peer_cert(cl_com_ssl_private_t *com_priv
 
 /* dummy functions for compilation without openssl lib */
 /* ssl specific functions */
-int cl_com_ssl_framework_setup(void) {
+int cl_com_ssl_framework_setup() {
    return CL_RETVAL_OK;
 }
 
-int cl_com_ssl_framework_cleanup(void) {
+int cl_com_ssl_framework_cleanup() {
    return CL_RETVAL_OK;
 }
 

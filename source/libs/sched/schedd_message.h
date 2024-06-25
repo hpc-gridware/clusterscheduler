@@ -41,7 +41,7 @@
 
 /* Initialize module variables */
 /* prepare tmp_sme for collecting messages */
-void schedd_mes_initialize(void);
+void schedd_mes_initialize();
 
 /* Get message structure */
 lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count);
@@ -54,12 +54,12 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
 
 void schedd_mes_set_logging(int bval);
 
-int schedd_mes_get_logging(void);
+int schedd_mes_get_logging();
 
 void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category);
 
-void schedd_mes_rollback(void);
+void schedd_mes_rollback();
 
-lList *schedd_mes_get_tmp_list(void);
+lList *schedd_mes_get_tmp_list();
 
 void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number);

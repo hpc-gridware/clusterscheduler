@@ -47,6 +47,6 @@ enum { INVALID_THREAD = 0 };
 void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
 
 /* misc functions */
-bool sge_daemonize_qmaster(void);
+bool sge_daemonize_qmaster();
 void sge_become_admin_user(const char *admin_user);
 void sge_exit_func(int);

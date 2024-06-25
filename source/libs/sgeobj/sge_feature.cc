@@ -66,7 +66,7 @@ static const featureset_names_t featureset_list[] = {
 static pthread_once_t feature_once = PTHREAD_ONCE_INIT;
 static pthread_key_t feature_state_key;
 
-static void feature_once_init(void);
+static void feature_once_init();
 static void feature_state_destroy(void* theState);
 static void feature_state_init(struct feature_state_t* theState);
 static feature_id_t feature_get_featureset_id(const char *name); 
@@ -77,7 +77,7 @@ static feature_id_t feature_get_featureset_id(const char *name);
 *     feature_mt_init() -- Initialize feature code for multi threading use.
 *
 *  SYNOPSIS
-*     void feature_mt_init(void) 
+*     void feature_mt_init() 
 *
 *  FUNCTION
 *     Set up feature code. This function must be called at least once before
@@ -95,7 +95,7 @@ static feature_id_t feature_get_featureset_id(const char *name);
 *  NOTES
 *     MT-NOTE: feature_mt_init() is MT safe 
 *******************************************************************************/
-static void feature_mt_init(void)
+static void feature_mt_init()
 {
    pthread_once(&feature_once, feature_once_init);
 }
@@ -136,7 +136,7 @@ void feature_set_already_read_from_file(int i)
 *  RESULT
 *     Returns value of per thread global variable already_read_from_file.
 *******************************************************************************/
-int feature_get_already_read_from_file(void)
+int feature_get_already_read_from_file()
 {
    GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key);
    return feature_state->already_read_from_file;
@@ -147,13 +147,13 @@ int feature_get_already_read_from_file(void)
 *     feature_get_master_featureset_list()
 *
 *  SYNOPSIS
-*     lList **feature_get_master_featureset_list(void)
+*     lList **feature_get_master_featureset_list()
 *
 *  RESULT
 *     Returns pointer to location where per thread global list 
 *     Master_FeatureSet_List is stored.
 *******************************************************************************/
-lList **feature_get_master_featureset_list(void)
+lList **feature_get_master_featureset_list()
 {
    GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key);
    return &(feature_state->Master_FeatureSet_List);
@@ -204,7 +204,7 @@ int feature_initialize_from_string(const char *mode, lList **answer_list)
 *     feature_initialize() -- initialize this module
 *
 *  SYNOPSIS
-*     static void feature_initialize(void)
+*     static void feature_initialize()
 *
 *  FUNCTION
 *     build up the CULL list "Master_FeatureSet_List" (FES_Type) with
@@ -219,7 +219,7 @@ int feature_initialize_from_string(const char *mode, lList **answer_list)
 *  NOTES
 *     MT-NOTE: feature_initialize() is MT safe
 ******************************************************************************/
-void feature_initialize(void)
+void feature_initialize()
 {
    if (!*feature_get_master_featureset_list()) {
       lListElem *featureset;
@@ -312,7 +312,7 @@ void feature_activate(feature_id_t id)
 *  NOTES
 *     MT-NOTE: feature_get_active_featureset_id() is MT safe
 ******************************************************************************/
-feature_id_t feature_get_active_featureset_id(void) 
+feature_id_t feature_get_active_featureset_id() 
 {
    const lListElem *feature;
    feature_id_t ret = FEATURE_UNINITIALIZED;
@@ -525,7 +525,7 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
 *     feature_once_init() -- One-time feature code initialization.
 *
 *  SYNOPSIS
-*     static feature_once_init(void) 
+*     static feature_once_init() 
 *
 *  FUNCTION
 *     Create access key for thread local storage. Register cleanup function.
@@ -541,7 +541,7 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
 *  NOTES
 *     MT-NOTE: feature_once_init() is MT safe. 
 *******************************************************************************/
-static void feature_once_init(void)
+static void feature_once_init()
 {
    pthread_key_create(&feature_state_key, feature_state_destroy);
 }

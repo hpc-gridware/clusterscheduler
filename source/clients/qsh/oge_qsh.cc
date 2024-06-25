@@ -133,7 +133,7 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin, int is
 static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrated, bool error,
                                 int is_qlogin, int is_rsh, int is_qsh); 
 static void delete_job(u_long32 job_id, lList *lp);
-static void set_builtin_ijs_signals_and_handlers(void);
+static void set_builtin_ijs_signals_and_handlers();
 
 #define VERBOSE_LOG(x) if (log_state_get_log_verbose()) { fprintf x; fflush(stderr); }
 
@@ -1269,7 +1269,7 @@ lList *opts_qrsh)
 *     block_notification_signals() -- block signals used by -notify
 *
 *  SYNOPSIS
-*     void block_notification_signals(void)
+*     void block_notification_signals()
 *
 *  FUNCTION
 *     Makes sure that signals used for job notification are blocked
@@ -1296,7 +1296,7 @@ lList *opts_qrsh)
 *  NOTES
 *     MT-NOTE: block_notification_signals() is MT safe 
 *******************************************************************************/
-void block_notification_signals(void)
+void block_notification_signals()
 {
    /* default notification signals */
    int sig1 = SIGUSR1;

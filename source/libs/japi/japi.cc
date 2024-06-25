@@ -322,14 +322,14 @@ static int do_gdi_delete (lList **id_list, int action, bool delete_all,
 static int japi_stop_event_client(const char *default_cell);
 
 
-static void japi_use_library_signals(void)
+static void japi_use_library_signals()
 {
    /* simply ignore SIGPIPE */
    signal (SIGPIPE, SIG_IGN);
 }
 
 
-static void japi_once_init(void)
+static void japi_once_init()
 {
    /* enable rmon monitoring */
    rmon_mopen();
@@ -4925,7 +4925,7 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all,
 *     japi_stop_event_client() -- stops the event client
 *
 *  SYNOPSIS
-*     int japi_stop_event_client(void) 
+*     int japi_stop_event_client() 
 *
 *  FUNCTION
 *     Uses the Event Master interface to send a SHUTDOWN event to the event

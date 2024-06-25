@@ -117,7 +117,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                    const char *attr_name, const char *object_name);
 
 void
-host_initalitze_timer(void) {
+host_initalitze_timer() {
    DENTER(TOP_LAYER);
    const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 

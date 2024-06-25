@@ -64,7 +64,7 @@ sge_err_destroy(void *state) {
 /* init function that initializes the key that holds the pointer
  * to thread local storrage for this module */
 static void
-sge_err_once_init(void) {
+sge_err_once_init() {
    pthread_key_create(&sge_err_key, sge_err_destroy);
 }
 
@@ -111,7 +111,7 @@ sge_err_vset(sge_err_t id, const char *format, va_list args) {
 
 /* initialization function that has to be called before threads are spawned */
 static void
-sge_err_init(void) {
+sge_err_init() {
    DENTER(ERR_LAYER);
    pthread_once(&sge_err_once, sge_err_once_init);
    DRETURN_VOID;
@@ -160,7 +160,7 @@ sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size) {
 }
 
 bool
-sge_err_has_error(void) {
+sge_err_has_error() {
    sge_err_object_t *err_obj = nullptr;
    bool ret;
 
@@ -171,7 +171,7 @@ sge_err_has_error(void) {
 }
 
 void
-sge_err_clear(void) {
+sge_err_clear() {
    sge_err_object_t *err_obj = nullptr;
 
    DENTER(ERR_LAYER);

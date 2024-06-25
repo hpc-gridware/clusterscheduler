@@ -64,4 +64,4 @@ an_status_t
 
 bool verify_host_name(lList **answer_list, const char *host_name);
 
-int reresolve_qualified_hostname(void);
+int reresolve_qualified_hostname();

@@ -102,7 +102,7 @@ static void fgl_state_destroy(void *st) {
    sge_free(&state);
 }
 
-static void fgl_once_init(void) {
+static void fgl_once_init() {
    pthread_key_create(&fgl_state_key, fgl_state_destroy);
 }
 
@@ -121,7 +121,7 @@ static void fgl_state_set_pos(u_long32 new_pos) {
    fgl_state->pos = new_pos;
 }
 
-void fgl_mt_init(void) {
+void fgl_mt_init() {
    pthread_once(&fgl_once, fgl_once_init);
    pthread_mutex_lock(&fgl_mtx);
    if (fgl_lcks == nullptr) {
@@ -235,7 +235,7 @@ int fgl_rsv_compare(const void *a, const void *b) {
    return 0;
 }
 
-void fgl_rsv_sort(void) {
+void fgl_rsv_sort() {
    // fetch current lck requests array and pos 
    fgl_t *requests = nullptr;
    u_long32 pos = 0;
@@ -288,7 +288,7 @@ void fgl_add_s(u_long32 id_root, const char *id_str, bool is_rw) {
    fgl_add(id_root, is_rw, FGL_STR, 0, id_str);
 }
 
-void fgl_clear(void) {
+void fgl_clear() {
    fgl_state_set_pos(0);
 }
 
@@ -363,7 +363,7 @@ void fgl_dump_stats(dstring *stats_str) {
    return;
 }
 
-void fgl_lock(void) {
+void fgl_lock() {
    DENTER(TOP_LAYER);
 
    // fetch request array 
@@ -464,7 +464,7 @@ void fgl_lock(void) {
    DRETURN_VOID;
 }
 
-void fgl_unlock(void) {
+void fgl_unlock() {
    DENTER(TOP_LAYER);
    // fetch current array and pos 
    fgl_t *requests = nullptr;

@@ -61,7 +61,7 @@ void sighandler_server(
    do_shutdown = 1;
 }
 
-unsigned long my_application_status(void) {
+unsigned long my_application_status() {
    return (unsigned long) 1;
 }
 

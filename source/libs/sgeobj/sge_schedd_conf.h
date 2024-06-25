@@ -95,9 +95,9 @@ void sconf_ph_fill_array(policy_hierarchy_t array[]);
 
 void sconf_ph_print_array(policy_hierarchy_t array[]);
 
-void sconf_print_config(void);
+void sconf_print_config();
 
-lListElem *sconf_create_default(void);
+lListElem *sconf_create_default();
 
 bool sconf_set_config(lList **config, lList **answer_list);
 
@@ -110,137 +110,137 @@ bool sconf_validate_config(lList **answer_list, lList *config);
 
 bool sconf_validate_config_(lList **answer_list);
 
-lListElem *sconf_get_config(void);
+lListElem *sconf_get_config();
 
-lList *sconf_get_config_list(void);
+lList *sconf_get_config_list();
 
-bool sconf_is_new_config(void);
-void sconf_reset_new_config(void);
+bool sconf_is_new_config();
+void sconf_reset_new_config();
 
-bool sconf_is(void);
+bool sconf_is();
 
-u_long32 sconf_get_load_adjustment_decay_time(void);
+u_long32 sconf_get_load_adjustment_decay_time();
 
-lList *sconf_get_job_load_adjustments(void);
+lList *sconf_get_job_load_adjustments();
 
-char *sconf_get_load_formula(void);
+char *sconf_get_load_formula();
 
-u_long32 sconf_get_queue_sort_method(void);
+u_long32 sconf_get_queue_sort_method();
 
-u_long32 sconf_get_maxujobs(void);
+u_long32 sconf_get_maxujobs();
 
-u_long32 sconf_get_schedule_interval(void);
+u_long32 sconf_get_schedule_interval();
 
-u_long32 sconf_get_reprioritize_interval(void);
+u_long32 sconf_get_reprioritize_interval();
 
-u_long32 sconf_get_weight_tickets_share(void);
+u_long32 sconf_get_weight_tickets_share();
 
-lList *sconf_get_schedd_job_info_range(void);
+lList *sconf_get_schedd_job_info_range();
 
 bool sconf_is_id_in_schedd_job_info_range(u_long32 job_number);
 
-lList *sconf_get_usage_weight_list(void);
+lList *sconf_get_usage_weight_list();
 
-double sconf_get_weight_user(void);
+double sconf_get_weight_user();
 
-double sconf_get_weight_department(void);
+double sconf_get_weight_department();
 
-double sconf_get_weight_project(void);
+double sconf_get_weight_project();
 
-double sconf_get_weight_job(void);
+double sconf_get_weight_job();
 
-u_long32 sconf_get_weight_tickets_share(void);
+u_long32 sconf_get_weight_tickets_share();
 
-u_long32 sconf_get_weight_tickets_functional(void);
+u_long32 sconf_get_weight_tickets_functional();
 
-u_long32 sconf_get_halftime(void);
+u_long32 sconf_get_halftime();
 
 void sconf_set_weight_tickets_override(u_long32 active);
 
-u_long32 sconf_get_weight_tickets_override(void);
+u_long32 sconf_get_weight_tickets_override();
 
-double sconf_get_compensation_factor(void);
+double sconf_get_compensation_factor();
 
-bool sconf_get_share_override_tickets(void);
+bool sconf_get_share_override_tickets();
 
-bool sconf_get_share_functional_shares(void);
+bool sconf_get_share_functional_shares();
 
-bool sconf_get_report_pjob_tickets(void);
+bool sconf_get_report_pjob_tickets();
 
-bool sconf_is_job_category_filtering(void);
+bool sconf_is_job_category_filtering();
 
-u_long32 sconf_get_flush_submit_sec(void);
+u_long32 sconf_get_flush_submit_sec();
 
-u_long32 sconf_get_flush_finish_sec(void);
+u_long32 sconf_get_flush_finish_sec();
 
-u_long32 sconf_get_max_functional_jobs_to_schedule(void);
+u_long32 sconf_get_max_functional_jobs_to_schedule();
 
-u_long32 sconf_get_max_pending_tasks_per_job(void);
+u_long32 sconf_get_max_pending_tasks_per_job();
 
-lList* sconf_get_halflife_decay_list(void);
+lList* sconf_get_halflife_decay_list();
 
-double sconf_get_weight_ticket(void);
-double sconf_get_weight_waiting_time(void);
-double sconf_get_weight_deadline(void);
-double sconf_get_weight_urgency(void);
+double sconf_get_weight_ticket();
+double sconf_get_weight_waiting_time();
+double sconf_get_weight_deadline();
+double sconf_get_weight_urgency();
 
-u_long32 sconf_get_max_reservations(void);
+u_long32 sconf_get_max_reservations();
 
-double sconf_get_weight_priority(void);
-bool sconf_get_profiling(void);
+double sconf_get_weight_priority();
+bool sconf_get_profiling();
 
-u_long32 sconf_get_default_duration(void);
+u_long32 sconf_get_default_duration();
 
 typedef enum {
    QS_STATE_EMPTY,
    QS_STATE_FULL
 } qs_state_t;
 
-u_long32 sconf_get_schedd_job_info(void);
-void sconf_disable_schedd_job_info(void);
-void sconf_enable_schedd_job_info(void);
+u_long32 sconf_get_schedd_job_info();
+void sconf_disable_schedd_job_info();
+void sconf_enable_schedd_job_info();
 
 void sconf_set_qs_state(qs_state_t state);
-qs_state_t sconf_get_qs_state(void);
+qs_state_t sconf_get_qs_state();
 
 void sconf_set_global_load_correction(bool flag);
-bool sconf_get_global_load_correction(void);
+bool sconf_get_global_load_correction();
 
-bool sconf_get_host_order_changed(void);
+bool sconf_get_host_order_changed();
 void sconf_set_host_order_changed(bool changed);
 
-int  sconf_get_last_dispatch_type(void);
+int  sconf_get_last_dispatch_type();
 void sconf_set_last_dispatch_type(int changed);
 
-u_long32  sconf_get_duration_offset(void);
+u_long32  sconf_get_duration_offset();
 
-bool serf_get_active(void);
+bool serf_get_active();
 
-schedd_pe_algorithm sconf_best_pe_alg(void);
+schedd_pe_algorithm sconf_best_pe_alg();
 void sconf_update_pe_alg(int runs, int current, int max);
 int  sconf_get_pe_alg_value(schedd_pe_algorithm alg);
 
-void sconf_inc_fast_jobs(void);
-int sconf_get_fast_jobs(void);
+void sconf_inc_fast_jobs();
+int sconf_get_fast_jobs();
 
-void sconf_inc_pe_jobs(void);
-int sconf_get_pe_jobs(void);
+void sconf_inc_pe_jobs();
+int sconf_get_pe_jobs();
 
 void sconf_set_decay_constant(double decay);
-double sconf_get_decay_constant(void);
+double sconf_get_decay_constant();
 
 void sconf_set_mes_schedd_info(bool newval);
-bool sconf_get_mes_schedd_info(void);
+bool sconf_get_mes_schedd_info();
 
 void schedd_mes_set_logging(int bval);
-int schedd_mes_get_logging(void);
+int schedd_mes_get_logging();
 
-lListElem *sconf_get_sme(void);
+lListElem *sconf_get_sme();
 void sconf_set_sme(lListElem *sme);
 
-lListElem *sconf_get_tmp_sme(void);
+lListElem *sconf_get_tmp_sme();
 void sconf_set_tmp_sme(lListElem *sme);
 
-void sconf_reset_jobs(void);
+void sconf_reset_jobs();
 
 void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority);

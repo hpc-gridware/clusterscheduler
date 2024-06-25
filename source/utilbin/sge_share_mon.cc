@@ -185,7 +185,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
 
 static void
-usage(void)
+usage()
 {
       fprintf(stderr, "%s sge_share_mon [-cdfhilmnorsux] [node_names ...]\n", MSG_USAGE); 
       fprintf(stderr, "\n" );

@@ -504,7 +504,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
 *  RESULT
 *     lEnumeration* - enumeration 
 ******************************************************************************/
-lEnumeration *lWhatAll(void) {
+lEnumeration *lWhatAll() {
    lEnumeration *ep;
    int error_status;
 

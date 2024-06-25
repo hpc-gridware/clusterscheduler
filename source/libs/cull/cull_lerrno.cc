@@ -182,7 +182,7 @@ const char *get_lerror_string(int nr) {
    return "";
 }
 
-int lerror(void) {
+int lerror() {
    const char *errorText = nullptr;
 
    DENTER(TOP_LAYER);

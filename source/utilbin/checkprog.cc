@@ -43,7 +43,7 @@
 #include "uti/sge_smf.h"
 
 void sge_exit_wrapper(int);
-void usage(void);
+void usage();
 int main(int, char *[]);
 
 /*----------------------------------------------------------------------
@@ -57,7 +57,7 @@ int i
 }
    
 /*----------------------------------------------------------------------*/
-void usage_checkprog(void)
+void usage_checkprog()
 {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGECHECKPROG);
    /*fprintf(stderr, "check the first 8 letters of process basename\n\n");
@@ -68,7 +68,7 @@ void usage_checkprog(void)
 }
 
 /*----------------------------------------------------------------------*/
-void usage_getprogs(void)
+void usage_getprogs()
 {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGEGETPROGS );
    /*

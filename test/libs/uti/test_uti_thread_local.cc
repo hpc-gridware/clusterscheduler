@@ -56,7 +56,7 @@ void free_local_storage(void *data) {
    free(data);
 }
 
-void thread_work(void) {
+void thread_work() {
    int i;
 
    for (i = 0; i < 2; i++) {

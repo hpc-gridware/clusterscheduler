@@ -66,7 +66,7 @@ void var_list_set_sge_u32(lList **varl, const char *name, u_long32 value);
 
 void var_list_set_sharedlib_path(lList **varl);
 
-const char *var_get_sharedlib_path_name(void);
+const char *var_get_sharedlib_path_name();
 
 void var_list_remove_prefix_vars(lList **varl, const char *prefix);
 

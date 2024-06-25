@@ -68,7 +68,7 @@ struct qstat_env_str {
    
    bool need_queues;
    
-   int (*shut_me_down)(void);
+   int (*shut_me_down)();
    u_long32 global_showjobs;
    u_long32 global_showqueues;
    

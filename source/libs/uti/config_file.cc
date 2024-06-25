@@ -314,7 +314,7 @@ char *search_nonone_conf_val(const char *name) {
 }
 
 /**************************************************/
-void delete_config(void) {
+void delete_config() {
    config_entry *next;
 
    while (config_list) {

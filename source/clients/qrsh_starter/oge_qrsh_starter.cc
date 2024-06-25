@@ -329,7 +329,7 @@ static int readConfig(const char *jobdir)
 *     changeDirectory() -- change to directory named in job config
 *
 *  SYNOPSIS
-*     static int changeDirectory(void) 
+*     static int changeDirectory() 
 *
 *  FUNCTION
 *     Reads the target working directory for a qrsh job from the jobs 
@@ -343,7 +343,7 @@ static int readConfig(const char *jobdir)
 *     Interactive/qrsh/readConfig()
 *
 *******************************************************************************/
-static int changeDirectory(void) 
+static int changeDirectory()
 {
    char *cwd = nullptr;
 

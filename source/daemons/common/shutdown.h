@@ -33,5 +33,5 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void starting_up(void);
+void starting_up();
 void sge_shutdown(int i);

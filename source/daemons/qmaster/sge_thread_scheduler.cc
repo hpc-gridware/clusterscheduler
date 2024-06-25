@@ -312,7 +312,7 @@ sge_scheduler_initialize(lList **answer_list) {
 *     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread 
 *
 *  SYNOPSIS
-*     void sge_scheduler_cleanup_thread(void) 
+*     void sge_scheduler_cleanup_thread() 
 *
 *  FUNCTION
 *     Cleanup the scheduler thread. 

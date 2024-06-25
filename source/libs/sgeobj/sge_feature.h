@@ -62,14 +62,14 @@ typedef struct {
 } featureset_names_t;            
 
 void    feature_set_already_read_from_file(int i);
-int     feature_get_already_read_from_file(void);
-lList** feature_get_master_featureset_list(void);
+int     feature_get_already_read_from_file();
+lList** feature_get_master_featureset_list();
 
 
-void            feature_initialize(void);
+void            feature_initialize();
 int             feature_initialize_from_string(const char *mode, lList **answer_list);
 void            feature_activate(feature_id_t id);
 const char*     feature_get_featureset_name(feature_id_t id);
-feature_id_t    feature_get_active_featureset_id(void);
+feature_id_t    feature_get_active_featureset_id();
 bool            feature_is_enabled(feature_id_t id);
 const char*     feature_get_product_name(featureset_product_name_id_t style, dstring *buffer);

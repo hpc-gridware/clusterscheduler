@@ -35,10 +35,10 @@
 
 
 int add_signal(int signal);
-int get_signal(void);
+int get_signal();
 int pending_sig(int sig);
-int get_n_sigs(void);
-void clear_queued_signals(void);
-void report_signal_queue(void);
+int get_n_sigs();
+void clear_queued_signals();
+void report_signal_queue();
 
 int shepherd_sys_str2signal(char *override_signal);

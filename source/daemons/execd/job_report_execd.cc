@@ -68,7 +68,7 @@ void sge_set_flush_jr_flag(bool value) {
    flush_jr = value;
 }
 
-bool sge_get_flush_jr_flag(void) {
+bool sge_get_flush_jr_flag() {
    return flush_jr;
 }
 
@@ -448,7 +448,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
    }
 }
 
-bool check_for_queue_limits(void)
+bool check_for_queue_limits()
 {
    bool ret = false;
 

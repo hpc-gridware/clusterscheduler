@@ -69,9 +69,9 @@
 
 /* examples for retrieving information from SGE's master lists */
 static void print_load_value(lListElem *host, const char *name, const char *format);
-static void get_cluster_info(void);
-static void get_workload_info(void);
-static void get_policy_info(void);
+static void get_cluster_info();
+static void get_workload_info();
+static void get_policy_info();
 
 /* implementation of a simple job scheduler */
 static sge_callback_result remove_finished_job(sge_evc_class_t *evc, 

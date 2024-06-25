@@ -144,7 +144,7 @@ static void set_verify_func(sge_csp_path_class_t *thiz, cl_ssl_verify_func_t fun
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value);
 
-static bool is_daemon(void) {
+static bool is_daemon() {
    const char *progname = component_get_component_name();
    if (progname != nullptr) {
       if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) ||

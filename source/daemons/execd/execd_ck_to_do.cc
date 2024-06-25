@@ -99,7 +99,7 @@ extern volatile int jobs_to_start;
 extern lList *jr_list;
 
 #ifdef COMPILE_DC
-static void notify_ptf(void);
+static void notify_ptf();
 static void notify_ptf()
 {
    lListElem *jep;

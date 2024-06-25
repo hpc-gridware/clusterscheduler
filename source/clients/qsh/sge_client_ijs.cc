@@ -171,7 +171,7 @@ void signal_handler(int sig)
 *     set_signal_handlers() -- set all signal handlers
 *
 *  SYNOPSIS
-*     static void set_signal_handlers(void)
+*     static void set_signal_handlers()
 *
 *  FUNCTION
 *     Sets all signal handlers. Doesn't overwrite SIG_IGN and therefore
@@ -184,7 +184,7 @@ void signal_handler(int sig)
 *
 *  SEE ALSO
 *******************************************************************************/
-void set_signal_handlers(void)
+void set_signal_handlers()
 {
    struct sigaction old_handler, new_handler;
    memset(&old_handler, 0, sizeof(old_handler));

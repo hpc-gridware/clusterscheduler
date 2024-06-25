@@ -77,7 +77,7 @@ lListElem *
 hgroup_list_locate(const lList *this_list, const char *group);
 
 lList **
-hgroup_list_get_master_list(void);
+hgroup_list_get_master_list();
 
 bool
 hgroup_list_exists(const lList *this_list, lList **answer_list,

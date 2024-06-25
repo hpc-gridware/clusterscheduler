@@ -71,4 +71,4 @@ int sge_get_max_fd();
 
 int sge_dup_fd_above_stderr(int *fd);
 
-int sge_occupy_first_three(void);
+int sge_occupy_first_three();

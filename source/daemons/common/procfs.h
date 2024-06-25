@@ -36,8 +36,8 @@
 
 #include "err_trace.h"
 
-int pt_open(void);
-void pt_close(void);
+int pt_open();
+void pt_close();
 int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time);
 
 #if defined(LINUX) || defined(SOLARIS)
@@ -46,7 +46,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig,
 #endif
 
 #if defined(LINUX)
-int groups_in_proc (void);
+int groups_in_proc ();
 #endif
 
 #endif

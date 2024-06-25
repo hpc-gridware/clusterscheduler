@@ -145,7 +145,7 @@ static const char *result_category[] = { nullptr,
 *     MT-NOTE: test_create_access() is not MT safe 
 *
 *******************************************************************************/
-static lList *test_create_access(void)
+static lList *test_create_access()
 {
    lList *access_list = nullptr;
 
@@ -213,7 +213,7 @@ static lList *test_create_project(const char *project)
    return project_list;
 }
 
-static lList *test_create_rqs(void)
+static lList *test_create_rqs()
 {
    lList* rqs_list = lCreateList("my_rqs", RQS_Type);
    lListElem* rqs;

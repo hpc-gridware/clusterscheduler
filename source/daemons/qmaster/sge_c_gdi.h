@@ -68,7 +68,7 @@ typedef int (*writer_func_t)(
 );
 
 /* allows to retrieve a master list */
-typedef lList **(*getMasterList)(void);
+typedef lList **(*getMasterList)();
 
 typedef int (*on_success_func_t)(
         lListElem *ep,       /* new modified and already spooled element */
@@ -107,7 +107,7 @@ int
 sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
                         const char *ruser, const char *rhost, int sub_command, lList **ppList, monitoring_t *monitor);
 
-void sge_clean_lists(void);
+void sge_clean_lists();
 
 /* EB: TODO: CLEANUP: should be replaced with sge_gdi_packet_verify_version() */
 int verify_request_version(lList **alpp, u_long32 version, char *host, char *commproc, int id);

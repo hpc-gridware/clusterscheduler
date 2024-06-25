@@ -232,7 +232,7 @@ void sge_prof_set_enabled(bool enabled) {
 *     prof_thread_local_once_init() -- inititalizes the profiling array 
 *
 *  SYNOPSIS
-*     void prof_thread_local_once_init(void) 
+*     void prof_thread_local_once_init() 
 *
 *  FUNCTION
 *     Initializes the profiling array.
@@ -258,7 +258,7 @@ static void prof_thread_local_once_init() {
 }
 
 static void
-prof_mt_init(void) {
+prof_mt_init() {
    pthread_once(&prof_once, prof_thread_local_once_init);
 }
 
@@ -329,7 +329,7 @@ bool prof_set_level_name(prof_level level, const char *name, dstring *error) {
 *     prof_is_active() -- is profiling active?
 *
 *  SYNOPSIS
-*     bool prof_is_active(void) 
+*     bool prof_is_active() 
 *
 *  FUNCTION
 *     Returns true, if profiling is active, else false.
@@ -1599,7 +1599,7 @@ static void init_array_first() {
 *     init_thread_info() -- mallocs memory for the thread_info_t array 
 *
 *  SYNOPSIS
-*     void init_thread_info(void) 
+*     void init_thread_info() 
 *
 *  FUNCTION
 *     mallocs memory for thread_info_t array (thread name/id mapping) 
@@ -1783,7 +1783,7 @@ int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
 *     sge_prof_cleanup() -- frees the profiling array 
 *
 *  SYNOPSIS
-*     void sge_prof_cleanup(void) 
+*     void sge_prof_cleanup() 
 *
 *  FUNCTION
 *     frees the profiling array
@@ -1932,7 +1932,7 @@ static int get_prof_info_thread_id(pthread_t thread_num) {
 *
 *  SYNOPSIS
 *     void 
-*     thread_start_stop_profiling(void) 
+*     thread_start_stop_profiling() 
 *
 *  FUNCTION
 *     Checks if profiling has been enabled for the current thread.

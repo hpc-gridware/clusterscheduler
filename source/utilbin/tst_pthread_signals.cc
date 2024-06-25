@@ -55,12 +55,12 @@ typedef struct {
 static control_block_t cb = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0, 0 };
 
 
-static void  incr_thrd_cnt(void);
+static void  incr_thrd_cnt();
 static void* signal_emitter(void*);
 static void* signal_waiter(void*);
-static void  ignore_signals(void);
-static void  reap_thrds(void);
-static int   should_quit(void);
+static void  ignore_signals();
+static void  reap_thrds();
+static int   should_quit();
 
 
 /****** /utilbin/tst_pthread_signals/main() ************************************
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 *     incr_thrd_cnt() -- increment thread count 
 *
 *  SYNOPSIS
-*     static void incr_thrd_cnt(void) 
+*     static void incr_thrd_cnt() 
 *
 *  FUNCTION
 *     Increment number of active threads. The so called 'main thread' is NOT
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 *     utilbin/tst_pthread_signals/reap_thrds()
 *
 *******************************************************************************/
-static void incr_thrd_cnt(void)
+static void incr_thrd_cnt()
 {
    pthread_mutex_lock(&cb.mtx);
    cb.cntr++;
@@ -200,7 +200,7 @@ static void* signal_emitter(void* anArg)
 *     should_quit() -- should thread quit? 
 *
 *  SYNOPSIS
-*     static int should_quit(void) 
+*     static int should_quit() 
 *
 *  FUNCTION
 *     Determine if thread should quit. Lock control block mutex. Inspect quit
@@ -218,7 +218,7 @@ static void* signal_emitter(void* anArg)
 *     MT-NOTE: should_quit() is MT safe. 
 *
 *******************************************************************************/
-static int should_quit(void)
+static int should_quit()
 {
    int res = FALSE;
 
@@ -314,7 +314,7 @@ static void* signal_waiter(void* anArg)
 *     ignore_signals() -- ignore signals 
 *
 *  SYNOPSIS
-*     static void ignore_signals(void) 
+*     static void ignore_signals() 
 *
 *  FUNCTION
 *     Ignore all signals, which 'signal_waiter()' should not recognize.
@@ -329,7 +329,7 @@ static void* signal_waiter(void* anArg)
 *     MT-NOTE: ignore_signals() is NOT MT safe. 
 *
 *******************************************************************************/
-static void ignore_signals(void)
+static void ignore_signals()
 {
    struct sigaction act;
 
@@ -359,7 +359,7 @@ static void ignore_signals(void)
 *     reap_thrds() -- reap threads 
 *
 *  SYNOPSIS
-*     static void reap_thrds(void) 
+*     static void reap_thrds() 
 *
 *  FUNCTION
 *     Reap threads. Lock control block mutex. Set quit flag to true. If there
@@ -376,7 +376,7 @@ static void ignore_signals(void)
 *     MT-NOTE: reap_thrds() must be called from within a single thread only.
 *
 *******************************************************************************/
-static void reap_thrds(void)
+static void reap_thrds()
 {
    printf("reap_thrds: start to reap threads\n");
 

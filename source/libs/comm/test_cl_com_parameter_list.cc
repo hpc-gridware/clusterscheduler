@@ -43,7 +43,7 @@
 
 #include "uti/sge_stdlib.h"
 
-extern int main(void) {
+extern int main() {
    int retval;
    const char *param2 = "param2";
    const char *param3 = "param3";

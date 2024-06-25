@@ -268,7 +268,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 *     sge_setup_job_resend() -- Setup job resend events.
 *
 *  SYNOPSIS
-*     void sge_setup_job_resend(void) 
+*     void sge_setup_job_resend() 
 *
 *  FUNCTION
 *     Register a job resend event for each job or array task which does have a
@@ -556,7 +556,7 @@ qmaster_init() {
 *     communication_setup() -- set up communication
 *
 *  SYNOPSIS
-*     static void communication_setup(void) 
+*     static void communication_setup() 
 *
 *  FUNCTION
 *     Initialize qmaster communication. 
@@ -665,7 +665,7 @@ communication_setup() {
 *     is_qmaster_already_running() -- is qmaster already running 
 *
 *  SYNOPSIS
-*     static bool is_qmaster_already_running(void) 
+*     static bool is_qmaster_already_running() 
 *
 *  FUNCTION
 *     Check, whether there is running qmaster already.
@@ -1314,7 +1314,7 @@ static void debit_all_jobs_from_qs() {
 *     init_categories() -- Initialize usersets/projects wrts categories
 *
 *  SYNOPSIS
-*     static void init_categories(void)
+*     static void init_categories()
 *
 *  FUNCTION
 *     Initialize usersets/projects wrts categories.

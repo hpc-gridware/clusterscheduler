@@ -107,7 +107,7 @@ static struct dirent *dent;
 
 #if defined(LINUX)
 
-int groups_in_proc (void) 
+int groups_in_proc () 
 {
    char buf[1024];
    FILE* fd = (FILE*) nullptr;
@@ -372,12 +372,12 @@ FCLOSE_ERROR:
    DRETURN_VOID;
 }
 
-int pt_open(void)
+int pt_open()
 {
    cwd = opendir(PROC_DIR);
    return !cwd;
 }
-void pt_close(void)
+void pt_close()
 {
    closedir(cwd);
 }

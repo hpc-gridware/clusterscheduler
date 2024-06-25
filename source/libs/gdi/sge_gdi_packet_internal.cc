@@ -305,7 +305,7 @@ sge_gdi_packet_broadcast_that_handled(sge_gdi_packet_class_t *packet)
 *     get_gdi_retries_value() -- get commlib parameter list value "gdi_retries"
 *
 *  SYNOPSIS
-*     static int get_gdi_retries_value(void) 
+*     static int get_gdi_retries_value() 
 *
 *  FUNCTION
 *     Returns the nr of retries on synchron receive retries when getting a
@@ -337,7 +337,7 @@ static int get_gdi_retries_value() {
 *     get_cl_ping_value() -- get commlib parameter list value "cl_ping"
 *
 *  SYNOPSIS
-*     static bool get_cl_ping_value(void) 
+*     static bool get_cl_ping_value() 
 *
 *  FUNCTION
 *     Returns the value of the "cl_ping" commlib parameter. The value is true

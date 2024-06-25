@@ -193,7 +193,7 @@ static gdi_object_t gdi_object[] = {
 
 /* *INDENT-ON* */
 
-void sge_clean_lists(void) {
+void sge_clean_lists() {
    int i = 0;
 
    for (; gdi_object[i].target != 0; i++) {

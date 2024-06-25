@@ -130,7 +130,7 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
 *     sge_daemonize_qmaster() -- Turn qmaster into a daemon. 
 *
 *  SYNOPSIS
-*     static void sge_daemonize_qmaster(void) 
+*     static void sge_daemonize_qmaster() 
 *
 *  FUNCTION
 *     If the environment variable 'SGE_ND' is set, the functions does return
@@ -216,7 +216,7 @@ sge_daemonize_qmaster() {
 *     sge_become_admin_user() -- Become admin user. 
 *
 *  SYNOPSIS
-*     static void sge_become_admin_user(void) 
+*     static void sge_become_admin_user() 
 *
 *  FUNCTION
 *     Get admin user from bootstrap configuration. Set admin user and change

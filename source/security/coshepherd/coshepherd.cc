@@ -51,7 +51,7 @@
 
 #include "msg_common.h"
 
-static void show_coshepherd_version(void) {
+static void show_coshepherd_version() {
 
    printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_coshepherd");

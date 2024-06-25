@@ -33,9 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int delete_qrsh_pid_file(void);
+int delete_qrsh_pid_file();
 int qlogin_starter(const char *cwd, char *daemon, char **env);
 int write_to_qrsh(const char *data);
 void write_exit_code_to_qrsh(int exit_code);
 int get_exit_code_of_qrsh_starter(int* exit_code);
-const char *get_error_of_qrsh_starter(void);
+const char *get_error_of_qrsh_starter();

@@ -343,7 +343,7 @@ event_master_control_t Event_Master_Control = {
    0                                /* transaction_key */
 };
 
-static void       init_send_events(void); 
+static void       init_send_events(); 
 static void       flush_events(lListElem*, int);
 static void       total_update(lListElem*);
 static void       build_subscription(lListElem*);
@@ -365,7 +365,7 @@ static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
 static lListElem* get_event_client(u_long32 id);
 static u_long32   allocate_new_dynamic_id(lList **answer_list);
 static void       free_dynamic_id(lList **answer_list, u_long32 id);
-static void       set_flush(void);
+static void       set_flush();
 
 static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock);
 
@@ -985,7 +985,7 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
 *
 *******************************************************************************/
 u_long32
-sge_get_max_dynamic_event_clients(void) {
+sge_get_max_dynamic_event_clients() {
    u_long32 actual_value = 0;
 
    DENTER(TOP_LAYER);
@@ -1792,7 +1792,7 @@ sge_deliver_events_immediately(u_long32 event_client_id)
 *     sge_resync_schedd() -- resync schedd 
 *
 *  SYNOPSIS
-*     int sge_resync_schedd(void) 
+*     int sge_resync_schedd() 
 *
 *  FUNCTION
 *     Does a total update (send all lists) to schedd and outputs an error
@@ -1838,7 +1838,7 @@ sge_resync_schedd(monitoring_t *monitor)
 *     sge_event_master_init() -- event master initialization
 *
 *  SYNOPSIS
-*     static void sge_event_master_init(void) 
+*     static void sge_event_master_init() 
 *
 *  FUNCTION
 *     Initialize the event master control structure. Initialize permanent
@@ -1855,7 +1855,7 @@ sge_resync_schedd(monitoring_t *monitor)
 *
 *******************************************************************************/
 void
-sge_event_master_init(void) {
+sge_event_master_init() {
    DENTER(TOP_LAYER);
 
    Event_Master_Control.clients = lCreateListHash("EV_Clients", EV_Type, true);
@@ -1889,7 +1889,7 @@ sge_event_master_init(void) {
 *
 *******************************************************************************/
 static void
-init_send_events(void) {
+init_send_events() {
    DENTER(TOP_LAYER);
 
    memset(SEND_EVENTS, false, sizeof(bool) * sgeE_EVENTSIZE);
@@ -1925,7 +1925,7 @@ init_send_events(void) {
 *     sge_event_master_wait_next() -- waits for a weakup
 *
 *  SYNOPSIS
-*     void sge_event_master_wait_next(void) 
+*     void sge_event_master_wait_next() 
 *
 *  FUNCTION
 *     waits for a weakup
@@ -2028,7 +2028,7 @@ remove_event_client(lListElem **client, int event_client_id, bool lock_event_mas
 *     sge_event_master_send_events() -- send events to event clients 
 *
 *  SYNOPSIS
-*     static void send_events(void) 
+*     static void send_events() 
 *
 *  FUNCTION
 *     Loop over all event clients and send events due. If an event client did
@@ -3183,7 +3183,7 @@ static lListElem *get_event_client(u_long32 id)
 *     allocate_new_dynamic_id() -- gets a new dynamic id
 *
 *  SYNOPSIS
-*     static u_long32 allocate_new_dynamic_id(void)
+*     static u_long32 allocate_new_dynamic_id()
 *
 *  FUNCTION
 *     Returns the next available dynamic event client id.  The id returned will
@@ -3237,7 +3237,7 @@ free_dynamic_id(lList **answer_list, u_long32 id)
 *     sge_commit() -- Commit the queued events
 *
 *  SYNOPSIS
-*     bool sge_commit(void)
+*     bool sge_commit()
 *
 *  FUNCTION
 *     Sends any events that this thread currently has queued and clears the
@@ -3249,7 +3249,7 @@ free_dynamic_id(lList **answer_list, u_long32 id)
 *  NOTE
 *     MT-NOTE: sge_commit is thread safe.
 *******************************************************************************/
-bool sge_commit(void)
+bool sge_commit()
 {
    bool ret = true;
 
@@ -3329,7 +3329,7 @@ static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock)
 *     set_flush() -- Flush all events
 *
 *  SYNOPSIS
-*     void set_flush(void)
+*     void set_flush()
 *
 *  FUNCTION
 *     Flushes all pending events
@@ -3337,7 +3337,7 @@ static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock)
 *  NOTE
 *     MT-NOTE: set_flush is thread safe.
 *******************************************************************************/
-static void set_flush(void)
+static void set_flush()
 {
    DENTER(TOP_LAYER);
 
@@ -3370,7 +3370,7 @@ static void set_flush(void)
 *     MT-NOTE: sge_set_commit_required is thread safe.  Transactional event
 *     processing is handled for each thread individually.
 *******************************************************************************/
-void sge_set_commit_required(void)
+void sge_set_commit_required()
 {
    DENTER(TOP_LAYER);
 

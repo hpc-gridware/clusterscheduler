@@ -37,7 +37,7 @@
 
 #include "uti/sge_uidgid.h"
 
-int check_get_buffer_size(void) {
+int check_get_buffer_size() {
    int ret = EXIT_SUCCESS;
    int size;
 

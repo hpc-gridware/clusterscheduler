@@ -52,8 +52,8 @@ typedef struct {
 static int do_utilization_test(lListElem *cr, test_array_t *ta);
 static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result);
 
-static int test_normal_utilization(void);
-static int test_extensive_utilization(void);
+static int test_normal_utilization();
+static int test_extensive_utilization();
 
 int main(int argc, char *argv[]) 
 {
@@ -127,7 +127,7 @@ static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result)
    return ret;
 }
 
-static int test_normal_utilization(void)
+static int test_normal_utilization()
 {
    /*
     *  8-|          --------    ----
@@ -176,7 +176,7 @@ static int test_normal_utilization(void)
    return ret;
 }
 
-static int test_extensive_utilization(void) {
+static int test_extensive_utilization() {
    int ret = 0;
    
    lListElem *cr = lCreateElem(RUE_Type);

@@ -88,7 +88,7 @@ static int get_admin_user(uid_t *, gid_t *);
 *                                     is superuser (root/Administrator)
 *
 *  SYNOPSIS
-*     int sge_is_start_user_superuser(void)
+*     int sge_is_start_user_superuser()
 *
 *  FUNCTION
 *     Check the real user id to determine if it is the superuser. If so, return
@@ -192,7 +192,7 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
 *     sge_switch2admin_user() -- Set euid/egid to admin uid/gid
 *
 *  SYNOPSIS
-*     int sge_switch2admin_user(void)
+*     int sge_switch2admin_user()
 *
 *  FUNCTION
 *     Set euid/egid to admin uid/gid. Silently ignore if our uid
@@ -268,7 +268,7 @@ DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getu
 *     sge_switch2start_user() -- set euid/egid to start uid/gid
 *
 *  SYNOPSIS
-*     int sge_switch2start_user(void)
+*     int sge_switch2start_user()
 *
 *  FUNCTION
 *     Set euid/egid to the uid/gid of that user which started the
@@ -620,7 +620,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
 *     get_pw_buffer_size() -- get the buffer size required for getpw*_r
 *
 *  SYNOPSIS
-*     int get_pw_buffer_size(void) 
+*     int get_pw_buffer_size() 
 *
 *  FUNCTION
 *     Returns the buffer size required for functions like getpwnam_r.
@@ -658,7 +658,7 @@ get_pw_buffer_size() {
 *     get_group_buffer_size() -- get the buffer size required for getgr*_r
 *
 *  SYNOPSIS
-*     int get_group_buffer_size(void) 
+*     int get_group_buffer_size() 
 *
 *  FUNCTION
 *     Returns the buffer size required for functions like getgrnam_r.
@@ -1198,7 +1198,7 @@ get_admin_user(uid_t *theUID, gid_t *theGID) {
 *     get_admin_user_name() -- Returns the admin user name
 *
 *  SYNOPSIS
-*     const char* get_admin_user_name(void) 
+*     const char* get_admin_user_name() 
 *
 *  FUNCTION
 *     Returns the admin user name. 
@@ -1222,7 +1222,7 @@ get_admin_user_name() {
 *     sge_has_admin_user() -- is there a admin user configured and set
 *
 *  SYNOPSIS
-*     bool sge_has_admin_user(void) 
+*     bool sge_has_admin_user() 
 *
 *  FUNCTION
 *     Returns if there is a admin user setting configured and set. 

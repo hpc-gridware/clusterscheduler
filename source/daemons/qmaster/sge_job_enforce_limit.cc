@@ -70,7 +70,7 @@
 #include "msg_qmaster.h"
 
 static bool
-is_module_enabled(void) {
+is_module_enabled() {
    static bool old_setting = false;
    bool ret = mconf_get_enable_enforce_master_limit();
 
@@ -249,7 +249,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 *     sge_add_check_limit_trigger() -- check limits for unknown host 
 *
 *  SYNOPSIS
-*     void sge_add_check_limit_trigger(void) 
+*     void sge_add_check_limit_trigger() 
 *
 *  FUNCTION
 *     Add a timer thread event trigger which will be fired when the
@@ -277,7 +277,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 *     qmaster/qmaster-execd/sge_job_enfoce_limit_handler() 
 *******************************************************************************/
 void
-sge_add_check_limit_trigger(void) {
+sge_add_check_limit_trigger() {
    const lList *master_host_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    u_long64 now = sge_get_gmt64();
    u_long32 max_time = 0;

@@ -49,7 +49,7 @@
 gdi_request_queue_t Master_Request_Queue;
 
 bool
-schedd_order_initialize(void) {
+schedd_order_initialize() {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -59,7 +59,7 @@ schedd_order_initialize(void) {
 }
 
 bool
-schedd_order_destroy(void) {
+schedd_order_destroy() {
    bool ret = true;
 
    DENTER(TOP_LAYER);

@@ -194,7 +194,7 @@ void serf_new_interval(u_long64 time)
 *     serf_exit() -- Closes SERF
 *
 *  SYNOPSIS
-*     void serf_exit(void) 
+*     void serf_exit() 
 *
 *  FUNCTION
 *     All operations requited to cleanly shutdown the SERF are done.
@@ -202,7 +202,7 @@ void serf_new_interval(u_long64 time)
 *  NOTES
 *     MT-NOTE: serf_exit() is MT safe 
 *******************************************************************************/
-void serf_exit(void)
+void serf_exit()
 {
    memset(&current_serf, 0, sizeof(sge_serf_t)); 
 }

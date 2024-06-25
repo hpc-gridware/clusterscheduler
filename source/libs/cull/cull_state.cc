@@ -58,7 +58,7 @@ typedef struct {
 static pthread_once_t cull_once = PTHREAD_ONCE_INIT;
 static pthread_key_t cull_state_key;
 
-static void cull_once_init(void);
+static void cull_once_init();
 
 static void cull_state_destroy(void *theState);
 
@@ -75,7 +75,7 @@ static void cull_state_init(cull_state_t *theState);
 *     Provides access to thread local storage.
 *
 ******************************************************************************/
-int cull_state_get_lerrno(void) {
+int cull_state_get_lerrno() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -85,7 +85,7 @@ int cull_state_get_lerrno(void) {
    return cull_state->lerrno;
 }
 
-const char *cull_state_get_noinit(void) {
+const char *cull_state_get_noinit() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -95,7 +95,7 @@ const char *cull_state_get_noinit(void) {
    return cull_state->noinit;
 }
 
-const lSortOrder *cull_state_get_global_sort_order(void) {
+const lSortOrder *cull_state_get_global_sort_order() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -105,7 +105,7 @@ const lSortOrder *cull_state_get_global_sort_order(void) {
    return cull_state->global_sort_order;
 }
 
-const lNameSpace *cull_state_get_name_space(void) {
+const lNameSpace *cull_state_get_name_space() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -185,7 +185,7 @@ void cull_state_set_observe_started(bool started)
    return;
 }
 
-dstring *cull_state_get_observe_dstring(void)
+dstring *cull_state_get_observe_dstring()
 {
    cull_state_t *cull_state = nullptr;
 
@@ -196,7 +196,7 @@ dstring *cull_state_get_observe_dstring(void)
    return &cull_state->observe_dstring;
 }
 
-bool cull_state_get_observe_started(void)
+bool cull_state_get_observe_started()
 {
    cull_state_t *cull_state = nullptr;
 
@@ -213,7 +213,7 @@ bool cull_state_get_observe_started(void)
 *     cull_once_init() -- One-time CULL initialization.
 *
 *  SYNOPSIS
-*     static cull_once_init(void) 
+*     static cull_once_init() 
 *
 *  FUNCTION
 *     Create access key for thread local storage. Register cleanup function.
@@ -230,7 +230,7 @@ bool cull_state_get_observe_started(void)
 *     MT-NOTE: cull_once_init() is MT safe. 
 *
 *******************************************************************************/
-static void cull_once_init(void) {
+static void cull_once_init() {
    pthread_key_create(&cull_state_key, cull_state_destroy);
    return;
 } /* cull_once_init() */

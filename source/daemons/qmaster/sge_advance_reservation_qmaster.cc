@@ -790,7 +790,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
 *     sge_init_ar_id() -- init ar id counter
 *
 *  SYNOPSIS
-*     void sge_init_ar_id(void) 
+*     void sge_init_ar_id() 
 *
 *  FUNCTION
 *     Called during startup and sets the advance reservation id counter. 
@@ -799,7 +799,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
 *     MT-NOTE: sge_init_ar_id() is MT safe 
 *******************************************************************************/
 void
-sge_init_ar_id(void) {
+sge_init_ar_id() {
    FILE *fp = nullptr;
    u_long32 ar_id = 0;
    u_long32 guess_ar_id = 0;
@@ -835,7 +835,7 @@ sge_init_ar_id(void) {
 *     guess_highest_ar_id() -- guesses the histest ar id
 *
 *  SYNOPSIS
-*     static u_long32 guess_highest_ar_id(void) 
+*     static u_long32 guess_highest_ar_id() 
 *
 *  FUNCTION
 *     Iterates over all granted advance reservations in the cluster and determines

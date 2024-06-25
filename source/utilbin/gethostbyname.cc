@@ -52,7 +52,7 @@
 #include "basis_types.h"
 #include "msg_utilbin.h"
 
-void usage(void)
+void usage()
 {
   fprintf(stderr, "Version: %s\n", GDI_VERSION);
   fprintf(stderr, "%s gethostbyname [-help|-name|-aname|-all] <name>\n",MSG_UTILBIN_USAGE);

@@ -75,10 +75,10 @@ static int inherit_environ = -1;
 /* static functions */
 static char **read_job_args(char **args, int extra_args);
 static char *parse_script_params(char **script_file);
-static void setup_environment (void);
-static bool inherit_env(void);
+static void setup_environment ();
+static bool inherit_env();
 static void start_qlogin_job(const char *shell_path);
-static void start_qrsh_job(void);
+static void start_qrsh_job();
 #if 0 /* Not currently used, but looks kinda useful... */
 static void set_inherit_env (bool inherit);
 #endif
@@ -830,7 +830,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 *     and store it in the appropriate environment, inherited or internal.
 *
 *  SYNOPSIS
-*      int sge_set_environment(void)
+*      int sge_set_environment()
 *
 *  FUNCTION
 *     This function reads the "environment" file written out by the execd and
@@ -897,7 +897,7 @@ FCLOSE_ERROR:
 *     setup_environment () -- Set up the internal environment
 *
 *  SYNOPSIS
-*     void setup_environment(void)
+*     void setup_environment()
 *
 *  FUNCTION
 *     This function initializes the variables used to store the internal
@@ -934,7 +934,7 @@ static void setup_environment()
 *     sge_get_environment () -- Get a pointer to the current environment
 *
 *  SYNOPSIS
-*     char **sge_get_environment(void)
+*     char **sge_get_environment()
 *
 *  FUNCTION
 *     This function returns a point to the current environment, inherited or
@@ -1786,7 +1786,7 @@ static void start_qlogin_job(const char *shell_path)
 *     start_qrsh_job() -- starts the "qrsh <command>" job
 *
 *  SYNOPSIS
-*     static void start_qrsh_job(void) 
+*     static void start_qrsh_job() 
 *
 *  FUNCTION
 *     Prepares the argument list and starts the qrsh <command> job, i.e.
@@ -1806,7 +1806,7 @@ static void start_qlogin_job(const char *shell_path)
 *  SEE ALSO
 *     builtin_starter/start_qlogin_job()
 *******************************************************************************/
-static void start_qrsh_job(void)
+static void start_qrsh_job()
 {
    /* TODO: RFE: Make a minimal qrsh_starter for new IJS */
    const char *sge_root = nullptr;

@@ -603,7 +603,7 @@ static int do_add_auto_user(lListElem *anUser, lList **anAnswer, monitoring_t *m
 *     sge_userprj_spool() -- updates the spooled user and projects
 *
 *  SYNOPSIS
-*     void sge_userprj_spool(void) 
+*     void sge_userprj_spool() 
 *
 *  FUNCTION
 *     The usage is only stored every 2 min. To have the acual usage stored when

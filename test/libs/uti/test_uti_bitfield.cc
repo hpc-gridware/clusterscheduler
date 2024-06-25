@@ -50,7 +50,7 @@ const unsigned int test_bf_max_size = 100;
 unsigned int test_bf_loops = 1000;
 
 static void
-test_nullpointer_actions(void) {
+test_nullpointer_actions() {
    bitfield *b1;
 
    /* bitfields of size 0 */
@@ -159,7 +159,7 @@ static void test_bitfield_bitwise_copy(const bitfield *bf) {
    copy = sge_bitfield_free(copy);
 }
 
-static void test_bitops(void) {
+static void test_bitops() {
    /* we need a fixed size and a dynamic bitfield */
    bitfield *fixed;
    bitfield *dynamic;

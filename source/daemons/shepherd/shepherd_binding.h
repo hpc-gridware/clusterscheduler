@@ -36,7 +36,7 @@
 namespace oge {
 #if defined(OGE_HWLOC)
 
-   int do_core_binding(void);
+   int do_core_binding();
 
 #endif
 }

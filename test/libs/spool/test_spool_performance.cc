@@ -118,7 +118,7 @@ static bool generate_jobs(int num)
    return true;
 }
 
-static bool update_jobs(void)
+static bool update_jobs()
 {
    lListElem *job;
    int num_total = 0;
@@ -133,7 +133,7 @@ static bool update_jobs(void)
    return true;
 }
 
-static bool spool_data(void)
+static bool spool_data()
 {
    lList *answer_list = nullptr;
    const lListElem *context;

@@ -46,7 +46,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/oge_DataStore.h"
 
-bool check_attr_str_list_find_value(void) 
+bool check_attr_str_list_find_value() 
 {
    bool ret = false;
 

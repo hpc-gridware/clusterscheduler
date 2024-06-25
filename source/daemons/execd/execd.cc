@@ -449,7 +449,7 @@ static void execd_exit_func(int i)
 *     sge_execd_register_at_qmaster() -- modify execd list at qmaster site
 *
 *  SYNOPSIS
-*     int sge_execd_register_at_qmaster(void) 
+*     int sge_execd_register_at_qmaster() 
 *
 *  FUNCTION
 *     add local execd name to SGE_EH_LIST in order to register at

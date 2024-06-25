@@ -80,4 +80,4 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
       const char *state, u_long64 start_time, u_long64 end_time, char level_char,
             const char *object_name, const char *name, double utilization);
 void serf_new_interval(u_long64 time);
-void serf_exit(void);
+void serf_exit();

@@ -43,22 +43,22 @@ static void *thread_function_1(void *anArg);
 
 static void *thread_function_2(void *anArg);
 
-static void lock_recursive(void);
+static void lock_recursive();
 
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    long p = 2;  /* min num of threads */
 
    return (int) p;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    static int i = 0;
 
    return ((i++ % 2) ? thread_function_1 : thread_function_2);
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 
@@ -76,7 +76,7 @@ static void *thread_function_1(void *anArg) {
    DRETURN((void *) nullptr);
 }
 
-static void lock_recursive(void) {
+static void lock_recursive() {
    DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);

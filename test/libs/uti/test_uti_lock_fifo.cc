@@ -56,17 +56,17 @@ void set_thread_count(int count) {
 }
 
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    long p = THREAD_COUNT;  /* max num of threads */
 
    return (int) p;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 

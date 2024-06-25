@@ -37,12 +37,12 @@ typedef int (*tShepherd_trace)(const char *format, ...);
 
 extern int foreground;      /* != 0 if we can write to stderr/out     */
 
-void shepherd_trace_init(void);
-void shepherd_trace_exit(void);
+void shepherd_trace_init();
+void shepherd_trace_exit();
 void shepherd_trace_chown(const char* job_owner);
 
-void shepherd_error_init(void);
-void shepherd_error_exit(void);
+void shepherd_error_init();
+void shepherd_error_exit();
 void shepherd_error_chown(const char* job_owner);
 
 int  shepherd_trace(const char *format, ...);
@@ -51,4 +51,4 @@ void shepherd_error_ptr(const char *text);
 void shepherd_write_exit_status( const char *exit_status );
 
 int  is_shepherd_trace_fd( int fd );
-int  count_exit_status(void);
+int  count_exit_status();

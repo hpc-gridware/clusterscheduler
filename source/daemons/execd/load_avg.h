@@ -44,15 +44,15 @@ void update_job_usage(const char *qualified_hostname);
 
 void execd_merge_load_report(u_long32 seqno);
 
-void execd_trash_load_report(void);
+void execd_trash_load_report();
 
-bool sge_get_flush_lr_flag(void);
+bool sge_get_flush_lr_flag();
 void sge_set_flush_lr_flag(bool new_val);
 
-bool sge_get_delay_job_reports_flag(void);
+bool sge_get_delay_job_reports_flag();
 void sge_set_delay_job_reports_flag(bool new_val);
 
-u_long64 sge_get_qmrestart_time(void);
+u_long64 sge_get_qmrestart_time();
 void sge_set_qmrestart_time(u_long64 qmr);
 
 void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lListElem *pe_task,

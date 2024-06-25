@@ -94,5 +94,5 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);
 bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
                            const lList *userprj_list);
 
-lListElem *getUserTemplate(void);
-lListElem *getPrjTemplate(void);
+lListElem *getUserTemplate();
+lListElem *getPrjTemplate();

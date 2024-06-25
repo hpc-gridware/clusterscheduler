@@ -283,7 +283,7 @@ static void qping_general_communication_error(const cl_application_error_list_el
    }
 }
 
-static void qping_parse_environment(void) {
+static void qping_parse_environment() {
    char* env_opt = nullptr;
    char opt_buffer[1024];
    char* opt_str = nullptr;

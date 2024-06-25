@@ -63,7 +63,7 @@ void sighandler_issue_tests(int sig) {
    do_shutdown = 1;
 }
 
-void usage(void) {
+void usage() {
    long i = 0;
    printf("usage: test_commlib_issue [ISSUE_NR]\n");
    printf("supported issues are:\n");
@@ -73,7 +73,7 @@ void usage(void) {
    }
 }
 
-int issue_2728_test(void) {
+int issue_2728_test() {
    const char *host1 = "Foo.domain.Net";
    const char *host2 = "foo.domain.net";
    const char *host3 = "notFoo";

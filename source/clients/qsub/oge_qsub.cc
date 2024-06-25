@@ -72,8 +72,8 @@ static pthread_cond_t exit_cv = PTHREAD_COND_INITIALIZER;
 static bool exited = false;
 
 static char *get_bulk_jobid_string(long job_id, int start, int end, int step);
-static void qsub_setup_sig_handlers(void);
-static void qsub_terminate(void);
+static void qsub_setup_sig_handlers();
+static void qsub_terminate();
 static void *sig_thread(void *dummy);
 static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
@@ -525,7 +525,7 @@ static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
 *     qsub_setup_sig_handlers() -- Set up the signal handlers
 *
 *  SYNOPSIS
-*     void qsub_setup_sig_handlers(void)
+*     void qsub_setup_sig_handlers()
 *
 *  FUNCTION
 *     Blocks all signals so that the signal handler thread receives them.
@@ -533,7 +533,7 @@ static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
 *  NOTES
 *     MT-NOTES: get_bulk_jobid_string() is MT safe
 *******************************************************************************/
-static void qsub_setup_sig_handlers(void)
+static void qsub_setup_sig_handlers()
 {
    sigset_t sig_set;
 
@@ -546,7 +546,7 @@ static void qsub_setup_sig_handlers(void)
 *     qsub_terminate() -- Terminates qsub
 *
 *  SYNOPSIS
-*     void qsub_terminate(void)
+*     void qsub_terminate()
 *
 *  FUNCTION
 *     Prints out messages that qsub is ending and exits JAPI.
@@ -554,7 +554,7 @@ static void qsub_setup_sig_handlers(void)
 *  NOTES
 *     MT-NOTES: qsub_terminate() is MT safe
 *******************************************************************************/
-static void qsub_terminate(void)
+static void qsub_terminate()
 {
    dstring diag = DSTRING_INIT;
    int tmp_ret;

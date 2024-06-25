@@ -80,7 +80,7 @@
 *  SEE ALSO
 *  qrsh_starter
 *******************************************************************************/
-int delete_qrsh_pid_file(void)
+int delete_qrsh_pid_file()
 {
    char *pid_file_name = nullptr;
    int ret = 1;
@@ -322,7 +322,7 @@ FCLOSE_ERROR:
 *  SYNOPSIS
 *     #include "qlogin_starter.h"
 *     const char *
-*     get_error_of_qrsh_starter(void);
+*     get_error_of_qrsh_starter();
 *
 *  FUNCTION
 *     Reads an error message that qrsh_starter may have written to the 
@@ -336,7 +336,7 @@ FCLOSE_ERROR:
 *     The returned string is dynamically allocated. It is in the responsibility
 *     of the caller to free it.
 ******************************************************************************/
-const char *get_error_of_qrsh_starter(void)
+const char *get_error_of_qrsh_starter()
 {
    char buffer[SGE_PATH_MAX];
    char *ret = nullptr;

@@ -43,7 +43,7 @@
 #include "shutdown.h"
 #include "msg_daemons_common.h"
 
-void starting_up(void)
+void starting_up()
 {
    u_long32 old_ll = log_state_get_log_level();
    dstring ds;

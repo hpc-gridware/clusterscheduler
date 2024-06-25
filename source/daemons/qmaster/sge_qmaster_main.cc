@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 *     init_sig_action_and_mask() -- initialize signal action and mask 
 *
 *  SYNOPSIS
-*     static void init_sig_action_and_mask(void)
+*     static void init_sig_action_and_mask()
 *
 *  FUNCTION
 *     Initialize signal action and mask.

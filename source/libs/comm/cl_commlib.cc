@@ -72,7 +72,7 @@ static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *t
 
 static void cl_com_default_application_debug_client_callback(int dc_connected, int debug_level);
 
-static int cl_commlib_check_callback_functions(void);
+static int cl_commlib_check_callback_functions();
 
 static int cl_commlib_check_connection_count(cl_com_handle_t *handle);
 
@@ -278,7 +278,7 @@ static int cl_message_list_remove_receive(cl_com_connection_t *c, cl_com_message
    return cl_message_list_remove_message(c->received_message_list, m, l);
 }
 
-cl_raw_list_t *cl_com_get_host_list(void) {
+cl_raw_list_t *cl_com_get_host_list() {
    cl_raw_list_t *host_list = nullptr;
    pthread_mutex_lock(&cl_com_host_list_mutex);
    host_list = cl_com_host_list;
@@ -286,7 +286,7 @@ cl_raw_list_t *cl_com_get_host_list(void) {
    return host_list;
 }
 
-cl_raw_list_t *cl_com_get_endpoint_list(void) {
+cl_raw_list_t *cl_com_get_endpoint_list() {
    cl_raw_list_t *endpoint_list = nullptr;
    pthread_mutex_lock(&cl_com_endpoint_list_mutex);
    endpoint_list = cl_com_endpoint_list;
@@ -294,7 +294,7 @@ cl_raw_list_t *cl_com_get_endpoint_list(void) {
    return endpoint_list;
 }
 
-cl_raw_list_t *cl_com_get_log_list(void) {
+cl_raw_list_t *cl_com_get_log_list() {
    cl_raw_list_t *log_list = nullptr;
    pthread_mutex_lock(&cl_com_log_list_mutex);
    log_list = cl_com_log_list;
@@ -500,7 +500,7 @@ int cl_commlib_push_application_error(cl_log_t cl_err_type, int cl_error, const 
    return retval;
 }
 
-static int cl_commlib_check_callback_functions(void) {
+static int cl_commlib_check_callback_functions() {
    /*
     * This function will call application callback functions in context
     * of application. This happens when application is calling
@@ -562,7 +562,7 @@ static int cl_commlib_check_callback_functions(void) {
 *     cl_com_setup_commlib_complete() -- check whether commlib setup was called
 *
 *  SYNOPSIS
-*     bool cl_com_setup_commlib_complete(void)
+*     bool cl_com_setup_commlib_complete()
 *
 *  FUNCTION
 *     This function returns true when cl_com_setup_commlib() was called
@@ -578,7 +578,7 @@ static int cl_commlib_check_callback_functions(void) {
 *  SEE ALSO
 *     cl_commlib/cl_com_setup_commlib()
 *******************************************************************************/
-bool cl_com_setup_commlib_complete(void) {
+bool cl_com_setup_commlib_complete() {
    bool setup_complete = false;
 
    pthread_mutex_lock(&cl_com_log_list_mutex);
@@ -593,11 +593,11 @@ bool cl_com_setup_commlib_complete(void) {
  * because the memory is malloced in cl_com_setup_commlib()
  * and freed in cl_com_cleanup_commlib()
  */
-char *cl_com_get_resolvable_hosts(void) {
+char *cl_com_get_resolvable_hosts() {
    return cl_commlib_debug_resolvable_hosts;
 }
 
-char *cl_com_get_unresolvable_hosts(void) {
+char *cl_com_get_unresolvable_hosts() {
    return cl_commlib_debug_unresolvable_hosts;
 }
 
@@ -791,7 +791,7 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
    return CL_RETVAL_OK;
 }
 
-int cl_com_cleanup_commlib(void) {
+int cl_com_cleanup_commlib() {
    int ret_val = CL_RETVAL_OK;
    cl_thread_settings_t *thread_p = nullptr;
    cl_handle_list_elem_t *elem = nullptr;
@@ -2181,7 +2181,7 @@ cl_com_handle_t *cl_com_get_handle(const char *component_name, unsigned long com
    return ret_handle;
 }
 
-cl_thread_mode_t cl_commlib_get_thread_state(void) {
+cl_thread_mode_t cl_commlib_get_thread_state() {
    return cl_com_create_threads;
 }
 
@@ -2199,7 +2199,7 @@ int cl_com_set_alias_file(const char *alias_file) {
    return ret_val;
 }
 
-int cl_com_set_alias_file_dirty(void) {
+int cl_com_set_alias_file_dirty() {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;
 
    if (cl_com_host_list != nullptr) {

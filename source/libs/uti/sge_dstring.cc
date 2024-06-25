@@ -821,7 +821,7 @@ void sge_dstring_strip_white_space_at_eol(dstring *string) {
 }
 
 #if 0 /* EB: DEBUG: */
-int main(void)
+int main()
 {
    char *s;
    dstring sb = DSTRING_INIT;    /* initialize */

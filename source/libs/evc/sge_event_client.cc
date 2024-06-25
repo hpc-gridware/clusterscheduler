@@ -890,7 +890,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
 *
 *  SYNOPSIS
 *     int 
-*     ec_is_initialized(void) 
+*     ec_is_initialized() 
 *
 *  FUNCTION
 *     Checks if the event client mechanism has been initialized
@@ -946,7 +946,7 @@ static lListElem* ec2_get_event_client(sge_evc_class_t *thiz)
 *     #include "evc/sge_event_client.h"
 *
 *     void 
-*     ec_mark4registration(void) 
+*     ec_mark4registration() 
 *
 *  FUNCTION
 *     Tells the event client mechanism, that the connection to the server
@@ -983,7 +983,7 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool ec_need_new_registration(void) 
+*     bool ec_need_new_registration() 
 *
 *  FUNCTION
 *     Function to check, if a new registration at the server is neccessary.
@@ -1058,7 +1058,7 @@ ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval) {
 *     #include "evc/sge_event_client.h"
 *
 *     int 
-*     ec_get_edtime(void) 
+*     ec_get_edtime() 
 *
 *  FUNCTION
 *     Get the interval qmaster will use to send events to the client.
@@ -1138,7 +1138,7 @@ ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) {
 *     #include "evc/sge_event_client.h"
 *
 *     int 
-*     ec_get_flush_delay(void) 
+*     ec_get_flush_delay() 
 *
 *  FUNCTION
 *     Returns the policy currently configured.
@@ -1228,7 +1228,7 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
 *     #include "evc/sge_event_client.h"
 *
 *     ev_busy_handling 
-*     ec_get_busy_handling(void) 
+*     ec_get_busy_handling() 
 *
 *  FUNCTION
 *     Returns the policy currently configured.
@@ -1406,7 +1406,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 *     #include "evc/sge_event_client.h"
 *
 *     bool 
-*     ec_register(void) 
+*     ec_register() 
 *
 *  FUNCTION
 *     Registers the event client at the event server (usually the qmaster). 
@@ -1560,7 +1560,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 *     #include "evc/sge_event_client.h"
 *
 *     int 
-*     ec_deregister(void) 
+*     ec_deregister() 
 *
 *  FUNCTION
 *     Deregister from the event server (usually the qmaster).
@@ -1833,7 +1833,7 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
 *     #include "evc/sge_event_client.h"
 *
 *     bool 
-*     ec_subscribe_all(void) 
+*     ec_subscribe_all() 
 *
 *  FUNCTION
 *     Subscribe all possible event.
@@ -1944,7 +1944,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
 *     #include "evc/sge_event_client.h"
 *
 *     bool 
-*     ec_unsubscribe_all(void) 
+*     ec_unsubscribe_all() 
 *
 *  FUNCTION
 *     Unsubscribe all possible event.
@@ -2251,7 +2251,7 @@ ec2_set_busy(sge_evc_class_t *thiz, int busy) {
 *
 *  SYNOPSIS
 *     bool 
-*     ec_get_busy(void) 
+*     ec_get_busy() 
 *
 *  FUNCTION
 *     Reads the busy state of the event client.
@@ -2329,7 +2329,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session) {
 *     ec_get_session() -- Get session key used for event filtering.
 *
 *  SYNOPSIS
-*     const char* ec_get_session(void) 
+*     const char* ec_get_session() 
 *
 *  FUNCTION
 *     Returns session key that is used in event master for event
@@ -2361,7 +2361,7 @@ static const char *ec2_get_session(sge_evc_class_t *thiz) {
 *     ec_get_id() -- Return event client id.
 *
 *  SYNOPSIS
-*     ev_registration_id ec_get_id(void) 
+*     ev_registration_id ec_get_id() 
 *
 *  FUNCTION
 *     Return event client id.
@@ -2390,7 +2390,7 @@ ec2_get_id(sge_evc_class_t *thiz) {
 *     #include "evc/sge_event_client.h"
 *
 *     static void 
-*     ec_config_changed(void) 
+*     ec_config_changed() 
 *
 *  FUNCTION
 *     Checkes whether the configuration has changes.
@@ -2478,7 +2478,7 @@ ec2_ack(sge_evc_class_t *thiz) {
 *     #include "evc/sge_event_client.h"
 *
 *     bool 
-*     ec_commit(void) 
+*     ec_commit() 
 *
 *  FUNCTION
 *     Configuration changes (subscription and/or event delivery 

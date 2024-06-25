@@ -94,4 +94,4 @@
 
 /* prototypes */
 
-int lerror(void);
+int lerror();

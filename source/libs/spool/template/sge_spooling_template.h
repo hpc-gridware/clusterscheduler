@@ -52,9 +52,9 @@
 */
 
 #ifdef SPOOLING_template
-const char *get_spooling_method(void);
+const char *get_spooling_method();
 #else
-const char *get_template_spooling_method(void);
+const char *get_template_spooling_method();
 #endif
 
 lListElem *

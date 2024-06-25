@@ -164,7 +164,7 @@ int rmon_condition(int layer, int rmon_class) {
 *     rmon_is_enabled() -- Check if monitoring is enabled. 
 *
 *  SYNOPSIS
-*     int rmon_is_enabled(void) 
+*     int rmon_is_enabled() 
 *
 *  FUNCTION
 *     Check if monitoring is enabled. Note that even if monitoring is enabled
@@ -410,7 +410,7 @@ static void mwrite(char *message, const char *thread_name, int thread_id) {
 *     set_debug_level_from_env() -- Set debug level from environment variable.
 *
 *  SYNOPSIS
-*     static int set_debug_level_from_env(void) 
+*     static int set_debug_level_from_env() 
 *
 *  FUNCTION
 *     Set debug level. Read environment variable "SGE_DEBUG_LEVEL" and use it
@@ -458,7 +458,7 @@ static int set_debug_level_from_env() {
 *     set_debug_target_from_env() -- Set debug target from environment variable.
 *
 *  SYNOPSIS
-*     static int set_debug_target_from_env(void) 
+*     static int set_debug_target_from_env() 
 *
 *  FUNCTION
 *     Set debug target. Read environment variable "SGE_DEBUG_TARGET" and use it

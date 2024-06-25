@@ -546,7 +546,7 @@ static drmaa_job_template_t *create_sleeper_job_template(int seconds,
                                                          int in_hold);
 static drmaa_job_template_t *create_exit_job_template(const char *exit_job,
                                                       int as_bulk_job);
-static void report_session_key(void);
+static void report_session_key();
 static void *submit_and_wait_thread (void *v);
 static void *submit_sleeper_thread (void *v);
 
@@ -610,7 +610,7 @@ static void free_jobids(const char *jobids[], int size)
    }
 }
 
-static void usage(void)
+static void usage()
 {
    int i;
    fprintf(stderr, "usage: test_drmaa <test_case>\n");
@@ -5137,7 +5137,7 @@ static int wait_n_jobs(int n)
    return error;
 }
 
-static void report_session_key(void) 
+static void report_session_key() 
 {
    if (is_sun_grid_engine) {
       const char *session_key = getenv("SGE_SESSION_KEY");
