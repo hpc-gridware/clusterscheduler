@@ -298,7 +298,7 @@ sge_build_job_cs_category(dstring *category_str, lListElem *job, lListElem *cat_
    /* 
     *  deadline
     */
-   sge_dstring_sprintf_append(category_str, "-dl " sge_u32, lGetUlong(job, JB_deadline));
+   sge_dstring_sprintf_append(category_str, "-dl " sge_u64, lGetUlong64(job, JB_deadline));
    /*
     * priority
     */

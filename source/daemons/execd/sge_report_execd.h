@@ -36,15 +36,15 @@
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
 
-typedef int (*report_func_type)(lList *, u_long32 now, u_long32 *next_send);
+typedef int (*report_func_type)(lList *, u_long64 now, u_long64 *next_send);
 
 typedef struct report_source {
   int type;
   report_func_type func;
-  u_long32 next_send;
+  u_long64 next_send;
 } report_source;
 
-int sge_send_all_reports(u_long32 now, int which, report_source *report_sources);
+int sge_send_all_reports(u_long64 now, int which, report_source *report_sources);
 
 int sge_add_double2load_report(lList **lpp, const char *name, double value, const char *host, const char *units);
 int sge_add_int2load_report(lList **lpp, const char *name, int value, const char *host);

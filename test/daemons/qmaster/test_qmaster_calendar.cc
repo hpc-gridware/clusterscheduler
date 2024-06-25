@@ -33,7 +33,6 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
-#include <cctype>
 #include <ctime>
 
 #include "uti/sge_time.h"
@@ -164,7 +163,7 @@ static cal_entry_t calendars[] = {
  * Test definitions
  *
  * If no state change is expected, the result has to be set to: 
- * "0,0,1, 1,0,70, 0,0,0". This coresponds to the time in sec of 0. 
+ * "0,0,1, 1,0,70, 0,0,0". This corresponds to the time in sec of 0.
  *
  * The time/date definition is: sec, min, hour, day(starting with 1), 
  * month(starting with 0) year (since 1900), 0, 0, 0.
@@ -325,7 +324,7 @@ static int test_state_change(lListElem *stateObject, u_long32 state, struct tm *
    }
    else {
       time_t now  = mktime(time);
-      time_t result = (time_t) lGetUlong(stateObject, CQU_till);
+      time_t result = sge_gmt64_to_time_t(lGetUlong64(stateObject, CQU_till));
       if (result != now) {
          ret = 1;
          printf("state list elem %d: ", elemNr);
@@ -524,9 +523,9 @@ static int test(date_entry_t *test, cal_entry_t *calendar, int test_nr)
    /* test output*/
    printf("\n==> Test Nr:     %d(%d)\n", test_nr, test->cal_nr);
    printf("==> Description: %s\n", calendar->description);
-   printf("==> Time:        %d/%d/%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n\n",
-      (test->now.tm_mon + 1),      
+   printf("==> Time:        %d.%d.%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n\n",
       test->now.tm_mday,
+      (test->now.tm_mon + 1),
       (test->now.tm_year + 1900),
    
       test->now.tm_hour,
@@ -545,7 +544,10 @@ static int test(date_entry_t *test, cal_entry_t *calendar, int test_nr)
       time_t now  = mktime(&test->now);
       lList *state_changes_list = nullptr;
 
-      if (test->state1 == (int)(current_state = calender_state_changes(destCal, &state_changes_list, &when, &now))) {
+      u_long64 when64 = sge_time_t_to_gmt64(when);
+      u_long64 now64 = sge_time_t_to_gmt64(now);
+      if (test->state1 == (int)(current_state = calender_state_changes(destCal, &state_changes_list, &when64, &now64))) {
+         when = sge_gmt64_to_time_t(when64);
          if (when == mktime(&test->result1)) {
             if ((ret = test_state_change_list(test, state_changes_list)) == 0) {
                printf("==> Test is okay\n");
@@ -629,17 +631,17 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
    lListElem *destCal = nullptr;
    struct tm *end_tm;
    struct tm res;
-   u_long32 start_time = (u_long32)mktime(&test->start_time);
-   time_t end_time = (time_t)duration_add_offset(start_time, test->duration);
+   u_long64 start_time = sge_time_t_to_gmt64(mktime(&test->start_time));
+   time_t end_time = sge_gmt64_to_time_t(duration_add_offset(start_time, sge_gmt32_to_gmt64(test->duration)));
 
    end_tm = localtime_r(&end_time, &res);
 
     /* test output*/
-   printf("\n==> Test Nr:     %d(%d)\n", test_nr, test->cal_nr);
+   printf("\n==> TF-Test Nr:  %d(%d)\n", test_nr, test->cal_nr);
    printf("==> Description: %s\n", calendar->description);
-   printf("==> Start Time:        %d/%d/%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n",
-      (test->start_time.tm_mon + 1),      
+   printf("==> Start Time:        %d.%d.%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n",
       test->start_time.tm_mday,
+      (test->start_time.tm_mon + 1),
       (test->start_time.tm_year + 1900),
    
       test->start_time.tm_hour,
@@ -649,9 +651,9 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
       test->start_time.tm_wday,
       test->start_time.tm_yday,
       (test->start_time.tm_isdst?"true":"false"));
-   printf("==> End Time:          %d/%d/%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n",
-      (end_tm->tm_mon + 1),      
+   printf("==> End Time:          %d.%d.%d %d:%d:%d  (wday:%d yday:%d Summer time: %s)\n",
       end_tm->tm_mday,
+      (end_tm->tm_mon + 1),
       (end_tm->tm_year + 1900),
    
       end_tm->tm_hour,
@@ -661,10 +663,10 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
       end_tm->tm_wday,
       end_tm->tm_yday,
       (end_tm->tm_isdst?"true":"false"));
-   printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);  
+   printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);
 
    if ((destCal = createCalObject(calendar)) != nullptr) {
-      bool result = calendar_open_in_time_frame(destCal, start_time, test->duration);
+      bool result = calendar_open_in_time_frame(destCal, start_time, sge_gmt32_to_gmt64(test->duration));
       if (test->open != result) {
          printf("wrong state for time frame: expected %d, got %d\n", test->open, result);
          ret++;

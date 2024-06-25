@@ -108,7 +108,7 @@ lList* sge_select_event_clients(const char *list_name, const lCondition *where, 
 int sge_shutdown_event_client(u_long32 aClientID, const char* anUser, uid_t anUID, lList **alpp);
 int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitoring_t *monitor);
 
-bool sge_add_event(u_long32 timestamp,
+bool sge_add_event(u_long64 timestamp,
                    ev_event type,
                    u_long32 intkey,
                    u_long32 intkey2,
@@ -117,17 +117,17 @@ bool sge_add_event(u_long32 timestamp,
                    const char *session,
                    lListElem *element);
                           
-bool sge_add_event_for_client(u_long32 aClientID,
-                              u_long32 aTimestamp,
+bool sge_add_event_for_client(u_long32 event_client_id,
+                              u_long64 timestamp,
                               ev_event type,
-                              u_long32 anIntKey1, 
-                              u_long32 anIntKey2,
-                              const char *aStrKey1,
-                              const char *aStrKey2, 
-                              const char *aSession,
+                              u_long32 intkey,
+                              u_long32 intkey2,
+                              const char *strkey,
+                              const char *strkey2,
+                              const char *session,
                               lListElem *element);
                                     
-bool sge_add_list_event(u_long32 timestamp,
+bool sge_add_list_event(u_long64 timestamp,
                         ev_event type, 
                         u_long32 intkey,
                         u_long32 intkey2,

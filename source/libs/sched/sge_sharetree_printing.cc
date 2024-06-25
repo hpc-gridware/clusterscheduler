@@ -69,7 +69,8 @@ static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static double mem, cpu, io, ltmem, ltcpu, ltio, level, total,
        lt_share, st_share, actual_share, combined_usage;
-static lUlong current_time, time_stamp, shares, job_count;
+static u_long64 current_time, time_stamp;
+static lUlong shares, job_count;
 static const char *node_name, *user_name, *project_name;
 
 static const item_t item[] = {
@@ -164,22 +165,16 @@ print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, co
          }
          break;
       case DATE_T: {
-         u_long32 t = *(u_long32 *) field->val;
+         u_long64 t = *(u_long64 *) field->val;
          if (out != nullptr) {
             if (t && format->format_times) {
-               char tc_buffer[100];
-               dstring tc_dstring;
-               char *tc;
+               DSTRING_STATIC(tc_dstr, 64);
+               const char *tc_str;
 
-               sge_dstring_init(&tc_dstring, tc_buffer, sizeof(tc_buffer));
-               tc = (char *) sge_ctime32(&t, &tc_dstring);
-               if (tc != nullptr && *tc != '\0') {
-                  /* remove trailing linefeed */
-                  tc[sge_dstring_strlen(&tc_dstring) - 1] = '\0';
-               }
-               sge_dstring_sprintf_append(out, format->str_format, tc);
+               tc_str = sge_ctime64(t, &tc_dstr);
+               sge_dstring_sprintf_append(out, format->str_format, tc_str);
             } else {
-               sge_dstring_sprintf_append(out, sge_U32CFormat, t);
+               sge_dstring_sprintf_append(out, sge_u64, t);
             }
          }
          if (writer != nullptr) {
@@ -230,8 +225,8 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          writer = new rapidjson::Writer<rapidjson::StringBuffer>(*jsonBuffer);
       }
 
-      current_time = sge_get_gmt();
-      time_stamp = user ? lGetUlong(user, UU_usage_time_stamp) : 0;
+      current_time = sge_get_gmt64();
+      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) : 0;
 
       /*
        * we want to name the Root node simply /, instead of /Root 
@@ -314,7 +309,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          if (writer != nullptr) {
             writer->StartObject();
             writer->Key("time");
-            writer->Uint64(sge_get_gmt());
+            writer->Uint64(current_time);
             writer->Key("type");
             writer->String(format->line_prefix);
          }
@@ -503,7 +498,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
 {
 
    lListElem *root;
-   u_long32 curr_time = 0;
+   u_long64 curr_time = 0;
    lList *sharetree;
 
    DENTER(TOP_LAYER);
@@ -530,7 +525,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
    calculate_share_percents(root, 1.0, lGetUlong(root, STN_shares));
 
    if (decay_usage) {
-      curr_time = sge_get_gmt();
+      curr_time = sge_get_gmt64();
    }
 
    _sge_calc_share_tree_proportions(sharetree, users, projects, nullptr, curr_time);

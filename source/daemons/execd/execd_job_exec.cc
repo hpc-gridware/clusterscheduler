@@ -666,7 +666,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    lSetUlong(jatep, JAT_next_pe_task_id, tid + 1);
 
    lSetString(petep, PET_name, "petask");
-   lSetUlong(petep, PET_submission_time, lGetUlong(petrep, PETR_submission_time));
+   lSetUlong64(petep, PET_submission_time, lGetUlong64(petrep, PETR_submission_time));
    lSetString(petep, PET_cwd, lGetString(petrep, PETR_cwd));
    lSetList(petep, PET_environment, 
             lCopyList("petask environment", lGetList(petrep, PETR_environment)));
@@ -718,7 +718,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    {
       lListElem *jr = add_job_report(jobid, jataskid, new_task_id, jep);
 
-      add_usage(jr, "submission_time", nullptr, lGetUlong(petep, PET_submission_time));
+      add_usage(jr, "submission_time", nullptr, lGetUlong64(petep, PET_submission_time));
       
       /* if we are not interested in online usage per task, suppress sending of this job report */
       if (mconf_get_sharetree_reserved_usage() && lGetBool(pe, PE_accounting_summary)) {

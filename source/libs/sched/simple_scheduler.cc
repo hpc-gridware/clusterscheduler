@@ -211,7 +211,7 @@ static void get_workload_info()
          u_long32 ja_task_id;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
-         start_time = lGetUlong(ja_task, JAT_start_time);
+         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
          if(lGetUlong(ja_task, JAT_status) != JFINISHED) {
             printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
@@ -221,7 +221,7 @@ static void get_workload_info()
       }
 
       /* for not yet started tasks, set start_time to the requested start time */
-      start_time = lGetUlong(job, JB_execution_time);
+      start_time = lGetUlong(job, JB_execution_time) / 1000000;
 
       /* output tasks without hold
        * these are the tasks to be scheduled
@@ -551,12 +551,12 @@ static void delete_some_jobs(sge_evc_class_t *evc)
     * to test the sge_ssi_job_cancel function 
     */
    lListElem *job; 
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
       lListElem *ja_task;
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
-         if((lGetUlong(ja_task, JAT_start_time) + 120) < now) {
+         if((lGetUlong64(ja_task, JAT_start_time) + sge_gmt32_to_gmt64(120)) < now) {
             char id[100];
             sprintf(id, sge_U32CFormat"." sge_U32CFormat,
                     sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));

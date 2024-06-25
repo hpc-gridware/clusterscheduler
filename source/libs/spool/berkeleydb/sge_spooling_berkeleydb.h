@@ -83,7 +83,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 
 bool
 spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-                              time_t trigger, time_t *next_trigger);
+                              u_long64 trigger, u_long64 *next_trigger);
 
 bool
 spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule, 

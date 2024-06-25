@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_job.h"
@@ -146,7 +147,7 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          const lListElem *job,
                                          lListElem *ja_task,
                                          lListElem *pe_task,
-                                         u_long32 time_stamp)
+                                         u_long64 time_stamp)
 {
    lListElem *ep;
    lListElem *obj;
@@ -176,9 +177,9 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    }
 
    ep = lAddSubStr(obj, UA_name, "submission_time", nm, UA_Type);
-   lSetDouble(ep, UA_value, lGetUlong(job, JB_submission_time));
+   lSetDouble(ep, UA_value, lGetUlong64(job, JB_submission_time));
    ep = lAddSubStr(obj, UA_name, "start_time", nm, UA_Type);
-   lSetDouble(ep, UA_value, lGetUlong(ja_task, JAT_start_time)); 
+   lSetDouble(ep, UA_value, lGetUlong64(ja_task, JAT_start_time));
    ep = lAddSubStr(obj, UA_name, "end_time", nm, UA_Type);
    lSetDouble(ep, UA_value, time_stamp);
    ep = lAddSubStr(obj, UA_name, "ru_wallclock", nm, UA_Type);

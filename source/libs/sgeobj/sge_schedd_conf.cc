@@ -45,6 +45,7 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sched/msg_schedd.h"
 
@@ -119,8 +120,8 @@
 #define MAXUJOBS                            0
 #define MAXGJOBS                            0
 #define SCHEDD_JOB_INFO                     "true"
-#define DEFAULT_DURATION                    "INFINITY" /* the default_duration and default_duration_I have to be */
-#define DEFAULT_DURATION_I                  600       /* in sync. On is the strin version of the other (based on seconds)*/
+#define DEFAULT_DURATION                    "INFINITY"     // the default_duration and default_duration_I have to be
+#define DEFAULT_DURATION_I                  600            // in sync. On is the string version of the other (based on seconds)
 #define DEFAULT_DURATION_OFFSET             60
 
 /**
@@ -816,7 +817,7 @@ static const char * get_load_adjustment_decay_time_str()
 *  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
 *
 *******************************************************************************/
-u_long32 sconf_get_load_adjustment_decay_time() 
+u_long32 sconf_get_load_adjustment_decay_time()
 {
    u_long32 uval;
    const char *time = nullptr;
@@ -3046,21 +3047,18 @@ bool sconf_validate_config_(lList **answer_list)
                                                  sizeof(tmp_error), 1, true) ) {
          if (s == nullptr) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", "not defined");
-         }   
-         else {
+         } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", tmp_error);
-         }   
+         }
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret =  false;
-      } 
-      else {
+      } else {
          /* ensure we get a non-zero/non-infinity duration default in reservation scheduling mode */
          if (max_reservation != 0 && uval == 0) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_RR_REQUIRES_DEFAULT_DURATION);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);      
             ret = false; 
-         }
-         else {
+         } else {
             pos.c_default_duration = uval;
          }
       }
@@ -3667,7 +3665,7 @@ bool sconf_get_global_load_correction(void)
    return sc_state->global_load_correction;
 }
 
-u_long32 sconf_get_default_duration(void) 
+u_long32 sconf_get_default_duration(void)
 {
    return pos.c_default_duration;
 }

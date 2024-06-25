@@ -37,7 +37,7 @@
 
 double sge_normalize_value(double value, double range_min, double range_max);
 
-void sge_do_urgency(u_long32 now, lList *running_jobs, lList *pending_jobs, 
+void sge_do_urgency(u_long64 now, lList *running_jobs, lList *pending_jobs,
                     scheduler_all_data_t *lists);
 
 int sge_job_slot_request(const lListElem *job, const lList *pe_list);

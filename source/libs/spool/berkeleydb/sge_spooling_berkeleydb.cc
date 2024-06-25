@@ -48,6 +48,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
@@ -370,7 +371,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *******************************************************************************/
 bool
 spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-                              time_t trigger, time_t *next_trigger)
+                              u_long64 trigger, u_long64 *next_trigger)
 {
    bool ret = true;
    bdb_info info;
@@ -386,7 +387,7 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
       ret = false;
 
       /* nothing can be done - but set new trigger!! */
-      *next_trigger = trigger + BERKELEYDB_MIN_INTERVAL;
+      *next_trigger = trigger + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
    } 
 
    if (ret) {

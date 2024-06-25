@@ -192,7 +192,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter);
 static int
 sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                             lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
-                            const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long32 start_time,
+                            const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long64 start_time,
                             monitoring_t *monitor, int forced, bool *deletion_time_reached);
 
 
@@ -334,7 +334,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
 
    /* do job logging */
    oge::ReportingFileWriter::create_new_job_records(nullptr, *jep);
-   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
+   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong64(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
                             *jep, nullptr, nullptr, MSG_LOG_NEWJOB);
 
    /*
@@ -371,7 +371,6 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    u_long32 step = 0;
    int alltasks = 1;
    lListElem *nxt, *job = nullptr;
-   u_long32 start_time;
    bool forced = false;
    const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
@@ -463,7 +462,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    job_list_filter(user_list_flag ? user_list : nullptr,
                    jid_flag ? jid_str : nullptr, &job_where);
 
-   start_time = sge_get_gmt();
+   u_long64 start_time = sge_get_gmt64();
    nxt = lFirstRW(master_job_list);
    while ((job = nxt)) {
       u_long32 job_number = 0;
@@ -1012,7 +1011,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
       }
    } else {
       if (force) {
-         u_long32 now = sge_get_gmt();
+         u_long64 now = sge_get_gmt64();
          const char *qualified_hostname = component_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
@@ -1065,7 +1064,7 @@ void job_mark_job_as_deleted(lListElem *j,
 
       SETBIT(JDELETED, state);
       lSetUlong(t, JAT_state, state);
-      lSetUlong(t, JAT_stop_initiate_time, sge_get_gmt());
+      lSetUlong64(t, JAT_stop_initiate_time, sge_get_gmt64());
       spool_write_object(&answer_list, spool_get_default_context(), j,
                          job_get_key(lGetUlong(j, JB_job_number), lGetUlong(t, JAT_task_number), nullptr, &buffer),
                          SGE_TYPE_JOB, true);
@@ -2062,7 +2061,7 @@ static int mod_job_attributes(
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       } else {
-         lSetUlong(new_job, JB_deadline, lGetUlong(jep, JB_deadline));
+         lSetUlong64(new_job, JB_deadline, lGetUlong64(jep, JB_deadline));
          *trigger |= MOD_EVENT;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_DEADLINETIME, sge_u32c(jobid));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2073,7 +2072,7 @@ static int mod_job_attributes(
    /* ---- JB_execution_time */
    if ((pos = lGetPosViaElem(jep, JB_execution_time, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_execution_time\n");
-      lSetUlong(new_job, JB_execution_time, lGetUlong(jep, JB_execution_time));
+      lSetUlong64(new_job, JB_execution_time, lGetUlong64(jep, JB_execution_time));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STARTTIME, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3241,7 +3240,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
          }
 
          /* we will assume this time as start time for now assignments */
-         a.now = sge_get_gmt();
+         a.now = sge_get_gmt64();
 
          /*
           * Current scheduler code expects all queue instances in a plain list. We use
@@ -3600,7 +3599,7 @@ bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
 static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const char *rhost,
                                        lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                                        const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks,
-                                       u_long32 start_time, monitoring_t *monitor, int forced,
+                                       u_long64 start_time, monitoring_t *monitor, int forced,
                                        bool *deletion_time_reached) {
    int njobs = 0;
    const lListElem *rn;
@@ -3629,7 +3628,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
     */
    rn = lFirst(ja_structure);
    do {
-      u_long32 max_job_deletion_time = mconf_get_max_job_deletion_time();
+      u_long64 max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
       int showmessage = 0;
       u_long32 enrolled_start = 0;
       u_long32 enrolled_end = 0;
@@ -3746,7 +3745,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
 
             (*deleted_tasks)++;
 
-            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED,
+            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
                                      ruser, rhost, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
             sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -3855,7 +3854,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 */
                if ((lGetUlong(tmp_task, JAT_status) & JFINISHED) ||
                    (lGetUlong(tmp_task, JAT_state) & JDELETED &&
-                    lGetUlong(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt() &&
+                    lGetUlong64(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt64() &&
                     !forced)) {
                   INFO(MSG_JOB_ALREADYDELETED_U, sge_u32c(job_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3866,7 +3865,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 * of jobs is greater than MAX_JOB_DELETION_TIME, break out of
                 * qdel and delete remaining jobs later
                 */
-               if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
+               if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
                   INFO(MSG_JOB_DISCONTTASKTRANS_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
                   *deletion_time_reached = true;
@@ -3875,7 +3874,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                   DRETURN(njobs);
                }
 
-               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
+               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
                                         MSG_LOG_DELETED);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
@@ -3916,7 +3915,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
-      if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt() - start_time) > max_job_deletion_time)) {
+      if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
          INFO(MSG_JOB_DISCONTINUEDTRANS_SU, ruser, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
          *deletion_time_reached = true;

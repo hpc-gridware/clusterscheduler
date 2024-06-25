@@ -49,11 +49,12 @@
 
 #include "cull/cull_list.h"
 
+#include "uti/sge_component.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_rmon_monitoring_level.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_component.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_daemonize.h"
 #include "sgeobj/sge_job.h"
@@ -661,7 +662,9 @@ int main(int argc, char *argv[])
          return 1;
       }
       printf("Connecting to DRM system \"%s\"\n", drm_name);
-      if (!strncmp(drm_name, "SGE", 3))
+      if (strncmp(drm_name, "SGE", 3) == 0 ||
+          strncmp(drm_name, "OCS", 3) == 0 ||
+          strncmp(drm_name, "GCS", 3) == 0)
          is_sun_grid_engine = 1;
       else
          is_sun_grid_engine = 0;
@@ -5417,7 +5420,7 @@ static void report_wrong_job_finish(const char *comment, const char *jobid, int 
    }
 }
 
-static bool extract_array_command(char *command_line, int *start, int *end, int *incr) 
+static bool extract_array_command(char *command_line, int *start, int *end, int *incr)
 {
    bool ret = false;
    char *t_option = nullptr;
@@ -5467,10 +5470,9 @@ static bool extract_array_command(char *command_line, int *start, int *end, int 
       }
 
       if (end_t_option != nullptr) {
-         strcpy(t_option, end_t_option+1);
-      }
-      else {
-         t_option = (char *)'\0';
+         sge_str_move_left(t_option, end_t_option + 1);
+      } else {
+         *t_option = '\0';
       }
    }/* end if */
    
@@ -5478,10 +5480,9 @@ static bool extract_array_command(char *command_line, int *start, int *end, int 
 
 error:
    if (end_t_option != nullptr) {
-      strcpy(t_option, end_t_option);
-   }
-   else {
-      t_option = (char *)'\0';
+      sge_str_move_left(t_option, end_t_option);
+   } else {
+      *t_option = '\0';
    }   
    *start = 1;
    *end = 1;
@@ -5489,13 +5490,6 @@ error:
    ret = false;
    fprintf(stderr, "could not parse \"%s\" for -t option\n", command_line);
 
-   if (end_t_option != nullptr) {
-      strcpy(t_option, end_t_option);
-   }
-   else {
-      t_option = (char *)'\0';
-   }   
-   
    return ret;
 }
 

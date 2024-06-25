@@ -55,8 +55,8 @@ struct _bdb_info {
    DB_ENV *          env;                 /* global database environment */
    DB **             db;                  /* global database object */
 
-   time_t            next_clear;          /* time of next logfile clear */
-   time_t            next_checkpoint;     /* time of next checkpoint */
+   u_long64            next_clear;          /* time of next logfile clear */
+   u_long64            next_checkpoint;     /* time of next checkpoint */
    bool              recover;             /* shall we recover on open? */
 };
 
@@ -303,13 +303,13 @@ bdb_get_txn(bdb_info info)
    return con->txn;
 }
 
-time_t
+u_long64
 bdb_get_next_clear(bdb_info info)
 {
    return info->next_clear;
 }
 
-time_t
+u_long64
 bdb_get_next_checkpoint(bdb_info info)
 {
    return info->next_checkpoint;
@@ -409,13 +409,13 @@ bdb_set_txn(bdb_info info, DB_TXN *txn)
 }
 
 void
-bdb_set_next_clear(bdb_info info, const time_t next)
+bdb_set_next_clear(bdb_info info, const u_long64 next)
 {
    info->next_clear = next;
 }
 
 void
-bdb_set_next_checkpoint(bdb_info info, const time_t next)
+bdb_set_next_checkpoint(bdb_info info, const u_long64 next)
 {
    info->next_checkpoint = next;
 }

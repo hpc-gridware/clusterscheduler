@@ -35,6 +35,7 @@
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_advance_reservation.h"
@@ -74,7 +75,7 @@ qrstat_report_ar_node_ulong_unknown(qrstat_report_handler_t* handler, qrstat_env
 
 static bool
 qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
-                               const char *name, u_long32 value);
+                               const char *name, u_long64 value);
 
 static bool
 qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
@@ -82,7 +83,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
 
 static bool
 qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
-                           const char *name, time_t value);
+                           const char *name, u_long64 value);
 
 static bool
 qrstat_report_ar_node_state(qrstat_report_handler_t* handler, lList **alpp,
@@ -357,13 +358,14 @@ qrstat_report_ar_node_ulong_unknown(qrstat_report_handler_t* handler, qrstat_env
 
 static bool
 qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
-                               const char *name, u_long32 value)
+                               const char *name, u_long64 value)
 {
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
-   int seconds = value % 60;
-   int minutes = ((value - seconds) / 60) % 60;
-   int hours = ((value - seconds - minutes * 60) / 3600);
+   u_long32 value32 = sge_gmt64_to_gmt32(value);
+   int seconds = value32 % 60;
+   int minutes = ((value32 - seconds) / 60) % 60;
+   int hours = ((value32 - seconds - minutes * 60) / 3600);
 
    DENTER(TOP_LAYER);
 
@@ -403,23 +405,23 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
 
 static bool
 qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
-                           const char *name, time_t value)
+                           const char *name, u_long64 value)
 {
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
-   dstring time_string = DSTRING_INIT;
+   DSTRING_STATIC(time_string, 64);
 
    DENTER(TOP_LAYER);
  
-   sge_dstring_append_time(&time_string, value, false); 
    if (handler->show_summary) {
       if (strcmp("start_time", name) == 0 || strcmp("end_time", name) == 0) {
+         sge_ctime64_short(value, &time_string);
          fprintf(out, "%-20.20s ", sge_dstring_get_string(&time_string));
       }
    } else {
+      sge_ctime64(value, &time_string);
       fprintf(out, SFN_FIRST_COLUMN" " SFN "\n", name, sge_dstring_get_string(&time_string));
    }
-   sge_dstring_free(&time_string);
 
    DRETURN(ret); 
 } 

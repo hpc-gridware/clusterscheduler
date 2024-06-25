@@ -165,7 +165,6 @@ main(int argc, char **argv) {
    int latest_heartbeat = 0;
    int ret = 0;
    int delay = 0;
-   time_t now, last;
 /*    const char *cp; */
    char err_str[MAX_STRING_SIZE];
    char shadowd_pidfile[SGE_PATH_MAX];
@@ -327,7 +326,7 @@ main(int argc, char **argv) {
 
    last_heartbeat = get_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30);
 
-   last = (time_t) sge_get_gmt(); /* set time of last check time */
+   time_t last = time(nullptr); /* set time of last check time */
 
    delay = 0;
    while (!shut_me_down) {
@@ -336,7 +335,7 @@ main(int argc, char **argv) {
       /* get current heartbeat file content */
       heartbeat = get_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30);
 
-      now = (time_t) sge_get_gmt();
+      time_t now = time(nullptr);
 
 
       /* Only check when we could read the heartbeat file at least two times

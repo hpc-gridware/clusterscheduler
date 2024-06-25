@@ -230,9 +230,7 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
 
    if (val_as_str) {
       char *p;
-      double parsed;
-
-      parsed = strtod(val_as_str, &p);
+      double parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
          ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number))); /* use default value */
          lSetDouble(usage, UA_value, val); 

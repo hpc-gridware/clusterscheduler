@@ -72,32 +72,32 @@ int sge_execd_process_messages()
    bool terminate = false;
    bool do_reconnect = false;
    int ret = CL_RETVAL_UNKNOWN;
-   unsigned long last_heard           = 0;
-   u_long32      last_alive_check     = 0;
-   u_long32      load_report_time     = 0;
-   u_long32      alive_check_interval = 0;
+   u_long64 last_heard = 0;
+   u_long64 last_alive_check = 0;
+   u_long64 load_report_time = 0;
+   u_long64 alive_check_interval = 0;
 
    DENTER(TOP_LAYER);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR);
 
    /* If we just started the execd we skip alive check */
-   last_alive_check = sge_get_gmt();
+   last_alive_check = sge_get_gmt64();
    last_heard = last_alive_check;
 
    /* calculate alive check interval based on load report time POS 1/2 
     * If modified, please also change POS 2/2
     */
-   load_report_time = mconf_get_load_report_time();
-   alive_check_interval    = SGE_EXECD_ALIVE_CHECK_DELAY;
-   if (load_report_time > SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL) {
+   load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
+   alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
+   if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
       alive_check_interval += load_report_time;
    } else {
-      alive_check_interval += SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL;
+      alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
    }
 
    while (!terminate) {
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
       struct_msg_t msg;
       char* buffer     = nullptr;
       u_long32 buflen  = 0;
@@ -153,12 +153,12 @@ int sge_execd_process_messages()
                 /* calculate alive check interval based on load report time POS 2/2 
                  * If modified, please also change POS 1/2
                  */
-               load_report_time = mconf_get_load_report_time();
-               alive_check_interval    = SGE_EXECD_ALIVE_CHECK_DELAY;
-               if (load_report_time > SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL) {
+               load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
+               alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
+               if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
                   alive_check_interval += load_report_time;
                } else {
-                  alive_check_interval += SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL;
+                  alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
                }
                break;
             case TAG_FULL_LOAD_REPORT:
@@ -215,14 +215,14 @@ int sge_execd_process_messages()
           * trigger re-read of act_qmaster_file 
           */
          if (!terminate) {
-            static u_long32 last_qmaster_file_read = 0;
+            static u_long64 last_qmaster_file_read = 0;
             
             /* fix system clock moved back situation */
             if (last_qmaster_file_read > now) {
                last_qmaster_file_read = 0;
             }
 
-            if (now - last_qmaster_file_read >= EXECD_MAX_RECONNECT_TIMEOUT) {
+            if (now - last_qmaster_file_read >= sge_gmt32_to_gmt64(EXECD_MAX_RECONNECT_TIMEOUT)) {
                /* re-read act qmaster file (max. every EXECD_MAX_RECONNECT_TIMEOUT seconds) */
                DPRINTF("re-read actual qmaster file\n");
                last_qmaster_file_read = now;
@@ -230,7 +230,7 @@ int sge_execd_process_messages()
                /* Try to re-register at qmaster */
                if (sge_execd_register_at_qmaster(true) == 0) {
                   do_reconnect = false;    /* we are reconnected */
-                  last_heard = sge_get_gmt();
+                  last_heard = sge_get_gmt64();
                   sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, true);
                   sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true);
 
@@ -264,7 +264,8 @@ int sge_execd_process_messages()
                last_heard = 0;
             }
 
-            if (sge_get_delay_job_reports_flag() && (now - sge_get_qmrestart_time() >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL)) {
+            if (sge_get_delay_job_reports_flag() &&
+                now - sge_get_qmrestart_time() >= sge_gmt32_to_gmt64(DELAYED_FINISHED_JOB_REPORTING_INTERVAL)) {
                   sge_set_delay_job_reports_flag(false);
                   sge_set_qmrestart_time(0);
                   INFO(SFNMAX, MSG_EXECD_DISABLEDELEAYDJOBREPORTING);
@@ -279,10 +280,10 @@ int sge_execd_process_messages()
 
 
                DPRINTF("*************************************** alive check *****************************************************\n");
-               DPRINTF("last_heard=%ld\n", last_heard);
+               DPRINTF("last_heard=" sge_u64 "\n", last_heard);
                DPRINTF("now=%ld\n", now);
-               DPRINTF("now - last_heard = %ld\n", now - last_heard);
-               DPRINTF("alive_check_interval=%ld\n", alive_check_interval);
+               DPRINTF("now - last_heard = " sge_u64 "\n", now - last_heard);
+               DPRINTF("alive_check_interval= " sge_u64 "\n", alive_check_interval);
 #endif
                
                /*

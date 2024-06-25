@@ -38,6 +38,60 @@
 
 #include "sge_string.h"
 
+bool test_sge_str_move_left() {
+   bool ret = true;
+
+   //const char *sge_str_move_left(char *start, char *substr);
+   char buffer[] = "123 456 789";
+   if (sge_str_move_left(nullptr, nullptr) != nullptr ||
+       sge_str_move_left(buffer, nullptr) != nullptr ||
+       sge_str_move_left(nullptr, buffer) != nullptr) {
+      fprintf(stderr, "sge_str_move_left: should return nullptr on nullptr argument\n");
+      ret = false;
+   }
+
+   if (sge_str_move_left(buffer, buffer -5) != nullptr) {
+      fprintf(stderr, "sge_str_move_left: should return nullptr on substr < start\n");
+      ret = false;
+   }
+
+   const char *result = sge_str_move_left(buffer, buffer);
+   if (result != buffer) {
+      fprintf(stderr, "sge_str_move_left: should return buffer on substr == start == buffer\n");
+      ret = false;
+   }
+   if (strcmp(result, "123 456 789") != 0) {
+      fprintf(stderr, "sge_str_move_left: substr == start == buffer didn't return unmodified buffer but \"%s\"\n", result);
+      ret = false;
+   }
+
+   result = sge_str_move_left(buffer, buffer + 4);
+   if (result != buffer ||
+       strcmp(buffer, "456 789") != 0) {
+      fprintf(stderr, "sge_str_move_left: expected \"456 789\" but got \"%s\"\n", result);
+      ret = false;
+   }
+
+   result = sge_str_move_left(buffer + 2, buffer + 4);
+   if (result != buffer + 2) {
+      fprintf(stderr, "sge_str_move_left: result should be buffer + 2: %p, but is %p\n",
+              (void *)(buffer + 2), (void *)result);
+      ret = false;
+   }
+   if (strcmp(buffer, "45789") != 0) {
+      fprintf(stderr, "sge_str_move_left: expected \"45789\" but got \"%s\"\n", result);
+      ret = false;
+   }
+
+   if (ret) {
+      printf("sge_str_move_left: succeeded");
+   } else {
+      fprintf(stderr, "sge_str_move_left: failed");
+   }
+
+   return ret;
+}
+
 int main(int argc, char *argv[]) {
    bool ret = true;
 
@@ -72,6 +126,8 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "sge_strlcat(1) failed\n");
       ret = false;
    }
+
+   ret = test_sge_str_move_left();
 
    return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }

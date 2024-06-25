@@ -64,7 +64,7 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
 
 bool 
 spool_berkeleydb_trigger(lList **answer_list, bdb_info info, 
-                         time_t trigger, time_t *next_trigger);
+                         u_long64 trigger, u_long64 *next_trigger);
 
 bool 
 spool_berkeleydb_read_list(lList **answer_list, bdb_info info,

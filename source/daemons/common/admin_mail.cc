@@ -93,7 +93,7 @@ int admail_states[MAX_SSTATE + 1] = {
 /* 35 SSTATE_HELPER_SERVICE_BEFORE_JOB */ 0,
 /* 36 SSTATE_CHECK_DAEMON_CONFIG */   0 };
 
-u_long32 admail_times[MAX_SSTATE + 1];
+u_long64 admail_times[MAX_SSTATE + 1];
 
 /*
 ** this functions reports job failures to the admin
@@ -112,7 +112,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    const char *q;
    const lListElem *ep;
    lList *lp_mail = nullptr;
-   u_long32 now;
+   u_long64 now;
    int ret;
    const char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
    int num_files = 3;
@@ -153,12 +153,12 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       q = MSG_MAIL_UNKNOWN_NAME;
    }
    if ((ep=lGetSubStr(jr, UA_name, "start_time", JR_usage))) {
-      sge_strlcpy(sge_mail_start, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_start));
+      sge_strlcpy(sge_mail_start, sge_ctime64(lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_start));
    } else {
       sge_strlcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_start));
    }
    if ((ep=lGetSubStr(jr, UA_name, "end_time", JR_usage))) {
-      sge_strlcpy(sge_mail_end, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_end));
+      sge_strlcpy(sge_mail_end, sge_ctime64(lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_end));
    } else {
       sge_strlcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_end));
    }
@@ -168,7 +168,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
 
    failed = lGetUlong(jr, JR_failed);
    general = lGetUlong(jr, JR_general_failure);
-   now = sge_get_gmt();
+   now = sge_get_gmt64();
    
    if (failed) {
       const char *err_str;
@@ -198,10 +198,11 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
             }
          }
          if ((admail_states[failed] & BIT_ADM_HOUR)) {
-            if ((now - admail_times[failed] < 3600))
+            if ((now - admail_times[failed] < sge_gmt32_to_gmt64(3600))) {
                DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d, again next hour\n", failed);
                sge_free(&administrator_mail);
                DRETURN_VOID;
+            }
          }
          admail_times[failed] = now;
       }

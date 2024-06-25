@@ -111,7 +111,8 @@ static void *thread_function_1(void *anArg) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
 
-   DPRINTF("Thread %u sleeping at %d\n", sge_locker_id(), sge_get_gmt());
+   DSTRING_STATIC(dstr, 64);
+   DPRINTF("Thread %u sleeping at %s\n", sge_locker_id(), sge_ctime64(0, &dstr));
    sleep(5);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);

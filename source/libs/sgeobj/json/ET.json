@@ -39,9 +39,9 @@
 			"name":	"timestamp",
 			"summary":	"event generation time",
 			"description":	[{
-					"line":	"Date and time (seconds since epoch) when the event was generated."
+					"line":	"Date and time (microseconds since epoch) when the event was generated."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"type",

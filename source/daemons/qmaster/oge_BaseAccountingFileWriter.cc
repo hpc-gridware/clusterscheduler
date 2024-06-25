@@ -18,13 +18,15 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "uti/sge_time.h"
+
 #include "oge_BaseAccountingFileWriter.h"
 
 namespace oge {
    void BaseAccountingFileWriter::update_config() {
       ReportingFileWriter::update_config();
       // if the flush_time changed, need to re-calculate the next_flush_time
-      auto new_config_flush_time = mconf_get_accounting_flush_time();
+      auto new_config_flush_time = sge_gmt32_to_gmt64(mconf_get_accounting_flush_time());
       update_config_flush_time(new_config_flush_time);
    }
 }

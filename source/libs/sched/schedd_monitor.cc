@@ -75,24 +75,18 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 
    if (monitor_next_run) {
       /* do logging (-tsm) */
-      time_t now;
       FILE *fp = nullptr;
-      char *time_str = nullptr;
-      char str[128];
+      DSTRING_STATIC(dstr, 64);
 
-      now = (time_t)sge_get_gmt();
-      time_str =  ctime_r(&now, str);
-      if (time_str[strlen(time_str) - 1] == '\n') {
-         time_str[strlen(time_str) - 1] = '|';
-      }
+      const char *time_str = sge_ctime64(sge_get_gmt64(), &dstr);
 
       fp = fopen(schedd_log_file, "a");
-      if (!fp) {
+      if (fp == nullptr) {
          DPRINTF("could not open schedd_log_file " SFQ "\n", schedd_log_file);
          DRETURN(-1);
       }
 
-      fprintf(fp, "%s", time_str);
+      fprintf(fp, "%s|", time_str);
       fprintf(fp, "%s\n", logstr);
       FCLOSE(fp);
    }

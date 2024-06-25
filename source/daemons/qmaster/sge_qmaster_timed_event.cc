@@ -98,7 +98,7 @@ handler_tbl_t Handler_Tbl = {
 *     u_long32 aKey1      - first numeric key 
 *     u_long32 aKey2      - second numeric key 
 *     const char* aStrKey - alphanumeric key 
-*     bool ignore_kezs    - boolean flag
+*     bool ignore_keys    - boolean flag
 *
 *  RESULT
 *     int - number of events deleted
@@ -118,7 +118,6 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    lCondition *cond = nullptr;
 
    DENTER(EVENT_LAYER);
-
 
    DPRINTF("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__, aType, aKey1, aKey2, strKey ? strKey : MSG_SMALLNULL);
 
@@ -220,17 +219,15 @@ void te_wait_empty(void) {
 *     MT-NOTE: te_wait_next() is not MT safe 
 *
 *******************************************************************************/
-void te_wait_next(te_event_t te, time_t now) {
+void te_wait_next(te_event_t te, u_long64 now) {
    DENTER(EVENT_LAYER);
-   struct timespec ts{};
 
-   ts.tv_sec = te->when;
-   ts.tv_nsec = 0;
+   struct timespec ts{};
+   sge_gmt64_to_timespec(te->when, ts);
 
    while (Event_Control.next == te->when) {
       int res = 0;
 
-      DPRINTF("%s: time:" sge_u32" next:" sge_u32" --> will wait\n", __func__, now, Event_Control.next);
       res = pthread_cond_timedwait(&Event_Control.cond_var, &Event_Control.mutex, &ts);
       if (ETIMEDOUT == res) { break; }
    }
@@ -297,7 +294,7 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *     te_new_event() -- Allocate new timed event. 
 *
 *  SYNOPSIS
-*     te_event_t te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, 
+*     te_event_t te_new_event(u_long64 aTime, te_type_t aType, te_mode_t aMode,
 *     u_long32 aKey1, u_long32 aKey2, const char* aStrKey) 
 *
 *  FUNCTION
@@ -315,7 +312,7 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *     If 'aStrKey' is not 'nullptr', the new timed event will contain a copy.
 *
 *  INPUTS
-*     time_t aTime        - event due time or interval 
+*     u_long64 aTime      - event due time or interval
 *     te_type_t aType     - event type 
 *     te_mode_t aMode     - event mode 
 *     u_long32 aKey1      - first numeric key, '0' if not used 
@@ -330,12 +327,10 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *
 *******************************************************************************/
 te_event_t
-te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u_long32 aKey2, const char *aStrKey) {
-   te_event_t ev = nullptr;
-
+te_new_event(u_long64 aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u_long32 aKey2, const char *aStrKey) {
    DENTER(EVENT_LAYER);
 
-   ev = (te_event_t) sge_malloc(sizeof(struct te_event));
+   te_event_t ev = (te_event_t) sge_malloc(sizeof(struct te_event));
 
    if (ONE_TIME_EVENT == aMode) {
       ev->when = aTime;
@@ -430,25 +425,24 @@ te_free_event(te_event_t *anEvent) {
 *******************************************************************************/
 void
 te_add_event(te_event_t anEvent) {
-   time_t when = 0;
    lListElem *le;
 
    DENTER(EVENT_LAYER);
 
    SGE_ASSERT((anEvent != nullptr));
 
-   when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (time(nullptr) + anEvent->interval);
+   u_long64 when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (sge_get_gmt64() + anEvent->interval);
 
    le = lCreateElem(TE_Type);
-   lSetUlong(le, TE_when, when);
+   lSetUlong64(le, TE_when, when);
    lSetUlong(le, TE_type, anEvent->type);
    lSetUlong(le, TE_mode, anEvent->mode);
-   lSetUlong(le, TE_interval, anEvent->interval);
+   lSetUlong64(le, TE_interval, anEvent->interval);
    lSetUlong(le, TE_uval0, anEvent->ulong_key_1);
    lSetUlong(le, TE_uval1, anEvent->ulong_key_2);
    lSetString(le, TE_sval, anEvent->str_key);
 
-   DPRINTF("%s: (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", __func__, anEvent->type,
+   DPRINTF("%s: (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", __func__, anEvent->type,
            when, anEvent->mode, anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -572,14 +566,12 @@ int te_delete_all_one_time_events(te_type_t aType) {
 *     MT-NOTE: 'te_get_when()' is MT safe. 
 *
 *******************************************************************************/
-time_t te_get_when(te_event_t anEvent) {
-   time_t res = 0;
-
+u_long64 te_get_when(te_event_t anEvent) {
    DENTER(EVENT_LAYER);
 
    SGE_ASSERT(nullptr != anEvent);
 
-   res = (time_t) anEvent->when;
+   u_long64 res = anEvent->when;
 
    DRETURN(res);
 } /* te_get_when() */
@@ -809,18 +801,18 @@ void te_shutdown(void) {
 *     MT-NOTE: It may only be called with 'Event_Control.mutex' locked!
 *
 *******************************************************************************/
-void te_check_time(time_t aTime) {
+void te_check_time(u_long64 aTime) {
    lListElem *le;
 
    DENTER(EVENT_LAYER);
 
    if (Event_Control.last > aTime) {
-      time_t delta = Event_Control.last - aTime;
+      u_long64 delta = Event_Control.last - aTime;
 
-      WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) delta);
+      WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) sge_gmt64_to_gmt32(delta));
 
       for_each_rw (le, Event_Control.list) {
-         lSetUlong(le, TE_when, (lGetUlong(le, TE_when) - delta));
+         lSetUlong64(le, TE_when, (lGetUlong64(le, TE_when) - delta));
       }
 
       Event_Control.last = aTime;
@@ -862,8 +854,8 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 
    ev = (te_event_t) sge_malloc(sizeof(struct te_event));
 
-   ev->when = (time_t) lGetUlong(aListElem, TE_when);
-   ev->interval = (time_t) lGetUlong(aListElem, TE_interval);
+   ev->when = lGetUlong64(aListElem, TE_when);
+   ev->interval = lGetUlong64(aListElem, TE_interval);
    ev->type = (te_type_t) lGetUlong(aListElem, TE_type);
    ev->mode = (te_mode_t) lGetUlong(aListElem, TE_mode);
    ev->ulong_key_1 = lGetUlong(aListElem, TE_uval0);
@@ -929,9 +921,9 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    if (RECURRING_EVENT == anEvent->mode) {
-      anEvent->when = time(nullptr) + anEvent->interval;
+      anEvent->when = sge_get_gmt64() + anEvent->interval;
 
-      DPRINTF("%s: reccuring event (t:" sge_u32" w:" sge_u32" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent));
+      DPRINTF("%s: reccuring event (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", EVENT_FRMT(anEvent));
 
       te_add_event(anEvent);
    }

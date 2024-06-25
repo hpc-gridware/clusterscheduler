@@ -331,7 +331,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               petask = lAddSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list, PET_Type);
                               lSetUlong(petask, PET_status, JRUNNING);
                               /* JG: TODO: this should be delivered from execd! */
-                              lSetUlong(petask, PET_start_time, sge_get_gmt());
+                              lSetUlong64(petask, PET_start_time, sge_get_gmt64());
                               lSetList(petask, PET_granted_destin_identifier_list, nullptr);
                               if ((ep = lAddSubHost(petask, JG_qhostname, rhost, PET_granted_destin_identifier_list,
                                                     JG_Type))) {
@@ -475,9 +475,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                                  JG_qname));
 
                            DPRINTF("trigger retry of job delivery to master execd\n");
-                           lSetUlong(jatep, JAT_start_time, 0);
+                           lSetUlong64(jatep, JAT_start_time, 0);
                            cancel_job_resend(jobid, jataskid);
-                           trigger_job_resend(sge_get_gmt(), nullptr, jobid, jataskid, 0);
+                           trigger_job_resend(sge_get_gmt64(), nullptr, jobid, jataskid, 0);
                         }
                      }
                   } else {

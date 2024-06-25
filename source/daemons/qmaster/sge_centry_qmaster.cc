@@ -555,7 +555,7 @@ void centry_redebit_consumables(const lList *centries) {
     */
    {
       lList *answer_list = nullptr;
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       /* dump all queue consumables */
       for_each_ep(cqueue, master_cqueue_list) {

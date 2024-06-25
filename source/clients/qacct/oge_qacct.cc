@@ -130,8 +130,8 @@ typedef struct {
    u_long32 taskstart;
    u_long32 taskend;
    u_long32 taskstep;
-   time_t begin_time;
-   time_t end_time;
+   u_long64 begin_time;
+   u_long64 end_time;
    lList *queue_name_list;
 } sge_qacct_options;
 
@@ -213,8 +213,8 @@ int main(int argc, char **argv)
 
    memset(&totals, 0, sizeof(totals));
    memset(&options, 0, sizeof(options));
-   options.begin_time = -1;
-   options.end_time = -1;
+   options.begin_time = U_LONG64_MAX;
+   options.end_time = U_LONG64_MAX;
 
    column_sizes.host       = strlen(MSG_HISTORY_HOST)+1;
    column_sizes.queue      = strlen(MSG_HISTORY_QUEUE)+1;
@@ -369,8 +369,8 @@ int main(int argc, char **argv)
                */
                qacct_usage(stderr);
             }
-            options.begin_time = (time_t)tmp_begin_time;
-            DPRINTF("begin is: %ld\n", options.begin_time);
+            options.begin_time = sge_gmt32_to_gmt64(tmp_begin_time);
+            DPRINTF("begin is: " sge_u64 "\n", options.begin_time);
             beginflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -389,8 +389,8 @@ int main(int argc, char **argv)
                */
                qacct_usage(stderr);
             }
-            options.end_time = (time_t)tmp_end_time;
-            DPRINTF("end is: %ld\n", options.end_time);
+            options.end_time = sge_gmt32_to_gmt64(tmp_end_time);
+            DPRINTF("end is: " sge_u64 "\n", options.end_time);
             endflag = 1; 
          } else {
             qacct_usage(stderr);
@@ -566,22 +566,26 @@ int main(int argc, char **argv)
    */
    if (!endflag) {
       if (daysflag && beginflag) {
-         options.end_time = options.begin_time + (time_t)(days*24*3600);
+         options.end_time = options.begin_time + sge_gmt32_to_gmt64(days*24*3600);
       } else {
-         options.end_time = -1; /* infty */
+         options.end_time = U_LONG64_MAX;
       }
    }
    if (!beginflag) {
       if (endflag && daysflag) {
-         options.begin_time = options.end_time - (time_t)(days*24*3600);
+         options.begin_time = options.end_time - sge_gmt32_to_gmt64(days*24*3600);
       } else if (daysflag) {
-         options.begin_time = time(nullptr) - (time_t)(days*24*3600);
+         options.begin_time = sge_get_gmt64() - sge_gmt32_to_gmt64(days*24*3600);
       } else {
-         options.begin_time = -1; /* minus infty */
+         options.begin_time = U_LONG64_MAX;
       }
    }
-   DPRINTF(" begin_time: %s", ctime(&options.begin_time));
-   DPRINTF(" end_time:   %s", ctime(&options.end_time));
+
+   if (DPRINTF_IS_ACTIVE) {
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF(" begin_time: %s\n", sge_ctime64(options.begin_time, &dstr));
+      DPRINTF(" end_time:   %s\n", sge_ctime64(options.end_time, &dstr));
+   }
 
    {
       dstring cqueue_name = DSTRING_INIT;
@@ -1371,9 +1375,7 @@ static void qacct_usage(FILE *err_fp)
 #define SHOWJOB_FLOAT_3        "%-35.34s%-13.3f\n"
 #define SHOWJOB_FLOAT_18_0     "%-35.34s%-18.0f\n"
 #define SHOWJOB_FLOAT_18_3     "%-35.34s%-18.3f\n"
-static void showjob(
-sge_rusage_type *dusage 
-) {
+static void showjob(sge_rusage_type *dusage) {
    DSTRING_STATIC(dstr_buffer, 100);
    dstring *pdstr_buffer = &dstr_buffer;
 
@@ -1401,15 +1403,15 @@ sge_rusage_type *dusage
 
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
-   printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime32(&dusage->submission_time, pdstr_buffer));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime64(dusage->submission_time, pdstr_buffer));
 
    if (dusage->start_time)
-      printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime32(&dusage->start_time, pdstr_buffer));
+      printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime64(dusage->start_time, pdstr_buffer));
    else
       printf(SHOWJOB_STRING_NO_DATA,MSG_HISTORY_SHOWJOB_STARTTIME);
 
    if (dusage->end_time)
-      printf(SHOWJOB_STRING_20_NOLF,MSG_HISTORY_SHOWJOB_ENDTIME, sge_ctime32(&dusage->end_time, pdstr_buffer));
+      printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ENDTIME, sge_ctime64(dusage->end_time, pdstr_buffer));
    else
       printf(SHOWJOB_STRING_NO_DATA,MSG_HISTORY_SHOWJOB_ENDTIME);
 
@@ -1784,7 +1786,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->submission_time = SGE_STRTOU_LONG32(pc);
+   d->submission_time = sge_gmt32_to_gmt64(SGE_STRTOU_LONG32(pc));
 
    /*
     * start_time
@@ -1793,7 +1795,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->start_time = SGE_STRTOU_LONG32(pc);
+   d->start_time = sge_gmt32_to_gmt64(SGE_STRTOU_LONG32(pc));
    /*
    ** skipping jobs that never ran
    */
@@ -1801,10 +1803,10 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DPRINTF("skipping job that never ran\n");
       DRETURN(-2);
    }
-   if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) { 
+   if (options->begin_time != U_LONG64_MAX && d->start_time < options->begin_time) {
       DRETURN(-2);
    }
-   if ((options->end_time != -1) && ((time_t) d->start_time > options->end_time)) {
+   if (options->end_time != U_LONG64_MAX && d->start_time > options->end_time) {
       DRETURN(-2);
    }
 
@@ -1815,7 +1817,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   d->end_time = SGE_STRTOU_LONG32(pc);
+   d->end_time = sge_gmt32_to_gmt64(SGE_STRTOU_LONG32(pc));
 
    /*
     * failed
@@ -2109,6 +2111,15 @@ read_json(const rapidjson::Value &json, const char *name, u_long32 default_value
    return default_value;
 }
 
+static u_long64
+read_json(const rapidjson::Value &json, const char *name, u_long64 default_value) {
+   if (json.HasMember(name)) {
+      return json[name].GetUint64();
+   }
+
+   return default_value;
+}
+
 static double
 read_json(const rapidjson::Value &json, const char *name, double default_value) {
    if (json.HasMember(name)) {
@@ -2154,7 +2165,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          }
       }
 
-      d->start_time = read_json(document, "start_time", (u_long32)0);
+      d->start_time = read_json(document, "start_time", (u_long64)0);
       /*
       ** skipping jobs that never ran
       */
@@ -2162,13 +2173,13 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          DPRINTF("skipping job that never ran\n");
          DRETURN(-2);
       }
-      if ((options->begin_time != -1) && ((time_t) d->start_time < options->begin_time)) {
+      if (options->begin_time != U_LONG64_MAX && d->start_time < options->begin_time) {
          DRETURN(-2);
       }
-      if ((options->end_time != -1) && ((time_t) d->start_time > options->end_time)) {
+      if (options->end_time != U_LONG64_MAX && d->start_time > options->end_time) {
          DRETURN(-2);
       }
-      d->end_time = read_json(document, "end_time", (u_long32)0);
+      d->end_time = read_json(document, "end_time", (u_long64)0);
 
       d->owner = (char *) read_json(document, "owner", nullptr);
       if (options->owner != nullptr && sge_strnullcmp(options->owner, d->owner)) {
@@ -2222,8 +2233,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
       }
 
       d->priority = read_json(document, "priority", (u_long32)0);
-      d->submission_time = read_json(document, "submission_time", (u_long32)0);
-      //d->ar_submission_time = read_json(document, "ar_submission_time", (u_long32)0);
+      d->submission_time = read_json(document, "submission_time", (u_long64)0);
+      //d->ar_submission_time = read_json(document, "ar_submission_time", (u_long64)0);
 
       //d->category = read_json(document, "category", NONE_STR);
 

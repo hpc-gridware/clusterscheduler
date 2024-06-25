@@ -77,7 +77,7 @@ void
 reschedule_unknown_trigger(lListElem *hep);
 
 void
-reschedule_add_additional_time(u_long32 time);
+reschedule_add_additional_time(u_long64 time);
 
 void
 remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number);

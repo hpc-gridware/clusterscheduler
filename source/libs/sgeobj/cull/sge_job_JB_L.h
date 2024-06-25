@@ -1,37 +1,28 @@
 #pragma once
-/*___INFO__MARK_BEGIN__*/
-/*************************************************************************
- * 
- *  The Contents of this file are made available subject to the terms of
- *  the Sun Industry Standards Source License Version 1.2
- * 
- *  Sun Microsystems Inc., March, 2001
- * 
- * 
- *  Sun Industry Standards Source License Version 1.2
- *  =================================================
- *  The contents of this file are subject to the Sun Industry Standards
- *  Source License Version 1.2 (the "License"); You may not use this file
- *  except in compliance with the License. You may obtain a copy of the
- *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
- *  Software provided under this License is provided on an "AS IS" basis,
- *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
- *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
- *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
- *  See the License for the specific provisions governing your rights and
- *  obligations concerning the Software.
- * 
- *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
- *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
- *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
  *
- ************************************************************************/
-/*___INFO__MARK_END__*/
+ *  Copyright 2024 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/*
+ * This code was generated from file source/libs/sgeobj/json/JB.json
+ * DO NOT CHANGE
+ */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
@@ -120,16 +111,16 @@
 *    SGE_STRING(JB_script_ptr) - Script in Memory
 *    the pointer to the character area of the jobscript
 *
-*    SGE_ULONG(JB_submission_time) - Submission Time
-*    timestamp in s since epoch
+*    SGE_ULONG64(JB_submission_time) - Submission Time
+*    timestamp in microseconds since epoch
 *
-*    SGE_ULONG(JB_execution_time) - Earliest Execution Time
+*    SGE_ULONG64(JB_execution_time) - Earliest Execution Time
 *    When should the job start ("qsub/qalter -a date_time")
-*    timestamp in s since epoch
+*    timestamp in microseconds since epoch
 *
-*    SGE_ULONG(JB_deadline) - Deadline Time
+*    SGE_ULONG64(JB_deadline) - Deadline Time
 *    SGEEE. Deadline initiation time. (qsub -dl date_time)
-*    timestamp in s since epoch
+*    timestamp in microseconds since epoch
 *
 *    SGE_STRING(JB_owner) - Job Owner
 *    user who submitted the job
@@ -322,11 +313,11 @@
 *    SGE_ULONG(JB_verify_suitable_queues) - Verify Suitable Queues
 *    @todo used in qalter?
 *
-*    SGE_ULONG(JB_soft_wallclock_gmt) - Soft Wallclock GMT
-*    @todo the same as complex s_rt?
+*    SGE_ULONG64(JB_soft_wallclock_gmt) - Soft Wallclock GMT
+*    Timestamp (microseconds since epoch) when a soft wallclock limit will take effect
 *
-*    SGE_ULONG(JB_hard_wallclock_gmt) - Hard Wallclock GMT
-*    @todo the same as complex s_rt?
+*    SGE_ULONG64(JB_hard_wallclock_gmt) - Hard Wallclock GMT
+*    Timestamp (microseconds since epoch) when a hard wallclock limit will take effect
 *
 *    SGE_ULONG(JB_override_tickets) - Override Tickets
 *    SGEEE - override tickets assigned by admin.
@@ -496,9 +487,9 @@ LISTDEF(JB_Type)
    SGE_STRING(JB_script_file, CULL_SPOOL)
    SGE_ULONG(JB_script_size, CULL_SPOOL)
    SGE_STRING(JB_script_ptr, CULL_DEFAULT)
-   SGE_ULONG(JB_submission_time, CULL_SPOOL)
-   SGE_ULONG(JB_execution_time, CULL_SPOOL)
-   SGE_ULONG(JB_deadline, CULL_SPOOL)
+   SGE_ULONG64(JB_submission_time, CULL_SPOOL)
+   SGE_ULONG64(JB_execution_time, CULL_SPOOL)
+   SGE_ULONG64(JB_deadline, CULL_SPOOL)
    SGE_STRING(JB_owner, CULL_SPOOL)
    SGE_ULONG(JB_uid, CULL_SPOOL)
    SGE_STRING(JB_group, CULL_SPOOL)
@@ -549,8 +540,8 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_user_list, ST_Type, CULL_DEFAULT)
    SGE_LIST(JB_job_identifier_list, ID_Type, CULL_DEFAULT)
    SGE_ULONG(JB_verify_suitable_queues, CULL_DEFAULT)
-   SGE_ULONG(JB_soft_wallclock_gmt, CULL_SPOOL)
-   SGE_ULONG(JB_hard_wallclock_gmt, CULL_SPOOL)
+   SGE_ULONG64(JB_soft_wallclock_gmt, CULL_SPOOL)
+   SGE_ULONG64(JB_hard_wallclock_gmt, CULL_SPOOL)
    SGE_ULONG(JB_override_tickets, CULL_SPOOL)
    SGE_LIST(JB_qs_args, ST_Type, CULL_DEFAULT)
    SGE_LIST(JB_path_aliases, PA_Type, CULL_SPOOL)

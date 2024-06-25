@@ -37,7 +37,7 @@
 			"description":	[{
 					"line":	"timestamp (seconds since epoch) when the load value was last updated"
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"is_static",

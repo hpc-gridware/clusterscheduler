@@ -58,7 +58,7 @@
                }, { "line": "Whenever a user submits a job the delete time is updated."
                }, { "line": "When set to 0 (via qconf) the user object is kept forever."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_CONF"
 				}, {
@@ -104,7 +104,7 @@
 			"description":	[{
 					"line":	"Time stamp of last decay. Set when usage changes."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_HIDDEN"
 				}, {

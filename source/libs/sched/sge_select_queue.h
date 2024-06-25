@@ -85,7 +85,7 @@ int sge_split_suspended(bool monitor_next_run, lList **queue_list, lList **suspe
 
 enum { 
    DISPATCH_TIME_NOW = 0, 
-   DISPATCH_TIME_QUEUE_END = LONG32_MAX // shouldn't it be U_LONG32_MAX? We assign it to u_long32 type.
+   DISPATCH_TIME_QUEUE_END = U_LONG64_MAX
 };
 
 typedef struct {
@@ -118,7 +118,7 @@ typedef struct {
    const char* project;           /* project name (JB_project)                      */
    const lListElem *ckpt;         /* the checkpoint interface (CK_Type)             */
    lListElem  *gep;               /* the global host (EH_Type)                      */
-   u_long32   duration;           /* jobs time of the assignment                    */
+   u_long64   duration;           /* jobs time of the assignment                    */
    lList      *load_adjustments;  /* shall load adjustmend be considered (CE_Type)  */
    lList      *host_list;         /* the hosts (EH_Type)                            */
    lList      *queue_list;        /* the queues (QU_Type)                           */
@@ -133,7 +133,7 @@ typedef struct {
    bool       is_job_verify;      /* true, if job verification (-w ev) (in qmaster) */
    bool       is_schedule_based;  /* true, if resource reservation is enabled       */
    bool       is_soft;            /* true, if job has soft requests                 */
-   u_long32   now;                /* now time for immediate jobs                    */
+   u_long64   now;                /* now time for immediate jobs                    */
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked any more (CTI_Type) */ 
@@ -143,7 +143,7 @@ typedef struct {
    const char* pe_name;           /* name of the PE                                 */
    lList      *gdil;              /* the resources (JG_Type)                        */
    int        slots;              /* total number of slots                          */
-   u_long32   start;              /* jobs start time                                */
+   u_long64   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
@@ -169,7 +169,7 @@ typedef enum {
    DISPATCH_OK = 0,           /* ok got an assignment + set time for DISPATCH_TIME_QUEUE_END */
    DISPATCH_NEVER_CAT = -1,   /* assignment will never be possible for all jobs of that category */
    DISPATCH_NEVER_JOB = -2    /* assignment will never be possible for that particular job */
-}dispatch_t;
+} dispatch_t;
 
 dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);
@@ -206,6 +206,6 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name);
+                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);

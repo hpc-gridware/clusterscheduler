@@ -129,7 +129,7 @@ sge_signaler_main(void *arg) {
    bool is_continue = true;
    sigset_t sig_set;
    int sig_num;
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
    monitoring_t monitor;
 
    DENTER(TOP_LAYER);

@@ -40,20 +40,20 @@
 /* those are for treating resource utilization */
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
 void utilization_print(const lListElem *cr, const char *object_name);
-int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, double utilization, 
+int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, double utilization,
    u_long32 job_id, u_long32 ja_taskid, u_long32 level, const char *object_name, const char *type, bool for_job, bool implicit_non_exclusive);
-double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 duration, bool for_excl_request);
-u_long32 utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request);
+double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request);
+u_long64 utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request);
 
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling);
 double utilization_queue_end(const lListElem *cr, bool for_excl_request);
 
 int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, 
       lListElem *ep, const lList *centry_list, int slots, int config_nm, int actual_nm, 
-      const char *obj_name, u_long32 start_time, u_long32 duration, u_long32 tag, bool for_job_scheduling,
+      const char *obj_name, u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
       bool is_master_task);
 
 void prepare_resource_schedules(const lList *running_jobs,
       const lList *suspended_jobs, lList *pe_list, lList *host_list,
       lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
-      const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now);
+      const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long64 now);

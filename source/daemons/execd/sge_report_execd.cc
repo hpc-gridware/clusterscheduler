@@ -36,6 +36,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_report.h"
@@ -64,7 +65,7 @@ extern lUlong sge_execd_report_seqno;
 
 
 /*-------------------------------------------------------------------------*/
-int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
+int sge_send_all_reports(u_long64 now, int which, report_source *report_sources)
 {
    int ret = 0;
    unsigned long connect_time = 0;
@@ -79,7 +80,7 @@ int sge_send_all_reports(u_long32 now, int which, report_source *report_sources)
                                (char *)gdi_get_act_master_host(true), (char*)prognames[QMASTER], 1,
                                &connect_time);
 
-   if (get_last_qmaster_register_time() >= connect_time && connect_time != 0) {
+   if (connect_time != 0 && get_last_qmaster_register_time() >= sge_gmt32_to_gmt64(connect_time)) {
       if (!sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
          const char *master_host = nullptr;
          lList *report_list = nullptr;

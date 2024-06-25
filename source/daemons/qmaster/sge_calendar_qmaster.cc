@@ -122,8 +122,7 @@ calendar_mod(lList **alpp, lListElem *new_cal, lListElem *cep, int add,
          for_each_ep(queue, lGetList(cqueue, CQ_qinstances)) {
             const char *q_cal = lGetString(queue, QU_calendar);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp,
-                                                       lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
+               if (sge_ar_list_conflicts_with_calendar(alpp, lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
                   goto ERROR;
                }
             }
@@ -261,7 +260,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;
    u_long32 state;
-   time_t when = 0;
+   u_long64 when = 0;
    DENTER(TOP_LAYER);
 
    if (lListElem_is_changed(cep)) {
@@ -276,7 +275,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
 
    lFreeList(&state_changes_list);
 
-   if (when) {
+   if (when != 0) {
       te_event_t ev;
 
       ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);

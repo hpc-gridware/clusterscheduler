@@ -24,9 +24,9 @@
 
 namespace oge {
 
-   u_long32 BaseReportingFileWriter::trigger(monitoring_t *monitor) {
-      u_long32 now = sge_get_gmt();
-      u_long32 next_trigger = U_LONG32_MAX;
+   u_long64 BaseReportingFileWriter::trigger(monitoring_t *monitor) {
+      u_long64 now = sge_get_gmt64();
+      u_long64 next_trigger = U_LONG64_MAX;
 
       // trigger sharelog
       if (sharelog_interval > 0) {
@@ -38,7 +38,7 @@ namespace oge {
       }
 
       // trigger
-      u_long32 base_trigger = ReportingFileWriter::trigger(monitor);
+      u_long64 base_trigger = ReportingFileWriter::trigger(monitor);
       if (base_trigger < next_trigger) {
          next_trigger = base_trigger;
       }
@@ -50,7 +50,7 @@ namespace oge {
       ReportingFileWriter::update_config();
       do_joblog = mconf_get_do_joblog();
       log_consumables = mconf_get_log_consumables();
-      u_long32 new_sharelog_interval = mconf_get_sharelog_time();
+      u_long64 new_sharelog_interval = sge_gmt32_to_gmt64(mconf_get_sharelog_time());
       if (new_sharelog_interval != sharelog_interval) {
          if (new_sharelog_interval == 0) {
             next_sharelog = 0;

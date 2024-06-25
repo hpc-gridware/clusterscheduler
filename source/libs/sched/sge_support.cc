@@ -66,6 +66,7 @@ static const long sge_usage_interval = SGE_USAGE_INTERVAL;
  * decay_usage - decay usage for the passed usage list
  *--------------------------------------------------------------------*/
 
+// interval in seconds
 static void decay_usage(lList *usage_list, const lList *decay_list, double interval)
 {
    lListElem *usage = nullptr;
@@ -97,9 +98,9 @@ decay_userprj_usage( lListElem *userprj,
                      bool is_user,
                      const lList *decay_list,
                      u_long seqno,
-                     u_long curr_time )
+                     u_long64 curr_time)
 {
-   u_long usage_time_stamp;
+   u_long64 usage_time_stamp;
    int obj_usage_seqno_POS;
    int obj_usage_time_stamp_POS;
    int obj_usage_POS;
@@ -128,21 +129,20 @@ decay_userprj_usage( lListElem *userprj,
     * the scheduling interval.
     *-------------------------------------------------------------*/
 
-      usage_time_stamp = lGetPosUlong(userprj, obj_usage_time_stamp_POS);
+      usage_time_stamp = lGetPosUlong64(userprj, obj_usage_time_stamp_POS);
 
       if (usage_time_stamp > 0 && (curr_time > usage_time_stamp)) {
          const lListElem *upp;
-         double interval = curr_time - usage_time_stamp;
+         double interval = sge_gmt64_to_gmt32_double(curr_time - usage_time_stamp);
 
          decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
 
          for_each_ep(upp, lGetPosList(userprj, obj_project_POS)) {
             decay_usage(lGetPosList(upp, UPP_usage_POS), decay_list, interval);
          }
-
       }
 
-      lSetPosUlong(userprj, obj_usage_time_stamp_POS, curr_time);
+      lSetPosUlong64(userprj, obj_usage_time_stamp_POS, curr_time);
       if (seqno != (u_long) -1) {
       	lSetPosUlong(userprj, obj_usage_seqno_POS, seqno);
       }
@@ -271,7 +271,7 @@ sge_calc_node_usage( lListElem *node,
                      const lList *user_list,
                      const lList *project_list,
                      const lList *decay_list,
-                     u_long curr_time,
+                     u_long64 curr_time,
                      const char *projname,
                      u_long seqno )
 {
@@ -528,7 +528,7 @@ _sge_calc_share_tree_proportions(const lList *share_tree,
                                  const lList *user_list,
                                  const lList *project_list,
                                  const lList *decay_list,
-                                 u_long curr_time )
+                                 u_long64 curr_time )
 {
    lListElem *root;
    double total_usage;
@@ -562,7 +562,7 @@ sge_calc_share_tree_proportions( lList *share_tree,
                                  const lList *decay_list )
 {
    _sge_calc_share_tree_proportions(share_tree, user_list, project_list,
-                                    decay_list, sge_get_gmt());
+                                    decay_list, sge_get_gmt64());
    return;
 }
 
@@ -872,7 +872,7 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
       */
 
       lSetUlong(tmp_sge_job, SGEJ_job_number, lGetUlong(job, JB_job_number));
-      lSetUlong(tmp_sge_job, SGEJ_submission_time, lGetUlong(job, JB_submission_time));
+      lSetUlong64(tmp_sge_job, SGEJ_submission_time, lGetUlong64(job, JB_submission_time));
 
       if (by_SGEJ_field != SGEJ_priority) { 
          lSetString(tmp_sge_job, SGEJ_job_name, lGetString(job, JB_job_name));
@@ -880,9 +880,9 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
       }
       lSetRef(tmp_sge_job, SGEJ_job_reference, job);
 #if 0
-      DPRINTF("JOB: " sge_u32" SUBMISSION_TIME: " sge_u32" PRIORITY: %f NAME: %s OWNER: %s QUEUE: %s STATUS: " sge_u32"\n",
+      DPRINTF("JOB: " sge_u32" SUBMISSION_TIME: " sge_u64" PRIORITY: %f NAME: %s OWNER: %s QUEUE: %s STATUS: " sge_u32"\n",
          lGetUlong(tmp_sge_job, SGEJ_job_number), 
-         lGetUlong(tmp_sge_job, SGEJ_submission_time), 
+         lGetUlong64(tmp_sge_job, SGEJ_submission_time),
          lGetDouble(tmp_sge_job, SGEJ_priority),
          lGetString(tmp_sge_job, SGEJ_job_name) ? lGetString(tmp_sge_job, SGEJ_job_name) : "",
          lGetString(tmp_sge_job, SGEJ_owner) ? lGetString(tmp_sge_job, SGEJ_owner) : "",

@@ -1007,9 +1007,9 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
       if (print_job_id) {
          /* start/submit time */
          if (summary->is_running) {
-            printf("%s ", sge_ctime(summary->start_time, &ds));
+            printf("%s ", sge_ctime64_short(summary->start_time, &ds));
          } else {
-            printf("%s ", sge_ctime(summary->submit_time, &ds));
+            printf("%s ", sge_ctime64_short(summary->submit_time, &ds));
          }
       } else {
          printf("                    "); 
@@ -1022,7 +1022,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
          if (!summary->deadline )
             printf("                    ");
          else
-            printf("%s ", sge_ctime(summary->deadline, &ds));
+            printf("%s ", sge_ctime64_short(summary->deadline, &ds));
       } else {
          printf("                    "); 
       }
@@ -1144,8 +1144,7 @@ static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, 
    if (summary->has_cpu_usage) {
       dstring resource_string = DSTRING_INIT;
 
-      double_print_time_to_dstring(summary->cpu_usage,
-                                   &resource_string);
+      double_print_time_to_dstring(summary->cpu_usage, &resource_string, true);
       printf("%s ", sge_dstring_get_string(&resource_string));
       sge_dstring_free(&resource_string);
    } else {

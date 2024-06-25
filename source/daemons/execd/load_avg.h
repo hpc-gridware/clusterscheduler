@@ -52,8 +52,8 @@ void sge_set_flush_lr_flag(bool new_val);
 bool sge_get_delay_job_reports_flag(void);
 void sge_set_delay_job_reports_flag(bool new_val);
 
-u_long32 sge_get_qmrestart_time(void);
-void sge_set_qmrestart_time(u_long32 qmr);
+u_long64 sge_get_qmrestart_time(void);
+void sge_set_qmrestart_time(u_long64 qmr);
 
-void build_reserved_usage(const u_long32 now, const lListElem *ja_task, const lListElem *pe_task,
+void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lListElem *pe_task,
                           double *wallclock, double *cpu, double *mem, double *maxvmem);

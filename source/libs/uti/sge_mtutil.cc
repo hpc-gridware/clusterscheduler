@@ -87,7 +87,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 
    DENTER(BASIS_LAYER);
 
-   DPRINTF("%s() line %d: about to lock mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt());
+   DPRINTF("%s() line %d: about to lock mutex \"%s\" : " sge_u64 "\n", func, line, mutex_name, sge_get_gmt64());
 
 #ifdef PRINT_LOCK
    {
@@ -102,7 +102,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
       abort();
    }
  
-   DPRINTF("%s() line %d: locked mutex \"%s\" : %u\n", func, line, mutex_name, sge_get_gmt());
+   DPRINTF("%s() line %d: locked mutex \"%s\" : " sge_u64 "\n", func, line, mutex_name, sge_get_gmt64());
  
 #ifdef PRINT_LOCK
    {

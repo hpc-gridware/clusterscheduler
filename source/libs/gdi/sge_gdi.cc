@@ -195,14 +195,14 @@ gdi_get_act_master_host(bool reread) {
    if (gdi_data_get_master_host() == nullptr || reread) {
       char err_str[SGE_PATH_MAX + 128];
       char master_name[CL_MAXHOSTLEN];
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       /* fix system clock moved back situation */
       if (gdi_data_get_timestamp_qmaster_file() > now) {
          gdi_data_set_timestamp_qmaster_file(0);
       }
 
-      if (gdi_data_get_master_host() == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= 30) {
+      if (gdi_data_get_master_host() == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= sge_gmt32_to_gmt64(30)) {
          /* re-read act qmaster file (max. every 30 seconds) */
          DPRINTF("re-read actual qmaster file\n");
          gdi_data_set_timestamp_qmaster_file(now);
@@ -724,7 +724,7 @@ static void dump_receive_info(cl_com_message_t **message, cl_com_endpoint_t **se
       DEBUG("gdi_rcv: cl_xml_ack_type_t: %s", cl_com_get_mih_mat_string((*message)->message_mat));
       DEBUG("gdi_rcv: message tag:       %s", sge_dump_message_tag((*message)->message_tag));
       DEBUG("gdi_rcv: message id:        " sge_U32CFormat "", sge_u32c((*message)->message_id));
-      DEBUG("gdi_rcv: receive time:      %s", sge_ctime((*message)->message_receive_time.tv_sec, &ds));
+      DEBUG("gdi_rcv: receive time:      %s", sge_ctime64(sge_gmt32_to_gmt64((*message)->message_receive_time.tv_sec), &ds));
       DEBUG("<<<<<<<<<<<<<<<<<<<<");
    }
    DRETURN_VOID;
@@ -749,7 +749,7 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
       } else {
          DEBUG("gdi_snd: message id:        not handled by caller");
       }
-      DEBUG("gdi_snd: send time:         %s", sge_ctime(0, &ds));
+      DEBUG("gdi_snd: send time:         %s", sge_ctime64(0, &ds));
       DEBUG(">>>>>>>>>>>>>>>>>>>>");
    } else {
       DEBUG(">>>>>>>>>>>>>>>>>>>>");
@@ -1346,7 +1346,7 @@ int gdi_wait_for_conf(lList **conf_list) {
    lListElem *local = nullptr;
    int ret_val;
    int ret;
-   static u_long32 last_qmaster_file_read = 0;
+   static u_long64 last_qmaster_file_read = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
@@ -1385,8 +1385,8 @@ int gdi_wait_for_conf(lList **conf_list) {
             break;
       }
 
-      u_long32 now = sge_get_gmt();
-      if (now - last_qmaster_file_read >= 30) {
+      u_long64 now = sge_get_gmt64();
+      if (now - last_qmaster_file_read >= sge_gmt32_to_gmt64(30)) {
          gdi_get_act_master_host(true);
          DPRINTF("re-read actual qmaster file\n");
          last_qmaster_file_read = now;

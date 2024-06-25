@@ -137,7 +137,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
    DPRINTF("%s\n", event_text(event, &buffer_wrapper));
    if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
       u_long32 event_type = lGetUlong(event, ET_type);
-      u_long32 timestamp = lGetUlong(event, ET_timestamp);
+      u_long64 timestamp = lGetUlong64(event, ET_timestamp);
       
       if (event_type == sgeE_JATASK_MOD) {
          lList *jat = lGetListRW(event,ET_new_version);
@@ -148,7 +148,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
          if (task_running) {
-            fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id ,task_id,sge_u32c(timestamp));
+            fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id ,task_id, timestamp);
             fflush(stdout);  
             Global_jobs_running++;
          }
@@ -159,7 +159,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          u_long job_id = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          /* lWriteElemTo(event, stdout); */
-         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id, task_id,sge_u32c(timestamp));
+         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_running--;
          fflush(stdout);  
       }
@@ -172,14 +172,14 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          if (job_project == nullptr) {
             job_project = "NONE";
          }
-         fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME=" sge_U32CFormat ":project=%s)\n", job_id, task_id, sge_u32c(timestamp),job_project);
+         fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME=" sge_u64 ":project=%s)\n", job_id, task_id, timestamp,job_project);
          Global_jobs_registered++;
          fflush(stdout);  
       }
       if (event_type == sgeE_JOB_DEL) {
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
-         fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_U32CFormat ")\n", job_id, task_id,sge_u32c(timestamp));
+         fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_registered--;
          fflush(stdout);  
       }
@@ -609,7 +609,7 @@ static const char* qevent_get_event_name(int event) {
 static void qevent_testsuite_mode(sge_evc_class_t *evc) 
 {
 #ifndef QEVENT_SHOW_ALL
-   u_long32 timestamp;
+   u_long64 timestamp;
    lCondition *where =nullptr;
    lEnumeration *what = nullptr;
  
@@ -673,9 +673,9 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
       }
 
 #ifndef QEVENT_SHOW_ALL
-      timestamp = sge_get_gmt();
-      fprintf(stdout,"ECL_STATE (jobs_running=%ld:jobs_registered=%ld:ECL_TIME=" sge_U32CFormat ")\n",
-              Global_jobs_running,Global_jobs_registered,sge_u32c(timestamp));
+      timestamp = sge_get_gmt64();
+      fprintf(stdout,"ECL_STATE (jobs_running=%ld:jobs_registered=%ld:ECL_TIME=" sge_u64 ")\n",
+              Global_jobs_running, Global_jobs_registered, timestamp);
       fflush(stdout);  
 #endif
    }

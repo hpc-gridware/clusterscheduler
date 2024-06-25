@@ -75,8 +75,8 @@ typedef enum {
 } te_mode_t;
 
 struct te_event {
-   time_t when;        /* event delivery time                */
-   time_t interval;    /* event interval, if recurring event */
+   u_long64 when;        /* event delivery time (absolute timestamp in microseconds */
+   u_long64 interval;    /* event interval, if recurring event (relative in microseconds) */
    te_type_t type;        /* event type                         */
    te_mode_t mode;        /* event mode                         */
    u_long32 ulong_key_1; /* 1st numeric key                    */
@@ -93,8 +93,8 @@ typedef struct {
    lList *list;       /* timed event list                                  */
    lSortOrder *sort_order; /* list sort order                                   */
    u_long32 seq_no;     /* last added timed event sequence number            */
-   time_t last;       /* last time, event delivery has been checked        */
-   time_t next;       /* due date for next event, 0 -> event list is empty */
+   u_long64 last;       /* last time, event delivery has been checked        */
+   u_long64 next;       /* due date for next event, 0 -> event list is empty */
 } event_control_t;
 
 typedef struct te_event *te_event_t;
@@ -119,13 +119,13 @@ extern event_control_t Event_Control;
 
 /* internal interface functions */
 
-void te_check_time(time_t time);
+void te_check_time(u_long64 time);
 
 void te_wait_empty(void);
 
 te_event_t te_event_from_list_elem(const lListElem *aListElem);
 
-void te_wait_next(te_event_t te, time_t now);
+void te_wait_next(te_event_t te, u_long64 now);
 
 void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor);
 
@@ -135,7 +135,7 @@ void te_init(void);
 
 extern void te_register_event_handler(te_handler_t, te_type_t);
 
-extern te_event_t te_new_event(time_t, te_type_t, te_mode_t, u_long32, u_long32, const char *);
+extern te_event_t te_new_event(u_long64, te_type_t, te_mode_t, u_long32, u_long32, const char *);
 
 extern void te_free_event(te_event_t *);
 
@@ -147,7 +147,7 @@ extern int te_delete_all_one_time_events(te_type_t aType);
 
 extern void te_shutdown(void);
 
-extern time_t te_get_when(te_event_t);
+extern u_long64 te_get_when(te_event_t);
 
 extern te_type_t te_get_type(te_event_t);
 

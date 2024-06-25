@@ -303,7 +303,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    if (me_who != QRESUB) {
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-a"))) {
-         lSetUlong(job, JB_execution_time, lGetUlong(ep, SPA_argval_lUlongT));
+         lSetUlong64(job, JB_execution_time, lGetUlong64(ep, SPA_argval_lUlong64T));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_execution_time);
       }
@@ -387,7 +387,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
 
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dl"))) {
-         lSetUlong(job, JB_deadline, lGetUlong(ep, SPA_argval_lUlongT));
+         lSetUlong64(job, JB_deadline, lGetUlong64(ep, SPA_argval_lUlong64T));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_deadline);
       }
@@ -854,8 +854,6 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             NoName
          };
          static int ulong_nm[] = {
-            JB_execution_time,
-            JB_deadline,
             JB_mail_options,
             JB_priority,
             JB_jobshare,
@@ -864,6 +862,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_verify_suitable_queues,
             JB_ar,
             JB_ja_task_concurrency,
+            NoName
+         };
+         static int ulong64_nm[] = {
+            JB_execution_time,
+            JB_deadline,
             NoName
          };
          static int bool_nm[] = {
@@ -906,6 +909,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          for (i=0; ulong_nm[i]!=NoName; i++)
             if (lGetPosViaElem(job, ulong_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, ulong_nm[i], SGE_NO_ABORT) != -1)
                lSetUlong(rep, ulong_nm[i], lGetUlong(job, ulong_nm[i]));
+
+         /* copy all ulong64s */
+         for (i=0; ulong64_nm[i]!=NoName; i++)
+            if (lGetPosViaElem(job, ulong64_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, ulong64_nm[i], SGE_NO_ABORT) != -1)
+               lSetUlong64(rep, ulong64_nm[i], lGetUlong64(job, ulong64_nm[i]));
 
          /* copy all bools */
          for (i=0; bool_nm[i]!=NoName; i++)

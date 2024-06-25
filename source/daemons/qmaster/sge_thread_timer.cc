@@ -38,6 +38,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
@@ -68,6 +69,7 @@
 #include "sge_qmod_qmaster.h"
 #include "reschedule.h"
 #include "sge_job_qmaster.h"
+#include "sge_log.h"
 
 static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
@@ -154,27 +156,27 @@ void sge_timer_start_periodic_tasks() {
    DENTER(TOP_LAYER);
 
    /* recurring events */
-   ev = te_new_event(15, TYPE_JOB_NUMBER_EVENT, RECURRING_EVENT, 0, 0, "job_number_changed");
+   ev = te_new_event(sge_gmt32_to_gmt64(15), TYPE_JOB_NUMBER_EVENT, RECURRING_EVENT, 0, 0, "job_number_changed");
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(15, TYPE_AR_ID_EVENT, RECURRING_EVENT, 0, 0, "ar_id_changed");
+   ev = te_new_event(sge_gmt32_to_gmt64(15), TYPE_AR_ID_EVENT, RECURRING_EVENT, 0, 0, "ar_id_changed");
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(15, TYPE_LOAD_VALUE_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "load-value-cleanup");
+   ev = te_new_event(sge_gmt32_to_gmt64(15), TYPE_LOAD_VALUE_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "load-value-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(30, TYPE_ZOMBIE_JOB_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "zombie-job-cleanup");
+   ev = te_new_event(sge_gmt32_to_gmt64(30), TYPE_ZOMBIE_JOB_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "zombie-job-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(60, TYPE_AUTOMATIC_USER_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "automatic-user-cleanup");
+   ev = te_new_event(sge_gmt32_to_gmt64(60), TYPE_AUTOMATIC_USER_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "automatic-user-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(10, TYPE_SECURITY_EVENT, RECURRING_EVENT, 0, 0, "security-event");
+   ev = te_new_event(sge_gmt32_to_gmt64(10), TYPE_SECURITY_EVENT, RECURRING_EVENT, 0, 0, "security-event");
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -291,8 +293,8 @@ sge_timer_main(void *arg) {
 
    lListElem *le = nullptr;
    te_event_t te = nullptr;
-   time_t now;
-   time_t next_prof_output = 0;
+   u_long64 now;
+   u_long64 next_prof_output = 0;
 
    DENTER(TOP_LAYER);
 
@@ -316,14 +318,13 @@ sge_timer_main(void *arg) {
 
    while (true) {
       int execute = 0;
-
       thread_start_stop_profiling();
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-      te_check_time(time(nullptr));
+      te_check_time(sge_get_gmt64());
 
-      Event_Control.last = time(nullptr);
+      Event_Control.last = sge_get_gmt64();
 
       MONITOR_IDLE_TIME(te_wait_empty(), p_monitor, mconf_get_monitor_time(),
                         mconf_is_monitor_message());
@@ -334,17 +335,16 @@ sge_timer_main(void *arg) {
 
       le = lFirstRW(Event_Control.list);
       te = te_event_from_list_elem(le);
-      now = Event_Control.next = time(nullptr);
+      now = Event_Control.next = sge_get_gmt64();
 
       if (te->when > now) {
-
          Event_Control.next = te->when;
          Event_Control.deleted = false;
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),
                            mconf_is_monitor_message());
 
          if ((Event_Control.next < te->when) || Event_Control.deleted) {
-            DPRINTF("%s: event list changed - next:" sge_u32" --> start over\n", __func__, Event_Control.next);
+            DPRINTF("%s: event list changed - next:" sge_u64" --> start over\n", __func__, Event_Control.next);
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 

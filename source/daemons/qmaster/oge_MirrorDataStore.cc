@@ -128,11 +128,11 @@ namespace oge {
          // if we did not receive a signal about new events then we will wait for one
          if (!triggered) {
 #if 0
-            static const long timeout_s = 15;
-            static const long timeout_n = 0;
+            static const time_t timeout_s = 15;
+            static const time_t timeout_n = 0;
             struct timespec ts{};
-            u_long32 current_time = sge_get_gmt();
-            ts.tv_sec = (long) current_time + timeout_s;
+            time_t current_time = time(nullptr);
+            ts.tv_sec = current_time + timeout_s;
             ts.tv_nsec = timeout_n;
 
             // wait till we get notified by event master thread that there are new events
@@ -238,7 +238,7 @@ namespace oge {
       DPRINTF("registered at profiling module\n");
 
       // set profiling parameters
-      time_t next_prof_output = 0;
+      u_long64 next_prof_output = 0;
       prof_set_level_name(SGE_PROF_CUSTOM0, "main", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM1, "wait", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM2, "mirror", nullptr);

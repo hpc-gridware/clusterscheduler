@@ -1,37 +1,28 @@
 #pragma once
-/*___INFO__MARK_BEGIN__*/
-/*************************************************************************
- * 
- *  The Contents of this file are made available subject to the terms of
- *  the Sun Industry Standards Source License Version 1.2
- * 
- *  Sun Microsystems Inc., March, 2001
- * 
- * 
- *  Sun Industry Standards Source License Version 1.2
- *  =================================================
- *  The contents of this file are subject to the Sun Industry Standards
- *  Source License Version 1.2 (the "License"); You may not use this file
- *  except in compliance with the License. You may obtain a copy of the
- *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
- *  Software provided under this License is provided on an "AS IS" basis,
- *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
- *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
- *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
- *  See the License for the specific provisions governing your rights and
- *  obligations concerning the Software.
- * 
- *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
- *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
- *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
  *
- ************************************************************************/
-/*___INFO__MARK_END__*/
+ *  Copyright 2024 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/*
+ * This code was generated from file source/libs/sgeobj/json/SPA.json
+ * DO NOT CHANGE
+ */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
@@ -74,6 +65,9 @@
 *    SGE_ULONG(SPA_argval_lUlongT) - Parsed Ulong Argument
 *    If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong.
 *
+*    SGE_ULONG64(SPA_argval_lUlong64T) - Parsed Ulong64 Argument
+*    If the option argument is an ulong64 then this value is the commandline argument (switch_arg) parsed to ulong64.
+*
 *    SGE_LONG(SPA_argval_lLongT) - Parsed Long Argument
 *    If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long.
 *
@@ -100,6 +94,7 @@ enum {
    SPA_argval_lFloatT,
    SPA_argval_lDoubleT,
    SPA_argval_lUlongT,
+   SPA_argval_lUlong64T,
    SPA_argval_lLongT,
    SPA_argval_lCharT,
    SPA_argval_lIntT,
@@ -116,6 +111,7 @@ LISTDEF(SPA_Type)
    SGE_FLOAT(SPA_argval_lFloatT, CULL_DEFAULT)
    SGE_DOUBLE(SPA_argval_lDoubleT, CULL_DEFAULT)
    SGE_ULONG(SPA_argval_lUlongT, CULL_DEFAULT)
+   SGE_ULONG64(SPA_argval_lUlong64T, CULL_DEFAULT)
    SGE_LONG(SPA_argval_lLongT, CULL_DEFAULT)
    SGE_CHAR(SPA_argval_lCharT, CULL_DEFAULT)
    SGE_INT(SPA_argval_lIntT, CULL_DEFAULT)
@@ -132,6 +128,7 @@ NAMEDEF(SPAN)
    NAME("SPA_argval_lFloatT")
    NAME("SPA_argval_lDoubleT")
    NAME("SPA_argval_lUlongT")
+   NAME("SPA_argval_lUlong64T")
    NAME("SPA_argval_lLongT")
    NAME("SPA_argval_lCharT")
    NAME("SPA_argval_lIntT")

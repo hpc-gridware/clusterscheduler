@@ -114,11 +114,11 @@ namespace oge {
     * (for writing the sharelog)
     * @return timestamp of the next trigger operation
     */
-   u_long32 ReportingFileWriter::trigger_all(monitoring_t *monitor) {
-      u_long32 next_trigger = U_LONG32_MAX;
+   u_long64 ReportingFileWriter::trigger_all(monitoring_t *monitor) {
+      u_long64 next_trigger = U_LONG64_MAX;
       for (auto w: writers) {
          if (w != nullptr) {
-            u_long32 next = w->trigger(monitor);
+            u_long64 next = w->trigger(monitor);
             if (next < next_trigger) {
                next_trigger = next;
             }
@@ -245,7 +245,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_job_logs(lList **answer_list, u_long32 event_time, const job_log_t type,
+   bool ReportingFileWriter::create_job_logs(lList **answer_list, u_long64 event_time, const job_log_t type,
                                              const char *user, const char *host, const lListElem *job_report,
                                              const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                              const char *message) {
@@ -275,7 +275,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, u_long32 report_time) {
+   bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -289,7 +289,7 @@ namespace oge {
 
    bool
    ReportingFileWriter::create_host_consumable_records(lList **answer_list, const lListElem *host, const lListElem *job,
-                                                       u_long32 report_time) {
+                                                       u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -301,7 +301,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, u_long32 report_time) {
+   bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -315,7 +315,7 @@ namespace oge {
 
    bool ReportingFileWriter::create_queue_consumable_records(lList **answer_list, const lListElem *host,
                                                              const lListElem *queue, const lListElem *job,
-                                                             u_long32 report_time) {
+                                                             u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -327,7 +327,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -340,7 +340,7 @@ namespace oge {
    }
 
    bool
-   ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -353,7 +353,7 @@ namespace oge {
    }
 
    bool ReportingFileWriter::create_ar_log_records(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                                                   const char *ar_description, u_long32 report_time) {
+                                                   const char *ar_description, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -365,7 +365,7 @@ namespace oge {
       return ret;
    }
 
-   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time) {
+   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
       for (auto w: writers) {
@@ -420,7 +420,7 @@ namespace oge {
       /*
        * optimization: only do the following actions "shortly after midnight"
        */
-      now = (time_t) sge_get_gmt();
+      now = time(nullptr);
       localtime_r(&now, &tm_now);
 #if 1
       if (tm_now.tm_hour != 0 || tm_now.tm_min > INTERMEDIATE_ACCT_WINDOW) {
@@ -433,9 +433,9 @@ namespace oge {
        * "started a short time before"
        */
       if (pe_task != nullptr) {
-         start_time = (time_t) lGetUlong(pe_task, PET_start_time);
+         start_time = sge_gmt64_to_time_t(lGetUlong64(pe_task, PET_start_time));
       } else {
-         start_time = (time_t) lGetUlong(ja_task, JAT_start_time);
+         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
       }
 
       if ((now - start_time) < (INTERMEDIATE_MIN_RUNTIME + tm_now.tm_min * 60 + tm_now.tm_sec)) {
@@ -567,9 +567,9 @@ namespace oge {
     * @param monitor not used here but trigger functions of derived classes need it
     * @return the timestamp of the next flush time
     */
-   u_long32 ReportingFileWriter::trigger(monitoring_t *monitor) {
+   u_long64 ReportingFileWriter::trigger(monitoring_t *monitor) {
       // trigger for flushing the data are the same for all accounting/reporting classes
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
       if (next_flush_time <= now) {
          flush();
          next_flush_time = now + config_flush_time;
@@ -584,7 +584,7 @@ namespace oge {
       update_config_flush_time(new_config_flush_time);
    }
 
-   void ReportingFileWriter::update_config_flush_time(u_long32 new_flush_time) {
+   void ReportingFileWriter::update_config_flush_time(u_long64 new_flush_time) {
       if (new_flush_time != config_flush_time) {
          if (next_flush_time != 0) {
             next_flush_time = next_flush_time - config_flush_time + new_flush_time;

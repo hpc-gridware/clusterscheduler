@@ -1710,3 +1710,18 @@ const char *sge_replace_substring(const char *input, const char *search, const c
    }
    return return_string;
 }
+
+const char *sge_str_move_left(char *start, char *substr) {
+   if (start == nullptr || substr == nullptr || substr < start) {
+      return nullptr;
+   } else if (substr > start){
+      char *dst = start;
+      char *src = substr;
+      while (*src != '\0') {
+         *dst++ = *src++;
+      }
+      *dst = '\0';
+      return start;
+   }
+   return start;
+}

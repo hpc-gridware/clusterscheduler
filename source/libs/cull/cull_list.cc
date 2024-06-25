@@ -719,7 +719,7 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
                                        changed ? '*' : ' ', lGetPosUlong(ep, i));
             break;
          case lUlong64T:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64)   %c = " sge_u64"\n", space, name,
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) %c = " sge_u64"\n", space, name,
                                        changed ? '*' : ' ', lGetPosUlong64(ep, i));
             break;
          case lStringT:

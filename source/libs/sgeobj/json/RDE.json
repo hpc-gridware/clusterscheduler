@@ -35,9 +35,9 @@
 			"name":	"time",
 			"summary":	"Time",
 			"description":	[{
-					"line":	"Time stamp (seconds since epoch)."
+					"line":	"Time stamp (microseconds since epoch)."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"amount",

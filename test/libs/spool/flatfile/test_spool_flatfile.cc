@@ -920,10 +920,10 @@ static int UU_test(void) {
    lSetString(user, UU_name, "Test_Name");
    lSetUlong(user, UU_oticket, 100);
    lSetUlong(user, UU_fshare, 50);
-   lSetUlong(user, UU_delete_time, 123456789);
+   lSetUlong64(user, UU_delete_time, (u_long64)123456789000000);
    lSetString(user, UU_default_project, "default_project");
 
-   lSetUlong(user, UU_usage_time_stamp, 987654321);
+   lSetUlong64(user, UU_usage_time_stamp, 987654321);
 
    lp = buildUsageList();
    lSetList(user, UU_usage, lp);
@@ -985,7 +985,7 @@ static int PR_test(void) {
    lSetString(prj, PR_name, "Test_Name");
    lSetUlong(prj, PR_oticket, 100);
    lSetUlong(prj, PR_fshare, 50);
-   lSetUlong(prj, PR_usage_time_stamp, 987654321);
+   lSetUlong64(prj, PR_usage_time_stamp, 987654321);
 
    lp = buildUsageList();
    lSetList(prj, PR_usage, lp);
@@ -2301,7 +2301,7 @@ static int QU_test(void)
    lSetString(ep, QU_qname, "Test_Name2");
    lSetUlong(ep, QU_state, 1);
    lSetUlong(ep, QU_pending_signal, 2);
-   lSetUlong(ep, QU_pending_signal_delivery_time, 3);
+   lSetUlong64(ep, QU_pending_signal_delivery_time, 3000000);
    lSetUlong(ep, QU_version, 4);
 
    printf("QU: No Args\n");   
