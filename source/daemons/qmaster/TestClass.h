@@ -21,7 +21,7 @@
 
 #include <string>
 
-namespace oge {
+namespace ocs {
    class TestClass {
    private:
    protected:

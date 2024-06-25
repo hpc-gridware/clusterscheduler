@@ -31,7 +31,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #define THREADS 32L
 #define REQUESTS (1024L*1024L*16L)
@@ -259,12 +259,12 @@ int main(int argc, char *argv[]) {
    request = 0;
 
    // create some CULL objects that simulation functions can access
-   lList **job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   lList **job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    for (int j = 0; j < JOBS; j++) {
       lAddElemUlong(job_list, JB_job_number, j, JB_Type);
    }
 
-   lList **host_list = oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList **host_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    for (int h = 0; h < HOSTS; h++) {
       dstring host_name = DSTRING_INIT;
 
@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
       sge_dstring_free(&host_name);
    }
 
-   lList **cqueue_list = oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList **cqueue_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    for (int q = 0; q < CQUEUES; q++) {
       dstring cqueue_name = DSTRING_INIT;
 
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
       sge_dstring_free(&cqueue_name);
    }
 
-   lList **project_list = oge::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
+   lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
    for (int p = 0; p < PROJECTS; p++) {
       dstring project_name = DSTRING_INIT;
 

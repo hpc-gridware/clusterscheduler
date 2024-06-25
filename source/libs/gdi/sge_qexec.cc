@@ -47,7 +47,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
-#include "gdi/oge_gdi_execd_delivery.h"
+#include "gdi/ocs_gdi_execd_delivery.h"
 #include "gdi/sge_qexec.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/msg_gdilib.h"

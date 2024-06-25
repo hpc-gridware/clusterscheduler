@@ -59,7 +59,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
-   list = oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
    cqueue = cqueue_list_locate(*list, name);
 
@@ -105,7 +105,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
    name = lGetString(event, ET_strkey);
    hostname = lGetString(event, ET_strkey2);
 
-   cqueue = cqueue_list_locate(*oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name);
+   cqueue = cqueue_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name);
                         
    if (cqueue != nullptr) {
       dstring key_buffer = DSTRING_INIT;

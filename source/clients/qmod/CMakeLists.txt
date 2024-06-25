@@ -19,7 +19,7 @@
 #___INFO__MARK_END_NEW__
 
 # source/clients/qmod
-add_executable(qmod oge_qmod.cc ../../common/sig_handlers.cc
+add_executable(qmod ocs_qmod.cc ../../common/sig_handlers.cc
       ../../common/sge_options.cc ../../common/usage.cc)
 target_include_directories(qmod PRIVATE ${SGE_INCLUDES})
 target_link_libraries(

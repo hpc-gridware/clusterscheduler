@@ -47,7 +47,7 @@
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
-#include "uti/oge_topology.h"
+#include "uti/ocs_topology.h"
 
 #include "shepherd_binding.h"
 #include "err_trace.h"
@@ -57,7 +57,7 @@
 #  include <sys/pset.h>
 #endif
 
-namespace oge {
+namespace ocs {
 #if defined(OGE_HWLOC)
 
    static bool binding_set_linear_linux(int first_socket, int first_core,

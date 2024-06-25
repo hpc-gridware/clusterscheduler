@@ -21,7 +21,7 @@
 # source/libs/evm
 set(LIBRARY_NAME evm)
 set(LIBRARY_SOURCES
-      oge_event_master.cc
+        ocs_event_master.cc
       sge_event_master.cc
       sge_queue_event_master.cc
 )

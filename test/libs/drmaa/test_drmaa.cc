@@ -64,9 +64,9 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
-#include "oge_client_job.h"
+#include "ocs_client_job.h"
 #include "msg_common.h"
 
 #define JOB_CHUNK 8

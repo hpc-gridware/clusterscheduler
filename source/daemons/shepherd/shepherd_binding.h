@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-namespace oge {
+namespace ocs {
 #if defined(OGE_HWLOC)
 
    int do_core_binding();

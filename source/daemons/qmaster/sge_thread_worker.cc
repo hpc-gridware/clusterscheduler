@@ -42,7 +42,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"

@@ -41,7 +41,7 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sched/sge_resource_utilization.h"
 
 #include "sgeobj/sge_answer.h"
@@ -58,7 +58,7 @@
 
 #include "sched/sge_sharetree_printing.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_job_qmaster.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_rusage.h"
@@ -119,7 +119,7 @@ reporting_initialize() {
    DENTER(TOP_LAYER);
 
    // create ReportingFileWriter
-   oge::ReportingFileWriter::initialize();
+   ocs::ReportingFileWriter::initialize();
 
    te_register_event_handler(reporting_trigger_handler, TYPE_REPORTING_TRIGGER);
 
@@ -172,13 +172,13 @@ reporting_shutdown(lList **answer_list, bool do_spool) {
 
    if (do_spool) {
       /* flush the last reporting values, suppress adding new timer */
-      if (!oge::ReportingFileWriter::flush_all()) {
+      if (!ocs::ReportingFileWriter::flush_all()) {
          answer_list_output(&alp);
          ret = false;
       }
    }
 
-   oge::ReportingFileWriter::shutdown();
+   ocs::ReportingFileWriter::shutdown();
 
    DRETURN(ret);
 }
@@ -208,7 +208,7 @@ void
 reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   u_long64 next_flush = oge::ReportingFileWriter::trigger_all(monitor);
+   u_long64 next_flush = ocs::ReportingFileWriter::trigger_all(monitor);
    te_event_t ev = te_new_event(next_flush, te_get_type(anEvent), ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
@@ -251,13 +251,13 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
 // object methods
 
 bool
-oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
+ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                                                 lListElem *ja_task, bool intermediate) {
    bool ret = true;
 
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 
@@ -293,7 +293,7 @@ oge::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
 }
 
 void
-oge::ClassicReportingFileWriter::create_record(const char *type, const char *data) {
+ocs::ClassicReportingFileWriter::create_record(const char *type, const char *data) {
    sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
    buffer += std::to_string(sge_gmt64_to_time_t(sge_get_gmt64()));
    buffer += REPORTING_DELIMITER;
@@ -340,12 +340,12 @@ oge::ClassicReportingFileWriter::create_record(const char *type, const char *dat
  * create_acct_record is called and we needn't search it from ja_task
  */
 bool
-oge::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
+ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                                                lListElem *ja_task, bool intermediate) {
    bool ret = true;
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 
@@ -381,7 +381,7 @@ oge::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
 }
 
 bool
-oge::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
+ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -437,7 +437,7 @@ oge::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
 }
 
 bool
-oge::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 event_time, const job_log_t type, const char *user,
+ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 event_time, const job_log_t type, const char *user,
                                            const char *host, const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                                            const lListElem *pe_task, const char *message) {
    bool ret = true;
@@ -559,7 +559,7 @@ oge::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 ev
 *     MT-NOTE: reporting_write_consumables() is MT safe
 *******************************************************************************/
 void
-oge::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *actual, const lList *total,
+ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *actual, const lList *total,
                             const lListElem *host, const lListElem *job) const {
    DENTER(TOP_LAYER);
 
@@ -635,7 +635,7 @@ oge::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
 *     MT-NOTE: create_queue_record() is MT safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
                                                 const lListElem *queue,
                                                 u_long64 report_time) {
    bool ret = true;
@@ -693,7 +693,7 @@ oge::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
 *     MT-NOTE: create_queue_consumable_record() is MT safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_list,
                                                            const lListElem *host,
                                                            const lListElem *queue,
                                                            const lListElem *job,
@@ -762,7 +762,7 @@ oge::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
 *     MT-NOTE: create_host_record() is MT safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_host_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
                                                const lListElem *host,
                                                u_long64 report_time) {
    bool ret = true;
@@ -824,7 +824,7 @@ oge::ClassicReportingFileWriter::create_host_record(lList **answer_list,
 *     MT-NOTE: create_host_consumable_record() is MT safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_list,
                                                           const lListElem *host,
                                                           const lListElem *job,
                                                           u_long64 report_time) {
@@ -885,11 +885,11 @@ oge::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
 *              (depends on sge_sharetree_print with uncertain MT safety)
 *******************************************************************************/
 void
-oge::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
-   const lList *master_stree_list = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-   const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
+   const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER);
 
@@ -944,7 +944,7 @@ oge::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
 *     MT-NOTE: reporting_write_load_values() is MT-safe
 */
 bool
-oge::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
+ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
                                               const lList *load_list, const lList *variables) {
    bool ret = true;
    bool first = true;
@@ -1000,7 +1000,7 @@ oge::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
 *     MT-NOTE: reporting_flush() is MT-safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                                                  const lListElem *ar,
                                                  u_long64 report_time) {
    bool ret = true;
@@ -1058,7 +1058,7 @@ oge::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
 *     MT-NOTE: reporting_flush() is MT-safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                                                        const lListElem *ar,
                                                        u_long64 report_time) {
    bool ret = true;
@@ -1140,7 +1140,7 @@ oge::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
 *     MT-NOTE: reporting_flush() is MT-safe
 *******************************************************************************/
 bool
-oge::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                                                  const lListElem *ar,
                                                  ar_state_event_t event,
                                                  const char *ar_description,
@@ -1208,7 +1208,7 @@ oge::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
 *  SEE ALSO
 *     qmaster/create_single_ar_acct_record()
 *******************************************************************************/
-bool oge::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) {
+bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) {
    bool ret = true;
    dstring dstr = DSTRING_INIT;
 
@@ -1274,7 +1274,7 @@ bool oge::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
 *     MT-NOTE: reporting_flush() is MT-safe
 *******************************************************************************/
 void
-oge::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
+ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                                                          const lListElem *ar,
                                                          const char *cqueue_name,
                                                          const char *hostname,

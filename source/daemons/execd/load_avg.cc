@@ -51,7 +51,7 @@
 
 #include "comm/commlib.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
@@ -1143,7 +1143,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = nullptr;

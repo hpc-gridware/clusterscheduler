@@ -45,12 +45,12 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "comm/cl_commlib.h"
 
@@ -95,7 +95,7 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
    gid_t gid;
    char username[128];
    char groupname[128];
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
 

@@ -60,7 +60,7 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
@@ -87,7 +87,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "configuration_qmaster.h"   /* TODO: bad dependency!! */
-#include "evm/oge_event_master.h"
+#include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
 #include "uti/sge.h"
 
@@ -436,7 +436,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    const char *host;
    const char *commproc;
    u_long32 commproc_id;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -1110,7 +1110,7 @@ int
 sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t anUID, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -1186,7 +1186,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 {
    const lListElem *client;
    int id = 0;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -2783,69 +2783,69 @@ static void total_update_event(lListElem *event_client, ev_event type,
    if (new_subscription || eventclient_subscribed(event_client, type, nullptr)) {
       switch (type) {
          case sgeE_ADMINHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
             break;
          case sgeE_CALENDAR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
             break;
          case sgeE_CKPT_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
             break;
          case sgeE_CENTRY_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
             break;
          case sgeE_CONFIG_LIST:
             /* sge_get_configuration() returns a copy already, we do not need to make
                one later */
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
             break;
          case sgeE_EXECHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
             break;
          case sgeE_JOB_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
             break;
          case sgeE_JOB_SCHEDD_INFO_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
             break;
          case sgeE_MANAGER_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
             break;
          case sgeE_NEW_SHARETREE:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
             break;
          case sgeE_OPERATOR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
             break;
          case sgeE_PE_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
             break;
          case sgeE_PROJECT_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
             break;
          case sgeE_CQUEUE_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
             break;
          case sgeE_SCHED_CONF:
             copy_lp = sconf_get_config_list();
             break;
          case sgeE_SUBMITHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
             break;
          case sgeE_USER_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
             break;
          case sgeE_USERSET_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
             break;
          case sgeE_HGROUP_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
             break;
          case sgeE_RQS_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
             break;
          case sgeE_AR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
             break;
          default:
             WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);

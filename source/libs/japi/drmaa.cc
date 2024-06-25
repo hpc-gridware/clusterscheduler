@@ -52,7 +52,7 @@
 #include "sgeobj/sge_answer.h"
 
 /* CLIENTS/COMMON */
-#include "oge_client_parse.h"
+#include "ocs_client_parse.h"
 
 /* COMMON */
 #include "msg_common.h"

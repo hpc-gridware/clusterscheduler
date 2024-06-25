@@ -1083,7 +1083,7 @@ spool_classic_default_write_func(lList **answer_list,
                /* job_write_spool_file takes a job, even if we only want
                 * to spool a ja_task or pe_task
                 */
-               job = lGetElemUlong(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+               job = lGetElemUlong(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
 
                /* additional flags for job_write_spool_file
                 * to avoid spooling too many files
@@ -1347,7 +1347,7 @@ static bool write_manop(int spool, int target) {
 
    switch (target) {
    case SGE_UM_LIST:
-      lp = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+      lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
       strcpy(filename, ".");
       strcat(filename, MAN_FILE);
       strcpy(real_filename, MAN_FILE);
@@ -1355,7 +1355,7 @@ static bool write_manop(int spool, int target) {
       break;
       
    case SGE_UO_LIST:
-      lp = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+      lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
       strcpy(filename, ".");
       strcat(filename, OP_FILE);
       strcpy(real_filename, OP_FILE);
@@ -1411,14 +1411,14 @@ static bool read_manop(int target) {
 
    switch (target) {
    case SGE_UM_LIST:
-      lpp = oge::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
+      lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
       strcpy(filename, MAN_FILE);
       key = UM_name;
       descr = UM_Type;
       break;
       
    case SGE_UO_LIST:
-      lpp = oge::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
+      lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
       strcpy(filename, OP_FILE);
       key = UO_name;
       descr = UO_Type;

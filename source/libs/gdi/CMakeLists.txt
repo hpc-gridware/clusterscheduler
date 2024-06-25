@@ -21,9 +21,9 @@
 # source/libs/gdi
 set(LIBRARY_NAME gdi)
 set(LIBRARY_SOURCES
-      oge_gdi_execd_delivery.cc
+        ocs_gdi_execd_delivery.cc
       qm_name.cc
-      oge_gdi_client.cc
+        ocs_gdi_client.cc
       sge_gdi.cc
       sge_gdi_data.cc
       sge_gdi_packet.cc

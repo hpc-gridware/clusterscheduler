@@ -44,7 +44,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 
 bool check_attr_str_list_find_value() 
 {
@@ -79,10 +79,10 @@ bool check_attr_str_list_find_value()
       hgroup1 = hgroup_create(nullptr, "@A", hostref_list1, true);
       hgroup2 = hgroup_create(nullptr, "@B", hostref_list2, true);
       hgroup3 = hgroup_create(nullptr, "@C", hostref_list3, true);
-      *oge::DataStore::get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
-      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup1);
-      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup2);
-      lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup3);
+      *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
+      lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup1);
+      lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup2);
+      lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), hgroup3);
    }
    return ret;
 }

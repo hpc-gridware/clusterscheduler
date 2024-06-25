@@ -21,8 +21,8 @@
 # source/clients/qrsub
 add_executable(
       qrsub
-      oge_qrsub.cc
-      oge_qrsub_parse.cc
+        ocs_qrsub.cc
+        ocs_qrsub_parse.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc

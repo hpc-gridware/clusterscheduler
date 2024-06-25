@@ -198,13 +198,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          lList *gdil = nullptr;
          lListElem *master_qep = nullptr;
          lListElem *master_host = nullptr;
-         const lList *exec_host_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-         const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-         const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+         const lList *exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+         const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
          DPRINTF("ORDER ORT_start_job\n");
 
@@ -590,7 +590,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             ja_task_pos_t *ja_pos = nullptr;
             job_pos_t *job_pos = nullptr;
             lListElem *next_ja_task = nullptr;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -691,7 +691,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             job_pos_t *job_pos;
             job_pos_t *order_job_pos;
             const lListElem *joker;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -803,7 +803,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       DPRINTF("ORDER ORT_tickets\n");
          {
             const lListElem *joker;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -993,7 +993,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * (former ORT_remove_interactive_job)
           * ----------------------------------------------------------------------- */
       case ORT_remove_immediate_job: {
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
          DPRINTF("ORDER: ORT_remove_immediate_job or ORT_remove_job\n");
 
          job_number = lGetUlong(ep, OR_job_number);
@@ -1097,7 +1097,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             lList *tlp;
             u_long64 now = 0;
             bool is_spool = false;
-            const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
             sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
@@ -1232,7 +1232,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             lList *tlp;
             u_long64 now = 0;
             bool is_spool = false;
-            const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+            const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
 
             sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
@@ -1355,7 +1355,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * TO BE DISPLAYED BY QMON AND OTHER CLIENTS
           * ----------------------------------------------------------------------- */
       case ORT_share_tree: {
-         lList *master_stree_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
+         lList *master_stree_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
 
          DPRINTF("ORDER: ORT_share_tree\n");
          sge_init_node_fields(lFirstRW(master_stree_list));
@@ -1389,8 +1389,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_suspend_on_threshold: {
          lListElem *queueep;
          u_long32 jobid;
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-         lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
          DPRINTF("ORDER: ORT_suspend_on_threshold\n");
 
@@ -1440,8 +1440,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_unsuspend_on_threshold: {
          lListElem *queueep;
          u_long32 jobid;
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-         lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
          DPRINTF("ORDER: ORT_unsuspend_on_threshold\n");
 
@@ -1488,7 +1488,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
       case ORT_job_schedd_info: {
          lList *sub_order_list = lGetListRW(ep, OR_joker);
-         lList **master_job_schedd_info_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
+         lList **master_job_schedd_info_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
 
          DPRINTF("ORDER: ORT_job_schedd_info\n");
 
@@ -1531,7 +1531,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
    const lListElem *ep;
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 

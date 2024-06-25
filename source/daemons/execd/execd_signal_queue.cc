@@ -47,7 +47,7 @@
 
 #include "spool/classic/read_write_job.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
@@ -108,7 +108,7 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
    } else {            /* signal a queue */
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
-      for_each_rw(jep, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
          lListElem *gdil_ep, *master_q;
          lListElem *jatep;
          const char *qnm;

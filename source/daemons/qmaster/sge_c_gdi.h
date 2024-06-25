@@ -83,7 +83,7 @@ struct _gdi_object_t {
    int key_nm;          /* QU_qname */
    lDescr *type;           /* QU_Type */
    const char *object_name;    /* "queue" */
-   sge_object_type list_type;       /* identifier to retrive the master list via oge::DataStore::get_master_list*/
+   sge_object_type list_type;       /* identifier to retrive the master list via ocs::DataStore::get_master_list*/
    modifier_func_t modifier;        /* responsible for validating each our attribute modifier */
    writer_func_t writer;          /* function that spools our object */
    on_success_func_t on_success;      /* do everything what has to be done on successful writing */

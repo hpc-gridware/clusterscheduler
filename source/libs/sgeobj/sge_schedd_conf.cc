@@ -49,7 +49,7 @@
 
 #include "sched/msg_schedd.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
@@ -466,7 +466,7 @@ static bool calc_pos()
    DENTER(TOP_LAYER);
 
    if (pos.empty) {
-      const lListElem *config = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *config = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
       if (config) {
          pos.empty = false;
@@ -561,7 +561,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   master_sconf_list = oge::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF);
+   master_sconf_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF);
   
 #if 0 
    store = Master_Sched_Config_List;   
@@ -631,7 +631,7 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
    DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   schedd_conf = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   schedd_conf = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
    /* Modify input */
    load_formula = lGetString(schedd_conf, SC_load_formula);
    sge_strip_blanks((char *)load_formula);
@@ -749,7 +749,7 @@ bool sconf_is_centry_referenced(const lListElem *centry)
    
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
-   sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
    
    if (sc_ep != nullptr) {
       const char *name = lGetString(centry, CE_name);
@@ -789,7 +789,7 @@ bool sconf_is_centry_referenced(const lListElem *centry)
 *******************************************************************************/
 static const char * get_load_adjustment_decay_time_str()
 {
-   const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       
    if (pos.load_adjustment_decay_time != -1) {
       return lGetPosString(sc_ep, pos.load_adjustment_decay_time );
@@ -885,7 +885,7 @@ lList *sconf_get_job_load_adjustments() {
 *******************************************************************************/
 static const lList *get_job_load_adjustments() 
 {
-   const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       
    if (pos.job_load_adjustments!= -1) {
       return lGetPosList(sc_ep, pos.job_load_adjustments); 
@@ -947,7 +947,7 @@ char* sconf_get_load_formula() {
 *******************************************************************************/
 static const char* get_load_formula() 
 {
-   const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       
    if (pos.load_formula != -1) {
       return lGetPosString(sc_ep, pos.load_formula);
@@ -984,7 +984,7 @@ u_long32 sconf_get_queue_sort_method()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.queue_sort_method != -1) {
-      sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       sort_method = lGetPosUlong(sc_ep, pos.queue_sort_method);
    }
 
@@ -1018,7 +1018,7 @@ u_long32 sconf_get_maxujobs()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.maxujobs != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       jobs = lGetPosUlong(sc_ep, pos.maxujobs );
    }   
 
@@ -1048,7 +1048,7 @@ u_long32 sconf_get_maxujobs()
 static const char *get_schedule_interval_str()
 {
    if (pos.schedule_interval != -1) {
-      const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       if (sc_ep != nullptr) {
          return lGetPosString(sc_ep, pos.schedule_interval);
       } else {
@@ -1117,7 +1117,7 @@ u_long32 sconf_get_schedule_interval() {
 static const char *reprioritize_interval_str()
 {
    if (pos.reprioritize_interval!= -1) {
-      const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       return lGetPosString(sc_ep, pos.reprioritize_interval);
    }   
    else {
@@ -1463,7 +1463,7 @@ bool sconf_is_id_in_schedd_job_info_range(u_long32 job_number)
 static const char * get_algorithm() 
 {
    if (pos.algorithm!= -1) {
-      const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       return lGetPosString(sc_ep, pos.algorithm);
    }   
    else {
@@ -1525,7 +1525,7 @@ lList *sconf_get_usage_weight_list()
 *******************************************************************************/
 static const lList *get_usage_weight_list() 
 {
-   const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.usage_weight_list != -1) {
       return lGetPosList(sc_ep, pos.usage_weight_list );
@@ -1563,7 +1563,7 @@ double sconf_get_weight_user()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_user!= -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_user);
    }   
 
@@ -1597,7 +1597,7 @@ double sconf_get_weight_department()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_department != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_department);
    }   
 
@@ -1631,7 +1631,7 @@ double sconf_get_weight_project()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_project != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_project);
    }
 
@@ -1665,7 +1665,7 @@ double sconf_get_weight_job()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_job != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_job);
    }   
 
@@ -1699,7 +1699,7 @@ u_long32 sconf_get_weight_tickets_share()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_tickets_share != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosUlong(sc_ep, pos.weight_tickets_share );
    }   
 
@@ -1733,7 +1733,7 @@ u_long32 sconf_get_weight_tickets_functional()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_tickets_functional != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosUlong(sc_ep, pos.weight_tickets_functional);
    }   
 
@@ -1768,7 +1768,7 @@ u_long32 sconf_get_halftime()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.halftime != -1) {
-      sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       halftime = lGetPosUlong(sc_ep, pos.halftime);
    }   
 
@@ -1802,7 +1802,7 @@ void sconf_set_weight_tickets_override(u_long32 active)
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);   
 
-   sc_ep = lFirstRW(*oge::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
+   sc_ep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
    
    if (pos.weight_tickets_override!= -1) {
       lSetPosUlong(sc_ep, pos.weight_tickets_override, active);
@@ -1835,7 +1835,7 @@ u_long32 sconf_get_weight_tickets_override()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);   
 
    if (pos.weight_tickets_override!= -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       tickets = lGetPosUlong(sc_ep, pos.weight_tickets_override);
    }
 
@@ -1870,7 +1870,7 @@ double sconf_get_compensation_factor()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.compensation_factor!= -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       factor = lGetPosDouble(sc_ep, pos.compensation_factor);
    }
 
@@ -1904,7 +1904,7 @@ double sconf_get_weight_ticket()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_ticket != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_ticket);
    }   
 
@@ -1917,7 +1917,7 @@ void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, d
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_ticket != -1 && pos.weight_urgency != -1 && pos.weight_priority != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       *ticket = lGetPosDouble(sc_ep, pos.weight_ticket);
       *urgency = lGetPosDouble(sc_ep, pos.weight_urgency);
       *priority = lGetPosDouble(sc_ep, pos.weight_priority);
@@ -1952,7 +1952,7 @@ double sconf_get_weight_waiting_time()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_waiting_time != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_waiting_time);
    }   
 
@@ -1986,7 +1986,7 @@ double sconf_get_weight_deadline()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_deadline != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_deadline);
    }   
 
@@ -2020,7 +2020,7 @@ double sconf_get_weight_urgency()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.weight_urgency != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_urgency);
    }   
 
@@ -2053,7 +2053,7 @@ u_long32 sconf_get_max_reservations() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (!pos.empty && (pos.max_reservation != -1)) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       max_res = lGetPosUlong(sc_ep, pos.max_reservation);
    }
 
@@ -2079,7 +2079,7 @@ u_long32 sconf_get_max_reservations() {
 *******************************************************************************/
 static const char *get_default_duration_str()
 {
-   const lListElem *sc_ep =  lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       
    if (pos.schedule_interval != -1) {
       return lGetPosString(sc_ep, pos.default_duration);
@@ -2114,7 +2114,7 @@ double sconf_get_weight_priority()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
    if (pos.weight_priority != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       weight = lGetPosDouble(sc_ep, pos.weight_priority);
    }   
 
@@ -2149,7 +2149,7 @@ bool sconf_get_share_override_tickets()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.share_override_tickets != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       is_share = lGetPosBool(sc_ep, pos.share_override_tickets) ? true : false;
    }   
 
@@ -2179,7 +2179,7 @@ bool sconf_get_share_functional_shares()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.share_functional_shares != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       is_share = lGetPosBool(sc_ep, pos.share_functional_shares) ? true : false;
    }   
 
@@ -2213,7 +2213,7 @@ bool sconf_get_report_pjob_tickets()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.report_pjob_tickets!= -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       is_report = lGetPosBool(sc_ep, pos.report_pjob_tickets) ? true : false;
    }   
 
@@ -2276,7 +2276,7 @@ u_long32 sconf_get_flush_submit_sec()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
    if (pos.flush_submit_sec != -1) {
-      sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       if (sc_ep != nullptr) {
          flush_sec = lGetPosUlong(sc_ep, pos.flush_submit_sec);
       }
@@ -2313,7 +2313,7 @@ u_long32 sconf_get_flush_finish_sec()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
    if (pos.flush_finish_sec!= -1) {
-      sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       if (sc_ep != nullptr) {
          flush_sec = lGetPosUlong(sc_ep, pos.flush_finish_sec);
       }
@@ -2350,7 +2350,7 @@ u_long32 sconf_get_max_functional_jobs_to_schedule()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.max_functional_jobs_to_schedule != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       amount = lGetPosUlong(sc_ep, pos.max_functional_jobs_to_schedule);
    }   
 
@@ -2384,7 +2384,7 @@ u_long32 sconf_get_max_pending_tasks_per_job()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (pos.max_pending_tasks_per_job != -1) {
-      const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       max_pending = lGetPosUlong(sc_ep, pos.max_pending_tasks_per_job);
    }
       
@@ -2413,7 +2413,7 @@ u_long32 sconf_get_max_pending_tasks_per_job()
 *******************************************************************************/
 static const char *get_halflife_decay_list_str()
 {
-   const lListElem *sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.halflife_decay_list != -1) {
       return lGetPosString(sc_ep, pos.halflife_decay_list);
@@ -2470,8 +2470,8 @@ static bool is_config_set()
 {
    const lListElem *sc_ep = nullptr;
    
-   if (*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)) {
-      sc_ep = lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   if (*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)) {
+      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
    }   
 
    return ((sc_ep != nullptr) ? true : false);
@@ -2527,7 +2527,7 @@ lListElem *sconf_get_config()
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
-   config = lCopyElem(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+   config = lCopyElem(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex); 
    return config;
@@ -2565,7 +2565,7 @@ lList *sconf_get_config_list()
    DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
  
-   copy_list = lCopyList("sched_conf_copy", *oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   copy_list = lCopyList("sched_conf_copy", *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex); 
    DRETURN(copy_list);
@@ -2616,10 +2616,10 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, get_load_formula(), "load_formula");
 
    /* --- SC_schedd_job_info */
-   INFO(MSG_ATTRIB_USINGXFORY_SS, lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info), "schedd_job_info");
+   INFO(MSG_ATTRIB_USINGXFORY_SS, lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info), "schedd_job_info");
    
    /* --- SC_params */
-   s=lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
+   s=lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
    INFO(MSG_READ_PARAM_S, s);
 
    /* --- SC_reprioritize_interval */
@@ -2635,7 +2635,7 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "halflife_decay_list");
   
    /* --- SC_policy_hierarchy */
-   s = lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy);
+   s = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy);
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "policy_hierarchy");
 
    /* --- SC_job_load_adjustments */
@@ -2835,7 +2835,7 @@ bool sconf_validate_config_(lList **answer_list)
 
  /* --- SC_params */
    {
-      const char *sparams = lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
+      const char *sparams = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
       char *s = nullptr;
       
       /* the implementation has a problem. If an entry is removed, its setting is not
@@ -2872,7 +2872,7 @@ bool sconf_validate_config_(lList **answer_list)
          }
          sge_free_saved_vars(context);
       } else {
-         lSetString(lFirstRW(*oge::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_params, "none");
+         lSetString(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_params, "none");
       }
    }
    
@@ -2922,7 +2922,7 @@ bool sconf_validate_config_(lList **answer_list)
       char* key = nullptr;
       int ikey = 0;
       lList *rlp=nullptr, *alp=nullptr;
-      const char *schedd_info = lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info);
+      const char *schedd_info = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info);
 
       if (schedd_info == nullptr){
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM );
@@ -3020,14 +3020,14 @@ bool sconf_validate_config_(lList **answer_list)
   
    /* --- SC_policy_hierarchy */
    {
-      const char *value_string = lGetString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
+      const char *value_string = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
                                             SC_policy_hierarchy);
       if (value_string) {
          if (policy_hierarchy_verify_value(value_string) != 0) {
             answer_list_add(answer_list, MSG_GDI_INVALIDPOLICYSTRING, STATUS_ESYNTAX, 
                             ANSWER_QUALITY_ERROR);  
             ret = false;
-            lSetString(lFirstRW(*oge::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy, policy_hierarchy_chars);
+            lSetString(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy, policy_hierarchy_chars);
          }
       } 
       else {
@@ -3084,7 +3084,7 @@ bool sconf_validate_config_(lList **answer_list)
    
    /* --- SC_load_formula */
    {
-      const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+      const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
       if (master_centry_list != nullptr && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
          ret = false; 
       }
@@ -3128,14 +3128,14 @@ bool sconf_validate_config(lList **answer_list, lList *config){
 
    if (config){
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      store = *oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF);
-      *oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = config;
+      store = *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF);
+      *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = config;
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
       ret = sconf_validate_config_(answer_list);
       
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      *oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = store;
+      *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = store;
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
       sconf_validate_config_(nullptr);
@@ -3277,7 +3277,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
-   policy_hierarchy_string = lGetPosString(lFirst(*oge::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
+   policy_hierarchy_string = lGetPosString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
                                            pos.policy_hierarchy);
    
    for (i = 0; i < POLICY_VALUES; i++) {

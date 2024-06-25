@@ -49,7 +49,7 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_pe.h"
@@ -3030,7 +3030,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
       }
    }
 
-   cq = lGetElemStr(*oge::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
+   cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
    if ((hard_resource_list = lGetList(a->job, JB_hard_resource_list))) {

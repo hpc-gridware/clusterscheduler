@@ -91,7 +91,7 @@
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "evm/sge_event_master.h"
 #include "msg_common.h"

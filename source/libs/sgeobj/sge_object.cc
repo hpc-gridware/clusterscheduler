@@ -47,7 +47,7 @@
 #   include "cull/cull_observe.h"
 #endif
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance_type.h"
@@ -985,7 +985,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *     object_type_get_name(SGE_TYPE_JOB) will return "JOB"
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1075,7 +1075,7 @@ sge_object_type object_name_get_type(const char *name) {
 *     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1116,7 +1116,7 @@ const lDescr *object_type_get_descr(sge_object_type type) {
 *     object_type_get_key_nm(SGE_TYPE_SHUTDOWN) will return -1
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_descr()
 *******************************************************************************/
@@ -2471,7 +2471,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
    if (range_list_get_number_of_ids(pe_range) > 1) {
-      const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);

@@ -37,7 +37,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 
@@ -67,7 +67,7 @@ int do_kill_execd(struct_msg_t *aMsg)
 
    DPRINTF("===>KILL EXECD%s\n", kill_jobs?" and jobs":"");
    if (kill_jobs) {
-      for_each_ep(jep, *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_ep(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_AT_SHUTDOWN) {
                WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, sge_u32c(lGetUlong(jep, JB_job_number)));

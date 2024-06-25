@@ -41,7 +41,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_report.h"
@@ -115,7 +115,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    const lListElem *qep;            /* QU_Type */
    lList *answer_list = nullptr; /* AN_Type */
    lListElem *hep;            /* EH_Type */
-   const lList *master_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    u_long64 timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    u_long64 new_timeout;
    char *hostname = te_get_alphanumeric_key(anEvent);
@@ -135,7 +135,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    /*
     * locate the host object which went in unknown-state
     */
-   if (!(hep = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), hostname))) {
+   if (!(hep = host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), hostname))) {
       DTRACE;
       goto Error;
    }
@@ -229,7 +229,7 @@ reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *mon
        * Find all jobs currently running on the host/queue
        * append the jobids/taskids into a sublist of the exechost object
        */
-      for_each_rw(jep, *(oge::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      for_each_rw(jep, *(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
          reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual);
       }
       ret = 0;
@@ -350,7 +350,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       } else if (ep && object_has_type(ep, QU_Type)) {
          qep = ep;
          hostname = lGetHost(qep, QU_qhostname);
-         hep = host_list_locate(*oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), hostname);
+         hep = host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), hostname);
       } else {
          qep = nullptr;
          hep = nullptr;
@@ -430,7 +430,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * contains an appropriate flag or when the forced flag is set
        */
       if (!force && lGetString(jep, JB_checkpoint_name)) {
-         const lListElem *ckpt_ep = ckpt_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_CKPT),
+         const lListElem *ckpt_ep = ckpt_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT),
                                                      lGetString(jep, JB_checkpoint_name));
          if (ckpt_ep) {
             u_long32 flags;
@@ -472,7 +472,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             queue = qep;
          } else {
             queue = cqueue_list_locate_qinstance(
-                    *(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)),
+                    *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)),
                     lGetString(first_granted_queue, JG_qname));
          }
          if (queue == nullptr || !lGetBool(queue, QU_rerun)) {
@@ -497,7 +497,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       if (hep && !sge_hostcmp(lGetHost(first_granted_queue, JG_qhostname), lGetHost(hep, EH_name))) {
          host = hep;
       } else {
-         host = host_list_locate(*oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
+         host = host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
                                  lGetHost(first_granted_queue, JG_qhostname));
          hostname = lGetHost(first_granted_queue, JG_qhostname);
       }
@@ -897,7 +897,7 @@ update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_l
 void
 update_reschedule_unknown_timout_values(const char *config_name) {
    lListElem *host = nullptr;
-   lList *master_exechost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_exechost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 
@@ -1114,7 +1114,7 @@ remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number) 
 
    DENTER(TOP_LAYER);
 
-   for_each_rw(host, *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)) {
+   for_each_rw(host, *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)) {
       remove_from_reschedule_unknown_list(host, job_number, task_number);
    }
 

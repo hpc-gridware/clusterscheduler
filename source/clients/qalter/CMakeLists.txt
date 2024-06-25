@@ -21,7 +21,7 @@
 # source/clients/qalter
 add_executable(
       qalter
-      oge_qalter.cc
+        ocs_qalter.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
