@@ -159,7 +159,7 @@ static int wait_my_builtin_ijs_child(int pid, const char *childname, int timeout
 static int do_wait(pid_t pid);
 
 /* checkpointing functions */
-static int check_ckpttype(void);
+static int check_ckpttype();
 static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
    char *migr_command, int migr_len, char *clean_command, int clean_len,
    int *ckpt_interval);
@@ -180,8 +180,8 @@ void shepherd_signal_job(pid_t pid, int sig);
 
 /* signal functions */
 static void signal_handler(int signal);
-static void set_shepherd_signal_mask(void);
-static void change_shepherd_signal_mask(void);
+static void set_shepherd_signal_mask();
+static void change_shepherd_signal_mask();
 static void shepherd_deliver_signal(int sig,
                                     int pid,
                                     int *postponed_signal,
@@ -672,7 +672,7 @@ static void signal_handler(int signal)
    received_signal = signal;
 }
 
-static void show_shepherd_version(void) {
+static void show_shepherd_version() {
 
    printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_shepherd");
@@ -862,10 +862,10 @@ int main(int argc, char **argv)
     * Perform core binding (do not use processor set together with core binding) 
     */ 
 #if defined(OGE_HWLOC)
-   oge::do_core_binding();
+   ocs::do_core_binding();
 #elif defined(BINDING_SOLARIS)
    /*switch later to startuser */
-   oge::do_core_binding();
+   ocs::do_core_binding();
 #endif    
 
    /*
@@ -1060,7 +1060,7 @@ int ckpt_type
 ) {
    SGE_STRUCT_STAT buf;
    struct rusage rusage;
-   u_long32 start_time, end_time;
+   u_long64 start_time, end_time;
    u_long32 wait_status = 0;
    int pid, status, core_dumped, ret;
    int child_signal = 0;
@@ -1177,7 +1177,7 @@ int ckpt_type
 
    change_shepherd_signal_mask();
    
-   start_time = sge_get_gmt();
+   start_time = sge_get_gmt64();
 
    /* Write pid to job_pid file and set ckpt_pid to original job pid 
     * Kill job if we can't write job_pid file and exit with error
@@ -1251,7 +1251,7 @@ int ckpt_type
                   &ckpt_info, &ijs_fds, &rusage, &dstr_error);
    }
    alarm(0);
-   end_time = sge_get_gmt();
+   end_time = sge_get_gmt64();
 
    shepherd_trace("reaped \"%s\" with pid %d", childname, pid);
 
@@ -1995,7 +1995,7 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
  * set_shepherd_signal_mask
  * set signal mask that shpher can handle signals from execd
  *--------------------------------------------------------------------*/
-static void set_shepherd_signal_mask(void)   
+static void set_shepherd_signal_mask()   
 {
    struct sigaction sigact, sigact_old;
    sigset_t mask;
@@ -2075,7 +2075,7 @@ static void change_shepherd_signal_mask()
  *           0 no checkpointing
  *           Bitmask of checkpointing type
  *------------------------------------------------------------------------*/
-static int check_ckpttype(void)
+static int check_ckpttype()
 {
    char *ckpt_job, *ckpt_interface, *ckpt_restarted, *ckpt_migr_command, 
         *ckpt_rest_command, *ckpt_command, *ckpt_pid, *ckpt_osjobid, 
@@ -2891,7 +2891,7 @@ shepherd_signal_job(pid_t pid, int sig) {
     */
    {
       static int first_kill = 1;
-      static u_long32 first_kill_ts = 0;
+      static time_t first_kill_ts = 0;
       static bool is_qrsh = false;
    
       if (first_kill == 1 || sig != SIGKILL) {
@@ -2919,7 +2919,7 @@ shepherd_signal_job(pid_t pid, int sig) {
       * qrsh -d is killed in the same time as the qrsh_starter child and so no
       * qrsh_exit_code file is written (see Issue: 1679)
       */
-      if ((first_kill == 1) || (sge_get_gmt() - first_kill_ts > 10) || (sig != SIGKILL)) {
+      if ((first_kill == 1) || (time(nullptr) - first_kill_ts > 10) || (sig != SIGKILL)) {
         shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
         sge_switch2start_user();
         kill(pid, sig);
@@ -2954,7 +2954,7 @@ shepherd_signal_job(pid_t pid, int sig) {
 
       if (sig == SIGKILL) {
         first_kill = 0;
-        first_kill_ts = sge_get_gmt();
+        first_kill_ts = time(nullptr);
       }
    }
 }

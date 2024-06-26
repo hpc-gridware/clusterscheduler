@@ -50,7 +50,7 @@ char *search_nonone_conf_val(const char *name);
 
 int replace_params(const char *src, char *dst, int dst_len, const char **allowed);
 
-void delete_config(void);
+void delete_config();
 
 int add_config_entry(const char *name, const char *value);
 

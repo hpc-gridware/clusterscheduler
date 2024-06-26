@@ -158,7 +158,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
                                              double max_share,
                                              double max_ticket_share);
 
-static void ptf_get_usage_from_data_collector(void);
+static void ptf_get_usage_from_data_collector();
 
 static lListElem *ptf_process_job(osjobid_t os_job_id,
                                   const char *task_id_str,
@@ -670,7 +670,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
 *     ptf_get_usage_from_data_collector() -- get usage from PDC 
 *
 *  SYNOPSIS
-*     static void ptf_get_usage_from_data_collector(void) 
+*     static void ptf_get_usage_from_data_collector() 
 *
 *  FUNCTION
 *     get the usage for all the jobs in the job ticket list and update 
@@ -682,7 +682,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
 *        update list of process IDs associated with job end     
 *     do
 ******************************************************************************/
-static void ptf_get_usage_from_data_collector(void)
+static void ptf_get_usage_from_data_collector()
 {
 #ifdef USE_DC
 
@@ -1358,10 +1358,10 @@ void ptf_update_job_usage()
  * executing jobs. Called whenever the PTF interval timer expires.
  *--------------------------------------------------------------------*/
 
-int ptf_adjust_job_priorities(void)
+int ptf_adjust_job_priorities()
 {
-   static u_long32 next = 0;
-   u_long32 now;
+   static u_long64 next = 0;
+   u_long64 now = sge_get_gmt64();
    lList *job_list;
    const lList *pid_list;
    lListElem *job, *osjob;
@@ -1377,7 +1377,7 @@ int ptf_adjust_job_priorities(void)
 
    DENTER(TOP_LAYER);
 
-   if ((now = sge_get_gmt()) < next) {
+   if (now < next) {
       DRETURN(0);
    }
 
@@ -1461,7 +1461,7 @@ int ptf_adjust_job_priorities(void)
    ptf_set_OS_scheduling_parameters(job_list, min_share, max_share,
                                     max_ticket_share);
    
-   next = now + PTF_SCHEDULE_TIME;
+   next = now + sge_gmt32_to_gmt64(PTF_SCHEDULE_TIME);
 
    DRETURN(0);
 }
@@ -1580,7 +1580,7 @@ int ptf_get_usage(lList **job_usage_list)
  * ptf_init - initialize the Priority Translation Facility
  *--------------------------------------------------------------------*/
 
-int ptf_init(void)
+int ptf_init()
 {
    DENTER(TOP_LAYER);
    lInit(nmv);
@@ -1606,7 +1606,7 @@ int ptf_init(void)
    DRETURN(0);
 }
 
-void ptf_start(void)
+void ptf_start()
 {
    DENTER(TOP_LAYER);
    if (!is_ptf_running) {
@@ -1616,7 +1616,7 @@ void ptf_start(void)
    DRETURN_VOID;
 }
 
-void ptf_stop(void)
+void ptf_stop()
 {
    DENTER(TOP_LAYER);
    if (is_ptf_running) {
@@ -1629,7 +1629,7 @@ void ptf_stop(void)
    DRETURN_VOID;
 }
 
-void ptf_show_registered_jobs(void)
+void ptf_show_registered_jobs()
 {
    lList *job_list;
    const lListElem *job_elem;
@@ -1705,7 +1705,7 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
    DRETURN_VOID;
 }
 
-void ptf_unregister_registered_jobs(void)
+void ptf_unregister_registered_jobs()
 {
    const lListElem *job;
 
@@ -1724,7 +1724,7 @@ void ptf_unregister_registered_jobs(void)
    DRETURN_VOID;
 }
 
-int ptf_is_running(void)
+int ptf_is_running()
 {
    return is_ptf_running;
 }

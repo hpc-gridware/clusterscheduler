@@ -150,7 +150,7 @@ test_thread_producer_type2(void *arg) {
  * - global string contains execution sequence of p and c threads
  */
 bool
-test_mt_consumer_producer(void) {
+test_mt_consumer_producer() {
    bool ret = true;
    test_sl_thread_cp_t global;
    const char *string;

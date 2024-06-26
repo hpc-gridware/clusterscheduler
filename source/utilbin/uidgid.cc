@@ -40,7 +40,7 @@
 #include "basis_types.h"
 
 /*-------------------------------------------*/
-void usage(void)
+void usage()
 {
    fprintf(stderr, "usage: uidgid -uid|-gid|-euid|-egid\n");
    exit(1);

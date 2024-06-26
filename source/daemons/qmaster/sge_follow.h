@@ -45,4 +45,4 @@ int
 distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor);
 
 void
-sge_set_next_spooling_time(void);
+sge_set_next_spooling_time();

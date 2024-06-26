@@ -40,7 +40,7 @@
 
 #include <unistd.h>
 
-#include "uti/oge_topology.h"
+#include "uti/ocs_topology.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_language.h"
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
    double avg[3];
    int loads;
    char *name;
-   oge::TestClass tst("troete");
+   ocs::TestClass tst("troete");
 
    tst.method("rhabarberkuchen");
 
@@ -302,33 +302,33 @@ void test_hwloc()
       printf("Your " SFN  " kernel version is: %s\n", name.sysname, name.release);
    }
 
-   if (!oge::topo_has_core_binding()) {
+   if (!ocs::topo_has_core_binding()) {
       printf("Your " SFN " kernel seems not to offer core binding capabilities for HWLOC!\n",
              name.sysname);
    }
 
-   if (!oge::topo_has_topology_information()) {
+   if (!ocs::topo_has_topology_information()) {
       printf("No topology information could by retrieved by HWLOC!\n");
    } else {
       /* get amount of sockets */
-      printf("Amount of sockets:\t\t%d\n", oge::topo_get_total_amount_of_sockets());
+      printf("Amount of sockets:\t\t%d\n", ocs::topo_get_total_amount_of_sockets());
       /* get amount of cores   */
-      printf("Amount of cores:\t\t%d\n", oge::topo_get_total_amount_of_cores());
+      printf("Amount of cores:\t\t%d\n", ocs::topo_get_total_amount_of_cores());
       /* the amount of threads must be shown as well */
-      printf("Amount of threads:\t\t%d\n", oge::topo_get_total_amount_of_threads());
+      printf("Amount of threads:\t\t%d\n", ocs::topo_get_total_amount_of_threads());
       /* get topology */
-      oge::topo_get_topology(&topology, &length);
+      ocs::topo_get_topology(&topology, &length);
       printf("Topology:\t\t\t%s\n", topology);
       sge_free(&topology); 
       printf("Mapping of logical socket and core numbers to internal\n");
 
       /* for each socket,core pair get the internal processor number */
       /* try multi-mapping */
-      for (s = 0; s < oge::topo_get_total_amount_of_sockets(); s++) {
-         for (c = 0; c < oge::topo_get_amount_of_cores_for_socket(s); c++) {
+      for (s = 0; s < ocs::topo_get_total_amount_of_sockets(); s++) {
+         for (c = 0; c < ocs::topo_get_amount_of_cores_for_socket(s); c++) {
             int* proc_ids  = nullptr;
             int amount     = 0;
-            if (oge::topo_get_processor_ids(s, c, &proc_ids, &amount)) {
+            if (ocs::topo_get_processor_ids(s, c, &proc_ids, &amount)) {
                printf("Internal processor ids for socket %5d core %5d: ", s , c);
                for (int i = 0; i < amount; i++) {
                   printf(" %5d", proc_ids[i]);

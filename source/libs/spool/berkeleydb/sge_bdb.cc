@@ -45,6 +45,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
 #include "cull/cull.h"
@@ -682,7 +683,7 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
 
 bool 
 spool_berkeleydb_trigger(lList **answer_list, bdb_info info, 
-                         time_t trigger, time_t *next_trigger)
+                         u_long64 trigger, u_long64 *next_trigger)
 {
    bool ret = true;
 
@@ -695,12 +696,12 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
        * - do a dummy request in case of RPC spooling to avoid timeouts
        */
       ret = spool_berkeleydb_clear_log(answer_list, info);
-      bdb_set_next_clear(info, trigger + BERKELEYDB_CLEAR_INTERVAL);
+      bdb_set_next_clear(info, trigger + sge_gmt32_to_gmt64(BERKELEYDB_CLEAR_INTERVAL));
    }
 
    if (bdb_get_next_checkpoint(info) <= trigger) {
       ret = spool_berkeleydb_checkpoint(answer_list, info);
-      bdb_set_next_checkpoint(info, trigger + BERKELEYDB_CHECKPOINT_INTERVAL);
+      bdb_set_next_checkpoint(info, trigger + sge_gmt32_to_gmt64(BERKELEYDB_CHECKPOINT_INTERVAL));
    }
 
    /* set time of next trigger */

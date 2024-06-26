@@ -69,7 +69,7 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
-extern int main(void) {
+extern int main() {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
    struct sigaction sa;

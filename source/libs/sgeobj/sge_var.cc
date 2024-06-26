@@ -90,7 +90,7 @@
 *     var_get_sharedlib_path_name -- name of sharedlib path variable
 *
 *  SYNOPSIS
-*     static const char *var_get_sharedlib_path_name(void);
+*     static const char *var_get_sharedlib_path_name();
 *
 *  FUNCTION
 *     Returns the operating dependent name of the shared library path
@@ -111,7 +111,7 @@
 *     executed with a faked shared lib path, operations defined in
 *     a non sge library libgdi.so might be executed as user root.
 ******************************************************************************/
-const char *var_get_sharedlib_path_name(void)
+const char *var_get_sharedlib_path_name()
 {
 #if defined(AIX)
    return "LIBPATH";

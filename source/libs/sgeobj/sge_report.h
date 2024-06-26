@@ -102,4 +102,4 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          const lListElem *job,
                                          lListElem *ja_task,
                                          lListElem *pe_task,
-                                         u_long32 time_stamp);
+                                         u_long64 time_stamp);

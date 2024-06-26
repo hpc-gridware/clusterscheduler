@@ -42,6 +42,7 @@
 #include <pwd.h>
 
 #include "uti/sge_mtutil.h"
+#include "uti/sge_time.h"
 
 #include "drmaa.h"
 #include "msg_drmaa.h"
@@ -51,7 +52,7 @@
 #include "sgeobj/sge_answer.h"
 
 /* CLIENTS/COMMON */
-#include "oge_client_parse.h"
+#include "ocs_client_parse.h"
 
 /* COMMON */
 #include "msg_common.h"
@@ -3209,7 +3210,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       }
 
       ep_opt = sge_add_arg(args, a_OPT, lUlongT, "-a", value);
-      lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+      lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
    }
 
    /* remote command -- last thing on the command line before the job args */

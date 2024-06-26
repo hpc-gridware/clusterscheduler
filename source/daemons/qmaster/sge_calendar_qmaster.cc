@@ -64,7 +64,7 @@ calendar_initalize_timer(monitoring_t *monitor) {
    lListElem *cep;
    lList *ppList = nullptr;
    lList *answer_list = nullptr;
-   const lList *master_calendar_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER);
 
@@ -85,8 +85,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
 int
 calendar_mod(lList **alpp, lListElem *new_cal, lListElem *cep, int add,
              const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lListElem *cqueue;
    const char *cal_name;
 
@@ -122,8 +122,7 @@ calendar_mod(lList **alpp, lListElem *new_cal, lListElem *cep, int add,
          for_each_ep(queue, lGetList(cqueue, CQ_qinstances)) {
             const char *q_cal = lGetString(queue, QU_calendar);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp,
-                                                       lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
+               if (sge_ar_list_conflicts_with_calendar(alpp, lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
                   goto ERROR;
                }
             }
@@ -158,8 +157,8 @@ calendar_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
 int
 sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    const char *cal_name;
-   lList **master_calendar_list = oge::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   lList **master_calendar_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -234,7 +233,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
    lList *ppList = nullptr;
-   const lList *master_calendar_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER);
 
@@ -261,7 +260,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;
    u_long32 state;
-   time_t when = 0;
+   u_long64 when = 0;
    DENTER(TOP_LAYER);
 
    if (lListElem_is_changed(cep)) {
@@ -276,7 +275,7 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
 
    lFreeList(&state_changes_list);
 
-   if (when) {
+   if (when != 0) {
       te_event_t ev;
 
       ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);

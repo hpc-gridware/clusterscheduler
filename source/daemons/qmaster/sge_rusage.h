@@ -105,9 +105,9 @@ struct drusage {
    u_long32 job_number;
    u_long32 task_number;      /* job-array task number */
    const char *pe_taskid;     /* in case of tasks of a parallel job: the pe_taskid, else nullptr */
-   u_long32 submission_time;
-   u_long32 start_time;
-   u_long32 end_time;
+   u_long64 submission_time;
+   u_long64 start_time;
+   u_long64 end_time;
    u_long32 exit_status;
    u_long32 signal;
    double ru_wallclock;

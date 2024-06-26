@@ -40,7 +40,7 @@
 #include "uti/sge_sl.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -142,7 +142,7 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, u_long32 j
    lListElem *jep = nullptr;
    lListElem *jatep = nullptr;
    u_long32 state = 0;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -212,7 +212,7 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
    const char *node_host_name = nullptr;
    lListElem *cqueue = nullptr;
    lListElem *root_qinstance = nullptr;
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -292,7 +292,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
    lListElem *qinstance = nullptr;
    lListElem *super_qinstance = nullptr;
    lListElem *so = nullptr;
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -595,8 +595,8 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
                        ssos_task_t **ssos_task_to_x) {
    sge_sl_elem_t *ssos_tree_elem = nullptr;
    u_long32 extreme_seq_no = suspend ? 0 : (u_long32) -1;
-   u_long32 oldest_start_time = (u_long32) -1;
-   u_long32 youngest_start_time = 0;
+   u_long64 oldest_start_time = (u_long64) -1;
+   u_long64 youngest_start_time = 0;
 
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
       ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
@@ -633,12 +633,12 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 dep
          }
 
          for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-            u_long32 start_time = 0;
+            u_long64 start_time = 0;
             ssos_task_t *ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
 
             if (suspend ||
                 (!suspend && is_ssos(only_slotwise_suspended, ssos_task->task))) {
-               start_time = lGetUlong(ssos_task->task, JAT_start_time);
+               start_time = lGetUlong64(ssos_task->task, JAT_start_time);
                if (oldest && start_time < oldest_start_time) {
                   oldest_start_time = start_time;
                   *ssos_task_to_x = ssos_task;
@@ -777,7 +777,7 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance, sge_sl_list_t **tree_
    const lList *so_list = nullptr;
    const lListElem *so = nullptr;
    lListElem *sub_qinstance = nullptr;
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    /* get all qinstances in the slotwise sos tree excluding the super qinstance
     * (i.e. the root node of the tree), it was already added in the iteration before.
@@ -849,7 +849,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
    /* Walk over job list and get the tasks that are running in the qinstances
     * of the slotwise sos tree. Store informations about these tasks in the tree list.
     */
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lListElem *job = nullptr;
    u_long32 sum = 0;
 

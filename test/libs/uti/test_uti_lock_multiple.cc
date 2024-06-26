@@ -88,12 +88,12 @@ static int threads = MAX_THREADS;
 
 static sge_control_t Control = {PTHREAD_MUTEX_INITIALIZER, MAX_THREADS, 0.0, PTHREAD_COND_INITIALIZER};
 
-static void has_finished(const char *str, double time) {
+static void has_finished(const char *str, double time_in) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("has_finished", __func__, __LINE__, &Control.mutex);
    Control.working--;
-   Control.time += time;
+   Control.time += time_in;
 
    if (Control.working == 0) {
       Control.working = threads;
@@ -104,7 +104,7 @@ static void has_finished(const char *str, double time) {
 
    } else {
       struct timespec ts;
-      ts.tv_sec = (long) (sge_get_gmt() + 180);
+      ts.tv_sec = time(nullptr) + 180;
       ts.tv_nsec = 0;
       pthread_cond_timedwait(&Control.cond_var,
                              &Control.mutex, &ts);
@@ -123,7 +123,7 @@ void set_thread_count(int count) {
    Control.working = count;
 }
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    int p = MAX_THREADS;  /* min num of threads */
 
    pthread_key_create(&state_key, &state_destroy);
@@ -131,15 +131,15 @@ int get_thrd_demand(void) {
    return (int) p;
 }
 
-static void log_once_init(void) {
+static void log_once_init() {
    return;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 

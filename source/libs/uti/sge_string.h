@@ -111,4 +111,6 @@ bool sge_str_is_number(const char *string);
 
 const char *sge_replace_substring(const char *input, const char *search, const char *replace);
 
+const char *sge_str_move_left(char *start, char *substr);
+
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)

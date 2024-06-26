@@ -310,7 +310,7 @@ int redirect_to_dev_null(int target, int mode) {
 *     sge_occupy_first_three() -- Open descriptor 0, 1, 2 to /dev/null
 *
 *  SYNOPSIS
-*     int sge_occupy_first_three(void)
+*     int sge_occupy_first_three()
 *
 *  FUNCTION
 *     Occupy the first three filedescriptors, if not available. This is done
@@ -331,7 +331,7 @@ int redirect_to_dev_null(int target, int mode) {
 *     uti/os/redirect_to_dev_null()
 *     uti/os/sge_close_all_fds()
 ******************************************************************************/
-int sge_occupy_first_three(void) {
+int sge_occupy_first_three() {
    int ret = -1;
 
    DENTER(TOP_LAYER);
@@ -358,7 +358,7 @@ extern int _insure_is_internal_fd(int);
 *     sge_get_max_fd() -- get max filedescriptor count
 *
 *  SYNOPSIS
-*     int sge_get_max_fd(void) 
+*     int sge_get_max_fd() 
 *
 *  FUNCTION
 *     This function returns the nr of file descriptors which are available 

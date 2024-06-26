@@ -73,7 +73,7 @@
 
 #include "spool/sge_spooling.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "symbols.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -117,9 +117,9 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                    const char *attr_name, const char *object_name);
 
 void
-host_initalitze_timer(void) {
+host_initalitze_timer() {
    DENTER(TOP_LAYER);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
    /* initiate timer for all hosts because they start in 'unknown' state */
    if (master_ehost_list) {
@@ -135,7 +135,7 @@ host_initalitze_timer(void) {
 
       for_each_rw(host, master_ehost_list) {
          if ((host != global_host_elem) && (host != template_host_elem)) {
-            reschedule_add_additional_time(load_report_interval(host));
+            reschedule_add_additional_time(sge_gmt32_to_gmt64(load_report_interval(host)));
             reschedule_unknown_trigger(host);
             reschedule_add_additional_time(0);
          }
@@ -262,10 +262,10 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
    const char *name = nullptr;
    int ret;
    const char *qualified_hostname = component_get_qualified_hostname();
-   lList **master_ehost_list = oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList **master_ahost_list = oge::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
-   lList **master_shost_list = oge::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   lList **master_ehost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList **master_ahost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
+   lList **master_shost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -407,10 +407,10 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
    int dataType;
    bool changed = false;
    bool update_qversion = false;
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -615,7 +615,7 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 int
 host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    switch (object->key_nm) {
       case EH_name: {
@@ -656,7 +656,7 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 void
 sge_mark_unheard(lListElem *hep) {
    const char *host;
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -666,11 +666,11 @@ sge_mark_unheard(lListElem *hep) {
       DEBUG("set %s/%s/%d to unheard\n", host, prognames[EXECD], 1);
    }
 
-   if (lGetUlong(hep, EH_lt_heard_from) != 0) {
+   if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
       host_trash_nonstatic_load_values(hep);
       cqueue_list_set_unknown_state(master_cqueue_list, host, true, true);
 
-      lSetUlong(hep, EH_lt_heard_from, 0);
+      lSetUlong64(hep, EH_lt_heard_from, 0);
 
       /* add a trigger to enforce limits when they are exceeded */
       sge_host_add_enforce_limit_trigger(host);
@@ -689,22 +689,21 @@ sge_mark_unheard(lListElem *hep) {
 */
 void
 sge_update_load_values(const char *rhost, lList *lp) {
-   u_long32 now;
    lListElem *ep, **hepp = nullptr;
    lListElem *lep;
    lListElem *global_ep = nullptr;
    lListElem *host_ep = nullptr;
    bool statics_changed = false;
    lList *answer_list = nullptr;
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 
    /* JG: TODO: this time should better come with the report.
     *           it is the time when the reported values were valid.
     */
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    host_ep = lGetElemHostRW(master_ehost_list, EH_name, rhost);
    if (host_ep == nullptr) {
@@ -715,13 +714,13 @@ sge_update_load_values(const char *rhost, lList *lp) {
    /* 
     * if rhost is unknown set him to known
     */
-   if (lGetUlong(host_ep, EH_lt_heard_from) == 0) {
+   if (lGetUlong64(host_ep, EH_lt_heard_from) == 0) {
       cqueue_list_set_unknown_state(master_cqueue_list, rhost, true, false);
 
       /* remove a trigger to enforce limits when they are exceeded */
       sge_host_remove_enforce_limit_trigger(rhost);
 
-      lSetUlong(host_ep, EH_lt_heard_from, sge_get_gmt());
+      lSetUlong64(host_ep, EH_lt_heard_from, sge_get_gmt64());
    }
 
    host_ep = nullptr;
@@ -753,7 +752,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
             sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                             0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
                             host_ep, nullptr, nullptr, true, statics_changed);
-            oge::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
+            ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
             statics_changed = false;
          }
 
@@ -790,7 +789,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
 
          /* copy value */
          lSetString(lep, HL_value, value);
-         lSetUlong(lep, HL_last_update, now);
+         lSetUlong64(lep, HL_last_update, now);
          lSetBool(lep, HL_is_static, is_static);
       }
    }
@@ -804,14 +803,14 @@ sge_update_load_values(const char *rhost, lList *lp) {
                       0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
                       *hepp, nullptr, nullptr, true, statics_changed);
 
-      oge::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
+      ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
    }
 
    if (global_ep) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, SGE_GLOBAL_NAME, nullptr, nullptr,
                       global_ep, nullptr, nullptr, true, false);
-      oge::ReportingFileWriter::create_host_records(&answer_list, global_ep, now);
+      ocs::ReportingFileWriter::create_host_records(&answer_list, global_ep, now);
    }
    answer_list_output(&answer_list);
 
@@ -827,14 +826,14 @@ void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *hep;
    const char *host;
-   u_long32 timeout;
+   u_long64 timeout;
    lListElem *global_host_elem = nullptr;
    lListElem *template_host_elem = nullptr;
-   u_long32 now = sge_get_gmt();
-   u_long32 max_unheard = mconf_get_max_unheard();
+   u_long64 now = sge_get_gmt64();
+   u_long64 max_unheard = sge_gmt32_to_gmt64(mconf_get_max_unheard());
    bool simulate_execds = mconf_get_simulate_execds();
-   lList *master_exechost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_exechost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -865,7 +864,7 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          }
       }
 
-      if (lGetUlong(hep, EH_lt_heard_from) == 0) {
+      if (lGetUlong64(hep, EH_lt_heard_from) == 0) {
          /* host is already unknown, nothing to trash */
          continue;
       }
@@ -875,12 +874,12 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 
 
       timeout = MAX(load_report_interval(hep) * 3, max_unheard);
-      if (now <= last_heard + timeout) {
+      if (now <= sge_gmt32_to_gmt64((u_long32)last_heard) + timeout) {
          continue;
          /* host is known, nothing to trash */
       }
 
-      lSetUlong(hep, EH_lt_heard_from, 0);
+      lSetUlong64(hep, EH_lt_heard_from, 0);
 
       /* take each load value */
       host_trash_nonstatic_load_values(hep);
@@ -940,7 +939,7 @@ static void
 exec_host_change_queue_version(const char *exechost_name) {
    const lListElem *cqueue = nullptr;
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -988,7 +987,7 @@ exec_host_change_queue_version(const char *exechost_name) {
  ****/
 void
 sge_gdi_kill_exechost(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
 
@@ -1018,7 +1017,7 @@ master_kill_execds(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    const lListElem *rep;
    char host[CL_MAXHOSTLEN];
    const char *hostname;
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 
@@ -1090,7 +1089,7 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
    int mail_options;
    unsigned long last_heard_from;
    int result;
-   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1194,8 +1193,8 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
    lListElem *hep, *cqueue;
    dstring ds;
    char buffer[256];
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -1262,7 +1261,7 @@ verify_scaling_list(lList **answer_list, lListElem *host) {
    DENTER(TOP_LAYER);
    bool ret = true;
    const lListElem *hs_elem;
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
    for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
       const char *name = lGetString(hs_elem, HS_name);
@@ -1465,9 +1464,9 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                    const char *attr_name, const char *object_name) {
 
    DENTER(TOP_LAYER);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    /* ---- attribute EH_consumable_config_list */
    if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
@@ -1543,7 +1542,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                       tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
                                       EH_consumable_config_list, EH_resource_utilization, host,
-                                      lGetUlong(ar_ep, AR_start_time), lGetUlong(ar_ep, AR_duration),
+                                      lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
                                       HOST_TAG, false, is_master_task);
                lFreeElem(&dummy_job);
             }

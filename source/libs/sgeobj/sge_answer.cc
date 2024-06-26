@@ -63,7 +63,7 @@ static bool answer_log(const lListElem *answer, bool show_info);
 *
 *     Example:
 *
-*        void caller(void) {
+*        void caller() {
 *           lList *answer_list = nullptr;
 *
 *           callee(&answer_list);

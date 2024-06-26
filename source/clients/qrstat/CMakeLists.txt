@@ -21,11 +21,11 @@
 # source/clients/qrstat
 add_executable(
       qrstat
-      oge_qrstat.cc
-      oge_qrstat_filter.cc
-      oge_qrstat_report_handler.cc
-      oge_qrstat_report_handler_stdout.cc
-      oge_qrstat_report_handler_xml.cc
+        ocs_qrstat.cc
+        ocs_qrstat_filter.cc
+        ocs_qrstat_report_handler.cc
+        ocs_qrstat_report_handler_stdout.cc
+        ocs_qrstat_report_handler_xml.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
@@ -43,7 +43,6 @@ target_link_libraries(
       comm
       commlists
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

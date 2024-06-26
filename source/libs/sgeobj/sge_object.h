@@ -58,7 +58,7 @@
 *     sgeobj/Object/object_get_name_prefix()
 *     sgeobj/Object/object_append_field_to_dstring()
 *     sgeobj/Object/object_parse_field_from_string()
-*     sgeobj/Object/oge::DataStore::get_master_list()
+*     sgeobj/Object/ocs::DataStore::get_master_list()
 *     sgeobj/Object/object_type_get_name()
 *     sgeobj/Object/object_type_get_descr()
 *     sgeobj/Object/object_type_get_key_nm()
@@ -226,6 +226,9 @@ bool
 object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
+object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+
+bool
 object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
 
 bool
@@ -287,9 +290,13 @@ object_verify_cull(const lListElem *ep, const lDescr *descr);
 
 bool
 object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
+bool
+object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm);
 
 bool
 object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm);
+bool
+object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm);
 
 bool
 object_verify_double_null(const lListElem *ep, lList **answer_list, int nm);

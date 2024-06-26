@@ -47,7 +47,7 @@
 #   include "cull/cull_observe.h"
 #endif
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance_type.h"
@@ -182,6 +182,9 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
          case lUlongT:
             result = sge_dstring_sprintf_append(buffer, sge_U32CFormat, lGetPosUlong(object, pos));
             break;
+         case lUlong64T:
+            result = sge_dstring_sprintf_append(buffer, sge_u64, lGetPosUlong64(object, pos));
+            break;
          case lLongT:
             result = sge_dstring_sprintf_append(buffer, "%ld", lGetPosLong(object, pos));
             break;
@@ -291,6 +294,9 @@ object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const
             break;
          case lUlongT:
             ret = object_parse_ulong32_from_string(object, answer_list, nm, value);
+            break;
+         case lUlong64T:
+            ret = object_parse_ulong64_from_string(object, answer_list, nm, value);
             break;
          case lLongT:
             ret = object_parse_long_from_string(object, answer_list, nm, value);
@@ -979,7 +985,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *     object_type_get_name(SGE_TYPE_JOB) will return "JOB"
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1069,7 +1075,7 @@ sge_object_type object_name_get_type(const char *name) {
 *     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
@@ -1110,7 +1116,7 @@ const lDescr *object_type_get_descr(sge_object_type type) {
 *     object_type_get_key_nm(SGE_TYPE_SHUTDOWN) will return -1
 *
 *  SEE ALSO
-*     sgeobj/object/oge::DataStore::get_master_list()
+*     sgeobj/object/ocs::DataStore::get_master_list()
 *     sgeobj/object/object_type_get_name()
 *     sgeobj/object/object_type_get_descr()
 *******************************************************************************/
@@ -1509,6 +1515,52 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int 
             ret = false;
          } else if (end_ptr != nullptr && *end_ptr == '\0') {
             lSetPosUlong(this_elem, pos, ulong_value);
+         } else {
+            /*
+             * Not a number or
+             * garbage after number
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
+                                    string);
+            ret = false;
+         }
+      }
+   } else {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+bool
+object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+   bool ret = true;
+
+   if (this_elem != nullptr && string != nullptr) {
+      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
+
+      if (strlen(string) == 0) {
+         /*
+          * Empty string will be parsed as '0'
+          */
+         lSetPosUlong64(this_elem, pos, 0);
+      } else {
+         const double epsilon = 1.0E-12;
+         char *end_ptr = nullptr;
+         double dbl_value = strtod(string, &end_ptr);
+         u_long64 ulong_value = dbl_value;
+
+         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
+            /*
+             * value to big for u_long32 variable
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
+                                    string);
+            ret = false;
+         } else if (end_ptr != nullptr && *end_ptr == '\0') {
+            lSetPosUlong64(this_elem, pos, ulong_value);
          } else {
             /*
              * Not a number or
@@ -2134,6 +2186,19 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
+bool
+object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm) {
+   bool ret = true;
+
+   if (lGetUlong(ep, nm) == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL,
+                              lNm2Str(nm));
+      ret = false;
+   }
+
+   return ret;
+}
+
 /****** sge_object/object_verify_ulong_null() ******************************
 *  NAME
 *     object_verify_ulong_null() -- verify ulong attribute null
@@ -2166,6 +2231,18 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) != 0) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
+      ret = false;
+   }
+
+   return ret;
+}
+
+bool
+object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
+   bool ret = true;
+
+   if (lGetUlong64(ep, nm) != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
       ret = false;
    }
@@ -2394,7 +2471,7 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
    if (range_list_get_number_of_ids(pe_range) > 1) {
-      const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);

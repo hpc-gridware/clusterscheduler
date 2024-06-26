@@ -43,6 +43,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/cull_parse_util.h"
@@ -51,7 +52,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_binding_io.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
@@ -161,8 +162,8 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         ep_opt = sge_add_arg(pcmdline, a_OPT, lUlongT, *(sp - 1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         ep_opt = sge_add_arg(pcmdline, a_OPT, lUlong64T, *(sp - 1), *sp);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -522,7 +523,7 @@ u_long32 flags
 /*----------------------------------------------------------------------------*/
       /* "-d time */
       if (!strcmp("-d", *sp)) {
-         double timeval;
+         u_long32 timeval;
          char tmp[1000];
 
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
@@ -540,14 +541,14 @@ u_long32 flags
 
          DPRINTF("\"-d %s\"\n", *sp);
 
-         if (!parse_ulong_val(&timeval, nullptr, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
+         if (!parse_ulong_val(nullptr, &timeval, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTODOPTION_S, *sp);
             DRETURN(answer);
          }
 
-         ep_opt = sge_add_arg(pcmdline, d_OPT, lUlongT, *(sp-1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         ep_opt = sge_add_arg(pcmdline, d_OPT, lUlong64T, *(sp-1), *sp);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -640,7 +641,7 @@ u_long32 flags
          }
 
          ep_opt = sge_add_arg(pcmdline, dl_OPT, lUlongT, *(sp - 1), *sp);
-         lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+         lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -676,8 +677,8 @@ u_long32 flags
                                        MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTOAOPTION_S, *sp);
                DRETURN(answer);
             }
-            ep_opt = sge_add_arg(pcmdline, e_OPT, lUlongT, *(sp-1), *sp);
-            lSetUlong(ep_opt, SPA_argval_lUlongT, timeval);
+            ep_opt = sge_add_arg(pcmdline, e_OPT, lUlong64T, *(sp-1), *sp);
+            lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
          } else {
             /* next field is path_name */
             i_ret = cull_parse_path_list(&path_list, *sp);

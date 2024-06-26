@@ -486,7 +486,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
 *     terminal_enter_raw_mode() -- Sets terminal to raw mode 
 *
 *  SYNOPSIS
-*     int terminal_enter_raw_mode(void) 
+*     int terminal_enter_raw_mode() 
 *
 *  FUNCTION
 *     Sets terminal to raw mode, i.e. no control characters are interpreted any
@@ -536,7 +536,7 @@ int terminal_enter_raw_mode() {
 *     terminal_leave_raw_mode() -- restore previous terminal mode
 *
 *  SYNOPSIS
-*     int terminal_leave_raw_mode(void) 
+*     int terminal_leave_raw_mode() 
 *
 *  FUNCTION
 *     Restores the previous terminal mode.

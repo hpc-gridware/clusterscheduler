@@ -52,7 +52,7 @@ static pthread_mutex_t global_thread_config_key_mutex = PTHREAD_MUTEX_INITIALIZE
 static pthread_key_t global_thread_config_key;
 static int global_thread_config_key_done = 0;
 
-static int cl_thread_set_default_cancel_method(void);
+static int cl_thread_set_default_cancel_method();
 
 int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
    cl_thread_condition_t *new_condition = nullptr;
@@ -354,7 +354,7 @@ int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_
    return ret_val;
 }
 
-void cl_thread_cleanup_global_thread_config_key(void) {
+void cl_thread_cleanup_global_thread_config_key() {
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done == 1) {
       pthread_key_delete(global_thread_config_key);
@@ -473,7 +473,7 @@ int cl_thread_join(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
-cl_thread_settings_t *cl_thread_get_thread_config(void) {
+cl_thread_settings_t *cl_thread_get_thread_config() {
    /* cl_thread_setup  will set the thread specific data */
    cl_thread_settings_t *settings = nullptr;
    pthread_mutex_lock(&global_thread_config_key_mutex);
@@ -677,7 +677,7 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
-static int cl_thread_set_default_cancel_method(void) {
+static int cl_thread_set_default_cancel_method() {
    /*
     * Setting thread cancel state and type to default values.
     * Commlib threads have a cancelation point:
@@ -728,7 +728,7 @@ int cl_thread_set_thread_config(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_NOT_THREAD_SPECIFIC_INIT;
 }
 
-int cl_thread_unset_thread_config(void) {
+int cl_thread_unset_thread_config() {
 
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done != 0) {

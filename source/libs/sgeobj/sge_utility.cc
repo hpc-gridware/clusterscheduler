@@ -273,7 +273,7 @@ bool verify_host_name(lList **answer_list, const char *host_name)
    return ret;
 }
 
-int reresolve_qualified_hostname(void) {
+int reresolve_qualified_hostname() {
    int ret = CL_RETVAL_OK;
 
    char unique_hostname[256];

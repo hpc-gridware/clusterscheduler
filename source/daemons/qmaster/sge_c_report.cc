@@ -41,7 +41,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_report.h"
@@ -155,7 +155,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
    this_seqno = lGetUlong(lFirst(report_list), REP_seqno);
 
    /* need exec host for all types of reports */
-   if (!(hep = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost))) {
+   if (!(hep = host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost))) {
       ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S, rhost);
       DRETURN_VOID;
    }
@@ -192,7 +192,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
          case NUM_REP_FULL_REPORT_LOAD:
             MONITOR_ELOAD(monitor);
             /* Now handle execds load reports */
-            if (lGetUlong(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
+            if (lGetUlong64(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
                host_notify_about_full_load_report(hep);
             } else {
                if (!is_pb_used) {
@@ -202,7 +202,7 @@ sge_c_report(char *rhost, char *commproc, int id, lList *report_list, monitoring
                sge_update_load_values(rhost, lGetListRW(report, REP_list));
 
                if (mconf_get_simulate_execds()) {
-                  const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+                  const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
                   const lListElem *shep;
                   const lListElem *simhostElem = nullptr;
 

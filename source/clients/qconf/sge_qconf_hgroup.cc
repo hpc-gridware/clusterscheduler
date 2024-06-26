@@ -121,8 +121,7 @@ hgroup_get_via_gdi(lList **answer_list, const char *name)
       lList *hostgroup_list = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
-      where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, 
-                     name);
+      where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name);
       gdi_answer_list = sge_gdi(SGE_HGRP_LIST, SGE_GDI_GET, &hostgroup_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);

@@ -79,10 +79,10 @@ static int test_match_old(u_long32 , const char *, const char *, int );
 int main(int argc, char *argv[]) {
    int ret;
    int i, j;
-   u_long32 start_tm=0;
-   u_long32 end_tm=0;
-   u_long32 new_total_tm=0;
-   u_long32 old_total_tm=0;
+   u_long64 start_tm=0;
+   u_long64 end_tm=0;
+   u_long64 new_total_tm=0;
+   u_long64 old_total_tm=0;
    
    DENTER_MAIN(TOP_LAYER, "test_evel_performance");
 
@@ -91,25 +91,25 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "\nEval performance tests\n");
 
       for(j=0;(j<BALANCE_LOOP_COUNT) && (ret==0);j++){
-         start_tm = sge_get_gmt();
+         start_tm = sge_get_gmt64();
          for(i=0;(i<LOOP_COUNT) && (ret==0);i++){
             ret=tests(&test_match_old);
          }
-         end_tm = sge_get_gmt();
+         end_tm = sge_get_gmt64();
          old_total_tm+=(end_tm-start_tm);
          /* Old match */
-         start_tm = sge_get_gmt();
+         start_tm = sge_get_gmt64();
          for(i=0;(i<LOOP_COUNT)&&(ret==0);i++){
             ret=tests(&test_match_new);
          }
-         end_tm = sge_get_gmt();
+         end_tm = sge_get_gmt64();
          new_total_tm+=(end_tm-start_tm);
       } /* End of j */
 
       fprintf(stdout, "Try:$time test_eval_performance [0..old, 1..new] '<expresion>' '<value>'\n");
       fprintf(stdout, "All eval_tests result is: %s \n", RESULT(ret));
       if(ret==0){
-         fprintf(stdout, "The consumed time old is " sge_u32", new  is " sge_u32" \n", old_total_tm, new_total_tm);
+         fprintf(stdout, "The consumed time old is " sge_u64", new  is " sge_u64" \n", old_total_tm, new_total_tm);
          ret = (int)((double) new_total_tm/(3*old_total_tm)); /* No more than 3x slower */
          fprintf(stdout, "Performance tests result is: %s \n", RESULT(ret));
       }

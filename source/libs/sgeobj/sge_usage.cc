@@ -77,6 +77,18 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name,
    }
 }
 
+u_long64
+usage_list_get_ulong64_usage(const lList *usage_list, const char *name,
+                             u_long64 def)
+{
+   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   if (ep != nullptr) {
+      return (u_long64)lGetDouble(ep, UA_value);
+   } else {
+      return def;
+   }
+}
+
 /****** sgeobj/usage/usage_list_get_double_usage() ****************************
 *  NAME
 *     usage_list_get_double_usage() -- return double usage value
@@ -143,6 +155,12 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
 *******************************************************************************/
 void
 usage_list_set_ulong_usage(lList *usage_list, const char *name, u_long32 value)
+{
+   usage_list_set_double_usage(usage_list, name, value);
+}
+
+void
+usage_list_set_ulong64_usage(lList *usage_list, const char *name, u_long64 value)
 {
    usage_list_set_double_usage(usage_list, name, value);
 }

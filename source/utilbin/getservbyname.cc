@@ -43,7 +43,7 @@
 
 #include "gdi/version.h"
 
-void usage(void)
+void usage()
 {
    fprintf(stderr, "Version: %s\n", GDI_VERSION);
    fprintf(stderr, "%s\n getservbyname [-help|-number] service | -check port_number\n\n%s\n",MSG_UTILBIN_USAGE, MSG_COMMAND_USAGE_GETSERVBYNAME );

@@ -35,7 +35,7 @@
 
 typedef int (*sge_node_func_t) (lListElem *node, void *ptr);
 
-void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list, u_long seqno, u_long curr_time);
+void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list, u_long seqno, u_long64 curr_time);
 
 void calculate_default_decay_constant(int halftime);
 
@@ -53,7 +53,7 @@ double sge_calc_node_usage(lListElem *node,
                            const lList *user_list, 
                            const lList *project_list,
                            const lList *decay_list,
-                           u_long curr_time, 
+                           u_long64 curr_time,
                            const char *projname,
                            u_long seqno );
 
@@ -61,7 +61,7 @@ void _sge_calc_share_tree_proportions(const lList *share_tree,
                                       const lList *user_list,
                                       const lList *project_list,
                                       const lList *decay_list,
-                                      u_long curr_time);
+                                      u_long64 curr_time);
 
 void sge_calc_share_tree_proportions(lList *share_tree, const lList *user_list, const lList *project_list, const lList *decay_list);
 

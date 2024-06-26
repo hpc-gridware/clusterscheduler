@@ -50,7 +50,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -233,14 +233,14 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
     * 
     * We can ignore this job because job is resend by qmaster.
     */
-   jep = lGetElemUlongFirstRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
+   jep = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    while (jep != nullptr) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
          DPRINTF("Job " sge_u32"." sge_u32" is already running - skip the new one\n", jobid, jataskid);
          goto Ignore;   /* don't set queue in error state */
       }
 
-      jep = lGetElemUlongNextRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
+      jep = lGetElemUlongNextRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    }
 
    /* initialize state - prevent slaves from getting started */
@@ -317,7 +317,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
              * check wether there is another master task of the same job running
              * on this host. This is important in case of array pe-jobs.
              */
-             if (count_master_tasks(*oge::DataStore::get_master_list(SGE_TYPE_JOB), job_id) == 0) {
+             if (count_master_tasks(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id) == 0) {
                int fd;
 
                /* We are root. Make the scriptfile readable for the jobs submitter,
@@ -385,7 +385,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
 
    /* put into job list */
-   lAppendElem(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), jelem);
+   lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), jelem);
 
    DRETURN(0);
 
@@ -666,7 +666,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    lSetUlong(jatep, JAT_next_pe_task_id, tid + 1);
 
    lSetString(petep, PET_name, "petask");
-   lSetUlong(petep, PET_submission_time, lGetUlong(petrep, PETR_submission_time));
+   lSetUlong64(petep, PET_submission_time, lGetUlong64(petrep, PETR_submission_time));
    lSetString(petep, PET_cwd, lGetString(petrep, PETR_cwd));
    lSetList(petep, PET_environment, 
             lCopyList("petask environment", lGetList(petrep, PETR_environment)));
@@ -718,7 +718,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    {
       lListElem *jr = add_job_report(jobid, jataskid, new_task_id, jep);
 
-      add_usage(jr, "submission_time", nullptr, lGetUlong(petep, PET_submission_time));
+      add_usage(jr, "submission_time", nullptr, lGetUlong64(petep, PET_submission_time));
       
       /* if we are not interested in online usage per task, suppress sending of this job report */
       if (mconf_get_sharetree_reserved_usage() && lGetBool(pe, PE_accounting_summary)) {

@@ -398,7 +398,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetUlong(new_job, JB_execution_time, timeval);
+               lSetUlong64(new_job, JB_execution_time, sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -509,7 +509,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetUlong(new_job, JB_deadline, timeval);
+               lSetUlong64(new_job, JB_deadline, sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -1391,7 +1391,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * PARAM a <date_time> (optional; <date_time> := CCYYMMDDhhmm.SS)
     */
    {
-      time_t clocks = (time_t) lGetUlong(old_job, JB_execution_time);
+      time_t clocks = (time_t) lGetUlong64(old_job, JB_execution_time) / 1000000;
 
       if (clocks > 0) {
          struct tm time_struct;
@@ -1549,7 +1549,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * optional
     */
    {
-      time_t clocks = (time_t) lGetUlong(old_job, JB_deadline);
+      time_t clocks = (time_t) lGetUlong64(old_job, JB_deadline) / 1000000;
 
       if (clocks > 0) {
          struct tm time_struct;
@@ -2521,25 +2521,25 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
       ret &= jsv_send_command(jsv, answer_list, "START");
    }
    if (ret) {
-      u_long32 start_time = sge_get_gmt();
+      u_long64 start_time = sge_get_gmt64();
       bool do_retry = true;
-      u_long32 jsv_timeout = 10;
+      u_long64 jsv_timeout = sge_gmt32_to_gmt64(10);
       
       if (strcmp(lGetString(jsv, JSV_context), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
          if (atoi(getenv("SGE_JSV_TIMEOUT")) > 0) {
-            jsv_timeout = atoi(getenv("SGE_JSV_TIMEOUT")); 
-            DPRINTF("JSV_TIMEOUT value of %d s being used from environment variable\n", jsv_timeout);
+            jsv_timeout = sge_gmt32_to_gmt64(atoi(getenv("SGE_JSV_TIMEOUT")));
+            DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from environment variable\n", jsv_timeout);
          }         
       } else {
-         jsv_timeout = mconf_get_jsv_timeout();
-         DPRINTF("JSV_TIMEOUT value of %d s being used from qmaster parameter\n", jsv_timeout);
+         jsv_timeout = sge_gmt32_to_gmt64(mconf_get_jsv_timeout());
+         DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from qmaster parameter\n", jsv_timeout);
       }
 
       lSetBool(jsv, JSV_done, false);
       lSetBool(jsv, JSV_soft_shutdown, true);
       while (!lGetBool(jsv, JSV_done)) {
-         if (sge_get_gmt() - start_time > jsv_timeout) {
-            DPRINTF("JSV - master waited longer than %d s to get response from JSV\n", jsv_timeout);
+         if (sge_get_gmt64() - start_time > jsv_timeout) {
+            DPRINTF("JSV - master waited longer than " sge_u64 " µs to get response from JSV\n", jsv_timeout);
             /*
              * In case of a timeout we try it a second time. In that case we kill
              * the old instance and start a new one before we continue
@@ -2564,7 +2564,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                   }
                   ret &= jsv_send_command(jsv, answer_list, "START");
                }
-               start_time = sge_get_gmt();
+               start_time = sge_get_gmt64();
                do_retry = false;
             } else {
                DPRINTF("JSV - reject due to timeout in communication process\n");
@@ -2631,7 +2631,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                   /*
                    * set start time for ne iteration
                    */
-                  start_time = sge_get_gmt();
+                  start_time = sge_get_gmt64();
                   sge_dstring_free(&sub_command);
                   sge_dstring_free(&command);
                   sge_dstring_free(&args);

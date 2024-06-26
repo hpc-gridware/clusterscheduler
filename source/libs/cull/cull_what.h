@@ -44,7 +44,7 @@ lEnumeration *lWhat(const char *fmt, ...);
 
 lEnumeration *_lWhat(const char *fmt, const lDescr *dp, const int *nm_list, int nm);
 
-lEnumeration *lWhatAll(void);
+lEnumeration *lWhatAll();
 
 void lFreeWhat(lEnumeration **ep);
 

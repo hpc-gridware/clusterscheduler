@@ -45,15 +45,15 @@ void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);
 void signal_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
-static void test_delete_nonexistent_event(void);
-static void test_add_one_time_event_without_handler(void);
-static void test_delete_one_time_event(void);
-static void test_delete_multiple_one_time_events(void);
-static void test_one_time_event_delivery(void);
-static void test_multiple_one_time_events_delivery(void);
-static void test_recurring_event_delivery(void);
-static void test_add_earlier_one_time_event(void);
-static void test_add_earlier_recurring_event(void);
+static void test_delete_nonexistent_event();
+static void test_add_one_time_event_without_handler();
+static void test_delete_one_time_event();
+static void test_delete_multiple_one_time_events();
+static void test_one_time_event_delivery();
+static void test_multiple_one_time_events_delivery();
+static void test_recurring_event_delivery();
+static void test_add_earlier_one_time_event();
+static void test_add_earlier_recurring_event();
 
 int main(int argc, char* argv[])
 {
@@ -131,14 +131,14 @@ void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
    DRETURN_VOID;
 } /* job_resend_event_handler() */
 
-static void test_delete_nonexistent_event(void)
+static void test_delete_nonexistent_event()
 {
    te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "no-event");
 
    sleep(2);
 }
 
-static void test_add_one_time_event_without_handler(void)
+static void test_add_one_time_event_without_handler()
 {
    te_event_t ev1;
 
@@ -151,7 +151,7 @@ static void test_add_one_time_event_without_handler(void)
    return;
 }
 
-static void test_delete_one_time_event(void)
+static void test_delete_one_time_event()
 {
    te_event_t ev1;
    time_t when = time(nullptr) + 30;
@@ -169,7 +169,7 @@ static void test_delete_one_time_event(void)
    return;
 }
 
-static void test_delete_multiple_one_time_events(void)
+static void test_delete_multiple_one_time_events()
 {
    te_event_t ev1;
    time_t when1, when2 = 0;
@@ -198,7 +198,7 @@ static void test_delete_multiple_one_time_events(void)
    return;
 }
 
-static void test_one_time_event_delivery(void)
+static void test_one_time_event_delivery()
 {
    te_event_t ev1;
 
@@ -212,7 +212,7 @@ static void test_one_time_event_delivery(void)
    return;
 }
 
-static void test_multiple_one_time_events_delivery(void)
+static void test_multiple_one_time_events_delivery()
 {
    te_event_t ev1, ev2, ev3;
 
@@ -236,7 +236,7 @@ static void test_multiple_one_time_events_delivery(void)
    return;
 }
 
-static void test_recurring_event_delivery(void)
+static void test_recurring_event_delivery()
 {
    te_event_t ev1;
 
@@ -249,7 +249,7 @@ static void test_recurring_event_delivery(void)
    return;
 }
 
-static void test_add_earlier_one_time_event(void)
+static void test_add_earlier_one_time_event()
 {
    te_event_t ev1;
 
@@ -262,7 +262,7 @@ static void test_add_earlier_one_time_event(void)
    return;
 }
 
-static void test_add_earlier_recurring_event(void)
+static void test_add_earlier_recurring_event()
 {
    te_event_t ev1;
 

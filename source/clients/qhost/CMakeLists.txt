@@ -21,8 +21,8 @@
 # source/clients/qhost
 add_executable(
       qhost
-      oge_qhost.cc
-      oge_qhost_print.cc
+        ocs_qhost.cc
+        ocs_qhost_print.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)
@@ -38,7 +38,6 @@ target_link_libraries(
       sgeobj
       cull
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

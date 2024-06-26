@@ -40,6 +40,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -53,7 +54,7 @@
 
 static void sge_normalize_urgency(lList *job_list, double min_urgency, 
    double max_urgency);
-static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency, 
+static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
                lList *job_list, const lList *centry_list, lList *pe_list);
 
 
@@ -79,7 +80,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
 *
 *  NOTES
 *******************************************************************************/
-void sge_do_urgency(u_long32 now, lList *running_jobs, lList *pending_jobs, 
+void sge_do_urgency(u_long64 now, lList *running_jobs, lList *pending_jobs,
                     scheduler_all_data_t *lists)
 {
    double min_urgency = DBL_MAX;
@@ -130,7 +131,7 @@ void sge_do_urgency(u_long32 now, lList *running_jobs, lList *pending_jobs,
 *
 *  NOTES
 *******************************************************************************/
-static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency, 
+static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
                lList *job_list, const lList *centry_list, lList *pe_list)
 {
    lListElem *jep;
@@ -143,19 +144,23 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
 
    for_each_rw (jep, job_list) {
       lListElem *cat;
-      u_long32 deadline;
+      u_long64 deadline;
 
       rrc = dtc = 0.0;
 
       /* waiting time dependent contribution */
-      wtc = weight_waiting_time * (now - lGetUlong(jep, JB_submission_time));
+      wtc = weight_waiting_time * sge_gmt64_to_gmt32(now - lGetUlong64(jep, JB_submission_time));
 
       /* job deadline dependent contribution */
-      if ((deadline=lGetUlong(jep, JB_deadline))) {
-          int time_left = deadline - now;
+      deadline = lGetUlong64(jep, JB_deadline);
+      if (deadline > 0) {
+         if (deadline >= now) {
+            dtc = weight_deadline / MAX(sge_gmt64_to_gmt32_double(deadline - now), 1.0);
+         } else {
+            dtc = weight_deadline;
+         }
 /*           DPRINTF("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline); */
           /* might be too late for this job anyways we're optimistic and treat it high prior */
-          dtc = weight_deadline / MAX(time_left, 1);
       }
 
       /* we do category based caching when determining the resource request 

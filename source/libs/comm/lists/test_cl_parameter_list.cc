@@ -38,7 +38,7 @@
 
 #include "comm/lists/cl_parameter_list.h"
 
-extern int main(void) {
+extern int main() {
    int ret;
    char *param1 = "param1";
    char *param2 = "param2";

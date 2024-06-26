@@ -36,7 +36,7 @@
 #include "gdi/sge_gdi.h"
 
 void sge_set_flush_jr_flag(bool value);
-bool sge_get_flush_jr_flag(void);
+bool sge_get_flush_jr_flag();
 void flush_job_report(lListElem *jr);
 
 lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep);
@@ -44,7 +44,7 @@ lListElem *get_job_report(u_long32 jobid, u_long32 jataskid, const char *petaski
 
 void del_job_report(lListElem *jr);
 void cleanup_job_report(u_long32 jobid, u_long32 jataskid);
-void trace_jr(void);
+void trace_jr();
 
 int add_usage(lListElem *jr, const char *name, const char *uval_as_str, double val);
 
@@ -53,4 +53,4 @@ int add_usage(lListElem *jr, const char *name, const char *uval_as_str, double v
 int do_ack(struct_msg_t *aMsg);
 
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase);
-bool check_for_queue_limits(void);
+bool check_for_queue_limits();

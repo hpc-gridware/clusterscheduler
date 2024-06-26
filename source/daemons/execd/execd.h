@@ -36,5 +36,5 @@
 #include "sgeobj/sge_daemonize.h"
 
 int sge_execd_register_at_qmaster(bool is_restart);
-u_long32 get_last_qmaster_register_time(void);
+u_long64 get_last_qmaster_register_time();
 bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job, lListElem **ja_task);

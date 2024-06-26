@@ -66,7 +66,7 @@ set(LIBRARY_SOURCES
       sge_thread_ctrl.cc
       sge_time.cc
       sge_tmpnam.cc
-      oge_topology.cc
+        ocs_topology.cc
       sge_tq.cc
       sge_uidgid.cc
       sge_unistd.cc)

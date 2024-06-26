@@ -91,7 +91,7 @@
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
@@ -322,14 +322,14 @@ static int do_gdi_delete (lList **id_list, int action, bool delete_all,
 static int japi_stop_event_client(const char *default_cell);
 
 
-static void japi_use_library_signals(void)
+static void japi_use_library_signals()
 {
    /* simply ignore SIGPIPE */
    signal (SIGPIPE, SIG_IGN);
 }
 
 
-static void japi_once_init(void)
+static void japi_once_init()
 {
    /* enable rmon monitoring */
    rmon_mopen();
@@ -824,7 +824,7 @@ static int japi_open_session(const char *username, const char* unqualified_hostn
       unsigned int id = 0;
 
       /* seed random function */
-      id = sge_get_gmt();
+      id = sge_gmt64_to_gmt32(sge_get_gmt64());
 
       sge_dstring_init(&tmp_session_key, tmp_session_key_buffer, sizeof(tmp_session_key_buffer));  
 
@@ -883,7 +883,7 @@ int japi_exit(int flag, dstring *diag)
 
    DENTER(TOP_LAYER);
 
-   DPRINTF("entering japi_exit() at " sge_u32"\n", sge_get_gmt());
+   DPRINTF("entering japi_exit() at " sge_u64"\n", sge_get_gmt64());
 
    JAPI_LOCK_SESSION();   
    if (japi_session != JAPI_SESSION_ACTIVE) {
@@ -3158,7 +3158,7 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
           * not know these hold * conditions.
           */
          if ((ja_task_hold & (MINUS_H_TGT_OPERATOR|MINUS_H_TGT_SYSTEM|MINUS_H_TGT_JA_AD)) || 
-             (lGetUlong(job, JB_execution_time) > sge_get_gmt()) ||
+             (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) ||
              lGetList(job, JB_jid_predecessor_list))
             *remote_ps |= DRMAA_PS_SUBSTATE_SYSTEM_SUSP;
 
@@ -3201,7 +3201,7 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
    if (range_list_is_id_within(lGetList(job, JB_ja_s_h_ids), taskid) ||
        range_list_is_id_within(lGetList(job, JB_ja_o_h_ids), taskid) ||
        range_list_is_id_within(lGetList(job, JB_ja_a_h_ids), taskid)  ||
-       (lGetUlong(job, JB_execution_time) > sge_get_gmt()) || 
+       (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) ||
                     lGetList(job, JB_jid_predecessor_list)) {
       *remote_ps |= DRMAA_PS_SUBSTATE_SYSTEM_SUSP;
    }
@@ -4925,7 +4925,7 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all,
 *     japi_stop_event_client() -- stops the event client
 *
 *  SYNOPSIS
-*     int japi_stop_event_client(void) 
+*     int japi_stop_event_client() 
 *
 *  FUNCTION
 *     Uses the Event Master interface to send a SHUTDOWN event to the event

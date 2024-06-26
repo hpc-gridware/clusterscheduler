@@ -93,4 +93,4 @@ host_diff_usersets(const lListElem *new_host, const lListElem *old, lList **new_
 
 
 void
-host_initalitze_timer(void);
+host_initalitze_timer();

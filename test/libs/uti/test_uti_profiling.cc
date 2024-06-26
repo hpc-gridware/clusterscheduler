@@ -41,9 +41,9 @@
 
 #include "uti/sge_profiling.h"
 
-int do_test(void);
+int do_test();
 
-int test_params(void);
+int test_params();
 
 void *do_sleep(void *);
 

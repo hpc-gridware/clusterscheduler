@@ -39,7 +39,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -49,7 +49,7 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_report_execd.h"
 #include "execution_states.h"
 #include "job_report_qmaster.h"
@@ -170,7 +170,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
    char job_id_buffer[MAX_STRING_SIZE];
    dstring job_id_dstring;
    const char *job_id_string;
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -210,7 +210,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
       jataskid = lGetUlong(jr, JR_ja_task_number);
       rstate = lGetUlong(jr, JR_state);
 
-      jep = lGetElemUlongRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
+      jep = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
       if (jep != nullptr) {
          jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
@@ -331,7 +331,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               petask = lAddSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list, PET_Type);
                               lSetUlong(petask, PET_status, JRUNNING);
                               /* JG: TODO: this should be delivered from execd! */
-                              lSetUlong(petask, PET_start_time, sge_get_gmt());
+                              lSetUlong64(petask, PET_start_time, sge_get_gmt64());
                               lSetList(petask, PET_granted_destin_identifier_list, nullptr);
                               if ((ep = lAddSubHost(petask, JG_qhostname, rhost, PET_granted_destin_identifier_list,
                                                     JG_Type))) {
@@ -388,9 +388,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                       * reporting file to have correct daily usage reporting with
                       * long running jobs
                       */
-                     if (oge::ReportingFileWriter::is_intermediate_acct_required(jep, jatep, petask)) {
+                     if (ocs::ReportingFileWriter::is_intermediate_acct_required(jep, jatep, petask)) {
                         /* write intermediate usage */
-                        oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, true);
+                        ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, true);
 
                         /* this action has changed the ja_task/pe_task - spool */
                         if (pe_task_id_str != nullptr) {
@@ -475,9 +475,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                                  JG_qname));
 
                            DPRINTF("trigger retry of job delivery to master execd\n");
-                           lSetUlong(jatep, JAT_start_time, 0);
+                           lSetUlong64(jatep, JAT_start_time, 0);
                            cancel_job_resend(jobid, jataskid);
-                           trigger_job_resend(sge_get_gmt(), nullptr, jobid, jataskid, 0);
+                           trigger_job_resend(sge_get_gmt64(), nullptr, jobid, jataskid, 0);
                         }
                      }
                   } else {
@@ -504,7 +504,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                    */
                   lListElem *host;
 
-                  host = host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost);
+                  host = host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost);
                   update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 
                   DPRINTF("RU: CLEANUP FOR SLAVE JOB " SFN " on host " SFN "\n", job_id_string, rhost);
@@ -640,7 +640,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            DPRINTF("--- petask " SFN " -> final usage\n", job_id_string);
                            lSetUlong(petask, PET_status, JFINISHED);
 
-                           oge::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
+                           ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
 
                            /* add tasks (scaled) usage to past usage container */
                            {

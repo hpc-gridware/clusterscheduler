@@ -45,17 +45,17 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_conf.h"
 
 #include "comm/cl_commlib.h"
 
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "evm/sge_event_master.h"
 
 #include "basis_types.h"
-#include "oge_MirrorDataStore.h"
+#include "ocs_MirrorDataStore.h"
 #include "sge_thread_main.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
@@ -151,7 +151,7 @@ sge_qmaster_application_status(char **info_message) {
 int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
-   u_long32 start_time = sge_get_gmt();
+   u_long64 start_time = sge_get_gmt64();
    monitoring_t monitor;
    lList *alp = nullptr;
 
@@ -266,14 +266,14 @@ int main(int argc, char *argv[]) {
    sge_event_master_initialize();
 #define OGE_ENABLE_MIRROR_THREADS
 #if defined(OGE_ENABLE_MIRROR_THREADS)
-   oge::event_mirror_initialize();
+   ocs::event_mirror_initialize();
 #endif
    sge_timer_initialize(&monitor);
    sge_worker_initialize();
    sge_listener_initialize();
    sge_scheduler_initialize(nullptr);
 
-   INFO("qmaster startup took " sge_u32" seconds", sge_get_gmt() - start_time);
+   INFO("qmaster startup took %f seconds", sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time));
 
    /*
     * Block till signal from signal thread arrives us
@@ -289,7 +289,7 @@ int main(int argc, char *argv[]) {
    sge_worker_terminate();
    sge_timer_terminate();
 #if defined (OGE_ENABLE_MIRROR_THREADS)
-   oge::event_mirror_terminate();
+   ocs::event_mirror_terminate();
 #endif
    sge_event_master_terminate();
    sge_signaler_terminate();
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
     * Remaining shutdown operations
     */
    // sge_clean_lists();
-   oge::DataStore::free_all_master_lists();
+   ocs::DataStore::free_all_master_lists();
    sge_monitor_free(&monitor);
 
    sge_shutdown(sge_qmaster_get_exit_state());
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 *     init_sig_action_and_mask() -- initialize signal action and mask 
 *
 *  SYNOPSIS
-*     static void init_sig_action_and_mask(void)
+*     static void init_sig_action_and_mask()
 *
 *  FUNCTION
 *     Initialize signal action and mask.

@@ -303,7 +303,7 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;
    int pos;
    const char *ckpt_name;
-   lList **lpp = oge::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
+   lList **lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
 
    DENTER(TOP_LAYER);
 
@@ -340,8 +340,8 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    {
       lList *local_answer_list = nullptr;
 
-      if (ckpt_is_referenced(found, &local_answer_list, *oge::DataStore::get_master_list(SGE_TYPE_JOB),
-                             *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+      if (ckpt_is_referenced(found, &local_answer_list, *ocs::DataStore::get_master_list(SGE_TYPE_JOB),
+                             *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
          const lListElem *answer = lFirst(local_answer_list);
 
          ERROR("denied: %s", lGetString(answer, AN_text));

@@ -44,6 +44,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "comm/commlib.h"
 
@@ -3387,14 +3388,14 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
       }
    }
 
-   /* JB_soft_wallclock_gm must be 0 */
+   /* JB_soft_wallclock_gmt must be 0 */
    if (ret) {
-      ret = object_verify_ulong_null(job, answer_list, JB_soft_wallclock_gmt);
+      ret = object_verify_ulong64_null(job, answer_list, JB_soft_wallclock_gmt);
     }
 
-   /* JB_hard_wallclock_gm must be 0 */
+   /* JB_hard_wallclock_gmt must be 0 */
    if (ret) {
-      ret = object_verify_ulong_null(job, answer_list, JB_hard_wallclock_gmt);
+      ret = object_verify_ulong64_null(job, answer_list, JB_hard_wallclock_gmt);
     }
 
    /* JB_override_tickets must be 0 */
@@ -3462,7 +3463,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
 *     If no limit was requested the maximal ulong32 value is returned
 *
 *  INPUTS
-*     u_long32 *limit      - store for the value
+*     u_long64 *limit      - store for the value
 *     const lListElem *jep - jobs ep
 *
 *  RESULT
@@ -3473,7 +3474,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
 *     MT-NOTE: job_get_wallclock_limit() is not MT safe 
 *
 *******************************************************************************/
-bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
+bool job_get_wallclock_limit(u_long64 *limit, const lListElem *jep) {
    const lListElem *ep;
    double d_ret = 0, d_tmp;
    const char *s;
@@ -3507,12 +3508,12 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
 
    if (got_duration) {
       if (d_ret > (double)U_LONG32_MAX) {
-         *limit = U_LONG32_MAX;
+         *limit = U_LONG64_MAX;
       } else {
-         *limit = d_ret;
+         *limit = sge_gmt32_to_gmt64(d_ret);
       }
    } else {
-      *limit = U_LONG32_MAX;
+      *limit = U_LONG64_MAX;
    }
 
    DRETURN(got_duration);

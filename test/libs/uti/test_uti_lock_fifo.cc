@@ -56,22 +56,22 @@ void set_thread_count(int count) {
 }
 
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    long p = THREAD_COUNT;  /* max num of threads */
 
    return (int) p;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 
 static void *thread_function(void *anArg) {
-   u_long32 start = sge_get_gmt();
+   u_long64 start = sge_get_gmt64();
    u_long32 count = 0;
    int thread_id = thread_count++;
    bool read_thread = true;
@@ -96,7 +96,7 @@ static void *thread_function(void *anArg) {
       }
       count++;
 
-      if (sge_get_gmt() - start >= THREAD_RUN_TIME) {
+      if (sge_get_gmt64() - start >= sge_gmt32_to_gmt64(THREAD_RUN_TIME)) {
          break;
       }
    }

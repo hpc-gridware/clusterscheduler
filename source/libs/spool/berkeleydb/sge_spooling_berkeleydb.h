@@ -55,9 +55,9 @@
 
 extern "C" {
 #ifdef SPOOLING_berkeleydb
-const char *get_spooling_method(void);
+const char *get_spooling_method();
 #else
-const char *get_berkeleydb_spooling_method(void);
+const char *get_berkeleydb_spooling_method();
 #endif
 
 lListElem *
@@ -83,7 +83,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 
 bool
 spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-                              time_t trigger, time_t *next_trigger);
+                              u_long64 trigger, u_long64 *next_trigger);
 
 bool
 spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule, 

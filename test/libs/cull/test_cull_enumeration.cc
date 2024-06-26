@@ -149,7 +149,7 @@ lNameSpace nmv[] = {
         {0, 0, nullptr}
 };
 
-bool test_lWhat_ALL(void) {
+bool test_lWhat_ALL() {
    bool ret = true;
    lEnumeration *what = lWhat("%T(ALL)", TEST_Type);
    const int result[] = {-99, -99, -1};
@@ -167,7 +167,7 @@ bool test_lWhat_ALL(void) {
    return ret;
 }
 
-bool test_lWhat_NONE(void) {
+bool test_lWhat_NONE() {
    bool ret = true;
    lEnumeration *what = lWhat("%T(NONE)", TEST_Type);
    const int result[] = {-99, -99, -2};
@@ -218,7 +218,7 @@ bool test_lWhat_enumeration(lEnumeration *what, int *result,
    return ret;
 }
 
-bool test_lWhat_simple(void) {
+bool test_lWhat_simple() {
    bool ret = true;
    lEnumeration *what = lWhat("%T(%I%I%I)", TEST_Type, TEST_int,
                               TEST_host, TEST_object);
@@ -235,7 +235,7 @@ bool test_lWhat_simple(void) {
    return ret;
 }
 
-bool test_lWhat_complex(void) {
+bool test_lWhat_complex() {
    bool ret = true;
    lEnumeration *what = lWhat("%T(%I %I "
                               "%I -> %T(%I %I -> %T(%I %I)) "
@@ -271,7 +271,7 @@ bool test_lWhat_complex(void) {
    return ret;
 }
 
-bool test_lWhat(void) {
+bool test_lWhat() {
    bool ret = true;
 
    ret &= test_lWhat_ALL();
@@ -281,7 +281,7 @@ bool test_lWhat(void) {
    return ret;
 }
 
-bool test_lCountWhat(void) {
+bool test_lCountWhat() {
    bool ret = true;
    lEnumeration *what1 = lWhat("%T(%I %I "
                                "%I -> %T(%I %I -> %T(%I %I)) "
@@ -305,7 +305,7 @@ bool test_lCountWhat(void) {
    return ret;
 }
 
-bool test_lReduceDescr(void) {
+bool test_lReduceDescr() {
    bool ret = true;
    lEnumeration *what1 = lWhat("%T(ALL)", TEST_Type);
    lEnumeration *what2 = lWhat("%T(NONE)", TEST_Type);
@@ -372,7 +372,7 @@ static int enumeration_compare(const lEnumeration *what1,
    return ret;
 }
 
-bool test_lCopyWhat(void) {
+bool test_lCopyWhat() {
    bool ret = true;
    lEnumeration *what1 = lWhat("%T(ALL)", TEST_Type);
    lEnumeration *what2 = lWhat("%T(NONE)", TEST_Type);
@@ -419,7 +419,7 @@ bool test_lCopyWhat(void) {
    return ret;
 }
 
-bool test_lIntVector2What(void) {
+bool test_lIntVector2What() {
    bool ret = true;
    lEnumeration *what1 = lWhat("%T(%I %I %I %I)",
                                TEST_Type, TEST_int, TEST_list, TEST_object, TEST_ref);
@@ -437,7 +437,7 @@ bool test_lIntVector2What(void) {
    return ret;
 }
 
-bool test_lWhat_lSelect(void) {
+bool test_lWhat_lSelect() {
    bool ret = true;
    lEnumeration *what = lWhat("%T(%I %I -> %T( %I %I -> %T (%I %I %I %I) %I %I) %I -> %T(%I) %I)",
                               TEST_Type,

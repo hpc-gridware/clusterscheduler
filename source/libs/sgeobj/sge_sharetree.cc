@@ -172,7 +172,7 @@ const char *path
 /***************************************************
  Generate a Template for a sharetreenode
  ***************************************************/
-lListElem *getSNTemplate(void)
+lListElem *getSNTemplate()
 {
    lListElem *ep;
 

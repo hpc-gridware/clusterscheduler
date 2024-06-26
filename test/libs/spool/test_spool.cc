@@ -54,7 +54,7 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "mir/sge_mirror.h"
 
@@ -67,7 +67,7 @@
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
    char unique_name[CL_MAXHOSTLEN];
-   const lList *cluster_config = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
+   const lList *cluster_config = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -98,7 +98,7 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 progid = component_get_component_id();
-   lList *cluster_config = *oge::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
+   lList *cluster_config = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
    
@@ -153,7 +153,7 @@ static bool read_spooled_data()
    lList *answer_list = nullptr;
    const lListElem *context;
    lList *master_list = nullptr;
-   lList **cluster_configuration = oge::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
+   lList **cluster_configuration = ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
@@ -175,95 +175,95 @@ static bool read_spooled_data()
       DPRINTF("read %d entries to master scheduler configuration list\n", lGetNumberOfElem(sconf_get_config_list()));
    }
    /* complexes */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master complex entry list\n", lGetNumberOfElem(master_list));
 
    /* hosts */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master exechost list\n", lGetNumberOfElem(master_list));
 
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_ADMINHOST);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master admin host list\n", lGetNumberOfElem(master_list));
 
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SUBMITHOST);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master submit host list\n", lGetNumberOfElem(master_list));
 
    /* managers */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master manager list\n", lGetNumberOfElem(master_list));
 
    /* host groups */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master host group list\n", lGetNumberOfElem(master_list));
 
    /* operators */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master operator list\n", lGetNumberOfElem(master_list));
 
    /* usersets */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master user set list\n", lGetNumberOfElem(master_list));
 
    /* calendars */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master calendar list\n", lGetNumberOfElem(master_list));
 
    /* queues */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master cluster queue list\n", lGetNumberOfElem(master_list));
 
    /* pes */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_PE);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PE);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master parallel environment list\n", lGetNumberOfElem(master_list));
 
    /* ckpt */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master ckpt list\n", lGetNumberOfElem(master_list));
 
    /* jobs */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_JOB);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master job list\n", lGetNumberOfElem(master_list));
 
    /* user list */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_USER);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USER);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master user list\n", lGetNumberOfElem(master_list));
 
    /* project list */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master project list\n", lGetNumberOfElem(master_list));
 
    /* sharetree */
-   master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
+   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master sharetree list\n", lGetNumberOfElem(master_list));
@@ -285,7 +285,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
 
    context = spool_get_default_context();
    
-   master_list = oge::DataStore::get_master_list(type);
+   master_list = ocs::DataStore::get_master_list(type);
    key_nm      = object_type_get_key_nm(type);
    new_list    = lGetList(event, ET_new_version);
 
@@ -458,9 +458,9 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
 
    context = spool_get_default_context();
    
-   master_list = oge::DataStore::get_master_list(type);
+   master_list = ocs::DataStore::get_master_list(type);
    key_nm      = object_type_get_key_nm(type);
-   master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    switch(action) {
       case SGE_EMA_LIST:
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
    sge_setup_sig_handlers(QEVENT);
 
    // this thread will use the GLOBAL data store
-   oge::DataStore::select_active_ds(oge::DataStore::Id::GLOBAL);
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);
 
    if (reresolve_qualified_hostname() != CL_RETVAL_OK) {
       sge_exit(1);

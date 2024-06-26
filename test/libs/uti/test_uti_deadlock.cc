@@ -45,7 +45,7 @@ static void *thread_function_1(void *anArg);
 
 static void *thread_function_2(void *anArg);
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    long p = 2;  /* min num of threads */
 
 #if defined(SOLARIS)
@@ -55,13 +55,13 @@ int get_thrd_demand(void) {
    return (int) p;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    static int i = 0;
 
    return ((i++ % 2) ? thread_function_1 : thread_function_2);
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 
@@ -111,7 +111,8 @@ static void *thread_function_1(void *anArg) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
 
-   DPRINTF("Thread %u sleeping at %d\n", sge_locker_id(), sge_get_gmt());
+   DSTRING_STATIC(dstr, 64);
+   DPRINTF("Thread %u sleeping at %s\n", sge_locker_id(), sge_ctime64(0, &dstr));
    sleep(5);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);

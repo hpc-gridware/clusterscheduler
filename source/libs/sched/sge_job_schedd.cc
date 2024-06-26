@@ -61,7 +61,7 @@
 *     job_get_duration() -- Determine a jobs runtime duration
 *
 *  SYNOPSIS
-*     bool job_get_duration(u_long32 *duration, const lListElem *jep) 
+*     bool job_get_duration(u_long64 *duration, const lListElem *jep)
 *
 *  FUNCTION
 *     The minimum of the time values the user specified with -l h_rt=<time> 
@@ -69,7 +69,7 @@
 *     time values were specified the default duration is used.
 *
 *  INPUTS
-*     u_long32 *duration   - Returns duration on success
+*     u_long64 *duration   - Returns duration on success
 *     const lListElem *jep - The job (JB_Type)
 *
 *  RESULT
@@ -78,12 +78,12 @@
 *  NOTES
 *     MT-NOTE: job_get_duration() is MT safe 
 *******************************************************************************/
-bool job_get_duration(u_long32 *duration, const lListElem *jep)
+bool job_get_duration(u_long64 *duration, const lListElem *jep)
 {
    DENTER(TOP_LAYER);
 
    if (!job_get_wallclock_limit(duration, jep)) {
-      *duration = sconf_get_default_duration();
+      *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
    }
 
    DRETURN(true);
@@ -110,17 +110,17 @@ bool job_get_duration(u_long32 *duration, const lListElem *jep)
 *  NOTES
 *     MT-NOTE: task_get_duration() is MT safe 
 *******************************************************************************/
-bool task_get_duration(u_long32 *duration, const lListElem *ja_task) {
+bool task_get_duration(u_long64 *duration, const lListElem *ja_task) {
 
    DENTER(TOP_LAYER);
 
    if (ja_task != nullptr) {
-      *duration = lGetUlong(ja_task, JAT_wallclock_limit);
-      if (*duration == U_LONG32_MAX) {
-         *duration = sconf_get_default_duration();
+      *duration = lGetUlong64(ja_task, JAT_wallclock_limit);
+      if (*duration == U_LONG64_MAX) {
+         *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
       }
    } else {
-      *duration = sconf_get_default_duration();
+      *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
    }
 
    DRETURN(true);
@@ -640,7 +640,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
             target = &(target_tasks[SPLIT_ERROR]);
          } 
          if (target == nullptr && result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-             (lGetUlong(job, JB_execution_time) > sge_get_gmt()) &&
+             (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) &&
              (ja_task_status == JIDLE)) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32" is waiting due to time.\n", ja_task_id);
@@ -728,7 +728,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
       }
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-          lGetUlong(job, JB_execution_time) > sge_get_gmt()) {
+          lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) {
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Unenrolled tasks are waiting due to time\n");
 #endif

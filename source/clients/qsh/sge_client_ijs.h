@@ -38,7 +38,7 @@
 #define COMM_SERVER "qrsh_ijs"
 #define COMM_CLIENT "shepherd_ijs"
 
-void set_signal_handlers(void);
+void set_signal_handlers();
 void* tty_to_commlib(void *t_conf);
 void* commlib_to_tty(void *t_conf);
 

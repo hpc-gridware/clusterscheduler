@@ -55,7 +55,7 @@
 #include "spool/loader/sge_spooling_loader.h"
 //#include "spool/berkeleydb/sge_bdb.h"
 
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "msg_common.h"
 #include "msg_utilbin.h"
@@ -437,7 +437,7 @@ main(int argc, char *argv[])
 
    if (spool_get_default_context() != nullptr) {
 #if 0
-      time_t next_trigger = 0;
+      u_long64 next_trigger = 0;
       if (!spool_trigger_context(&answer_list, spool_get_default_context(), 
                                  0, &next_trigger)) {
          ret = EXIT_FAILURE;

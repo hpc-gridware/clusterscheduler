@@ -43,8 +43,8 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-#include "oge_BaseAccountingFileWriter.h"
-#include "oge_BaseReportingFileWriter.h"
+#include "ocs_BaseAccountingFileWriter.h"
+#include "ocs_BaseReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 
 void
@@ -61,7 +61,7 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task);
 
-namespace oge {
+namespace ocs {
    class ClassicReportingFileWriter : public BaseReportingFileWriter {
    private:
       static const char REPORTING_DELIMITER{':'};
@@ -76,7 +76,7 @@ namespace oge {
       create_new_job_record(lList **answer_list, const lListElem *job) override;
 
       bool
-      create_job_log(lList **answer_list, u_long32 event_time, job_log_t, const char *user, const char *host,
+      create_job_log(lList **answer_list, u_long64 event_time, job_log_t, const char *user, const char *host,
                      const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                      const lListElem *pe_task, const char *message) override;
 
@@ -85,31 +85,31 @@ namespace oge {
                          lListElem *ja_task, bool intermediate) override;
 
       bool
-      create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time) override;
+      create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) override;
 
       bool
       create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
-                                    u_long32 report_time) override;
+                                    u_long64 report_time) override;
 
       bool
-      create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time) override;
+      create_queue_record(lList **answer_list, const lListElem *queue, u_long64 report_time) override;
 
       bool
       create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                     const lListElem *job, u_long32 report_time) override;
+                                     const lListElem *job, u_long64 report_time) override;
 
       bool
-      create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+      create_new_ar_record(lList **answer_list, const lListElem *ar, u_long64 report_time) override;
 
       bool
-      create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+      create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long64 report_time) override;
 
       bool
       create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
-                           const char *ar_description, u_long32 report_time) override;
+                           const char *ar_description, u_long64 report_time) override;
 
       bool
-      create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long32 report_time) override;
+      create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) override;
 
       void
       create_sharelog_record(monitoring_t *monitor) override;
@@ -117,7 +117,7 @@ namespace oge {
       // non virtual functions
       static void
       create_single_ar_acct_record(dstring *dstr, const lListElem *ar, const char *cqueue_name,
-                                   const char *hostname, u_long32 slots, u_long32 report_time);
+                                   const char *hostname, u_long32 slots, u_long64 report_time);
 
       bool
       write_load_values(lList **answer_list, dstring *buffer,

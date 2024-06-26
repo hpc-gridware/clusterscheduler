@@ -46,9 +46,9 @@
 #include "uti/sge_profiling.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_feature.h"
@@ -107,10 +107,10 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
 
 int main(int argc, char *argv[]);
-static u_long32 last_qmaster_registration_time = 0;
+static u_long64 last_qmaster_registration_time = 0;
 
 
-u_long32 get_last_qmaster_register_time(void) {
+u_long64 get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
    int printed_points = 0;
    int max_enroll_tries;
    static char tmp_err_file_name[SGE_PATH_MAX];
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
    lList *alp = nullptr;
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
    INFO(SFNMAX, MSG_EXECD_STARTPDCANDPTF);
 #endif
 
-   master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    *master_job_list = lCreateList("master job list", JB_Type);
    job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
@@ -400,12 +400,12 @@ int main(int argc, char **argv)
 
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    if (prof_is_active(SGE_PROF_ALL)) {
-     time_t now = (time_t)sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "profiling summary:\n");
          prof_reset(SGE_PROF_ALL,nullptr);
-         next_prof_output = now + 60;
+         next_prof_output = now + sge_gmt32_to_gmt64(60);
       }
    }
    sge_prof_cleanup();
@@ -449,7 +449,7 @@ static void execd_exit_func(int i)
 *     sge_execd_register_at_qmaster() -- modify execd list at qmaster site
 *
 *  SYNOPSIS
-*     int sge_execd_register_at_qmaster(void) 
+*     int sge_execd_register_at_qmaster() 
 *
 *  FUNCTION
 *     add local execd name to SGE_EH_LIST in order to register at
@@ -528,7 +528,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    if (return_value == 0) {
       sge_last_register_error_flag = 0;
       INFO(MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:"");
-      last_qmaster_registration_time = sge_get_gmt();
+      last_qmaster_registration_time = sge_get_gmt64();
    }
    lFreeList(&alp);
    DRETURN(return_value);
@@ -692,7 +692,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
 
    DENTER(TOP_LAYER);
 
-   *job = lGetElemUlongFirstRW(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+   *job = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != nullptr) {
       *ja_task = job_search_task(*job, nullptr, ja_task_id);
       if (*ja_task != nullptr) {
@@ -702,7 +702,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
       /* in execd, we have exactly one ja_task per job,
        * therefore we can have multiple jobs with the same job_id
        */
-      *job = lGetElemUlongNextRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+      *job = lGetElemUlongNextRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
    
    if (*job == nullptr) {

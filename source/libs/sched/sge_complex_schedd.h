@@ -44,7 +44,7 @@ int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue,
 lListElem *
 get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, 
              const char *attrname, const lList *centry_list, 
-             u_long32 start_time, u_long32 duration);
+             u_long64 start_time, u_long64 duration);
 
 int compare_complexes(int slots, lListElem *complex1, 
                       lListElem *complex2, char *availability_text, 
@@ -58,7 +58,7 @@ lListElem*
 get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, 
               const lList *load_attr, const lList *centry_list, const lListElem *queue, 
               u_long32 layer, double lc_factor, dstring *reason, bool zero_utilization,
-              u_long32 start_time, u_long32 duration);
+              u_long64 start_time, u_long64 duration);
 
 int string_base_cmp(u_long32 type, const char *s1, const char *s2);
 int string_base_cmp_old(u_long32 type, const char *s1, const char *s2);

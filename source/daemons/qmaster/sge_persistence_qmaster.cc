@@ -35,6 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -99,7 +100,7 @@ sge_initialize_persistance_timer() {
 
    te_register_event_handler(spooling_trigger_handler, TYPE_SPOOLING_TRIGGER);
 
-   ev = te_new_event(time(nullptr), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, nullptr);
+   ev = te_new_event(sge_get_gmt64(), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -109,7 +110,7 @@ sge_initialize_persistance_timer() {
 bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
-   time_t time = 0;
+   u_long64 time = 0;
    lList *alp = nullptr;
    lListElem *context;
 
@@ -143,8 +144,7 @@ sge_shutdown_persistence(lList **answer_list) {
 
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
-   time_t next_trigger = 0;
-   time_t now;
+   u_long64 next_trigger = 0;
    lList *answer_list = nullptr;
    te_event_t ev = nullptr;
 
@@ -157,9 +157,9 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* validate next_trigger. If it is invalid, set it to one minute after now */
-   now = time(nullptr);
+   u_long64 now = sge_get_gmt64();
    if (next_trigger <= now) {
-      next_trigger = now + 60;
+      next_trigger = now + sge_gmt32_to_gmt64(60);
    }
 
    /* set timerevent for next trigger */
@@ -176,7 +176,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *
 *  SYNOPSIS
 *     bool 
-*     sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, 
+*     sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event,
 *                     u_long32 intkey1, u_long32 intkey2, const char *strkey, 
 *                     const char *strkey2, const char *session,
 *                     lListElem *object, lListElem *sub_object1, 
@@ -190,7 +190,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *
 *  INPUTS
 *     lList **answer_list    - to return error messages
-*     u_long32 timestamp     - timestamp of object change, if 0 is passed,
+*     u_long64 timestamp     - timestamp of object change, if 0 is passed,
 *                              use current date/time
 *     ev_event event         - the event to send
 *     u_long32 intkey1       - an integer key (job_id)
@@ -218,7 +218,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *     
 *******************************************************************************/
 bool
-sge_event_spool(lList **answer_list, u_long32 timestamp, ev_event event, u_long32 intkey1,
+sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long32 intkey1,
                 u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
    bool ret = true;

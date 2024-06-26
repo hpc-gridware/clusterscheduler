@@ -40,7 +40,7 @@
 
 #include "comm/lists/cl_lists.h"
 
-extern int main(void) {
+extern int main() {
    int ret;
    char *data1 = "string_1";
    char *data2 = "string_2";

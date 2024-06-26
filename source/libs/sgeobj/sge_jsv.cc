@@ -689,7 +689,7 @@ jsv_list_remove(const char *name, const char *context)
 *     jsv_is_enabled() -- is JSV enabled in the given context 
 *
 *  SYNOPSIS
-*     bool jsv_is_enabled(void) 
+*     bool jsv_is_enabled() 
 *
 *  FUNCTION
 *     Returns if there are active JSV instances which have to be triggered. 
@@ -728,7 +728,7 @@ jsv_is_enabled(const char *context) {
 *     jsv_list_remove_all() -- Remove all JSV elements 
 *
 *  SYNOPSIS
-*     bool jsv_list_remove_all(void) 
+*     bool jsv_list_remove_all() 
 *
 *  FUNCTION
 *     Remove all JSV elements from the global 'jsv_list' 
@@ -745,7 +745,7 @@ jsv_is_enabled(const char *context) {
 *     MT-NOTE: jsv_list_remove_all() is MT safe 
 *******************************************************************************/
 bool 
-jsv_list_remove_all(void)
+jsv_list_remove_all()
 {
    bool ret = true;
    lListElem *jsv;

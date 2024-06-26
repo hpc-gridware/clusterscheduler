@@ -55,7 +55,7 @@ typedef struct {
    pthread_mutex_t mutex;
 
    char *master_host;
-   u_long32 timestamp_qmaster_file;
+   u_long64 timestamp_qmaster_file;
    char *ssl_private_key;
    char *ssl_certificate;
    sge_csp_path_class_t *csp_path_obj;
@@ -89,7 +89,7 @@ static void
 gdi_data_log_ts_parameter() {
    DENTER(TOP_LAYER);
    DPRINTF("master_host             >%s<\n", ts.master_host ? ts.master_host : "NA");
-   DPRINTF("timestamp_qmaster_file  >%d<\n", ts.timestamp_qmaster_file);
+   DPRINTF("timestamp_qmaster_file  >" sge_u64 "<\n", ts.timestamp_qmaster_file);
    DRETURN_VOID;
 }
 
@@ -177,13 +177,13 @@ gdi_data_set_setup(bool is_setup) {
    DRETURN_VOID;
 }
 
-u_long32
+u_long64
 gdi_data_get_timestamp_qmaster_file() {
    return ts.timestamp_qmaster_file;
 }
 
 void
-gdi_data_set_timestamp_qmaster_file(u_long32 timestamp_qmaster_file) {
+gdi_data_set_timestamp_qmaster_file(u_long64 timestamp_qmaster_file) {
    ts.timestamp_qmaster_file = timestamp_qmaster_file;
 }
 

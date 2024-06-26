@@ -106,7 +106,7 @@ sge_event_master_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
 
    DENTER(TOP_LAYER);
 

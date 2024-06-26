@@ -58,25 +58,25 @@
 #define allow_delete_time_modification
 
 static int diff(const char *file1, const char *file2);
-static int PE_test(void);
-static int CAL_test(void);
-static int CK_test(void);
-static int STN_test(void);
-static int CE_test(void);
-static int CEL_test(void); 
-static int UU_test(void);
-static int PR_test(void);
-static int US_test(void);
-static int EH_test(void);
-static int CQ_test(void);
-static int SC_test(void);
-static int QU_test(void);
-static int HGRP_test(void);
-static int CONF_test(void);
-static int RQS_test(void);
-static int AR_test(void);
+static int PE_test();
+static int CAL_test();
+static int CK_test();
+static int STN_test();
+static int CE_test();
+static int CEL_test(); 
+static int UU_test();
+static int PR_test();
+static int US_test();
+static int EH_test();
+static int CQ_test();
+static int SC_test();
+static int QU_test();
+static int HGRP_test();
+static int CONF_test();
+static int RQS_test();
+static int AR_test();
 
-typedef int (*func)(void);
+typedef int (*func)();
 
 /*
  * 
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
    DRETURN_VOID(EXIT_SUCCESS);
 }
 
-static int PE_test(void)
+static int PE_test()
 {
    int ret = 0;
    lList *lp = nullptr;
@@ -299,7 +299,7 @@ static int PE_test(void)
    return ret;
 }
 
-static int CAL_test(void)
+static int CAL_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -349,7 +349,7 @@ static int CAL_test(void)
    return ret;
 }
 
-static int CK_test(void)
+static int CK_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -514,7 +514,7 @@ static int STN_test() {
    return ret;
 }
 
-static int CE_test(void)
+static int CE_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -568,7 +568,7 @@ static int CE_test(void)
    return ret;
 }
 
-static int CEL_test(void)
+static int CEL_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -673,7 +673,7 @@ static int diff(const char *file1, const char *file2)
    return ret;
 }
 
-static lList *buildUsageList(void) {   
+static lList *buildUsageList() {   
    lList *lp = nullptr;
    lListElem *ep2 = nullptr;
 
@@ -697,7 +697,7 @@ static lList *buildUsageList(void) {
    return lp;
 }
 
-static lList *buildLTUsageList(void) {
+static lList *buildLTUsageList() {
    lList *lp = nullptr;
    lListElem *ep2 = nullptr;
 
@@ -721,7 +721,7 @@ static lList *buildLTUsageList(void) {
    return lp;
 }      
 
-static lList *buildProjectList(void) {
+static lList *buildProjectList() {
    lList *lp = nullptr;
    lList *lp2 = nullptr;
    lListElem *ep2 = nullptr;
@@ -816,7 +816,7 @@ static lList *buildProjectList(void) {
    return lp;
 }
 
-static lList *buildDebitedUsageList(void) {
+static lList *buildDebitedUsageList() {
    lList *lp = nullptr;
    lList *lp2 = nullptr;
    lListElem *ep = nullptr;
@@ -873,7 +873,7 @@ static lList *buildDebitedUsageList(void) {
    return lp;
 }   
 
-static lList *buildACLList(void) {
+static lList *buildACLList() {
    lList *lp = nullptr;
    lListElem *ep2 = nullptr;
 
@@ -890,7 +890,7 @@ static lList *buildACLList(void) {
    return lp;
 }   
    
-static lList *buildXACLList(void) {
+static lList *buildXACLList() {
    lList *lp = nullptr;
    lListElem *ep2 = nullptr;
 
@@ -907,7 +907,7 @@ static lList *buildXACLList(void) {
    return lp;
 }   
 
-static int UU_test(void) {
+static int UU_test() {
    int ret = 0;
    lListElem *user = nullptr;
    lList *lp = nullptr;
@@ -920,10 +920,10 @@ static int UU_test(void) {
    lSetString(user, UU_name, "Test_Name");
    lSetUlong(user, UU_oticket, 100);
    lSetUlong(user, UU_fshare, 50);
-   lSetUlong(user, UU_delete_time, 123456789);
+   lSetUlong64(user, UU_delete_time, (u_long64)123456789000000);
    lSetString(user, UU_default_project, "default_project");
 
-   lSetUlong(user, UU_usage_time_stamp, 987654321);
+   lSetUlong64(user, UU_usage_time_stamp, 987654321);
 
    lp = buildUsageList();
    lSetList(user, UU_usage, lp);
@@ -972,7 +972,7 @@ static int UU_test(void) {
    return ret;
 }
 
-static int PR_test(void) {
+static int PR_test() {
    int ret = 0;
    lListElem *prj = nullptr;
    lList *lp = nullptr;
@@ -985,7 +985,7 @@ static int PR_test(void) {
    lSetString(prj, PR_name, "Test_Name");
    lSetUlong(prj, PR_oticket, 100);
    lSetUlong(prj, PR_fshare, 50);
-   lSetUlong(prj, PR_usage_time_stamp, 987654321);
+   lSetUlong64(prj, PR_usage_time_stamp, 987654321);
 
    lp = buildUsageList();
    lSetList(prj, PR_usage, lp);
@@ -1046,7 +1046,7 @@ static int PR_test(void) {
    return ret;
 }
 
-static int US_test(void)
+static int US_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -1116,7 +1116,7 @@ static int US_test(void)
    return ret;
 }
 
-static int EH_test(void)
+static int EH_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -1356,7 +1356,7 @@ static int EH_test(void)
    return ret;
 }
 
-static int CQ_test(void) {
+static int CQ_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -2164,7 +2164,7 @@ static int CQ_test(void) {
    return ret;
 }
 
-static int SC_test(void)
+static int SC_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -2288,7 +2288,7 @@ static int SC_test(void)
    return ret;
 }
 
-static int QU_test(void)
+static int QU_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -2301,7 +2301,7 @@ static int QU_test(void)
    lSetString(ep, QU_qname, "Test_Name2");
    lSetUlong(ep, QU_state, 1);
    lSetUlong(ep, QU_pending_signal, 2);
-   lSetUlong(ep, QU_pending_signal_delivery_time, 3);
+   lSetUlong64(ep, QU_pending_signal_delivery_time, 3000000);
    lSetUlong(ep, QU_version, 4);
 
    printf("QU: No Args\n");   
@@ -2345,7 +2345,7 @@ static int QU_test(void)
    return ret;
 }
 
-static int HGRP_test(void)
+static int HGRP_test()
 {
    int ret = 0;
    lListElem *ep = nullptr;
@@ -2396,7 +2396,7 @@ static int HGRP_test(void)
    return ret;
 }
 
-static int CONF_test(void) {
+static int CONF_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -2491,7 +2491,7 @@ static int CONF_test(void) {
    return ret;
 }
 
-static int RQS_test(void) {
+static int RQS_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -2634,7 +2634,7 @@ static int RQS_test(void) {
    return ret;
 }
 
-static int AR_test(void) {
+static int AR_test() {
    int ret = 0;
    lList *lp;
    lListElem *ep = nullptr;

@@ -114,7 +114,7 @@ static int get_load_avg(double loadv[], int nelem);
 
 #endif
 
-static double get_cpu_load(void);
+static double get_cpu_load();
 
 #endif
 
@@ -380,7 +380,7 @@ int kupdate(int avenrun[3])
    return(ncpu);
 }
 
-double get_cpu_load(void) {
+double get_cpu_load() {
    int cpus_found, i, j;
    double cpu_load = -1.0;
    static long cpu_time[CPUSTATES] = { 0L, 0L, 0L, 0L, 0L};
@@ -504,7 +504,7 @@ static double get_cpu_load()
 
 #elif defined(DARWIN)
 
-double get_cpu_load(void)
+double get_cpu_load()
 {
    static long cpu_new[CPU_STATE_MAX];
    static long cpu_old[CPU_STATE_MAX];
@@ -598,7 +598,7 @@ static int get_load_avg(
 #endif
 
 
-int get_channel_fd(void) {
+int get_channel_fd() {
    if (kernel_initialized) {
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD)
       return -1;

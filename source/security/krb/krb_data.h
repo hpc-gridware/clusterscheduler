@@ -82,4 +82,4 @@ typedef struct {
 
 } krb_global_data_t;
 
-krb_global_data_t *krb_gsd(void);
+krb_global_data_t *krb_gsd();

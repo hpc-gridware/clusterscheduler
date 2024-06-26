@@ -34,31 +34,32 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
+#include <unistd.h>
 
-#ifndef __BASIS_TYPES_H
+#include "basis_types.h"
+#include "uti/sge_dstring.h"
 
-#   include "basis_types.h"
+u_long64 sge_get_gmt64();
 
-#endif
+constexpr u_long64 sge_gmt32_to_gmt64(u_long32 timestamp) {
+   u_long64 ret = timestamp;
+   return ret * 1000000;
+}
 
-#include "sge_dstring.h"
+u_long32 sge_gmt64_to_gmt32(u_long64 timestamp);
+time_t sge_gmt64_to_time_t(u_long64 timestamp);
+void sge_gmt64_to_timespec(u_long64 timestamp, struct timespec &tm);
+double sge_gmt64_to_gmt32_double(u_long64 timestamp);
+u_long64 sge_time_t_to_gmt64(time_t timestamp);
 
-u_long32 sge_get_gmt();
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr, bool is_xml, bool with_micro);
+const char *sge_ctime64(u_long64 timestamp, dstring *dstr);
+const char *sge_ctime64_short(u_long64 timestamp, dstring *dstr);
+const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr);
 
-const char *sge_ctime(time_t, dstring *buffer);
+const char *append_time(u_long64 i, dstring *buffer, bool is_xml);
+const char *append_time(time_t i, dstring *buffer, bool is_xml);
 
-const char *sge_ctimeXML(time_t i, dstring *buffer);
-
-const char *sge_ctime32(u_long32 *, dstring *buffer);
-
-const char *sge_at_time(time_t, dstring *buffer);
-
-void append_time(time_t i, dstring *buffer, bool is_xml);
-
-void sge_stopwatch_start(int);
-
-void sge_stopwatch_log(int, const char *);
-
-u_long32 duration_add_offset(u_long32 duration, u_long32 offset);
+u_long64 duration_add_offset(u_long64 duration, u_long64 offset);
 
 void sge_usleep(int);

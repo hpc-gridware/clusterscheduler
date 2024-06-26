@@ -87,7 +87,7 @@ typedef struct {
 
 static pthread_once_t message_id_once = PTHREAD_ONCE_INIT;
 
-static void message_id_once_init(void);
+static void message_id_once_init();
 
 static pthread_key_t message_id_key;
 
@@ -101,7 +101,7 @@ static htable sge_message_hash_table = nullptr;
 /* this is to find out if the sge_init_language_func() was called */
 static bool sge_are_language_functions_installed = false;
 
-static int sge_get_message_id_output_implementation(void);
+static int sge_get_message_id_output_implementation();
 
 /****** uti/language/sge_init_language() **************************************
 *  NAME
@@ -484,7 +484,7 @@ void sge_set_message_id_output(int flag) {
 *     sge_get_message_id_output() -- check if message id should be added
 *
 *  SYNOPSIS
-*     int sge_get_message_id_output(void) 
+*     int sge_get_message_id_output() 
 *
 *  FUNCTION
 *     This function returns the value stored in the static global 
@@ -506,7 +506,7 @@ void sge_set_message_id_output(int flag) {
 *     uti/language/sge_set_message_id_output()
 *     uti/language/sge_get_message_id_output_implementation()
 *******************************************************************************/
-int sge_get_message_id_output(void) {
+int sge_get_message_id_output() {
    int ret;
 
    DENTER_(TOP_LAYER);
@@ -525,7 +525,7 @@ int sge_get_message_id_output(void) {
 *        language_mutex
 *
 *  SYNOPSIS
-*     int sge_get_message_id_output_implementation(void) 
+*     int sge_get_message_id_output_implementation() 
 *
 *  FUNCTION
 *     When the sge_get_message_id_output() functionality is needed from within
@@ -549,7 +549,7 @@ int sge_get_message_id_output(void) {
 *     uti/language/sge_get_message_id_output()
 *     uti/language/sge_set_message_id_output()
 *******************************************************************************/
-static int sge_get_message_id_output_implementation(void) {
+static int sge_get_message_id_output_implementation() {
    int *buf;
    DENTER_(CULL_LAYER);
 
@@ -762,7 +762,7 @@ static void message_id_destroy(void *theState) {
    sge_free(&theState);
 }
 
-static void message_id_once_init(void) {
+static void message_id_once_init() {
    int *buf;
    int res;
    pthread_key_create(&message_id_key, &message_id_destroy);

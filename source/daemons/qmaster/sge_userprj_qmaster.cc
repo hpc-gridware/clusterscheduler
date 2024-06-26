@@ -92,7 +92,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
    int obj_usage;
    int obj_version;
    int obj_project;
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *obj_master_list;
 
    DENTER(TOP_LAYER);
@@ -106,7 +106,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
       obj_usage = PR_usage;
       obj_version = PR_version;
       obj_project = PR_project;
-      obj_master_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      obj_master_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
    } else {
       // user
       obj_name = MSG_OBJ_USER;
@@ -116,7 +116,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
       obj_usage = UU_usage;
       obj_version = UU_version;
       obj_project = UU_project;
-      obj_master_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+      obj_master_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
    }
 
    /* ---- UP_name */
@@ -154,8 +154,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
    if (user_flag) {
       /* ---- UU_delete_time */
       if ((pos = lGetPosViaElem(ep, UU_delete_time, SGE_NO_ABORT)) >= 0) {
-         uval = lGetPosUlong(ep, pos);
-         lSetUlong(modp, UU_delete_time, uval);
+         lSetUlong64(modp, UU_delete_time, lGetPosUlong64(ep, pos));
       }
    }
 
@@ -181,7 +180,7 @@ userprj_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *r
          NULL_OUT_NONE(ep, UU_default_project);
          /* make sure default project exists */
          if ((dproj = lGetPosString(ep, pos))) {
-            const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
             if (master_project_list == nullptr || !prj_list_locate(master_project_list, dproj)) {
                ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj);
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -254,7 +253,7 @@ userprj_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **
       obj_mod_event = sgeE_USER_MOD;
    }
 
-   for_each_ep(rqs, *(oge::DataStore::get_master_list(SGE_TYPE_RQS))) {
+   for_each_ep(rqs, *(ocs::DataStore::get_master_list(SGE_TYPE_RQS))) {
       if (scope_is_referenced_rqs(rqs, obj_filter, lGetString(ep, obj_key))) {
          lSetBool(ep, obj_consider, true);
          break;
@@ -323,7 +322,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
    }
 
    /* ensure this u/p object is not referenced in actual share tree */
-   if (getNode(*oge::DataStore::get_master_list(SGE_TYPE_SHARETREE), name, user ? STT_USER : STT_PROJECT, 0)) {
+   if (getNode(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE), name, user ? STT_USER : STT_PROJECT, 0)) {
       ERROR(MSG_SGETEXT_CANT_DELETE_UP_IN_SHARE_TREE_SS, user ? MSG_OBJ_USER : MSG_OBJ_PRJ, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -337,7 +336,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
        * fix for bug 6422335
        * check the cq configuration for project references instead of qinstances
        */
-      for_each_ep(cqueue, *(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+      for_each_ep(cqueue, *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
          for_each_ep(prj, lGetList(cqueue, CQ_projects)) {
             if (lGetSubStr(prj, PR_name, name, APRJLIST_value)) {
                ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE, lGetString( cqueue, CQ_name));
@@ -355,7 +354,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       }
 
       /* check hosts */
-      for_each_ep(host, *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
+      for_each_ep(host, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
          if (prj_list_locate(lGetList(host, EH_prj), name)) {
             ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host, EH_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -387,7 +386,7 @@ sge_del_userprj(lListElem *up_ep, lList **alpp, lList **upl,
       lFreeList(&projects);
 
       /* check user list for reference */
-      if ((prj = lGetElemStr(*oge::DataStore::get_master_list(SGE_TYPE_USER), UU_default_project, name))) {
+      if ((prj = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_USER), UU_default_project, name))) {
          ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, lGetString(prj, UU_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -433,7 +432,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /*-------------------------------------------------------------------------*/
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
-   u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
    const char *admin = bootstrap_get_admin_user();
    const char *qmaster_host = component_get_qualified_hostname();
 
@@ -442,18 +441,18 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    /* shall auto users be deleted again? */
    if (auto_user_delete_time > 0) {
       lListElem *user, *next;
-      u_long32 now = sge_get_gmt();
-      u_long32 next_delete = now + auto_user_delete_time;
+      u_long64 now = sge_get_gmt64();
+      u_long64 next_delete = now + auto_user_delete_time;
 
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-      lList **master_user_list = oge::DataStore::get_master_list_rw(SGE_TYPE_USER);
+      lList **master_user_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
 
       /*
        * Check each user for deletion time. We don't use for_each_ep()
        * because we are deleting entries.
        */
       for (user = lFirstRW(*master_user_list); user; user = next) {
-         u_long32 delete_time = lGetUlong(user, UU_delete_time);
+         u_long64 delete_time = lGetUlong64(user, UU_delete_time);
          next = lNextRW(user);
 
          /* 
@@ -464,8 +463,8 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
             const char *name = lGetString(user, UU_name);
 
             /* if the user has jobs, we increment the delete time */
-            if (suser_get_job_counter(suser_list_find(*oge::DataStore::get_master_list(SGE_TYPE_SUSER), name)) > 0) {
-               lSetUlong(user, UU_delete_time, next_delete);
+            if (suser_get_job_counter(suser_list_find(*ocs::DataStore::get_master_list(SGE_TYPE_SUSER), name)) > 0) {
+               lSetUlong64(user, UU_delete_time, next_delete);
             } else {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
@@ -476,7 +475,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                       * if deleting the user failes (due to user being referenced
                       * in other objects, e.g. queue), regard him as non auto user
                       */
-                     lSetUlong(user, UU_delete_time, 0);
+                     lSetUlong64(user, UU_delete_time, 0);
                   }
                   /* output low level error messages */
                   answer_list_output(&answer_list);
@@ -498,19 +497,19 @@ int
 sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
    int status = STATUS_OK;
-   u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
+   u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
 
    DENTER(TOP_LAYER);
 
-   uep = user_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_USER), user);
+   uep = user_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_USER), user);
 
    /* if the user already exists */
    if (uep != nullptr) {
       /* and is an auto user */
-      if (lGetUlong(uep, UU_delete_time) != 0) {
+      if (lGetUlong64(uep, UU_delete_time) != 0) {
          /* and we shall not keep auto users forever */
          if (auto_user_delete_time > 0) {
-            lSetUlong(uep, UU_delete_time, sge_get_gmt() + auto_user_delete_time);
+            lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
          }
       }
       /* and we are done */
@@ -528,9 +527,9 @@ sge_add_auto_user(const char *user, lList **alpp, monitoring_t *monitor) {
       lSetString(uep, UU_name, user);
 
       if (auto_user_delete_time > 0) {
-         lSetUlong(uep, UU_delete_time, sge_get_gmt() + auto_user_delete_time);
+         lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
       } else {
-         lSetUlong(uep, UU_delete_time, 0);
+         lSetUlong64(uep, UU_delete_time, 0);
       }
 
       lSetUlong(uep, UU_oticket, mconf_get_auto_user_oticket());
@@ -604,7 +603,7 @@ static int do_add_auto_user(lListElem *anUser, lList **anAnswer, monitoring_t *m
 *     sge_userprj_spool() -- updates the spooled user and projects
 *
 *  SYNOPSIS
-*     void sge_userprj_spool(void) 
+*     void sge_userprj_spool() 
 *
 *  FUNCTION
 *     The usage is only stored every 2 min. To have the acual usage stored when
@@ -620,19 +619,19 @@ void sge_userprj_spool() {
    lListElem *elem = nullptr;
    lList *answer_list = nullptr;
    const char *name = nullptr;
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
    DENTER(TOP_LAYER);
 
    /* this function is used on qmaster shutdown, no need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   for_each_rw(elem, *oge::DataStore::get_master_list(SGE_TYPE_USER)) {
+   for_each_rw(elem, *ocs::DataStore::get_master_list(SGE_TYPE_USER)) {
       name = lGetString(elem, UU_name);
       sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
    }
 
-   for_each_rw(elem, *oge::DataStore::get_master_list(SGE_TYPE_PROJECT)) {
+   for_each_rw(elem, *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT)) {
       name = lGetString(elem, PR_name);
       sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true);
    }
@@ -671,19 +670,19 @@ void sge_userprj_spool() {
 static bool project_still_used(const char *p) {
    const lListElem *qc, *cq, *hep, *rqs;
 
-   for_each_ep(rqs, *oge::DataStore::get_master_list(SGE_TYPE_RQS)) {
+   for_each_ep(rqs, *ocs::DataStore::get_master_list(SGE_TYPE_RQS)) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_projects, p)) {
          return true;
       }
    }
 
-   for_each_ep(hep, *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
+   for_each_ep(hep, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
       if (lGetSubStr(hep, PR_name, p, EH_prj) || lGetSubStr(hep, PR_name, p, EH_xprj)) {
          return true;
       }
    }
 
-   for_each_ep(cq, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       for_each_ep(qc, lGetList(cq, CQ_projects)) {
          if (lGetSubStr(qc, PR_name, p, APRJLIST_value)) {
             return true;
@@ -729,7 +728,7 @@ void project_update_categories(const lList *added, const lList *removed) {
    for_each_ep(ep, added) {
       p = lGetString(ep, PR_name);
       DPRINTF("added project: \"%s\"\n", p);
-      prj = lGetElemStrRW(*oge::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
+      prj = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
       if (prj && !lGetBool(prj, PR_consider_with_categories)) {
          lSetBool(prj, PR_consider_with_categories, true);
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj);
@@ -739,7 +738,7 @@ void project_update_categories(const lList *added, const lList *removed) {
    for_each_ep(ep, removed) {
       p = lGetString(ep, PR_name);
       DPRINTF("removed project: \"%s\"\n", p);
-      prj = lGetElemStrRW(*oge::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
+      prj = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
 
       if (prj && !project_still_used(p)) {
          lSetBool(prj, PR_consider_with_categories, false);

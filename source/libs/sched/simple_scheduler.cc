@@ -69,9 +69,9 @@
 
 /* examples for retrieving information from SGE's master lists */
 static void print_load_value(lListElem *host, const char *name, const char *format);
-static void get_cluster_info(void);
-static void get_workload_info(void);
-static void get_policy_info(void);
+static void get_cluster_info();
+static void get_workload_info();
+static void get_policy_info();
 
 /* implementation of a simple job scheduler */
 static sge_callback_result remove_finished_job(sge_evc_class_t *evc, 
@@ -108,7 +108,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
                   job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring));
          sge_dstring_free(&id_dstring);
 
-         job = lGetElemUlong(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+         job = lGetElemUlong(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
          ja_task = job_search_task(job, nullptr, ja_task_id);
 
          order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, nullptr, false);
@@ -142,7 +142,7 @@ static void get_cluster_info()
           "mem_total", "mem_free", "swap_total", "swap_free", "disk_total", "disk_free");
 
    /* loop over all exec hosts and output information */
-   for_each_ep(host, *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
+   for_each_ep(host, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
       const char *name = lGetHost(host, EH_name);
       printf("%-20s", name);
 
@@ -176,7 +176,7 @@ static void get_workload_info()
    printf("\n");
 
    /* loop over all jobs and output information */
-   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id, procs;
       const char *user, *group, *pe;
       lListElem *ja_task, *range;
@@ -211,7 +211,7 @@ static void get_workload_info()
          u_long32 ja_task_id;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
-         start_time = lGetUlong(ja_task, JAT_start_time);
+         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
          if(lGetUlong(ja_task, JAT_status) != JFINISHED) {
             printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
@@ -221,7 +221,7 @@ static void get_workload_info()
       }
 
       /* for not yet started tasks, set start_time to the requested start time */
-      start_time = lGetUlong(job, JB_execution_time);
+      start_time = lGetUlong(job, JB_execution_time) / 1000000;
 
       /* output tasks without hold
        * these are the tasks to be scheduled
@@ -305,7 +305,7 @@ static void get_policy_info()
    lListElem *pe;
 
    /* output information for all parallel environments */
-   for_each_ep(pe, *oge::DataStore::get_master_list(SGE_TYPE_PE)) {
+   for_each_ep(pe, *ocs::DataStore::get_master_list(SGE_TYPE_PE)) {
       const char *name, *allocation_rule;
       int procs; 
       lListElem *queue_ref;
@@ -331,14 +331,14 @@ static void get_policy_info()
          
          if(strcmp(qname, "all") == 0) {  
             /* TODO: CQ_Type not QU_Type */
-            for_each_ep(queue, *(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+            for_each_ep(queue, *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
                const char *host_name = lGetHost(queue, QU_qhostname);
                if(lGetElemStr(host_list, STR, host_name) == nullptr) {
                   lAddElemStr(&host_list, STR, host_name, ST_Type);
                }
             }
          } else {
-            const char *host_name = lGetHost(lGetElemStr(*(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, qname), QU_qhostname);
+            const char *host_name = lGetHost(lGetElemStr(*(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, qname), QU_qhostname);
             if(lGetElemStr(host_list, STR, host_name) == nullptr) {
                lAddElemStr(&host_list, STR, host_name, ST_Type);
             }
@@ -367,7 +367,7 @@ static bool find_pending_ja_task(lListElem **job, lListElem **ja_task) {
    lListElem *sjob;
 
    /* find a pending job */
-   for_each_ep(sjob, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(sjob, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       lListElem *range;
 
       /* find non enrolled, pending ja_task_id */
@@ -402,7 +402,7 @@ static int queue_get_free_slots(lListElem *queue)
    name  = lGetString(queue, QU_full_name);
    slots = lGetUlong(queue, QU_job_slots);
 
-   for_each_ep(job, oge::DataStore::get_master_list_mt(SGE_TYPE_JOB)) {
+   for_each_ep(job, ocs::DataStore::get_master_list_mt(SGE_TYPE_JOB)) {
       lListElem *ja_task;
 
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
@@ -465,7 +465,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    pe_name = lGetString(job, JB_pe);
    if(pe_name != nullptr) {
       lListElem *range;
-      pe = lGetElemStr(*oge::DataStore::get_master_list(SGE_TYPE_PE), PE_name, pe_name);
+      pe = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_PE), PE_name, pe_name);
       for_each_ep(range, lGetList(job, JB_pe_range)) {
          procs = MAX(procs, lGetUlong(range, RN_max));
       }
@@ -484,7 +484,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    if(pe == nullptr ||
       strcmp("all", lGetString(lFirst(lGetList(pe, PE_queue_list)), QR_name)) == 0) {
       /* find suited queue(s) */
-      for_each_ep(queue, *(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+      for_each_ep(queue, *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
          allocate_queue_slots(&allocated_queues, queue, &procs);
          if(procs <= 0) {
             break;
@@ -493,7 +493,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    } else {
       lListElem *queue_ref;
       for_each_ep(queue_ref, lGetList(pe, PE_queue_list)) {
-         lListElem *queue = lGetElemStr(*(oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, lGetString(queue_ref, QR_name));
+         lListElem *queue = lGetElemStr(*(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, lGetString(queue_ref, QR_name));
          if(queue != nullptr) {
             allocate_queue_slots(&allocated_queues, queue, &procs);
             if(procs <= 0) {
@@ -551,12 +551,12 @@ static void delete_some_jobs(sge_evc_class_t *evc)
     * to test the sge_ssi_job_cancel function 
     */
    lListElem *job; 
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
 
-   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       lListElem *ja_task;
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
-         if((lGetUlong(ja_task, JAT_start_time) + 120) < now) {
+         if((lGetUlong64(ja_task, JAT_start_time) + sge_gmt32_to_gmt64(120)) < now) {
             char id[100];
             sprintf(id, sge_U32CFormat"." sge_U32CFormat,
                     sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));

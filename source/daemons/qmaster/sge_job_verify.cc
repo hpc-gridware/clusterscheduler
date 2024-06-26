@@ -95,18 +95,18 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    DENTER(TOP_LAYER);
 
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-   lList *master_suser_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -200,7 +200,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* set the jobs submittion time */
    if (ret == STATUS_OK) {
-      lSetUlong(jep, JB_submission_time, sge_get_gmt());
+      lSetUlong64(jep, JB_submission_time, sge_get_gmt64());
    }
 
    /* initialize the task template element and other sublists */
@@ -295,7 +295,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          jid = sge_get_job_number(monitor);
       } while (lGetElemUlong(master_job_list, JB_job_number, jid));
       lSetUlong(jep, JB_job_number, jid);
-      lSetUlong(jep, JB_submission_time, sge_get_gmt());
+      lSetUlong64(jep, JB_submission_time, sge_get_gmt64());
    }
 
    /*      
@@ -561,7 +561,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    /* 
     * If it is a deadline job the user has to be a deadline user
     */
-   if (lGetUlong(jep, JB_deadline)) {
+   if (lGetUlong64(jep, JB_deadline) > 0) {
       if (!userset_is_deadline_user(master_userset_list, ruser)) {
          ERROR(MSG_JOB_NODEADLINEUSER_S, ruser);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -575,7 +575,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
       if (ar_id != 0) {
          lListElem *ar;
-         u_long32 ar_start_time, ar_end_time, job_execution_time, job_duration, now_time;
+         u_long64 ar_start_time, ar_end_time, job_duration;
+         u_long64 now_time, job_execution_time;
 
          DPRINTF("job -ar " sge_u32"\n", sge_u32c(ar_id));
 
@@ -591,10 +592,10 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
             DRETURN(STATUS_EEXIST);
          }
          /* fill the job and ar values */
-         ar_start_time = lGetUlong(ar, AR_start_time);
-         ar_end_time = lGetUlong(ar, AR_end_time);
-         now_time = sge_get_gmt();
-         job_execution_time = lGetUlong(jep, JB_execution_time);
+         ar_start_time = lGetUlong64(ar, AR_start_time);
+         ar_end_time = lGetUlong64(ar, AR_end_time);
+         now_time = sge_get_gmt64();
+         job_execution_time = lGetUlong64(jep, JB_execution_time);
 
          /* execution before now is set to at least now */
          if (job_execution_time < now_time) {
@@ -608,10 +609,10 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
          /* hard_resources h_rt limit */
          if (job_get_wallclock_limit(&job_duration, jep)) {
-            DPRINTF("job -ar " sge_u32", ar_start_time " sge_u32", ar_end_time " sge_u32
-                    ", job_execution_time " sge_u32", job duration " sge_u32" \n",
-                    sge_u32c(ar_id), sge_u32c(ar_start_time), sge_u32c(ar_end_time),
-                    sge_u32c(job_execution_time), sge_u32c(job_duration));
+            DPRINTF("job -ar " sge_u64", ar_start_time " sge_u64", ar_end_time " sge_u64
+                    ", job_execution_time " sge_u64", job duration " sge_u64" \n",
+                    ar_id, ar_start_time, ar_end_time,
+                    job_execution_time, job_duration);
 
             /* fit the timeframe */
             if (job_duration > (ar_end_time - ar_start_time)) {

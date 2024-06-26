@@ -66,7 +66,7 @@ static int fd_pipe[2];
 *     sge_daemonize_prepare() -- prepare daemonize of process
 *
 *  SYNOPSIS
-*     int sge_daemonize_prepare(void) 
+*     int sge_daemonize_prepare() 
 *
 *  FUNCTION
 *     The parent process will wait for the child's successful daemonizing.

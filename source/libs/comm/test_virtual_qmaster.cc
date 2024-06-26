@@ -63,7 +63,7 @@ cl_com_endpoint_t *event_client_array[MAX_EVENT_CLIENTS];
 
 void *my_message_thread(void *t_conf);
 
-void do_nothing(void) {
+void do_nothing() {
    char help[255];
 
    sprintf(help, "hallo");

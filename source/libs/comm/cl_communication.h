@@ -142,7 +142,7 @@ const char *cl_com_get_data_flow_type(cl_com_connection_t *connection);
 /* This can be called by an signal handler to trigger abort of communications */
 void cl_com_ignore_timeouts(bool flag);
 
-bool cl_com_get_ignore_timeouts_flag(void);
+bool cl_com_get_ignore_timeouts_flag();
 
 
 /* message functions */

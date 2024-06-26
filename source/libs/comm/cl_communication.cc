@@ -1112,7 +1112,7 @@ void cl_com_ignore_timeouts(bool flag) {
    cl_ingore_timeout = flag;
 }
 
-bool cl_com_get_ignore_timeouts_flag(void) {
+bool cl_com_get_ignore_timeouts_flag() {
    if (cl_ingore_timeout) {
       CL_LOG(CL_LOG_WARNING, "ignoring all communication timeouts");
    }

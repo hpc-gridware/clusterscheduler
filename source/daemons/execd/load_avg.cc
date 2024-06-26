@@ -51,7 +51,7 @@
 
 #include "comm/commlib.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
@@ -87,13 +87,13 @@
 static void 
 get_reserved_usage(const char*qualified_hostname, lList **job_usage_list);
 static int 
-execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_conf_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_license_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
-execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send);
+execd_add_job_report(lList *report_list, u_long64 now, u_long64 *next_send);
 static int 
 sge_get_loadavg(const char *qualified_hostname, lList **lpp);
 
@@ -112,7 +112,7 @@ report_source execd_report_sources[] = {
 };
 
 lUlong sge_execd_report_seqno = 0;
-u_long32 qmrestart_time = 0;
+u_long64 qmrestart_time = 0;
 static bool delay_job_reports = false;
 static bool send_all = true;
 static lListElem *last_lr = nullptr;
@@ -122,18 +122,18 @@ extern lList *jr_list;
 
 static bool flush_lr = false;
 
-u_long32 sge_get_qmrestart_time(void)
+u_long64 sge_get_qmrestart_time()
 {
    return qmrestart_time;
 }
 
 /* record qmaster restart time, need for use in delayed_reporting */
-void sge_set_qmrestart_time(u_long32 qmr)
+void sge_set_qmrestart_time(u_long64 qmr)
 {
    qmrestart_time = qmr;
 }
 
-bool sge_get_delay_job_reports_flag(void)
+bool sge_get_delay_job_reports_flag()
 {
    return delay_job_reports;
 }
@@ -143,7 +143,7 @@ void sge_set_delay_job_reports_flag(bool new_val)
    delay_job_reports = new_val;
 }
 
-bool sge_get_flush_lr_flag(void)
+bool sge_get_flush_lr_flag()
 {
    return flush_lr;
 }
@@ -189,12 +189,12 @@ void execd_merge_load_report(u_long32 seqno)
    lFreeElem(&last_lr);
 }
 
-void execd_trash_load_report(void) {
+void execd_trash_load_report() {
    send_all = true;
 }
 
 static int 
-execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* binary_path = bootstrap_get_binary_path();
@@ -206,7 +206,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
       lListElem *report;
       lList *tmp_lr_list;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
       sge_set_flush_lr_flag(false);
 
       /*
@@ -289,7 +289,7 @@ execd_add_load_report(lList *report_list, u_long32 now, u_long32 *next_send)
 
 
 static int 
-execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_conf_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    const char* qualified_hostname = component_get_qualified_hostname();
 
@@ -297,7 +297,7 @@ execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
    if (*next_send <= now) {
       lListElem *report;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
       /*
       ** 2. report about the configuration versions
@@ -318,14 +318,14 @@ execd_add_conf_report(lList *report_list, u_long32 now, u_long32 *next_send)
 }
 
 static int 
-execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_license_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
       lListElem *report;
 
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
       /*
       ** 3. license report
@@ -356,11 +356,11 @@ execd_add_license_report(lList *report_list, u_long32 now, u_long32 *next_send)
 }
 
 static int 
-execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
+execd_add_job_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    bool do_send = false;
    bool only_flush = false;
-   static u_long32 last_send = 0;
+   static u_long64 last_send = 0;
    const char* qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
@@ -372,7 +372,7 @@ execd_add_job_report(lList *report_list, u_long32 now, u_long32 *next_send)
 
    /* if report interval expired: send all reports */
    if (*next_send <= now) {
-      *next_send = now + mconf_get_load_report_time();
+      *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
       do_send = true;
    } else if (sge_get_flush_jr_flag()) {
       /* if we shall flush reports: send only reports marked to flush */
@@ -699,20 +699,20 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    loads = sge_getloadavg(avg, 3);
    nprocs = sge_nprocs();
    if (loads == -1) {
-      static u_long32 next_log = 0;
-      u_long32 now;
+      // log warning only every 2 hours
+      static u_long64 next_log = 0;
+      u_long64 now = sge_get_gmt64();
 
-      now = sge_get_gmt();
       if (now >= next_log) {
          WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
-         next_log = now + 7200;
+         next_log = now + sge_gmt32_to_gmt64(7200);
       }
    } else if (loads == -2) {
       static bool logged_at_startup = false;
       if (!logged_at_startup) {
          logged_at_startup = true;
          WARNING(MSG_LS_USE_EXTERNAL_LS_S, sge_get_arch());
-   }
+      }
    }
 
    /* build a list of load values */
@@ -783,12 +783,12 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
       if (sge_getcpuload(&cpu_percentage) != -1) {
          sge_add_double2load_report(lpp, "cpu", cpu_percentage, qualified_hostname, nullptr);
       } else {
-         static u_long32 next_log2 = 0;
+         static u_long64 next_log2 = 0;
 
-         u_long32 now = sge_get_gmt();
+         u_long64 now = sge_get_gmt64();
          if (now >= next_log2) {
             WARNING(SFNMAX, MSG_SGETEXT_NO_LOAD);
-            next_log2 = now + 7200;
+            next_log2 = now + sge_gmt32_to_gmt64(7200);
          }
       }
    }
@@ -1011,7 +1011,7 @@ static lList *
 calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_task, const lListElem *pe_task,
                          u_long32 job_id, u_long32 ja_task_id, 
                          const char *pe_task_id,
-                         const lListElem *pe, u_long32 now)
+                         const lListElem *pe, u_long64 now)
 {
    lList *ul = nullptr;
    lListElem *jr;
@@ -1067,7 +1067,7 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
 static lListElem *
 calculate_reserved_usage_ja_task(const char* qualified_hostname, const lListElem *ja_task, 
                                  u_long32 job_id, u_long32 ja_task_id, 
-                                 const lListElem *pe, u_long32 now, 
+                                 const lListElem *pe, u_long64 now,
                                  lListElem *new_job) 
 {
    lList *usage_list;
@@ -1097,7 +1097,7 @@ calculate_reserved_usage_pe_task(const char* qualified_hostname,
                                  const lListElem *pe_task,
                                  u_long32 job_id, u_long32 ja_task_id, 
                                  const char *pe_task_id, 
-                                 const lListElem *pe, u_long32 now, 
+                                 const lListElem *pe, u_long64 now,
                                  lListElem *new_job) 
 {
    lListElem *new_ja_task, *new_pe_task;
@@ -1131,11 +1131,10 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
    lList *temp_job_usage_list;
    const lListElem *job;
    lEnumeration *what;
-   u_long32 now;
 
    DENTER(TOP_LAYER);
 
-   now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
    /* JG: TODO: why use JB_Type etc.? We only need an object containing
     * job_id, ja_task_id, pe_task_id and a usage_list.
@@ -1144,7 +1143,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = nullptr;
@@ -1248,10 +1247,10 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
 *  NOTES
 *     MT-NOTE: build_reserved_usage() is MT safe 
 *******************************************************************************/
-void build_reserved_usage(const u_long32 now, const lListElem *ja_task, const lListElem *pe_task,
+void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lListElem *pe_task,
                           double *wallclock, double *cpu, double *mem, double *maxvmem)
 {
-   u_long32 start_time;
+   u_long64 start_time;
 
    if (ja_task == nullptr || wallclock == nullptr || cpu == nullptr || mem == nullptr || maxvmem == nullptr) {
       return;
@@ -1259,17 +1258,17 @@ void build_reserved_usage(const u_long32 now, const lListElem *ja_task, const lL
 
    /* calculate wallclock time */ 
    if (pe_task == nullptr) {
-      start_time = lGetUlong(ja_task, JAT_start_time);
+      start_time = lGetUlong64(ja_task, JAT_start_time);
    } else {
-      start_time = lGetUlong(pe_task, PET_start_time);
+      start_time = lGetUlong64(pe_task, PET_start_time);
    }
    if (start_time > 0 && start_time < now) {
-      *wallclock = now - start_time;
+      *wallclock = sge_gmt64_to_gmt32_double(now - start_time); // reported wallclock is in seconds as double
    } else {
       *wallclock = 0;
    }
 
-   /* if wallclock == 0, something is wrong with start_time vs. end_time
+   /* if wallclock == 0, something is wrong with start_time vs. end_time,
     * and we cannot report any usage
     */
    *cpu = 0.0;

@@ -59,7 +59,7 @@
 
 #include "evm/sge_event_master.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_c_gdi.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_common.h"
@@ -358,10 +358,10 @@ centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **p
 int
 sge_del_centry(lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
-   lList *master_centry_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+   lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 
@@ -434,8 +434,8 @@ sge_change_queue_version_centry() {
    lListElem *ep;
    const lListElem *cqueue;
    lList *answer_list = nullptr;
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -493,10 +493,10 @@ void centry_redebit_consumables(const lList *centries) {
    const lListElem *cqueue = nullptr;
    lListElem *hep = nullptr;
    lListElem *jep = nullptr;
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each_ep(cqueue, master_cqueue_list) {
@@ -555,7 +555,7 @@ void centry_redebit_consumables(const lList *centries) {
     */
    {
       lList *answer_list = nullptr;
-      u_long32 now = sge_get_gmt();
+      u_long64 now = sge_get_gmt64();
 
       /* dump all queue consumables */
       for_each_ep(cqueue, master_cqueue_list) {
@@ -565,13 +565,13 @@ void centry_redebit_consumables(const lList *centries) {
          for_each_ep(qinstance, qinstance_list) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
             const lListElem *host = lGetElemHost(master_ehost_list, EH_name, hostname);
-            oge::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, qinstance, nullptr, now);
+            ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, qinstance, nullptr, now);
          }
       }
       answer_list_output(&answer_list);
       /* dump all host consumables */
       for_each_rw (hep, master_ehost_list) {
-         oge::ReportingFileWriter::create_host_consumable_records(&answer_list, hep, nullptr, now);
+         ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, hep, nullptr, now);
       }
       answer_list_output(&answer_list);
    }

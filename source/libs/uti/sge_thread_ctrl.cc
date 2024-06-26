@@ -53,7 +53,7 @@ thread_control_t Thread_Control = {
 *     sge_thread_has_shutdown_started() -- shutdown in progress? 
 *
 *  SYNOPSIS
-*     bool sge_thread_has_shutdown_started(void) 
+*     bool sge_thread_has_shutdown_started() 
 *
 *  FUNCTION
 *     Service function which can be used to check if the executing
@@ -84,7 +84,7 @@ sge_thread_has_shutdown_started() {
 *     sge_thread_notify_all_waiting() -- notify waiting thread 
 *
 *  SYNOPSIS
-*     void sge_thread_notify_all_waiting(void) 
+*     void sge_thread_notify_all_waiting() 
 *
 *  FUNCTION
 *     After the main thread has initialized all needed components and 
@@ -124,7 +124,7 @@ sge_thread_notify_all_waiting() {
 *     sge_thread_wait_for_signal() -- block current thread till shutdown 
 *
 *  SYNOPSIS
-*     void sge_thread_wait_for_signal(void) 
+*     void sge_thread_wait_for_signal() 
 *
 *  FUNCTION
 *     A call of this function will block the executing thread until the 

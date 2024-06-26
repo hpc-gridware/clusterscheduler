@@ -79,8 +79,8 @@ krb_renew_tgts(
 lList *joblist 
 ) {
    krb5_error_code rc;
-   static u_long32 next_time = 0;
-   u_long32 now = sge_get_gmt();
+   static time_t next_time = 0;
+   time_t now = time(nullptr);
    lListElem *job;
    krb5_context context = krb_context();
    krb5_timestamp time_now;
@@ -89,7 +89,7 @@ lList *joblist
    DENTER(TOP_LAYER);
 
 
-   if ((now = sge_get_gmt())<next_time) {
+   if ((now = time(nullptr))<next_time) {
       DRETURN(0);
    }
 

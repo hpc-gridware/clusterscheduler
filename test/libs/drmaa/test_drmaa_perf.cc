@@ -64,7 +64,7 @@ static void *submit_jobs(void *arg);
 static void get_gmt(struct timeval *);
 static int submit_by_project(const char *project);
 
-static void usage(void) 
+static void usage() 
 {
    fprintf(stderr, "usage: test_drmaa_perf [ options ] <path-to-job> [<job_args>]\n");
    fprintf(stderr, "   -jobs       <njobs>                                       number of jobs per thread (default 100)\n");

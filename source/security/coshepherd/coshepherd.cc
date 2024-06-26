@@ -51,7 +51,7 @@
 
 #include "msg_common.h"
 
-static void show_coshepherd_version(void) {
+static void show_coshepherd_version() {
 
    printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_coshepherd");
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
    SGE_STRUCT_STAT sb;
    time_t now;
    static time_t last = 0;
-   int last_token_set, token_extend_time, renew_before;
+   time_t last_token_set, token_extend_time, renew_before;
    char *command, *user;
    char *tokenbuf;
    int i;
@@ -104,14 +104,14 @@ int main(int argc, char *argv[])
    token_extend_time = atoi(argv[3]);
    
    /* assume that toke was just set before - otherwise set to 0 */
-   last_token_set = sge_get_gmt();
+   last_token_set = time(nullptr);
    renew_before = MIN(token_extend_time/10, 1800);
 
 #define SLEEP 30
 
    done = false;
    while (!done) {
-      now = (time_t)sge_get_gmt();      
+      now = time(nullptr);
 
       if (now < last)
          last = now;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
          if (sge_afs_extend_token(command, tokenbuf, user, token_extend_time, err_str, sizeof(err_str))) {
             DPRINTF("AFS token renewal failed\n");
          } else {
-            last_token_set = sge_get_gmt();
+            last_token_set = time(nullptr);
          }   
       }
    }

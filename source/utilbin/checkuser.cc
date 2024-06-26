@@ -42,7 +42,7 @@
 #include "basis_types.h"
 
 /*-------------------------------------------*/
-void usage(void)
+void usage()
 {
    fprintf(stderr, "%s checkuser [-check -name]|[-uid name]|[-gid name]\n" , MSG_UTILBIN_USAGE );
    exit(1);

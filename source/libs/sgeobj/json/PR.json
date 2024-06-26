@@ -89,7 +89,7 @@
 			"description":	[{
 					"line":	"Time stamp of last decay. Set when usage changes."
 				}],
-			"type":	"lUlongT",
+			"type":	"lTimestampT",
 			"flags":	[{
 					"name":	"JGDI_HIDDEN"
 				}, {

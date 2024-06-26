@@ -91,7 +91,7 @@ extern event_master_control_t Event_Master_Control;
 
 void sge_event_master_process_requests(monitoring_t *monitor);
 void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
-void sge_event_master_wait_next(void);
+void sge_event_master_wait_next();
 
 int sge_add_event_client(lListElem *ev,
                          lList **alpp,
@@ -108,7 +108,7 @@ lList* sge_select_event_clients(const char *list_name, const lCondition *where, 
 int sge_shutdown_event_client(u_long32 aClientID, const char* anUser, uid_t anUID, lList **alpp);
 int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitoring_t *monitor);
 
-bool sge_add_event(u_long32 timestamp,
+bool sge_add_event(u_long64 timestamp,
                    ev_event type,
                    u_long32 intkey,
                    u_long32 intkey2,
@@ -117,17 +117,17 @@ bool sge_add_event(u_long32 timestamp,
                    const char *session,
                    lListElem *element);
                           
-bool sge_add_event_for_client(u_long32 aClientID,
-                              u_long32 aTimestamp,
+bool sge_add_event_for_client(u_long32 event_client_id,
+                              u_long64 timestamp,
                               ev_event type,
-                              u_long32 anIntKey1, 
-                              u_long32 anIntKey2,
-                              const char *aStrKey1,
-                              const char *aStrKey2, 
-                              const char *aSession,
+                              u_long32 intkey,
+                              u_long32 intkey2,
+                              const char *strkey,
+                              const char *strkey2,
+                              const char *session,
                               lListElem *element);
                                     
-bool sge_add_list_event(u_long32 timestamp,
+bool sge_add_list_event(u_long64 timestamp,
                         ev_event type, 
                         u_long32 intkey,
                         u_long32 intkey2,
@@ -142,9 +142,9 @@ void sge_deliver_events_immediately(u_long32 aClientID);
 int sge_resync_schedd(monitoring_t *monitor);
 
 u_long32 sge_set_max_dynamic_event_clients(u_long32 max);
-u_long32 sge_get_max_dynamic_event_clients(void);
+u_long32 sge_get_max_dynamic_event_clients();
 
-void sge_event_master_shutdown(void);
-void sge_event_master_init(void);
-bool sge_commit(void);
-void sge_set_commit_required(void);
+void sge_event_master_shutdown();
+void sge_event_master_init();
+bool sge_commit();
+void sge_set_commit_required();

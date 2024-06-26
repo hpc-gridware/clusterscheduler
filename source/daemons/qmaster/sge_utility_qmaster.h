@@ -49,6 +49,7 @@ int attr_mod_double(lListElem *qep, lListElem *new_queue, int nm, char *attr_nam
 int attr_mod_bool(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
 int attr_mod_ulong(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
+int attr_mod_ulong64(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
 
 int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
 

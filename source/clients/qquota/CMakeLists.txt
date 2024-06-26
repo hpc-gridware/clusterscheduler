@@ -21,8 +21,8 @@
 # source/clients/qquota
 add_executable(
       qquota
-      oge_qquota.cc
-      oge_qquota_print.cc
+        ocs_qquota.cc
+        ocs_qquota_print.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
@@ -40,7 +40,6 @@ target_link_libraries(
       comm
       commlists
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

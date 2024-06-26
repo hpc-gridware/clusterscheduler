@@ -48,6 +48,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
@@ -74,9 +75,9 @@
 static const char *spooling_method = "berkeleydb";
 
 #ifdef SPOOLING_berkeleydb
-const char *get_spooling_method(void)
+const char *get_spooling_method()
 #else
-const char *get_berkeleydb_spooling_method(void)
+const char *get_berkeleydb_spooling_method()
 #endif
 {
    return spooling_method;
@@ -370,7 +371,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *******************************************************************************/
 bool
 spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-                              time_t trigger, time_t *next_trigger)
+                              u_long64 trigger, u_long64 *next_trigger)
 {
    bool ret = true;
    bdb_info info;
@@ -386,7 +387,7 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
       ret = false;
 
       /* nothing can be done - but set new trigger!! */
-      *next_trigger = trigger + BERKELEYDB_MIN_INTERVAL;
+      *next_trigger = trigger + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
    } 
 
    if (ret) {
@@ -525,7 +526,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    const lDescr *descr;
    const char *table_name;
    bdb_info info;
-   lList *master_suser_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+   lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(BDB_LAYER);
 
@@ -649,7 +650,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            }
                         }
                      }
-                     job_list_register_new_job(*oge::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+                     job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
                      suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {
                         break;

@@ -40,7 +40,7 @@
 #define HEARTBEAT_INTERVAL 30
 
 void 
-heartbeat_initialize(void);
+heartbeat_initialize();
 
 void       
 increment_heartbeat(te_event_t anEvent, monitoring_t *monitor);

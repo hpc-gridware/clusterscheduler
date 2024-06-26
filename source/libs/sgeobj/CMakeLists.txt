@@ -23,7 +23,7 @@ set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
       config.cc
       cull_parse_util.cc
-      oge_DataStore.cc
+      ocs_DataStore.cc
       parse.cc
       sge_ack.cc
       sge_advance_reservation.cc
@@ -31,6 +31,7 @@ set(LIBRARY_SOURCES
       sge_answer.cc
       sge_attr.cc
       sge_binding.cc
+      ocs_binding_io.cc
       sge_calendar.cc
       sge_centry.cc
       sge_centry_rsmap.cc
@@ -81,7 +82,7 @@ set(LIBRARY_SOURCES
       sge_userset.cc
       sge_utility.cc
       sge_var.cc
-      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/oge_RequestLimits.cc
+      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_RequestLimits.cc
       cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 

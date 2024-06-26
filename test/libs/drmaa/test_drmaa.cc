@@ -49,11 +49,12 @@
 
 #include "cull/cull_list.h"
 
+#include "uti/sge_component.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_rmon_monitoring_level.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_component.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_daemonize.h"
 #include "sgeobj/sge_job.h"
@@ -63,9 +64,9 @@
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
-#include "oge_client_job.h"
+#include "ocs_client_job.h"
 #include "msg_common.h"
 
 #define JOB_CHUNK 8
@@ -545,7 +546,7 @@ static drmaa_job_template_t *create_sleeper_job_template(int seconds,
                                                          int in_hold);
 static drmaa_job_template_t *create_exit_job_template(const char *exit_job,
                                                       int as_bulk_job);
-static void report_session_key(void);
+static void report_session_key();
 static void *submit_and_wait_thread (void *v);
 static void *submit_sleeper_thread (void *v);
 
@@ -609,7 +610,7 @@ static void free_jobids(const char *jobids[], int size)
    }
 }
 
-static void usage(void)
+static void usage()
 {
    int i;
    fprintf(stderr, "usage: test_drmaa <test_case>\n");
@@ -661,7 +662,9 @@ int main(int argc, char *argv[])
          return 1;
       }
       printf("Connecting to DRM system \"%s\"\n", drm_name);
-      if (!strncmp(drm_name, "SGE", 3))
+      if (strncmp(drm_name, "SGE", 3) == 0 ||
+          strncmp(drm_name, "OCS", 3) == 0 ||
+          strncmp(drm_name, "GCS", 3) == 0)
          is_sun_grid_engine = 1;
       else
          is_sun_grid_engine = 0;
@@ -5134,7 +5137,7 @@ static int wait_n_jobs(int n)
    return error;
 }
 
-static void report_session_key(void) 
+static void report_session_key() 
 {
    if (is_sun_grid_engine) {
       const char *session_key = getenv("SGE_SESSION_KEY");
@@ -5417,7 +5420,7 @@ static void report_wrong_job_finish(const char *comment, const char *jobid, int 
    }
 }
 
-static bool extract_array_command(char *command_line, int *start, int *end, int *incr) 
+static bool extract_array_command(char *command_line, int *start, int *end, int *incr)
 {
    bool ret = false;
    char *t_option = nullptr;
@@ -5467,10 +5470,9 @@ static bool extract_array_command(char *command_line, int *start, int *end, int 
       }
 
       if (end_t_option != nullptr) {
-         strcpy(t_option, end_t_option+1);
-      }
-      else {
-         t_option = (char *)'\0';
+         sge_str_move_left(t_option, end_t_option + 1);
+      } else {
+         *t_option = '\0';
       }
    }/* end if */
    
@@ -5478,10 +5480,9 @@ static bool extract_array_command(char *command_line, int *start, int *end, int 
 
 error:
    if (end_t_option != nullptr) {
-      strcpy(t_option, end_t_option);
-   }
-   else {
-      t_option = (char *)'\0';
+      sge_str_move_left(t_option, end_t_option);
+   } else {
+      *t_option = '\0';
    }   
    *start = 1;
    *end = 1;
@@ -5489,13 +5490,6 @@ error:
    ret = false;
    fprintf(stderr, "could not parse \"%s\" for -t option\n", command_line);
 
-   if (end_t_option != nullptr) {
-      strcpy(t_option, end_t_option);
-   }
-   else {
-      t_option = (char *)'\0';
-   }   
-   
    return ret;
 }
 

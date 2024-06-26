@@ -103,7 +103,7 @@ schedd_set_serf_log_file() {
 
 /* MT-NOTE: schedd_serf_record_func() is not MT safe */
 static void
-schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, u_long32 start_time, u_long32 end_time,
+schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, u_long64 start_time, u_long64 end_time,
                         char level_char, const char *object_name, const char *name, double utilization) {
    FILE *fp;
 
@@ -114,8 +114,8 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
    }
 
    /* a new record */
-   fprintf(fp, sge_U32CFormat":" sge_U32CFormat ":%s:" sge_U32CFormat ":" sge_U32CFormat ":%c:%s:%s:%f\n", sge_u32c(job_id),
-           sge_u32c(ja_taskid), state, sge_u32c(start_time), sge_u32c(end_time - start_time), level_char, object_name,
+   fprintf(fp, sge_U32CFormat":" sge_U32CFormat ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", sge_u32c(job_id),
+           sge_u32c(ja_taskid), state, start_time, end_time - start_time, level_char, object_name,
            name, utilization);
    FCLOSE(fp);
 
@@ -171,8 +171,8 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 
    if (!Scheduler_Control.triggered) {
       struct timespec ts{};
-      u_long32 current_time = sge_get_gmt();
-      ts.tv_sec = (long) current_time + SCHEDULER_TIMEOUT_S;
+      time_t current_time = time(nullptr);
+      ts.tv_sec = current_time + SCHEDULER_TIMEOUT_S;
       ts.tv_nsec = SCHEDULER_TIMEOUT_N;
 
       wait_ret = pthread_cond_timedwait(&Scheduler_Control.cond_var, &Scheduler_Control.mutex, &ts);
@@ -312,7 +312,7 @@ sge_scheduler_initialize(lList **answer_list) {
 *     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread 
 *
 *  SYNOPSIS
-*     void sge_scheduler_cleanup_thread(void) 
+*     void sge_scheduler_cleanup_thread() 
 *
 *  FUNCTION
 *     Cleanup the scheduler thread. 
@@ -470,7 +470,7 @@ sge_scheduler_terminate(lList **answer_list) {
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
-   time_t next_prof_output = 0;
+   u_long64 next_prof_output = 0;
    monitoring_t monitor;
    sge_evc_class_t *evc = nullptr;
    lList *alp = nullptr;
@@ -518,7 +518,7 @@ sge_scheduler_main(void *arg) {
    schedd_set_serf_log_file();
 
    // this thread will use the SCHEDULER data store
-   oge::DataStore::select_active_ds(oge::DataStore::Id::SCHEDULER);
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::SCHEDULER);
 
    /*
     * prepare event client/mirror mechanism
@@ -599,19 +599,19 @@ sge_scheduler_main(void *arg) {
       if (handled_events) {
          lList *answer_list = nullptr;
          scheduler_all_data_t copy;
-         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-         const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-         const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-         const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
-         const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-         const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-         const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
-         const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-         const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_hgrp_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-         const lList *master_sharetree_list = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+         const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+         const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+         const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+         const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+         const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+         const lList *master_hgrp_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+         const lList *master_sharetree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {
@@ -621,12 +621,12 @@ sge_scheduler_main(void *arg) {
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM6);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
-         if (rmon_condition(TOP_LAYER, INFOPRINT)) {
+         if (DPRINTF_IS_ACTIVE) {
             dstring ds;
             char buffer[128];
 
             sge_dstring_init(&ds, buffer, sizeof(buffer));
-            DPRINTF("================[SCHEDULING-EPOCH %s]==================\n", sge_at_time(0, &ds));
+            DPRINTF("================[SCHEDULING-EPOCH %s]==================\n", sge_ctime64(0, &ds));
             sge_dstring_free(&ds);
          }
 
@@ -852,7 +852,7 @@ sge_scheduler_main(void *arg) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
                                   "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
                     prof_total, prof_init, prof_copy, prof_run, prof_free,
-                    lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(),
+                    lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(),
                     sge_cs_category_count());
          }
          if (getenv("SGE_ND") != nullptr) {

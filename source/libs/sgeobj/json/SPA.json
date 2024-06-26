@@ -72,13 +72,21 @@
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
-		}, {
+	    }, {
 			"name":	"argval_lUlongT",
 			"summary":	"Parsed Ulong Argument",
 			"description":	[{
-					"line":	"If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
-				}],
+				"line":	"If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
+			}],
 			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"argval_lUlong64T",
+			"summary":	"Parsed Ulong64 Argument",
+			"description":	[{
+					"line":	"If the option argument is an ulong64 then this value is the commandline argument (switch_arg) parsed to ulong64."
+				}],
+			"type":	"lUlong64T",
 			"flags":	[]
 		}, {
 			"name":	"argval_lLongT",

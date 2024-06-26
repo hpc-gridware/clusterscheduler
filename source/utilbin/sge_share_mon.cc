@@ -43,7 +43,7 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_component.h"
 
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi.h"
 
@@ -185,7 +185,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
 
 static void
-usage(void)
+usage()
 {
       fprintf(stderr, "%s sge_share_mon [-cdfhilmnorsux] [node_names ...]\n", MSG_USAGE); 
       fprintf(stderr, "\n" );

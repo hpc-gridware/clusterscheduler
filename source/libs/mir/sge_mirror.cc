@@ -293,7 +293,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
 *     sge_mirror_shutdown() -- shutdown mirroring
 *
 *  SYNOPSIS
-*     sge_mirror_error sge_mirror_shutdown(void)
+*     sge_mirror_error sge_mirror_shutdown()
 *
 *  FUNCTION
 *     Shuts down the event mirroring mechanism:
@@ -965,7 +965,7 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
 *     sge_mirror_process_events() -- retrieve and process events
 *
 *  SYNOPSIS
-*     sge_mirror_error sge_mirror_process_events(void)
+*     sge_mirror_error sge_mirror_process_events()
 *
 *  FUNCTION
 *     Retrieves new events from qmaster.
@@ -1068,7 +1068,7 @@ const char *sge_mirror_strerror(sge_mirror_error num)
 
 static void sge_mirror_free_list(sge_object_type type)
 {
-   oge::DataStore::free_master_list(type);
+   ocs::DataStore::free_master_list(type);
 }
 
 static sge_mirror_error
@@ -1529,7 +1529,7 @@ generic_update_master_list( [[maybe_unused]] sge_evc_class_t *evc, sge_object_ty
                            sge_event_action action, lListElem *event,  [[maybe_unused]] void *client_data)
 {
    DENTER(TOP_LAYER);
-   lList **list = oge::DataStore::get_master_list_rw(type);
+   lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
    int key_nm = object_type_get_key_nm(type);
    const char *key = lGetString(event, ET_strkey);
@@ -1763,7 +1763,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
    DENTER(TOP_LAYER);
-   lList **list = oge::DataStore::get_master_list_rw(type);
+   lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
    int key_nm = object_type_get_key_nm(type);
    const char *key = lGetString(event, ET_strkey);

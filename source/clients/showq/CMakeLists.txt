@@ -21,9 +21,9 @@
 # source/clients/showq
 add_executable(
       showq
-      oge_showq.cc
-      oge_showq_cmdline_tacc.cc
-      oge_showq_support.cc
+        ocs_showq.cc
+        ocs_showq_cmdline_tacc.cc
+        ocs_showq_support.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
@@ -39,7 +39,6 @@ target_link_libraries(
       comm
       commlists
       uti
-      ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

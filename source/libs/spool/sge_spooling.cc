@@ -457,7 +457,7 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
 
 bool
 spool_trigger_context(lList **answer_list, const lListElem *context,
-                      time_t trigger, time_t *next_trigger)
+                      u_long64 trigger, u_long64 *next_trigger)
 {
    bool ret = true;
 
@@ -564,7 +564,7 @@ void spool_set_default_context(lListElem *context)
 *
 *  SYNOPSIS
 *     lListElem* 
-*     spool_get_default_context(void) 
+*     spool_get_default_context() 
 *
 *  FUNCTION
 *     Retrieves a spooling context that has been set earlier using the function

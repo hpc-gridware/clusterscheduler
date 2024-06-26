@@ -94,9 +94,9 @@ typedef enum {
 
 typedef struct {
    pthread_mutex_t last_update_mutex; /* guards the last_update access */
-   u_long32 last_update;               /* used to store the last time, when the usage was stored */
+   u_long64 last_update;               /* used to store the last time, when the usage was stored */
    spool_type is_spooling;             /* identifies, if spooling should happen */
-   u_long32 now;                     /* stores the time of the last spool computation */
+   u_long64 now;                       /* stores the time of the last spool computation */
    order_pos_t *cull_order_pos;        /* stores cull positions in the job, ja-task, and order structure */
 } sge_follow_t;
 
@@ -132,17 +132,18 @@ static int ticket_orders_field[] = {OR_job_number,
 *     sge_follow_order
 *******************************************************************************/
 void
-sge_set_next_spooling_time(void) {
+sge_set_next_spooling_time() {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
    if (Follow_Control.is_spooling != NOT_DEFINED) {
-      if ((Follow_Control.now + mconf_get_spool_time()) < Follow_Control.last_update) {
+      u_long64 spool_interval = sge_gmt32_to_gmt64(mconf_get_spool_time());
+      if ((Follow_Control.now + spool_interval) < Follow_Control.last_update) {
          Follow_Control.last_update = Follow_Control.now;
       } else if (Follow_Control.is_spooling == DO_SPOOL) {
-         Follow_Control.last_update = Follow_Control.now + mconf_get_spool_time();
-         DPRINTF("next spooling now:%ld next: %ld time:%d\n\n", Follow_Control.now, Follow_Control.last_update, mconf_get_spool_time());
+         Follow_Control.last_update = Follow_Control.now + spool_interval;
+         DPRINTF("next spooling now: " sge_u64 " next: " sge_u64 " interval: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update, spool_interval);
       }
 
       Follow_Control.now = 0;
@@ -197,13 +198,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          lList *gdil = nullptr;
          lListElem *master_qep = nullptr;
          lListElem *master_host = nullptr;
-         const lList *exec_host_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-         const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-         const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+         const lList *exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+         const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
          DPRINTF("ORDER ORT_start_job\n");
 
@@ -282,8 +283,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-2);
             }
-            lSetUlong(jatp, JAT_wallclock_limit,
-                      (lGetUlong(ar, AR_end_time) - sge_get_gmt() - sconf_get_duration_offset()));
+            lSetUlong64(jatp, JAT_wallclock_limit,
+                      lGetUlong64(ar, AR_end_time) - sge_get_gmt64() - sge_gmt32_to_gmt64(sconf_get_duration_offset()));
          }
 
          /* fill number of tickets into job */
@@ -548,18 +549,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          /* now send events and spool the job */
          {
             lList *answer_list = nullptr;
-            u_long32 now = sge_get_gmt();
             const char *session = lGetString(jep, JB_session);
 
             /* spool job and ja_task in one transaction, send job mod event */
-            sge_event_spool(&answer_list, now, sgeE_JOB_MOD,
+            sge_event_spool(&answer_list, 0, sgeE_JOB_MOD,
                             job_number, task_number, nullptr, nullptr, session,
                             jep, jatp, nullptr, true, true);
             answer_list_output(&answer_list);
          }
 
          /* set timeout for job resend */
-         trigger_job_resend(sge_get_gmt(), master_host, job_number, task_number, 5);
+         trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 5);
 
          if (pe) {
             pe_debit_slots(pe, pe_slots, job_number);
@@ -590,7 +590,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             ja_task_pos_t *ja_pos = nullptr;
             job_pos_t *job_pos = nullptr;
             lListElem *next_ja_task = nullptr;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -691,7 +691,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             job_pos_t *job_pos;
             job_pos_t *order_job_pos;
             const lListElem *joker;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -803,7 +803,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       DPRINTF("ORDER ORT_tickets\n");
          {
             const lListElem *joker;
-            const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
             job_number = lGetUlong(ep, OR_job_number);
             if (job_number == 0) {
@@ -993,7 +993,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * (former ORT_remove_interactive_job)
           * ----------------------------------------------------------------------- */
       case ORT_remove_immediate_job: {
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
          DPRINTF("ORDER: ORT_remove_immediate_job or ORT_remove_job\n");
 
          job_number = lGetUlong(ep, OR_job_number);
@@ -1095,17 +1095,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long32 now = 0;
+            u_long64 now = 0;
             bool is_spool = false;
-            const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
             sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
             if (Follow_Control.is_spooling == NOT_DEFINED) {
 
-               now = Follow_Control.now = sge_get_gmt();
+               now = Follow_Control.now = sge_get_gmt64();
 
-               DPRINTF(">>next spooling now: %ld next: %ld\n", Follow_Control.now, Follow_Control.last_update);
+               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
 
                if (now >= Follow_Control.last_update) {
                   Follow_Control.is_spooling = DO_SPOOL;
@@ -1150,7 +1150,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
 
                if ((pos = lGetPosViaElem(up_order, PR_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong(up, PR_usage_time_stamp, lGetPosUlong(up_order, pos));
+                  lSetUlong64(up, PR_usage_time_stamp, lGetPosUlong64(up_order, pos));
 
                if ((pos = lGetPosViaElem(up_order, PR_usage, SGE_NO_ABORT)) >= 0) {
                   lSwapList(up_order, PR_usage, up, PR_usage);
@@ -1230,17 +1230,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long32 now = 0;
+            u_long64 now = 0;
             bool is_spool = false;
-            const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+            const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
 
             sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
             if (Follow_Control.is_spooling == NOT_DEFINED) {
 
-               now = Follow_Control.now = sge_get_gmt();
+               now = Follow_Control.now = sge_get_gmt64();
 
-               DPRINTF(">>next spooling now:%ld next: %ld\n", Follow_Control.now, Follow_Control.last_update);
+               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
 
                if (now >= Follow_Control.last_update) {
                   Follow_Control.is_spooling = DO_SPOOL;
@@ -1285,7 +1285,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
 
                if ((pos = lGetPosViaElem(up_order, UU_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong(up, UU_usage_time_stamp, lGetPosUlong(up_order, pos));
+                  lSetUlong64(up, UU_usage_time_stamp, lGetPosUlong64(up_order, pos));
 
                if ((pos = lGetPosViaElem(up_order, UU_usage, SGE_NO_ABORT)) >= 0) {
                   lSwapList(up_order, UU_usage, up, UU_usage);
@@ -1355,7 +1355,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * TO BE DISPLAYED BY QMON AND OTHER CLIENTS
           * ----------------------------------------------------------------------- */
       case ORT_share_tree: {
-         lList *master_stree_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
+         lList *master_stree_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
 
          DPRINTF("ORDER: ORT_share_tree\n");
          sge_init_node_fields(lFirstRW(master_stree_list));
@@ -1389,8 +1389,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_suspend_on_threshold: {
          lListElem *queueep;
          u_long32 jobid;
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-         lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
          DPRINTF("ORDER: ORT_suspend_on_threshold\n");
 
@@ -1431,7 +1431,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             /* update queues time stamp in schedd */
-            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt());
+            lSetUlong64(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
          }
       }
@@ -1440,8 +1440,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_unsuspend_on_threshold: {
          lListElem *queueep;
          u_long32 jobid;
-         lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-         lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+         lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
          DPRINTF("ORDER: ORT_unsuspend_on_threshold\n");
 
@@ -1480,7 +1480,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                answer_list_output(&answer_list);
             }
             /* update queues time stamp in schedd */
-            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt());
+            lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
          }
       }
@@ -1488,7 +1488,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
       case ORT_job_schedd_info: {
          lList *sub_order_list = lGetListRW(ep, OR_joker);
-         lList **master_job_schedd_info_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
+         lList **master_job_schedd_info_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
 
          DPRINTF("ORDER: ORT_job_schedd_info\n");
 
@@ -1527,11 +1527,11 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
  * MT-NOTE: distribute_ticket_orders() is NOT MT safe
  */
 int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
-   u_long32 now = sge_get_gmt();
+   u_long64 now = sge_get_gmt64();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
    const lListElem *ep;
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER);
 
@@ -1546,7 +1546,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
          cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
                                           (char *) host_name, (char *) prognames[EXECD], 1, &last_heard_from);
       }
-      if (hep && last_heard_from + 10 * mconf_get_load_report_time() > now) {
+      if (hep &&sge_gmt32_to_gmt64(last_heard_from + 10 * mconf_get_load_report_time()) > now) {
          sge_pack_buffer pb;
 
          if (init_packbuffer(&pb, sizeof(u_long32) * 3 * n, 0) == PACK_SUCCESS) {

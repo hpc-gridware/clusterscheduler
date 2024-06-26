@@ -124,15 +124,15 @@ typedef gid_t addgrpid_t;
 
 */
 
-int ptf_init(void);
+int ptf_init();
 
-void ptf_start(void); 
+void ptf_start(); 
 
-void ptf_stop(void); 
+void ptf_stop(); 
 
-int ptf_is_running(void); 
+int ptf_is_running(); 
 
-void ptf_unregister_registered_jobs(void);
+void ptf_unregister_registered_jobs();
 void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id );
 
 void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_idr, 
@@ -150,13 +150,13 @@ int ptf_process_job_ticket_list(lList *jobs);
 
 int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lList **usage);
 
-void ptf_update_job_usage(void);
+void ptf_update_job_usage();
 
-int ptf_adjust_job_priorities(void);
+int ptf_adjust_job_priorities();
 
 const char *ptf_errstr(int ptf_error_code);
 
-void ptf_show_registered_jobs(void);
+void ptf_show_registered_jobs();
 
 /*-----------------------------------------------------
 

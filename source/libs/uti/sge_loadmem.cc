@@ -51,7 +51,7 @@
 #include <unistd.h>
 
 int (*p_page2M)(int size);
-void init_pageshift(void);
+void init_pageshift();
 static int page2M_none(int size);
 static int page2M_left(int size);
 static int page2M_right(int size);

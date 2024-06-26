@@ -62,7 +62,7 @@ void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);
 
 void
-sge_init_ar_id(void);
+sge_init_ar_id();
 
 int
 ar_do_reservation(lListElem *ar, bool incslots);

@@ -41,7 +41,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
@@ -373,7 +373,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(cq, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
       bool exclude = true;
 
@@ -491,7 +491,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(cq, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
@@ -1034,6 +1034,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
       DPRINTF("RD: 1\n");
       tmp_rue_elem = lCreateElem(RUE_Type);
    }
+#if 0
 {
    const char *object_name = "bla";
    const lListElem *rde;
@@ -1041,15 +1042,16 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
            object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
            lGetDouble(tmp_rue_elem, RUE_utilized_now));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
-      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
+      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
    DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
            object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
            lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive));
    for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
-      DPRINTF("\t" sge_U32CFormat "  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount));
+      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
    }
 }
+#endif
 
    lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
    lAppendElem(tmp_rue_list, tmp_rue_elem);
@@ -1262,7 +1264,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 *     const lListElem *rule        - rqsource quota rule (RQR_Type)
 *     const char* host       - host name
 *     const char* queue      - queue name
-*    u_long32 *start         - start time of job
+*    u_long64 *start         - start time of job
 *
 *  RESULT
 *     static dispatch_t - DISPATCH_OK job can be scheduled
@@ -1274,7 +1276,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 *     MT-NOTE: rqs_limitation_reached() is not MT safe 
 *
 *******************************************************************************/
-static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long32 *start) 
+static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long64 *start)
 {
    dispatch_t ret = DISPATCH_MISSING_ATTR;
    const lList *limit_list = nullptr;
@@ -1348,7 +1350,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             
          if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
             const lList *rue_list = lGetList(limit, RQRL_usage);
-            u_long32 tmp_time = a->start;
+            u_long64 tmp_time = a->start;
 
             /* create tmp_centry_list */
             tmp_centry_elem = lCopyElem(raw_centry);
@@ -1398,7 +1400,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 *
 *  SYNOPSIS
 *     dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, 
-*     const char *host, u_long32 *tt_rqs_all, bool *is_global, 
+*     const char *host, u_long64 *tt_rqs_all, bool *is_global,
 *     dstring *rue_string, dstring *limit_name, dstring *rule_name) 
 *
 *  FUNCTION
@@ -1414,12 +1416,12 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 *     sge_assignment_t *a  - assignment
 *     const char *queue    - cluster queue name
 *     const char *host     - host name
-*     u_long32 *tt_rqs_all - returns earliest time over all resource quotas
+*     u_long64 *tt_rqs_all - returns earliest time over all resource quotas
 *     bool *is_global      - returns true if result is valid for any other queue
 *     dstring *rue_string  - caller maintained buffer
 *     dstring *limit_name  - caller maintained buffer
 *     dstring *rule_name   - caller maintained buffer
-*     u_long32 tt_best     - time of best solution found so far
+*     u_long64 tt_best     - time of best solution found so far
 *
 *  RESULT
 *     static dispatch_t - usual return values
@@ -1428,7 +1430,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 *     MT-NOTE: rqs_by_slots() is MT safe 
 *******************************************************************************/
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host, 
-  u_long32 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long32 tt_best)
+  u_long64 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long64 tt_best)
 {
    const lListElem *rqs;
    dispatch_t result = DISPATCH_OK;
@@ -1442,7 +1444,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
    }
 
    for_each_ep(rqs, a->rqs_list) {
-      u_long32 tt_rqs = a->start;
+      u_long64 tt_rqs = a->start;
       const char *user = a->user;
       const char *group = a->group;
       const char *project = a->project;
@@ -1465,7 +1467,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
          /* check limit or reuse earlier results */
          if ((rql=lGetElemStrRW(a->limit_list, RQL_name, limit))) {
-            tt_rqs = lGetUlong(rql, RQL_time);
+            tt_rqs = lGetUlong64(rql, RQL_time);
             result = (dispatch_t)lGetInt(rql, RQL_result);
          } else {
             /* Check booked usage */
@@ -1473,7 +1475,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
             rql = lAddElemStr(&(a->limit_list), RQL_name, limit, RQL_Type);
             lSetInt(rql, RQL_result, result);
-            lSetUlong(rql, RQL_time, tt_rqs);
+            lSetUlong64(rql, RQL_time, tt_rqs);
             /* init with same value as QU_tagged4schedule */
             lSetUlong(rql, RQL_tagged4schedule, 2);
 
@@ -1504,13 +1506,14 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
    }
 
-   if (!rqs) 
+   if (!rqs) {
       result = DISPATCH_OK;
+   }
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
-      DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> " sge_U32CFormat "\n", queue, host, tt_rqs_all);
+      DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> " sge_u64 "\n", queue, host, tt_rqs_all);
    } else {
-      DPRINTF("rqs_by_slots(%s@%s) returns <later> " sge_U32CFormat " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global");
+      DPRINTF("rqs_by_slots(%s@%s) returns <later> " sge_u64 " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global");
    }
 
    DRETURN(result);

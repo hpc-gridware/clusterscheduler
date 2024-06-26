@@ -302,6 +302,18 @@ int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_n
    DRETURN(0);
 }
 
+int attr_mod_ulong64(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
+   DENTER(TOP_LAYER);
+
+   /* ---- attribute nm */
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
+      DPRINTF("got new %s\n", attr_name);
+      lSetUlong64(new_ep, nm, lGetUlong64(qep, nm));
+   }
+
+   DRETURN(0);
+}
+
 /****** sge_utility_qmaster/attr_mod_double() **********************************
 *  NAME
 *     attr_mod_double() --  modify raw double, no verification 

@@ -447,13 +447,13 @@ static int krb_delete_client(lListElem *client)
 
 int krb_check_for_idle_clients(void)
 {
-   static u_long32 next_time = 0;
-   u_long32 now = sge_get_gmt();
+   static u_long64 next_time = 0;
+   u_long64 now = sge_get_gmt64();
    lListElem *client, *next;
 
    DENTER(TOP_LAYER);
 
-   if ((now = sge_get_gmt())<next_time) {
+   if ((now = sge_get_gmt64())<next_time) {
       DRETURN(0);
    }
 
@@ -462,14 +462,14 @@ int krb_check_for_idle_clients(void)
 
       /* if client connection has timed out, remove client entry */
 
-      if (now > (lGetUlong(client, KRB_timestamp) + KRB_CLIENT_TIMEOUT)) {
+      if (now > (lGetUlong64(client, KRB_timestamp) + sge_gmt32_to_gmt64(KRB_CLIENT_TIMEOUT))) {
 
          krb_delete_client(client);
 
       }
    }
 
-   next_time = now + gsd.idle_client_interval;
+   next_time = now + sge_gmt32_to_gmt64(gsd.idle_client_interval);
 
    DRETURN(0);
 }

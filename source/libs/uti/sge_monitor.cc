@@ -95,7 +95,7 @@ static dstring Info_Line = DSTRING_INIT;
 static bool mallinfo_initialized = false;
 static void *mallinfo_shlib_handle = nullptr;
 
-static struct mallinfo (*mallinfo_func_pointer)(void) = nullptr;
+static struct mallinfo (*mallinfo_func_pointer)() = nullptr;
 
 #endif
 
@@ -224,7 +224,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
       if (mallinfo_shlib_handle != nullptr) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-         mallinfo_func_pointer = (struct mallinfo (*)(void)) dlsym(mallinfo_shlib_handle, function_name);
+         mallinfo_func_pointer = (struct mallinfo (*)()) dlsym(mallinfo_shlib_handle, function_name);
 #pragma GCC diagnostic pop
       }
    }

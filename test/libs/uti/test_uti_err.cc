@@ -41,7 +41,7 @@
 #define ERR_LAYER TOP_LAYER
 
 bool
-test_err_has_which_error(void) {
+test_err_has_which_error() {
    bool ret = true;
    sge_err_t id = SGE_ERR_SUCCESS;
    char buffer[1024];
