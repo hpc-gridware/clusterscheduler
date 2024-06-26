@@ -170,7 +170,7 @@
 #define MSG_SCHEDD_SHOULDHAVEFINISHED_UUU                   _MESSAGE(47209, _("job " sge_U32CFormat "." sge_U32CFormat " should have finished since " sge_U32CFormat "s"))
 
 #define MSG_SCHEDD_FORDEFAULTREQUEST                        _MESSAGE(47210, _("for default request "  ))
-#define MSG_SCHEDD_JOBREQUESTSUNKOWNRESOURCE_S              _MESSAGE(47211, _("job requests unknown resource (%s)"))
+#define MSG_SCHEDD_JOBREQUESTSUNKNOWNRESOURCE_S              _MESSAGE(47211, _("job requests unknown resource (%s)"))
 #define MSG_SCHEDD_JOBREQUESTSNONREQUESTABLERESOURCE        _MESSAGE(47212, _("job requests non requestable resource "))
 #define MSG_SCHEDD_ITOFFERSONLY                             _MESSAGE(47213, _("it offers only "))
 #define MSG_SCHEDD_LOGLIST_QUEUESFULLANDDROPPED             _MESSAGE(47214, _("queues dropped because they are full: "))

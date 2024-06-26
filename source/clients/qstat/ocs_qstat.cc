@@ -1207,7 +1207,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
       case MASTER_QUEUE:   sge_dstring_copy_string(&ds, "Master Queue"); break;
       case FULL_JOB_NAME:  sge_dstring_copy_string(&ds, "Full jobname"); break;
       default:
-           DPRINTF("Unkown additional info(%d)\n", name);
+           DPRINTF("Unknown additional info(%d)\n", name);
            abort();
    }
    {

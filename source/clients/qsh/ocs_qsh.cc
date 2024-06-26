@@ -2305,7 +2305,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
          if (!is_rsh && (!strcmp(cp, "-hold_jid") || !strcmp(cp, "-hold_jid_ad") 
              || !strcmp(cp, "-h"))){
             if (error) {
-               ERROR(MSG_ANSWER_UNKOWNOPTIONX_S, cp);
+               ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                sge_prof_cleanup();
                sge_exit(EXIT_FAILURE);
             } else {
@@ -2331,7 +2331,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
             strcmp(cp, "-jsv")
            ) {
             if (error) {
-               ERROR(MSG_ANSWER_UNKOWNOPTIONX_S, cp);
+               ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                sge_prof_cleanup();
                sge_exit(EXIT_FAILURE);
             } else {
@@ -2349,7 +2349,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
                strcmp(cp, "-V") == 0
               ) {
                if (error) {
-                  ERROR(MSG_ANSWER_UNKOWNOPTIONX_S, cp);
+                  ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_prof_cleanup();
                   sge_exit(EXIT_FAILURE);
                } else {
@@ -2363,7 +2363,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
          if (!JOB_TYPE_IS_QSH(jb_now)) {
             if (strcmp(cp, "-S") == 0) {
                if (error) {
-                  ERROR(MSG_ANSWER_UNKOWNOPTIONX_S, cp);
+                  ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_prof_cleanup();
                   sge_exit(EXIT_FAILURE);
                } else {
@@ -2382,7 +2382,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
                strcmp(cp, "-V")
               ) {
                if (error) {
-                  ERROR(MSG_ANSWER_UNKOWNOPTIONX_S, cp);
+                  ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_prof_cleanup();
                   sge_exit(EXIT_FAILURE);
                } else {

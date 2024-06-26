@@ -540,7 +540,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
-            ERROR(MSG_COM_ACKEVENTFORUNKOWNJOB_SU, host, sge_u32c(ack_ulong));
+            ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, sge_u32c(ack_ulong));
             DRETURN_VOID;
          }
          jatep = job_search_task(jep, nullptr, ack_ulong2);

@@ -524,7 +524,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    for_each_rw(ep, cmdline) {
       char str[1024];
 
-      snprintf(str, sizeof(str), MSG_ANSWER_UNKOWNOPTIONX_S, lGetString(ep, SPA_switch_val));
+      snprintf(str, sizeof(str), MSG_ANSWER_UNKNOWNOPTIONX_S, lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {
          strcat(str, " ");

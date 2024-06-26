@@ -2827,7 +2827,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF("a job cannot wait for a task to finish\n");
-            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
+            ERROR(MSG_JOB_MOD_UNKNOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -2941,7 +2941,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF("a job cannot wait for a task to finish\n");
-            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
+            ERROR(MSG_JOB_MOD_UNKNOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }

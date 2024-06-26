@@ -192,8 +192,8 @@ const char *cl_get_error_text(int error_id) {
       case CL_RETVAL_CLIENT_WELCOME_ERROR      : {
          return MSG_CL_RETVAL_CLIENT_WELCOME_ERROR;
       }
-      case CL_RETVAL_UNKOWN_HOST_ERROR         : {
-         return MSG_CL_RETVAL_UNKOWN_HOST_ERROR;
+      case CL_RETVAL_UNKNOWN_HOST_ERROR         : {
+         return MSG_CL_RETVAL_UNKNOWN_HOST_ERROR;
       }
       case CL_RETVAL_LOCAL_HOSTNAME_ERROR      : {
          return MSG_CL_RETVAL_LOCAL_HOSTNAME_ERROR;
