@@ -66,6 +66,7 @@ yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel
 yum install -y epel-release
 yum install -y tcsh expect
 yum install -y libdb libdb-devel hwloc hwloc-devel openssl-devel
+yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel
 ```
 
 ### Debian 12
@@ -84,6 +85,7 @@ apt-get install -y tcsh xterm expect tcl gnuplot
 pkg install cmake git autoconf automake gettext bash libudev-devd
 pkg install expect xterm gnuplot vim mailx
 pkg install hs-pandoc texlive-full tex-xetex
+pkg install openjdk8-8.402.06.1_1
 ```
 
 ### macOS 14 (default for darwin-arm64)
@@ -116,6 +118,7 @@ dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
+dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel
 ```
 
 Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
@@ -134,6 +137,7 @@ pkg install pkg:/shell/expect
 pkg install pkg:/developer/documentation-tool/doxygen
 pkg install pkg:/image/graphviz
 pkg install pkg:/image/gnuplot
+pkg install pkg:/developer/java/jdk-8
 ```
 
 ### SUSE Tumbleweed (default for lx-riscv64)

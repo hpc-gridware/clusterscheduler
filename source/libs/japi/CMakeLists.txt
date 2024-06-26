@@ -23,12 +23,21 @@ set(LIBRARY_NAME japi)
 set(LIBRARY_SOURCES japi.cc)
 set(LIBRARY_INCLUDES "./")
 
+if (WITH_JNI)
+   set(JNI_CODE ../jdrmaa/com_sun_grid_drmaa_SessionImpl.c)
+   set(JNI_INCLUDE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/${JNI_ARCH})
+endif()
+
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
-target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
+target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${JNI_INCLUDE}
       ${LIBRARY_INCLUDES})
 
 set(DRMAA_LIB_NAME drmaa)
-set(DRMAA_LIB_SOURCES drmaa.cc ../../common/parse_job_cull.cc ../../common/parse_qsub.cc)
+set(DRMAA_LIB_SOURCES drmaa.cc
+        ../../common/parse_job_cull.cc
+        ../../common/parse_qsub.cc
+        ${JNI_CODE}
+)
 set(DRMAA_LIB_INCLUDES "./")
 
 add_library(${DRMAA_LIB_NAME} SHARED ${DRMAA_LIB_SOURCES})
