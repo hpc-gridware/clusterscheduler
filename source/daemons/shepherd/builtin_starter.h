@@ -34,8 +34,8 @@
 /*___INFO__MARK_END__*/
 
 void son(const char *childname, char *script_file, int truncate_stderr_out);
-int sge_set_environment(void);
-char** sge_get_environment(void);
+int sge_set_environment();
+char** sge_get_environment();
 int sge_set_env_value(const char *, const char *);
 const char *sge_get_env_value(const char *);
 void start_command(const char *, char *, char *, char *, const char *, int, int, int, int, const char *, int);

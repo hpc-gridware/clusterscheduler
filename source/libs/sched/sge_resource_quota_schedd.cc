@@ -41,7 +41,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
@@ -373,7 +373,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(cq, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
       bool exclude = true;
 
@@ -491,7 +491,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(cq, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;

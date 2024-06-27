@@ -43,8 +43,8 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-#include "oge_BaseAccountingFileWriter.h"
-#include "oge_BaseReportingFileWriter.h"
+#include "ocs_BaseAccountingFileWriter.h"
+#include "ocs_BaseReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 
 void
@@ -61,7 +61,7 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task);
 
-namespace oge {
+namespace ocs {
    class ClassicReportingFileWriter : public BaseReportingFileWriter {
    private:
       static const char REPORTING_DELIMITER{':'};

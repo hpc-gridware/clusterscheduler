@@ -144,7 +144,7 @@ sge_listener_main(void *arg) {
    conf_update_thread_profiling("Listener Thread");
 
    // this thread will use the LISTENER data store
-   oge::DataStore::select_active_ds(oge::DataStore::Id::LISTENER);
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::LISTENER);
 
    DPRINTF("entering main loop\n");
    while (true) {

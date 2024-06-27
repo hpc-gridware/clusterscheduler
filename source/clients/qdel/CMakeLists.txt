@@ -19,7 +19,7 @@
 #___INFO__MARK_END_NEW__
 
 # source/clients/qdel
-add_executable(qdel oge_qdel.cc ../../common/sge_options.cc ../../common/usage.cc)
+add_executable(qdel ocs_qdel.cc ../../common/sge_options.cc ../../common/usage.cc)
 target_include_directories(qdel PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
       qdel

@@ -48,6 +48,6 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run);
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm);
 
 void schedd_set_monitor_next_run(bool set);
-bool schedd_is_monitor_next_run(void);
+bool schedd_is_monitor_next_run();
 
 void schedd_set_schedd_log_file();

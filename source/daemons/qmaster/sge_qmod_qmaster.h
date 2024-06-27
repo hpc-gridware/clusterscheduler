@@ -51,7 +51,7 @@ void
 resend_signal_event(te_event_t anEvent, monitoring_t *monitor);
 
 void
-rebuild_signal_events(void);
+rebuild_signal_events();
 
 void
 sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);

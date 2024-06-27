@@ -39,7 +39,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_range.h"
 
-bool check_range_get_all_ids(void)
+bool check_range_get_all_ids()
 {
    bool failed = false;
    lListElem *range;
@@ -90,7 +90,7 @@ bool check_range_get_all_ids(void)
    return failed;
 }
 
-bool check_range_set_all_ids(void)
+bool check_range_set_all_ids()
 {
    bool failed = false;
    lListElem *range;

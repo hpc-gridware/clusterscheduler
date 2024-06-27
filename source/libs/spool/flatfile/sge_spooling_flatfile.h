@@ -71,9 +71,9 @@
 
 extern "C" {
 #ifdef SPOOLING_classic
-const char *get_spooling_method(void);
+const char *get_spooling_method();
 #else
-const char *get_classic_spooling_method(void);
+const char *get_classic_spooling_method();
 #endif
 
 lListElem *

@@ -43,7 +43,7 @@
 
 static void *thread_function(void *anArg);
 
-int get_thrd_demand(void) {
+int get_thrd_demand() {
    long p = 2;  /* min num of threads */
 
 #if defined(SOLARIS)
@@ -53,11 +53,11 @@ int get_thrd_demand(void) {
    return (int) p;
 }
 
-void *(*get_thrd_func(void))(void *anArg) {
+void *(*get_thrd_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg(void) {
+void *get_thrd_func_arg() {
    return nullptr;
 }
 

@@ -66,7 +66,7 @@ void main(int, char**);
 #include "sge_os.h"
 
 #else
-int sge_nprocs (void);
+int sge_nprocs ();
 #endif
 
 /****** uti/os/sge_nprocs() ***************************************************

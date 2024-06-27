@@ -113,7 +113,7 @@ scheduler_control_t Scheduler_Control = {
 #if 0
 static void rest_busy(sge_evc_class_t *evc);
 
-static void wait_for_events(void);
+static void wait_for_events();
 #endif
 
 static int
@@ -137,7 +137,7 @@ st_set_flag_new_global_conf(bool new_value) {
 }
 
 bool
-st_get_flag_new_global_conf(void) {
+st_get_flag_new_global_conf() {
    bool ret = false;
 
    DENTER(TOP_LAYER);

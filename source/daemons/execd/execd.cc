@@ -46,9 +46,9 @@
 #include "uti/sge_profiling.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_feature.h"
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
    INFO(SFNMAX, MSG_EXECD_STARTPDCANDPTF);
 #endif
 
-   master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    *master_job_list = lCreateList("master job list", JB_Type);
    job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
@@ -449,7 +449,7 @@ static void execd_exit_func(int i)
 *     sge_execd_register_at_qmaster() -- modify execd list at qmaster site
 *
 *  SYNOPSIS
-*     int sge_execd_register_at_qmaster(void) 
+*     int sge_execd_register_at_qmaster() 
 *
 *  FUNCTION
 *     add local execd name to SGE_EH_LIST in order to register at
@@ -692,7 +692,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
 
    DENTER(TOP_LAYER);
 
-   *job = lGetElemUlongFirstRW(*oge::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+   *job = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != nullptr) {
       *ja_task = job_search_task(*job, nullptr, ja_task_id);
       if (*ja_task != nullptr) {
@@ -702,7 +702,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
       /* in execd, we have exactly one ja_task per job,
        * therefore we can have multiple jobs with the same job_id
        */
-      *job = lGetElemUlongNextRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+      *job = lGetElemUlongNextRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
    
    if (*job == nullptr) {

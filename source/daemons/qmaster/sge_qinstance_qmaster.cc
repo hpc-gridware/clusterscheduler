@@ -43,7 +43,7 @@
 #include "uti/sge_signal.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_job.h"
@@ -60,7 +60,7 @@
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_serf.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_persistence_qmaster.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_qinstance_qmaster.h"
@@ -98,9 +98,9 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 #define QINSTANCE_MODIFY_DEBUG
 #endif
    bool ret = true;
-   const lList *master_calendar_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
@@ -845,7 +845,7 @@ qinstance_change_state_on_calendar_all(const char *cal_name, u_long32 cal_order,
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(cqueue, *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = nullptr;
 
@@ -935,8 +935,8 @@ sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_s
    bool changed;
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_DISABLED, set_state);
    }
 
@@ -949,8 +949,8 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
    bool changed;
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_SUSPENDED, set_state);
    }
 
@@ -963,12 +963,12 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_unknown(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       if (mconf_get_simulate_execds()) {
-         sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+         sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                      lGetString(this_elem, QU_full_name), QI_UNKNOWN, false);
       } else {
-         sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+         sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                      lGetString(this_elem, QU_full_name), QI_UNKNOWN, set_state);
       }
    }
@@ -982,8 +982,8 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_ERROR, set_state);
    }
 
@@ -996,7 +996,7 @@ sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state
    bool changed;
    changed = qinstance_state_set_susp_on_sub(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
    return changed;
@@ -1007,7 +1007,7 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
    bool changed;
    changed = qinstance_state_set_cal_disabled(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
    return changed;
@@ -1018,7 +1018,7 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
    bool changed;
    changed = qinstance_state_set_cal_suspended(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
    return changed;
@@ -1029,7 +1029,7 @@ sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
    bool changed;
    changed = qinstance_state_set_orphaned(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
    return changed;
@@ -1040,8 +1040,8 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) 
    bool changed;
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
-      oge::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*oge::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
+      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
                                   lGetString(this_elem, QU_full_name), QI_AMBIGUOUS, set_state);
    }
 
@@ -1105,9 +1105,9 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
    if (this_elem != nullptr) {
       const char *name = lGetString(this_elem, QU_full_name);
-      const lList *job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-      const lList *centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-      const lList *ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+      const lList *job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+      const lList *centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+      const lList *ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
       lListElem *ep = nullptr;
 
       lSetList(this_elem, QU_resource_utilization, nullptr);

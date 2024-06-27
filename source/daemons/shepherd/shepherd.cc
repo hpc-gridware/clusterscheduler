@@ -159,7 +159,7 @@ static int wait_my_builtin_ijs_child(int pid, const char *childname, int timeout
 static int do_wait(pid_t pid);
 
 /* checkpointing functions */
-static int check_ckpttype(void);
+static int check_ckpttype();
 static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
    char *migr_command, int migr_len, char *clean_command, int clean_len,
    int *ckpt_interval);
@@ -180,8 +180,8 @@ void shepherd_signal_job(pid_t pid, int sig);
 
 /* signal functions */
 static void signal_handler(int signal);
-static void set_shepherd_signal_mask(void);
-static void change_shepherd_signal_mask(void);
+static void set_shepherd_signal_mask();
+static void change_shepherd_signal_mask();
 static void shepherd_deliver_signal(int sig,
                                     int pid,
                                     int *postponed_signal,
@@ -672,7 +672,7 @@ static void signal_handler(int signal)
    received_signal = signal;
 }
 
-static void show_shepherd_version(void) {
+static void show_shepherd_version() {
 
    printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_shepherd");
@@ -862,10 +862,10 @@ int main(int argc, char **argv)
     * Perform core binding (do not use processor set together with core binding) 
     */ 
 #if defined(OGE_HWLOC)
-   oge::do_core_binding();
+   ocs::do_core_binding();
 #elif defined(BINDING_SOLARIS)
    /*switch later to startuser */
-   oge::do_core_binding();
+   ocs::do_core_binding();
 #endif    
 
    /*
@@ -1995,7 +1995,7 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
  * set_shepherd_signal_mask
  * set signal mask that shpher can handle signals from execd
  *--------------------------------------------------------------------*/
-static void set_shepherd_signal_mask(void)   
+static void set_shepherd_signal_mask()   
 {
    struct sigaction sigact, sigact_old;
    sigset_t mask;
@@ -2075,7 +2075,7 @@ static void change_shepherd_signal_mask()
  *           0 no checkpointing
  *           Bitmask of checkpointing type
  *------------------------------------------------------------------------*/
-static int check_ckpttype(void)
+static int check_ckpttype()
 {
    char *ckpt_job, *ckpt_interface, *ckpt_restarted, *ckpt_migr_command, 
         *ckpt_rest_command, *ckpt_command, *ckpt_pid, *ckpt_osjobid, 

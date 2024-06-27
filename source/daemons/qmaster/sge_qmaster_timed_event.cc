@@ -179,7 +179,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 *     te_wait_empty() -- waits, if the event list is empty
 *
 *  SYNOPSIS
-*     static void te_wait_empty(void) 
+*     static void te_wait_empty() 
 *
 *  FUNCTION
 *     waits, if the event list is empty
@@ -188,7 +188,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 *     MT-NOTE: te_wait_empty() is not MT safe 
 *
 *******************************************************************************/
-void te_wait_empty(void) {
+void te_wait_empty() {
 
    DENTER(EVENT_LAYER);
 
@@ -711,7 +711,7 @@ char *te_get_alphanumeric_key(te_event_t anEvent) {
 *     te_init() -- one-time initialization 
 *
 *  SYNOPSIS
-*     static void te_init(void) 
+*     static void te_init() 
 *
 *  FUNCTION
 *     Create timed event list. Set list sort order to be ascending event due 
@@ -730,7 +730,7 @@ char *te_get_alphanumeric_key(te_event_t anEvent) {
 *     MT-NOTE: function.
 *
 *******************************************************************************/
-void te_init(void) {
+void te_init() {
    DENTER(EVENT_LAYER);
 
    Event_Control.list = lCreateList("timed event list", TE_Type);
@@ -748,7 +748,7 @@ void te_init(void) {
 *     te_shutdown() -- Shutdown event delivery thread. 
 *
 *  SYNOPSIS
-*     void te_shutdown(void) 
+*     void te_shutdown() 
 *
 *  FUNCTION
 *     Shutdown event delivery thread. Set event control structure 'exit' flag.
@@ -768,7 +768,7 @@ void te_init(void) {
 *     MT-NOTE: invoked without any prerequisite.
 *
 *******************************************************************************/
-void te_shutdown(void) {
+void te_shutdown() {
    DENTER(EVENT_LAYER);
 
    sge_free(&(Handler_Tbl.list));

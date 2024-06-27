@@ -38,7 +38,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_eval_expression.h"
@@ -404,8 +404,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    lListElem *ar = nullptr;
    u_long32 exit_status = 0;
    bool do_accounting_summary = false;
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 

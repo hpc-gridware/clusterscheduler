@@ -85,7 +85,7 @@ static void get_spool_dir_parts(u_long32 job_id, char *first, size_t first_size,
 *     sge_get_ja_tasks_per_directory() -- Configured number of tasks per dir
 *
 *  SYNOPSIS
-*     u_long32 sge_get_ja_tasks_per_directory(void) 
+*     u_long32 sge_get_ja_tasks_per_directory() 
 *
 *  FUNCTION
 *     Returns the configured number of tasks per directory
@@ -118,7 +118,7 @@ u_long32 sge_get_ja_tasks_per_directory() {
 *     sge_get_ja_tasks_per_file() -- Configured number of tasks per file
 *
 *  SYNOPSIS
-*     u_long32 sge_get_ja_tasks_per_file(void) 
+*     u_long32 sge_get_ja_tasks_per_file() 
 *
 *  FUNCTION
 *     Returns the configured number of tasks per file
@@ -677,7 +677,7 @@ void sge_status_set_type(washing_machine_t type) {
 *     sge_status_next_turn() -- show next turn
 *
 *  SYNOPSIS
-*     void sge_status_next_turn(void)
+*     void sge_status_next_turn()
 *
 *  FUNCTION
 *     Show next turn of rotating washing machine.
@@ -723,7 +723,7 @@ void sge_status_next_turn() {
 *     sge_status_end_turn() -- remove washing machine from display
 *
 *  SYNOPSIS
-*     void sge_status_end_turn(void)
+*     void sge_status_end_turn()
 *
 *  FUNCTION
 *     Last turn of washing machine.

@@ -250,7 +250,7 @@ void
 spool_set_default_context(lListElem *context);
 
 lListElem *
-spool_get_default_context(void);
+spool_get_default_context();
 
 lListElem *
 spool_context_search_rule(const lListElem *context, const char *name);
@@ -342,5 +342,5 @@ spool_compare_objects(lList **answer_list, const lListElem *context,
                       const lListElem *ep1, const lListElem *ep2);
 
 extern "C" { 
-const char *get_spooling_method(void);
+const char *get_spooling_method();
 }

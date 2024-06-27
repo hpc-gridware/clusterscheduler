@@ -71,10 +71,10 @@ int
 sge_is_job_category_reservation_rejected(const lListElem *job);
 
 int
-sge_reset_job_category(void);
+sge_reset_job_category();
 
 int
-sge_category_count(void);
+sge_category_count();
 
 int
-sge_cs_category_count(void);
+sge_cs_category_count();

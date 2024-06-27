@@ -364,13 +364,13 @@ bool spool_default_validate_func(lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -536,7 +536,7 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_ADMINHOST:
          break;
       case SGE_TYPE_EXECHOST:
-         host_list_merge(*oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+         host_list_merge(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
          break;
       case SGE_TYPE_SUBMITHOST:
       case SGE_TYPE_CONFIG:
@@ -545,7 +545,7 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_PE:
          break;
       case SGE_TYPE_CENTRY:
-         centry_list_sort(*oge::DataStore::get_master_list_rw(SGE_TYPE_CENTRY));
+         centry_list_sort(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY));
          break;
       case SGE_TYPE_MANAGER:
       case SGE_TYPE_OPERATOR:

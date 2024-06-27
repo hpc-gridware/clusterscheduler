@@ -91,7 +91,7 @@ extern event_master_control_t Event_Master_Control;
 
 void sge_event_master_process_requests(monitoring_t *monitor);
 void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
-void sge_event_master_wait_next(void);
+void sge_event_master_wait_next();
 
 int sge_add_event_client(lListElem *ev,
                          lList **alpp,
@@ -142,9 +142,9 @@ void sge_deliver_events_immediately(u_long32 aClientID);
 int sge_resync_schedd(monitoring_t *monitor);
 
 u_long32 sge_set_max_dynamic_event_clients(u_long32 max);
-u_long32 sge_get_max_dynamic_event_clients(void);
+u_long32 sge_get_max_dynamic_event_clients();
 
-void sge_event_master_shutdown(void);
-void sge_event_master_init(void);
-bool sge_commit(void);
-void sge_set_commit_required(void);
+void sge_event_master_shutdown();
+void sge_event_master_init();
+bool sge_commit();
+void sge_set_commit_required();

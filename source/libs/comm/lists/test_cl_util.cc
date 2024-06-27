@@ -42,7 +42,7 @@
 
 #include "comm/lists/cl_util.h"
 
-int main(void) {
+int main() {
    unsigned long i = 0;
    int back = 0;
    int i2 = 0;

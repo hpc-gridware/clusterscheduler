@@ -148,7 +148,7 @@ centry_print_resource_to_dstring(const lListElem *this_elem,
                                  dstring *string);
 
 lList **
-centry_list_get_master_list(void);
+centry_list_get_master_list();
 
 lListElem *
 centry_list_locate(const lList *this_list, 

@@ -46,7 +46,7 @@
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/oge_gdi_client.h"
+#include "gdi/ocs_gdi_client.h"
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
@@ -89,7 +89,7 @@ int main()
    sge_setup_sig_handlers(QEVENT);
 
    // this thread will use the GLOBAL data store
-   oge::DataStore::select_active_ds(oge::DataStore::Id::GLOBAL);
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);
 
    /* setup event client */
    int cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);

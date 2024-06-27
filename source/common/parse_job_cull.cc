@@ -636,7 +636,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    // if there are any elements left in cmdline it is unknown options
    // which we didn't handle above
    for_each_rw(ep, cmdline) {
-      snprintf(error_string, sizeof(error_string), MSG_ANSWER_UNKOWNOPTIONX_S, lGetString(ep, SPA_switch_val));
+      snprintf(error_string, sizeof(error_string), MSG_ANSWER_UNKNOWNOPTIONX_S, lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {
          strcat(error_string, " ");

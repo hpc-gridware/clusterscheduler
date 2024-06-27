@@ -96,7 +96,7 @@
 
 #include "spool/sge_spooling.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_task_depend.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_job_qmaster.h"
@@ -221,8 +221,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    u_long32 end;
    u_long32 step;
    cl_thread_settings_t *tc = cl_thread_get_thread_config();
-   lList **master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   lList **master_suser_list = oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+   lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   lList **master_suser_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(TOP_LAYER);
 
@@ -333,8 +333,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    /* do job logging */
-   oge::ReportingFileWriter::create_new_job_records(nullptr, *jep);
-   oge::ReportingFileWriter::create_job_logs(nullptr, lGetUlong64(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
+   ocs::ReportingFileWriter::create_new_job_records(nullptr, *jep);
+   ocs::ReportingFileWriter::create_job_logs(nullptr, lGetUlong64(*jep, JB_submission_time), JL_PENDING, ruser, rhost, nullptr,
                             *jep, nullptr, nullptr, MSG_LOG_NEWJOB);
 
    /*
@@ -372,10 +372,10 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
    int alltasks = 1;
    lListElem *nxt, *job = nullptr;
    bool forced = false;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -853,7 +853,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
 static int
 verify_job_list_filter( lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag, char *ruser) {
    DENTER(TOP_LAYER);
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    /* Reject incorrect requests */
    if (!all_users_flag && !all_jobs_flag && !jid_flag && !user_list_flag) {
@@ -894,7 +894,7 @@ static void get_rid_of_schedd_job_messages(u_long32 job_number) {
    lListElem *mes = nullptr;
    lListElem *next = nullptr;
    lList *mes_list = nullptr;
-   lList *master_job_schedd_info_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
+   lList *master_job_schedd_info_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
 
 
    DENTER(TOP_LAYER);
@@ -981,7 +981,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
                                 monitoring_t *monitor) {
    u_long32 job_number, task_number;
    lListElem *qep = nullptr;
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -1022,8 +1022,8 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
-         oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, j, t, false);
-         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
+         ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, j, t, false);
+         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
          sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
@@ -1122,9 +1122,9 @@ int sge_gdi_mod_job(
    bool job_name_flag = false;
    char *job_mod_name = nullptr;
    const char *job_name = nullptr;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   lList **master_job_list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1406,7 +1406,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
    const lListElem *task;
    const lListElem *prep;
    int pre_nm, suc_nm;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1567,8 +1567,8 @@ static int mod_task_attributes(
    u_long32 jobid = lGetUlong(job, JB_job_number);
    u_long32 jataskid = lGetUlong(new_ja_task, JAT_task_number);
    int pos;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
    DENTER(TOP_LAYER);
 
@@ -1831,15 +1831,15 @@ static int mod_job_attributes(
    int is_running = 0, may_not_be_running = 0;
    u_long32 uval;
    u_long32 jobid = lGetUlong(new_job, JB_job_number);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -2742,7 +2742,7 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
    const lList *predecessor_list_ad = lGetList(new_job, JB_ja_ad_predecessor_list);
    const lListElem *pre_elem = nullptr;
    u_long32 pre_nr;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -2808,7 +2808,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
    lList *predecessors_id = nullptr;
    const lListElem *pre;
    lListElem *pre_temp;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -2827,7 +2827,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF("a job cannot wait for a task to finish\n");
-            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
+            ERROR(MSG_JOB_MOD_UNKNOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -2911,7 +2911,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
    lList *predecessors_id = nullptr;
    const lListElem *pre;
    lListElem *pre_temp;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -2941,7 +2941,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
          if (strchr(pre_ident, '.')) {
             lFreeList(&predecessors_id);
             DPRINTF("a job cannot wait for a task to finish\n");
-            ERROR(MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S, pre_ident);
+            ERROR(MSG_JOB_MOD_UNKNOWNJOBTOWAITFOR_S, pre_ident);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -3134,7 +3134,7 @@ static u_long32 guess_highest_job_number() {
    const lListElem *jep;
    u_long32 maxid = 0;
    int pos;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -3161,15 +3161,15 @@ static u_long32 guess_highest_job_number() {
 int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_modify) {
    int verify_mode = lGetUlong(jep, JB_verify_suitable_queues);
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   lList *master_ar_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
-   lList *master_ehost_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList *master_rqs_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_RQS);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   lList *master_ar_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
+   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_rqs_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER);
 
@@ -3408,8 +3408,8 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, char *ruser, cha
    const lListElem *old_jep;
    lListElem *new_jep;
    int dummy_trigger = 0;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -3609,8 +3609,8 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
    u_long32 existing_tasks;
    lList *range_list = nullptr;        /* RN_Type */
    u_long32 job_number = lGetUlong(job, JB_job_number);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -3745,7 +3745,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
 
             (*deleted_tasks)++;
 
-            oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
+            ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
                                      ruser, rhost, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
             sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -3772,7 +3772,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
             sge_dstring_free(&buffer);
          } else {
             /* JG: TODO: this joblog seems to have an invalid job object! */
-/*                oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, nullptr, nullptr, MSG_LOG_DELETED); */
+/*                ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, nullptr, nullptr, MSG_LOG_DELETED); */
 
 #if 0 /* EB: TODO: this should not be necessary because events have been sent in sge_commit_job() above */
             sge_add_event(start_time, sgeE_JOB_DEL, job_number, 0, 
@@ -3874,7 +3874,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                   DRETURN(njobs);
                }
 
-               oge::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
+               ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED, ruser, rhost, nullptr, job, tmp_task, nullptr,
                                         MSG_LOG_DELETED);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
@@ -3970,8 +3970,8 @@ job_verify_project(const lListElem *job, lList **alpp,
    int ret = STATUS_OK;
    const char *project = lGetString(job, JB_project);
    lList *projects = mconf_get_projects();
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER);
 

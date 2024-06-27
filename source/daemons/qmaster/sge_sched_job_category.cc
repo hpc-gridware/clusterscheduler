@@ -71,7 +71,7 @@
  * This is done with:
  * - sge_add_job_category(lListElem *job, lList *acl_list)
  * - sge_rebuild_job_category(lList *job_list, lList *acl_list)
- * - int sge_reset_job_category(void)
+ * - int sge_reset_job_category()
  *
  * During the dispatch run for a job, the category caches
  * all hosts and queues, which are not suitable for that
@@ -383,12 +383,12 @@ sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const lLi
 }
 
 int
-sge_category_count(void) {
+sge_category_count() {
    return lGetNumberOfElem(CATEGORY_LIST);
 }
 
 int
-sge_cs_category_count(void) {
+sge_cs_category_count() {
    return lGetNumberOfElem(CS_CATEGORY_LIST);
 }
 

@@ -42,7 +42,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
@@ -82,8 +82,8 @@ sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
    int prev_version;
    int adding;
    lList *found = nullptr;
-   const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER);
 

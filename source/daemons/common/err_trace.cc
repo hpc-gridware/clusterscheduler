@@ -126,14 +126,14 @@ static void  shepherd_panic(const char *s);
 *  RESULT
 *     void - none
 *******************************************************************************/
-void shepherd_trace_init(void)
+void shepherd_trace_init()
 {
 	if (!shepherd_trace_fp) {
 		shepherd_trace_fp = shepherd_trace_init_intern(st_trace);
 	}
 }
 
-void shepherd_trace_exit(void)
+void shepherd_trace_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
 
@@ -207,7 +207,7 @@ void shepherd_trace_chown(const char* job_owner)
 *  RESULT
 *     void - none
 *******************************************************************************/
-void shepherd_error_init(void)
+void shepherd_error_init()
 {
 	if (shepherd_error_fp == nullptr) {
 		shepherd_error_fp = shepherd_trace_init_intern(st_error);
@@ -217,7 +217,7 @@ void shepherd_error_init(void)
 	}
 }
 
-void shepherd_error_exit(void)
+void shepherd_error_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
 
@@ -552,7 +552,7 @@ int is_shepherd_trace_fd(int fd)
 *     count_exit_status() -- Return the number of lines in the exit status file
 *
 *  SYNOPSIS
-*     int count_exit_status(void)
+*     int count_exit_status()
 *
 *  FUNCTION
 *     Returns the number of lines in the exit_status file.
@@ -566,7 +566,7 @@ int is_shepherd_trace_fd(int fd)
 *  RESULT
 *     int - Number of lines in the exit_status file.
 *******************************************************************************/
-int count_exit_status(void)
+int count_exit_status()
 {
    int n = 0;
    SGE_STRUCT_STAT sbuf;

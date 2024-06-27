@@ -54,7 +54,7 @@
 *     sge_start_heartbeat() -- Start qmaster heartbeat. 
 *
 *  SYNOPSIS
-*     static void sge_start_heartbeat(void) 
+*     static void sge_start_heartbeat() 
 *
 *  FUNCTION
 *     Add heartbeat event and register according event handler. 
@@ -70,7 +70,7 @@
 *
 *******************************************************************************/
 void
-heartbeat_initialize(void)
+heartbeat_initialize()
 {
    te_event_t ev     = nullptr;
 
@@ -90,7 +90,7 @@ heartbeat_initialize(void)
    }
 
    DRETURN_VOID;
-} /* sge_start_heartbeat(void) */
+} /* sge_start_heartbeat() */
 
 /****** qmaster/sge_qmaster_heartbeat/increment_heartbeat() *************************
 *  NAME

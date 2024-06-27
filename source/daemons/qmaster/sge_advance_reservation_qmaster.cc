@@ -80,7 +80,7 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_utility_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_job_qmaster.h"
@@ -121,7 +121,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   lList *ar_master_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
+   lList *ar_master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
    next_ar = lFirstRW(ar_master_list);
 
@@ -156,10 +156,10 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
          ar_do_reservation(ar, false);
 
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                         "end time of AR reached",
                                         now);
-         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
+         ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
          sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
 
@@ -219,13 +219,13 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -405,10 +405,10 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 
    /* with old_ep it is possible to identify if it is an add or modify request */
    if (old_ep == nullptr) {
-      oge::ReportingFileWriter::create_new_ar_records(nullptr, ep, timestamp);
-      oge::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
+      ocs::ReportingFileWriter::create_new_ar_records(nullptr, ep, timestamp);
+      ocs::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
    } else {
-      oge::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
+      ocs::ReportingFileWriter::create_ar_attribute_records(nullptr, ep, timestamp);
    }
 
    /*
@@ -479,7 +479,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    bool has_manager_privileges = false;
    dstring buffer = DSTRING_INIT;
    lCondition *ar_where = nullptr;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -615,10 +615,10 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
          /* unblock reserved queues */
          ar_do_reservation(ar, false);
 
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED,
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED,
                                         "AR deleted",
                                         now);
-         oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
+         ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
          gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp);
 
@@ -790,7 +790,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
 *     sge_init_ar_id() -- init ar id counter
 *
 *  SYNOPSIS
-*     void sge_init_ar_id(void) 
+*     void sge_init_ar_id() 
 *
 *  FUNCTION
 *     Called during startup and sets the advance reservation id counter. 
@@ -799,7 +799,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
 *     MT-NOTE: sge_init_ar_id() is MT safe 
 *******************************************************************************/
 void
-sge_init_ar_id(void) {
+sge_init_ar_id() {
    FILE *fp = nullptr;
    u_long32 ar_id = 0;
    u_long32 guess_ar_id = 0;
@@ -835,7 +835,7 @@ sge_init_ar_id(void) {
 *     guess_highest_ar_id() -- guesses the histest ar id
 *
 *  SYNOPSIS
-*     static u_long32 guess_highest_ar_id(void) 
+*     static u_long32 guess_highest_ar_id() 
 *
 *  FUNCTION
 *     Iterates over all granted advance reservations in the cluster and determines
@@ -851,7 +851,7 @@ static u_long32
 guess_highest_ar_id() {
    const lListElem *ar;
    u_long32 maxid = 0;
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -915,7 +915,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
     */
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   lList *master_ar_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_AR);
+   lList *master_ar_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
    if (!(ar = ar_list_locate(master_ar_list, ar_id))) {
       ERROR(MSG_EVE_TE4AR_U, sge_u32c(ar_id));
@@ -936,10 +936,10 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       /* unblock reserved queues */
       ar_do_reservation(ar, false);
 
-      oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
+      ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                      "end time of AR reached",
                                      timestamp);
-      oge::ReportingFileWriter::create_ar_acct_records(nullptr, ar, timestamp);
+      ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, timestamp);
 
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
@@ -968,7 +968,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
                     sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
       lListElem_clear_changed_info(ar);
 
-      oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
+      ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
                                      sge_get_gmt64());
 
@@ -1021,16 +1021,16 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
    int i = 0;
    lListElem *dummy_job = lCreateElem(JB_Type);
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   lList *master_job_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_cal_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_cal_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    /* These lists must be copied */
-   lList *master_pe_list = lCopyList("", *oge::DataStore::get_master_list(SGE_TYPE_PE));
-   lList *master_exechost_list = lCopyList("", *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   lList *master_pe_list = lCopyList("", *ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   lList *master_exechost_list = lCopyList("", *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
 
    dispatch_t result = DISPATCH_NEVER_CAT;
 
@@ -1273,10 +1273,10 @@ ar_do_reservation(lListElem *ar, bool incslots) {
    const char *granted_pe = lGetString(ar, AR_granted_pe);
    u_long64 start_time = lGetUlong64(ar, AR_start_time);
    u_long64 duration = lGetUlong64(ar, AR_duration);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    bool is_master_task = true;
 
    DENTER(TOP_LAYER);
@@ -1568,8 +1568,8 @@ void
 ar_initialize_reserved_queue_list(lListElem *ar) {
    const lListElem *gep;
    const lList *gdil = lGetList(ar, AR_granted_slots);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    dstring buffer = DSTRING_INIT;
    bool is_master_queue = true;
 
@@ -1772,7 +1772,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   nextjep = lFirstRW(*oge::DataStore::get_master_list(SGE_TYPE_JOB));
+   nextjep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
    while ((jep = nextjep)) {
       u_long32 task_number;
       u_long32 start = MIN(job_get_smallest_unenrolled_task_id(jep), job_get_smallest_enrolled_task_id(jep));
@@ -1913,7 +1913,7 @@ sge_ar_state_set_running(lListElem *ar) {
       lSetUlong(ar, AR_state, AR_ERROR);
       if (old_state != AR_WARNING && old_state != lGetUlong(ar, AR_state)) {
          /* state change from "running" to "error" */
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
       } else if (old_state != lGetUlong(ar, AR_state)) {
          /* state change from "warning" to "error" */
@@ -1923,7 +1923,7 @@ sge_ar_state_set_running(lListElem *ar) {
       lSetUlong(ar, AR_state, AR_RUNNING);
       if (old_state != AR_WAITING && old_state != lGetUlong(ar, AR_state)) {
          /* state change from "error" to "running" */
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
       }
    }
@@ -1963,12 +1963,12 @@ sge_ar_state_set_waiting(lListElem *ar) {
    if (sge_ar_has_errors(ar)) {
       lSetUlong(ar, AR_state, AR_WARNING);
       if (old_state != lGetUlong(ar, AR_state)) {
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
       }
    } else {
       lSetUlong(ar, AR_state, AR_WAITING);
       if (old_state != lGetUlong(ar, AR_state)) {
-         oge::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
+         ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
       }
    }
 }

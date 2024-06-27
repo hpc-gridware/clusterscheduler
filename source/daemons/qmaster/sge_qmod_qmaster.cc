@@ -70,7 +70,7 @@
 
 #include "spool/sge_spooling.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge.h"
 #include "sge_pe_qmaster.h"
 #include "evm/sge_queue_event_master.h"
@@ -136,9 +136,9 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
    int alltasks;
    dstring cqueue_buffer = DSTRING_INIT;
    dstring hostname_buffer = DSTRING_INIT;
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -402,9 +402,9 @@ sge_change_queue_state(char *user, char *host, lListElem *qep, u_long32 action,
    bool isowner;
    int result = 0;
    const char *ehname = lGetHost(qep, QU_qhostname);
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -486,9 +486,9 @@ sge_change_job_state(char *user, char *host, lListElem *jep, lListElem *jatep,
    u_long32 job_id;
 
    DENTER(TOP_LAYER);
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    job_id = lGetUlong(jep, JB_job_number);
 
@@ -599,8 +599,8 @@ qmod_queue_clean(lListElem *qep, u_long32 force, lList **answer, char *user, cha
                  int isoperator, int isowner, monitoring_t *monitor) {
    lListElem *nextjep, *jep;
    const char *qname = nullptr;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -773,7 +773,7 @@ qmod_job_suspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 
                             jep, jatep, nullptr, true, true);
          }
       }
-      oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+      ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_SUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
    }
    DRETURN_VOID;
 }
@@ -811,7 +811,7 @@ qmod_job_unsuspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long3
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
                          jep, jatep, nullptr, true, true);
-         oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
          DRETURN_VOID;
       } else {
          /* guess admin tries to remove threshold suspension by qmon -us <jobid> */
@@ -910,7 +910,7 @@ qmod_job_unsuspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long3
          }
       }
    }
-   oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
+   ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, user, host, nullptr, jep, jatep, nullptr, nullptr);
    DRETURN_VOID;
 }
 
@@ -918,8 +918,8 @@ qmod_job_unsuspend(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long3
 void
 rebuild_signal_events() {
    const lListElem *cqueue, *jep, *jatep;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -969,8 +969,8 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
    const char *queue = te_get_alphanumeric_key(anEvent);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -1009,7 +1009,7 @@ static void
 sge_propagate_queue_suspension(const char *qnm, int how) {
    const lListElem *jep;
    lListElem *jatep;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -1173,9 +1173,9 @@ signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
    lListElem *mq;
    lListElem *jep, *jatep;
    const char *qname, *mqname, *pe_name;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -1220,8 +1220,8 @@ signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_
    lListElem *mq, *pe;
    const lListElem *gdil_ep;
    const char *qname, *pe_name;
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 

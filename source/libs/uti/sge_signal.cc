@@ -368,7 +368,7 @@ void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
 *     sge_unblock_all_signals()
 *
 *  SYNOPSIS
-*     void sge_unblock_all_signals(void)
+*     void sge_unblock_all_signals()
 *
 *  FUNCTION
 *     Allow for all signals.
@@ -391,7 +391,7 @@ void sge_unblock_all_signals() {
 *     sge_thread_block_all_signals()
 *
 *  SYNOPSIS
-*     int sge_thread_block_all_signals(void)
+*     int sge_thread_block_all_signals()
 *
 *  FUNCTION
 *     Blocks all signals the OS knows for the calling thread.

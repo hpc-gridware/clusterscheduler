@@ -62,7 +62,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls);
 static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command);
 static int sge_ls_start(const char* qualified_hostname, const char *binary_path, char *scriptfile);
 
-static int read_ls(void);
+static int read_ls();
 
 /* 
  * time load sensors get to quit cleanly before they get a SIGKILL 
@@ -403,7 +403,7 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
 *     read_ls -- read sensor output and add it to load report
 *
 *  SYNOPSIS
-*     static int read_ls(void)
+*     static int read_ls()
 *
 *  FUNCTION
 *     This function loops over all loadsensor elements in 
@@ -424,7 +424,7 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
 *  RESULT
 *     [this_ls] LS_incomplete and LS_complete will be modified.
 ******************************************************************************/
-static int read_ls(void)
+static int read_ls()
 {
    char input[10000];
    char host[1000];
@@ -747,12 +747,12 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
 *     trigger_ls_restart -- restart loadsensors
 *
 *  SYNOPSIS
-*     void trigger_ls_restart(void)
+*     void trigger_ls_restart()
 *
 *  FUNCTION
 *     Trigger the restart of all loadsensors
 ******************************************************************************/
-void trigger_ls_restart(void)
+void trigger_ls_restart()
 {
    lListElem *ls;
 

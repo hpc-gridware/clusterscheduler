@@ -33,6 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void sge_pset_create_processor_set(void);
+void sge_pset_create_processor_set();
 
-void sge_pset_free_processor_set(void);
+void sge_pset_free_processor_set();

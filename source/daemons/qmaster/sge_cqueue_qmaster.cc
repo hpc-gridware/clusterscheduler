@@ -111,8 +111,8 @@ qinstance_create(const lListElem *cqueue, lList **answer_list, const char *hostn
    DENTER(TOP_LAYER);
    dstring buffer = DSTRING_INIT;
    const char *cqueue_name = lGetString(cqueue, CQ_name);
-   const lList *centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    int index;
    lListElem *ret = lCreateElem(QU_Type);
 
@@ -298,7 +298,7 @@ static bool
 cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
                     lList **rem_hosts) {
    bool ret = true;
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
    DENTER(TOP_LAYER);
    if (cqueue != nullptr && reduced_elem != nullptr) {
@@ -377,8 +377,8 @@ cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced
                       lList *master_cqueue_list) {
    dstring buffer = DSTRING_INIT;
    bool ret = true;
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER);
 
@@ -575,15 +575,15 @@ cqueue_mod(lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int 
    bool ret = true;
    lList *add_hosts = nullptr;
    lList *rem_hosts = nullptr;
-   const lList *master_calendar_list = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-   const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_hgroup_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_ehost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
@@ -680,7 +680,7 @@ cqueue_success(lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, l
    const lList *qinstances;
    lListElem *qinstance;
    DENTER(TOP_LAYER);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    cqueue_update_categories(cqueue, old_cqueue);
 
@@ -855,7 +855,7 @@ cqueue_spool(lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
 int
 cqueue_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
-   lList *master_cqueue_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 

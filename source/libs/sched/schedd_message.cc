@@ -131,12 +131,12 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
 *     schedd_mes_initialize() -- Initialize module variables 
 *
 *  SYNOPSIS
-*     void schedd_mes_initialize(void) 
+*     void schedd_mes_initialize() 
 *
 *  FUNCTION
 *     Initialize module variables 
 *******************************************************************************/
-void schedd_mes_initialize(void)
+void schedd_mes_initialize()
 {
    lListElem *sme = sconf_get_sme();
    lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -236,12 +236,12 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
 *     schedd_mes_rollback() -- Free temporaryly generated messages 
 *
 *  SYNOPSIS
-*     void schedd_mes_rollback(void) 
+*     void schedd_mes_rollback() 
 *
 *  FUNCTION
 *     Free temporaryly generated messages contained in "tmp_sme". 
 ******************************************************************************/
-void schedd_mes_rollback(void)
+void schedd_mes_rollback()
 {
    lListElem *tmp_sme = sconf_get_tmp_sme();
    

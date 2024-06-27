@@ -178,7 +178,7 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
 }
 
 bool
-test_create_insert_destroy(void) {
+test_create_insert_destroy() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -227,7 +227,7 @@ test_create_insert_destroy(void) {
 }
 
 bool
-test_create_append(void) {
+test_create_append() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -264,7 +264,7 @@ test_create_append(void) {
 }
 
 bool
-test_create_insort(void) {
+test_create_insort() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -302,7 +302,7 @@ test_create_insort(void) {
 }
 
 bool
-test_create_insert_sort(void) {
+test_create_insert_sort() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -342,7 +342,7 @@ test_create_insert_sort(void) {
 }
 
 bool
-test_dechain_before_after(void) {
+test_dechain_before_after() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    sge_sl_elem_t *new_elem = nullptr;
@@ -437,7 +437,7 @@ test_dechain_before_after(void) {
 }
 
 bool
-test_search_forward_backward(void) {
+test_search_forward_backward() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -486,7 +486,7 @@ test_search_forward_backward(void) {
 }
 
 bool
-test_delete_forward_backward(void) {
+test_delete_forward_backward() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -541,7 +541,7 @@ test_delete_forward_backward(void) {
 }
 
 bool
-test_delete_search(void) {
+test_delete_search() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
 
@@ -589,7 +589,7 @@ test_delete_search(void) {
 }
 
 bool
-test_for_each_ep(void) {
+test_for_each_ep() {
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    int sum = 0;
@@ -736,7 +736,7 @@ test_thread1_main(void *arg) {
 }
 
 bool
-test_mt_support(void) {
+test_mt_support() {
    bool ret = true;
    test_sl_thread_t global;
 

@@ -36,7 +36,7 @@
 #include "msg_utilbin.h"
 #include "uti/sge_language.h"
 
-void usage(void)
+void usage()
 {
    fprintf(stderr, "%s range lower upper\n",MSG_UTILBIN_USAGE);
 }

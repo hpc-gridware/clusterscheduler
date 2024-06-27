@@ -138,15 +138,15 @@ static void tix_range_get(double *min_tix, double *max_tix);
 #endif
 
 #ifdef DEBUG_TASK_REF 
-static void task_ref_print_table(void);
+static void task_ref_print_table();
 static void task_ref_print_table_entry(sge_task_ref_t *tref);
 #endif
 
 static void sge_clear_ja_task ( lListElem *ja_task );
 
 static sge_task_ref_t *task_ref_get_first(u_long32 job_number, u_long32 ja_task_number);
-static sge_task_ref_t *task_ref_get_first_job_entry(void);
-static sge_task_ref_t *task_ref_get_next_job_entry(void);
+static sge_task_ref_t *task_ref_get_first_job_entry();
+static sge_task_ref_t *task_ref_get_next_job_entry();
 static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task);
 
 static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_tix,
@@ -198,7 +198,7 @@ static void calc_intern_pending_job_functional_tickets(
 
 
 static void task_ref_initialize_table(u_long32 number_of_tasks);
-static void task_ref_destroy_table(void);
+static void task_ref_destroy_table();
 static sge_task_ref_t *task_ref_get_entry(u_long32 index);
 
 static scheduler_all_data_t *all_lists; /* thread local */
@@ -279,7 +279,7 @@ static void task_ref_initialize_table(u_long32 number_of_tasks)
    }
 }
 
-static void task_ref_destroy_table(void) 
+static void task_ref_destroy_table() 
 {
    if (task_ref_table != nullptr) {
       sge_free(&task_ref_table);
@@ -299,7 +299,7 @@ static sge_task_ref_t *task_ref_get_entry(u_long32 index)
 }
 
 #ifdef DEBUG_TASK_REF
-static void task_ref_print_table(void)
+static void task_ref_print_table()
 {
    u_long32 i;
 
@@ -360,7 +360,7 @@ static sge_task_ref_t *task_ref_get_first(u_long32 job_number,
    DRETURN(ret);
 }
 
-static sge_task_ref_t *task_ref_get_first_job_entry(void)
+static sge_task_ref_t *task_ref_get_first_job_entry()
 {
    sge_task_ref_t *ret = nullptr;
 
@@ -372,7 +372,7 @@ static sge_task_ref_t *task_ref_get_first_job_entry(void)
    DRETURN(ret);
 }
 
-static sge_task_ref_t *task_ref_get_next_job_entry(void)
+static sge_task_ref_t *task_ref_get_next_job_entry()
 {
    sge_task_ref_t *current_entry = task_ref_get_entry(task_ref_job_pos);
    sge_task_ref_t *ret = nullptr;

@@ -42,7 +42,7 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_conf.h"
@@ -193,12 +193,12 @@ static gdi_object_t gdi_object[] = {
 
 /* *INDENT-ON* */
 
-void sge_clean_lists(void) {
+void sge_clean_lists() {
    int i = 0;
 
    for (; gdi_object[i].target != 0; i++) {
       if (gdi_object[i].list_type != SGE_TYPE_NONE) {
-         lList **master_list = oge::DataStore::get_master_list_rw(gdi_object[i].list_type);
+         lList **master_list = ocs::DataStore::get_master_list_rw(gdi_object[i].list_type);
          lFreeList(master_list);
       }
    }
@@ -319,8 +319,8 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
       }
       case SGE_GDI_TRIGGER:
       {
-         const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-         const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+         const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+         const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
          // operators are allowed to trigger rescheduling requests
          // other trigger requests must have been initiated by a manager
@@ -551,7 +551,7 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gd
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          } else {
-            lList *data_source = *oge::DataStore::get_master_list_rw(ao->list_type);
+            lList *data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
@@ -693,7 +693,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                break;
 
             case SGE_STN_LIST:
-               sge_add_sharetree(ep, oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+               sge_add_sharetree(ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                                  packet->user, packet->host);
                break;
 
@@ -769,7 +769,7 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
 
       switch (task->target) {
          case SGE_STN_LIST:
-            sge_del_sharetree(oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+            sge_del_sharetree(ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                               packet->user, packet->host);
             break;
          default:
@@ -787,7 +787,7 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
             case SGE_SH_LIST:
             case SGE_EH_LIST:
                sge_del_host(ep, &(task->answer_list), packet->user, packet->host, task->target,
-                            *oge::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+                            *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
                break;
 
             case SGE_CQ_LIST:
@@ -816,22 +816,22 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
                break;
 
             case SGE_UU_LIST:
-               sge_del_userprj(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_USER),
+               sge_del_userprj(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
                                packet->user, packet->host, 1);
                break;
 
             case SGE_US_LIST:
-               sge_del_userset(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
+               sge_del_userset(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
                                packet->user, packet->host);
                break;
 
             case SGE_PR_LIST:
-               sge_del_userprj(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
+               sge_del_userprj(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
                                packet->user, packet->host, 0);
                break;
 
             case SGE_RQS_LIST:
-               rqs_del(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
+               rqs_del(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
                        packet->host);
                break;
 
@@ -846,7 +846,7 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
                hgroup_del(ep, &(task->answer_list), packet->user, packet->host);
                break;
             case SGE_AR_LIST:
-               ar_del(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_AR), packet->user,
+               ar_del(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), packet->user,
                       packet->host, monitor);
                break;
             default:
@@ -892,10 +892,10 @@ static void sge_c_gdi_copy(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge
 
 static void
 sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_admin_host_list = *oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-   const lList *master_submit_host_list = *oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+   const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
 
    DENTER(TOP_LAYER);
 
@@ -961,11 +961,11 @@ void sge_c_gdi_replace(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi
             DRETURN_VOID;
          }
          /* delete all currently defined rule sets */
-         ep = lFirstRW(*oge::DataStore::get_master_list(SGE_TYPE_RQS));
+         ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
          while (ep != nullptr) {
-            rqs_del(ep, &(task->answer_list), oge::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
+            rqs_del(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
                     packet->host);
-            ep = lFirstRW(*oge::DataStore::get_master_list(SGE_TYPE_RQS));
+            ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
          }
 
          for_each_rw (ep, task->data_list) {
@@ -990,7 +990,7 @@ sge_c_gdi_trigger_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class
    switch (target) {
       case SGE_MASTER_EVENT:
          // shutdown request for qmaster (qconf -km)
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
@@ -999,7 +999,7 @@ sge_c_gdi_trigger_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class
          DRETURN_VOID;
       case SGE_SC_LIST:
          // trigger scheduling (qconf -tsm)
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
@@ -1129,12 +1129,12 @@ sge_gdi_shutdown_event_client(sge_gdi_packet_class_t *packet, sge_gdi_task_class
       }
 
       if (client_id == EV_ID_SCHEDD &&
-          !host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+          !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
          ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
-      } else if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)
-                 && !host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+      } else if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)
+                 && !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
          ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
@@ -1238,7 +1238,7 @@ static int get_client_id(lListElem *anElem, int *anID) {
 static void
 trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                              monitoring_t *monitor) {
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
 
@@ -1300,7 +1300,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
                break;
 
             case SGE_STN_LIST:
-               sge_mod_sharetree(ep, oge::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+               sge_mod_sharetree(ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                                  &(task->answer_list), packet->user, packet->host);
                break;
             default:
@@ -1337,8 +1337,8 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
 
 static bool
 sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user) {
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
    DENTER(TOP_LAYER);
 
@@ -1408,7 +1408,7 @@ sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user) {
             Advance reservation can be submitted by a manager or any user in the aruser access list.
          */
          if (!manop_is_manager(user, master_manager_list) &&
-             !userset_is_ar_user(*oge::DataStore::get_master_list(SGE_TYPE_USERSET), user)) {
+             !userset_is_ar_user(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), user)) {
             ERROR(MSG_SGETEXT_MUSTBEMANAGERORUSER_SS, user, AR_USERS);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(false);
@@ -1452,7 +1452,7 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
       case SGE_MASTER_EVENT:
 
          /* host must be SGE_AH_LIST */
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(false);
@@ -1463,8 +1463,8 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
 
          /* host must be either admin host or exec host and execd */
 
-         if (!(host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) ||
-               (host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), host) &&
+         if (!(host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) ||
+               (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), host) &&
                 !strcmp(commproc, prognames[EXECD])))) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
@@ -1474,7 +1474,7 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
 
       case SGE_JB_LIST:
          /* host must be SGE_SH_LIST */
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
             ERROR(MSG_SGETEXT_NOSUBMITHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(false);
@@ -1485,8 +1485,8 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
             performs modify requests on itself
             it must be on a submit or an admin host
           */
-         if ((!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host))
-             && (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host))) {
+         if ((!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host))
+             && (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host))) {
             ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(false);
@@ -1494,7 +1494,7 @@ sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc
          break;
       case SGE_AR_LIST:
          /* host must be SGE_SH_LIST */
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
             ERROR(MSG_SGETEXT_NOSUBMITHOST_S, host);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN(false);
@@ -1550,8 +1550,8 @@ sge_task_check_get_perm_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
       case SGE_RQS_LIST:
       case SGE_AR_LIST:
          /* host must be admin or submit host */
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
-             !host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
+             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -1559,9 +1559,9 @@ sge_task_check_get_perm_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
          break;
       case SGE_CONF_LIST:
          /* host must be admin or submit host or exec host */
-         if (!host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
-             !host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host) &&
-             !host_list_locate(*oge::DataStore::get_master_list(SGE_TYPE_EXECHOST), host)) {
+         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
+             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host) &&
+             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), host)) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -1644,13 +1644,13 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
 
-      old_obj = lGetElemUlongRW(*oge::DataStore::get_master_list(object->list_type), object->key_nm, id);
+      old_obj = lGetElemUlongRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, id);
    } else if (dataType == lHostT) {
       name = lGetHost(instructions, object->key_nm);
-      old_obj = lGetElemHostRW(*oge::DataStore::get_master_list(object->list_type), object->key_nm, name);
+      old_obj = lGetElemHostRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, name);
    } else {
       name = lGetString(instructions, object->key_nm);
-      old_obj = lGetElemStrRW(*oge::DataStore::get_master_list(object->list_type), object->key_nm, name);
+      old_obj = lGetElemStrRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, name);
    }
 
    if (name == nullptr) {
@@ -1722,7 +1722,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
    lFreeList(&tmp_alp);
 
    {
-      lList **master_list = oge::DataStore::get_master_list_rw(object->list_type);
+      lList **master_list = ocs::DataStore::get_master_list_rw(object->list_type);
 
       /* chain out the old object */
       if (old_obj) {

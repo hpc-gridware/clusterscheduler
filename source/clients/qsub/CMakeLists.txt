@@ -21,7 +21,7 @@
 # source/clients/qsub
 add_executable(
       qsub
-      oge_qsub.cc
+        ocs_qsub.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc

@@ -51,7 +51,7 @@
 
 #include "msg_utilbin.h"
 
-void usage(void)
+void usage()
 {
   fprintf(stderr, "Version: %s\n", GDI_VERSION);
   fprintf(stderr, "%s gethostbyaddr [-help|-name|-aname|-all]x.x.x.x\n", MSG_UTILBIN_USAGE );

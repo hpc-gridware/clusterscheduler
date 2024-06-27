@@ -21,13 +21,13 @@
 # source/clients/qconf
 add_executable(
       qconf
-      oge_qconf_cqueue.cc
-      oge_qconf_centry.cc
+        ocs_qconf_cqueue.cc
+        ocs_qconf_centry.cc
       sge_qconf_hgroup.cc
-      oge_qconf_rqs.cc
-      oge_qconf.cc
-      oge_qconf_parse.cc
-      oge_qconf_acl.cc
+        ocs_qconf_rqs.cc
+        ocs_qconf.cc
+        ocs_qconf_parse.cc
+        ocs_qconf_acl.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)

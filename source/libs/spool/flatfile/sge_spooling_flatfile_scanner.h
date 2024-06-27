@@ -55,8 +55,8 @@ extern int spool_return_whitespace;
 extern int spool_finish_line;
 extern char *spool_text;
 
-int spool_lex(void);
+int spool_lex();
 
 int spool_scanner_initialize(FILE *input);
 
-void spool_scanner_shutdown(void);
+void spool_scanner_shutdown();

@@ -58,9 +58,9 @@
 static const char *spooling_method = "dynamic";
 
 #ifdef SPOOLING_dynamic
-const char *get_spooling_method(void)
+const char *get_spooling_method()
 #else
-const char *get_dynamic_spooling_method(void)
+const char *get_dynamic_spooling_method()
 #endif
 {
    return spooling_method;

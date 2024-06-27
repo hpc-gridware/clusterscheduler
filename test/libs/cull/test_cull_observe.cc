@@ -108,7 +108,7 @@ static bool test_check_info(const char *scenario, long exp_elements, const char 
    return ret;
 }
 
-bool test_scenario1(void) {
+bool test_scenario1() {
    bool ret = true;
 
    // 1.1 create a master list with 10 elements 
@@ -131,7 +131,7 @@ bool test_scenario1(void) {
    return ret;
 }
 
-bool test_scenario2(void) {
+bool test_scenario2() {
    bool ret = true;
 
    // 2.1 
@@ -216,7 +216,7 @@ bool test_scenario2(void) {
    return ret;
 }
 
-bool test_scenario3(void) {
+bool test_scenario3() {
    bool ret = true;
 
    // 3.1 

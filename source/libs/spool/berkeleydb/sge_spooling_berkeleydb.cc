@@ -75,9 +75,9 @@
 static const char *spooling_method = "berkeleydb";
 
 #ifdef SPOOLING_berkeleydb
-const char *get_spooling_method(void)
+const char *get_spooling_method()
 #else
-const char *get_berkeleydb_spooling_method(void)
+const char *get_berkeleydb_spooling_method()
 #endif
 {
    return spooling_method;
@@ -526,7 +526,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    const lDescr *descr;
    const char *table_name;
    bdb_info info;
-   lList *master_suser_list = *oge::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+   lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(BDB_LAYER);
 
@@ -650,7 +650,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            }
                         }
                      }
-                     job_list_register_new_job(*oge::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+                     job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
                      suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {
                         break;

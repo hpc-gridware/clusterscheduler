@@ -57,4 +57,4 @@ int sge_getcpuload(double *cpu_load);
 
 #endif
 
-int get_channel_fd(void);  
+int get_channel_fd();  

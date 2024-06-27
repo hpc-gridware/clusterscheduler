@@ -78,7 +78,7 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    DENTER(TOP_LAYER);
 
    /* remove old share tree */
-   list = oge::DataStore::get_master_list_rw(type);
+   list = ocs::DataStore::get_master_list_rw(type);
    lFreeList(list);
    
 

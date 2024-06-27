@@ -39,7 +39,7 @@
 
 #include "comm/lists/cl_lists.h"
 
-int main(void) {
+int main() {
    int i;
 
    for (i = CL_RETVAL_START_ID; i < CL_RETVAL_LAST_ID; i++) {

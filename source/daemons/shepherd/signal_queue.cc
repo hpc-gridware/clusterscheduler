@@ -135,7 +135,7 @@ int add_signal(int signal)
 *        >0 - signal number
 *        -1 - There are no more signals 
 *******************************************************************************/
-int get_signal(void)
+int get_signal()
 {
    int signal = -1;
 
@@ -185,7 +185,7 @@ int pending_sig(int sig)
 *     get_n_sigs() -- return number of queues signals 
 *
 *  SYNOPSIS
-*     int get_n_sigs(void) 
+*     int get_n_sigs() 
 *
 *  FUNCTION
 *     Return number of queues signals 
@@ -193,7 +193,7 @@ int pending_sig(int sig)
 *  RESULT
 *     int - number of signals
 *******************************************************************************/
-int get_n_sigs(void)
+int get_n_sigs()
 {
    return n_sigs; 
 }
@@ -203,12 +203,12 @@ int get_n_sigs(void)
 *     clear_queued_signals() -- clear signal queue 
 *
 *  SYNOPSIS
-*     void clear_queued_signals(void) 
+*     void clear_queued_signals() 
 *
 *  FUNCTION
 *     Clear signal queue 
 *******************************************************************************/
-void clear_queued_signals(void)
+void clear_queued_signals()
 {
    n_sigs = next_sig = free_sig = 0; 
 }

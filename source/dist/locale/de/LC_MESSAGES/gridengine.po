@@ -5771,8 +5771,8 @@ msgid "system time has been modified (%d seconds)\n"
 msgstr "system time has been modified (%d seconds)\n"
 
 #: ../src/time_event.c:61
-msgid "received unkown event\n"
-msgstr "received unkown event\n"
+msgid "received unknown event\n"
+msgstr "received unknown event\n"
 
 #: ../src/tmpdir.c:73
 #, c-format

@@ -67,7 +67,7 @@ bool
 jsv_list_remove(const char *name, const char *context);
 
 bool 
-jsv_list_remove_all(void);
+jsv_list_remove_all();
 
 bool
 jsv_is_enabled(const char *context);

@@ -312,7 +312,7 @@ sge_scheduler_initialize(lList **answer_list) {
 *     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread 
 *
 *  SYNOPSIS
-*     void sge_scheduler_cleanup_thread(void) 
+*     void sge_scheduler_cleanup_thread() 
 *
 *  FUNCTION
 *     Cleanup the scheduler thread. 
@@ -518,7 +518,7 @@ sge_scheduler_main(void *arg) {
    schedd_set_serf_log_file();
 
    // this thread will use the SCHEDULER data store
-   oge::DataStore::select_active_ds(oge::DataStore::Id::SCHEDULER);
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::SCHEDULER);
 
    /*
     * prepare event client/mirror mechanism
@@ -599,19 +599,19 @@ sge_scheduler_main(void *arg) {
       if (handled_events) {
          lList *answer_list = nullptr;
          scheduler_all_data_t copy;
-         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-         const lList *master_userset_list = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_project_list = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
-         const lList *master_exechost_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-         const lList *master_rqs_list = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
-         const lList *master_centry_list = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
-         const lList *master_ckpt_list = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
-         const lList *master_user_list = *oge::DataStore::get_master_list(SGE_TYPE_USER);
-         const lList *master_ar_list = *oge::DataStore::get_master_list(SGE_TYPE_AR);
-         const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_hgrp_list = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
-         const lList *master_sharetree_list = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+         const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+         const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+         const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+         const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
+         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+         const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+         const lList *master_hgrp_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+         const lList *master_sharetree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {
@@ -852,7 +852,7 @@ sge_scheduler_main(void *arg) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
                                   "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
                     prof_total, prof_init, prof_copy, prof_run, prof_free,
-                    lGetNumberOfElem(*oge::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(),
+                    lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(),
                     sge_cs_category_count());
          }
          if (getenv("SGE_ND") != nullptr) {

@@ -121,7 +121,7 @@ extern event_control_t Event_Control;
 
 void te_check_time(u_long64 time);
 
-void te_wait_empty(void);
+void te_wait_empty();
 
 te_event_t te_event_from_list_elem(const lListElem *aListElem);
 
@@ -129,7 +129,7 @@ void te_wait_next(te_event_t te, u_long64 now);
 
 void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor);
 
-void te_init(void);
+void te_init();
 
 /* user interface */
 
@@ -145,7 +145,7 @@ extern int te_delete_one_time_event(te_type_t, u_long32, u_long32, const char *)
 
 extern int te_delete_all_one_time_events(te_type_t aType);
 
-extern void te_shutdown(void);
+extern void te_shutdown();
 
 extern u_long64 te_get_when(te_event_t);
 

@@ -89,7 +89,7 @@ sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
 *     log_state_get_log_level() -- Return log level.
 *
 *  SYNOPSIS
-*     u_long32 log_state_get_log_level(void) 
+*     u_long32 log_state_get_log_level() 
 *
 *  FUNCTION
 *     Return log level
@@ -110,7 +110,7 @@ u_long32 log_state_get_log_level() {
 *     log_state_get_log_file() -- get log file name
 *
 *  SYNOPSIS
-*     const char* log_state_get_log_file(void) 
+*     const char* log_state_get_log_file() 
 *
 *  FUNCTION
 *     Return name of current log file. The string returned may or may not 
@@ -145,7 +145,7 @@ const char *log_state_get_log_file() {
 *     log_state_get_log_verbose() -- Is verbose logging enabled?
 *
 *  SYNOPSIS
-*     int log_state_get_log_verbose(void) 
+*     int log_state_get_log_verbose() 
 *
 *  FUNCTION
 *     Is verbose logging enabled? 
@@ -170,7 +170,7 @@ int log_state_get_log_verbose() {
 *     log_state_get_log_gui() -- Is GUI logging enabled?
 *
 *  SYNOPSIS
-*     int log_state_get_log_gui(void) 
+*     int log_state_get_log_gui() 
 *
 *  FUNCTION
 *     Is GUI logging enabled? 

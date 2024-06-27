@@ -1112,7 +1112,7 @@ void cl_com_ignore_timeouts(bool flag) {
    cl_ingore_timeout = flag;
 }
 
-bool cl_com_get_ignore_timeouts_flag(void) {
+bool cl_com_get_ignore_timeouts_flag() {
    if (cl_ingore_timeout) {
       CL_LOG(CL_LOG_WARNING, "ignoring all communication timeouts");
    }
@@ -1670,12 +1670,12 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
    /* use sge_gethostbyname() */
    he = sge_gethostbyname(hostname, system_error);
    if (he == nullptr) {
-      CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKOWN_HOST_ERROR));
+      CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKNOWN_HOST_ERROR));
       cl_com_free_hostent(&hostent_p);       /* could not find host */
       if (do_free_host) {
          sge_free(&hostname);
       }
-      return CL_RETVAL_UNKOWN_HOST_ERROR;
+      return CL_RETVAL_UNKNOWN_HOST_ERROR;
    } else {
       hostent_p->he = he;
    }
@@ -1720,9 +1720,9 @@ static int cl_com_gethostbyaddr(struct in_addr *addr, cl_com_hostent_t **hostent
    he = sge_gethostbyaddr(addr, system_error_retval);
 
    if (he == nullptr) {
-      CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKOWN_HOST_ERROR));
+      CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKNOWN_HOST_ERROR));
       cl_com_free_hostent(&hostent_p);       /* could not find host */
-      return CL_RETVAL_UNKOWN_HOST_ERROR;
+      return CL_RETVAL_UNKNOWN_HOST_ERROR;
    } else {
       hostent_p->he = he;
    }

@@ -70,7 +70,7 @@ typedef struct _lObserveEntry {
    const char *list_name;   // master list name if pointer is a master list
 } lObserveEntry;
 
-static lObserveEntry *lObserveMallocEntry(void) {
+static lObserveEntry *lObserveMallocEntry() {
    return (lObserveEntry *)sge_malloc(sizeof(lObserveEntry));
 }
 
@@ -88,7 +88,7 @@ void lObserveDumpEntry(htable ht, const void *key, const void **e) {
            entry->is_list, entry->is_master_list, entry->direct_access, entry->indirect_access);
 }
 
-void lObserveDumpAccess(void) {
+void lObserveDumpAccess() {
    dstring dstr = DSTRING_INIT;
 
    pthread_mutex_lock(&ob_mtx);
@@ -96,7 +96,7 @@ void lObserveDumpAccess(void) {
    pthread_mutex_unlock(&ob_mtx);
 }
 
-void _lObserveDumpAccess(void) {
+void _lObserveDumpAccess() {
    sge_htable_for_each_ep(ob_ht, lObserveDumpEntry);
 }
 #endif
@@ -116,7 +116,7 @@ static void lObserveClearEntry(htable ht, const void *key, const void **e) {
 /*
  * @brief lObserveClear clear intenal flags for all observed pointers
  */
-static void lObserveClear(void) {
+static void lObserveClear() {
    pthread_mutex_lock(&ob_mtx);
    sge_htable_for_each_ep(ob_ht, lObserveClearEntry);
    pthread_mutex_unlock(&ob_mtx);
@@ -144,7 +144,7 @@ void lObserveGetInfoString(dstring *dstr) {
 /*
  * @brief Returns the internal size of the hashtable.
  */
-long lObserveGetSize(void) {
+long lObserveGetSize() {
    pthread_mutex_lock(&ob_mtx);
    long l = sge_htable_get_size(ob_ht);
    pthread_mutex_unlock(&ob_mtx);
@@ -156,7 +156,7 @@ long lObserveGetSize(void) {
  *
  * This function will be called as part of lInit().
  */
-void lObserveInit(void) {
+void lObserveInit() {
    pthread_mutex_lock(&ob_mtx);
    if (ob_ht == nullptr) {
       ob_ht = sge_htable_create(2^20, dup_func_u_long64, hash_func_u_long64, hash_compare_u_long64);
@@ -167,7 +167,7 @@ void lObserveInit(void) {
 /*
  * @brief Start observation. Clears 'old' information in advance.
  */
-void lObserveStart(void) {
+void lObserveStart() {
    bool started = cull_state_get_observe_started();
    if (!started) {
       lObserveClear();
@@ -178,7 +178,7 @@ void lObserveStart(void) {
 /*
  * @brief Stops observation. 
  */
-void lObserveEnd(void) {
+void lObserveEnd() {
    bool started = cull_state_get_observe_started();
 
    if (started) {

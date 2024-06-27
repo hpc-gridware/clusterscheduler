@@ -23,9 +23,9 @@
 
 #ifdef OBSERVE
 
-void lObserveInit(void);
-void lObserveStart(void);
-void lObserveEnd(void);
+void lObserveInit();
+void lObserveStart();
+void lObserveEnd();
 
 void lObserveAdd(const void *pointer, const void *owner, bool is_list);
 void lObserveRemove(const void *pointer);
@@ -36,6 +36,6 @@ void lObserveChangeValue(const void *pointer, bool has_hash, int nm);
 void lObserveChangeListType(const void *pointer, bool is_master_list, const char *list_name);
 
 void lObserveGetInfoString(dstring *dstr);
-long lObserveGetSize(void);
+long lObserveGetSize();
 
 #endif 

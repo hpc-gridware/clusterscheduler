@@ -60,7 +60,7 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
@@ -87,7 +87,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "configuration_qmaster.h"   /* TODO: bad dependency!! */
-#include "evm/oge_event_master.h"
+#include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
 #include "uti/sge.h"
 
@@ -343,7 +343,7 @@ event_master_control_t Event_Master_Control = {
    0                                /* transaction_key */
 };
 
-static void       init_send_events(void); 
+static void       init_send_events(); 
 static void       flush_events(lListElem*, int);
 static void       total_update(lListElem*);
 static void       build_subscription(lListElem*);
@@ -365,7 +365,7 @@ static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
 static lListElem* get_event_client(u_long32 id);
 static u_long32   allocate_new_dynamic_id(lList **answer_list);
 static void       free_dynamic_id(lList **answer_list, u_long32 id);
-static void       set_flush(void);
+static void       set_flush();
 
 static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock);
 
@@ -436,7 +436,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    const char *host;
    const char *commproc;
    u_long32 commproc_id;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -985,7 +985,7 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
 *
 *******************************************************************************/
 u_long32
-sge_get_max_dynamic_event_clients(void) {
+sge_get_max_dynamic_event_clients() {
    u_long32 actual_value = 0;
 
    DENTER(TOP_LAYER);
@@ -1110,7 +1110,7 @@ int
 sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t anUID, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -1186,7 +1186,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 {
    const lListElem *client;
    int id = 0;
-   const lList *master_manager_list = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -1792,7 +1792,7 @@ sge_deliver_events_immediately(u_long32 event_client_id)
 *     sge_resync_schedd() -- resync schedd 
 *
 *  SYNOPSIS
-*     int sge_resync_schedd(void) 
+*     int sge_resync_schedd() 
 *
 *  FUNCTION
 *     Does a total update (send all lists) to schedd and outputs an error
@@ -1838,7 +1838,7 @@ sge_resync_schedd(monitoring_t *monitor)
 *     sge_event_master_init() -- event master initialization
 *
 *  SYNOPSIS
-*     static void sge_event_master_init(void) 
+*     static void sge_event_master_init() 
 *
 *  FUNCTION
 *     Initialize the event master control structure. Initialize permanent
@@ -1855,7 +1855,7 @@ sge_resync_schedd(monitoring_t *monitor)
 *
 *******************************************************************************/
 void
-sge_event_master_init(void) {
+sge_event_master_init() {
    DENTER(TOP_LAYER);
 
    Event_Master_Control.clients = lCreateListHash("EV_Clients", EV_Type, true);
@@ -1889,7 +1889,7 @@ sge_event_master_init(void) {
 *
 *******************************************************************************/
 static void
-init_send_events(void) {
+init_send_events() {
    DENTER(TOP_LAYER);
 
    memset(SEND_EVENTS, false, sizeof(bool) * sgeE_EVENTSIZE);
@@ -1925,7 +1925,7 @@ init_send_events(void) {
 *     sge_event_master_wait_next() -- waits for a weakup
 *
 *  SYNOPSIS
-*     void sge_event_master_wait_next(void) 
+*     void sge_event_master_wait_next() 
 *
 *  FUNCTION
 *     waits for a weakup
@@ -2028,7 +2028,7 @@ remove_event_client(lListElem **client, int event_client_id, bool lock_event_mas
 *     sge_event_master_send_events() -- send events to event clients 
 *
 *  SYNOPSIS
-*     static void send_events(void) 
+*     static void send_events() 
 *
 *  FUNCTION
 *     Loop over all event clients and send events due. If an event client did
@@ -2783,69 +2783,69 @@ static void total_update_event(lListElem *event_client, ev_event type,
    if (new_subscription || eventclient_subscribed(event_client, type, nullptr)) {
       switch (type) {
          case sgeE_ADMINHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
             break;
          case sgeE_CALENDAR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
             break;
          case sgeE_CKPT_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CKPT);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
             break;
          case sgeE_CENTRY_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CENTRY);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
             break;
          case sgeE_CONFIG_LIST:
             /* sge_get_configuration() returns a copy already, we do not need to make
                one later */
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CONFIG);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
             break;
          case sgeE_EXECHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
             break;
          case sgeE_JOB_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
             break;
          case sgeE_JOB_SCHEDD_INFO_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
             break;
          case sgeE_MANAGER_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_MANAGER);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
             break;
          case sgeE_NEW_SHARETREE:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
             break;
          case sgeE_OPERATOR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
             break;
          case sgeE_PE_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
             break;
          case sgeE_PROJECT_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
             break;
          case sgeE_CQUEUE_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
             break;
          case sgeE_SCHED_CONF:
             copy_lp = sconf_get_config_list();
             break;
          case sgeE_SUBMITHOST_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
             break;
          case sgeE_USER_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_USER);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
             break;
          case sgeE_USERSET_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_USERSET);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
             break;
          case sgeE_HGROUP_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_HGROUP);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
             break;
          case sgeE_RQS_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_RQS);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
             break;
          case sgeE_AR_LIST:
-            lp = *oge::DataStore::get_master_list(SGE_TYPE_AR);
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
             break;
          default:
             WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);
@@ -3183,7 +3183,7 @@ static lListElem *get_event_client(u_long32 id)
 *     allocate_new_dynamic_id() -- gets a new dynamic id
 *
 *  SYNOPSIS
-*     static u_long32 allocate_new_dynamic_id(void)
+*     static u_long32 allocate_new_dynamic_id()
 *
 *  FUNCTION
 *     Returns the next available dynamic event client id.  The id returned will
@@ -3237,7 +3237,7 @@ free_dynamic_id(lList **answer_list, u_long32 id)
 *     sge_commit() -- Commit the queued events
 *
 *  SYNOPSIS
-*     bool sge_commit(void)
+*     bool sge_commit()
 *
 *  FUNCTION
 *     Sends any events that this thread currently has queued and clears the
@@ -3249,7 +3249,7 @@ free_dynamic_id(lList **answer_list, u_long32 id)
 *  NOTE
 *     MT-NOTE: sge_commit is thread safe.
 *******************************************************************************/
-bool sge_commit(void)
+bool sge_commit()
 {
    bool ret = true;
 
@@ -3329,7 +3329,7 @@ static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock)
 *     set_flush() -- Flush all events
 *
 *  SYNOPSIS
-*     void set_flush(void)
+*     void set_flush()
 *
 *  FUNCTION
 *     Flushes all pending events
@@ -3337,7 +3337,7 @@ static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock)
 *  NOTE
 *     MT-NOTE: set_flush is thread safe.
 *******************************************************************************/
-static void set_flush(void)
+static void set_flush()
 {
    DENTER(TOP_LAYER);
 
@@ -3370,7 +3370,7 @@ static void set_flush(void)
 *     MT-NOTE: sge_set_commit_required is thread safe.  Transactional event
 *     processing is handled for each thread individually.
 *******************************************************************************/
-void sge_set_commit_required(void)
+void sge_set_commit_required()
 {
    DENTER(TOP_LAYER);
 

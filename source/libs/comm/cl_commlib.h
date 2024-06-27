@@ -42,11 +42,11 @@
 #define CL_COM_DEBUG_CLIENT_NAME "debug_client"
 
 /* commlib init and hostlist functions */
-cl_raw_list_t *cl_com_get_host_list(void);
+cl_raw_list_t *cl_com_get_host_list();
 
-cl_raw_list_t *cl_com_get_log_list(void);
+cl_raw_list_t *cl_com_get_log_list();
 
-cl_raw_list_t *cl_com_get_endpoint_list(void);
+cl_raw_list_t *cl_com_get_endpoint_list();
 
 int cl_com_set_parameter_list_value(const char *parameter, const char *value);
 
@@ -63,9 +63,9 @@ int cl_commlib_push_application_error(cl_log_t cl_err_type, int cl_error, const 
 
 int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_func_t flush_func);
 
-bool cl_com_setup_commlib_complete(void);
+bool cl_com_setup_commlib_complete();
 
-int cl_com_cleanup_commlib(void);
+int cl_com_cleanup_commlib();
 
 
 /* local handle functions */
@@ -100,7 +100,7 @@ int cl_com_remove_allowed_host(cl_com_handle_t *handle, char *hostname);
 
 int cl_com_set_alias_file(const char *alias_file);
 
-int cl_com_set_alias_file_dirty(void);
+int cl_com_set_alias_file_dirty();
 
 int cl_com_append_host_alias(char *local_resolved_name, char *alias_name);
 
@@ -170,15 +170,15 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message);
 int cl_com_set_application_debug_client_callback_func(cl_app_debug_client_func_t);
 
 
-char *cl_com_get_resolvable_hosts(void);
+char *cl_com_get_resolvable_hosts();
 
-char *cl_com_get_unresolvable_hosts(void);
+char *cl_com_get_unresolvable_hosts();
 
 unsigned long cl_com_messages_in_send_queue(cl_com_handle_t *handle);
 
 bool cl_com_is_valid_fd(int fd);
 
-cl_thread_mode_t cl_commlib_get_thread_state(void);
+cl_thread_mode_t cl_commlib_get_thread_state();
 
 int cl_com_setup_connection(cl_com_handle_t *handle,
                             cl_com_connection_t **connection);
@@ -255,7 +255,7 @@ cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolve
 
 /* dummy defines for old lib compatibility */
 
-#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKOWN_HOST_ERROR  /* TODO: check this define */
+#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKNOWN_HOST_ERROR  /* TODO: check this define */
 #define COMMD_NACK_CONFLICT CL_RETVAL_ENDPOINT_NOT_UNIQUE
 #define CL_FIRST_FREE_EC    32
 

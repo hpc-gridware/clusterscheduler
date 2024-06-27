@@ -207,7 +207,7 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
 
       DPRINTF("job requests %d slots on host %s\n", tasks[i].procs, tasks[i].host_name);
   
-      queue = lGetElemHost(*oge::DataStore::get_master_list(SGE_TYPE_CQUEUE), QU_qhostname, tasks[i].host_name);
+      queue = lGetElemHost(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), QU_qhostname, tasks[i].host_name);
       if (queue == nullptr) {
          ERROR(MSG_SSI_COULDNOTFINDQUEUEFORHOST_S, tasks[i].host_name);
          DRETURN(false);

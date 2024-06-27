@@ -103,13 +103,13 @@ static int scan(const char *s, token_set_t token_set[]);
 static void join_wday_range(lList *week_day); 
 static void extend_wday_range(lList *week_day);
 
-static char *get_string(void);
+static char *get_string();
 
-static int get_number(void); 
+static int get_number(); 
 
-static void eat_token(void);
+static void eat_token();
 
-static char *save_error(void);
+static char *save_error();
 
 static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name);
 

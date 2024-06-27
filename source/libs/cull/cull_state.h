@@ -47,16 +47,16 @@ void cull_state_set_name_space(const lNameSpace *ns);
 
 void cull_state_set_observe_started(bool started);
 
-int cull_state_get_lerrno(void);
+int cull_state_get_lerrno();
 
-const char *cull_state_get_noinit(void);
+const char *cull_state_get_noinit();
 
-const lSortOrder *cull_state_get_global_sort_order(void);
+const lSortOrder *cull_state_get_global_sort_order();
 
-const lNameSpace *cull_state_get_name_space(void);
+const lNameSpace *cull_state_get_name_space();
 
 #ifdef OBSERVE
 void cull_state_set_observe_started(bool started);
-dstring *cull_state_get_observe_dstring(void);
-bool cull_state_get_observe_started(void);
+dstring *cull_state_get_observe_dstring();
+bool cull_state_get_observe_started();
 #endif

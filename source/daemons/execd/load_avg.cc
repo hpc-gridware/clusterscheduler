@@ -51,7 +51,7 @@
 
 #include "comm/commlib.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
@@ -122,7 +122,7 @@ extern lList *jr_list;
 
 static bool flush_lr = false;
 
-u_long64 sge_get_qmrestart_time(void)
+u_long64 sge_get_qmrestart_time()
 {
    return qmrestart_time;
 }
@@ -133,7 +133,7 @@ void sge_set_qmrestart_time(u_long64 qmr)
    qmrestart_time = qmr;
 }
 
-bool sge_get_delay_job_reports_flag(void)
+bool sge_get_delay_job_reports_flag()
 {
    return delay_job_reports;
 }
@@ -143,7 +143,7 @@ void sge_set_delay_job_reports_flag(bool new_val)
    delay_job_reports = new_val;
 }
 
-bool sge_get_flush_lr_flag(void)
+bool sge_get_flush_lr_flag()
 {
    return flush_lr;
 }
@@ -189,7 +189,7 @@ void execd_merge_load_report(u_long32 seqno)
    lFreeElem(&last_lr);
 }
 
-void execd_trash_load_report(void) {
+void execd_trash_load_report() {
    send_all = true;
 }
 
@@ -1143,7 +1143,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each_ep(job, *oge::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = nullptr;

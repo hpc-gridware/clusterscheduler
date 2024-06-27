@@ -53,7 +53,7 @@
 *     sge_get_arch() -- SGE/EE architecture string
 *
 *  SYNOPSIS
-*     const char* sge_get_arch(void) 
+*     const char* sge_get_arch() 
 *
 *  FUNCTION
 *     This function returns the SGE/EE architecture string of that
@@ -212,7 +212,7 @@ int sge_get_lib_dir(char *buffer, size_t size) {
 *     sge_get_default_cell() -- get cell name and remove trailing slash 
 *
 *  SYNOPSIS
-*     const char* sge_get_default_cell(void) 
+*     const char* sge_get_default_cell() 
 *
 *  FUNCTION
 *     This function returns the defined cell name of SGE/SGEEE.
@@ -267,7 +267,7 @@ const char *sge_get_default_cell() {
 *     sge_get_alias_path() -- Return the path of the 'alias_file' 
 *
 *  SYNOPSIS
-*     const char* sge_get_alias_path(void) 
+*     const char* sge_get_alias_path() 
 *
 *  FUNCTION
 *     Return the path of the 'alias_file' 

@@ -128,11 +128,11 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
 
 int cl_thread_cleanup(cl_thread_settings_t *thread_config);
 
-cl_thread_settings_t *cl_thread_get_thread_config(void);
+cl_thread_settings_t *cl_thread_get_thread_config();
 
 int cl_thread_set_thread_config(cl_thread_settings_t *thread_config);
 
-int cl_thread_unset_thread_config(void);
+int cl_thread_unset_thread_config();
 
 int cl_thread_shutdown(cl_thread_settings_t *thread_config);
 
@@ -142,7 +142,7 @@ const char *cl_thread_convert_state_id(int thread_state);
 
 int cl_thread_join(cl_thread_settings_t *thread_config);
 
-void cl_thread_cleanup_global_thread_config_key(void);
+void cl_thread_cleanup_global_thread_config_key();
 
 int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long micro_sec);
 

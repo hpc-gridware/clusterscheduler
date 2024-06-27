@@ -134,7 +134,7 @@
 #define MSG_GDI_KEYSTR_PERCENT         _MESSAGE(33103, _("Percent"))
 #define MSG_GDI_KEYSTR_ASTERISK        _MESSAGE(33104, _("Asterisk"))
 #define MSG_COM_ACK_S                  _MESSAGE(33105, _("ack event from " SFN))
-#define MSG_COM_ACKEVENTFORUNKOWNJOB_SU _MESSAGE(33106, _("ack event from host " SFN " for unknown job " sge_U32CFormat))
+#define MSG_COM_ACKEVENTFORUNKNOWNJOB_SU _MESSAGE(33106, _("ack event from host " SFN " for unknown job " sge_U32CFormat))
 #define MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU _MESSAGE(33107, _("ack event from host " SFN " for unknown task " sge_U32CFormat " of job " sge_U32CFormat))
 #define MSG_COM_UNKNOWN_TAG            _MESSAGE(33108, _("received unknown ack tag " sge_U32CFormat))
 
@@ -338,7 +338,7 @@
 #define MSG_JOB_MOD_ADDEDRUNNINGJOBCONSUMABLE_S       _MESSAGE(33309, _("denied: resource request on consumable " SFQ " of running job was not contained former resource request"))
 #define MSG_JOB_MOD_CHANGEDRUNNINGJOBCONSUMABLE_S     _MESSAGE(33310, _("denied: can't change consumable resource request " SFQ " of running job"))
 #define MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U      _MESSAGE(33311, _("denied: job \"" sge_U32CFormat "\" may not be it's own jobnet predecessor"))
-#define MSG_JOB_MOD_UNKOWNJOBTOWAITFOR_S              _MESSAGE(33312, _("denied: job " SFQ " not found"))
+#define MSG_JOB_MOD_UNKNOWNJOBTOWAITFOR_S              _MESSAGE(33312, _("denied: job " SFQ " not found"))
 #define MSG_JOB_MOD_CANONLYSPECIFYHOLDJIDADWITHADOPT _MESSAGE(33315, _("Can only specify \"-hold_jid_ad\" option with an array job (using \"-t\" option)"))
 #define MSG_JOB_MOD_ARRAYJOBMUSTHAVESAMERANGEWITHADOPT _MESSAGE(33316, _("This array job must have the same range of sub-tasks as the dependent array job specified with -hold_jid_ad"))
 #define MSG_SGETEXT_NEEDONEELEMENT_SS                 _MESSAGE(33317, _("denied: request format error: need at least one element in sublist " SFQ " in " SFN "()"))

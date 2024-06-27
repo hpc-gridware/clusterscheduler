@@ -50,7 +50,7 @@ int sge_ls_get(const char* qualified_hostname, const char *binary_path, lList **
 
 void sge_ls_stop(int);
 
-void trigger_ls_restart(void);
+void trigger_ls_restart();
 
 void sge_ls_qidle(int);
 

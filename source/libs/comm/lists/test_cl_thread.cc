@@ -43,7 +43,7 @@ void *timeout_thread_main(void *t_conf);  /* thread_func for timeout thread impl
 
 #define THREAD_COUNT 10
 
-extern int main(void) {
+extern int main() {
    int i;
    int retval;
    cl_thread_settings_t thread_list[THREAD_COUNT];

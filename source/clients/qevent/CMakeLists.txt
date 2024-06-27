@@ -20,7 +20,7 @@
 
 # source/clients/qevent
 add_executable(
-      qevent oge_qevent.cc
+      qevent ocs_qevent.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)

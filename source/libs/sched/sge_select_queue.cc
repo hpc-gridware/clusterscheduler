@@ -49,7 +49,7 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_pe.h"
@@ -1409,7 +1409,7 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
 
          case DISPATCH_MISSING_ATTR : /* the requested element does not exist */
             if (tag == QUEUE_TAG && lGetUlong(attr, CE_tagged) == NO_TAG) {
-               sge_dstring_sprintf(reason, MSG_SCHEDD_JOBREQUESTSUNKOWNRESOURCE_S, attr_name);
+               sge_dstring_sprintf(reason, MSG_SCHEDD_JOBREQUESTSUNKNOWNRESOURCE_S, attr_name);
                DRETURN(DISPATCH_NEVER_CAT);
             }
 
@@ -3030,7 +3030,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
       }
    }
 
-   cq = lGetElemStr(*oge::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
+   cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
    if ((hard_resource_list = lGetList(a->job, JB_hard_resource_list))) {

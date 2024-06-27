@@ -45,10 +45,10 @@ typedef struct {
 extern gdi_request_queue_t Master_Request_Queue;
 
 bool
-schedd_order_initialize(void);
+schedd_order_initialize();
 
 bool
-schedd_order_destroy(void);
+schedd_order_destroy();
 
 bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list);

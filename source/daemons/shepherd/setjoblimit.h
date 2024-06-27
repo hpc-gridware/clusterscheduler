@@ -36,5 +36,5 @@
 #include "cull/cull.h"
 #include "ptf.h"
 
-osjobid_t get_rlimits_os_job_id (void);
+osjobid_t get_rlimits_os_job_id ();
 void set_rlimits_os_job_id(osjobid_t new_os_job_id); 

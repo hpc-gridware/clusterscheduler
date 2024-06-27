@@ -44,7 +44,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "sgeobj/oge_DataStore.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_host.h"
@@ -58,7 +58,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_conf.h"
 
-#include "oge_ReportingFileWriter.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_job_enforce_limit.h"
 #include "sge_reporting_qmaster.h"
@@ -70,7 +70,7 @@
 #include "msg_qmaster.h"
 
 static bool
-is_module_enabled(void) {
+is_module_enabled() {
    static bool old_setting = false;
    bool ret = mconf_get_enable_enforce_master_limit();
 
@@ -139,7 +139,7 @@ static void
 sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    lListElem *job;
    lListElem *ja_task;
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
 
@@ -194,7 +194,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
                      }
                   }
                } else {
-                  const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+                  const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
                   lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                       lGetString(gdil_ep, JG_qname));
 
@@ -249,7 +249,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 *     sge_add_check_limit_trigger() -- check limits for unknown host 
 *
 *  SYNOPSIS
-*     void sge_add_check_limit_trigger(void) 
+*     void sge_add_check_limit_trigger() 
 *
 *  FUNCTION
 *     Add a timer thread event trigger which will be fired when the
@@ -277,8 +277,8 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 *     qmaster/qmaster-execd/sge_job_enfoce_limit_handler() 
 *******************************************************************************/
 void
-sge_add_check_limit_trigger(void) {
-   const lList *master_host_list = *oge::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+sge_add_check_limit_trigger() {
+   const lList *master_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    u_long64 now = sge_get_gmt64();
    u_long32 max_time = 0;
    u_long32 reconnect_timeout = EXECD_MAX_RECONNECT_TIMEOUT;
@@ -360,7 +360,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
       if (job_id == 0 && ja_task_id == 0) {
          sge_host_add_enforce_limit_trigger(nullptr);
       } else {
-         const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
          lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
          lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
@@ -377,8 +377,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
             if (gdil_ep != nullptr) {
                bool do_action = false;
                u_long64 now = sge_get_gmt64();
-               const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-               const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+               const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+               const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
                lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                    lGetString(gdil_ep, JG_qname));
 
@@ -432,7 +432,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                            lListElem *dummy_jr = lCreateElem(JR_Type);
 
                            job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
-                           oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
+                           ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
                            lFreeElem(&dummy_jr);
                         }
                      }
@@ -443,9 +443,9 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    */
                   dummy_jr = lCreateElem(JR_Type);
                   job_report_init_from_job_with_usage(dummy_jr, job, ja_task, nullptr, now);
-                  oge::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
+                  ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
                   lFreeElem(&dummy_jr);
-                  oge::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD,
+                  ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD,
                                            lGetHost(gdil_ep, JG_qhostname),
                                            nullptr, job, ja_task, nullptr, MSG_LOG_DELFORCED);
 
@@ -590,8 +590,8 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
        * and add a new timer which will trigger enforcement of limit
        */
       if (job != nullptr && ja_task != nullptr) {
-         const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
          /*
           * If the job is a tightly integrated parallel job than we have to take care
@@ -734,9 +734,9 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
 *******************************************************************************/
 void
 sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id) {
-   const lList *master_cqueue_list = *oge::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_job_list = *oge::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_pe_list = *oge::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
    bool delete_trigger = false;

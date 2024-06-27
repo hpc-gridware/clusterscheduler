@@ -152,7 +152,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   list = oge::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    list_descr = lGetListDescr(lGetList(event, ET_new_version)); 
    job_id = lGetUlong(event, ET_intkey);
    job = lGetElemUlongRW(*list, JB_job_number, job_id);
@@ -230,7 +230,7 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    
    DENTER(TOP_LAYER);
 
-   list = oge::DataStore::get_master_list_rw(type);
+   list = ocs::DataStore::get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
 
    /* We always update the whole list (consisting of one list element) */

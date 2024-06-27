@@ -123,7 +123,7 @@ int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_l
 
 int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_list) {
    int ret_val = CL_RETVAL_OK;
-   int function_return = CL_RETVAL_UNKOWN_HOST_ERROR;
+   int function_return = CL_RETVAL_UNKNOWN_HOST_ERROR;
    cl_string_list_elem_t *elem = nullptr;
 
    if (list_p == nullptr || string == nullptr) {

@@ -38,8 +38,8 @@
 
 lListElem *get_pr (int pid);
 void append_pr (lListElem *pr);
-void gen_procList (void);
-void free_procList (void);
-void fill_procList (void);
-void clear_procList (void);
-void clean_procList (void);
+void gen_procList ();
+void free_procList ();
+void fill_procList ();
+void clear_procList ();
+void clean_procList ();

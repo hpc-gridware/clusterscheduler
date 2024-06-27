@@ -40,7 +40,7 @@
 
 #include "gdi/sge_gdi_packet.h"
 
-#include "oge_MirrorDataStore.h"
+#include "ocs_MirrorDataStore.h"
 
 typedef struct {
    /* exit state: 100 = another master took over */
@@ -71,7 +71,7 @@ typedef struct {
    cl_raw_list_t *test_thread_pool;
 
    /* Event mirror thread */
-   std::vector<oge::MirrorDataStore *>mirror_thread_pool;
+   std::vector<ocs::MirrorDataStore *>mirror_thread_pool;
 } main_control_t;
 
 extern main_control_t Main_Control;

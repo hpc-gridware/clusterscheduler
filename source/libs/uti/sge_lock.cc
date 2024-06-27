@@ -491,7 +491,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 *     sge_locker_id() -- Locker identifier 
 *
 *  SYNOPSIS
-*     sge_locker_t sge_locker_id(void) 
+*     sge_locker_t sge_locker_id() 
 *
 *  FUNCTION
 *     Return an unambiguous identifier for the locker.  
@@ -523,7 +523,7 @@ sge_locker_t sge_locker_id() {
 *     lock_once_init() -- setup lock service 
 *
 *  SYNOPSIS
-*     static void lock_once_init(void) 
+*     static void lock_once_init() 
 *
 *  FUNCTION
 *     Determine number of locks needed. Create and initialize the respective
@@ -563,7 +563,7 @@ static void lock_once_init() {
 *     id_callback_impl() -- locker ID callback 
 *
 *  SYNOPSIS
-*     static sge_locker_t id_callback_impl(void) 
+*     static sge_locker_t id_callback_impl() 
 *
 *  FUNCTION
 *     Return ID of current locker. 

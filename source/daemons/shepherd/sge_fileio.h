@@ -51,7 +51,7 @@ bool
 shepherd_write_osjobid_file(const char *osjobid);
 
 bool 
-shepherd_write_shepherd_about_to_exit_file(void);
+shepherd_write_shepherd_about_to_exit_file();
 
 bool 
 shepherd_read_exit_status_file(int *return_code);
@@ -60,7 +60,7 @@ void
 create_checkpointed_file(int ckpt_is_in_arena);
 
 int 
-checkpointed_file_exists(void);
+checkpointed_file_exists();
 
 bool
 shepherd_write_sig_info_file(const char *filename, const char *task_id,

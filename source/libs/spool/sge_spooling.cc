@@ -564,7 +564,7 @@ void spool_set_default_context(lListElem *context)
 *
 *  SYNOPSIS
 *     lListElem* 
-*     spool_get_default_context(void) 
+*     spool_get_default_context() 
 *
 *  FUNCTION
 *     Retrieves a spooling context that has been set earlier using the function

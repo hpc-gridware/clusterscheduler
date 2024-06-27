@@ -40,9 +40,9 @@
 #define CL_COM_SSL_FRAMEWORK_MIN_INT_SIZE 4
 
 /* ssl specific functions */
-int cl_com_ssl_framework_setup(void);
+int cl_com_ssl_framework_setup();
 
-int cl_com_ssl_framework_cleanup(void);
+int cl_com_ssl_framework_cleanup();
 
 
 /* debug functions */

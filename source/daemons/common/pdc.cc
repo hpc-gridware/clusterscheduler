@@ -154,7 +154,7 @@ int sup_grp_in_proc;
 #define INCPROCPTR(ptr, nbyte) INCPTR(struct psProc_s, ptr, nbyte)
 
 #if defined(LINUX)
-   int sup_groups_in_proc (void) {
+   int sup_groups_in_proc () {
       return(sup_grp_in_proc);
    }
 #endif
@@ -264,7 +264,7 @@ lnk_link_t * find_job(JobID_t jid) {
 }
 
 static int
-get_gmt(void)
+get_gmt()
 {
    struct timeval now;
 
@@ -296,7 +296,7 @@ psSetCollectionIntervals(int jobi, int prci, int sysi)
 }
 
 static int
-get_numjobs(void)
+get_numjobs()
 {
    lnk_link_t *curr;
    int count = 0;
@@ -330,7 +330,7 @@ free_job(job_elem_t *job_elem)
    sge_free(&job_elem);
 }
 
-static int psRetrieveOSJobData(void) {
+static int psRetrieveOSJobData() {
    lnk_link_t *curr, *next;
    time_t time_stamp = get_gmt();
    static time_t next_time, pnext_time;
@@ -643,7 +643,7 @@ static int psRetrieveOSJobData(void) {
 
 static time_t start_time;
 
-int psStartCollector(void)
+int psStartCollector()
 {
    static int initialized = 0;
 #ifdef PDC_STANDALONE
@@ -687,7 +687,7 @@ int psStartCollector(void)
 }
 
 
-int psStopCollector(void)
+int psStopCollector()
 {
    return 0;
 }
@@ -740,7 +740,7 @@ int psIgnoreJob(JobID_t JobID) {
 }
 
 
-struct psStat_s *psStatus(void)
+struct psStat_s *psStatus()
 {
    psStat_t *pstat;
    static time_t last_time_stamp;
@@ -838,7 +838,7 @@ struct psJob_s *psGetOneJob(JobID_t JobID)
 }
 
 
-struct psJob_s *psGetAllJobs(void)
+struct psJob_s *psGetAllJobs()
 {
    psJob_t *rjob, *jobs;
    lnk_link_t *curr;
@@ -907,7 +907,7 @@ struct psJob_s *psGetAllJobs(void)
 
 
 #ifdef PDC_STANDALONE
-struct psSys_s *psGetSysdata(void)
+struct psSys_s *psGetSysdata()
 {
    psSys_t *sd;
 
@@ -922,7 +922,7 @@ struct psSys_s *psGetSysdata(void)
 }
 #endif
 
-int psVerify(void)
+int psVerify()
 {
    return 0;
 }
@@ -935,7 +935,7 @@ int psVerify(void)
 
 
 void
-usage(void)
+usage()
 {
    fprintf(stderr, "\n%s\n\n", MSG_SGE_USAGE);
    fprintf(stderr, "\t-s\t%s\n",  MSG_SGE_s_OPT_USAGE);

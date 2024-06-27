@@ -58,7 +58,7 @@
 *     sgeobj/Object/object_get_name_prefix()
 *     sgeobj/Object/object_append_field_to_dstring()
 *     sgeobj/Object/object_parse_field_from_string()
-*     sgeobj/Object/oge::DataStore::get_master_list()
+*     sgeobj/Object/ocs::DataStore::get_master_list()
 *     sgeobj/Object/object_type_get_name()
 *     sgeobj/Object/object_type_get_descr()
 *     sgeobj/Object/object_type_get_key_nm()

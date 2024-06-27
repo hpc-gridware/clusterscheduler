@@ -66,9 +66,9 @@ typedef struct sge_infotext_opt {
 
 
 
-static void  sge_infotext_welcome(void);
+static void  sge_infotext_welcome();
 static void  sge_infotext_raw(char *format_string);
-static void  sge_infotext_usage(void);
+static void  sge_infotext_usage();
 static int   sge_infotext_get_nr_of_substrings(const char* buffer, const char* substring);
 #if defined(SOLARISAMD64) || __GNUC__ >= 3 || defined(NETBSD)
 static char *sge_infotext_string_replace(dstring* buf, const char *arg, const char *what, const char *with, int only_first );
@@ -606,7 +606,7 @@ static int sge_infotext_get_nr_of_substrings(const char* buffer, const char* sub
  
 
 
-static void sge_infotext_welcome(void) {
+static void sge_infotext_welcome() {
 
    const char* user = nullptr;
    user = getenv("USER");
@@ -632,7 +632,7 @@ static void sge_infotext_raw(char *format_string) {
 }
 
 
-static void sge_infotext_usage(void) {
+static void sge_infotext_usage() {
    printf("Version: %s\n", GDI_VERSION);
    printf("usage:\n");
    printf("infotext -help    : show help\n");

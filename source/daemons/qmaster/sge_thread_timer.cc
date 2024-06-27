@@ -83,7 +83,7 @@ sge_timer_cleanup_monitor(monitoring_t *monitor) {
 *     sge_timer_register_event_handler() -- register event handlers
 *
 *  SYNOPSIS
-*     void sge_timer_register_event_handler(void) 
+*     void sge_timer_register_event_handler() 
 *
 *  FUNCTION
 *    registers event handlers
@@ -136,7 +136,7 @@ sge_timer_register_event_handler() {
 *     sge_timer_start_periodic_tasks() -- Start periodic qmaster tasks. 
 *
 *  SYNOPSIS
-*     static void sge_timer_start_periodic_tasks(void) 
+*     static void sge_timer_start_periodic_tasks() 
 *
 *  FUNCTION
 *     Start periodic qmaster tasks. Periodic tasks are implemented as recurring
