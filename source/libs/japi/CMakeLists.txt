@@ -50,7 +50,7 @@ target_link_libraries(${DRMAA_LIB_NAME} PRIVATE
 # test binaries
 add_executable(test_drmaa ../../../test/libs/drmaa/test_drmaa.cc)
 target_include_directories(test_drmaa PRIVATE "./")
-target_link_libraries(test_drmaa PRIVATE drmaa)
+target_link_libraries(test_drmaa PRIVATE drmaa ${SGE_LIBS})
 
 
 if (INSTALL_SGE_COMMON)
