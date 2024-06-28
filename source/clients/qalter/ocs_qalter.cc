@@ -682,7 +682,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       const char *cp;
       char str[1024];
  
-      snprintf(str, sizeof(str), MSG_ANSWER_UNKOWNOPTIONX_S,
+      snprintf(str, sizeof(str), MSG_ANSWER_UNKNOWNOPTIONX_S,
          lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {

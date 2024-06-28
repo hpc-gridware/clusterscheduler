@@ -572,7 +572,7 @@ int cl_host_list_append_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, in
 
 int cl_host_list_remove_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, int lock_list) {
    int ret_val = CL_RETVAL_OK;
-   int function_return = CL_RETVAL_UNKOWN_HOST_ERROR;
+   int function_return = CL_RETVAL_UNKNOWN_HOST_ERROR;
    cl_host_list_elem_t *elem = nullptr;
 
    if (list_p == nullptr || host == nullptr) {

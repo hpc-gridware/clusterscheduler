@@ -1409,7 +1409,7 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
 
          case DISPATCH_MISSING_ATTR : /* the requested element does not exist */
             if (tag == QUEUE_TAG && lGetUlong(attr, CE_tagged) == NO_TAG) {
-               sge_dstring_sprintf(reason, MSG_SCHEDD_JOBREQUESTSUNKOWNRESOURCE_S, attr_name);
+               sge_dstring_sprintf(reason, MSG_SCHEDD_JOBREQUESTSUNKNOWNRESOURCE_S, attr_name);
                DRETURN(DISPATCH_NEVER_CAT);
             }
 

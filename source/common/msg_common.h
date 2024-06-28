@@ -146,7 +146,7 @@
 #define MSG_MEM_MEMORYALLOCFAILED_S         _MESSAGE(23035, _("memory allocation failed " SFN))
 #define MSG_ANSWER_GETCWDFAILED             _MESSAGE(23036, _("getcwd() failed"))
 #define MSG_ANSWER_HELPNOTALLOWEDINCONTEXT  _MESSAGE(23038, _("-help not allowed in this context"))
-#define MSG_ANSWER_UNKOWNOPTIONX_S          _MESSAGE(23039, _("Unknown option " SFN))
+#define MSG_ANSWER_UNKNOWNOPTIONX_S          _MESSAGE(23039, _("Unknown option " SFN))
 #define MSG_ANSWER_CANTPROCESSNULLLIST      _MESSAGE(23040, _("can't process nullptr list"))
 #define MSG_FILE_ERROROPENINGXY_SS          _MESSAGE(23041, _("error opening " SFN ": " SFN))
 #define MSG_ANSWER_ERRORREADINGFROMFILEX_S  _MESSAGE(23042, _("error reading from file " SFN))

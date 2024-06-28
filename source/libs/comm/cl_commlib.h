@@ -255,7 +255,7 @@ cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolve
 
 /* dummy defines for old lib compatibility */
 
-#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKOWN_HOST_ERROR  /* TODO: check this define */
+#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKNOWN_HOST_ERROR  /* TODO: check this define */
 #define COMMD_NACK_CONFLICT CL_RETVAL_ENDPOINT_NOT_UNIQUE
 #define CL_FIRST_FREE_EC    32
 

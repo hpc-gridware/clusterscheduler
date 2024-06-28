@@ -84,7 +84,7 @@
 #define MSG_CL_RETVAL_READ_ERROR                  _MESSAGE(80045, _("got read error"))
 #define MSG_CL_RETVAL_MAX_READ_SIZE               _MESSAGE(80046, _("max read size reached"))
 #define MSG_CL_RETVAL_CLIENT_WELCOME_ERROR        _MESSAGE(80047, _("got client welcome error"))
-#define MSG_CL_RETVAL_UNKOWN_HOST_ERROR           _MESSAGE(80048, _("unknown host error"))
+#define MSG_CL_RETVAL_UNKNOWN_HOST_ERROR           _MESSAGE(80048, _("unknown host error"))
 #define MSG_CL_RETVAL_LOCAL_HOSTNAME_ERROR        _MESSAGE(80049, _("local host name error"))
 #define MSG_CL_RETVAL_UNKNOWN_ENDPOINT            _MESSAGE(80050, _("unknown endpoint error"))
 #define MSG_CL_RETVAL_UNCOMPLETE_WRITE            _MESSAGE(80051, _("couldn't write all data"))

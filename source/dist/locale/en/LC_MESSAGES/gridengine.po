@@ -6619,7 +6619,7 @@ msgstr ""
 
 #
 #: ../src/time_event.c:61
-msgid "received unkown event\n"
+msgid "received unknown event\n"
 msgstr ""
 
 #
