@@ -1,15 +1,15 @@
 {
 	"className":	"PETask",
-	"summary":	"@todo add summary",
+	"summary":	"PE Task",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A PET_Type object describes one task of a tightly integrated parallel job."
 		}],
 	"cullPrefix":	"PET",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"PE Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The pe task id. It is unique per job."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,7 +25,9 @@
 			"name":	"name",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Optional name of a pe task. Not yet completely implemented, but"
+               }, {
+					"line":	"it could be used to pass information to be shown by qstat."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -33,9 +35,9 @@
 				}]
 		}, {
 			"name":	"status",
-			"summary":	"@todo add summary",
+			"summary":	"Status",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Status of the pe job, see defines in libs/gdi/sge_jobL.h."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -43,9 +45,9 @@
 				}]
 		}, {
 			"name":	"granted_destin_identifier_list",
-			"summary":	"@todo add summary",
+			"summary":	"Granted Destination Identifier List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Contains one entry specifying the queue the pe task runs in."
 				}],
 			"type":	"lListT",
 			"subClassName":	"JG",
@@ -55,25 +57,25 @@
 				}]
 		}, {
 			"name":	"pid",
-			"summary":	"@todo add summary",
+			"summary":	"Process Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pid of a running pe task (process group id)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"osjobid",
-			"summary":	"@todo add summary",
+			"summary":	"OS JobId",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"OS jobid / additional group id of a running pe task."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"usage",
-			"summary":	"@todo add summary",
+			"summary":	"Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Usage list of a running/just finished pe task."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -83,9 +85,9 @@
 				}]
 		}, {
 			"name":	"scaled_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Scaled Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Scaled usage list of a running/just finished pe task."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -95,9 +97,13 @@
 				}]
 		}, {
 			"name":	"reported_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Reported Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used in reporting of long running jobs:"
+               }, {
+					"line":	"An intermediate usage record is written around midnight every day,"
+               }, {
+					"line":	"the usage already reported so far is stored in the PET_reported_usage list"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -107,9 +113,9 @@
 				}]
 		}, {
 			"name":	"previous_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Previous Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"In case a petask is re-run (@todo is this ever done?) the usage of the previous run."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -117,9 +123,9 @@
 			"flags":	[]
 		}, {
 			"name":	"submission_time",
-			"summary":	"@todo add summary",
+			"summary":	"Submission Time",
 			"description":	[{
-					"line":	"... microseconds since epoch"
+					"line":	"Submission time of a task (when qrsh -inherit was called) in microseconds since epoch"
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -127,9 +133,9 @@
 				}]
 		}, {
 			"name":	"start_time",
-			"summary":	"@todo add summary",
+			"summary":	"Start Time",
 			"description":	[{
-					"line":	"... microseconds since epoch"
+					"line":	"Start time of the petask in microseconds since epoch"
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -137,9 +143,9 @@
 				}]
 		}, {
 			"name":	"end_time",
-			"summary":	"@todo add summary",
+			"summary":	"End Time",
 			"description":	[{
-					"line":	"... microseconds since epoch"
+					"line":	"End time of the petask in microseconds since epoch"
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -147,9 +153,11 @@
 				}]
 		}, {
 			"name":	"cwd",
-			"summary":	"@todo add summary",
+			"summary":	"Current Working Directory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Path to the petask's current working directory."
+               }, {
+					"line":	"If not set, the cwd from the ja task is inherited."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -157,9 +165,9 @@
 				}]
 		}, {
 			"name":	"path_aliases",
-			"summary":	"@todo add summary",
+			"summary":	"Path Aliases",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Path alias list for the petask."
 				}],
 			"type":	"lListT",
 			"subClassName":	"PA",
@@ -167,9 +175,11 @@
 			"flags":	[]
 		}, {
 			"name":	"environment",
-			"summary":	"@todo add summary",
+			"summary":	"Environment",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Environment variables to be set when executing the job (qrsh inherit -v)."
+               }, {
+					"line":	"They will overwrite inherited variables from the ja task."
 				}],
 			"type":	"lListT",
 			"subClassName":	"VA",
@@ -177,9 +187,11 @@
 			"flags":	[]
 		}, {
 			"name":	"do_contact",
-			"summary":	"@todo add summary",
+			"summary":	"Do Contact",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used in limit enforcement to remember whether to contact the host where a task is running."
+               }, {
+					"line":	"Is set to false when the host is down/unknown."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
