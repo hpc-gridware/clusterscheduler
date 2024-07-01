@@ -72,6 +72,7 @@ add_test(NAME test_uti_sl COMMAND test_uti_sl)
 
 add_executable(test_uti_string test_uti_string.cc)
 target_include_directories(test_uti_string PRIVATE "./")
+target_compile_options(test_uti_string PRIVATE -Wno-array-bounds)
 target_link_libraries(test_uti_string PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_string COMMAND test_uti_string)
 
