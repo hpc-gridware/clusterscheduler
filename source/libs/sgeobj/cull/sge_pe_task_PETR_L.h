@@ -28,33 +28,34 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief PE Task Request
 *
-* @todo add description
+* Objects of PETR_Type are used to request the start of a task in a
+* tightly integrated parallel job.
 *
-*    SGE_ULONG(PETR_jobid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PETR_jobid) - Job ID
+*    Job id of the job to start the task in.
 *
-*    SGE_ULONG(PETR_jataskid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PETR_jataskid) - Array Task ID
+*    Array task id of the ja_task to start the pe task in.
 *
-*    SGE_STRING(PETR_queuename) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PETR_queuename) - Queue Name
+*    Optionally: Name of the queue to start the job in.
 *
-*    SGE_STRING(PETR_owner) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PETR_owner) - Owner
+*    Owner of the pe task.
 *
-*    SGE_STRING(PETR_cwd) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PETR_cwd) - Current Working Directory
+*    Current working directory for the execution of the task.
 *
-*    SGE_LIST(PETR_path_aliases) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PETR_path_aliases) - Path Aliases
+*    Optional: Path alias configuration.
 *
-*    SGE_LIST(PETR_environment) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PETR_environment) - Environment
+*    Environment variables to set / to overwrite the job environment with (from qrsh -inherit -v).
 *
-*    SGE_ULONG64(PETR_submission_time) - @todo add summary
-*    ... microseconds since epoch.
+*    SGE_ULONG64(PETR_submission_time) - Submission Time
+*    Time when qrsh -inherit was started in microseconds since epoch.
 *
 */
 

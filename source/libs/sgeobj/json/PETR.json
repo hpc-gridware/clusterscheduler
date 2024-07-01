@@ -1,55 +1,57 @@
 {
 	"className":	"PETaskRequest",
-	"summary":	"@todo add summary",
+	"summary":	"PE Task Request",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Objects of PETR_Type are used to request the start of a task in a"
+          }, {
+			"line":	"tightly integrated parallel job."
 		}],
 	"cullPrefix":	"PETR",
 	"attributes":	[{
 			"name":	"jobid",
-			"summary":	"@todo add summary",
+			"summary":	"Job ID",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job id of the job to start the task in."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"jataskid",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task ID",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Array task id of the ja_task to start the pe task in."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"queuename",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Optionally: Name of the queue to start the job in."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"owner",
-			"summary":	"@todo add summary",
+			"summary":	"Owner",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Owner of the pe task."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"cwd",
-			"summary":	"@todo add summary",
+			"summary":	"Current Working Directory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Current working directory for the execution of the task."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"path_aliases",
-			"summary":	"@todo add summary",
+			"summary":	"Path Aliases",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Optional: Path alias configuration."
 				}],
 			"type":	"lListT",
 			"subClassName":	"PA",
@@ -57,9 +59,9 @@
 			"flags":	[]
 		}, {
 			"name":	"environment",
-			"summary":	"@todo add summary",
+			"summary":	"Environment",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Environment variables to set / to overwrite the job environment with (from qrsh -inherit -v)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"VA",
@@ -67,9 +69,9 @@
 			"flags":	[]
 		}, {
 			"name":	"submission_time",
-			"summary":	"@todo add summary",
+			"summary":	"Submission Time",
 			"description":	[{
-					"line":	"... microseconds since epoch."
+					"line":	"Time when qrsh -inherit was started in microseconds since epoch."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[]
