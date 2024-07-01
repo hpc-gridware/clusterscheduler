@@ -1,15 +1,21 @@
 {
 	"className":	"SchedulerConfiguration",
-	"summary":	"@todo add summary",
+	"summary":	"Object containing scheduler configuration attributes",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"In the corresponding master list there is exactly one element holding the scheduler configuration."
+         }, {
+         "line":	"See also man page sge_sched_conf(5)."
 		}],
 	"cullPrefix":	"SC",
 	"attributes":	[{
 			"name":	"algorithm",
-			"summary":	"@todo add summary",
+			"summary":	"Scheduler Algorithm",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Deprecated and may be removed in the future."
+               }, {
+					"line":	"Was intended to differentiate settings for different scheduling algorithms."
+               }, {
+					"line":	"There is exactly one algorithm called default."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +25,9 @@
 				}]
 		}, {
 			"name":	"schedule_interval",
-			"summary":	"@todo add summary",
+			"summary":	"Scheduling Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Fixed interval (time value) defining how often scheduling runs are done."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -31,9 +37,9 @@
 				}]
 		}, {
 			"name":	"maxujobs",
-			"summary":	"@todo add summary",
+			"summary":	"Maximum User Jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The maximum number of *running* jobs per user."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -43,9 +49,13 @@
 				}]
 		}, {
 			"name":	"queue_sort_method",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Sort Method",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"For scheduling jobs the queue instances the sort order can be specified as"
+               }, {
+					"line":	"  - seqno: requires that sequence numbers are defined in the queue definitions"
+               }, {
+					"line":	"  - load: sorting is done by load, @see also load_formula"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -55,9 +65,9 @@
 				}]
 		}, {
 			"name":	"job_load_adjustments",
-			"summary":	"@todo add summary",
+			"summary":	"Job Load Adjustments",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Adds virtual load to just started jobs."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CE",
@@ -69,9 +79,9 @@
 				}]
 		}, {
 			"name":	"load_adjustment_decay_time",
-			"summary":	"@todo add summary",
+			"summary":	"Load Adjustment Decay Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"How fast to decay virtual load added via @see job_load_adjustments."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -81,9 +91,9 @@
 				}]
 		}, {
 			"name":	"load_formula",
-			"summary":	"@todo add summary",
+			"summary":	"Load Formula",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Algebraic expression based on load values and weighting factors."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -93,9 +103,9 @@
 				}]
 		}, {
 			"name":	"schedd_job_info",
-			"summary":	"@todo add summary",
+			"summary":	"Schedd Job Info",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Boolean which defines if information why jobs cannot be schedules shall be made available."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -105,9 +115,9 @@
 				}]
 		}, {
 			"name":	"flush_submit_sec",
-			"summary":	"@todo add summary",
+			"summary":	"Flush Submit Sec",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Forces scheduling run n seconds after job submission."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -117,9 +127,9 @@
 				}]
 		}, {
 			"name":	"flush_finish_sec",
-			"summary":	"@todo add summary",
+			"summary":	"Flush Finish Sec",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Forces a scheduling run n seconds after a job finished."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -129,9 +139,9 @@
 				}]
 		}, {
 			"name":	"params",
-			"summary":	"@todo add summary",
+			"summary":	"Params",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Arbitrary list of scheduler parameters, usually name-value pairs."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -141,9 +151,9 @@
 				}]
 		}, {
 			"name":	"reprioritize_interval",
-			"summary":	"@todo add summary",
+			"summary":	"Reprioritize Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Time value defining how often running jobs will be reprioritized (based on policies)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -153,9 +163,9 @@
 				}]
 		}, {
 			"name":	"halftime",
-			"summary":	"@todo add summary",
+			"summary":	"Halftime",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Halftime for decaying sharetree usage."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -165,9 +175,9 @@
 				}]
 		}, {
 			"name":	"usage_weight_list",
-			"summary":	"@todo add summary",
+			"summary":	"Usage Weight List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines how different usage values (e.g. cpu, mem, io) are weighted in sharetree calculations."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -179,9 +189,9 @@
 				}]
 		}, {
 			"name":	"compensation_factor",
-			"summary":	"@todo add summary",
+			"summary":	"Compensation Factor",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines how fast too low or too high sharetree usage is compensated."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -191,9 +201,9 @@
 				}]
 		}, {
 			"name":	"weight_user",
-			"summary":	"@todo add summary",
+			"summary":	"Weight User",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weighting factor for functional policy on user configuration."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -203,9 +213,9 @@
 				}]
 		}, {
 			"name":	"weight_project",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weighting factor for functional policy on project configuration."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -215,9 +225,9 @@
 				}]
 		}, {
 			"name":	"weight_department",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Department",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weighting factor for functional policy on department configuration."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -227,9 +237,9 @@
 				}]
 		}, {
 			"name":	"weight_job",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Job",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weighting factor for functional policy on job shares (qsub -js)."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -239,9 +249,9 @@
 				}]
 		}, {
 			"name":	"weight_tickets_functional",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Tickets Functional",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of functional policy as compared to other ticket policies."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -251,9 +261,9 @@
 				}]
 		}, {
 			"name":	"weight_tickets_share",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Tickets Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of sharetree policy as compared to other ticket policies."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -263,9 +273,9 @@
 				}]
 		}, {
 			"name":	"weight_tickets_override",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Tickets Override",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of override policy as compared to other ticket policies."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -275,9 +285,11 @@
 				}]
 		}, {
 			"name":	"share_override_tickets",
-			"summary":	"@todo add summary",
+			"summary":	"Share Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Boolean defining if every job gets the same amount of tickets from a sharetree node"
+               }, {
+					"line":	"or if tickets shall be distributed over the jobs belonging to a sharetree node."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -287,9 +299,11 @@
 				}]
 		}, {
 			"name":	"share_functional_shares",
-			"summary":	"@todo add summary",
+			"summary":	"Share Functional Shares",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Boolean defining if functional shares of any object instance are shared among"
+               }, {
+					"line":	"all the jobs associated with the object"
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -299,9 +313,9 @@
 				}]
 		}, {
 			"name":	"max_functional_jobs_to_schedule",
-			"summary":	"@todo add summary",
+			"summary":	"Max Functional Jobs to Schedule",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The maximum number of functional pending jobs to schedule using the brute-force method."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -311,9 +325,9 @@
 				}]
 		}, {
 			"name":	"report_pjob_tickets",
-			"summary":	"@todo add summary",
+			"summary":	"Report Pending Job Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Report pending job tickets to the qmaster via scheduler order or not."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -323,9 +337,9 @@
 				}]
 		}, {
 			"name":	"max_pending_tasks_per_job",
-			"summary":	"@todo add summary",
+			"summary":	"Maximum Pending Tasks Per Job",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The number of array tasks per pending job to schedule. Helps to reduce scheduling overhead."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -335,9 +349,9 @@
 				}]
 		}, {
 			"name":	"halflife_decay_list",
-			"summary":	"@todo add summary",
+			"summary":	"Halflife Decay List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A list of halflife decay values (UA_Type)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -347,9 +361,9 @@
 				}]
 		}, {
 			"name":	"policy_hierarchy",
-			"summary":	"@todo add summary",
+			"summary":	"Policy Hierarchy",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines the Order of the ticket computation."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -359,9 +373,9 @@
 				}]
 		}, {
 			"name":	"weight_ticket",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Ticket",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of the ticket policies (functional, override, sharetree) as compared to other policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -371,9 +385,9 @@
 				}]
 		}, {
 			"name":	"weight_waiting_time",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Waiting Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of the waiting time policy as compared to other policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -383,9 +397,9 @@
 				}]
 		}, {
 			"name":	"weight_deadline",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Deadline",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of the deadline policy as compared to other policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -395,9 +409,9 @@
 				}]
 		}, {
 			"name":	"weight_urgency",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Urgency",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of the urgency policy as compared to other policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -407,9 +421,9 @@
 				}]
 		}, {
 			"name":	"weight_priority",
-			"summary":	"@todo add summary",
+			"summary":	"Weight Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Weight of the posix priority as compared to other policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -419,9 +433,9 @@
 				}]
 		}, {
 			"name":	"max_reservation",
-			"summary":	"@todo add summary",
+			"summary":	"Maximum Number of Reservations",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The maximum number of resource reservations. 0 disables resource reservation."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -431,9 +445,9 @@
 				}]
 		}, {
 			"name":	"default_duration",
-			"summary":	"@todo add summary",
+			"summary":	"Default Duration",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Default duration assumed for jobs that specify no h_rt/s_rt."
 				}],
 			"type":	"lStringT",
 			"flags":	[{

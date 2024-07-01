@@ -1,6 +1,6 @@
 ---
 title: "Third Party Licenses and Copyright Statements"
-author: "The OGE Development Team"
+author: "The OCS Development Team"
 ---
 
 The software mentioned in the following sections may be included in this product. The use of this software is 
