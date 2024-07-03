@@ -52,18 +52,19 @@ RPMSPECFILE=sge.spec
 ErrUsage()
 {
    echo "Usage: mk_dist -vdir vdir -version version [-basedir dir] \\"
-   echo "               [-bin] [-common] [-arco] [-doc] binarchs ..." 
+   echo "               [-bin] [-common] [-arco] [-doc] [-drmaaj] binarchs ..."
    echo ""
    echo "    -vdir vdir         use subdirectory vdir to create distribution"
    echo "    -version <version> string to build filename of distribution"
    echo "    -basedir <basedir> set base directory for outputfile location"
    echo "                       default: $BASEDIR" 
-   echo "    -tar <tarcmd>      tar command which supports "z" option"
+   echo "    -tar <tarcmd>      tar command which supports \"z\" option"
    echo "    -bin               create tar.gz files from binaries in bin/,"
    echo "                       utilbin/ and examples/jobsbin"
    echo "    -common            create tar.gz file of \"common\" files"
    echo "    -arco              create tar.gz file of \"arco\" files"
-   echo "    -doc               create tar.gz file of \"doc\" files"  
+   echo "    -doc               create tar.gz file of \"doc\" files"
+   echo "    -drmaaj            create tar.gz file of \"drmaa-java\" files"
    echo "    -rpm               create RPM packages instead of tar files"
    echo ""
    exit 1
@@ -118,7 +119,6 @@ CreateRpm() # Arguments: package arch files
    done
    
    rpmbuild -bb $RPMSPECFILE
-
 }
 
 #------------------------------------------------------------------------
@@ -127,6 +127,7 @@ CreateRpm() # Arguments: package arch files
 #
 
 makearco=false
+makedrmaaj=false
 makebin=false
 maketestbin=false
 makecommon=false
@@ -189,6 +190,12 @@ while [ $ARGC -gt 0 ]; do
       echo "Creating tar file with doc files of distribution"
       makedoc=true
       shift 
+      ARGC=`expr $ARGC - 1`
+      ;;
+   -drmaaj)
+      echo "Creating tar file with drmaa-java files of distribution"
+      makedrmaaj=true
+      shift
       ARGC=`expr $ARGC - 1`
       ;;
    -h|-help)
@@ -273,8 +280,9 @@ DOC_PACKAGE="doc man"
 COMMON_PACKAGE="3rd_party ckpt dtrace examples/jobs \
                 examples/drmaa hadoop include inst_sge \
                 install_qmaster install_execd \
-		          mpi util lib/drmaa.jar"
+		          mpi util"
 ARCO_PACKAGE="dbwriter"
+DRMAAJ_PACKAGE="lib/jdrmaa-1.0.jar lib/drmaa.jar"
 
 if [ "$VERSION" = "" -o "$VDIR" = "" ]; then
    ErrUsage
@@ -318,6 +326,24 @@ if [ $makearco = true ]; then
      filename=$BASEDIR/${PRODUCT}-${VERSION}-arco.tar.gz
      echo Command: $TAR cvzf $filename $ARCO_PACKAGE
                   $TAR cvzf $filename $ARCO_PACKAGE
+     cd ..
+   fi
+fi
+
+if [ $makedrmaaj = true ]; then
+   # do any necessary postprocessing of the "drmaaj" package here
+   if [ -f localext/$VDIR/mk_dist.private.drmaaj ]; then
+      echo executing commands from mk_dist.private.drmaaj
+      . ./localext/$VDIR/mk_dist.private.drmaaj
+   fi
+
+   if [ $makerpm = true ]; then
+      CreateRpm drmaaj noarch $DRMAAJ_PACKAGE
+   else
+     cd $VDIR
+     filename=$BASEDIR/${PRODUCT}-${VERSION}-drmaaj.tar.gz
+     echo Command: $TAR cvzf $filename $DRMAAJ_PACKAGE
+                  $TAR cvzf $filename $DRMAAJ_PACKAGE
      cd ..
    fi
 fi

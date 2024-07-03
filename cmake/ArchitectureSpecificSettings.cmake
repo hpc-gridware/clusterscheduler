@@ -78,6 +78,7 @@ function(architecture_specific_settings)
 
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
+      set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
@@ -155,6 +156,8 @@ function(architecture_specific_settings)
          add_compile_options(-static-libstdc++ -static-libgcc)
          add_link_options(-static-libstdc++ -static-libgcc)
       endif ()
+
+      set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
@@ -167,6 +170,8 @@ function(architecture_specific_settings)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
+
+      set(JNI_ARCH "freebsd" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "sol-.*")
       # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
@@ -174,6 +179,8 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+
+      set(JNI_ARCH "solaris" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
@@ -187,6 +194,8 @@ function(architecture_specific_settings)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
+
+      set(JNI_ARCH "darwin" PARENT_SCOPE)
    else ()
       # unknown platform
       message(WARNING "no arch specific compiler options for ${SGE_ARCH}")

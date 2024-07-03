@@ -99,6 +99,10 @@ if [ $DO_BUILD -ne 0 ]; then
       CMAKE_OPTIONS="$CMAKE_OPTIONS -DINSTALL_SGE_DOC=ON"
    fi
 
+   if [ -z "$JAVA_HOME" ]; then
+      CMAKE_OPTIONS="$CMAKE_OPTIONS -DWITH_JNI=OFF"
+   fi
+
    cd /build
    cmake $CMAKE_OPTIONS
    if [ $? -ne 0 ]; then
