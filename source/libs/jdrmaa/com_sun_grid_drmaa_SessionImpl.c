@@ -128,7 +128,7 @@ enum {
    DRMAAJ_NO_ERRNO
 };
 
-#define NO_EXECEPTION_CLASS "Unable to locate class, %s, for DRMAA error: %s: %s"
+#define NO_EXECEPTION_CLASS "Unable to locate class, " SFN ", for DRMAA error: " SFN2 ": " SFN2
 
 static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static drmaa_job_template_t **job_templates = NULL;
