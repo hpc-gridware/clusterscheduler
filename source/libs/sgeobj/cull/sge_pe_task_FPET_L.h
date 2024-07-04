@@ -28,12 +28,15 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Finished PE Task
 *
-* @todo add description
+* We need to store information about finished pe tasks to avoid
+* duplicate accounting records (see IZ 438).
+* A ja task will contain a list of finished pe tasks.
+* Only the task id of finished tasks will be stored.
 *
-*    SGE_STRING(FPET_id) - @todo add summary
-*    @todo add description
+*    SGE_STRING(FPET_id) - Finished PE Task Id
+*    PE Task Id identifying a finished PE Task.
 *
 */
 

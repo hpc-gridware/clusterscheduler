@@ -1,15 +1,21 @@
 {
 	"className":	"PETaskFinished",
-	"summary":	"@todo add summary",
+	"summary":	"Finished PE Task",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"We need to store information about finished pe tasks to avoid"
+         }, {
+			"line":	"duplicate accounting records (see IZ 438)."
+         }, {
+			"line":	"A ja task will contain a list of finished pe tasks."
+         }, {
+			"line":	"Only the task id of finished tasks will be stored."
 		}],
 	"cullPrefix":	"FPET",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Finished PE Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"PE Task Id identifying a finished PE Task."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
