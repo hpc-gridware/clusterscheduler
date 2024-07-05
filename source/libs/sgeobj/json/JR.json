@@ -1,15 +1,17 @@
 {
 	"className":	"JobReport",
-	"summary":	"@todo add summary",
+	"summary":	"Job Report",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Definition of a job report sent from sge_execd to sge_qmaster."
+         }, {
+			"line":	"Job reports are sent for every running array task and every task of a tightly integrated parallel job."
 		}],
 	"cullPrefix":	"JR",
 	"attributes":	[{
 			"name":	"job_number",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job number / job id of the corresponding job."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -17,57 +19,57 @@
 				}]
 		}, {
 			"name":	"ja_task_number",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The array task number / id of the corresponding array task."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"queue_name",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue this job is running in / tried to run in."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Either JRUNNING or JEXITING, JRUNNING is sent as ack for jobdelivery and in the load_report_interval."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"failed",
-			"summary":	"@todo add summary",
+			"summary":	"Failed",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Failure code, e.g. EESTATE_NO_CONFIG, EESTATE_NO_PID, ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"general_failure",
-			"summary":	"@todo add summary",
+			"summary":	"General Failure",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"General failure code, e.g. GFSTATE_NO_HALT, GFSTATE_QUEUE, ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"err_str",
-			"summary":	"@todo add summary",
+			"summary":	"Error String",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Error description for failed jobs."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"usage",
-			"summary":	"@todo add summary",
+			"summary":	"Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of resource usage by the job/task, e.g. wallclock, cpu, mem, ..."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -75,65 +77,68 @@
 			"flags":	[]
 		}, {
 			"name":	"job_pid",
-			"summary":	"@todo add summary",
+			"summary":	"Job Pid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Process Id of the job script / the toplevel process of the job."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"ckpt_arena",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint Arena",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If there is a checkpoint in the arena."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"pe_task_id_str",
-			"summary":	"@todo add summary",
+			"summary":	"Pe Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"For tasks of tightly integrated parallel jobs: The tasks unique id."
+               }, {
+					"line":	"It consists of the host name and a sequential number, e.g. myhostname.5"
+               }
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"osjobid",
-			"summary":	"@todo add summary",
+			"summary":	"OS Job Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"String containing osjobid for ckpt jobs."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"wait_status",
-			"summary":	"@todo add summary",
+			"summary":	"Wait Status",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"japi_wait() 'status' information."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"flush",
-			"summary":	"@todo add summary",
+			"summary":	"Flush",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used in sge_execd: Whether to send the job report immediately / as early as possible."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"no_send",
-			"summary":	"@todo add summary",
+			"summary":	"No Send",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used in sge_execd: Do not send the job report, e.g. for pe tasks when accounting_summary is configured."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"delay_report",
-			"summary":	"@todo add summary",
+			"summary":	"Delay Report",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used in sge_execd: Delay sending of the job report. Used for qsub -sync/DRMAA jobs after a qmaster failover."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
