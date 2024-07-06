@@ -1,23 +1,25 @@
 {
 	"className":	"LicenseReport",
-	"summary":	"@todo add summary",
+	"summary":	"License Report",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Definition for a license report."
+         }, {
+			"line":	"There is no license management or license enforcement in Cluster Scheduler."
 		}],
 	"cullPrefix":	"LIC",
 	"attributes":	[{
 			"name":	"processors",
-			"summary":	"@todo add summary",
+			"summary":	"Processors",
 			"description":	[{
-					"line":	"@todo add description"
+			      "line":	"Number of processors (nprocs = number of cores) on the execution host."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"arch",
-			"summary":	"@todo add summary",
+			"summary":	"Architecture",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The execution host's architecture, e.g. lx-amd64."
 				}],
 			"type":	"lStringT",
 			"flags":	[]

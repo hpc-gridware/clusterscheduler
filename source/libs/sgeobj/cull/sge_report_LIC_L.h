@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief License Report
 *
-* @todo add description
+* Definition for a license report.
+* There is no license management or license enforcement in Cluster Scheduler.
 *
-*    SGE_ULONG(LIC_processors) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(LIC_processors) - Processors
+*    Number of processors (nprocs = number of cores) on the execution host.
 *
-*    SGE_STRING(LIC_arch) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LIC_arch) - Architecture
+*    The execution host's architecture, e.g. lx-amd64.
 *
 */
 
