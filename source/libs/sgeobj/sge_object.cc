@@ -2178,7 +2178,7 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) == 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL,
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
                               lNm2Str(nm));
       ret = false;
    }
@@ -2191,7 +2191,7 @@ object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm)
    bool ret = true;
 
    if (lGetUlong(ep, nm) == 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL,
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
                               lNm2Str(nm));
       ret = false;
    }
@@ -2231,7 +2231,8 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) != 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL_SU,
+                              lNm2Str(nm), lGetUlong(ep, nm));
       ret = false;
    }
 
@@ -2243,7 +2244,8 @@ object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong64(ep, nm) != 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG64_NULL_SU,
+                              lNm2Str(nm), lGetUlong64(ep, nm));
       ret = false;
    }
 
@@ -2282,7 +2284,8 @@ object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
 
    if (lGetDouble(ep, nm) != 0.0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL, lNm2Str(nm));
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL_SD,
+                              lNm2Str(nm), lGetDouble(ep, nm));
       ret = false;
    }
 
@@ -2321,7 +2324,7 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) 
    bool ret = true;
 
    if (lGetString(ep, nm) == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL,
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL_S,
                               lNm2Str(nm));
       ret = false;
    }
