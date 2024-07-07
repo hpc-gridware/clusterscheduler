@@ -98,7 +98,6 @@
 					"line":	"For tasks of tightly integrated parallel jobs: The tasks unique id."
                }, {
 					"line":	"It consists of the host name and a sequential number, e.g. myhostname.5"
-               }
 				}],
 			"type":	"lStringT",
 			"flags":	[]

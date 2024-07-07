@@ -28,75 +28,76 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief PTF Job
 *
-* @todo add description
+* This is the list type we use to hold the jobs which are running under the local execution daemon.
+* @todo This is a very old module and probably noone really knows its details any more. Add better documentation.
 *
-*    SGE_ULONG(JL_job_ID) - @todo add summary
+*    SGE_ULONG(JL_job_ID) - Job Id
+*    The Job Id.
+*
+*    SGE_LIST(JL_OS_job_list) - OS Job List
+*    List of OS jobs (JO_Type). There should be one per running Array/PE task having one os job id each.
+*
+*    SGE_ULONG(JL_state) - State
+*    Job State, one of JL_JOB_ACTIVE, JL_JOB_COMPLETE, JL_JOB_DELETED.
+*
+*    SGE_ULONG(JL_tickets) - Tickets
+*    Job Tickets. Used for reprioritization.
+*
+*    SGE_DOUBLE(JL_share) - Share
+*    ptf interval share
+*
+*    SGE_DOUBLE(JL_ticket_share) - Ticket Share
+*    ptf job ticket share
+*
+*    SGE_DOUBLE(JL_timeslice) - Timeslice
+*    ptf calculated timeslice (SX)
+*
+*    SGE_DOUBLE(JL_usage) - Usage
+*    ptf interval combined usage
+*
+*    SGE_DOUBLE(JL_old_usage_value) - Old Usage
+*    ptf interval combined usage
+*
+*    SGE_DOUBLE(JL_adjusted_usage) - Adjusted Usage
+*    ptf interval adjusted usage
+*
+*    SGE_DOUBLE(JL_last_usage) - Last Usage
+*    ptf last interval combined usage
+*
+*    SGE_DOUBLE(JL_old_usage) - Old Usage
+*    prev interval combined usage
+*
+*    SGE_DOUBLE(JL_proportion) - Proportion
 *    @todo add description
 *
-*    SGE_LIST(JL_OS_job_list) - @todo add summary
+*    SGE_DOUBLE(JL_adjusted_proportion) - Adjusted Proportion
 *    @todo add description
 *
-*    SGE_ULONG(JL_state) - @todo add summary
+*    SGE_DOUBLE(JL_adjusted_current_proportion) - Adjusted Current Proportion
 *    @todo add description
 *
-*    SGE_ULONG(JL_tickets) - @todo add summary
+*    SGE_DOUBLE(JL_actual_proportion) - Actual Proportion
 *    @todo add description
 *
-*    SGE_DOUBLE(JL_share) - @todo add summary
+*    SGE_DOUBLE(JL_diff_proportion) - Diff Proportion
 *    @todo add description
 *
-*    SGE_DOUBLE(JL_ticket_share) - @todo add summary
+*    SGE_DOUBLE(JL_last_proportion) - Last Proportion
 *    @todo add description
 *
-*    SGE_DOUBLE(JL_timeslice) - @todo add summary
+*    SGE_DOUBLE(JL_curr_pri) - Current Priority
 *    @todo add description
 *
-*    SGE_DOUBLE(JL_usage) - @todo add summary
+*    SGE_LONG(JL_pri) - Priority
 *    @todo add description
 *
-*    SGE_DOUBLE(JL_old_usage_value) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JL_procfd) - Proc FD
+*    proc file descriptor
 *
-*    SGE_DOUBLE(JL_adjusted_usage) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_last_usage) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_old_usage) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_adjusted_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_adjusted_current_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_actual_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_diff_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_last_proportion) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(JL_curr_pri) - @todo add summary
-*    @todo add description
-*
-*    SGE_LONG(JL_pri) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(JL_procfd) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(JL_interactive) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JL_interactive) - Interactive
+*    interactive flag
 *
 */
 

@@ -322,6 +322,9 @@ object_get_subtype(int nm)
       case PETR_environment:
          ret = VA_Type;
          break;
+      case JR_usage:
+         ret = UA_Type;
+         break;
       case JL_OS_job_list:
          ret = JO_Type;
          break;

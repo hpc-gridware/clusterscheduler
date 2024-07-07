@@ -28,57 +28,59 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Report
 *
-* @todo add description
+* Definition of a job report sent from sge_execd to sge_qmaster.
+* Job reports are sent for every running array task and every task of a tightly integrated parallel job.
 *
-*    SGE_ULONG(JR_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_job_number) - Job Number
+*    The job number / job id of the corresponding job.
 *
-*    SGE_ULONG(JR_ja_task_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_ja_task_number) - Array Task Number
+*    The array task number / id of the corresponding array task.
 *
-*    SGE_STRING(JR_queue_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JR_queue_name) - Queue Name
+*    Queue this job is running in / tried to run in.
 *
-*    SGE_ULONG(JR_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_state) - State
+*    Either JRUNNING or JEXITING, JRUNNING is sent as ack for jobdelivery and in the load_report_interval.
 *
-*    SGE_ULONG(JR_failed) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_failed) - Failed
+*    Failure code, e.g. EESTATE_NO_CONFIG, EESTATE_NO_PID, ...
 *
-*    SGE_ULONG(JR_general_failure) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_general_failure) - General Failure
+*    General failure code, e.g. GFSTATE_NO_HALT, GFSTATE_QUEUE, ...
 *
-*    SGE_STRING(JR_err_str) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JR_err_str) - Error String
+*    Error description for failed jobs.
 *
-*    SGE_LIST(JR_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JR_usage) - Usage
+*    List of resource usage by the job/task, e.g. wallclock, cpu, mem, ...
 *
-*    SGE_ULONG(JR_job_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_job_pid) - Job Pid
+*    Process Id of the job script / the toplevel process of the job.
 *
-*    SGE_ULONG(JR_ckpt_arena) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_ckpt_arena) - Checkpoint Arena
+*    If there is a checkpoint in the arena.
 *
-*    SGE_STRING(JR_pe_task_id_str) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JR_pe_task_id_str) - Pe Task Id
+*    For tasks of tightly integrated parallel jobs: The tasks unique id.
+*    It consists of the host name and a sequential number, e.g. myhostname.5
 *
-*    SGE_STRING(JR_osjobid) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JR_osjobid) - OS Job Id
+*    String containing osjobid for ckpt jobs.
 *
-*    SGE_ULONG(JR_wait_status) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JR_wait_status) - Wait Status
+*    japi_wait() 'status' information.
 *
-*    SGE_BOOL(JR_flush) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JR_flush) - Flush
+*    Used in sge_execd: Whether to send the job report immediately / as early as possible.
 *
-*    SGE_BOOL(JR_no_send) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JR_no_send) - No Send
+*    Used in sge_execd: Do not send the job report, e.g. for pe tasks when accounting_summary is configured.
 *
-*    SGE_BOOL(JR_delay_report) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JR_delay_report) - Delay Report
+*    Used in sge_execd: Delay sending of the job report. Used for qsub -sync/DRMAA jobs after a qmaster failover.
 *
 */
 
