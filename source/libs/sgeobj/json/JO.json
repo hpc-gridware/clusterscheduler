@@ -1,55 +1,61 @@
 {
 	"className":	"OsJob",
-	"summary":	"@todo add summary",
+	"summary":	"OS Job",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to hold the list of"
+         }, {
+			"line":	"OS jobs being tracked for each PTF job. There"
+         }, {
+			"line":	"will normally only be one OS job per PTF job,"
+         }, {
+			"line":	"except in the case of tightly integrated parallel jobs or jobs with multiple tasks."
 		}],
 	"cullPrefix":	"JO",
 	"attributes":	[{
 			"name":	"OS_job_ID",
-			"summary":	"@todo add summary",
+			"summary":	"OS Job Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"OS job id (lower 32 bits)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"OS_job_ID2",
-			"summary":	"@todo add summary",
+			"summary":	"OS Job Id 2",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"OS job id (upper 32 bits). @todo Replace the two id fields by one u_long64?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"ja_task_ID",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"In case of an array job: Task number of an array task."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"task_id_str",
-			"summary":	"@todo add summary",
+			"summary":	"Task Id String",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"In case of a tightly integrated parallel job: Pe Task Id String."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job state (JL_JOB_* values)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"PTF interval usage values."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -57,9 +63,9 @@
 			"flags":	[]
 		}, {
 			"name":	"pid_list",
-			"summary":	"@todo add summary",
+			"summary":	"Pid List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of process Ids belonging to this job/task."
 				}],
 			"type":	"lListT",
 			"subClassName":	"JP",

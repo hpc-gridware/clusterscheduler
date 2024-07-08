@@ -28,15 +28,15 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Pid
 *
-* @todo add description
+* This is the list type we use to hold the process ID list for jobs in the PTF O.S. job list.
 *
-*    SGE_ULONG(JP_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JP_pid) - Pid
+*    Process Id.
 *
-*    SGE_ULONG(JP_background) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JP_background) - Background
+*    Background flag. @todo looks as if it is not used, remove it.
 *
 */
 

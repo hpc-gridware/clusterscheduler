@@ -1,15 +1,15 @@
 {
 	"className":	"JobPid",
-	"summary":	"@todo add summary",
+	"summary":	"Job Pid",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to hold the process ID list for jobs in the PTF O.S. job list."
 		}],
 	"cullPrefix":	"JP",
 	"attributes":	[{
 			"name":	"pid",
-			"summary":	"@todo add summary",
+			"summary":	"Pid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Process Id."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -19,9 +19,9 @@
 				}]
 		}, {
 			"name":	"background",
-			"summary":	"@todo add summary",
+			"summary":	"Background",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Background flag. @todo looks as if it is not used, remove it."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

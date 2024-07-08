@@ -28,30 +28,33 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief OS Job
 *
-* @todo add description
+* This is the list type we use to hold the list of
+* OS jobs being tracked for each PTF job. There
+* will normally only be one OS job per PTF job,
+* except in the case of tightly integrated parallel jobs or jobs with multiple tasks.
 *
-*    SGE_ULONG(JO_OS_job_ID) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JO_OS_job_ID) - OS Job Id
+*    OS job id (lower 32 bits)
 *
-*    SGE_ULONG(JO_OS_job_ID2) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JO_OS_job_ID2) - OS Job Id 2
+*    OS job id (upper 32 bits). @todo Replace the two id fields by one u_long64?
 *
-*    SGE_ULONG(JO_ja_task_ID) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JO_ja_task_ID) - Array Task Id
+*    In case of an array job: Task number of an array task.
 *
-*    SGE_STRING(JO_task_id_str) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JO_task_id_str) - Task Id String
+*    In case of a tightly integrated parallel job: Pe Task Id String.
 *
-*    SGE_ULONG(JO_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JO_state) - State
+*    Job state (JL_JOB_* values).
 *
-*    SGE_LIST(JO_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JO_usage_list) - Usage List
+*    PTF interval usage values.
 *
-*    SGE_LIST(JO_pid_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JO_pid_list) - Pid List
+*    List of process Ids belonging to this job/task.
 *
 */
 
