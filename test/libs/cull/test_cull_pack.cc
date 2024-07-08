@@ -41,8 +41,8 @@
 
 #include "cull/cull.h"
 
-#include "uti/sge_profiling.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_string.h"
 
 #include "msg_common.h"
 
@@ -88,6 +88,88 @@ lNameSpace nmv[] = {
         {1, TEST_Size, TEST_Name},
         {0, 0, nullptr}
 };
+
+static bool compare_objects(const lListElem *a, const lListElem *b) {
+   bool ret = true;
+
+   if (a == nullptr && b == nullptr) {
+      return true;
+   }
+
+   if (a == nullptr) {
+      fprintf(stderr, "first object is nullptr\n");
+      ret = false;
+   }
+
+   if (a == nullptr) {
+      fprintf(stderr, "second object is nullptr\n");
+      ret = false;
+   }
+
+   if (sge_strnullcmp(lGetHost(a, TEST_host), lGetHost(b, TEST_host)) != 0) {
+      fprintf(stderr, "TEST_host differs after unpacking: %s vs. %s\n",
+              lGetHost(a, TEST_host), lGetHost(b, TEST_host));
+      ret = false;
+   }
+   if (sge_strnullcmp(lGetString(a, TEST_string), lGetString(b, TEST_string)) != 0) {
+      fprintf(stderr, "TEST_string differs after unpacking: %s vs. %s\n",
+              lGetString(a, TEST_string), lGetString(b, TEST_string));
+      ret = false;
+   }
+   if (lGetDouble(a, TEST_double) != lGetDouble(b, TEST_double)) {
+      fprintf(stderr, "TEST_double differs after unpacking: %f vs. %f\n",
+              lGetDouble(a, TEST_double), lGetDouble(b, TEST_double));
+      ret = false;
+   }
+   if (lGetUlong(a, TEST_ulong) != lGetUlong(b, TEST_ulong)) {
+      fprintf(stderr, "TEST_ulong differs after unpacking: " sge_u32 " vs. " sge_u32 " \n",
+              lGetUlong(a, TEST_ulong), lGetUlong(b, TEST_ulong));
+      ret = false;
+   }
+   if (lGetUlong64(a, TEST_ulong64) != lGetUlong64(b, TEST_ulong64)) {
+      fprintf(stderr, "TEST_ulong64 differs after unpacking: " sge_u64 " vs. " sge_u64 " \n",
+              lGetUlong64(a, TEST_ulong64), lGetUlong64(b, TEST_ulong64));
+      ret = false;
+   }
+   if (lGetBool(a, TEST_bool) != lGetBool(b, TEST_bool)) {
+      fprintf(stderr, "TEST_bool differs after unpacking: %d vs. %d\n",
+              lGetBool(a, TEST_bool), lGetBool(b, TEST_bool));
+      ret = false;
+   }
+   if (lGetRef(b, TEST_ref) != nullptr) {
+      fprintf(stderr, "TEST_ref should be nullptr after unpacking but is: %p\n",
+              lGetRef(b, TEST_ref));
+      ret = false;
+   }
+   const lListElem *ao = lGetObject(a, TEST_object);
+   const lListElem *bo = lGetObject(b, TEST_object);
+   if (!compare_objects(ao, bo)) {
+      ret = false;
+   }
+
+   const lList *al = lGetList(a, TEST_list);
+   const lList *bl = lGetList(b, TEST_list);
+   if (al == nullptr && bl == nullptr) {
+      ;
+   } else {
+      if (lGetNumberOfElem(al) != lGetNumberOfElem(bl)) {
+         fprintf(stderr, "TEST_list have different number of elements\n");
+         ret = false;
+      } else {
+         const lListElem *ae = lFirst(al), *be = lFirst(bl);
+         while (ae != nullptr && be != nullptr) {
+            if (!compare_objects(ae, be)) {
+               ret = false;
+               break;
+            }
+            ae = lNext(ae);
+            be = lNext(be);
+         }
+      }
+   }
+
+   return ret;
+}
 
 int main(int argc, char *argv[]) {
    const char *const filename = "test_cull_pack.txt";
@@ -181,6 +263,9 @@ int main(int argc, char *argv[]) {
 
    if ((pack_ret = cull_unpack_elem(&copy_pb, &copy, TEST_Type)) != PACK_SUCCESS) {
       printf("unpacking element failed: %s\n", cull_pack_strerror(pack_ret));
+      return EXIT_FAILURE;
+   }
+   if (!compare_objects(ep, copy)) {
       return EXIT_FAILURE;
    }
    clear_packbuffer(&pb);
