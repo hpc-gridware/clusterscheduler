@@ -66,7 +66,13 @@ yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel
 yum install -y epel-release
 yum install -y tcsh expect
 yum install -y libdb libdb-devel hwloc hwloc-devel openssl-devel
-yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel
+```
+#### for repository drmaa-java
+
+Need Java >= 1.8 and Maven.   
+Maven (`mvn`) is not in `PATH` by default, source `/opt/rh/rh-maven35/enable`.
+```
+yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel rh-maven35
 ```
 
 ### Debian 12
@@ -79,13 +85,22 @@ apt-get install -y expect tcl tdom gnuplot vim
 apt-get install -y tcsh xterm expect tcl gnuplot
 ```
 
+#### for repository drmaa-java
+```
+apt-get install y openjdk-17-jdk maven
+```
+
 ### FreeBSD 13/14
 
 ```
 pkg install cmake git autoconf automake gettext bash libudev-devd
 pkg install expect xterm gnuplot vim mailx
 pkg install hs-pandoc texlive-full tex-xetex
-pkg install openjdk8-8.402.06.1_1
+```
+
+#### for repository drmaa-java
+```
+pkg install openjdk8-8.402.06.1_1 maven
 ```
 
 ### macOS 14 (default for darwin-arm64)
@@ -99,6 +114,10 @@ brew install pandoc texlive
 brew install doxygen graphviz
 ```
 
+#### for repository drmaa-java
+```
+```
+
 ### Raspian 11
 
 ```
@@ -107,6 +126,11 @@ apt-get install expect xterm gnuplot tdom
 ```
 
 `cmake` needs to be (compiled and) installed manually because the default `cmake` package just provides version 3.18.
+
+#### for repository drmaa-java
+```
+apt-get install -y openjdk-8-jdk maven
+```
 
 ### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
 and only for lx-amd64
@@ -118,10 +142,14 @@ dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
-dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel
 ```
 
 Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
+
+#### for repository drmaa-java
+```
+dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel maven
+```
 
 ### Solaris 11 (default for sol-amd64)
 
@@ -137,18 +165,29 @@ pkg install pkg:/shell/expect
 pkg install pkg:/developer/documentation-tool/doxygen
 pkg install pkg:/image/graphviz
 pkg install pkg:/image/gnuplot
+```
+
+#### for repository drmaa-java
+```
 pkg install pkg:/developer/java/jdk-8
 ```
+There is no Maven package in the Solaris 11 package manager,
+so you need to install it [manually](https://maven.apache.org/install.html).
 
 ### SUSE Tumbleweed (default for lx-riscv64)
 
 ```
-zypper install --type pattern devel_C_C++
-zypper install gdb cmake git patchelf 
-zypper install openssl libtirpc-devel systemd-devel
-zypper install doxygen graphviz
-zypper install tcl expect vim xterm mailx perl gnuplot
-zypper install texlive pandoc
+zypper install -y --type pattern devel_C_C++
+zypper install -y gdb cmake git patchelf 
+zypper install -y openssl libtirpc-devel systemd-devel
+zypper install -y doxygen graphviz
+zypper install -y tcl expect vim xterm mailx perl gnuplot
+zypper install -y texlive pandoc
+```
+
+#### for repository drmaa-java
+```
+zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven
 ```
 
 ### Ubuntu 20/22/24
@@ -160,6 +199,11 @@ apt-get install -y doxygen graphviz pandoc
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y pandoc texlive*
+```
+
+#### for repository drmaa-java
+```
+apt-get install -y openjdk-8-jdk maven
 ```
 
 ## Clone the Required Repositories
