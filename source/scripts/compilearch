@@ -155,7 +155,7 @@ case $buildarch in
    lx-armhf)
       BUILDARCH=LINUXARMHF
       COMPILE_ARCH=LINUXARMHF
-      TARGET_BITS=TARGET_64BIT
+      TARGET_BITS=TARGET_32BIT
       ;;
    lx-ia64)
       BUILDARCH=LINUXIA64
