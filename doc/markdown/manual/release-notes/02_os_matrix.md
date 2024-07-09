@@ -15,7 +15,7 @@ xxQS_NAMExx components on the other axis.
 | Centos Linux     | 8       | ppc64le      | x                         | x                 | x                        |
 | Rocky Linux      | 8       | ppc64le      | x                         | x                 | x                        |
 |                  |         |              |                           |                   |                          |
-| SUSE Tumbleweed  |         | Risc-V       | a                         | x                 | x                        |
+| SUSE Tumbleweed  |         | Risc-V64     | a                         | x                 | x                        |
 |                  |         |              |                           |                   |                          |
 | Alma Linux       | 8       | x86-64       | x                         | x                 | x                        |
 | Alma Linux       | 9       | x86-64       | x                         | x                 | x                        |
@@ -31,12 +31,13 @@ xxQS_NAMExx components on the other axis.
 | Solaris          | 11      | x86-64       | x                         | x                 | x                        |
 | SUSE Leap Linux  | 15      | x86-64       | x                         | x                 | x                        |
 | SUSE Tumbleweed  |         | x86-64       | a                         | x                 | x                        |
-| Ubuntu Linux     | 2022    | x86-64       | x                         | x                 | x                        |
-| Ubuntu Linux     | 2024    | x86-64       | x                         | x                 | x                        |
+| Ubuntu Linux     | 20.04   | x86-64       | x                         | x                 | x                        |
+| Ubuntu Linux     | 22.04   | x86-64       | x                         | x                 | x                        |
+| Ubuntu Linux     | 24.04   | x86-64       | x                         | x                 | x                        |
 
--: Unsupported
-a: Available but still not supported
-x: Supported
+-: Unsupported  
+a: Available but still not supported  
+x: Supported  
 
 > **Note**
 > 
