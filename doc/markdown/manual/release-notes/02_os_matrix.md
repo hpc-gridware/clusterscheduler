@@ -4,7 +4,7 @@ The following table shows the matrix of operating systems, versions and architec
 xxQS_NAMExx components on the other axis. 
 
 | Operating System | Version | Architecture | Master and Shadow Service | Execution Service | Admin and Submit Clients |
-|:-----------------|:--------|:-------------|---------------------------|:------------------|:-------------------------|
+|:-----------------|:--------|:-------------|:-------------------------:|:-----------------:|:------------------------:|
 | macOS Sonoma     | 14      | ARM64        | a                         | a                 | x                        |
 | Rocky Linux      | 8       | ARM64        | x                         | x                 | x                        |
 | Rocky Linux      | 9       | ARM64        | x                         | x                 | x                        |
