@@ -5,15 +5,38 @@ xxQS_NAMExx components on the other axis.
 
 | Operating System | Version | Architecture | Master and Shadow Service | Execution Service | Admin and Submit Clients |
 |:-----------------|:--------|:-------------|---------------------------|:------------------|:-------------------------|
-| Alma Linux       | 8/9     | x86-64       | x                         | x                 | x                        |
-| Redhat Linux     | 8/9     | x86-64       | x                         | x                 | x                        |
-| Rocky Linux      | 8/9     | x86-64       | x                         | x                 | x                        |
-| Ubuntu Linux     | 22/24   | x86-64       | x                         | x                 | x                        |
+| macOS Sonoma     | 14      | ARM64        | a                         | a                 | x                        |
+| Rocky Linux      | 8       | ARM64        | x                         | x                 | x                        |
+| Rocky Linux      | 9       | ARM64        | x                         | x                 | x                        |
+| Raspbian Linux   | 11      | ARM64        | x                         | x                 | x                        |
+| Raspbian Linux   | 12      | ARM64        | x                         | x                 | x                        |
 |                  |         |              |                           |                   |                          |
-| Free BSD         | 13/14   | ARM64        |                           |                   | x                        |
-| macOS Sonoma     | 14      | ARM64        |                           |                   | x                        |
-| Rocky Linux      | 8/9     | ARM64        | x                         | x                 | x                        |
-| Raspbian Linux   | 11      | ARM64        |                           |                   | x                        |
+| Alma Linux       | 8       | ppc64le      | x                         | x                 | x                        |
+| Centos Linux     | 8       | ppc64le      | x                         | x                 | x                        |
+| Rocky Linux      | 8       | ppc64le      | x                         | x                 | x                        |
+|                  |         |              |                           |                   |                          |
+| SUSE Tumbleweed  |         | Risc-V       | a                         | x                 | x                        |
+|                  |         |              |                           |                   |                          |
+| Alma Linux       | 8       | x86-64       | x                         | x                 | x                        |
+| Alma Linux       | 9       | x86-64       | x                         | x                 | x                        |
+| CentOS Linux     | 7       | x86-64       | x                         | x                 | x                        |
+| CentOS Linux     | 8       | x86-64       | x                         | x                 | x                        |
+| CentOS Linux     | 9       | x86-64       | x                         | x                 | x                        |
+| Free BSD         | 13      | x86-64       | a                         | x                 | x                        |
+| Free BSD         | 14      | x86-64       | a                         | x                 | x                        |
+| Redhat Linux     | 8       | x86-64       | x                         | x                 | x                        |
+| Redhat Linux     | 9       | x86-64       | x                         | x                 | x                        |
+| Rocky Linux      | 8       | x86-64       | x                         | x                 | x                        |
+| Rocky Linux      | 9       | x86-64       | x                         | x                 | x                        |
+| Solaris          | 11      | x86-64       | x                         | x                 | x                        |
+| SUSE Leap Linux  | 15      | x86-64       | x                         | x                 | x                        |
+| SUSE Tumbleweed  |         | x86-64       | a                         | x                 | x                        |
+| Ubuntu Linux     | 2022    | x86-64       | x                         | x                 | x                        |
+| Ubuntu Linux     | 2024    | x86-64       | x                         | x                 | x                        |
+
+-: Unsupported
+a: Available but still not supported
+x: Supported
 
 > **Note**
 > 
