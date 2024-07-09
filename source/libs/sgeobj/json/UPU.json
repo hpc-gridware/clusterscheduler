@@ -1,15 +1,21 @@
 {
 	"className":	"JobUsage",
-	"summary":	"@todo add summary",
+	"summary":	"Job Usage",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to hold the"
+         }, {
+			"line":	"information for user/project. This objects are targets of throwing"
+         }, {
+			"line":	"tickets to them and as usage accumulators. There are no real differences"
+         }, {
+			"line":	"at the moment, so putting them together is convenient."
 		}],
 	"cullPrefix":	"UPU",
 	"attributes":	[{
 			"name":	"job_number",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job number. Usage of individual array tasks and/or PE tasks is accumulated."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -23,9 +29,9 @@
 				}]
 		}, {
 			"name":	"old_usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Old Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"UA_Type still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",

@@ -28,15 +28,18 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Usage
 *
-* @todo add description
+* This is the list type we use to hold the
+* information for user/project. This objects are targets of throwing
+* tickets to them and as usage accumulators. There are no real differences
+* at the moment, so putting them together is convenient.
 *
-*    SGE_ULONG(UPU_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UPU_job_number) - Job Number
+*    The job number. Usage of individual array tasks and/or PE tasks is accumulated.
 *
-*    SGE_LIST(UPU_old_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UPU_old_usage_list) - Old Usage List
+*    UA_Type still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster.
 *
 */
 
