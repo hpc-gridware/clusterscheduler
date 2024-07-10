@@ -71,6 +71,7 @@
 *    CONSUMABLE_NO
 *    CONSUMABLE_YES
 *    CONSUMABLE_JOB
+*    CONSUMABLE_HOST
 *
 *    SGE_STRING(CE_defaultval) - Default Value
 *    Default value (default request) as string.

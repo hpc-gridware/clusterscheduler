@@ -69,7 +69,8 @@ enum {
 enum {
    CONSUMABLE_NO = 0,
    CONSUMABLE_YES,
-   CONSUMABLE_JOB
+   CONSUMABLE_JOB,
+   CONSUMABLE_HOST
 };
 
 /* bit mask for CE_dominant */

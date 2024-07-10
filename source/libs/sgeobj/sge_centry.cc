@@ -343,15 +343,15 @@ map_req2str(u_long32 op)
 *  NOTES
 *     MT-NOTE: map_consumable2str() is not safe 
 *******************************************************************************/
-const char * map_consumable2str(u_long32 op)
-{
+const char *map_consumable2str(u_long32 op) {
    static const char *opv[] = {
       "NO",       /* CONSUMABLE_NO */
       "YES",      /* CONSUMABLE_YES */
       "JOB",      /* CONSUMABLE_JOB */
+      "HOST",     /* CONSUMABLE_HOST */
    };
 
-   if (op > CONSUMABLE_JOB) {
+   if (op > CONSUMABLE_HOST) {
       op = CONSUMABLE_NO;
    }
    return opv[op];
