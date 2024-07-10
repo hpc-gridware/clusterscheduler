@@ -29,6 +29,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
 
+#include "uti/sge_string.h"
+
 #include "sge_sched_thread_rsmap.h"
 
 static bool
@@ -165,11 +167,19 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job,
       // loop over the gdil and figure out the hosts
       // Attention: One host can appear multiple times in gdil (for different queue instances)!
       const lListElem *gdil_ep;
+      const char *last_host = nullptr;
       for_each_ep(gdil_ep, gdil) {
          const char *host_name = lGetHost(gdil_ep, JG_qhostname);
+
+         if (consumable == CONSUMABLE_HOST && sge_strnullcmp(last_host, host_name) == 0) {
+            // we book HOST consumables only once per host
+            continue;
+         }
+         last_host = host_name;
+
          u_long32 slots = lGetUlong(gdil_ep, JG_slots);
-         if (consumable == CONSUMABLE_JOB) {
-            // we consume only once for the master task
+         if (consumable == CONSUMABLE_JOB || consumable == CONSUMABLE_HOST) {
+            // we consume only once for the master task / once per host
             slots = 1;
          }
 
