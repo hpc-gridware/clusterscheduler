@@ -53,7 +53,7 @@ target_link_libraries(${DRMAA_LIB_NAME} PRIVATE
       comm
       commlists
       uti
-      ${SGE_LIBS}
+      ${SGE_LIBS_SHARED}
 )
 
 # test binaries

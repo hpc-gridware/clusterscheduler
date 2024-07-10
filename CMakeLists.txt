@@ -178,12 +178,12 @@ if (WITH_JNI)
    endif()
 endif()
 
-
 if (SGE_ARCH MATCHES "fbsd-amd64")
-   set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)
+   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)
 else ()
-   set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
+   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
 endif ()
+set(SGE_LIBS ${SGE_JEMALLOC_LIB} ${SGE_LIBS_SHARED})
 
 if (INSTALL_SGE_DOC)
    include(cmake/BuildMarkdownMan.cmake)
