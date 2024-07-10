@@ -28,39 +28,51 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Checkpoint
 *
-* @todo add description
+* This is the list type to hold the checkpointing object
+* for the interfaces to the various supported checkpointing mechanisms.
 *
-*    SGE_STRING(CK_name) - @todo add summary
+*    SGE_STRING(CK_name) - Name
 *    @todo add description
 *
-*    SGE_STRING(CK_interface) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_interface) - Interface
+*    The type of checkpointing to be used, e.g.
+*     -hibernator
+*     -cpr @todo no longer supported SGI kernel level checkpointing, remove
+*     -cray-ckpt @todo no longer supported Cray kernel level checkpointing, remove
+*     -transparent, using a checkpointing library like Condor
+*     -userdefined, some user defined method
+*     -application-level, same as userdefined, all interface commands except restart are used, @todo verify
 *
-*    SGE_STRING(CK_ckpt_command) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_ckpt_command) - Checkpoint Command
+*    Commandline to be executed to initiate a checkpoint.
 *
-*    SGE_STRING(CK_migr_command) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_migr_command) - Migration Command
+*    Commandline to be executed to initiate a migration of a job (from one host to another one).
 *
-*    SGE_STRING(CK_rest_command) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_rest_command) - Restart Command
+*    Commandline to be executed to restart a checkpointed application.
 *
-*    SGE_STRING(CK_ckpt_dir) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_ckpt_dir) - Checkpoint Directory
+*    A directory to which checkpoints shall be written.
 *
-*    SGE_STRING(CK_when) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_when) - When
+*    When a checkpoint shall be written, one or a combination of:
+*     n: no checkpoint is performed
+*     s: when the execution service is shutdown
+*     m: checkpoint every minimum CPU interval (see queue configuration)
+*     x: when the job gets suspended
+*     an interval: in the specified interval
 *
-*    SGE_STRING(CK_signal) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_signal) - Signal
+*    A Unix signal to be sent to the jobs process(es) in order to initiate a checkpoint.
 *
-*    SGE_ULONG(CK_job_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CK_job_pid) - Job Pid
+*    @todo not used and can be removed?
 *
-*    SGE_STRING(CK_clean_command) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CK_clean_command) - Clean Command
+*    Commandline to be executed after checkpointing to clean up.
 *
 */
 
