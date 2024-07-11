@@ -28,21 +28,23 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Path Alias
 *
-* @todo add description
+* Object holding information necessary to realize path aliasing.
+* Path aliasing is configured in $SGE_ROOT/$SGE_CELL/sge_aliases and/or $HOME/.sge_aliases
+* See man page sge_aliases.5
 *
-*    SGE_STRING(PA_origin) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PA_origin) - Original Path
+*    The original path before applying aliasing.
 *
-*    SGE_HOST(PA_submit_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(PA_submit_host) - Submit Host
+*    The host from which the job was submitted.
 *
-*    SGE_HOST(PA_exec_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(PA_exec_host) - Exec Host
+*    The destination execution host.
 *
-*    SGE_STRING(PA_translation) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PA_translation) - Translation
+*    The path after applying path aliasing.
 *
 */
 

@@ -1,21 +1,23 @@
 {
 	"className":	"KerberosAuthentication",
-	"summary":	"@todo add summary",
+	"summary":	"Kerberos Authentication",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to hold the client connection list for kerberos authentication."
+         }, {
+			"line":	"@todo can probably be removed: There is no usage of KRB_* attributes in the code, not even in source/security/krb"
 		}],
 	"cullPrefix":	"KRB",
 	"attributes":	[{
 			"name":	"commproc",
-			"summary":	"@todo add summary",
+			"summary":	"Commproc Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Commproc Id of the connection (to sge_qmaster?) from commlib."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Id",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -23,7 +25,7 @@
 			"flags":	[]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -31,7 +33,7 @@
 			"flags":	[]
 		}, {
 			"name":	"timestamp",
-			"summary":	"@todo add summary",
+			"summary":	"Timestamp",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -39,7 +41,7 @@
 			"flags":	[]
 		}, {
 			"name":	"auth_context",
-			"summary":	"@todo add summary",
+			"summary":	"Authentication Context",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -47,7 +49,7 @@
 			"flags":	[]
 		}, {
 			"name":	"tgt_list",
-			"summary":	"@todo add summary",
+			"summary":	"TGT List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],

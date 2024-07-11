@@ -1,15 +1,19 @@
 {
 	"className":	"PathAlias",
-	"summary":	"@todo add summary",
+	"summary":	"Path Alias",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Object holding information necessary to realize path aliasing."
+         }, {
+			"line":	"Path aliasing is configured in $SGE_ROOT/$SGE_CELL/sge_aliases and/or $HOME/.sge_aliases"
+         }, {
+			"line":	"See man page sge_aliases.5"
 		}],
 	"cullPrefix":	"PA",
 	"attributes":	[{
 			"name":	"origin",
-			"summary":	"@todo add summary",
+			"summary":	"Original Path",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The original path before applying aliasing."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +23,9 @@
 				}]
 		}, {
 			"name":	"submit_host",
-			"summary":	"@todo add summary",
+			"summary":	"Submit Host",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The host from which the job was submitted."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -29,9 +33,9 @@
 				}]
 		}, {
 			"name":	"exec_host",
-			"summary":	"@todo add summary",
+			"summary":	"Exec Host",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The destination execution host."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -39,9 +43,9 @@
 				}]
 		}, {
 			"name":	"translation",
-			"summary":	"@todo add summary",
+			"summary":	"Translation",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The path after applying path aliasing."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
