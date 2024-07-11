@@ -409,3 +409,5 @@
 [CS-357](https://hpc-gridware.atlassian.net/browse/CS-357) Libtirpc is not found on lx-riscv64 \(Suse Tumbleweed\)
 
 [CS-362](https://hpc-gridware.atlassian.net/browse/CS-362) libdrmaa.so has unresolved symbols hwloc\_\*
+
+[CS-409](https://hpc-gridware.atlassian.net/browse/CS-409) ncores is incorrectly reported as the number of threads
