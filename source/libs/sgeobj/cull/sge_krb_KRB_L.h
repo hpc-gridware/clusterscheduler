@@ -28,26 +28,27 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Kerberos Authentication
 *
-* @todo add description
+* This is the list type we use to hold the client connection list for kerberos authentication.
+* @todo can probably be removed: There is no usage of KRB_* attributes in the code, not even in source/security/krb
 *
-*    SGE_STRING(KRB_commproc) - @todo add summary
+*    SGE_STRING(KRB_commproc) - Commproc Id
+*    Commproc Id of the connection (to sge_qmaster?) from commlib.
+*
+*    SGE_ULONG(KRB_id) - Id
 *    @todo add description
 *
-*    SGE_ULONG(KRB_id) - @todo add summary
+*    SGE_HOST(KRB_host) - Host
 *    @todo add description
 *
-*    SGE_HOST(KRB_host) - @todo add summary
+*    SGE_ULONG64(KRB_timestamp) - Timestamp
 *    @todo add description
 *
-*    SGE_ULONG64(KRB_timestamp) - @todo add summary
+*    SGE_STRING(KRB_auth_context) - Authentication Context
 *    @todo add description
 *
-*    SGE_STRING(KRB_auth_context) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(KRB_tgt_list) - @todo add summary
+*    SGE_LIST(KRB_tgt_list) - TGT List
 *    @todo add description
 *
 */

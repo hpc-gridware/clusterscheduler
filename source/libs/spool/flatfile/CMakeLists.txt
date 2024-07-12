@@ -51,7 +51,8 @@ target_link_libraries(
       cull
       comm
       uti
-      commlists ${SGE_LIBS})
+      commlists
+)
 
 if (INSTALL_SGE_BIN)
    install(TARGETS spoolc DESTINATION lib/${SGE_ARCH})

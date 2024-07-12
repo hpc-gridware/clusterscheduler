@@ -137,7 +137,7 @@ namespace ocs {
     * @return total number of cores
     */
    int topo_get_total_amount_of_cores() {
-      return topo_get_total_amount_of_type(HWLOC_OBJ_PU);
+      return topo_get_total_amount_of_type(HWLOC_OBJ_CORE);
    }
 
    /**
