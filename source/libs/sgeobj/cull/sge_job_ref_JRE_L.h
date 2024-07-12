@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Reference
 *
-* @todo add description
+* Reference to a job by job id or job name.
+* It is for example used to reference successor or predecessor jobs in job dependencies.
 *
-*    SGE_ULONG(JRE_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JRE_job_number) - Job Number
+*    Job number of the referenced job.
 *
-*    SGE_STRING(JRE_job_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JRE_job_name) - Job Name
+*    Job name of the referenced job(s). Multiple jobs can be referenced by the same name.
 *
 */
 
