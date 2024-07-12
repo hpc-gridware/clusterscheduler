@@ -796,8 +796,9 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
 *
 *******************************************************************************/
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const char *pename, const lList *centry_list, 
-                     const lList *acl_list, const lList *hgrp_list, int slots, bool is_master_task)
+rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const char *pename,
+                     const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
+                     bool is_master_task, bool do_per_host_booking)
 {
    lListElem *rule = nullptr;
    int mods = 0;
@@ -826,7 +827,8 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
       rqs_get_rue_string(&rue_name, rule, username, project,
                                 hostname, qname, pename);
 
-      mods = rqs_debit_rule_usage(job, rule, &rue_name, slots, centry_list, lGetString(rqs, RQS_name), is_master_task);
+      mods = rqs_debit_rule_usage(job, rule, &rue_name, slots, centry_list, lGetString(rqs, RQS_name), is_master_task,
+                                  do_per_host_booking);
 
       sge_dstring_free(&rue_name);
    }
@@ -922,7 +924,8 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
 *     MT-NOTE: rqs_debit_rule_usage() is MT safe 
 *******************************************************************************/
 int
-rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list, const char *obj_name, bool is_master_task) 
+rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list,
+                     const char *obj_name, bool is_master_task, bool do_per_host_booking)
 {
    const lList *limit_list;
    lListElem *limit;
@@ -947,28 +950,16 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
          continue;
       }
 
-      consumable = lGetUlong(raw_centry, CE_consumable);
-      if (consumable == CONSUMABLE_NO) {
-         continue;
-      }
-
-      if (consumable == CONSUMABLE_JOB) {
-         if (!is_master_task) {
-            /* no error, only master_task is debited */
-            continue;
-         }
-         /* it's a job consumable, we don't multiply with slots */
-         if (slots > 0) {
-            debit_slots = 1;
-         } else if (slots < 0) {
-            debit_slots = -1;
-         }
-      }
-
       rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
       if (rue_elem == nullptr) {
          rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
+      }
+
+      consumable = lGetUlong(raw_centry, CE_consumable);
+      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
+      if (debit_slots == 0) {
+         continue;
       }
 
       if (job) {

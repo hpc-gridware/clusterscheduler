@@ -423,7 +423,7 @@ bool spool_default_validate_func(lList **answer_list,
             centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true,
                                      false, true);
             /* necessary to setup actual list of exechost */
-            debit_host_consumable(nullptr, nullptr, object, master_centry_list, 0, true, nullptr);
+            debit_host_consumable(nullptr, nullptr, object, master_centry_list, 0, true, false, nullptr);
 
             if (ensure_attrib_available(nullptr, object, EH_consumable_config_list, master_centry_list)) {
                ret = false;

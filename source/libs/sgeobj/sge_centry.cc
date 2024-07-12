@@ -1613,3 +1613,42 @@ const char *sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dst
    DRETURN(s);
 }
 
+static int slot_signum(int slots) {
+   int ret = 0;
+
+   if (slots > 0) {
+      ret = 1;
+   } else if (slots < 0) {
+      ret = -1;
+   }
+
+   return ret;
+}
+
+int consumable_get_debit_slots(u_long32 consumable, int slots, bool is_master_task, bool do_per_host_booking) {
+   // default: CONSUMABLE_YES
+   int ret = slots;
+
+   if (consumable == CONSUMABLE_NO) {
+      // no consumable booking
+      ret = 0;
+   } else if (consumable == CONSUMABLE_JOB) {
+      if (!is_master_task) {
+         // no master task to do booking for
+         ret = 0;
+      } else {
+         // it's a job consumable, we don't multiply with slots
+         ret = slot_signum(slots);
+      }
+   } else if (consumable == CONSUMABLE_HOST) {
+      if (!do_per_host_booking) {
+         // nothing to do, host consumables for this host are already booked
+         ret = 0;
+      } else {
+         // it's a host consumable, we don't multiply with slots
+         ret = slot_signum(slots);
+      }
+   }
+
+   return ret;
+}

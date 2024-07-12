@@ -51,8 +51,6 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "comm/commlib.h"
-
 #include "sched/debit.h"
 
 #include "spool/sge_spooling.h"
@@ -510,7 +508,7 @@ void centry_redebit_consumables(const lList *centries) {
    }
    for_each_rw (hep, master_ehost_list) {
       lSetList(hep, EH_resource_utilization, nullptr);
-      debit_host_consumable(nullptr, nullptr, hep, master_centry_list, 0, true, nullptr);
+      debit_host_consumable(nullptr, nullptr, hep, master_centry_list, 0, true, false, nullptr);
    }
 
    /* 
@@ -526,6 +524,8 @@ void centry_redebit_consumables(const lList *centries) {
          const lListElem *gdil;
          lListElem *qep = nullptr;
          int slots = 0;
+         const char *last_hostname = nullptr;
+
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int qslots;
 
@@ -536,15 +536,17 @@ void centry_redebit_consumables(const lList *centries) {
             }
 
             qslots = lGetUlong(gdil, JG_slots);
+
+            bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
             debit_host_consumable(jep, jatep, host_list_locate(master_ehost_list,
                                                                lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
-                                  master_task, nullptr);
+                                  master_task, do_per_host_booking, nullptr);
             qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, nullptr);
             slots += qslots;
             master_task = false;
          }
-         debit_host_consumable(jep, jatep, host_list_locate(master_ehost_list,
-                                                            "global"), master_centry_list, slots, true, nullptr);
+         debit_host_consumable(jep, jatep, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
+                               master_centry_list, slots, true, true, nullptr);
       }
    }
 

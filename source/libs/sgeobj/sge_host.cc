@@ -535,3 +535,19 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
    return mods;
 }
 
+bool
+host_do_per_host_booking(const char **last_hostname, const char *hostname)
+{
+   bool ret;
+
+   if (sge_strnullcmp(*last_hostname, hostname) == 0) {
+      // we already booked to this host - do not repeat
+      ret = false;
+   } else {
+      // we did not yet book to this host, it is a new one
+      ret = true;
+      *last_hostname = hostname;
+   }
+
+   return ret;
+}

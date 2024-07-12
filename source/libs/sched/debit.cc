@@ -37,6 +37,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -269,14 +270,13 @@ static int debit_job_from_hosts(
         int *sort_hostlist
 ) {
    lSortOrder *so = nullptr;
-   const lListElem *gel;
    lListElem *hep;
    lListElem *global;
    const char *hnm = nullptr;
    const char *load_formula = nullptr;
    lList *job_load_adjustments = sconf_get_job_load_adjustments();
    u_long64 load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
-   bool master_task = true;
+   bool is_master_task = true;
 
    double old_sort_value, new_sort_value;
 
@@ -289,11 +289,14 @@ static int debit_job_from_hosts(
    load_formula = sconf_get_load_formula();
 
    /* debit from hosts */
-   for_each_ep(gel, granted) {
+   const lListElem *gdil_ep;
+   const char *last_hostname = nullptr;
+   for_each_ep(gdil_ep, granted) {
       u_long32 ulc_factor;
-      int slots = lGetUlong(gel, JG_slots);
+      int slots = lGetUlong(gdil_ep, JG_slots);
 
-      hnm = lGetHost(gel, JG_qhostname);
+      hnm = lGetHost(gdil_ep, JG_qhostname);
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, hnm);
       hep = host_list_locate(host_list, hnm);
 
       if (load_adjustment_decay_time > 0 && lGetNumberOfElem(job_load_adjustments) > 0) {
@@ -303,9 +306,10 @@ static int debit_job_from_hosts(
          lSetUlong(hep, EH_load_correction_factor, ulc_factor);
       }
 
-      debit_host_consumable(job, ja_task, host_list_locate(host_list, "global"), centry_list, slots, master_task, nullptr);
-      debit_host_consumable(job, ja_task, hep, centry_list, slots, master_task, nullptr);
-      master_task = false;
+      debit_host_consumable(job, ja_task, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots, is_master_task, do_per_host_booking,
+                            nullptr);
+      debit_host_consumable(job, ja_task, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
+      is_master_task = false;
 
       /* compute new combined load for this host and put it into the host */
       old_sort_value = lGetDouble(hep, EH_sort_value);
@@ -343,12 +347,12 @@ static int debit_job_from_hosts(
  */
 int
 debit_host_consumable(const lListElem *jep, const lListElem *jatep, lListElem *hep, const lList *centry_list, int slots,
-                      bool is_master_task, bool *just_check) {
+                      bool is_master_task, bool do_per_host_booking, bool *just_check) {
    int mods = 0;
    mods += rc_debit_consumable(jep, hep, centry_list, slots,
                                EH_consumable_config_list,
                                EH_resource_utilization,
-                               lGetHost(hep, EH_name), is_master_task, just_check);
+                               lGetHost(hep, EH_name), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
       mods += ja_task_debit_host_rsmaps(jatep, hep, slots, just_check);
    }
@@ -382,7 +386,6 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, lListElem *h
 static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) {
-   const lListElem *gel = nullptr;
    bool master_task = true;
 
    DENTER(TOP_LAYER);
@@ -393,17 +396,21 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
    }
 
    /* debit for all hosts */
-   for_each_ep(gel, granted) {
+   const lListElem *gdil_ep;
+   const char *last_hostname = nullptr;
+   for_each_ep(gdil_ep, granted) {
       const char *pe_name = nullptr;
       lListElem *rqs = nullptr;
-      int slots = lGetUlong(gel, JG_slots);
+      int slots = lGetUlong(gdil_ep, JG_slots);
 
       if (pe != nullptr) {
          pe_name = lGetString(pe, PE_name);
       }
 
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil_ep, JG_qhostname));
+
       for_each_rw (rqs, rqs_list) {
-         rqs_debit_consumable(rqs, job, gel, pe_name, centry_list, acl_list, hgrp_list, slots, master_task);
+         rqs_debit_consumable(rqs, job, gdil_ep, pe_name, centry_list, acl_list, hgrp_list, slots, master_task, do_per_host_booking);
       }
       master_task = false;
    }

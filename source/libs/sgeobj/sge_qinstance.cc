@@ -703,12 +703,12 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *     MT-NOTE: qinstance_debit_consumable() is MT safe 
 *******************************************************************************/
 int
-qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list,
-                           int slots, bool is_master_task, bool *just_check) {
+qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list, int slots,
+                           bool is_master_task, bool *just_check) {
    return rc_debit_consumable(jep, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
-                              lGetString(qep, QU_qname), is_master_task, just_check);
+                              lGetString(qep, QU_qname), is_master_task, false, just_check);
 }
 
 /****** sgeobj/qinstance/qinstance_message_add() *****************************
@@ -982,9 +982,8 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
 *     consumable resources of the 'ep' object has not changed.
 ******************************************************************************/
 int
-rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list,
-                    int slots, int config_nm, int actual_nm,
-                    const char *obj_name, bool is_master_task,
+rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list, int slots, int config_nm,
+                    int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
                     bool *just_check) {
    lListElem *cr, *dcep;
    const lListElem *cr_config;
@@ -1015,28 +1014,18 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
          DRETURN(-1);
       }
 
-      consumable = lGetUlong(dcep, CE_consumable);
-      if (consumable == CONSUMABLE_NO) {
-         /* no error, nothing to debit */
-         continue;
-      } else if (consumable == CONSUMABLE_JOB) {
-         if (!is_master_task) {
-            /* no error, only_master_task is debited */
-            continue;
-         }
-         /* it's a job consumable, we don't multiply with slots */
-         if (slots > 0) {
-            debit_slots = 1;
-         } else if (slots < 0) {
-            debit_slots = -1;
-         }
-      }
-
-      /* ensure attribute is in actual list */
+      // ensure attribute is in actual list
+      // @todo we could do this only if jep == nullptr - this is the call to initialize booking
       cr = lGetSubStrRW(ep, RUE_name, name, actual_nm);
       if (just_check == nullptr && cr == nullptr) {
          cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
+      }
+
+      consumable = lGetUlong(dcep, CE_consumable);
+      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
+      if (debit_slots == 0) {
+         continue;
       }
 
       if (jep != nullptr) {

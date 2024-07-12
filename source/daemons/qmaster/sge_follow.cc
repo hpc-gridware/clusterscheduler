@@ -476,6 +476,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           */
          {
             bool is_master = true;
+            bool do_per_host_booking = true;
             bool consumables_ok = true;
             int host_slots = 0;
             int total_slots = 0;
@@ -495,13 +496,18 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                next_gdil_ep = lNextRW(gdil_ep);
                if (next_gdil_ep == nullptr || strcmp(host_name, lGetHost(next_gdil_ep, JG_qhostname)) != 0) {
                   hep = host_list_locate(exec_host_list, host_name);
-                  debit_host_consumable(jep, jatp, hep, master_centry_list, host_slots, is_master, &consumables_ok);
+                  debit_host_consumable(jep, jatp, hep, master_centry_list, host_slots, is_master, do_per_host_booking,
+                                        &consumables_ok);
                   if (!consumables_ok) {
                      break;
                   }
 
-                  /* if there is a next host, it is a slave host */
+                  /* if there is a next host
+                   *    - it is a slave host
+                   *    - we have already booked the per host consumables
+                   */
                   is_master = false;
+                  do_per_host_booking = false;
 
                   /* there is a next host: get hostname and reset host slot counter */
                   if (next_gdil_ep != nullptr) {
@@ -514,7 +520,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             /* Per host checks were OK? Then check global host. */
             if (consumables_ok) {
                lListElem *global_hep = host_list_locate(exec_host_list, SGE_GLOBAL_NAME);
-               debit_host_consumable(jep, jatp, global_hep, master_centry_list, total_slots, true, &consumables_ok);
+               debit_host_consumable(jep, jatp, global_hep, master_centry_list, total_slots, true, true,
+                                     &consumables_ok);
             }
 
             /* Consumable check failed - we cannot start this job! */
