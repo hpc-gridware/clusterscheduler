@@ -28,33 +28,35 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Time Event
 *
-* @todo add description
+* Time Event objects are used by the timed event thread in sge_qmaster.
+* Time Event Objects store one time or recurring events which trigger predefined actions.
 *
-*    SGE_ULONG64(TE_when) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(TE_when) - When
+*    Time in µs since epoch when this event must be delivered.
 *
-*    SGE_ULONG(TE_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TE_type) - Type
+*    Used to differ between different event categories from enum te_type_t, e.g.
+*    TYPE_CALENDAR_EVENT, TYPE_SIGNAL_RESEND_EVENT, ...
 *
-*    SGE_ULONG(TE_mode) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TE_mode) - Mode
+*    one-time or recurring event (ONE_TIME_EVENT or RECURRING_EVENT).
 *
-*    SGE_ULONG64(TE_interval) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(TE_interval) - Interval
+*    The event interval in µs, in case of recurring events.
 *
-*    SGE_ULONG(TE_uval0) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TE_uval0) - UVal0
+*    1st ulong key, e.g. the job number for a job specific event like a TYPE_JOB_RESEND_EVENT.
 *
-*    SGE_ULONG(TE_uval1) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TE_uval1) - UVal1
+*    2nd ulong key, e.g. the array task number for a job/task specific event like a TYPE_JOB_RESEND_EVENT.
 *
-*    SGE_STRING(TE_sval) - @todo add summary
-*    @todo add description
+*    SGE_STRING(TE_sval) - String Key
+*    String key, e.g. for a queue instance specific event.
 *
-*    SGE_ULONG(TE_seqno) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TE_seqno) - Sequence Number
+*    Every event is assigned an unique sequence number.
 *
 */
 

@@ -1,71 +1,75 @@
 {
 	"className":	"TimeEvent",
-	"summary":	"@todo add summary",
+	"summary":	"Time Event",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Time Event objects are used by the timed event thread in sge_qmaster."
+         }, {
+			"line":	"Time Event Objects store one time or recurring events which trigger predefined actions."
 		}],
 	"cullPrefix":	"TE",
 	"attributes":	[{
 			"name":	"when",
-			"summary":	"@todo add summary",
+			"summary":	"When",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Time in µs since epoch when this event must be delivered."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used to differ between different event categories from enum te_type_t, e.g."
+         }, {
+					"line":	"TYPE_CALENDAR_EVENT, TYPE_SIGNAL_RESEND_EVENT, ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"mode",
-			"summary":	"@todo add summary",
+			"summary":	"Mode",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"one-time or recurring event (ONE_TIME_EVENT or RECURRING_EVENT)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"interval",
-			"summary":	"@todo add summary",
+			"summary":	"Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The event interval in µs, in case of recurring events."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[]
 		}, {
 			"name":	"uval0",
-			"summary":	"@todo add summary",
+			"summary":	"UVal0",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"1st ulong key, e.g. the job number for a job specific event like a TYPE_JOB_RESEND_EVENT."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"uval1",
-			"summary":	"@todo add summary",
+			"summary":	"UVal1",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"2nd ulong key, e.g. the array task number for a job/task specific event like a TYPE_JOB_RESEND_EVENT."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"sval",
-			"summary":	"@todo add summary",
+			"summary":	"String Key",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"String key, e.g. for a queue instance specific event."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"seqno",
-			"summary":	"@todo add summary",
+			"summary":	"Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Every event is assigned an unique sequence number."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
