@@ -44,6 +44,7 @@ namespace ocs {
       };
 
    private:
+      bool write_comment_header;
       // @todo: do we need to use a mutex for accessing all these config values?
       static std::array<ReportingFileWriter *,NUM_WRITERS> writers;
       static std::string reporting_params;
@@ -58,9 +59,9 @@ namespace ocs {
       static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
 
    public:
-      explicit ReportingFileWriter(std::string filename)
-              : filename(std::move(filename)), mutex(PTHREAD_MUTEX_INITIALIZER),
-              config_flush_time(0), next_flush_time(0) {
+      explicit ReportingFileWriter(std::string filename, bool do_write_comment_header)
+              : write_comment_header(do_write_comment_header), filename(std::move(filename)),
+              mutex(PTHREAD_MUTEX_INITIALIZER), config_flush_time(0), next_flush_time(0) {
       };
 
       virtual ~ReportingFileWriter() {

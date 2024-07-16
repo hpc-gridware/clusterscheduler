@@ -66,7 +66,7 @@ namespace ocs {
    private:
       static const char REPORTING_DELIMITER{':'};
    public:
-      ClassicReportingFileWriter() : BaseReportingFileWriter(bootstrap_get_reporting_file()) {
+      ClassicReportingFileWriter() : BaseReportingFileWriter(bootstrap_get_reporting_file(), true) {
       }
 
       void
@@ -131,7 +131,7 @@ namespace ocs {
    private:
       static const char REPORTING_DELIMITER = ':';
    public:
-      ClassicAccountingFileWriter() : BaseAccountingFileWriter(bootstrap_get_acct_file()) {
+      ClassicAccountingFileWriter() : BaseAccountingFileWriter(bootstrap_get_acct_file(), true) {
       }
 
       bool

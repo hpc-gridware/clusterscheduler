@@ -31,7 +31,8 @@ namespace ocs {
       u_long64 sharelog_interval;
       u_long64 next_sharelog;
    public:
-      explicit BaseReportingFileWriter(std::string filename) : ReportingFileWriter(std::move(filename)),
+      explicit BaseReportingFileWriter(std::string filename, bool write_comment_header)
+      : ReportingFileWriter(std::move(filename), write_comment_header),
          do_joblog(false), log_consumables(false), sharelog_interval(0), next_sharelog(0) {
       }
 

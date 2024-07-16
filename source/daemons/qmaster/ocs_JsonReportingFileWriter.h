@@ -30,7 +30,7 @@ namespace ocs {
    private:
 
    public:
-      JsonReportingFileWriter() : BaseReportingFileWriter(std::string{bootstrap_get_reporting_file()} + ".jsonl") {
+      JsonReportingFileWriter() : BaseReportingFileWriter(std::string{bootstrap_get_reporting_file()} + ".jsonl", false) {
       }
 
       void

@@ -500,8 +500,10 @@ namespace ocs {
       if (size > 0) {
          bool write_comment = false;
 
-         if (!std::filesystem::exists(filename)) {
-            write_comment = true;
+         if (!std::filesystem::exists(filename) || std::filesystem::is_empty(filename)) {
+            if (write_comment_header) {
+               write_comment = true;
+            }
          }
 
          std::ofstream stream;
