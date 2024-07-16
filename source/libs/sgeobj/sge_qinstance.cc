@@ -1003,8 +1003,6 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
    }
 
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
-      int debit_slots = slots;
-      u_long32 consumable;
       name = lGetString(cr_config, CE_name);
       dval = 0;
 
@@ -1012,6 +1010,11 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
       if (!(dcep = centry_list_locate(centry_list, name))) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
+      }
+
+      u_long32 consumable = lGetUlong(dcep, CE_consumable);
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
+         continue;
       }
 
       // ensure attribute is in actual list
@@ -1022,11 +1025,8 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
          /* RUE_utilized_now is implicitly set to zero */
       }
 
-      consumable = lGetUlong(dcep, CE_consumable);
+      int debit_slots;
       debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-      if (debit_slots == 0) {
-         continue;
-      }
 
       if (jep != nullptr) {
          bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);

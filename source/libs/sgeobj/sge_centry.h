@@ -206,4 +206,5 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
 
 const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p);
 
+bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking);
 int consumable_get_debit_slots(u_long32 consumable, int slots, bool is_master_task, bool do_per_host_booking);

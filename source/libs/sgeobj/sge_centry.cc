@@ -1625,29 +1625,54 @@ static int slot_signum(int slots) {
    return ret;
 }
 
+/**
+ * Evaluate if booking for a specific consumable shall actually be done.
+ *
+ * @param[in] consumable type, e.g. CONSUMABLE_NO, CONSUMABLE_YES, ...
+ * @param[in] is_master_task is booking done for the master task of a parallel job (or the one task of a sequential job)
+ * @param[in] do_per_host_booking shall booking be done for a per host consumable (true only for the first task on a host)
+ * @return true, if booking shall be done, else false
+ */
+bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking) {
+   bool ret = true;
+
+   switch (consumable) {
+      case CONSUMABLE_NO:
+         ret = false;
+         break;
+      case CONSUMABLE_JOB:
+         if (!is_master_task) {
+            ret = false;
+         }
+         break;
+      case CONSUMABLE_HOST:
+         if (!do_per_host_booking) {
+            ret = false;
+         }
+         break;
+   }
+
+   return ret;
+}
+
+/**
+ * Returns the number of slots which shall be debited for.
+ * Depends on the consumable type,
+ * for CONSUMABLE_YES it is the given number of slots,
+ * but for CONSUMABLE_JOB and CONSUMABLE_HOST requests are only booked once (1, or -1 for undebiting)
+ *
+ * @param[in] consumable type, e.g. CONSUMABLE_NO, CONSUMABLE_YES, ...
+ * @param[in] slots, the number of slots (tasks) which shall be booked on a resource
+ * @param[in] is_master_task is booking done for the master task of a parallel job (or the one task of a sequential job)
+ * @param[in] do_per_host_booking shall booking be done for a per host consumable (true only for the first task on a host)
+ */
 int consumable_get_debit_slots(u_long32 consumable, int slots, bool is_master_task, bool do_per_host_booking) {
    // default: CONSUMABLE_YES
    int ret = slots;
 
-   if (consumable == CONSUMABLE_NO) {
-      // no consumable booking
-      ret = 0;
-   } else if (consumable == CONSUMABLE_JOB) {
-      if (!is_master_task) {
-         // no master task to do booking for
-         ret = 0;
-      } else {
-         // it's a job consumable, we don't multiply with slots
-         ret = slot_signum(slots);
-      }
-   } else if (consumable == CONSUMABLE_HOST) {
-      if (!do_per_host_booking) {
-         // nothing to do, host consumables for this host are already booked
-         ret = 0;
-      } else {
-         // it's a host consumable, we don't multiply with slots
-         ret = slot_signum(slots);
-      }
+   if (consumable == CONSUMABLE_JOB || consumable == CONSUMABLE_HOST) {
+      // it's a job consumable or a host consumable, we don't multiply with slots
+      ret = slot_signum(slots);
    }
 
    return ret;

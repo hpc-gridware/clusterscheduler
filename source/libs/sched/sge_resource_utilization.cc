@@ -814,7 +814,6 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
    }
 
    for_each_rw (cr_config, lGetList(ep, config_nm)) {
-      u_long32 consumable;
       const char *name = lGetString(cr_config, CE_name);
       double dval = 0.0;
       int debit_slots;
@@ -823,11 +822,10 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
       if (!(dcep = centry_list_locate(centry_list, name))) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
-      } 
+      }
 
-      consumable = lGetUlong(dcep, CE_consumable);
-      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-      if (debit_slots == 0) {
+      u_long32 consumable = lGetUlong(dcep, CE_consumable);
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
          continue;
       }
 
@@ -836,7 +834,9 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
          cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
          /* CE_double is implicitly set to zero */
       }
-   
+
+      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
+
       if (job_get_contribution(jep, nullptr, name, &dval, dcep) && dval != 0.0) {
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval,
@@ -907,11 +907,10 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
       limit_list = lGetList(rule, RQR_limit);
 
       for_each_rw (limit, limit_list) {
-         u_long32 consumable;
          lListElem *raw_centry;
          lListElem *rue_elem;
          double dval = 0.0;
-         int debit_slots = slots;
+         int debit_slots;
 
          centry_name = lGetString(limit, RQRL_name);
          
@@ -920,9 +919,8 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
             continue;
          }
 
-         consumable = lGetUlong(raw_centry, CE_consumable);
-         debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-         if (debit_slots == 0) {
+         u_long32 consumable = lGetUlong(raw_centry, CE_consumable);
+         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
             continue;
          }
 
@@ -931,6 +929,8 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
             rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage, RUE_Type);
             /* RUE_utilized_now is implicitly set to zero */
          }
+
+         debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
          if (job_get_contribution(jep, nullptr, centry_name, &dval, raw_centry) && dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */

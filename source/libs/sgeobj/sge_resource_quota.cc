@@ -937,16 +937,20 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
    limit_list = lGetList(rule, RQR_limit);
 
    for_each_rw(limit, limit_list) {
-      u_long32 consumable;
       lListElem *raw_centry;
       lListElem *rue_elem;
       double dval;
-      int debit_slots = slots;
+      int debit_slots;
 
       centry_name = lGetString(limit, RQRL_name);
       
       if (!(raw_centry = centry_list_locate(centry_list, centry_name))) {
          /* ignoring not defined centry */
+         continue;
+      }
+
+      u_long32 consumable = lGetUlong(raw_centry, CE_consumable);
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
          continue;
       }
 
@@ -956,11 +960,7 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
          /* RUE_utilized_now is implicitly set to zero */
       }
 
-      consumable = lGetUlong(raw_centry, CE_consumable);
       debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-      if (debit_slots == 0) {
-         continue;
-      }
 
       if (job) {
          bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry);
