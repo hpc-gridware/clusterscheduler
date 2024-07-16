@@ -1,23 +1,27 @@
 {
 	"className":	"MultiGdiId",
-	"summary":	"@todo add summary",
+	"summary":	"Multi Gdi Id",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Multiple requests can be sent by a client to sge_qmaster in a single message."
+         }, {
+			"line":	"Every such request gets a unique number."
+         }, {
+			"line":	"A list of MA_Type is used to return the answers to a multi GDI request."
 		}],
 	"cullPrefix":	"MA",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Id of the individual request to associate request with result."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"objects",
-			"summary":	"@todo add summary",
+			"summary":	"Objects",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A list of the requested type containing the result of the request."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -25,9 +29,9 @@
 			"flags":	[]
 		}, {
 			"name":	"answers",
-			"summary":	"@todo add summary",
+			"summary":	"Answers",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A list of answers. This can be error, warning or info messages from processing the request."
 				}],
 			"type":	"lListT",
 			"subClassName":	"AN",

@@ -28,18 +28,20 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Multi Gdi Id
 *
-* @todo add description
+* Multiple requests can be sent by a client to sge_qmaster in a single message.
+* Every such request gets a unique number.
+* A list of MA_Type is used to return the answers to a multi GDI request.
 *
-*    SGE_ULONG(MA_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(MA_id) - Id
+*    Id of the individual request to associate request with result.
 *
-*    SGE_LIST(MA_objects) - @todo add summary
-*    @todo add description
+*    SGE_LIST(MA_objects) - Objects
+*    A list of the requested type containing the result of the request.
 *
-*    SGE_LIST(MA_answers) - @todo add summary
-*    @todo add description
+*    SGE_LIST(MA_answers) - Answers
+*    A list of answers. This can be error, warning or info messages from processing the request.
 *
 */
 

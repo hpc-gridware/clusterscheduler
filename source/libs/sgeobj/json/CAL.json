@@ -1,15 +1,17 @@
 {
 	"className":	"Calendar",
-	"summary":	"@todo add summary",
+	"summary":	"Calendar",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This data structure represents the SGE calendar object."
 		}],
 	"cullPrefix":	"CAL",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The calendar name."
+               }, {
+					"line":	"See man page sge_calendar_conf.5 for detailed information about the attributes."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,9 +27,9 @@
 				}]
 		}, {
 			"name":	"year_calendar",
-			"summary":	"@todo add summary",
+			"summary":	"Year Calendar",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A year calendar as string, e.g. 12.03.2004=12-11=off."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -37,9 +39,9 @@
 				}]
 		}, {
 			"name":	"week_calendar",
-			"summary":	"@todo add summary",
+			"summary":	"Week Calendar",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A week calendar as string, e.g. mon-fri=6-20=suspended."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -49,9 +51,9 @@
 				}]
 		}, {
 			"name":	"parsed_year_calendar",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Year Calendar",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The year calendar parsed to internal data structures."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CA",
@@ -61,9 +63,9 @@
 				}]
 		}, {
 			"name":	"parsed_week_calendar",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Week Calendar",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The week calendar parsed to internal data structures."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CA",

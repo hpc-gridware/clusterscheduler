@@ -411,3 +411,8 @@
 [CS-362](https://hpc-gridware.atlassian.net/browse/CS-362) libdrmaa.so has unresolved symbols hwloc\_\*
 
 [CS-409](https://hpc-gridware.atlassian.net/browse/CS-409) ncores is incorrectly reported as the number of threads
+
+[CS-412](https://hpc-gridware.atlassian.net/browse/CS-412) New jsonl accounting file should not have comments at the beginning
+
+
+

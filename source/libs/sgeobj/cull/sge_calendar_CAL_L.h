@@ -28,24 +28,25 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Calendar
 *
-* @todo add description
+* This data structure represents the SGE calendar object.
 *
-*    SGE_STRING(CAL_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CAL_name) - Name
+*    The calendar name.
+*    See man page sge_calendar_conf.5 for detailed information about the attributes.
 *
-*    SGE_STRING(CAL_year_calendar) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CAL_year_calendar) - Year Calendar
+*    A year calendar as string, e.g. 12.03.2004=12-11=off.
 *
-*    SGE_STRING(CAL_week_calendar) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CAL_week_calendar) - Week Calendar
+*    A week calendar as string, e.g. mon-fri=6-20=suspended.
 *
-*    SGE_LIST(CAL_parsed_year_calendar) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CAL_parsed_year_calendar) - Parsed Year Calendar
+*    The year calendar parsed to internal data structures.
 *
-*    SGE_LIST(CAL_parsed_week_calendar) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CAL_parsed_week_calendar) - Parsed Week Calendar
+*    The week calendar parsed to internal data structures.
 *
 */
 

@@ -27,7 +27,8 @@ namespace ocs {
    class BaseAccountingFileWriter : public ReportingFileWriter {
    private:
    public:
-      explicit BaseAccountingFileWriter(std::string filename) : ReportingFileWriter(std::move(filename)) {
+      explicit BaseAccountingFileWriter(std::string filename, bool write_comment_header)
+      : ReportingFileWriter(std::move(filename), write_comment_header) {
       }
 
       void update_config() override;

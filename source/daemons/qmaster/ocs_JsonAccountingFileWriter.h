@@ -27,7 +27,7 @@ namespace ocs {
    class JsonAccountingFileWriter : public BaseAccountingFileWriter {
    private:
    public:
-      JsonAccountingFileWriter() : BaseAccountingFileWriter(std::string{bootstrap_get_acct_file()} + ".jsonl") {
+      JsonAccountingFileWriter() : BaseAccountingFileWriter(std::string{bootstrap_get_acct_file()} + ".jsonl", false) {
       }
 
       bool create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job, lListElem *ja_task,
