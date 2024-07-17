@@ -1,15 +1,15 @@
 {
 	"className":	"ParsedCalendar",
-	"summary":	"@todo add summary",
+	"summary":	"Parsed Calendar",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This data structure is used for storing a parsed calendar."
 		}],
 	"cullPrefix":	"CA",
 	"attributes":	[{
 			"name":	"yday_range_list",
-			"summary":	"@todo add summary",
+			"summary":	"YearDay Range List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"TMR_Type with begin/end using TM_mday/TM_mon/TM_year."
 				}],
 			"type":	"lListT",
 			"subClassName":	"TMR",
@@ -17,9 +17,9 @@
 			"flags":	[]
 		}, {
 			"name":	"wday_range_list",
-			"summary":	"@todo add summary",
+			"summary":	"WeekDay Range List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"TMR_Type with begin/end using TM_wday."
 				}],
 			"type":	"lListT",
 			"subClassName":	"TMR",
@@ -27,9 +27,9 @@
 			"flags":	[]
 		}, {
 			"name":	"daytime_range_list",
-			"summary":	"@todo add summary",
+			"summary":	"DayTime Range List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"TMR_Type with begin/end using TM_sec/TM_min/TM_hour."
 				}],
 			"type":	"lListT",
 			"subClassName":	"TMR",
@@ -37,9 +37,9 @@
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue state in the given time range, e.g. QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND, ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

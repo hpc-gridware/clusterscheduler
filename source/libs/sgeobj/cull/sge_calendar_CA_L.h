@@ -28,21 +28,21 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Parsed Calendar
 *
-* @todo add description
+* This data structure is used for storing a parsed calendar.
 *
-*    SGE_LIST(CA_yday_range_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CA_yday_range_list) - YearDay Range List
+*    TMR_Type with begin/end using TM_mday/TM_mon/TM_year.
 *
-*    SGE_LIST(CA_wday_range_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CA_wday_range_list) - WeekDay Range List
+*    TMR_Type with begin/end using TM_wday.
 *
-*    SGE_LIST(CA_daytime_range_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CA_daytime_range_list) - DayTime Range List
+*    TMR_Type with begin/end using TM_sec/TM_min/TM_hour.
 *
-*    SGE_ULONG(CA_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CA_state) - State
+*    Queue state in the given time range, e.g. QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND, ...
 *
 */
 
