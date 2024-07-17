@@ -144,6 +144,8 @@
 
 [CS-377](https://hpc-gridware.atlassian.net/browse/CS-377) improve build performance on sol-amd64
 
+[CS-394](https://hpc-gridware.atlassian.net/browse/CS-394) need per HOST consumables
+
 ## New Feature
 
 [CS-30](https://hpc-gridware.atlassian.net/browse/CS-30) Allow more than one data store within qmaster
