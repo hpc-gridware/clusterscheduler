@@ -351,10 +351,16 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, char *ruser, char *r
 }
 
 
-/*-------------------------------------------------------------------------*/
-/* sge_gdi_delete_job                                                    */
-/*    called in sge_c_gdi_del                                              */
-/*-------------------------------------------------------------------------*/
+/**
+ * sge_gdi_delete_job
+ *    - called in sge_c_gdi_del (possibly multiple times, e.g. qdel 1,2 will trigger 2 calls)
+ * @param[in] idep ID_Type element, can contain job ids, job names (with patterns), a user list (with patterns)
+ * @param[out] alpp to return messages (INFO, WARNING, ERROR) to the caller
+ * @param[in] ruser the user who executed qdel
+ * @param[in] rhost the host on which qdel was executed
+ * @param[in] sub_command sub command being part of the request (SGE_GDI_ALL_JOBS, SGE_GDI_ALL_USERS)
+ * @param[in] monitor for monitoring qmaster threads
+ */
 int
 sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
@@ -379,7 +385,7 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
 
    DENTER(TOP_LAYER);
 
-   if (!idep || !ruser || !rhost) {
+   if (idep == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -463,12 +469,31 @@ sge_gdi_del_job(lListElem *idep, lList **alpp, char *ruser, char *rhost, int sub
                    jid_flag ? jid_str : nullptr, &job_where);
 
    u_long64 start_time = sge_get_gmt64();
+
+   /* See CS-415 speed up job deletion by reverse order
+    * going over the job list in reverse order significantly lowers the probability of running into
+    * a problematic behavior of mass job deletion (e.g. qdel "*"):
+    * - the first bunch of jobs gets deleted,
+    *   then deletion pauses after a certain time period and qdel has to repeat the request
+    * - in the meantime scheduler sees free slots and starts the next pending jobs
+    * - exactly these jobs are deleted next
+    * - this repeats over and over again and drastically slows down the deletion (and might cause other issues as well)
+    */
+//#define DEL_JOB_REVERSE_ORDER
+#if defined(DEL_JOB_REVERSE_ORDER)
+   nxt = lLastRW(master_job_list);
+#else
    nxt = lFirstRW(master_job_list);
+#endif
    while ((job = nxt)) {
       u_long32 job_number = 0;
       bool deletion_time_reached = false;
 
+#if defined(DEL_JOB_REVERSE_ORDER)
+      nxt = lPrevRW(job);
+#else
       nxt = lNextRW(job);
+#endif
 
       if ((job_where != nullptr) && !lCompare(job, job_where)) {
          continue;
