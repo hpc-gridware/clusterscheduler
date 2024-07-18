@@ -28,15 +28,15 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Time Range
 *
-* @todo add description
+* Used for time ranges represented by two (begin and end) timestamps (TM_Type).
 *
-*    SGE_LIST(TMR_begin) - @todo add summary
-*    @todo add description
+*    SGE_LIST(TMR_begin) - Begin
+*    Begin time stamp.
 *
-*    SGE_LIST(TMR_end) - @todo add summary
-*    @todo add description
+*    SGE_LIST(TMR_end) - End
+*    End time stamp.
 *
 */
 

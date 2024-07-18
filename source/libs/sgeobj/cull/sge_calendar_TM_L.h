@@ -28,36 +28,36 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Date Time
 *
-* @todo add description
+* An object of this type represents a timestamp (date and time). It mostly corresponds to the struct tm, see man.
 *
-*    SGE_ULONG(TM_mday) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_mday) - Month Day
+*    Day of the month, 1-31 (@todo 32 in the old documentation, does it have a special meaning?).
 *
-*    SGE_ULONG(TM_mon) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_mon) - Month
+*    Month, 0-11.
 *
-*    SGE_ULONG(TM_year) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_year) - Year
+*    The number of years since 1900.
 *
-*    SGE_ULONG(TM_sec) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_sec) - Seconds
+*    Seconds, 0-59
 *
-*    SGE_ULONG(TM_min) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_min) - Minute
+*    Minutes, 0-59
 *
-*    SGE_ULONG(TM_hour) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_hour) - Hor
+*    Hour, 0-23
 *
-*    SGE_ULONG(TM_wday) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_wday) - Week Day
+*    Week day, 0-6.
 *
-*    SGE_ULONG(TM_yday) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_yday) - Year Day
+*    Day in the year, 0-365.
 *
-*    SGE_ULONG(TM_isdst) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(TM_isdst) - Is Daylight Saving Time
+*    Whether daylight saving time is in effect (0 = false, 1 = true).
 *
 */
 

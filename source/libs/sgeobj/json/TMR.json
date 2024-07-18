@@ -1,15 +1,15 @@
 {
 	"className":	"TimeRange",
-	"summary":	"@todo add summary",
+	"summary":	"Time Range",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used for time ranges represented by two (begin and end) timestamps (TM_Type)."
 		}],
 	"cullPrefix":	"TMR",
 	"attributes":	[{
 			"name":	"begin",
-			"summary":	"@todo add summary",
+			"summary":	"Begin",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Begin time stamp."
 				}],
 			"type":	"lListT",
 			"subClassName":	"TM",
@@ -17,9 +17,9 @@
 			"flags":	[]
 		}, {
 			"name":	"end",
-			"summary":	"@todo add summary",
+			"summary":	"End",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"End time stamp."
 				}],
 			"type":	"lListT",
 			"subClassName":	"TM",
