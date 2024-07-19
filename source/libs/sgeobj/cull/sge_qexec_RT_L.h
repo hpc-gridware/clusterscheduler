@@ -28,21 +28,22 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Remote Task
 *
-* @todo add description
+* An object of this type represents a remote task.
+* It is used in qrsh -inherit starting tasks within a tightly integrated parallel job.
 *
-*    SGE_STRING(RT_tid) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RT_tid) - Task Id
+*    Task Id.
 *
-*    SGE_HOST(RT_hostname) - @todo add summary
-*    @todo add description
+*    SGE_HOST(RT_hostname) - Hostname
+*    Remote host where the task is running on.
 *
-*    SGE_ULONG(RT_status) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RT_status) - Status
+*    Status as it comes from waitpid(2).
 *
-*    SGE_ULONG(RT_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RT_state) - State
+*    Internal state used by the qrexec module.
 *
 */
 
