@@ -559,7 +559,11 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          }
 
          /* set timeout for job resend */
-         trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 5);
+         if (mconf_get_simulate_execds()) {
+            trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 1);
+         } else {
+            trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 5);
+         }
 
          if (pe) {
             pe_debit_slots(pe, pe_slots, job_number);

@@ -3636,6 +3636,9 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
    u_long32 job_number = lGetUlong(job, JB_job_number);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   u_long64 max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
+   bool get_enable_forced_qdel_if_unknown = mconf_get_enable_forced_qdel_if_unknown();
+   bool simulate_execds = mconf_get_simulate_execds();
 
    DENTER(TOP_LAYER);
 
@@ -3653,7 +3656,6 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
     */
    rn = lFirst(ja_structure);
    do {
-      u_long64 max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
       int showmessage = 0;
       u_long32 enrolled_start = 0;
       u_long32 enrolled_end = 0;
@@ -3831,7 +3833,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 * then we will handle it as a forced request if the job (master-task) is running
                 * on a host in unknwon state.
                 */
-               if (mconf_get_enable_forced_qdel_if_unknown()) {
+               if (get_enable_forced_qdel_if_unknown) {
                   const lList *gdil = lGetList(tmp_task, JAT_granted_destin_identifier_list);
                   const lListElem *gdil_ep = lFirst(gdil);
 
@@ -3878,6 +3880,7 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                 * only recently and deletion is not forced, do nothing
                 */
                if ((lGetUlong(tmp_task, JAT_status) & JFINISHED) ||
+                   (simulate_execds && lGetUlong(tmp_task, JAT_state) & JDELETED) ||
                    (lGetUlong(tmp_task, JAT_state) & JDELETED &&
                     lGetUlong64(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt64() &&
                     !forced)) {

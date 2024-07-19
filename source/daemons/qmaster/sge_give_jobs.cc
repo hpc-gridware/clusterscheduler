@@ -82,6 +82,7 @@
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
 #include "basis_types.h"
+#include "execution_states.h"
 #include "sge_subordinate_qmaster.h"
 #include "sge_ckpt_qmaster.h"
 #include "sge_job_qmaster.h"
@@ -449,10 +450,10 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          init_packbuffer(&send_pb, 0, 0);
 
          pack_job_delivery(&send_pb, jep);
-         if (!simulate_execd) {
-            failed = gdi_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
-         } else {
+         if (simulate_execd) {
             failed = CL_RETVAL_OK;
+         } else {
+            failed = gdi_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          }
          clear_packbuffer(&send_pb);
       }
@@ -506,6 +507,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
          DRETURN(-1);
       }
    }
+   // @todo: we do lots of things *with* simulate_execd, why? Just create the timed event.
 
    if ((tmpjep = copyJob(jep, jatep)) == nullptr) {
       DRETURN(-1);
@@ -649,6 +651,61 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
    DRETURN(0);
 }
 
+static void
+sge_job_resend_event_handler_sim_job_end(u_long32 jobid, u_long32 jataskid, lListElem *jep, lListElem *jatep,
+                                         monitoring_t *monitor, u_long64 now, int runtime, bool deleted) {
+   lListElem *ue, *jr = lCreateElem(JR_Type);
+   lSetUlong(jr, JR_job_number, jobid);
+   lSetUlong(jr, JR_ja_task_number, jataskid);
+
+   const lListElem *ep;
+   if ((ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) {
+      lSetString(jr, JR_queue_name, lGetString(ep, JG_qname));
+      if (deleted) {
+         lSetUlong(jr, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WSIGNALED_BIT, SIGKILL)); // was killed
+         ue = lAddSubStr(jr, UA_name, "exit_status", JR_usage, UA_Type);
+         lSetDouble(ue, UA_value, 137); // 128 + SIGKILL
+         lSetUlong(jr, JR_failed, SSTATE_FAILURE_AFTER_JOB);
+      } else {
+         lSetUlong(jr, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0)); // did exit(0)
+      }
+
+      ue = lAddSubStr(jr, UA_name, "submission_time", JR_usage, UA_Type);
+      lSetDouble(ue, UA_value, lGetUlong64(jep, JB_submission_time));
+
+      u_long64 start_time = lGetUlong64(jatep, JAT_start_time);
+      ue = lAddSubStr(jr, UA_name, "start_time", JR_usage, UA_Type);
+      lSetDouble(ue, UA_value, start_time);
+
+      ue = lAddSubStr(jr, UA_name, "end_time", JR_usage, UA_Type);
+      lSetDouble(ue, UA_value, now);
+
+      ue = lAddSubStr(jr, UA_name, "ru_wallclock", JR_usage, UA_Type);
+      lSetDouble(ue, UA_value, sge_gmt64_to_gmt32(now - start_time));
+
+      ue = lAddSubStr(jr, UA_name, "wallclock", JR_usage, UA_Type);
+      lSetDouble(ue, UA_value, sge_gmt64_to_gmt32_double(now - start_time));
+
+      lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_scaled_usage_list));
+      ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
+      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
+   }
+   lFreeElem(&jr);
+}
+
+static int
+sge_job_resend_event_handler_sim_job_runtime(const lListElem *jep) {
+   const lListElem *argv1;
+   int runtime = 3;
+
+   argv1 = lFirst(lGetList(jep, JB_job_args));
+   if (argv1 != nullptr) {
+      runtime = atoi(lGetString(argv1, ST_name));
+   }
+
+   return runtime;
+}
+
 void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *jep, *jatep;
@@ -682,42 +739,23 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    jatasks = lGetListRW(jep, JB_ja_tasks);
 
    if (mconf_get_simulate_execds()) {
-      const lListElem *argv1;
-      int runtime = 3;
+      int runtime = sge_job_resend_event_handler_sim_job_runtime(jep);
 
-      if ((argv1 = lFirst(lGetList(jep, JB_job_args))))
-         runtime = atoi(lGetString(argv1, ST_name));
-
-      if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
-         sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor);
-         trigger_job_resend(now, hep, jobid, jataskid, runtime);
-
-      } else { /* must be JRUNNING */
-         lListElem *ue, *jr = lCreateElem(JR_Type);
-         lSetUlong(jr, JR_job_number, jobid);
-         lSetUlong(jr, JR_ja_task_number, jataskid);
-
-         if ((ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) {
-            lSetString(jr, JR_queue_name, lGetString(ep, JG_qname));
-            lSetUlong(jr, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0)); /* returned with exit(0) */
-
-            ue = lAddSubStr(jr, UA_name, "submission_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, lGetUlong64(jep, JB_submission_time));
-
-            ue = lAddSubStr(jr, UA_name, "start_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, lGetUlong64(jatep, JAT_start_time));
-
-            ue = lAddSubStr(jr, UA_name, "end_time", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, now);
-
-            ue = lAddSubStr(jr, UA_name, "ru_wallclock", JR_usage, UA_Type);
-            lSetDouble(ue, UA_value, runtime);
-
-            lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
-            ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
-            sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
+      if (ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
+         // job has been deleted
+         // delete other timers for this job/jatask
+         te_delete_one_time_event(TYPE_JOB_RESEND_EVENT, jobid, jataskid, nullptr);
+         // create usage
+         sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, true);
+      } else {
+         if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
+            // transition transferring to running state and set a timer for job end
+            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor);
+            trigger_job_resend(now, hep, jobid, jataskid, runtime);
+         } else { /* must be JRUNNING */
+            // job end, create usage
+            sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, false);
          }
-         lFreeElem(&jr);
       }
 
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
