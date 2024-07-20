@@ -1085,6 +1085,8 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
          }
 
          if (mconf_get_simulate_execds()) {
+            // @todo no need to do the packing above, best split the function in two
+            // @todo check if the job is already in deletion?
             i = CL_RETVAL_OK;
             if (jep && how == SGE_SIGKILL)
                trigger_job_resend(sge_get_gmt64(), nullptr, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), 1);
@@ -1191,8 +1193,8 @@ signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
             continue;
 
          /* signalling of not "slave controlled" parallel jobs will not work
-            since they are not known to the apropriate execd - we should
-            omit signalling in this case to prevent waste of communication bandwith */
+            since they are not known to the appropriate execd - we should
+            omit signalling in this case to prevent waste of communication bandwidth */
          if (!(pe_name = lGetString(jatep, JAT_granted_pe)) || !pe_list_locate(master_pe_list, pe_name))
             continue;
 

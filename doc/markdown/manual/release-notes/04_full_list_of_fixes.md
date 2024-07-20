@@ -416,5 +416,6 @@
 
 [CS-412](https://hpc-gridware.atlassian.net/browse/CS-412) New jsonl accounting file should not have comments at the beginning
 
+[CS-418](https://hpc-gridware.atlassian.net/browse/CS-418) deleting jobs in a simulated cluster gets into "an endless loop"
 
 
