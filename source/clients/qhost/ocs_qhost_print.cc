@@ -695,7 +695,7 @@ lList **alpp
       DRETURN(QHOST_SUCCESS);
    }
    host_complexes2scheduler(&rlp, host, ehl, cl);
-   for_each_rw(rep , rlp) {
+   for_each_rw(rep, rlp) {
       u_long32 type = lGetUlong(rep, CE_valtype);
 
       if (resl != nullptr) {

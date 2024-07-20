@@ -1503,7 +1503,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
 
          // initialize booking
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, false, nullptr);
+         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
 
          // do the resource booking
          for_each_rw (jep, master_job_list) {

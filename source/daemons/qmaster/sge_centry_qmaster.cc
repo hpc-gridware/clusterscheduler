@@ -508,7 +508,7 @@ void centry_redebit_consumables(const lList *centries) {
    }
    for_each_rw (hep, master_ehost_list) {
       lSetList(hep, EH_resource_utilization, nullptr);
-      debit_host_consumable(nullptr, nullptr, hep, master_centry_list, 0, true, false, nullptr);
+      debit_host_consumable(nullptr, nullptr, hep, master_centry_list, 0, true, true, nullptr);
    }
 
    /* 
