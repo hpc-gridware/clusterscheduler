@@ -823,6 +823,8 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
             cond = CONSUMABLE_NO;
          } else if (strcasecmp(value, "j") == 0 || strcasecmp(value, "job") == 0) {
             cond = CONSUMABLE_JOB;
+         } else if (strcasecmp(value, "h") == 0 || strcasecmp(value, "host") == 0) {
+            cond = CONSUMABLE_HOST;
          } else {
             cond = CONSUMABLE_NO;
             ret = false;

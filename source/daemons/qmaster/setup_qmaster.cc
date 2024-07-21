@@ -47,6 +47,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -1262,7 +1263,7 @@ static void debit_all_jobs_from_qs() {
 
          /* don't look at states - we only trust in 
             "granted destin. ident. list" */
-
+         const char *last_hostname = nullptr;
          for_each_ep(gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             u_long32 ar_id = lGetUlong(jep, JB_ar);
             const lListElem *ar = nullptr;
@@ -1278,19 +1279,20 @@ static void debit_all_jobs_from_qs() {
                ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number)));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else {
+               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdi, JG_qhostname));
                /* debit in all layers */
                lListElem *rqs = nullptr;
                debit_host_consumable(jep, jatep, host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                                   SGE_GLOBAL_NAME), master_centry_list, slots,
-                                                                  master_task, nullptr);
+                                     master_task, do_per_host_booking, nullptr);
                debit_host_consumable(jep, jatep, host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                                   lGetHost(qep, QU_qhostname)), master_centry_list,
-                                                                  slots, master_task, nullptr);
+                                     slots, master_task, do_per_host_booking, nullptr);
                qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, nullptr);
                for_each_rw (rqs, master_rqs_list) {
                   rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list,
                                        *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
-                                       *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), slots, master_task);
+                                       *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), slots, master_task, do_per_host_booking);
                }
                if (ar != nullptr) {
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);

@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
                   }   
                   temp_ref = lDechainElem(cp_ref_list, temp_ref);
                   lAppendElem(part_ref_list, temp_ref);
-                  /* break, if we got a job name by it self */
+                  /* break, if we got a job name by itself */
                   if (!isdigit(job[0])){
                      break;
                   }   

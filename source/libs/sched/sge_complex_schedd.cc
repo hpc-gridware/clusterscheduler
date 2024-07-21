@@ -157,29 +157,28 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
    DENTER(BASIS_LAYER);
 
    /* resource_attr is a complex_entry (CE_Type) */
-   if (config_attr) {
+   if (config_attr != nullptr) {
       const lListElem *temp = lGetElemStr(config_attr, CE_name, attrname);
-
-      if (temp){ 
-
+      if (temp != nullptr) {
          cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
-         if(!cplx_el){
+         if(cplx_el == nullptr) {
             /* error */
+            DPRINTF("==> ERROR in get_attribute(): didn't find centry for %s\n", attrname);
             DRETURN(nullptr);
          }
          lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_FIXED);
          lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
          lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp,CE_doubleval) ); 
-         lSetString(cplx_el, CE_stringval, lGetString(temp,CE_stringval) ); 
+         lSetString(cplx_el, CE_stringval, lGetString(temp,CE_stringval) );
       }
    }
 
-   if (cplx_el && lGetUlong(cplx_el, CE_consumable) != CONSUMABLE_NO) {
+   if (cplx_el != nullptr && lGetUlong(cplx_el, CE_consumable) != CONSUMABLE_NO) {
       lSetUlong(cplx_el, CE_pj_dominant, layer | DOMINANT_TYPE_CONSUMABLE);
       lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
-         if (actual_attr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))){
+         if (actual_attr != nullptr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))) {
             dstring ds;
             char as_str[20];
             double utilized = zero_utilization ? 0 : utilization_max(actual_el, start_time, duration, false);
@@ -195,13 +194,13 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                case CMPLXLE_OP:
                case CMPLXNE_OP:
                default:
-                     lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval) - utilized); 
+                  lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval) - utilized);
                   break;
             }
             sge_dstring_init(&ds, as_str, sizeof(as_str));
             sge_dstring_sprintf(&ds, "%8.3f", (float)lGetDouble(cplx_el, CE_pj_doubleval));
             lSetString(cplx_el,CE_pj_stringval, as_str);
-         } else{
+         } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
             lFreeElem(&cplx_el);
             DRETURN(nullptr);
@@ -319,11 +318,11 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
    }
 
    /* we are working on queue level, so we have to check for queue resource values */
-   if (queue){
+   if (queue != nullptr) {
       bool created=false;
-      if(!cplx_el){
+      if (cplx_el == nullptr) {
          cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
-         if(!cplx_el){
+         if(cplx_el == nullptr){
             /* error */
             DRETURN(nullptr);
          }         
@@ -586,12 +585,12 @@ lList *centry_list
 ) {
    DENTER(TOP_LAYER);
 
-   if (!host) {
+   if (host == nullptr) {
       DPRINTF("!!missing host!!\n");
    }
    /* build global complex and add it to result */
    lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), host, nullptr, centry_list);
+   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, SGE_GLOBAL_NAME), host, nullptr, centry_list);
 
    DRETURN(0);
 }
@@ -651,9 +650,10 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
 
    for_each_ep(elem, attrnames) {
       attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, DISPATCH_TIME_NOW, 0);
-      if (attr) {
-         if (!list )
+      if (attr != nullptr) {
+         if (list == nullptr) {
             list = lCreateList("attr", CE_Type);
+         }
          lAppendElem(list, attr);
       }
    }
@@ -693,17 +693,16 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    
    filter = lCreateList("", ST_Type);
 
-   if (global){
+   if (global != nullptr) {
       build_name_filter(filter, lGetList(global, EH_load_list), HL_name);
       build_name_filter(filter, lGetList(global, EH_consumable_config_list), CE_name);
    }    
-
-   if (host){
+   if (host != nullptr) {
       build_name_filter(filter, lGetList(host, EH_load_list), HL_name);
       build_name_filter(filter, lGetList(host, EH_consumable_config_list), CE_name);
    } 
 
-   if (queue){ 
+   if (queue != nullptr) {
       int x = 0;  
       for (; x < max_queue_resources; x++){
          if (lGetElemStr(filter, ST_name, queue_resource[x].name) == nullptr) {
@@ -1148,7 +1147,7 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
 
    DENTER(BASIS_LAYER);
 
-   if (global) {
+   if (global != nullptr) {
       double lc_factor = 0;
       load_attr = lGetList(global, EH_load_list);  
       config_attr = lGetList(global, EH_consumable_config_list);
@@ -1166,7 +1165,7 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
       ret_el = global_el;
    } 
 
-   if (host) {   
+   if (host != nullptr) {   
       double lc_factor = 0;
       load_attr = lGetList(host, EH_load_list); 
       config_attr = lGetList(host, EH_consumable_config_list);
@@ -1192,7 +1191,7 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
       }
    }
 
-   if (queue) {
+   if (queue != nullptr) {
       config_attr = lGetList(queue, QU_consumable_config_list);
       actual_attr = lGetList(queue, QU_resource_utilization);
       

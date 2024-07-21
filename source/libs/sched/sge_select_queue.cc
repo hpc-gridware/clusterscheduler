@@ -5930,11 +5930,11 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
          } else {
             *slots_qend = (int)(total / request_val);
          }
-         if (consumable == CONSUMABLE_JOB) {
-            /*
-               because the scheduler works on slots basis the amount we return is used as
-               it is. Therefore we map our job consumable here to just works (INT_MAX)
-               and if the queue can be used as master queue
+         if (consumable == CONSUMABLE_JOB || consumable == CONSUMABLE_HOST) {
+            /* what the function returns is the number of slots which can be assigned to tasks
+             * if slots here is at least 1 we know that the consumable request can be granted
+             * at least once. We need it just once and can then dispatch any number of tasks (= INT_MAX)
+             * to this resource
              */
             if (*slots == 0 || *slots_qend == 0) {
                ret = DISPATCH_NOT_AT_TIME;
@@ -6104,7 +6104,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
 
       if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
          if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-            lSetUlong(queue, QU_tagged4schedule, 0);
+            lSetUlong(queue, QU_tagged4schedule, 0); // can only be used as slave queue
             result = DISPATCH_MISSING_ATTR;
          } else if (!isRQ) {
             char buff[1024 + 1];

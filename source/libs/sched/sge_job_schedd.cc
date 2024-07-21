@@ -1078,10 +1078,10 @@ int nslots_granted(const lList *granted, const char *qhostname)
          nslots += lGetUlong(gdil_ep, JG_slots);
       }
    } else {
-      gdil_ep = lGetElemHostFirstRW(granted, JG_qhostname, qhostname, &iterator); 
+      gdil_ep = lGetElemHostFirst(granted, JG_qhostname, qhostname, &iterator);
       while (gdil_ep != nullptr) {
          nslots += lGetUlong(gdil_ep, JG_slots);
-         gdil_ep = lGetElemHostNextRW(granted, JG_qhostname , qhostname, &iterator); 
+         gdil_ep = lGetElemHostNext(granted, JG_qhostname , qhostname, &iterator);
       }
    }
 

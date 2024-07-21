@@ -1267,7 +1267,6 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
 int
 ar_do_reservation(lListElem *ar, bool incslots) {
    lListElem *dummy_job = lCreateElem(JB_Type);
-   const lListElem *qep;
    int pe_slots = 0;
    int tmp_slots;
    const char *granted_pe = lGetString(ar, AR_granted_pe);
@@ -1286,24 +1285,25 @@ ar_do_reservation(lListElem *ar, bool incslots) {
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
-   for_each_ep(qep, lGetList(ar, AR_granted_slots)) {
-      lListElem *host_ep = nullptr;
-      const char *queue_hostname = nullptr;
-      const char *queue_name = lGetString(qep, JG_qname);
+   const lListElem *gdil_ep;
+   const char *last_hostname = nullptr;
+   for_each_ep(gdil_ep, lGetList(ar, AR_granted_slots)) {
+      const char *queue_name = lGetString(gdil_ep, JG_qname);
       lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
 
-      if (!queue) {
+      if (queue == nullptr) {
          ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, queue_name);
          is_master_task = false;
          continue;
       }
 
-      queue_hostname = lGetHost(queue, QU_qhostname);
+      const char *queue_hostname = lGetHost(queue, QU_qhostname);
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
 
       if (!incslots) {
-         tmp_slots = -lGetUlong(qep, JG_slots);
+         tmp_slots = -lGetUlong(gdil_ep, JG_slots);
       } else {
-         tmp_slots = lGetUlong(qep, JG_slots);
+         tmp_slots = lGetUlong(gdil_ep, JG_slots);
       }
 
       pe_slots += tmp_slots;
@@ -1313,7 +1313,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
-                                 false, is_master_task) != 0) {
+                                 false, is_master_task, do_per_host_booking) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep);
@@ -1321,11 +1321,11 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       }
 
       /* reserve exec host */
-      host_ep = host_list_locate(master_exechost_list, queue_hostname);
+      lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
       if (rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
-                                 duration, HOST_TAG, false, is_master_task) != 0) {
+                                 duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        queue_hostname, nullptr, nullptr, host_ep);
@@ -1336,7 +1336,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
-                             QUEUE_TAG, false, is_master_task);
+                             QUEUE_TAG, false, is_master_task, do_per_host_booking);
 
       qinstance_increase_qversion(queue);
       /* this info is not spooled */

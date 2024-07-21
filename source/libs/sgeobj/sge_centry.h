@@ -69,7 +69,8 @@ enum {
 enum {
    CONSUMABLE_NO = 0,
    CONSUMABLE_YES,
-   CONSUMABLE_JOB
+   CONSUMABLE_JOB,
+   CONSUMABLE_HOST
 };
 
 /* bit mask for CE_dominant */
@@ -204,3 +205,6 @@ validate_load_formula(const char *formula, lList **answer_list, const lList *cen
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry);
 
 const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p);
+
+bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking);
+int consumable_get_debit_slots(u_long32 consumable, int slots, bool is_master_task, bool do_per_host_booking);

@@ -113,6 +113,7 @@
 			}, { "line":	"CONSUMABLE_NO"
 			}, { "line":	"CONSUMABLE_YES"
 			}, { "line":	"CONSUMABLE_JOB"
+			}, { "line":	"CONSUMABLE_HOST"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{

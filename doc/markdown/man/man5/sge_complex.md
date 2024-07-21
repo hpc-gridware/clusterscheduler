@@ -261,23 +261,28 @@ the complex_values entry in *host_conf*(5) and *queue_conf*(5).
 ## **consumable**
 
 The **consumable** parameter can be set to either 'yes' ('y'
-abbreviated), 'no' ('n') or 'JOB' ('j'). It can be set to 'yes' and
-'JOB' only for numeric attributes (INT, DOUBLE, MEMORY, TIME - see
-**type** above). If set to 'yes' or 'JOB' the consumption of the
+abbreviated), 'no' ('n'), 'JOB' ('j'), or 'HOST' ('h'). It can be set to 'yes', 
+'JOB', and 'HOST' only for numeric attributes (INT, DOUBLE, MEMORY, TIME - see
+**type** above). If set to 'yes', 'JOB', or 'HOST' the consumption of the
 corresponding resource can be managed by xxQS_NAMExx internal
 bookkeeping. In this case xxQS_NAMExx accounts for the consumption of
 this resource for all running jobs and ensures that jobs are only
 dispatched if the xxQS_NAMExx internal bookkeeping indicates enough
 available consumable resources. Consumables are an efficient means to
-manage limited resources such a available memory, free space on a file
+manage limited resources such as available memory, free space on a file
 system, network bandwidth or floating software licenses.
 
-A consumable defined by 'y' is a per slot consumables which means the
+A consumable defined by 'YES' is a per slot consumables which means the
 limit is multiplied by the number of slots being used by the job before
-being applied. In case of 'j' the consumable is a per job consumable.
+being applied.  
+In case of 'JOB' the consumable is a per job consumable.
 This resource is debited as requested (without multiplication) from the
-allocated master queue. The resource needs not be available for the
-slave task queues.
+allocated master queue or the host the master task is running on.
+The resource needs not be available for the slave task queues / hosts.   
+'HOST' consumables are per host consumables. Their capacity can only
+be defined on exechost or global level (not on queue level), the requested
+amount of such a resource is debited once per host running one or multiple
+tasks of a job.
 
 Consumables can be combined with default or user defined load parameters
 (see *xxqs_name_sxx_conf*(5) and *host_conf*(5)), i.e. load values can

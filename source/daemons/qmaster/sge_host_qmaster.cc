@@ -1501,8 +1501,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
          const char *host = lGetHost(tmp_elem, EH_name);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
+         // initialize booking
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, nullptr);
+         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
+
+         // do the resource booking
          for_each_rw (jep, master_job_list) {
             const lListElem *jatep = nullptr;
 
@@ -1516,34 +1519,44 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                   is_master_task = true;
                }
 
-               slots = nslots_granted(lGetList(jatep, JAT_granted_destin_identifier_list),
-                                      global_host ? nullptr : host);
+               slots = nslots_granted(gdil, global_host ? nullptr : host);
 
                if (slots > 0) {
-                  debit_host_consumable(jep, jatep, tmp_elem, master_centry_list, slots, is_master_task, nullptr);
+                  // do_per_host_booking is true, we book on one host once
+                  debit_host_consumable(jep, jatep, tmp_elem, master_centry_list, slots, is_master_task, true,
+                                        nullptr);
                }
             }
          }
 
          for_each_ep(ar_ep, master_ar_list) {
             const lList *gdil = lGetList(ar_ep, AR_granted_slots);
-            const lListElem *gdil_ep = lGetElemHost(gdil, JG_qhostname, host);
-            bool is_master_task = false;
+            const void *iterator = nullptr;
+            const lListElem *gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, host, &iterator);
 
+            // in case the master task is running on this host, need to book per JOB consumables
+            bool is_master_task = false;
             if (gdil_ep == lFirst(gdil)) {
                is_master_task = true;
             }
 
+            // we book per host consumables once
+            bool do_per_host_booking = true;
+
             if (gdil_ep != nullptr) {
                lListElem *dummy_job = lCreateElem(JB_Type);
-
                lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar_ep, AR_resource_list)));
 
-               rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                      tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
-                                      EH_consumable_config_list, EH_resource_utilization, host,
-                                      lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
-                                      HOST_TAG, false, is_master_task);
+               while (gdil_ep != nullptr) {
+                  rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                         tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
+                                         EH_consumable_config_list, EH_resource_utilization, host,
+                                         lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
+                                         HOST_TAG, false, is_master_task, do_per_host_booking);
+                  is_master_task = false;
+                  do_per_host_booking = false;
+                  gdil_ep = lGetElemHostNext(gdil, JG_qhostname, host, &iterator);
+               }
                lFreeElem(&dummy_job);
             }
          }

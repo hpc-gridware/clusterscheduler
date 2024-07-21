@@ -39,7 +39,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge.h"
 
-#include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -414,14 +414,16 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          const lListElem *ja_task = nullptr;
 
          for_each_ep(ja_task, ja_task_list) {
-            const lListElem *granted = nullptr;
             const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
             bool is_master_task = true;
 
-            for_each_ep(granted, gdi_list) {
-               int tmp_slot = lGetUlong(granted, JG_slots);
-               rqs_debit_consumable(rqs, job, granted, lGetString(ja_task, JAT_granted_pe), master_centry_list,
-                                    master_userset_list, master_hgroup_list, tmp_slot, is_master_task);
+            const lListElem *gdil_ep;
+            const char *last_hostname = nullptr;
+            for_each_ep(gdil_ep, gdi_list) {
+               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil_ep, JG_qhostname));
+               int tmp_slot = lGetUlong(gdil_ep, JG_slots);
+               rqs_debit_consumable(rqs, job, gdil_ep, lGetString(ja_task, JAT_granted_pe), master_centry_list,
+                                    master_userset_list, master_hgroup_list, tmp_slot, is_master_task, do_per_host_booking);
                is_master_task = false;
             }
          }
