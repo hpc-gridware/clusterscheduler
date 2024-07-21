@@ -1,23 +1,25 @@
 {
 	"className":	"KerberosClientTGT",
-	"summary":	"@todo add summary",
+	"summary":	"kerberos Client TGT",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to hold the client TGT list for kerberos TGT forwarding."
+         }, {
+			"line":	"@todo: Probably completly outdated, remove or fix"
 		}],
 	"cullPrefix":	"KTGT",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	""
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"tgt",
-			"summary":	"@todo add summary",
+			"summary":	"TGT",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	""
 				}],
 			"type":	"lStringT",
 			"flags":	[]
