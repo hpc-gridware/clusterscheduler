@@ -28,18 +28,21 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Project Usage
 *
-* @todo add description
+* This is the project usage list type we use to hold the usage for a user on a project basis.
+* Each entry contains a project name and a usage list.
 *
-*    SGE_STRING(UPP_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UPP_name) - Name
+*    Project name.
 *
-*    SGE_LIST(UPP_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UPP_usage) - Usage
+*    UA_Type; decayed usage.
+*    Set and used by SGEEE scheduler stored to qmaster; spooled.
 *
-*    SGE_LIST(UPP_long_term_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UPP_long_term_usage) - Long Term Usage
+*    UA_Type; long term accumulated non-decayed usage.
+*    Set by SGEEE scheduler stored to qmaster; spooled
 *
 */
 

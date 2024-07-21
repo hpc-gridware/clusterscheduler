@@ -1,15 +1,17 @@
 {
 	"className":	"ProjectUsage",
-	"summary":	"@todo add summary",
+	"summary":	"Project Usage",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the project usage list type we use to hold the usage for a user on a project basis."
+         }, {
+			"line":	"Each entry contains a project name and a usage list."
 		}],
 	"cullPrefix":	"UPP",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Project name."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -23,9 +25,11 @@
 				}]
 		}, {
 			"name":	"usage",
-			"summary":	"@todo add summary",
+			"summary":	"Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"UA_Type; decayed usage."
+               }, {
+					"line":	"Set and used by SGEEE scheduler stored to qmaster; spooled."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -35,9 +39,11 @@
 				}]
 		}, {
 			"name":	"long_term_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Long Term Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"UA_Type; long term accumulated non-decayed usage."
+               }, {
+					"line":	"Set by SGEEE scheduler stored to qmaster; spooled"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",

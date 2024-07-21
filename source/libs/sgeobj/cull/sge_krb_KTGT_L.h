@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief kerberos Client TGT
 *
-* @todo add description
+* This is the list type we use to hold the client TGT list for kerberos TGT forwarding.
+* @todo: Probably completly outdated, remove or fix
 *
-*    SGE_ULONG(KTGT_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(KTGT_id) - Id
+*    
 *
-*    SGE_STRING(KTGT_tgt) - @todo add summary
-*    @todo add description
+*    SGE_STRING(KTGT_tgt) - TGT
+*    
 *
 */
 
