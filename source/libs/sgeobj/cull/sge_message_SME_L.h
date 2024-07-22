@@ -28,15 +28,15 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job SchedulingInfo
 *
-* @todo add description
+* Root object for scheduler messages enabled by scheduler config attribute schedd_job_info.
 *
-*    SGE_LIST(SME_message_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(SME_message_list) - Message List
+*    Job specific messages explaining why certain requests of a job cannot be granted.
 *
-*    SGE_LIST(SME_global_message_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(SME_global_message_list) - Global Message List
+*    Global messages which apply to all jobs, e.g. queues being disabled.
 *
 */
 

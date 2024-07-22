@@ -1,15 +1,19 @@
 {
 	"className":	"JobSchedulingMessage",
-	"summary":	"@todo add summary",
+	"summary":	"Job Scheduling Message",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An individual scheduling message,"
+         }, {
+			"line":	"e.g. explaining why a specific request of a certain job cannot be granted."
 		}],
 	"cullPrefix":	"MES",
 	"attributes":	[{
 			"name":	"job_number_list",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A list of job ids to which the message applies."
+               }, {
+					"line":	"These are usually all jobs belonging to a specific job category (sharing the same requests)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ULNG",
@@ -17,17 +21,17 @@
 			"flags":	[]
 		}, {
 			"name":	"message_number",
-			"summary":	"@todo add summary",
+			"summary":	"Message Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Every possible scheduler message has an unique message number."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"message",
-			"summary":	"@todo add summary",
+			"summary":	"Message",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The scheduler message as string."
 				}],
 			"type":	"lStringT",
 			"flags":	[]

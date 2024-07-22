@@ -28,18 +28,20 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Scheduling Message
 *
-* @todo add description
+* An individual scheduling message,
+* e.g. explaining why a specific request of a certain job cannot be granted.
 *
-*    SGE_LIST(MES_job_number_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(MES_job_number_list) - Job Number List
+*    A list of job ids to which the message applies.
+*    These are usually all jobs belonging to a specific job category (sharing the same requests).
 *
-*    SGE_ULONG(MES_message_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(MES_message_number) - Message Number
+*    Every possible scheduler message has an unique message number.
 *
-*    SGE_STRING(MES_message) - @todo add summary
-*    @todo add description
+*    SGE_STRING(MES_message) - Message
+*    The scheduler message as string.
 *
 */
 

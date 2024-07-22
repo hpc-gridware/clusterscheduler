@@ -1,15 +1,15 @@
 {
 	"className":	"JobSchedulingInfo",
-	"summary":	"@todo add summary",
+	"summary":	"Job SchedulingInfo",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Root object for scheduler messages enabled by scheduler config attribute schedd_job_info."
 		}],
 	"cullPrefix":	"SME",
 	"attributes":	[{
 			"name":	"message_list",
-			"summary":	"@todo add summary",
+			"summary":	"Message List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job specific messages explaining why certain requests of a job cannot be granted."
 				}],
 			"type":	"lListT",
 			"subClassName":	"MES",
@@ -19,9 +19,9 @@
 				}]
 		}, {
 			"name":	"global_message_list",
-			"summary":	"@todo add summary",
+			"summary":	"Global Message List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Global messages which apply to all jobs, e.g. queues being disabled."
 				}],
 			"type":	"lListT",
 			"subClassName":	"MES",
