@@ -202,6 +202,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
    DENTER(TOP_LAYER);
 
    /* use each entry in sel_q_list as reference into the global_queue_list */
+   const char *last_hostname = nullptr;
    for_each_ep(gel, granted) {
 
       tagged = lGetUlong(gel, JG_slots);
@@ -212,6 +213,8 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
             master_task = false;
             continue;
          }
+
+         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gel, JG_qhostname));
 
          /* increase used slots */
          qslots = qinstance_slots_used(qep);
@@ -251,7 +254,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
 
          DPRINTF("REDUCING SLOTS OF QUEUE %s BY %d\n", qname, tagged);
 
-         qinstance_debit_consumable(qep, job, centry_list, tagged, master_task, nullptr);
+         qinstance_debit_consumable(qep, job, centry_list, tagged, master_task, do_per_host_booking, nullptr);
       }
       master_task = false;
    }
@@ -425,15 +428,17 @@ debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *c
 
    DENTER(TOP_LAYER);
 
-   for_each_ep(gel, granted) {
-      const lListElem *ar = nullptr;
-      int slots = lGetUlong(gel, JG_slots);
+   const lListElem *ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar));
+   if (ar != nullptr) {
+      const char *last_hostname = nullptr;
+      for_each_ep(gel, granted) {
+         int slots = lGetUlong(gel, JG_slots);
+         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gel, JG_qhostname));
 
-      if ((ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar))) != nullptr) {
          lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gel, JG_qname), AR_reserved_queues);
-         qinstance_debit_consumable(queue, job, centry_list, slots, master_task, nullptr);
+         qinstance_debit_consumable(queue, job, centry_list, slots, master_task, do_per_host_booking, nullptr);
+         master_task = false;
       }
-      master_task = false;
    }
 
    DRETURN(0);

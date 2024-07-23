@@ -1040,7 +1040,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   answer_list_output(&answer_list);
                   lListElem_clear_changed_info(host);
                }
-               qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, nullptr);
+               qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr);
                ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, jep, now);
                answer_list_output(&answer_list);
                /* this info is not spooled */
@@ -1060,7 +1060,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                } else {
                   /* debit in advance reservation */
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-                  if (qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, nullptr) > 0) {
+                  if (qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
                      dstring buffer = DSTRING_INIT;
                      /* this info is not spooled */
                      sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
@@ -1607,7 +1607,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                answer_list_output(&answer_list);
                lListElem_clear_changed_info(host);
             }
-            qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, nullptr);
+            qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, job, now);
             /* this info is not spooled */
             qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
@@ -1629,7 +1629,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             } else {
                /* undebit in advance reservation */
                lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-               if (qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, nullptr) > 0) {
+               if (qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
                   dstring buffer = DSTRING_INIT;
                   /* this info is not spooled */
                   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);

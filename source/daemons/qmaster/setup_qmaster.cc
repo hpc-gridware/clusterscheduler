@@ -1288,7 +1288,7 @@ static void debit_all_jobs_from_qs() {
                debit_host_consumable(jep, jatep, host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                                   lGetHost(qep, QU_qhostname)), master_centry_list,
                                      slots, master_task, do_per_host_booking, nullptr);
-               qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, nullptr);
+               qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
                for_each_rw (rqs, master_rqs_list) {
                   rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list,
                                        *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
@@ -1297,7 +1297,7 @@ static void debit_all_jobs_from_qs() {
                if (ar != nullptr) {
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);
                   if (queue != nullptr) {
-                     qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, nullptr);
+                     qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
                            sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));

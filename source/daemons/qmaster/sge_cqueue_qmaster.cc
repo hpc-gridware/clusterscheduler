@@ -156,7 +156,7 @@ qinstance_create(const lListElem *cqueue, lList **answer_list, const char *hostn
    }
 
    qinstance_set_conf_slots_used(ret);
-   qinstance_debit_consumable(ret, nullptr, centry_list, 0, true, nullptr);
+   qinstance_debit_consumable(ret, nullptr, centry_list, 0, true, true, nullptr);
 
    /*
     * Change qinstance state

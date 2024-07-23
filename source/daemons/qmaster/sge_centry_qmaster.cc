@@ -503,7 +503,7 @@ void centry_redebit_consumables(const lList *centries) {
 
       for_each_rw(qinstance, qinstance_list) {
          lSetList(qinstance, QU_resource_utilization, nullptr);
-         qinstance_debit_consumable(qinstance, nullptr, master_centry_list, 0, true, nullptr);
+         qinstance_debit_consumable(qinstance, nullptr, master_centry_list, 0, true, true, nullptr);
       }
    }
    for_each_rw (hep, master_ehost_list) {
@@ -541,7 +541,7 @@ void centry_redebit_consumables(const lList *centries) {
             debit_host_consumable(jep, jatep, host_list_locate(master_ehost_list,
                                                                lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
                                   master_task, do_per_host_booking, nullptr);
-            qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, nullptr);
+            qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, do_per_host_booking, nullptr);
             slots += qslots;
             master_task = false;
          }

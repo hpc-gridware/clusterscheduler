@@ -418,14 +418,13 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
    /* make sure our queue list is sorted according to host order (load formula) */
    sequential_update_host_order(best->host_list, best->queue_list);
 
-   /* initialize all taggs */
+   /* initialize all tags */
    for_each_rw(queue, best->queue_list) {
-      lSetUlong(queue, QU_tagged4schedule, 2);
+      lSetUlong(queue, QU_tagged4schedule, 2); // = can be used as master for now and reservation
    }
 
 
    if (best->is_reservation) { /* reservation scheduling */
-
       if (!best->is_advance_reservation) {
          old_logging = schedd_mes_get_logging();
          schedd_mes_set_logging(0);
@@ -446,7 +445,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             best->pe = pe;
             best->pe_name = pe_name;
 
-            /* determine earliest start time with that PE */
+            /* determine the earliest start time with that PE */
             result = parallel_reservation_max_time_slots(best, &available_slots);
             if (result != DISPATCH_OK) {
                schedd_mes_add(best->monitor_alpp, best->monitor_next_run,
@@ -488,15 +487,15 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
          }
       }
    } else {
-      u_long32 ar_id;
       /* now assignments */
+      u_long32 ar_id = lGetUlong(best->job, JB_ar);
 
-      result = match_static_advance_reservation(best);
-      if (result != DISPATCH_OK) {
-         DRETURN(result);
-      }
+      if (ar_id != 0) {
+         result = match_static_advance_reservation(best);
+         if (result != DISPATCH_OK) {
+            DRETURN(result);
+         }
 
-      if ((ar_id = lGetUlong(best->job, JB_ar)) != 0) {
          const lListElem *ar = lGetElemUlong(best->ar_list, AR_id, ar_id);
          pe = lGetElemStrRW(pe_list, PE_name, lGetString(ar, AR_granted_pe));
 

@@ -121,7 +121,7 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
 
 int
 qinstance_debit_consumable(lListElem *this_elem, const lListElem *job, const lList *centry_list, int slots,
-                           bool is_master_task, bool *just_check);
+                           bool is_master_task, bool do_per_host_booking, bool *just_check);
 
 bool
 qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message);

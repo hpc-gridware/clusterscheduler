@@ -1571,7 +1571,6 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    dstring buffer = DSTRING_INIT;
-   bool is_master_queue = true;
 
    static int queue_field[] = {QU_qhostname,
                                QU_qname,
@@ -1618,6 +1617,8 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
 
    queue_list = lCreateList("", rdp);
 
+   bool is_master_queue = true;
+   const char *last_hostname = nullptr;
    for_each_ep(gep, gdil) {
       int index = 0;
       u_long32 slots = lGetUlong(gep, JG_slots);
@@ -1629,7 +1630,10 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
       const char *queue_name = lGetString(gep, JG_qname);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
 
-      lSetHost(queue, QU_qhostname, lGetHost(gep, JG_qhostname));
+      const char *host_name = lGetHost(gep, JG_qhostname);
+      lSetHost(queue, QU_qhostname, host_name);
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
+
       lSetString(queue, QU_full_name, queue_name);
       lSetString(queue, QU_qname, cqueue_name);
 
@@ -1655,9 +1659,15 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
 
             if (lGetUlong(cr, CE_consumable) == CONSUMABLE_YES) {
                newval = lGetDouble(cr, CE_doubleval) * slots;
-            } else {
+            } else if (consumable == CONSUMABLE_JOB) {
                if (!is_master_queue) {
                   /* job consumables are only attached to the selected masterq */
+                  continue;
+               }
+               newval = lGetDouble(cr, CE_doubleval);
+            } else {
+               // must be CONSUMABLE_HOST
+               if (!do_per_host_booking) {
                   continue;
                }
                newval = lGetDouble(cr, CE_doubleval);
@@ -1682,7 +1692,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
       qinstance_set_conf_slots_used(queue);
 
       /* initialize QU_resource_utilization */
-      qinstance_debit_consumable(queue, nullptr, master_centry_list, 0, true, nullptr);
+      qinstance_debit_consumable(queue, nullptr, master_centry_list, 0, true, true, nullptr);
 
       /* initialize QU_state */
       {

@@ -41,6 +41,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -1112,7 +1113,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
       lSetList(this_elem, QU_resource_utilization, nullptr);
       qinstance_set_conf_slots_used(this_elem);
-      qinstance_debit_consumable(this_elem, nullptr, centry_list, 0, true, nullptr);
+      qinstance_debit_consumable(this_elem, nullptr, centry_list, 0, true, true, nullptr);
 
       for_each_rw(ep, job_list) {
          const lList *ja_task_list = lGetList(ep, JB_ja_tasks);
@@ -1123,15 +1124,22 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
             const lListElem *gdil_ep = lGetElemStr(gdil, JG_qname, name);
 
             if (gdil_ep != nullptr) {
-               bool is_master_task = false;
                int slots = lGetUlong(gdil_ep, JG_slots);
 
+               bool is_master_task = false;
                if (gdil_ep == lFirst(gdil)) {
                   is_master_task = true;
                }
 
+               bool do_per_host_booking = true;
+               const lListElem *prev = lPrev(gdil_ep);
+               if (prev != nullptr &&
+                   sge_strnullcmp(lGetHost(gdil_ep, JG_qhostname), lGetHost(prev, JG_qhostname)) == 0) {
+                  do_per_host_booking = false;
+               }
+
                if (slots > 0) {
-                  qinstance_debit_consumable(this_elem, ep, centry_list, slots, is_master_task, nullptr);
+                  qinstance_debit_consumable(this_elem, ep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
                }
             }
          }

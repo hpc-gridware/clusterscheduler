@@ -771,22 +771,25 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
       sge_dstring_free(&rue_name);
    } else {
-      bool is_master_task = true;
       /* debit AR-job */
-      const lListElem *gdil_ep;
-      for_each_ep(gdil_ep, a->gdil) {
-         const lListElem *ar = nullptr;
-         int slots = lGetUlong(gdil_ep, JG_slots);
-         const char *qname = lGetString(gdil_ep, JG_qname);
-         
-         if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != nullptr) {
+      const lListElem *ar = lGetElemUlong(a->ar_list, AR_id, ar_id);
+      if (ar != nullptr) {
+         bool is_master_task = true;
+         const char *last_eh_name = nullptr;
+         const lListElem *gdil_ep;
+         for_each_ep(gdil_ep, a->gdil) {
+            int slots = lGetUlong(gdil_ep, JG_slots);
+            const char *qname = lGetString(gdil_ep, JG_qname);
+            const char *eh_name = lGetHost(gdil_ep, JG_qhostname);
+            bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
+
             if ((qep = lGetSubStrRW(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
                rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
-                                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, false);
+                                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
-         } 
-         is_master_task = false;
+            is_master_task = false;
+         }
       }
    }
 

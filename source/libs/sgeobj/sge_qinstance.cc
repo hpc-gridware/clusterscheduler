@@ -704,11 +704,11 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *******************************************************************************/
 int
 qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list, int slots,
-                           bool is_master_task, bool *just_check) {
+                           bool is_master_task, bool do_per_host_booking, bool *just_check) {
    return rc_debit_consumable(jep, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
-                              lGetString(qep, QU_qname), is_master_task, false, just_check);
+                              lGetString(qep, QU_qname), is_master_task, do_per_host_booking, just_check);
 }
 
 /****** sgeobj/qinstance/qinstance_message_add() *****************************
@@ -855,7 +855,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);
 
    /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, nullptr);
+   qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
    if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true,
