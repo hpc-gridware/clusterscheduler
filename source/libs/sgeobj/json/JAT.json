@@ -1,15 +1,61 @@
 {
 	"className":	"JobArrayTask",
-	"summary":	"@todo add summary",
+	"summary":	"Job Array Task",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"JAT_Type elements are a sub element of JB_Type elements."
+         }, {
+			"line":	"One element of each type is necessary to hold all data for the execution of one job."
+         }, {
+			"line":	"One JB_Type element and x JAT_Type elements are needed to execute an array job with x tasks."
+         }, {
+			"line":	""
+         }, {
+			"line":	"         -----------       1:x        ------------"
+         }, {
+			"line":	"         | JB_Type |<---------------->| JAT_Type |"
+         }, {
+			"line":	"         -----------                  ------------"
+         }, {
+			"line":	""
+         }, {
+			"line":	"The relation between these two elements is defined in the"
+         }, {
+			"line":	"'JB_ja_tasks' sublist of a 'JB_Type' element. This list will"
+         }, {
+			"line":	"contain all belonging JAT_Type elements."
+         }, {
+			"line":	""
+         }, {
+			"line":	"The 'JAT_Type' CULL element containes all attributes in which"
+         }, {
+			"line":	"one array task may differ from another array task of the"
+         }, {
+			"line":	"same array job. The 'JB_Type' element defines all attributes"
+         }, {
+			"line":	"which are equivalent for all tasks of an array job."
+         }, {
+			"line":	"A job and an array job with one task are equivalent"
+         }, {
+			"line":	"concerning their data structures. Both consist of one 'JB_Type'"
+         }, {
+			"line":	"and one 'JAT_Type' element."
+         }, {
+			"line":	""
+         }, {
+			"line":	"'JAT_Type' elements contain dynamic data which accrue during the"
+         }, {
+			"line":	"execution of a job. Therefore it is not necessary to create"
+         }, {
+			"line":	"these elements during the submition of a (array) job but"
+         }, {
+			"line":	"after the job has been dispatched."
 		}],
 	"cullPrefix":	"JAT",
 	"attributes":	[{
 			"name":	"task_number",
-			"summary":	"@todo add summary",
+			"summary":	"Task Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unique task number assigned during task creation."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -23,9 +69,11 @@
 				}]
 		}, {
 			"name":	"status",
-			"summary":	"@todo add summary",
+			"summary":	"Status",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"First part of the state (see also JAT_hold, JAT_state)."
+               }, {
+					"line":	"@todo merge status, state and hold"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -33,7 +81,7 @@
 				}]
 		}, {
 			"name":	"start_time",
-			"summary":	"@todo add summary",
+			"summary":	"Start Time",
 			"description":	[{
 					"line":	"Start time of the array task in microseconds since epoch."
 				}],
@@ -43,9 +91,11 @@
 				}]
 		}, {
 			"name":	"end_time",
-			"summary":	"@todo add summary",
+			"summary":	"End Time",
 			"description":	[{
 					"line":	"End time of the array task in microseconds since epoch."
+               }, {
+					"line":	"Only used in sge_execd to simulate job runs."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -53,9 +103,11 @@
 				}]
 		}, {
 			"name":	"hold",
-			"summary":	"@todo add summary",
+			"summary":	"Hold",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Second part of the state (user, operator, system hold)"
+               }, {
+					"line":	"@todo merge status, state and hold"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -63,9 +115,9 @@
 				}]
 		}, {
 			"name":	"granted_pe",
-			"summary":	"@todo add summary",
+			"summary":	"Granted PE",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of a granted parallel environment (in case of parallel jobs)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -73,9 +125,11 @@
 				}]
 		}, {
 			"name":	"job_restarted",
-			"summary":	"@todo add summary",
+			"summary":	"Job Restarted",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Was the task restarted (due to reschedule/migrate)?"
+               }, {
+					"line":	"@todo it is no boolean, but misused for other information!"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -83,9 +137,11 @@
 				}]
 		}, {
 			"name":	"granted_destin_identifier_list",
-			"summary":	"@todo add summary",
+			"summary":	"Granted Destination Identifier List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Granted destination identifier list (JG_Type)."
+               }, {
+					"line":	"Has one element per queue instance the job is running on."
 				}],
 			"type":	"lListT",
 			"subClassName":	"JG",
@@ -107,9 +163,11 @@
 				}]
 		}, {
 			"name":	"master_queue",
-			"summary":	"@todo add summary",
+			"summary":	"Master Queue",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the master queue."
+               }, {
+					"line":	"@todo redundant information, it is the name of the first element in the GDIL."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -117,9 +175,11 @@
 				}]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Third part of state (see also JAT_hold, JAT_status)."
+               }, {
+					"line":	"@todo merge status, state and hold"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -127,9 +187,11 @@
 				}]
 		}, {
 			"name":	"pvm_ckpt_pid",
-			"summary":	"@todo add summary",
+			"summary":	"PVM Checkpoint Pid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pid of a previous, checkpointed run of the job/ja_task."
+               }, {
+					"line":	"@todo was apparently required for checkpointing/restart of PVM jobs - still needed?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -137,9 +199,9 @@
 				}]
 		}, {
 			"name":	"pending_signal",
-			"summary":	"@todo add summary",
+			"summary":	"Pending Signal",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pending signal (not yet acknowledged by execd)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -147,9 +209,11 @@
 				}]
 		}, {
 			"name":	"pending_signal_delivery_time",
-			"summary":	"@todo add summary",
+			"summary":	"Pending Signal Delivery Time",
 			"description":	[{
-					"line":	"... in microseconds since epoch."
+					"line":	"Time when a signal shall be delivered by sge_qmaster to sge_execd (repeated) in µs since epoch."
+               }, {
+					"line":	"Also used in sge_execd to repeat sending of signals."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -157,9 +221,9 @@
 				}]
 		}, {
 			"name":	"pid",
-			"summary":	"@todo add summary",
+			"summary":	"Pid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pid of the sge_shepherd of a job (child of sge_execd). Used for signal delivery."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -167,9 +231,21 @@
 				}]
 		}, {
 			"name":	"osjobid",
-			"summary":	"@todo add summary",
+			"summary":	"OS Job Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unique id which applies to all os processes started"
+               }, {
+					"line":	"on behalf of this task. Set during the startup phase of the"
+               }, {
+					"line":	"job. Meaning depends on the architecture of the"
+               }, {
+					"line":	"host were the task is started."
+               }, {
+					"line":	"SOLARIS/LINUX: additional group id"
+               }, {
+					"line":	"Could be / was a OS supported job id on no longer supported platforms"
+               }, {
+					"line":	"like Cray, Nec, Irix."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -177,9 +253,11 @@
 				}]
 		}, {
 			"name":	"usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list."
+               }, {
+					"line":	"Scheduling is using the scaled usage."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -189,9 +267,11 @@
 				}]
 		}, {
 			"name":	"scaled_usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Scaled Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Scaled usage set by qmaster, used by scheduler."
+               }, {
+					"line":	"Usage scaling is defined in the exechost objects, see sge_host_conf.5"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -201,9 +281,13 @@
 				}]
 		}, {
 			"name":	"reported_usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Reported Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Usage which has already been reported in intermediate accounting records"
+               }, {
+					"line":	"in the reporting file. For long running jobs, written around midnight"
+               }, {
+					"line":	"to provide daily accounting information."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -213,9 +297,9 @@
 				}]
 		}, {
 			"name":	"fshare",
-			"summary":	"@todo add summary",
+			"summary":	"Functional Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Functional shares associated with the job."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -223,9 +307,9 @@
 				}]
 		}, {
 			"name":	"tix",
-			"summary":	"@todo add summary",
+			"summary":	"Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total number of tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -233,9 +317,9 @@
 				}]
 		}, {
 			"name":	"oticket",
-			"summary":	"@todo add summary",
+			"summary":	"Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Override tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -243,9 +327,9 @@
 				}]
 		}, {
 			"name":	"fticket",
-			"summary":	"@todo add summary",
+			"summary":	"Functional Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Functional tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -253,9 +337,9 @@
 				}]
 		}, {
 			"name":	"sticket",
-			"summary":	"@todo add summary",
+			"summary":	"Sharetree Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sharetree tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -263,9 +347,9 @@
 				}]
 		}, {
 			"name":	"share",
-			"summary":	"@todo add summary",
+			"summary":	"Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job targeted proportion set by scheduler."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -273,17 +357,17 @@
 				}]
 		}, {
 			"name":	"suitable",
-			"summary":	"@todo add summary",
+			"summary":	"Suitable",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Tag used in filtering in client job output (qstat, qhost)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"task_list",
-			"summary":	"@todo add summary",
+			"summary":	"Task List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of running parallel tasks."
 				}],
 			"type":	"lListT",
 			"subClassName":	"PET",
@@ -293,9 +377,9 @@
 				}]
 		}, {
 			"name":	"finished_task_list",
-			"summary":	"@todo add summary",
+			"summary":	"Finished Task List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of finished parallel tasks - contains only task names."
 				}],
 			"type":	"lListT",
 			"subClassName":	"FPET",
@@ -305,9 +389,11 @@
 				}]
 		}, {
 			"name":	"previous_usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"Previous Usage List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Copy of the scaled usage list created when a job gets rescheduled."
+               }, {
+					"line":	"@todo If a job is rescheduled multiple times, should probably be aggregated."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -315,9 +401,9 @@
 			"flags":	[]
 		}, {
 			"name":	"pe_object",
-			"summary":	"@todo add summary",
+			"summary":	"PE Object",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"PE object granted to this task (PE_Type), only used in execd."
 				}],
 			"type":	"lObjectT",
 			"subClassName":	"ANY",
@@ -325,17 +411,19 @@
 			"flags":	[]
 		}, {
 			"name":	"next_pe_task_id",
-			"summary":	"@todo add summary",
+			"summary":	"Next PE Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used locally in execd to store next pe task id for this jatask on this execd."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"stop_initiate_time",
-			"summary":	"@todo add summary",
+			"summary":	"Stop Initiate Time",
 			"description":	[{
-					"line":	"... in microseconds since epoch."
+					"line":	"The time in µs since epoch when the action to initiate a job finish"
+               }, {
+					"line":	"(i.e. job termination, or checkpoint creation) was triggered or re-triggered."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -343,25 +431,29 @@
 				}]
 		}, {
 			"name":	"prio",
-			"summary":	"@todo add summary",
+			"summary":	"Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The priority derived from weighted normalized tickets and weighted normalized"
+               }, {
+					"line":	"static urgency. Changes with task due to GEEE ticket dependency."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"ntix",
-			"summary":	"@todo add summary",
+			"summary":	"Normalized Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Relative importance due to JAT_tix amount in the range between 0.0 and 1.0."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"wallclock_limit",
-			"summary":	"@todo add summary",
+			"summary":	"Wallclock Limit",
 			"description":	[{
-					"line":	"... in microseconds since epoch"
+					"line":	"Wallclock_limit. Either requested (qsub -l h_rt=...) or the minimum of queue h_rt"
+               }, {
+					"line":	"in microseconds since epoch"
 				}],
 			"type":	"lTimestampT",
 			"flags":	[{
@@ -369,9 +461,11 @@
 				}]
 		}, {
 			"name":	"message_list",
-			"summary":	"@todo add summary",
+			"summary":	"Message List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Task specific messages."
+               }, {
+					"line":	"Currently only used for storing the reason why a job is in error state."
 				}],
 			"type":	"lListT",
 			"subClassName":	"QIM",

@@ -28,117 +28,164 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Array Task
 *
-* @todo add description
+* JAT_Type elements are a sub element of JB_Type elements.
+* One element of each type is necessary to hold all data for the execution of one job.
+* One JB_Type element and x JAT_Type elements are needed to execute an array job with x tasks.
+* 
+*          -----------       1:x        ------------
+*          | JB_Type |<---------------->| JAT_Type |
+*          -----------                  ------------
+* 
+* The relation between these two elements is defined in the
+* 'JB_ja_tasks' sublist of a 'JB_Type' element. This list will
+* contain all belonging JAT_Type elements.
+* 
+* The 'JAT_Type' CULL element containes all attributes in which
+* one array task may differ from another array task of the
+* same array job. The 'JB_Type' element defines all attributes
+* which are equivalent for all tasks of an array job.
+* A job and an array job with one task are equivalent
+* concerning their data structures. Both consist of one 'JB_Type'
+* and one 'JAT_Type' element.
+* 
+* 'JAT_Type' elements contain dynamic data which accrue during the
+* execution of a job. Therefore it is not necessary to create
+* these elements during the submition of a (array) job but
+* after the job has been dispatched.
 *
-*    SGE_ULONG(JAT_task_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_task_number) - Task Number
+*    Unique task number assigned during task creation.
 *
-*    SGE_ULONG(JAT_status) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_status) - Status
+*    First part of the state (see also JAT_hold, JAT_state).
+*    @todo merge status, state and hold
 *
-*    SGE_ULONG64(JAT_start_time) - @todo add summary
+*    SGE_ULONG64(JAT_start_time) - Start Time
 *    Start time of the array task in microseconds since epoch.
 *
-*    SGE_ULONG64(JAT_end_time) - @todo add summary
+*    SGE_ULONG64(JAT_end_time) - End Time
 *    End time of the array task in microseconds since epoch.
+*    Only used in sge_execd to simulate job runs.
 *
-*    SGE_ULONG(JAT_hold) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_hold) - Hold
+*    Second part of the state (user, operator, system hold)
+*    @todo merge status, state and hold
 *
-*    SGE_STRING(JAT_granted_pe) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JAT_granted_pe) - Granted PE
+*    Name of a granted parallel environment (in case of parallel jobs).
 *
-*    SGE_ULONG(JAT_job_restarted) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_job_restarted) - Job Restarted
+*    Was the task restarted (due to reschedule/migrate)?
+*    @todo it is no boolean, but misused for other information!
 *
-*    SGE_LIST(JAT_granted_destin_identifier_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_granted_destin_identifier_list) - Granted Destination Identifier List
+*    Granted destination identifier list (JG_Type).
+*    Has one element per queue instance the job is running on.
 *
 *    SGE_LIST(JAT_granted_resources_list) - Granted Resources
 *    List of granted resources, currently these are granted RSMAPs only.
 *
-*    SGE_STRING(JAT_master_queue) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JAT_master_queue) - Master Queue
+*    Name of the master queue.
+*    @todo redundant information, it is the name of the first element in the GDIL.
 *
-*    SGE_ULONG(JAT_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_state) - State
+*    Third part of state (see also JAT_hold, JAT_status).
+*    @todo merge status, state and hold
 *
-*    SGE_ULONG(JAT_pvm_ckpt_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_pvm_ckpt_pid) - PVM Checkpoint Pid
+*    Pid of a previous, checkpointed run of the job/ja_task.
+*    @todo was apparently required for checkpointing/restart of PVM jobs - still needed?
 *
-*    SGE_ULONG(JAT_pending_signal) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_pending_signal) - Pending Signal
+*    Pending signal (not yet acknowledged by execd).
 *
-*    SGE_ULONG64(JAT_pending_signal_delivery_time) - @todo add summary
-*    ... in microseconds since epoch.
+*    SGE_ULONG64(JAT_pending_signal_delivery_time) - Pending Signal Delivery Time
+*    Time when a signal shall be delivered by sge_qmaster to sge_execd (repeated) in µs since epoch.
+*    Also used in sge_execd to repeat sending of signals.
 *
-*    SGE_ULONG(JAT_pid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_pid) - Pid
+*    Pid of the sge_shepherd of a job (child of sge_execd). Used for signal delivery.
 *
-*    SGE_STRING(JAT_osjobid) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JAT_osjobid) - OS Job Id
+*    Unique id which applies to all os processes started
+*    on behalf of this task. Set during the startup phase of the
+*    job. Meaning depends on the architecture of the
+*    host were the task is started.
+*    SOLARIS/LINUX: additional group id
+*    Could be / was a OS supported job id on no longer supported platforms
+*    like Cray, Nec, Irix.
 *
-*    SGE_LIST(JAT_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_usage_list) - Usage List
+*    Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list.
+*    Scheduling is using the scaled usage.
 *
-*    SGE_LIST(JAT_scaled_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_scaled_usage_list) - Scaled Usage List
+*    Scaled usage set by qmaster, used by scheduler.
+*    Usage scaling is defined in the exechost objects, see sge_host_conf.5
 *
-*    SGE_LIST(JAT_reported_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_reported_usage_list) - Reported Usage List
+*    Usage which has already been reported in intermediate accounting records
+*    in the reporting file. For long running jobs, written around midnight
+*    to provide daily accounting information.
 *
-*    SGE_ULONG(JAT_fshare) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_fshare) - Functional Share
+*    Functional shares associated with the job.
 *
-*    SGE_DOUBLE(JAT_tix) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_tix) - Tickets
+*    Total number of tickets.
 *
-*    SGE_DOUBLE(JAT_oticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_oticket) - Override Tickets
+*    Override tickets.
 *
-*    SGE_DOUBLE(JAT_fticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_fticket) - Functional Tickets
+*    Functional tickets.
 *
-*    SGE_DOUBLE(JAT_sticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_sticket) - Sharetree Tickets
+*    Sharetree tickets.
 *
-*    SGE_DOUBLE(JAT_share) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_share) - Share
+*    Job targeted proportion set by scheduler.
 *
-*    SGE_ULONG(JAT_suitable) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_suitable) - Suitable
+*    Tag used in filtering in client job output (qstat, qhost).
 *
-*    SGE_LIST(JAT_task_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_task_list) - Task List
+*    List of running parallel tasks.
 *
-*    SGE_LIST(JAT_finished_task_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_finished_task_list) - Finished Task List
+*    List of finished parallel tasks - contains only task names.
 *
-*    SGE_LIST(JAT_previous_usage_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_previous_usage_list) - Previous Usage List
+*    Copy of the scaled usage list created when a job gets rescheduled.
+*    @todo If a job is rescheduled multiple times, should probably be aggregated.
 *
-*    SGE_OBJECT(JAT_pe_object) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(JAT_pe_object) - PE Object
+*    PE object granted to this task (PE_Type), only used in execd.
 *
-*    SGE_ULONG(JAT_next_pe_task_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JAT_next_pe_task_id) - Next PE Task Id
+*    Used locally in execd to store next pe task id for this jatask on this execd.
 *
-*    SGE_ULONG64(JAT_stop_initiate_time) - @todo add summary
-*    ... in microseconds since epoch.
+*    SGE_ULONG64(JAT_stop_initiate_time) - Stop Initiate Time
+*    The time in µs since epoch when the action to initiate a job finish
+*    (i.e. job termination, or checkpoint creation) was triggered or re-triggered.
 *
-*    SGE_DOUBLE(JAT_prio) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_prio) - Priority
+*    The priority derived from weighted normalized tickets and weighted normalized
+*    static urgency. Changes with task due to GEEE ticket dependency.
 *
-*    SGE_DOUBLE(JAT_ntix) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JAT_ntix) - Normalized Tickets
+*    Relative importance due to JAT_tix amount in the range between 0.0 and 1.0.
 *
-*    SGE_ULONG64(JAT_wallclock_limit) - @todo add summary
-*    ... in microseconds since epoch
+*    SGE_ULONG64(JAT_wallclock_limit) - Wallclock Limit
+*    Wallclock_limit. Either requested (qsub -l h_rt=...) or the minimum of queue h_rt
+*    in microseconds since epoch
 *
-*    SGE_LIST(JAT_message_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JAT_message_list) - Message List
+*    Task specific messages.
+*    Currently only used for storing the reason why a job is in error state.
 *
 */
 
