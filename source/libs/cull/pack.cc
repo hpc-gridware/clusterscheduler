@@ -47,9 +47,8 @@
 #endif
 
 #if defined(SOLARIS)
-#include <sys/byteorder.h>
-#define htobe64(x) BE_64(x)
-#define be64toh(x) BE_IN64(x)
+#define htobe64(x) htonll(x)
+#define be64toh(x) ntohll(x)
 #endif
 
 /* do not compile in monitoring code */
