@@ -1,15 +1,15 @@
 {
 	"className":	"Category",
-	"summary":	"@todo add summary",
+	"summary":	"Job Category",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of this type describes a category of jobs."
 		}],
 	"cullPrefix":	"CT",
 	"attributes":	[{
 			"name":	"str",
-			"summary":	"@todo add summary",
+			"summary":	"Category String",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"String holding all elements of a category (requests, user, project, ...)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,33 +19,37 @@
 				}]
 		}, {
 			"name":	"refcount",
-			"summary":	"@todo add summary",
+			"summary":	"Reference Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of jobs referencing this category."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"count",
-			"summary":	"@todo add summary",
+			"summary":	"Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of jobs of this category used in this schuling run"
+               }, {
+					"line":	"If -1, then CT_refcount is used"
 				}],
 			"type":	"lIntT",
 			"flags":	[]
 		}, {
 			"name":	"rejected",
-			"summary":	"@todo add summary",
+			"summary":	"Rejected",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Has this category been rejected as it can not be dispached now?"
+               }, {
+					"line":	"@todo make it a boolean"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"cache",
-			"summary":	"@todo add summary",
+			"summary":	"Cache",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Stores all info, which cannot run this job category."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CCT",
@@ -53,33 +57,37 @@
 			"flags":	[]
 		}, {
 			"name":	"messages_added",
-			"summary":	"@todo add summary",
+			"summary":	"Messages Added",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If true, the scheduler info messages have been added for this category."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"resource_contribution",
-			"summary":	"@todo add summary",
+			"summary":	"Resource Contribution",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Resource request dependent contribution on urgency."
+               }, {
+					"line":	"This value is common for all jobs of a category."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"rc_valid",
-			"summary":	"@todo add summary",
+			"summary":	"Resource Contribution valid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Indicates whether the cached CT_resource_contribution is valid."
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"reservation_rejected",
-			"summary":	"@todo add summary",
+			"summary":	"Reservation Rejected",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Has this category been rejected as it can not be reserved?"
+               }, {
+					"line":	"@todo make it a boolean"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

@@ -28,36 +28,40 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Category
 *
-* @todo add description
+* An object of this type describes a category of jobs.
 *
-*    SGE_STRING(CT_str) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CT_str) - Category String
+*    String holding all elements of a category (requests, user, project, ...).
 *
-*    SGE_ULONG(CT_refcount) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CT_refcount) - Reference Count
+*    Number of jobs referencing this category.
 *
-*    SGE_INT(CT_count) - @todo add summary
-*    @todo add description
+*    SGE_INT(CT_count) - Count
+*    Number of jobs of this category used in this schuling run
+*    If -1, then CT_refcount is used
 *
-*    SGE_ULONG(CT_rejected) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CT_rejected) - Rejected
+*    Has this category been rejected as it can not be dispached now?
+*    @todo make it a boolean
 *
-*    SGE_LIST(CT_cache) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CT_cache) - Cache
+*    Stores all info, which cannot run this job category.
 *
-*    SGE_BOOL(CT_messages_added) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(CT_messages_added) - Messages Added
+*    If true, the scheduler info messages have been added for this category.
 *
-*    SGE_DOUBLE(CT_resource_contribution) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(CT_resource_contribution) - Resource Contribution
+*    Resource request dependent contribution on urgency.
+*    This value is common for all jobs of a category.
 *
-*    SGE_BOOL(CT_rc_valid) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(CT_rc_valid) - Resource Contribution valid
+*    Indicates whether the cached CT_resource_contribution is valid.
 *
-*    SGE_ULONG(CT_reservation_rejected) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CT_reservation_rejected) - Reservation Rejected
+*    Has this category been rejected as it can not be reserved?
+*    @todo make it a boolean
 *
 */
 
