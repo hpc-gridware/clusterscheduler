@@ -28,33 +28,41 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Job Sort Object
 *
-* @todo add description
+* This is the list type we use to sort the joblist in the sge scheduler.
+* The list will be build before the actual scheduling.
+* It is sorted by priorty ASC, submission time ASC, job number DESC.
+* Jobs in this list will then be scheduled one after the other.
 *
-*    SGE_DOUBLE(SGEJ_priority) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(SGEJ_priority) - Priority
+*    Normalized priority of the job/array task after applying all policies.
+*    The job list is sorted by priority descending as primary sort criterion.
 *
-*    SGE_ULONG(SGEJ_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SGEJ_job_number) - Job Number
+*    The job number. Third sort criterion.
 *
-*    SGE_STRING(SGEJ_job_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SGEJ_job_name) - Job Name
+*    The job name.
+*    @todo can be removed, it is only set, never read.
 *
-*    SGE_STRING(SGEJ_owner) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SGEJ_owner) - Owner
+*    The job owner.
+*    @todo can be removed, it is only set, never read.
 *
-*    SGE_ULONG(SGEJ_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SGEJ_state) - State
+*    The state of an enrolled array task (JAT_state).
+*    @todo can be removed, it is only set, never read.
 *
-*    SGE_STRING(SGEJ_master_queue) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SGEJ_master_queue) - Master Queue
+*    The master queue of an enrolled array task (JAT_master_queue).
+*    @todo can be removed, it is only set, never read.
 *
-*    SGE_REF(SGEJ_job_reference) - @todo add summary
-*    @todo add description
+*    SGE_REF(SGEJ_job_reference) - Job Reference
+*    Reference (Pointer) to the job in the scheduler's job list.
 *
-*    SGE_ULONG64(SGEJ_submission_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(SGEJ_submission_time) - Submission Time
+*    The job submission time. Secondary sort criterion.
 *
 */
 

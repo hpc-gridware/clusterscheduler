@@ -810,7 +810,9 @@ void sgeee_sort_jobs(lList **job_list)              /* JB_Type */
    sgeee_sort_jobs_by(job_list, SGEJ_priority, SGEJ_sort_decending , SGEJ_sort_ascending); /* decreasing priority then increasing job number */
 }
 
-void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_direction, int jobnum_sort_direction) /* JB_Type */
+void sgeee_sort_jobs_by(lList **job_list , int by_SGEJ_field,
+                        int field_sort_direction, int jobnum_sort_direction) /* JB_Type */
+// @todo by_SGEJ_field, field_sort_direction, jobnum_sort_direction are always the same
 {
 
    lListElem *job = nullptr, *nxt_job = nullptr;
@@ -849,7 +851,7 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
          const lListElem *tmp_task = lFirst(lGetList(job, JB_ja_tasks));
 
          /* 
-          * If there is no enrolled task than take the template element 
+          * If there is no enrolled task then take the template element
           */
          if (tmp_task == nullptr) {
             tmp_task = lFirst(lGetList(job, JB_ja_template));

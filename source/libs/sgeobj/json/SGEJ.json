@@ -1,63 +1,79 @@
 {
 	"className":	"JobSortObject",
-	"summary":	"@todo add summary",
+	"summary":	"Job Sort Object",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is the list type we use to sort the joblist in the sge scheduler."
+         }, {
+			"line":	"The list will be build before the actual scheduling."
+         }, {
+			"line":	"It is sorted by priorty ASC, submission time ASC, job number DESC."
+         }, {
+			"line":	"Jobs in this list will then be scheduled one after the other."
 		}],
 	"cullPrefix":	"SGEJ",
 	"attributes":	[{
 			"name":	"priority",
-			"summary":	"@todo add summary",
+			"summary":	"Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Normalized priority of the job/array task after applying all policies."
+               }, {
+					"line":	"The job list is sorted by priority descending as primary sort criterion."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"job_number",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job number. Third sort criterion."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"job_name",
-			"summary":	"@todo add summary",
+			"summary":	"Job Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job name."
+               }, {
+					"line":	"@todo can be removed, it is only set, never read."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"owner",
-			"summary":	"@todo add summary",
+			"summary":	"Owner",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job owner."
+               }, {
+					"line":	"@todo can be removed, it is only set, never read."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The state of an enrolled array task (JAT_state)."
+               }, {
+					"line":	"@todo can be removed, it is only set, never read."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"master_queue",
-			"summary":	"@todo add summary",
+			"summary":	"Master Queue",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The master queue of an enrolled array task (JAT_master_queue)."
+               }, {
+					"line":	"@todo can be removed, it is only set, never read."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"job_reference",
-			"summary":	"@todo add summary",
+			"summary":	"Job Reference",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Reference (Pointer) to the job in the scheduler's job list."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -65,9 +81,9 @@
 			"flags":	[]
 		}, {
 			"name":	"submission_time",
-			"summary":	"@todo add summary",
+			"summary":	"Submission Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job submission time. Secondary sort criterion."
 				}],
 			"type":	"lTimestampT",
 			"flags":	[]
