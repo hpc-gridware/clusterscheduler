@@ -28,12 +28,12 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Unsigned Long
 *
-* @todo add description
+* Used for lists / sublists holding 32bit ulong values, e.g. job ids.
 *
-*    SGE_ULONG(ULNG_value) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(ULNG_value) - Value
+*    An ulong value.
 *
 */
 

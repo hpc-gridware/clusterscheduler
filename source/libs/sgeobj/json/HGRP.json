@@ -1,15 +1,133 @@
 {
 	"className":	"HostGroup",
-	"summary":	"@todo add summary",
+	"summary":	"Host Group",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"HGRP_Type elements are used to define groups of hosts. Each group"
+         }, {
+			"line":	"will be identified by a unique name."
+         }, {
+			"line":	"Each hostgroup might refer to none, one or multiple hosts and/or"
+         }, {
+			"line":	"hostgroups. This object makes it possible to define a network of"
+         }, {
+			"line":	"hostgroups and hosts."
+         }, {
+			"line":	""
+         }, {
+			"line":	"                  --------------"
+         }, {
+			"line":	"                  |            |"
+         }, {
+			"line":	"                  V            | 0:x"
+         }, {
+			"line":	"            ------------- -----|"
+         }, {
+			"line":	"            | HGRP_Type |"
+         }, {
+			"line":	"            ------------- ------------> | hostname |"
+         }, {
+			"line":	"                               0:x      ------------"
+         }, {
+			"line":	""
+         }, {
+			"line":	"Example:"
+         }, {
+			"line":	"Following diagram shows a network of 9 hostgroups (A; B; C;"
+         }, {
+			"line":	"D; E; G; H; I). Each of those groups references one host"
+         }, {
+			"line":	"(A -> a; B -> b; C -> c; ...). Additionally some of those"
+         }, {
+			"line":	"hostgroups refer to one (A -> C; B -> C; C -> E; ...) or two"
+         }, {
+			"line":	"hostgroups (E -> F,G; F -> H,I) The connections are all"
+         }, {
+			"line":	"uni-directional, you have to read the diagram from the left"
+         }, {
+			"line":	"to the right."
+         }, {
+			"line":	""
+         }, {
+			"line":	"            -----                           -----"
+         }, {
+			"line":	"            | A | -- a                      | H | -- h"
+         }, {
+			"line":	"            ----- \\                       / -----"
+         }, {
+			"line":	"                    -----           -----"
+         }, {
+			"line":	"                    | C | -- c      | F | -- f"
+         }, {
+			"line":	"                    -----         / -----"
+         }, {
+			"line":	"            ----- /       \\ -----         \\ -----"
+         }, {
+			"line":	"            | B | -- b      | E | -- e      | I | -- i"
+         }, {
+			"line":	"            -----           -----           -----"
+         }, {
+			"line":	"                    ----- /       \\ -----"
+         }, {
+			"line":	"                    | D | -- d      | G | -- g"
+         }, {
+			"line":	"                    -----           -----"
+         }, {
+			"line":	"Several functions exist to create such networks and to find"
+         }, {
+			"line":	"certain sets of hosts and hostgroups within such a network:"
+         }, {
+			"line":	"hgroup_find_references(\"E\", &answer, master_list, &hosts, &groups)"
+         }, {
+			"line":	"   hosts -> e"
+         }, {
+			"line":	"   groups -> F, G"
+         }, {
+			"line":	""
+         }, {
+			"line":	"hgroup_find_all_references(\"E\", &answer, master_list, &hosts, &groups)"
+         }, {
+			"line":	"   hosts -> e, f, g, h, i"
+         }, {
+			"line":	"   groups -> F, G, H, I"
+         }, {
+			"line":	""
+         }, {
+			"line":	"hgroup_find_referencees(\"E\", &answer, master_list, &groups)"
+         }, {
+			"line":	"   groups -> C, D"
+         }, {
+			"line":	""
+         }, {
+			"line":	"hgroup_find_all_referencees(\"E\", &answer, master_list, &groups)"
+         }, {
+			"line":	"   groups -> A, B, C, D"
+         }, {
+			"line":	""
+         }, {
+			"line":	"@see hgroup_list_get_master_list()"
+         }, {
+			"line":	"@see hgroup_list_locate()"
+         }, {
+			"line":	"@see hgroup_create()"
+         }, {
+			"line":	"@see hgroup_add_references()"
+         }, {
+			"line":	"@see hgroup_find_all_references()"
+         }, {
+			"line":	"@see hgroup_find_references()"
+         }, {
+			"line":	"@see hgroup_find_all_referencees()"
+         }, {
+			"line":	"@see hgroup_find_referencees()"
+         }, {
+			"line":	"@see hgroup_list_exists()"
 		}],
 	"cullPrefix":	"HGRP",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the hostgroup. Always starts with '@', e.g. '@allhosts'."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -25,9 +143,9 @@
 				}]
 		}, {
 			"name":	"host_list",
-			"summary":	"@todo add summary",
+			"summary":	"Host List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of hosts and/or other host groups which are referenced by the host group."
 				}],
 			"type":	"lListT",
 			"subClassName":	"HR",
@@ -39,9 +157,11 @@
 				}]
 		}, {
 			"name":	"cqueue_list",
-			"summary":	"@todo add summary",
+			"summary":	"Cluster Queue List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Temporary list of cluster queues referencing a host group"
+               }, {
+					"line":	"while processing creation or modification requests for host groups."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CQ",

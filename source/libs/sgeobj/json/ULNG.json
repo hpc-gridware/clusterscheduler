@@ -1,15 +1,15 @@
 {
 	"className":	"UnsignedLong",
-	"summary":	"@todo add summary",
+	"summary":	"Unsigned Long",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used for lists / sublists holding 32bit ulong values, e.g. job ids."
 		}],
 	"cullPrefix":	"ULNG",
 	"attributes":	[{
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"An ulong value."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
