@@ -28,12 +28,12 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Host Reference
 *
-* @todo add description
+* Used to reference a host by name.
 *
-*    SGE_HOST(HR_name) - @todo add summary
-*    @todo add description
+*    SGE_HOST(HR_name) - Name
+*    The host name.
 *
 */
 
