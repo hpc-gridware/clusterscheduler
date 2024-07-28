@@ -28,42 +28,49 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Load Sensor
 *
-* @todo add description
+* The attributes of this element show the state of a load sensor.
+* A list of these elements is used in the execd.
 *
-*    SGE_STRING(LS_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LS_name) - Name
+*    Name of this load sensor, no hashing, we only have few loadsensors/host.
+*    Currently used names:
+*      - extern
+*      - IDLE_LOADSENSOR_NAME = qidle
+*      - GNU_LOADSENSOR_NAME = qloadsensor
+*    @todo what's the purpose of the name?
 *
-*    SGE_STRING(LS_command) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LS_command) - Command
+*    Absolute path of the load sensor script / binary.
 *
-*    SGE_STRING(LS_pid) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LS_pid) - Pid
+*    Pid of the load sensor process.
 *
-*    SGE_REF(LS_in) - @todo add summary
-*    @todo add description
+*    SGE_REF(LS_in) - Stdin File Handle
+*    stdin filehandle to the loadsensor process (type FILE *)
 *
-*    SGE_REF(LS_out) - @todo add summary
-*    @todo add description
+*    SGE_REF(LS_out) - Stdout File Handle
+*    stdout filehandle of the loadsensor process (type FILE *)
 *
-*    SGE_REF(LS_err) - @todo add summary
-*    @todo add description
+*    SGE_REF(LS_err) - Stderr File Handle
+*    stderr filehandle of the loadsensor process (type FILE *)
 *
-*    SGE_BOOL(LS_has_to_restart) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(LS_has_to_restart) - Has to restart
+*    Do we have to restart the load sensor script?
 *
-*    SGE_ULONG(LS_tag) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(LS_tag) - Tag
+*    Tag for internal use (@todo 1 means it is running, 0 it isn't running? Verify.)
 *
-*    SGE_LIST(LS_incomplete) - @todo add summary
-*    @todo add description
+*    SGE_LIST(LS_incomplete) - Incomplete Values
+*    Current values we got from the load sensor script.
 *
-*    SGE_LIST(LS_complete) - @todo add summary
-*    @todo add description
+*    SGE_LIST(LS_complete) - Complete Values
+*    Last complete set of the load sensor's values.
 *
-*    SGE_ULONG(LS_last_mod) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(LS_last_mod) - Last Modification Time
+*    Last modification time of the load sensor script.
+*    If the script is modified, then the load sensor will be re-started.
 *
 */
 
