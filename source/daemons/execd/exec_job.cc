@@ -45,6 +45,7 @@
 #include "uti/sge_arch.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_binding_parse.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_dstring.h"

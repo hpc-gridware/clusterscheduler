@@ -324,7 +324,6 @@ centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **p
 
    sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
                  lGetString(ep, CE_name), nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
 
    if (old_ep != nullptr) {
       /* 

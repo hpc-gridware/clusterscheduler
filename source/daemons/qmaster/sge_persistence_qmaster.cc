@@ -583,9 +583,6 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
                        intkey1, intkey2, strkey, strkey2,
                        session, element);
       }
-
-      /* clear the changed bits */
-      lListElem_clear_changed_info(object);
    }
 
    sge_dstring_free(&buffer);

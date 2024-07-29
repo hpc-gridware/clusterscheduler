@@ -274,10 +274,10 @@ void
 object_get_any_type(const lListElem *this_elem, int name, void *value);
 
 bool  
-object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem, bool modify_changed_flag);
+object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem);
 
 bool
-object_list_has_differences(const lList *this_elem, lList **answer_list, const lList *old_elem, bool modify_changed_flag);
+object_list_has_differences(const lList *this_elem, lList **answer_list, const lList *old_elem);
 
 bool
 object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr);

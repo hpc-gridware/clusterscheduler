@@ -6311,18 +6311,6 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
             }
             lSetRef(queue_ref_elem, QRL_queue, queue);
             lAppendElem(queue_ref_list, queue_ref_elem);
-
-            /* reset the changed bit in the consumables */
-            if (global_consumable != nullptr){
-               sge_bitfield_reset(&(global_consumable->changed));
-            }
-            if (host_consumable != nullptr){
-               sge_bitfield_reset(&(host_consumable->changed));
-            }
-            if (queue_consumable != nullptr){
-               sge_bitfield_reset(&(queue_consumable->changed));
-            }
-
          }
       }
    }
@@ -6434,52 +6422,27 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
    }
 
    for_each_rw(load, load_list) {
-      bool is_recalc=false;
-      lListElem *elem;
+      /* we used to have code here to check if load elements had changed and only then did the alarm calculation.
+       * but load elements will constantly change, so no real optimization
+       * removed it as part of CS-438
+       */
+      bool is_category_alarm = false;
+      queue_ref_list = lGetPosList(load, LDR_queue_ref_list_pos);
+      for_each_rw(queue_ref, queue_ref_list) {
+         queue = (lListElem *)lGetRef(queue_ref, QRL_queue);
+         if (is_category_alarm) {
+            lSetUlong(queue, QU_tagged4schedule, 1);
+         } else if (sge_load_alarm(reason, sizeof(reason), queue, lGetList(queue, QU_load_thresholds), host_list, centry_list, nullptr, true)) {
 
-      elem = (lListElem *)lGetPosRef(load, LDR_global_pos);
-      if (elem != nullptr) {
-         if ( sge_bitfield_changed(&(elem->changed))) {
-            is_recalc = true;
-            sge_bitfield_reset(&(elem->changed));
+            DPRINTF("queue %s tagged to be overloaded: %s\n", lGetString(queue, QU_full_name), reason);
+            schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,
+                                  lGetString(queue, QU_full_name), reason);
+            lSetUlong(queue, QU_tagged4schedule, 1);
+            is_alarm = true;
+            is_category_alarm = true;
          }
-      }
-
-      elem = (lListElem *)lGetPosRef(load, LDR_host_pos);
-      if (elem != nullptr) {
-         if ( sge_bitfield_changed(&(elem->changed))) {
-            is_recalc = true;
-            sge_bitfield_reset(&(elem->changed));
-         }
-      }
-
-      elem = (lListElem *)lGetPosRef(load, LDR_queue_pos);
-      if (elem != nullptr) {
-         if ( sge_bitfield_changed(&(elem->changed))) {
-            is_recalc = true;
-            sge_bitfield_reset(&(elem->changed));
-         }
-      }
-
-      if (is_recalc) {
-         bool is_category_alarm = false;
-         queue_ref_list = lGetPosList(load, LDR_queue_ref_list_pos);
-         for_each_rw(queue_ref, queue_ref_list) {
-            queue = (lListElem *)lGetRef(queue_ref, QRL_queue);
-            if (is_category_alarm) {
-               lSetUlong(queue, QU_tagged4schedule, 1);
-            } else if (sge_load_alarm(reason, sizeof(reason), queue, lGetList(queue, QU_load_thresholds), host_list, centry_list, nullptr, true)) {
-
-               DPRINTF("queue %s tagged to be overloaded: %s\n", lGetString(queue, QU_full_name), reason);
-               schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,
-                                     lGetString(queue, QU_full_name), reason);
-               lSetUlong(queue, QU_tagged4schedule, 1);
-               is_alarm = true;
-               is_category_alarm = true;
-            }
-            else {
-               break;
-            }
+         else {
+            break;
          }
       }
    }

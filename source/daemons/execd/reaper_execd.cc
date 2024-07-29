@@ -48,6 +48,7 @@
 
 #include "uti/config_file.h"
 #include "uti/sge_afsutil.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"

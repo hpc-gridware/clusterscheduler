@@ -39,11 +39,10 @@
 
 #ifndef __BASIS_TYPES_H
 
-#   include "basis_types.h"
+#include <cstdio>
+#include "basis_types.h"
 
 #endif
-
-#include "uti/sge_bitfield.h"
 
 #define CHUNK  (1024*1024)
 
@@ -136,8 +135,6 @@ int packstr(sge_pack_buffer *, const char *);
 
 int packbuf(sge_pack_buffer *, const char *, u_long32);
 
-int packbitfield(sge_pack_buffer *, const bitfield *);
-
 int unpackint(sge_pack_buffer *, u_long32 *);
 
 int unpackint64(sge_pack_buffer *, u_long64 *);
@@ -147,8 +144,6 @@ int unpackdouble(sge_pack_buffer *, double *);
 int unpackstr(sge_pack_buffer *, char **);
 
 int unpackbuf(sge_pack_buffer *, char **, int);
-
-int unpackbitfield(sge_pack_buffer *, bitfield *, int descr_size);
 
 void debugpack(int on_off);
 

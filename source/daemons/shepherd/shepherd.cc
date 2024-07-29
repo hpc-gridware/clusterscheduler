@@ -50,6 +50,7 @@
 #include <sys/wait.h>
 
 #include "uti/sge_binding_hlp.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_string.h"
 #include "shepherd_binding.h"
 /* TODO: (SH) get_path.h is a header-file of execd. We have to do a CLEANUP here. */

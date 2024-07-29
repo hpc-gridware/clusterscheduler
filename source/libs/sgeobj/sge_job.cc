@@ -39,6 +39,7 @@
 
 #include "uti/sge.h"
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"

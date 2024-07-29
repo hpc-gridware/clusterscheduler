@@ -1835,8 +1835,7 @@ object_get_any_type(const lListElem *this_elem, int name, void *value) {
 }
 
 bool
-object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem,
-                       bool modify_changed_flag) {
+object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem) {
    DENTER(TOP_LAYER);
    bool ret = false;
 
@@ -1927,14 +1926,14 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
                lListElem *new_obj = lGetPosObject(this_elem, pos);
                lListElem *old_obj = lGetPosObject(old_elem, pos);
 
-               equiv = object_has_differences(new_obj, answer_list, old_obj, modify_changed_flag) ? false : true;
+               equiv = object_has_differences(new_obj, answer_list, old_obj) ? false : true;
             }
                break;
             case lListT: {
                lList *new_list = lGetPosList(this_elem, pos);
                lList *old_list = lGetPosList(old_elem, pos);
 
-               if (object_list_has_differences(new_list, answer_list, old_list, modify_changed_flag)) {
+               if (object_list_has_differences(new_list, answer_list, old_list)) {
                   equiv = false;
                } else {
                   equiv = true;
@@ -1971,8 +1970,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
 }
 
 bool
-object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list,
-                            bool modify_changed_flag) {
+object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list) {
    DENTER(BASIS_LAYER);
    bool ret = false;
 
@@ -1986,7 +1984,7 @@ object_list_has_differences(const lList *this_list, lList **answer_list, const l
            new_elem != nullptr && old_elem != nullptr;
            new_elem = lNext(new_elem), old_elem = lNext(old_elem)) {
 
-         ret = object_has_differences(new_elem, answer_list, old_elem, modify_changed_flag);
+         ret = object_has_differences(new_elem, answer_list, old_elem);
          if (ret) {
             break;
          }

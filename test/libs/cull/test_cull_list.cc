@@ -170,11 +170,6 @@ int main(int argc, char *argv[]) {
 
    /* test reducing of elements */
 
-   /* test clearing of changed info */
-   lListElem_clear_changed_info(ep);
-   printf("cleared changed information for object and sub elements\n");
-   lWriteElemTo(ep, stdout);
-
    /* cleanup and exit */
    lFreeElem(&ep);
    return EXIT_SUCCESS;

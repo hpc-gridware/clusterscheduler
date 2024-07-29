@@ -34,6 +34,7 @@
 
 #include <cstring>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
@@ -1434,7 +1435,6 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
       if (send_event) {
          sge_add_event(0, event, 0, 0, cqueue_name, hostname, nullptr, nullptr);
       }
-      lListElem_clear_changed_info(this_elem);
       /*
        * this queue instance was (un)suspended by queue wise suspend on subordinate,
        * now check if it has slotwise subordinates that must be handled.

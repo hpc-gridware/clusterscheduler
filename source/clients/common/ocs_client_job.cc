@@ -34,7 +34,9 @@
 
 #include <string>
 #include <cstring>
+#include <cstdio>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"

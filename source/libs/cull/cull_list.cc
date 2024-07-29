@@ -193,12 +193,6 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
          DRETURN(nullptr);
       }
    }
-   if (!sge_bitfield_copy(&(ep->changed), &(new_ep->changed))) {
-      lFreeElem(&new_ep);
-
-      LERROR(LECOPYSWITCH);
-      DRETURN(nullptr);
-   }
 
    new_ep->status = FREE_ELEM;
 
@@ -288,12 +282,6 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
-#if 0 /* TODO EB: we need to decide if we want this or not */
-               /* copy changed field information */
-               if(sge_bitfield_get(&(src->changed), i)) {
-                  sge_bitfield_set(&(dst->changed), *jp);
-               }
-#endif
             }
          } else {
             cull_pack_elem(pb, src);
@@ -318,12 +306,6 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
-#if 0 /* TODO EB: we need to decide if we want this or not */
-               /* copy changed field information */
-               if(sge_bitfield_get(&(src->changed), enp[i].pos)) {
-                  sge_bitfield_set(&(dst->changed), *jp);
-               }
-#endif
             }
          } else {
             cull_pack_elem_partial(pb, src, enp, 0);
@@ -706,36 +688,29 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
    sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", space);
 
    for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      bool changed = sge_bitfield_get(&(ep->changed), i);
       const char *name = ((lNm2Str(ep->descr[i].nm) != nullptr) ? lNm2Str(ep->descr[i].nm) : "(null)");
 
       switch (mt_get_type(ep->descr[i].mt)) {
          case lIntT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) %c = %d\n", space, name, changed ? '*' : ' ',
-                                       lGetPosInt(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", space, name, lGetPosInt(ep, i));
             break;
          case lUlongT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   %c = " sge_u32"\n", space, name,
-                                       changed ? '*' : ' ', lGetPosUlong(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32"\n", space, name, lGetPosUlong(ep, i));
             break;
          case lUlong64T:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) %c = " sge_u64"\n", space, name,
-                                       changed ? '*' : ' ', lGetPosUlong64(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64"\n", space, name, lGetPosUlong64(ep, i));
             break;
          case lStringT:
             str = lGetPosString(ep, i);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (String)  %c = %s\n", space, name, changed ? '*' : ' ',
-                                       str ? str : "(null)");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (String)  = %s\n", space, name, str ? str : "(null)");
             break;
          case lHostT:
             str = lGetPosHost(ep, i);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Host)    %c = %s\n", space, name, changed ? '*' : ' ',
-                                       str ? str : "(null)");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Host)    = %s\n", space, name, str ? str : "(null)");
             break;
          case lListT:
             tlp = lGetPosList(ep, i);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (List)    %c = %s\n", space, name, changed ? '*' : ' ',
-                                       tlp ? "full {" : "empty");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (List)    = %s\n", space, name, tlp ? "full {" : "empty");
             if (tlp) {
                lWriteList_(tlp, buffer, nesting_level + 1);
                sge_dstring_sprintf_append(buffer, "%s}\n", space);
@@ -743,8 +718,7 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
             break;
          case lObjectT:
             tep = lGetPosObject(ep, i);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Object)  %c = %s\n", space, name, changed ? '*' : ' ',
-                                       tep ? "object {" : "none");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Object)  = %s\n", space, name, tep ? "object {" : "none");
             if (tep) {
                lWriteElem_(tep, buffer, nesting_level + 1);
                sge_dstring_sprintf_append(buffer, "%s}\n", space);
@@ -752,32 +726,27 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
             break;
          case lFloatT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Float)   %c = %f\n", space, name, changed ? '*' : ' ',
-                                       lGetPosFloat(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Float)   = %f\n", space, name, lGetPosFloat(ep, i));
             break;
          case lDoubleT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  %c = %f\n", space, name, changed ? '*' : ' ',
-                                       lGetPosDouble(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  = %f\n", space, name, lGetPosDouble(ep, i));
             break;
          case lLongT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    %c = %ld\n", space, name, changed ? '*' : ' ',
-                                       lGetPosLong(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    = %ld\n", space, name, lGetPosLong(ep, i));
             break;
          case lBoolT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    %c = %s\n", space, name, changed ? '*' : ' ',
-                                       lGetPosBool(ep, i) ? "true" : "false");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    = %s\n", space, name, lGetPosBool(ep, i) ? "true" : "false");
             break;
          case lCharT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Char)    %c = %c\n", space, name, changed ? '*' : ' ',
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Char)    = %c\n", space, name,
                                        isprint (lGetPosChar(ep, i)) ? lGetPosChar(ep, i) : '?');
             break;
          case lRefT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     %c = %p\n", space, name, changed ? '*' : ' ',
-                                       lGetPosRef(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", space, name, lGetPosRef(ep, i));
             break;
          default:
             DTRACE;
@@ -867,9 +836,9 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
    }
    indent[i] = '\0';
 
-   sge_dstring_sprintf_append(buffer, "\n%sList: <%s> %c #Elements: %d\n",
+   sge_dstring_sprintf_append(buffer, "\n%sList: <%s> #Elements: %d\n",
                               indent, (lGetListName(lp) != nullptr) ? lGetListName(lp) : "nullptr",
-                              lp->changed ? '*' : ' ', lGetNumberOfElem(lp));
+                              lGetNumberOfElem(lp));
    for_each_ep(ep, lp) {
       lWriteElem_(ep, buffer, nesting_level);
    }
@@ -930,14 +899,6 @@ lListElem *lCreateElem(const lDescr *dp) {
    ep->status = FREE_ELEM;
    if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * n))) {
       LERROR(LEMALLOC);
-      sge_free(&(ep->descr));
-      sge_free(&ep);
-      DRETURN(nullptr);
-   }
-
-   if (!sge_bitfield_init(&(ep->changed), n)) {
-      LERROR(LEMALLOC);
-      sge_free(&(ep->cont));
       sge_free(&(ep->descr));
       sge_free(&ep);
       DRETURN(nullptr);
@@ -1046,8 +1007,6 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
       }
       lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
    }
-
-   lp->changed = false;
 
 #ifdef OBSERVE
    lObserveAdd(lp, nullptr, true);
@@ -1192,8 +1151,6 @@ void lFreeElem(lListElem **ep1) {
    if (ep->cont != nullptr) {
       sge_free(&(ep->cont));
    }
-
-   sge_bitfield_free_data(&(ep->changed));
 
 #ifdef OBSERVE
    lObserveRemove(*ep1);
@@ -1587,10 +1544,6 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
       DRETURN(nullptr);
    }
 
-#if 0 /* TODO EB:  need to decide if we want this or not*/
-   dst->changed = src->changed;
-#endif
-
    for (sep = src->first; sep; sep = sep->next) {
       if (lAppendElem(dst, lCopyElem(sep)) == -1) {
          lFreeList(&dst);
@@ -1675,7 +1628,6 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    cull_hash_elem(new_ep);
 
    lp->nelem++;
-   lp->changed = true;
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, lp, nullptr, NoName);
@@ -1743,7 +1695,6 @@ int lAppendElem(lList *lp, lListElem *ep) {
 
    cull_hash_elem(ep);
    lp->nelem++;
-   lp->changed = true;
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, lp, nullptr, NoName);
@@ -1806,7 +1757,6 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
    ep->prev = ep->next = nullptr;
 
    lp->nelem--;
-   lp->changed = true;
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, nullptr, lp, NoName);
@@ -1894,9 +1844,6 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       source->nelem--;
    }
 
-   source->changed = true;
-   (*target)->changed = true;
-
    cull_hash_create_hashtables(source);
    cull_hash_create_hashtables(*target);
 
@@ -1972,7 +1919,6 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
    ep->descr = lCopyDescr(ep->descr);
    ep->status = FREE_ELEM;
    lp->nelem--;
-   lp->changed = true;
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, nullptr, lp, NoName);
@@ -2022,9 +1968,6 @@ lListElem *lDechainObject(lListElem *parent, int name) {
    if (dep != nullptr) {
       dep->status = FREE_ELEM;
       parent->cont[pos].obj = nullptr;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(parent->changed), pos);
    }
 
 #ifdef OBSERVE
@@ -2591,111 +2534,3 @@ int lUniqHost(lList *lp, int keyfield) {
 *  SEE ALSO
 *     
 *******************************************************************************/
-bool
-lListElem_is_pos_changed(const lListElem *ep, int pos) {
-   return sge_bitfield_get(&(ep->changed), pos);
-}
-
-
-bool
-lListElem_is_changed(const lListElem *ep) {
-   return sge_bitfield_changed(&(ep->changed));
-}
-
-/****** cull_list/lList_clear_changed_info() ***********************************
-*  NAME
-*     lList_clear_changed_info() -- clear changed info of a list
-*
-*  SYNOPSIS
-*     bool 
-*     lList_clear_changed_info(lList *lp) 
-*
-*  FUNCTION
-*     Clears in a list the information, if the list itself has been changed
-*     (objects added/removed) and which fields have changed in the lists
-*     objects.
-*
-*  INPUTS
-*     lList *lp - the list to update
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*
-*  BUGS
-*
-*  SEE ALSO
-*     cull_list/lListElem_clear_changed_info()
-*******************************************************************************/
-bool
-lList_clear_changed_info(lList *lp) {
-   bool ret = true;
-
-   if (lp == nullptr) {
-      ret = false;
-   } else {
-      lListElem *ep;
-
-      lp->changed = false;
-
-      for_each_rw(ep, lp) {
-         lListElem_clear_changed_info(ep);
-      }
-   }
-
-   return ret;
-}
-
-/****** cull_list/lListElem_clear_changed_info() *******************************
-*  NAME
-*     lListElem_clear_changed_info() -- clear changed info of an object
-*
-*  SYNOPSIS
-*     bool 
-*     lListElem_clear_changed_info(lListElem *ep) 
-*
-*  FUNCTION
-*     clears in an object the information, which fields have been changed.
-*     Recursively walks down sublists.
-*
-*  INPUTS
-*     lListElem *ep - the list element to update
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*
-*  BUGS
-*
-*  SEE ALSO
-*     cull_list/lList_clear_changed_info()
-*******************************************************************************/
-bool
-lListElem_clear_changed_info(lListElem *ep) {
-   bool ret = true;
-
-   if (ep == nullptr) {
-      ret = false;
-   } else {
-      int i;
-      lDescr *descr = ep->descr;
-
-      for (i = 0; ep->descr[i].nm != NoName; i++) {
-         int type = mt_get_type(descr[i].mt);
-
-         if (type == lListT) {
-            lList_clear_changed_info(ep->cont[i].glp);
-         } else if (type == lObjectT) {
-            lListElem_clear_changed_info(ep->cont[i].obj);
-         }
-      }
-
-      /* clear bitfield of this object */
-      sge_bitfield_reset(&(ep->changed));
-   }
-
-   return ret;
-}
-

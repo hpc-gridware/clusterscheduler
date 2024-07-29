@@ -36,6 +36,7 @@
 #include <climits>
 #include <fnmatch.h>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"

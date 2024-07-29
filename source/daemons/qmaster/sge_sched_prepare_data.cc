@@ -763,8 +763,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
 
          if ((lGetBool(new_ep, US_consider_with_categories) != lGetBool(old_ep, US_consider_with_categories))
              || (lGetBool(old_ep, US_consider_with_categories) &&
-                 object_list_has_differences(lGetList(old_ep, US_entries), nullptr, lGetList(new_ep, US_entries),
-                                             false))) {
+                 object_list_has_differences(lGetList(old_ep, US_entries), nullptr, lGetList(new_ep, US_entries)))) {
             set_rebuild_categories(true);
             DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_MOD(%s)\n", u);
          }

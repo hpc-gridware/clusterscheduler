@@ -357,8 +357,7 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
          }
 
          if (cqueue != nullptr) {
-            if (object_has_differences(*this_elem, answer_list, 
-                                       cqueue, false) ||
+            if (object_has_differences(*this_elem, answer_list, cqueue) ||
                 ignore_unchanged_message) {
                lFreeElem(this_elem);
                *this_elem = cqueue; 

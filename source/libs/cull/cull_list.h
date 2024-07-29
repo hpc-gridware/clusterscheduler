@@ -330,14 +330,6 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 #define mt_do_hashing(mt) (((mt) & CULL_HASH) ? true : false)
 #define mt_is_unique(mt) (((mt) & CULL_UNIQUE) ? true : false)
 
-bool lListElem_is_pos_changed(const lListElem *ep, int pos);
-
-bool lListElem_is_changed(const lListElem *ep);
-
-bool lList_clear_changed_info(lList *lp);
-
-bool lListElem_clear_changed_info(lListElem *lp);
-
 #define for_each_ep(ep, lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
 #define for_each_rev(ep, lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
 #define for_each_rw(ep, lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))

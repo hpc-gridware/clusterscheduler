@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <ctime>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
@@ -1029,7 +1030,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                 "global", nullptr, nullptr, global_host_ep);
                   ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, jep, now);
                   answer_list_output(&answer_list);
-                  lListElem_clear_changed_info(global_host_ep);
                }
                host = host_list_locate(master_exechost_list, queue_hostname);
                if (debit_host_consumable(jep, jatep, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
@@ -1038,14 +1038,12 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                 queue_hostname, nullptr, nullptr, host);
                   ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, jep, now);
                   answer_list_output(&answer_list);
-                  lListElem_clear_changed_info(host);
                }
                qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr);
                ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, jep, now);
                answer_list_output(&answer_list);
                /* this info is not spooled */
                qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
-               lListElem_clear_changed_info(queue);
 
                if (ar_id == 0) {
                   /* debit resource quota set */
@@ -1054,7 +1052,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                               master_userset_list, master_hgroup_list, tmp_slot, master_task, do_per_host_booking) > 0) {
                         /* this info is not spooled */
                         sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs);
-                        lListElem_clear_changed_info(rqs);
                      }
                   }
                } else {
@@ -1065,7 +1062,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                      /* this info is not spooled */
                      sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
                      sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
-                     lListElem_clear_changed_info(ar);
                      sge_dstring_free(&buffer);
                   }
                }
@@ -1098,7 +1094,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             spool_write_object(&answer_list, spool_get_default_context(), jatep,
                                job_get_key(jobid, jataskid, nullptr, &buffer), SGE_TYPE_JATASK, true);
             answer_list_output(&answer_list);
-            lListElem_clear_changed_info(jatep);
             sge_dstring_free(&buffer);
          }
          break;
@@ -1205,11 +1200,9 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                if (existing_container == nullptr) {
                   sge_add_event(now, sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                 nullptr, session, container);
-                  lListElem_clear_changed_info(container);
                } else {
                   sge_add_list_event(now, sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
                                      nullptr, session, lGetListRW(container, PET_scaled_usage));
-                  lList_clear_changed_info(lGetListRW(container, PET_scaled_usage));
                }
 
                next = lFirstRW(pe_task_list);
@@ -1595,7 +1588,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                              "global", nullptr, nullptr, global_host_ep);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, job, now);
                answer_list_output(&answer_list);
-               lListElem_clear_changed_info(global_host_ep);
             }
             host = host_list_locate(master_exechost_list, queue_hostname);
             if (debit_host_consumable(job, ja_task, host, master_centry_list, -tmp_slot, master_task,
@@ -1605,13 +1597,11 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                              queue_hostname, nullptr, nullptr, host);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, job, now);
                answer_list_output(&answer_list);
-               lListElem_clear_changed_info(host);
             }
             qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, job, now);
             /* this info is not spooled */
             qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
-            lListElem_clear_changed_info(queue);
 
             if (ar_id == 0) {
                /* undebit resource quota set */
@@ -1623,7 +1613,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                      /* this info is not spooled */
                      sge_add_event(0, sgeE_RQS_MOD, 0, 0,
                                    lGetString(rqs, RQS_name), nullptr, nullptr, rqs);
-                     lListElem_clear_changed_info(rqs);
                   }
                }
             } else {
@@ -1635,7 +1624,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
                   sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
                                 sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
-                  lListElem_clear_changed_info(ar);
                   sge_dstring_free(&buffer);
                }
             }
@@ -1656,7 +1644,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             /* this info is not spooled */
             sge_add_event(0, sgeE_PE_MOD, 0, 0,
                           lGetString(ja_task, JAT_granted_pe), nullptr, nullptr, pe);
-            lListElem_clear_changed_info(pe);
          }
       }
       lSetString(ja_task, JAT_granted_pe, nullptr);

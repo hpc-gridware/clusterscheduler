@@ -267,7 +267,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
             strlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value, false)) {
+            if (object_list_has_differences(old_value, answer_list, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
@@ -300,8 +300,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
             usrlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
                                          matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list,
-                                            new_value, false)) {
+            if (object_list_has_differences(old_value, answer_list, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
@@ -317,7 +316,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
             prjlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
                                          matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value, false)) {
+            if (object_list_has_differences(old_value, answer_list, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
@@ -386,7 +385,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   sge_dstring_free(&buffer);
                }
 
-               if (object_list_has_differences(old_value, answer_list, new_value, false)) {
+               if (object_list_has_differences(old_value, answer_list, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                   DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
@@ -419,7 +418,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
             celist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value, false)) {
+            if (object_list_has_differences(old_value, answer_list, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
 #endif
@@ -442,7 +441,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             old_value = lGetList(this_elem, attribute_name);
             solist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value, false)) {
+            if (object_list_has_differences(old_value, answer_list, new_value)) {
                lList *unsuspended_so = nullptr;  /* SO_Type list */
                lList *suspended_so = nullptr;    /* SO_Type list */
                const lListElem *first_old_elem = nullptr;

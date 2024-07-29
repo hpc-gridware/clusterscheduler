@@ -556,7 +556,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                   /* element already exists */
                   next_reduced_element = lNextRW(reduced_element);
                   if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                     if (object_has_differences(reduced_element, nullptr, full_element, false)) {
+                     if (object_has_differences(reduced_element, nullptr, full_element)) {
                         /* new object differs from old one - exchange them */
                         did_changes = true;
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);

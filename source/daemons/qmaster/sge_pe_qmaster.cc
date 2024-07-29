@@ -35,6 +35,7 @@
 #include <cstring>
 
 #include "uti/config_file.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -245,7 +246,6 @@ int pe_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **p
 
    sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0,
                  pe_name, nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
 
    DRETURN(0);
 }

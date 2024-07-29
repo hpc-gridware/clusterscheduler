@@ -277,7 +277,6 @@ rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLi
    const char *rqs_name = lGetString(ep, RQS_name);
    rqs_update_categories(ep, old_ep);
    sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
    DRETURN(0);
 }
 

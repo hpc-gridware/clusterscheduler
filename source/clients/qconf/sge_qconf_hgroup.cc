@@ -181,8 +181,7 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
          }      
 
          if (hgroup != nullptr) {
-            if (object_has_differences(*this_elem, answer_list,
-                                       hgroup, false) || 
+            if (object_has_differences(*this_elem, answer_list, hgroup) ||
                 ignore_unchanged_message) {
                lFreeElem(this_elem);
                *this_elem = hgroup;

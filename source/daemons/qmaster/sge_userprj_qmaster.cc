@@ -261,7 +261,6 @@ userprj_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **
    }
 
    sge_add_event(0, old_ep ? obj_mod_event : obj_add_event, 0, 0, lGetString(ep, obj_key), nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
 
    DRETURN(0);
 }

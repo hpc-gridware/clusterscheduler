@@ -840,7 +840,6 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
          LERROR(LECREATELIST);
          DRETURN(nullptr);
       }
-      dlp->changed = slp->changed;
       descr = dlp->descr;
    }
 

@@ -1533,9 +1533,6 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
 
    if (ep->cont[pos].i != value) {
       ep->cont[pos].i = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1588,9 +1585,6 @@ int lSetInt(lListElem *ep, int name, int value) {
 
    if (value != ep->cont[pos].i) {
       ep->cont[pos].i = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1650,9 +1644,6 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1718,9 +1709,6 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1790,9 +1778,6 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1858,9 +1843,6 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1930,9 +1912,6 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -1992,9 +1971,6 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2086,9 +2062,6 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
          cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2182,9 +2155,6 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2281,9 +2251,6 @@ int lSetString(lListElem *ep, int name, const char *value) {
          cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2381,8 +2348,6 @@ int lSetHost(lListElem *ep, int name, const char *value) {
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
    DRETURN(0);
 }
@@ -2447,9 +2412,6 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
 
       /* mark lListElem as bound */
       value->status = OBJECT_ELEM;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2506,9 +2468,6 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
 
       /* set new list */
       ep->cont[pos].glp = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2564,9 +2523,6 @@ int lXchgString(lListElem *ep, int name, char **str) {
       tmp = ep->cont[pos].str;
       ep->cont[pos].str = *str;
       *str = tmp;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2623,9 +2579,6 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
       tmp = ep->cont[pos].glp;
       ep->cont[pos].glp = *lpp;
       *lpp = tmp;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2736,9 +2689,6 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
 
       /* mark lListElem as bound */
       value->status = OBJECT_ELEM;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2800,9 +2750,6 @@ int lSetList(lListElem *ep, int name, lList *value) {
 
       /* set new list */
       ep->cont[pos].glp = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2851,9 +2798,6 @@ int lSetPosFloat(lListElem *ep, int pos, lFloat value) {
 
    if (value != ep->cont[pos].fl) {
       ep->cont[pos].fl = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2906,9 +2850,6 @@ int lSetFloat(lListElem *ep, int name, lFloat value) {
 
    if (value != ep->cont[pos].fl) {
       ep->cont[pos].fl = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -2957,9 +2898,6 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
 
    if (value != ep->cont[pos].db) {
       ep->cont[pos].db = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3013,9 +2951,6 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
 
    if (value != ep->cont[pos].db) {
       ep->cont[pos].db = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3069,8 +3004,6 @@ int lAddDouble(lListElem *ep, int name, lDouble value) {
 
    if (value != 0.0) {
       ep->cont[pos].db += value;
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3120,9 +3053,6 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
 
    if (value != ep->cont[pos].l) {
       ep->cont[pos].l = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3175,9 +3105,6 @@ int lSetLong(lListElem *ep, int name, lLong value) {
 
    if (value != ep->cont[pos].l) {
       ep->cont[pos].l = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3226,9 +3153,6 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
 
    if (value != ep->cont[pos].b) {
       ep->cont[pos].b = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3281,9 +3205,6 @@ int lSetBool(lListElem *ep, int name, lBool value) {
 
    if (value != ep->cont[pos].b) {
       ep->cont[pos].b = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3332,9 +3253,6 @@ int lSetPosChar(lListElem *ep, int pos, lChar value) {
 
    if (value != ep->cont[pos].c) {
       ep->cont[pos].c = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3387,9 +3305,6 @@ int lSetChar(lListElem *ep, int name, lChar value) {
 
    if (value != ep->cont[pos].c) {
       ep->cont[pos].c = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3438,9 +3353,6 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
 
    if (value != ep->cont[pos].ref) {
       ep->cont[pos].ref = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3493,9 +3405,6 @@ int lSetRef(lListElem *ep, int name, lRef value) {
 
    if (value != ep->cont[pos].ref) {
       ep->cont[pos].ref = value;
-
-      /* remember that field changed */
-      sge_bitfield_set(&(ep->changed), pos);
    }
 
    DRETURN(0);
@@ -3627,11 +3536,6 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 
    ret = lAddElemStr(&(ep->cont[sublist_pos].glp), nm, str, dp);
 
-   /* remember that field changed */
-   if (ret != nullptr) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
-
    DRETURN(ret);
 }
 
@@ -3684,11 +3588,6 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
    }
 
    ret = lAddElemHost(&(ep->cont[sublist_pos].glp), nm, str, dp);
-
-   /* remember that field changed */
-   if (ret != nullptr) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
 
    DRETURN(ret);
 }
@@ -3845,11 +3744,6 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
    ret = lDelElemStr(&(ep->cont[sublist_pos].glp), nm, str);
-
-   /* remember that field changed */
-   if (ret == 1) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
 
    DRETURN(ret);
 }
@@ -4274,11 +4168,6 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 
    ret = lAddElemUlong(&(ep->cont[sublist_pos].glp), nm, val, dp);
 
-   /* remember that field changed */
-   if (ret != nullptr) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
-
    DRETURN(ret);
 }
 
@@ -4369,11 +4258,6 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
    ret = lDelElemUlong(&(ep->cont[sublist_pos].glp), nm, val);
-
-   /* remember that field changed */
-   if (ret == 1) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
 
    DRETURN(ret);
 }
@@ -4683,11 +4567,6 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 
    ret = lAddElemUlong64(&(ep->cont[sublist_pos].glp), nm, val, dp);
 
-   /* remember that field changed */
-   if (ret != nullptr) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
-
    DRETURN(ret);
 }
 
@@ -4778,11 +4657,6 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
    ret = lDelElemUlong64(&(ep->cont[sublist_pos].glp), nm, val);
-
-   /* remember that field changed */
-   if (ret == 1) {
-      sge_bitfield_set(&(ep->changed), sublist_pos);
-   }
 
    DRETURN(ret);
 }

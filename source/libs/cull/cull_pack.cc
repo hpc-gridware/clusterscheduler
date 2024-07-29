@@ -649,31 +649,6 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
       }
    }
 
-   /*
-    * pack dummy bitfield: later on this space might be used to store
-    * the elements changed-bitfield
-    */
-   {
-      bitfield field;
-
-      if (what == nullptr) {
-         if (!sge_bitfield_init(&field, lCountDescr(ep->descr))) {
-            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DRETURN(PACK_ENOMEM);
-         }
-      } else {
-         if (!sge_bitfield_init(&field, lCountWhat(what, ep->descr))) {
-            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DRETURN(PACK_ENOMEM);
-         }
-      }
-      if ((ret = packbitfield(pb, &(field))) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-      sge_bitfield_free_data(&field);
-   }
-
    ret = cull_pack_cont(pb, ep->cont, ep->descr, what, flags);
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -731,13 +706,13 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       }
 
       /*
-       * Special handling for feature update releses where the job has been changed.
+       * Special handling for feature update releases where the job has been changed.
        * In all cases where we got an descriptor from outside and where the descriptor
        * is one that contains JB_job_number as first entry we will use this 
        * descriptor and not that one that is stored in a packbuffer.
        *
        * As a result we are able to read "old" JB_Type objects from a previous
-       * Cluster Scheduler version although the JB_Type object has been incresed in the new
+       * Cluster Scheduler version although the JB_Type object has been increased in the new
        * version.
        *
        * Note: Only JB_type objects will be handled correctly and only in the case 
@@ -776,15 +751,6 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       an element in a defined state - so we may
       call lFreeElem() in case of errors 
     */
-
-   if ((ret = unpackbitfield(pb, &(ep->changed), lCountDescr(ep->descr))) != PACK_SUCCESS) {
-      if (ep->status == FREE_ELEM || ep->status == OBJECT_ELEM) {
-         sge_free(&(ep->descr));
-      }
-      sge_free(&ep);
-      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DRETURN(ret);
-   }
 
    if ((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, flags))) {
       if (ep->status == FREE_ELEM || ep->status == OBJECT_ELEM) {
@@ -911,12 +877,6 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
          DRETURN(ret);
       }
 
-      /* changed variable */
-      if ((ret = packint(pb, lp->changed)) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-
       /* pack descriptor */
       if (what == nullptr) {
          ret = cull_pack_descr(pb, lp->descr);
@@ -957,11 +917,6 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
       }
 
       if ((ret = packstr(pb, lp->listname)) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-
-      if ((ret = packint(pb, lp->changed)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
       }
@@ -1026,7 +981,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
 
    u_long32 i = 0;
    u_long32 n = 0;
-   u_long32 c = 0;
 
    DENTER(CULL_LAYER);
 
@@ -1060,13 +1014,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
-
-   if ((ret = unpackint(pb, &c)) != PACK_SUCCESS) {
-      lFreeList(&lp);
-      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DRETURN(ret);
-   }
-   lp->changed = (bool) c;
 
    /* unpack descriptor */
    if ((ret = cull_unpack_descr(pb, &(lp->descr))) != PACK_SUCCESS) {

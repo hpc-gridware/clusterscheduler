@@ -527,7 +527,6 @@ hgroup_success(lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, l
     */
    sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0,
                  name, nullptr, nullptr, hgroup);
-   lListElem_clear_changed_info(hgroup);
 
    lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
 

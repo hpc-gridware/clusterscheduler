@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
@@ -311,7 +312,6 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            /* jatask usage is not spooled (?) */
                            sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, nullptr, nullptr,
                                               lGetString(jep, JB_session), lGetListRW(jatep, JAT_scaled_usage_list));
-                           lList_clear_changed_info(lGetListRW(jatep, JAT_scaled_usage_list));
                         }
                      } else {
                         /* register running task qmaster will log accounting for all registered tasks */

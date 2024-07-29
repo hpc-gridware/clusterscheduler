@@ -35,6 +35,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
@@ -631,20 +632,17 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 
          host_update_categories(ep, old_ep);
          sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, nullptr, nullptr, ep);
-         lListElem_clear_changed_info(ep);
       }
          break;
 
       case AH_name:
          sge_add_event(0, old_ep ? sgeE_ADMINHOST_MOD : sgeE_ADMINHOST_ADD,
                        0, 0, lGetHost(ep, AH_name), nullptr, nullptr, ep);
-         lListElem_clear_changed_info(ep);
          break;
 
       case SH_name:
          sge_add_event(0, old_ep ? sgeE_SUBMITHOST_MOD : sgeE_SUBMITHOST_ADD,
                        0, 0, lGetHost(ep, SH_name), nullptr, nullptr, ep);
-         lListElem_clear_changed_info(ep);
          break;
    }
 
@@ -1165,7 +1163,6 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
                                         job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
                                                     nullptr, &buffer),
                                         SGE_TYPE_JOB, true);
-                     lListElem_clear_changed_info(jatep);
                      /* JG: TODO: don't we have to send an event? */
                      answer_list_output(&answer_list);
                      sge_dstring_free(&buffer);

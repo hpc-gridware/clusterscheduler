@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_language.h"

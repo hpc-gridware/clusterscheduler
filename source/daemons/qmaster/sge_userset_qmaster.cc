@@ -879,7 +879,6 @@ int userset_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lLis
 
    sge_add_event(0, old_ep ? sgeE_USERSET_MOD : sgeE_USERSET_ADD, 0, 0,
                  userset_name, nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
 
    sge_dstring_free(&ds);
    DRETURN(0);

@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -453,7 +454,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 
       /*
        * Jobs which were registered for deletion will
-       * not be automaticly rescheduled (exception: forced flag)
+       * not be automatically rescheduled (exception: forced flag)
        */
       if (!force && (lGetUlong(this_jatep, JAT_state) & JDELETED)) {
          INFO(MSG_RU_INDELETEDSTATE_SS, mail_type, mail_ids);

@@ -90,9 +90,6 @@
 *
 *  SEE ALSO
 *     cull/pack/-Versioncontrol
-*
-*     cull/pack/packbitfield()
-*     cull/pack/unpackbitfield()
 ****************************************************************************
 */
 
@@ -472,54 +469,6 @@ int packstr(sge_pack_buffer *pb, const char *str) {
    DRETURN(PACK_SUCCESS);
 }
 
-
-/****** cull/pack/packbitfield() ****************************************************
-*  NAME
-*     packbitfield() -- pack a bitfield 
-*
-*  SYNOPSIS
-*     int packbitfield(sge_pack_buffer *pb, const bitfield *bitfield) 
-*
-*  FUNCTION
-*     Writes the bitfield into the given packbuffer.
-*     The following information will be written:
-*        - the size of the bitfield in bits
-*        - the bitfield itself as binary buffer
-*
-*  INPUTS
-*     sge_pack_buffer *pb - the target packbuffer
-*     const bitfield *bitfield   - the bitfield to pack
-*
-*  RESULT
-*     int - PACK_SUCCESS on success,
-*           else PACK_* error codes
-*
-*  SEE ALSO
-*     uti/bitfield/--Bitfield
-*     cull/pack/unpackbitfield()
-*******************************************************************************/
-int packbitfield(sge_pack_buffer *pb, const bitfield *bitfield) {
-   int ret;
-   u_long32 size;
-   u_long32 char_size;
-
-   DENTER(PACK_LAYER);
-
-   size = sge_bitfield_get_size(bitfield);
-   char_size = sge_bitfield_get_size_bytes(size);
-
-   if ((ret = packint(pb, size)) != PACK_SUCCESS) {
-      DRETURN(ret);
-   }
-
-   if ((ret = packbuf(pb, sge_bitfield_get_buffer(bitfield),
-                      char_size)) != PACK_SUCCESS) {
-      DRETURN(ret);
-   }
-
-   DRETURN(PACK_SUCCESS);
-}
-
 /* ---------------------------------------------------------
 
    return values:
@@ -746,69 +695,6 @@ int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
    /* update cur_ptr & bytes_unpacked */
    pb->cur_ptr = &(pb->cur_ptr[buf_size]);
    pb->bytes_used += buf_size;
-
-   DRETURN(PACK_SUCCESS);
-}
-
-/****** cull/pack/unpackbitfield() ********************************************
-*  NAME
-*     unpackbitfield() -- unpack a bitfield 
-*
-*  SYNOPSIS
-*     int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield) 
-*
-*  FUNCTION
-*     Unpacks a bitfield from a packbuffer.
-*
-*     If the size of the descriptor doesn't match the size of the unpacked
-*     bitfield, create a new bitfield.
-*
-*  INPUTS
-*     sge_pack_buffer *pb - the source packbuffer
-*     bitfield *bitfield  - used to return the unpacked bitfield
-*     int descr_size      - size of the corresponding descriptor
-*
-*  RESULT
-*     int - PACK_SUCCESS on success,
-*           else PACK_* error codes
-*
-*  SEE ALSO
-*     uti/bitfield/--Bitfield
-*     cull/pack/packbitfield()
-*******************************************************************************/
-int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield, int descr_size) {
-   int ret;
-   u_long32 size, char_size;
-   char *buffer = nullptr;
-
-   DENTER(PACK_LAYER);
-
-   /* create new bitfield */
-   if (!sge_bitfield_init(bitfield, descr_size)) {
-      DRETURN(PACK_ENOMEM);
-   }
-
-   /* unpack the size in bits */
-   if ((ret = unpackint(pb, &size)) != PACK_SUCCESS) {
-      DRETURN(ret);
-   }
-
-   /* size may not be bigger than bitfield initialized from descr information */
-   if (size > (u_int) descr_size) {
-      DRETURN(PACK_ENOMEM);
-   }
-
-   /* unpack contents of the bitfield */
-   char_size = sge_bitfield_get_size_bytes(size);
-   if ((ret = unpackbuf(pb, &buffer, char_size)) != PACK_SUCCESS) {
-      sge_bitfield_free_data(bitfield);
-      DRETURN(ret);
-   }
-
-   memcpy(sge_bitfield_get_buffer(bitfield), buffer, char_size);
-
-   /* free unpacked bitfield buffer */
-   sge_free(&buffer);
 
    DRETURN(PACK_SUCCESS);
 }

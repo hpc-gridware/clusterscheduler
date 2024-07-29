@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cerrno>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -429,7 +430,6 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
    sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
                  sge_dstring_get_string(&buffer), nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
    sge_dstring_free(&buffer);
 
    /*
@@ -966,7 +966,6 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       /* this info is not spooled */
       sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
                     sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
-      lListElem_clear_changed_info(ar);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
@@ -1317,7 +1316,6 @@ ar_do_reservation(lListElem *ar, bool incslots) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep);
-         lListElem_clear_changed_info(global_host_ep);
       }
 
       /* reserve exec host */
@@ -1329,7 +1327,6 @@ ar_do_reservation(lListElem *ar, bool incslots) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        queue_hostname, nullptr, nullptr, host_ep);
-         lListElem_clear_changed_info(host_ep);
       }
 
       /* reserve queue instance */
@@ -1354,7 +1351,6 @@ ar_do_reservation(lListElem *ar, bool incslots) {
                          duration, pe_slots, 0, 0, PE_TAG, granted_pe,
                          SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
          sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe);
-         lListElem_clear_changed_info(pe);
       }
    }
 
@@ -2096,7 +2092,6 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_ty
             sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ar, AR_id));
             sge_add_event(0, sgeE_AR_MOD, 0, 0,
                           sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
-            lListElem_clear_changed_info(ar);
          }
       }
    }

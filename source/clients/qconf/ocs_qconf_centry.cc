@@ -497,7 +497,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
          next_centry_elem = lNextRW(centry_elem);
          if (tmp_elem != nullptr) {
             lDechainElem(*this_list, centry_elem);
-            if (object_has_differences(centry_elem, nullptr, tmp_elem, false)) {
+            if (object_has_differences(centry_elem, nullptr, tmp_elem)) {
                lAppendElem(modify_list, centry_elem);
             } else {
                lFreeElem(&centry_elem);

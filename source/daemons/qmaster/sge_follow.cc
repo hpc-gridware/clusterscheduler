@@ -36,6 +36,7 @@
 #include <cstring>
 #include <pthread.h>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_string.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
@@ -576,7 +577,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             pe_debit_slots(pe, pe_slots, job_number);
             /* this info is not spooled */
             sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(jatp, JAT_granted_pe), nullptr, nullptr, pe);
-            lListElem_clear_changed_info(pe);
          }
 
          DPRINTF("successfully handed off job \"" sge_u32 "\" to queue \"%s\"\n",

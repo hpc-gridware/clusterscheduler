@@ -268,7 +268,6 @@ ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 
    sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
                  ckpt_name, nullptr, nullptr, ep);
-   lListElem_clear_changed_info(ep);
 
    DRETURN(0);
 }

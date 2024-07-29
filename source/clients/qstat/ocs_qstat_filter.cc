@@ -36,6 +36,7 @@
 #include <cstring>
 #include <fnmatch.h>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"

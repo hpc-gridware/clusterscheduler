@@ -431,7 +431,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
          lFreeList(&new_rqs_list);
       }
       if (new_rqs_list != nullptr) {
-         if (ignore_unchanged_message || object_list_has_differences(new_rqs_list, answer_list, *rqs_list, false)) {
+         if (ignore_unchanged_message || object_list_has_differences(new_rqs_list, answer_list, *rqs_list)) {
             lFreeList(rqs_list);
             *rqs_list = new_rqs_list;
             ret = true;

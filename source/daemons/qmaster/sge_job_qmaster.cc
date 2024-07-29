@@ -38,6 +38,7 @@
 #include <cerrno>
 #include <cctype>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -1093,7 +1094,6 @@ void job_mark_job_as_deleted(lListElem *j,
       spool_write_object(&answer_list, spool_get_default_context(), j,
                          job_get_key(lGetUlong(j, JB_job_number), lGetUlong(t, JAT_task_number), nullptr, &buffer),
                          SGE_TYPE_JOB, true);
-      lListElem_clear_changed_info(t);
       answer_list_output(&answer_list);
       sge_dstring_free(&buffer);
    }
@@ -1326,8 +1326,6 @@ int sge_gdi_mod_job(
          if (trigger & PRIO_EVENT) {
             sge_add_job_event(sgeE_JOB_MOD_SCHED_PRIORITY, new_job, nullptr);
          }
-
-         lListElem_clear_changed_info(new_job);
 
          /* remove all existing trigger links - 
             this has to be done using the old 
@@ -3795,7 +3793,6 @@ static int sge_delete_all_tasks_of_job(lList **alpp, const char *ruser, const ch
                                job, job_get_job_key(job_number, &buffer),
                                SGE_TYPE_JOB, true);
             answer_list_output(&answer_list);
-            lListElem_clear_changed_info(job);
             sge_dstring_free(&buffer);
          } else {
             /* JG: TODO: this joblog seems to have an invalid job object! */

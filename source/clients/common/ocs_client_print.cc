@@ -36,6 +36,7 @@
 #include <cstring>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
