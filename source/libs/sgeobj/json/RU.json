@@ -1,31 +1,43 @@
 {
 	"className":	"RescheduleUnknown",
-	"summary":	"@todo add summary",
+	"summary":	"Reschedule Unknown",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Objects of this types are created for jobs which are rescheduled when a host goes into unknown state."
 		}],
 	"cullPrefix":	"RU",
 	"attributes":	[{
 			"name":	"job_number",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job number (from JB_job_number)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"task_number",
-			"summary":	"@todo add summary",
+			"summary":	"Task Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The array task number (from JAT_task_number)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The rescheduling state, one of"
+               }, {
+					"line":	"RESCHEDULE_SKIP_JR_REMOVE"
+               }, {
+					"line":	"RESCHEDULE_SKIP_JR_SEND_ACK"
+               }, {
+					"line":	"RESCHEDULE_SKIP_JR"
+               }, {
+					"line":	"RESCHEDULE_HANDLE_JR_REMOVE"
+               }, {
+					"line":	"RESCHEDULE_HANDLE_JR_WAIT"
+               }, {
+					"line":	"@todo add more information, esp. about the meaning of the states."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

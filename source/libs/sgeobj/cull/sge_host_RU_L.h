@@ -28,18 +28,24 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Reschedule Unknown
 *
-* @todo add description
+* Objects of this types are created for jobs which are rescheduled when a host goes into unknown state.
 *
-*    SGE_ULONG(RU_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RU_job_number) - Job Number
+*    The job number (from JB_job_number).
 *
-*    SGE_ULONG(RU_task_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RU_task_number) - Task Number
+*    The array task number (from JAT_task_number).
 *
-*    SGE_ULONG(RU_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RU_state) - State
+*    The rescheduling state, one of
+*    RESCHEDULE_SKIP_JR_REMOVE
+*    RESCHEDULE_SKIP_JR_SEND_ACK
+*    RESCHEDULE_SKIP_JR
+*    RESCHEDULE_HANDLE_JR_REMOVE
+*    RESCHEDULE_HANDLE_JR_WAIT
+*    @todo add more information, esp. about the meaning of the states.
 *
 */
 
