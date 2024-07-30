@@ -1,23 +1,37 @@
 {
 	"className":	"FeatureSet",
-	"summary":	"@todo add summary",
+	"summary":	"Feature Set",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used to store the information if specific optional product features are active."
+         }, {
+			"line":	"@note None of the possible features is currently part of a Cluster Scheduler build."
 		}],
 	"cullPrefix":	"FES",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Featureset Id, see enum feature_id_t, one of"
+               }, {
+					"line":	"FEATURE_NO_SECURITY"
+               }, {
+					"line":	"FEATURE_AFS_SECURITY"
+               }, {
+					"line":	"FEATURE_DCE_SECURITY"
+               }, {
+					"line":	"FEATURE_KERBEROS_SECURITY"
+               }, {
+					"line":	"FEATURE_CSP_SECURITY"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"active",
-			"summary":	"@todo add summary",
+			"summary":	"Active",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Is the feature active (1) or not (0)."
+               }, {
+					"line":	"@todo should better be a boolean."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

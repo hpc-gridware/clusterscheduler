@@ -28,15 +28,22 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Feature Set
 *
-* @todo add description
+* Used to store the information if specific optional product features are active.
+* @note None of the possible features is currently part of a Cluster Scheduler build.
 *
-*    SGE_ULONG(FES_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FES_id) - Id
+*    Featureset Id, see enum feature_id_t, one of
+*    FEATURE_NO_SECURITY
+*    FEATURE_AFS_SECURITY
+*    FEATURE_DCE_SECURITY
+*    FEATURE_KERBEROS_SECURITY
+*    FEATURE_CSP_SECURITY
 *
-*    SGE_ULONG(FES_active) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FES_active) - Active
+*    Is the feature active (1) or not (0).
+*    @todo should better be a boolean.
 *
 */
 
