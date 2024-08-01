@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Submit User
 *
-* @todo add description
+* The list of these objects defines which users are allowed to submit jobs into Cluster Scheduler.
+* It is also used to count the number of active jobs of the user.
 *
-*    SGE_STRING(SU_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SU_name) - Name
+*    User Name
 *
-*    SGE_ULONG(SU_jobs) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SU_jobs) - Jobs
+*    Currently active jobs for this user (including jobs in finished state).
 *
 */
 
