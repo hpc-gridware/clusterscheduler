@@ -367,6 +367,7 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
 
    if (splitted_job_lists[SPLIT_RUNNING] != nullptr) {
       for_each_ep(job, *(splitted_job_lists[SPLIT_RUNNING])) {
+         // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
          sge_inc_jc(user_list, lGetString(job, JB_owner), 
                     job_get_ja_tasks(job));
       }

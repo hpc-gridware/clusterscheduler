@@ -114,7 +114,7 @@ void monitor_dominance(char *str, u_long32 mask) {
 
 /****** sge_select_queue/get_attribute() ***************************************
 *  NAME
-*     get_attribute() -- looks for an attribut, but only for one level (for host, global, or queue)  
+*     get_attribute() -- looks for an attribute, but only for one level (for host, global, or queue)
 *
 *  SYNOPSIS
 *     static lListElem* get_attribute(const char *attrname, lList *config_attr, 
@@ -122,7 +122,7 @@ void monitor_dominance(char *str, u_long32 mask) {
 *     *queue, lListElem *rep, u_long32 layer, double lc_factor, dstring *reason) 
 *
 *  FUNCTION
-*     Extracts the attribut specified with 'attrname' and finds the 
+*     Extracts the attribute specified with 'attrname' and finds the
 *     more important one, if it is defined multiple times on the same 
 *     level. It only cares about one level.
 *     If the attribute is a consumable, one can specify a point in time and a duration.
@@ -234,14 +234,12 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
          }
 
          {
-            const char *load_value=nullptr;
-            u_long32 type;
             double dval;
+            const char *load_value = lGetString(load_el, HL_value);
 
-            load_value = lGetString(load_el, HL_value);
-
-            /* are we working on string values? if though, than it is easy */
-            if ( (type = lGetUlong(cplx_el, CE_valtype)) == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
+            /* are we working on string values? if though, then it is easy */
+            u_long32 type = lGetUlong(cplx_el, CE_valtype);
+            if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
                lSetString(cplx_el, CE_stringval, load_value);
                lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_LOAD);
             } else { /* working on numerical values */
@@ -249,7 +247,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                char err_str[256];
                char sval[100];
                u_long32 dom_type = DOMINANT_TYPE_LOAD;
-               lList *load_adjustments = sconf_get_job_load_adjustments();
+               lList *load_adjustments = sconf_get_job_load_adjustments(); // @todo (CS-450) expensive, gives us a copy of the load adjustments
  
                job_load=lGetElemStr(load_adjustments, CE_name, attrname);
 
@@ -291,14 +289,14 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                   }
                }
 
-               /* we can have a user, who wants to override the incomming load value. This is no
+               /* we can have a user, who wants to override the incoming load value. This is no
                   problem for consumables, but for fixed values. A custom fixed value is a per
                   slot value (stored in CE_doubleval) and a load value is a per job value (stored
                   in CE_pj_doubleval). 
    
                   This code changes a fixed custom value from a per slot to a per job value!!
                */
-               if ( !(lGetUlong(cplx_el, CE_dominant) == DOMINANT_TYPE_VALUE) && 
+               if ( !(lGetUlong(cplx_el, CE_dominant) == DOMINANT_TYPE_VALUE) &&
                      (lGetUlong(cplx_el, CE_pj_dominant) == DOMINANT_TYPE_VALUE)){
                   lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval));
                   lSetString(cplx_el, CE_pj_stringval, lGetString(cplx_el, CE_stringval));

@@ -200,11 +200,10 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 *     MT-NOTE: qinstance_list_set_tag() is MT safe 
 *******************************************************************************/
 void
-qinstance_list_set_tag(lList *this_list, u_long32 tag_value) {
-   if (this_list != nullptr) {
-      lListElem *qinstance = nullptr;
-
-      for_each_rw (qinstance, this_list) {
+qinstance_list_set_tag(lList *queue_list, u_long32 tag_value) {
+   if (queue_list != nullptr) {
+      lListElem *qinstance;
+      for_each_rw (qinstance, queue_list) {
          lSetUlong(qinstance, QU_tag, tag_value);
       }
    }

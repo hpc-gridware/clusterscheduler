@@ -156,8 +156,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
 
 /*
  * Do load scaling and capacity correction for all consumable 
- *  attributes where also load values are available
- *
+ * attributes where also load values are available
  */
 int 
 correct_capacities(lList *host_list, const lList *centry_list) 
@@ -244,8 +243,9 @@ correct_capacities(lList *host_list, const lList *centry_list)
             DPRINTF("%s:%s %8.3f --> %8.3f (ext: %8.3f = all %8.3f - ubC %8.3f - load %8.3f) lc = %8.3f\n",
                     host_name, attr_name, full_capacity, lGetDouble(total, CE_doubleval),
                     inuse_ext, full_capacity, lGetDouble(inuse_rms, RUE_utilized_now), dval, load_correction);
-         } else
+         } else {
             DPRINTF("ext: %8.3f <= 0\n", inuse_ext);
+         }
       }
    }
    lFreeList(&job_load_adj_list);

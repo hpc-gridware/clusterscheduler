@@ -1038,7 +1038,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 
 /****** sge_resource_utilization/prepare_resource_schedules() *********************************
 *  NAME
-*     prepare_resource_schedules() -- Debit non-pending jobs in resource schedule
+*     prepare_resource_schedules() -- Debit non-pending jobs in resource schedule (resource diagram)
 *
 *  SYNOPSIS
 *     static void prepare_resource_schedules(const lList *running_jobs, const 
@@ -1047,7 +1047,8 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 *
 *  FUNCTION
 *     In order to reflect current and future resource utilization of running 
-*     and suspended jobs in the schedule we iterate through all jobs and debit
+*     and suspended jobs in the schedule (resource diagram)
+*     we iterate through all jobs and debit
 *     resources requested by those jobs.
 *
 *  INPUTS

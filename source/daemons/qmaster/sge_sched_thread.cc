@@ -147,58 +147,11 @@ st_get_flag_new_global_conf() {
    DRETURN(ret);
 }
 
-int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order) {
-   order_t orders = ORDER_INIT;
-   lList **splitted_job_lists[SPLIT_LAST];         /* JB_Type */
-   lList *waiting_due_to_pedecessor_list = nullptr;   /* JB_Type */
-   lList *waiting_due_to_time_list = nullptr;         /* JB_Type */
-   lList *pending_excluded_list = nullptr;            /* JB_Type */
-   lList *suspended_list = nullptr;                   /* JB_Type */
-   lList *finished_list = nullptr;                    /* JB_Type */
-   lList *pending_list = nullptr;                     /* JB_Type */
-   lList *pending_excludedlist = nullptr;             /* JB_Type */
-   lList *running_list = nullptr;                     /* JB_Type */
-   lList *error_list = nullptr;                       /* JB_Type */
-   lList *hold_list = nullptr;                        /* JB_Type */
-   lList *not_started_list = nullptr;                 /* JB_Type */
-   lList *deferred_list = nullptr;                    /* JB_Type */
-   int prof_job_count, global_mes_count, job_mes_count;
-
-   int i;
-
+static void
+scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
-   PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
-
-   serf_new_interval(sge_get_gmt64());
-   orders.pendingOrderList = *order;
-   *order = nullptr;
-
-   prof_job_count = lGetNumberOfElem(lists->job_list);
-
-   sconf_reset_jobs();
-   schedd_mes_initialize();
-   schedd_order_initialize();
-
-   for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
-      splitted_job_lists[i] = nullptr;
-   }
-   splitted_job_lists[SPLIT_WAITING_DUE_TO_PREDECESSOR] = &waiting_due_to_pedecessor_list;
-   splitted_job_lists[SPLIT_WAITING_DUE_TO_TIME] = &waiting_due_to_time_list;
-   splitted_job_lists[SPLIT_PENDING_EXCLUDED] = &pending_excluded_list;
-   splitted_job_lists[SPLIT_SUSPENDED] = &suspended_list;
-   splitted_job_lists[SPLIT_FINISHED] = &finished_list;
-   splitted_job_lists[SPLIT_PENDING] = &pending_list;
-   splitted_job_lists[SPLIT_PENDING_EXCLUDED_INSTANCES] = &pending_excludedlist;
-   splitted_job_lists[SPLIT_RUNNING] = &running_list;
-   splitted_job_lists[SPLIT_ERROR] = &error_list;
-   splitted_job_lists[SPLIT_HOLD] = &hold_list;
-   splitted_job_lists[SPLIT_NOT_STARTED] = &not_started_list;
-   splitted_job_lists[SPLIT_DEFERRED] = &deferred_list;
-
-   split_jobs(&(lists->job_list), mconf_get_max_aj_instances(), splitted_job_lists, false);
-
-   if (lists->all_queue_list != nullptr) { /* add global queue messages */
+   if (lists->all_queue_list != nullptr) {
       lList *qlp = nullptr;
       lCondition *where = nullptr;
       lEnumeration *what = nullptr;
@@ -221,38 +174,93 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       if (what == nullptr || where == nullptr) {
          DPRINTF("failed creating where or what describing non available queues\n");
       } else {
-         qlp = lSelect("", lists->all_queue_list, where, what);
+         qlp = lSelect(nullptr, lists->all_queue_list, where, what);
 
          for_each_ep(mes_queues, qlp) {
-            schedd_mes_add_global(nullptr, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
+            schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
                                   lGetString(mes_queues, QU_full_name));
          }
-
       }
 
       for_each_ep(mes_queues, lists->dis_queue_list) {
-         schedd_mes_add_global(nullptr, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
+         schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
                                lGetString(mes_queues, QU_full_name));
       }
 
-      schedd_log_list(nullptr, evc->monitor_next_run, MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED,
+      schedd_log_list(nullptr, monitor_next_run, MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED,
                       qlp, QU_full_name);
       lFreeList(&qlp);
       lFreeWhere(&where);
       lFreeWhat(&what);
    }
 
-   /**
-    * the actual scheduling
-    */
+   DRETURN_VOID;
+}
+
+void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order) {
+   order_t orders = ORDER_INIT;
+   lList **splitted_job_lists[SPLIT_LAST];            /* JB_Type */
+   lList *waiting_due_to_pedecessor_list = nullptr;   /* JB_Type */
+   lList *waiting_due_to_time_list = nullptr;         /* JB_Type */
+   lList *pending_excluded_list = nullptr;            /* JB_Type */
+   lList *suspended_list = nullptr;                   /* JB_Type */
+   lList *finished_list = nullptr;                    /* JB_Type */
+   lList *pending_list = nullptr;                     /* JB_Type */
+   lList *pending_excludedlist = nullptr;             /* JB_Type */
+   lList *running_list = nullptr;                     /* JB_Type */
+   lList *error_list = nullptr;                       /* JB_Type */
+   lList *hold_list = nullptr;                        /* JB_Type */
+   lList *not_started_list = nullptr;                 /* JB_Type */
+   lList *deferred_list = nullptr;                    /* JB_Type */
+   int prof_job_count, global_mes_count, job_mes_count;
+
+   int i;
+
+   DENTER(TOP_LAYER);
+
+   PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
+
+   // initializations
+   serf_new_interval(sge_get_gmt64());
+   orders.pendingOrderList = *order;
+   *order = nullptr;
+
+   prof_job_count = lGetNumberOfElem(lists->job_list);
+
+   sconf_reset_jobs();
+   schedd_mes_initialize();
+   schedd_order_initialize();
+
+   // split job list into multiple lists according to job states
+   // we will schedule the pending jobs
+   for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
+      splitted_job_lists[i] = nullptr;
+   }
+   splitted_job_lists[SPLIT_WAITING_DUE_TO_PREDECESSOR] = &waiting_due_to_pedecessor_list;
+   splitted_job_lists[SPLIT_WAITING_DUE_TO_TIME] = &waiting_due_to_time_list;
+   splitted_job_lists[SPLIT_PENDING_EXCLUDED] = &pending_excluded_list;
+   splitted_job_lists[SPLIT_SUSPENDED] = &suspended_list;
+   splitted_job_lists[SPLIT_FINISHED] = &finished_list;
+   splitted_job_lists[SPLIT_PENDING] = &pending_list;
+   splitted_job_lists[SPLIT_PENDING_EXCLUDED_INSTANCES] = &pending_excludedlist;
+   splitted_job_lists[SPLIT_RUNNING] = &running_list;
+   splitted_job_lists[SPLIT_ERROR] = &error_list;
+   splitted_job_lists[SPLIT_HOLD] = &hold_list;
+   splitted_job_lists[SPLIT_NOT_STARTED] = &not_started_list;
+   splitted_job_lists[SPLIT_DEFERRED] = &deferred_list;
+   split_jobs(&(lists->job_list), mconf_get_max_aj_instances(), splitted_job_lists, false);
+
+   // generate global queue messages (disabled, suspended, unknown, ...)
+   scheduler_global_queue_messages(lists, evc->monitor_next_run);
+
+   // the actual scheduling
    dispatch_jobs(evc, lists, &orders, splitted_job_lists);
 
-   /**
-    * post processing
-    */
+   // post processing
    remove_immediate_jobs(*(splitted_job_lists[SPLIT_PENDING]),
                          *(splitted_job_lists[SPLIT_RUNNING]), &orders);
 
+   // send orders to worker threads
    if (!sge_thread_has_shutdown_started()) {
       sge_schedd_send_orders(&orders, &(orders.configOrderList), nullptr, "C: config orders");
       sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), nullptr, "C: job start orders");
@@ -267,11 +275,10 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
                           SPLIT_PENDING_EXCLUDED_INSTANCES,
                           SPLIT_ERROR,
                           SPLIT_HOLD};
-      int i = 0;
       int max = 6;
       const lListElem *job;
 
-      for (i = 0; i < max; i++) {
+      for (int i = 0; i < max; ++i) {
          /* clear SGEEE fields for queued jobs */
          for_each_ep(job, *(splitted_job_lists[clean_jobs[i]])) {
             orders.pendingOrderList = sge_create_orders(orders.pendingOrderList,
@@ -280,7 +287,6 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
          }
       }
-
    }
    sge_build_sgeee_orders(lists, nullptr, *(splitted_job_lists[SPLIT_PENDING]), nullptr,
                           &orders, false, 0, false);
@@ -354,7 +360,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
    /* free all job lists */
    for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
-      if (splitted_job_lists[i]) {
+      if (splitted_job_lists[i] != nullptr) {
          lFreeList(splitted_job_lists[i]);
          splitted_job_lists[i] = nullptr;
       }
@@ -366,7 +372,50 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
    }
 
-   DRETURN(0);
+   DRETURN_VOID;
+}
+
+/*---------------------------------------------------------------------
+ * LOAD ADJUSTMENT
+ *
+ * Load sensors report load delayed. So we have to increase the load
+ * of an exechost for each job started before load adjustment decay time.
+ * load_adjustment_decay_time is a configuration value.
+ *---------------------------------------------------------------------
+ */
+static void
+do_load_adjustment(scheduler_all_data_t *lists, lList *running_jobs, lList *job_load_adjustments, bool monitor_next_run) {
+   DENTER(TOP_LAYER);
+   int global_lc = 0;
+
+   u_long64 decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
+   if (decay_time > 0) {
+      correct_load(running_jobs,
+                   lists->queue_list,
+                   lists->host_list,
+                   decay_time, monitor_next_run);
+
+      /* is there a "global" load value in the job_load_adjustments?
+         if so this will make it necessary to check load thresholds
+         of each queue after each dispatched job */
+      {
+         const lListElem *gep, *lcep;
+         if ((gep = host_list_locate(lists->host_list, "global"))) {
+            for_each_ep(lcep, job_load_adjustments) {
+               const char *attr = lGetString(lcep, CE_name);
+               if (lGetSubStr(gep, HL_name, attr, EH_load_list)) {
+                  DPRINTF("GLOBAL LOAD CORRECTION \"%s\"\n", attr);
+                  global_lc = 1;
+                  break;
+               }
+            }
+         }
+      }
+   }
+
+   sconf_set_global_load_correction(global_lc != 0);
+
+   DRETURN_VOID;
 }
 
 /****** schedd/scheduler/dispatch_jobs() **************************************
@@ -393,6 +442,8 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 ******************************************************************************/
 static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
                          lList **splitted_job_lists[]) {
+   DENTER(TOP_LAYER);
+
    lList *user_list = nullptr, *group_list = nullptr;
    lListElem *orig_job;
    lListElem *cat = nullptr;
@@ -400,73 +451,40 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    lList *consumable_load_list = nullptr;
    sched_prof_t pi;
 
-   u_long32 queue_sort_method;
-   u_long32 maxujobs;
-   lList *job_load_adjustments = nullptr;
    double total_running_job_tickets = 0;
-   int nreservation = 0;
+   u_long32 nreservation = 0;
    int fast_runs = 0;         /* sequential jobs */
    int fast_soft_runs = 0;    /* sequential jobs with soft requests */
    int pe_runs = 0;           /* pe jobs */
    int pe_soft_runs = 0;      /* pe jobs  with soft requests */
+   int sort_hostlist = 1;     /* hostlist has to be sorted. Info returned by select_assign_debit() */
 
-   int global_lc = 0;
-   int sort_hostlist = 1;       /* hostlist has to be sorted. Info returned by select_assign_debit */
    /* e.g. if load correction was computed */
-   u_long32 nr_pending_jobs = 0;
-   int max_reserve = sconf_get_max_reservations();
-   bool is_schedule_based = (max_reserve > 0) ? true : false;
+   u_long32 max_reserve = sconf_get_max_reservations();
+   bool is_schedule_based = max_reserve > 0; // check resource availability from the resource diagram
    u_long64 now = sge_get_gmt64();
 
-   DENTER(TOP_LAYER);
-
-   queue_sort_method = sconf_get_queue_sort_method();
-   maxujobs = sconf_get_maxujobs();
-   job_load_adjustments = sconf_get_job_load_adjustments();
+   u_long32 queue_sort_method = sconf_get_queue_sort_method();
+   u_long32 maxujobs = sconf_get_maxujobs();
+   lList *job_load_adjustments = sconf_get_job_load_adjustments();
    sconf_set_host_order_changed(false);
 
-   /*---------------------------------------------------------------------
-    * LOAD ADJUSTMENT
-    *
-    * Load sensors report load delayed. So we have to increase the load
-    * of an exechost for each job started before load adjustment decay time.
-    * load_adjustment_decay_time is a configuration value.
-    *---------------------------------------------------------------------*/
-   {
-      u_long64 decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
-      if (decay_time > 0) {
-         correct_load(*(splitted_job_lists[SPLIT_RUNNING]),
-                      lists->queue_list,
-                      lists->host_list,
-                      decay_time, evc->monitor_next_run);
-
-         /* is there a "global" load value in the job_load_adjustments?
-            if so this will make it necessary to check load thresholds
-            of each queue after each dispatched job */
-         {
-            const lListElem *gep, *lcep;
-            if ((gep = host_list_locate(lists->host_list, "global"))) {
-               for_each_ep(lcep, job_load_adjustments) {
-                  const char *attr = lGetString(lcep, CE_name);
-                  if (lGetSubStr(gep, HL_name, attr, EH_load_list)) {
-                     DPRINTF("GLOBAL LOAD CORRECTION \"%s\"\n", attr);
-                     global_lc = 1;
-                     break;
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   sconf_set_global_load_correction((global_lc != 0) ? true : false);
+   // adjust virtual load added at job start (if configured)
+   do_load_adjustment(lists, *(splitted_job_lists[SPLIT_RUNNING]), job_load_adjustments, evc->monitor_next_run);
 
    if (max_reserve != 0 || lGetNumberOfElem(lists->ar_list) > 0) {
       lListElem *dis_queue_elem = lFirstRW(lists->dis_queue_list);
-      /*----------------------------------------------------------------------
-       * ENSURE RUNNING JOBS ARE REFLECTED IN PER RESOURCE SCHEDULE
-       *---------------------------------------------------------------------*/
+      /*------------------------------------------------------------------------------
+       * ENSURE RUNNING JOBS ARE REFLECTED IN PER RESOURCE SCHEDULE (resource diagram)
+       * as well as suspended jobs and calendar events
+       * Advance reservations are already booked in the resource diagram
+       * (by worker threads processing qrsub requests).
+       * Resource reservations will be added during the scheduling run.
+       *------------------------------------------------------------------------------
+       */
 
+      // queues could have been disabled in the meantime, we still need to book into them
+      // @todo what about suspended queues etc. - are they also in the dis_queue_list?
       if (dis_queue_elem != nullptr) {
          lAppendList(lists->queue_list, lists->dis_queue_list);
       }
@@ -484,6 +502,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
    /*---------------------------------------------------------------------
     * CAPACITY CORRECTION
+    * We reduce the capacity of configured exec host consumables by
+    * use detected outside of Cluster Scheduler control
+    * (by comparing load value vs. available due to our internal booking).
     *---------------------------------------------------------------------*/
    correct_capacities(lists->host_list, lists->centry_list);
 
@@ -493,7 +514,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    if (sge_split_queue_load(
            evc->monitor_next_run,
            &(lists->queue_list),    /* queue list                             */
-           &none_avail_queues,            /* list of queues in suspend alarm state  */
+           &none_avail_queues,      /* list of queues in suspend alarm state  */
            lists->host_list,
            lists->centry_list,
            job_load_adjustments,
@@ -559,20 +580,16 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * FILTER JOBS
     *---------------------------------------------------------------------*/
 
-   DPRINTF("STARTING PASS 1 WITH " sge_uu32 " PENDING JOBS\n",
+   DPRINTF("STARTING FILTERING JOBS WITH " sge_uu32 " PENDING JOBS\n",
            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
 
+   // update the running jobs per user (in JC_Type objects)
    user_list_init_jc(&user_list, splitted_job_lists);
-
-   nr_pending_jobs = lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]));
-
-   DPRINTF("STARTING PASS 2 WITH %d PENDING JOBS\n", nr_pending_jobs);
 
    /*--------------------------------------------------------------------
     * CALL SGEEE SCHEDULER TO
     * CALCULATE TICKETS FOR EACH JOB  - IN SUPPORT OF SGEEE
     *------------------------------------------------------------------*/
-
    {
       int ret;
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -602,6 +619,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       }
    }
 
+   // shortcut: all queues are full, no need to continue
    if (((max_reserve == 0) && (lGetNumberOfElem(lists->queue_list) == 0)) || /* no reservation and no queues avail */
        ((lGetNumberOfElem(lists->queue_list) == 0) &&
         (lGetNumberOfElem(lists->dis_queue_list) == 0))) { /* reservation and no queues avail */
@@ -613,14 +631,17 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       DRETURN(0);
    }
 
+   // we need to do this *after* the SGEEE scheduler to make sure that we keep
+   // the jobs with high priority
    job_lists_split_with_reference_to_max_running(evc->monitor_next_run, splitted_job_lists,
                                                  &user_list,
                                                  nullptr,
                                                  maxujobs);
 
-   nr_pending_jobs = lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]));
+   DPRINTF("AFTER FILTERING WE HAVE " sge_uu32 " PENDING JOBS\n",
+           lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
 
-   if (nr_pending_jobs == 0) {
+   if (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) == 0) {
       /* no jobs to schedule */
       schedd_log(MSG_SCHEDD_MON_NOPENDJOBSTOPERFORMSCHEDULINGON, nullptr, evc->monitor_next_run);
       lFreeList(&user_list);
@@ -725,7 +746,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
          /* Don't need to look for a 'now' assignment if the last job 
             of this category got no 'now' assignement either */
-         is_start = (sge_is_job_category_rejected(orig_job)) ? false : true;
+         is_start = sge_is_job_category_rejected(orig_job) == 0;
 
          if (is_start || is_reserve) {
             lListElem *job = nullptr;
@@ -744,7 +765,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
             is_immediate_array_job = (is_immediate_array_job ||
                                       (JOB_TYPE_IS_ARRAY(lGetUlong(orig_job, JB_type)) &&
-                                       JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)))) ? true : false;
+                                       JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type))));
 
 
             if ((job = lCopyElem(orig_job)) == nullptr) {
@@ -955,7 +976,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    if (prof_is_active(SGE_PROF_CUSTOM4)) {
       static bool first_time = true;
       prof_stop_measurement(SGE_PROF_CUSTOM4, nullptr);
-      PROFILING("PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, %d res)",
+      PROFILING("PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, " sge_uu32 " res)",
               prof_get_measurement_wallclock(SGE_PROF_CUSTOM4, false, nullptr),
               fast_runs,
               fast_soft_runs,
@@ -1062,7 +1083,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
     *------------------------------------------------------------------*/
    if ((ckpt_name = lGetString(job, JB_checkpoint_name))) {
       a.ckpt = ckpt_list_locate(ckpt_list, ckpt_name);
-      if (!a.ckpt) {
+      if (a.ckpt == nullptr) {
          schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id, SCHEDD_INFO_CKPTNOTFOUND_);
          assignment_release(&a);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -1119,7 +1140,6 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       a.slots = 1;
 
       if (is_start) {
-
          DPRINTF("looking for immediate sequential assignment for job "
                          sge_U32CFormat"." sge_U32CFormat " duration " sge_U32CFormat "\n", a.job_id,
                          a.ja_task_id, a.duration);
@@ -1228,8 +1248,13 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
     * REMOVE QUEUES THAT ARE NO LONGER USEFUL FOR FURTHER SCHEDULING
     *------------------------------------------------------------------*/
    if (result == DISPATCH_OK || is_computed_reservation) {
+      /* @todo (CS-449) is_computed_reservation might be incorrect (it is initialized to true for every job
+       *    which requests a reservation, is again set to true for parallel jobs but not for
+       *    sequential jobs). And it is true even if no reservation could be found.
+       * @todo (CS-449) can the fact that a reservation was done lead to queues in suspended or alarm state?
+       *    It does not consume slots *now*, so does it have any effect on sge_split_queue_slots_free()?
+       */
       lList *disabled_queues = nullptr;
-      bool is_consumable_load_alarm = false;
 
       if (*load_list == nullptr) {
          sge_split_suspended(monitor_next_run, queue_list, dis_queue_list);
@@ -1248,7 +1273,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       }
 
 
-      is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list,
+      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list,
                                                      centry_list);
 
       /* split queues into overloaded and non-overloaded queues */

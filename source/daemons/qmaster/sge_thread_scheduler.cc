@@ -618,9 +618,6 @@ sge_scheduler_main(void *arg) {
             sleep(SGE_TEST_DELAY_SCHEDULING);
          }
 
-         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM6);
-         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
-
          if (DPRINTF_IS_ACTIVE) {
             dstring ds;
             char buffer[128];
@@ -630,6 +627,9 @@ sge_scheduler_main(void *arg) {
             sge_dstring_free(&ds);
          }
 
+         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM6);
+         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
+
          /*
           * If there were new events then
           * copy/filter data necessary for the scheduler run
@@ -637,8 +637,8 @@ sge_scheduler_main(void *arg) {
           */
          memset(&copy, 0, sizeof(copy));
 
-         copy.dept_list = lSelect("", master_userset_list, where_what.where_dept, where_what.what_acldept);
-         copy.acl_list = lSelect("", master_userset_list, where_what.where_acl, where_what.what_acldept);
+         copy.dept_list = lSelect(nullptr, master_userset_list, where_what.where_dept, where_what.what_acldept);
+         copy.acl_list = lSelect(nullptr, master_userset_list, where_what.where_acl, where_what.what_acldept);
 
          DPRINTF("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                   " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
@@ -658,6 +658,12 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfLeafs(nullptr, master_sharetree_list, STN_children)
                  );
 
+         /* rebuild all job categories
+          * - when the scheduler config changed
+          * - when the projects were added/modified/deleted
+          * - when jobs were added/modified/deleted
+          * - when usersets were added/modified/deleted
+          * */
          sge_rebuild_job_category(master_job_list, master_userset_list,
                                   master_project_list, master_rqs_list);
 
@@ -665,14 +671,16 @@ sge_scheduler_main(void *arg) {
          double prof_init = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
+         /*
+          * - fetch and merge new cluster (global, local) configuration if it has changed
+          * - reset counters in job categories
+          */
          sge_before_dispatch(evc);
 
-         /* prepare data for the scheduler itself */
-         copy.host_list = lCopyList("", master_exechost_list);
+         // prepare data for the scheduler itself
+         copy.host_list = lCopyList(nullptr, master_exechost_list);
 
-         /*
-          * Within the scheduler we do only need QIs
-          */
+         // within the scheduler we only need QIs create one big qinstance list
          {
             const lListElem *cqueue;
             lEnumeration *what_queue3 = nullptr;
@@ -681,7 +689,7 @@ sge_scheduler_main(void *arg) {
                const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                lList *t;
 
-               if (!qinstance_list) {
+               if (qinstance_list == nullptr) {
                   continue;
                }
 
@@ -689,7 +697,7 @@ sge_scheduler_main(void *arg) {
                if (!what_queue3) {
                   what_queue3 = lWhat("%T(%I%I)", lGetListDescr(qinstance_list), QU_full_name, QU_state);
                }
-               t = lSelect("t", qinstance_list, nullptr, what_queue3);
+               t = lSelect(nullptr, qinstance_list, nullptr, what_queue3);
                if (t) {
                   if (copy.all_queue_list == nullptr) {
                      copy.all_queue_list = lCreateList("all", lGetListDescr(t));
@@ -698,7 +706,7 @@ sge_scheduler_main(void *arg) {
                   lFreeList(&t);
                }
 
-               t = lSelect("t", qinstance_list, where_what.where_queue, where_what.what_queue2);
+               t = lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2);
                if (t) {
                   if (copy.queue_list == nullptr) {
                      copy.queue_list = lCreateList("enabled", lGetListDescr(t));
@@ -707,7 +715,7 @@ sge_scheduler_main(void *arg) {
                   lFreeList(&t);
                }
 
-               t = lSelect("t", qinstance_list, where_what.where_queue2, where_what.what_queue2);
+               t = lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2);
                if (t) {
                   if (copy.dis_queue_list == nullptr) {
                      copy.dis_queue_list = lCreateList("disabled", lGetListDescr(t));
@@ -724,7 +732,7 @@ sge_scheduler_main(void *arg) {
          if (sconf_is_job_category_filtering()) {
             copy.job_list = sge_category_job_copy(copy.queue_list, &orders, evc->monitor_next_run);
          } else {
-            copy.job_list = lCopyList("", master_job_list);
+            copy.job_list = lCopyList(nullptr, master_job_list);
          }
 
          /* no need to copy these lists, they are read only used */
@@ -733,12 +741,12 @@ sge_scheduler_main(void *arg) {
          copy.hgrp_list = master_hgrp_list;
 
          /* these lists need to be copied because they are modified during scheduling run */
-         copy.share_tree = lCopyList("", master_sharetree_list);
-         copy.pe_list = lCopyList("", master_pe_list);
-         copy.user_list = lCopyList("", master_user_list);
-         copy.project_list = lCopyList("", master_project_list);
-         copy.rqs_list = lCopyList("", master_rqs_list);
-         copy.ar_list = lCopyList("", master_ar_list);
+         copy.share_tree = lCopyList(nullptr, master_sharetree_list);
+         copy.pe_list = lCopyList(nullptr, master_pe_list);
+         copy.user_list = lCopyList(nullptr, master_user_list);
+         copy.project_list = lCopyList(nullptr, master_project_list);
+         copy.rqs_list = lCopyList(nullptr, master_rqs_list);
+         copy.ar_list = lCopyList(nullptr, master_ar_list);
 
          /* report number of reduced and raw (in brackets) lists */
          DPRINTF("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
@@ -820,7 +828,7 @@ sge_scheduler_main(void *arg) {
 
          /*
           * need to sync with event master thread
-          * if schedd configuration changed then settings in evm can be adjusted
+          * if scheduler configuration changed then settings in evm can be adjusted
           */
          if (sconf_is_new_config()) {
             /* set scheduler interval / event delivery interval */
@@ -834,7 +842,7 @@ sge_scheduler_main(void *arg) {
 
             /* no need to ec_commit here - we do it when resetting the busy state */
 
-            /* now we handled the new schedd config - no need to do it twice */
+            /* now we handled the new scheduler config - no need to do it twice */
             sconf_reset_new_config();
          }
 

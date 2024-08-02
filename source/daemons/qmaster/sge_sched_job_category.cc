@@ -113,48 +113,38 @@ static bool is_job_pending(lListElem *job);
 /*-------------------------------------------------------------------------*/
 /*    add jobs' category to the global category list, if it doesn't        */
 /*    already exist, and reference the category in the job element         */
-/*    The category_list is recreated for every scheduler run               */
 /*                                                                         */
 /*  NOTE: this function is not MT-Safe, because it uses global variables   */
 /*                                                                         */
-/* SG: TODO: split this into seperate functions                            */
+/* SG: TODO: split this into separate functions                            */
 /*-------------------------------------------------------------------------*/
 int
 sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list) {
+   DENTER(TOP_LAYER);
 
-   lListElem *cat = nullptr;
-   const char *cstr = nullptr;
-   u_long32 rc = 0;
    static const char no_requests[] = "no-requests";
    dstring category_str = DSTRING_INIT;
    bool did_project;
 
-   DENTER(TOP_LAYER);
-
    /* First part:
       Builds the category for the resource matching
    */
-
    sge_build_job_category_dstring(&category_str, job, acl_list, prj_list, &did_project, rqs_list);
 
+   const char *cstr;
    if (sge_dstring_strlen(&category_str) == 0) {
       cstr = sge_dstring_copy_string(&category_str, no_requests);
    } else {
       cstr = sge_dstring_get_string(&category_str);
    }
 
-   if (CATEGORY_LIST == nullptr) {
-      CATEGORY_LIST = lCreateList("new category list", CT_Type);
-   } else {
-      cat = lGetElemStrRW(CATEGORY_LIST, CT_str, cstr);
-   }
-
+   lListElem *cat = lGetElemStrRW(CATEGORY_LIST, CT_str, cstr);
    if (cat == nullptr) {
       cat = lAddElemStr(&CATEGORY_LIST, CT_str, cstr, CT_Type);
    }
 
    /* increment ref counter and set reference to this element */
-   rc = lGetUlong(cat, CT_refcount);
+   u_long32 rc = lGetUlong(cat, CT_refcount);
    lSetUlong(cat, CT_refcount, ++rc);
    lSetRef(job, JB_category, cat);
 
@@ -171,20 +161,12 @@ sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_lis
       */
       sge_dstring_clear(&category_str);
 
-
       cstr = sge_build_job_cs_category(&category_str, job, cat, did_project);
-
-      cat = nullptr;
       if (cstr == nullptr) {
          cstr = sge_dstring_copy_string(&category_str, no_requests);
       }
 
-      if (CS_CATEGORY_LIST == nullptr) {
-         CS_CATEGORY_LIST = lCreateList("category_list", SCT_Type);
-      } else {
-         cat = lGetElemStrRW(CS_CATEGORY_LIST, SCT_str, cstr);
-      }
-
+      cat = lGetElemStrRW(CS_CATEGORY_LIST, SCT_str, cstr);
       if (cat == nullptr) {
          cat = lAddElemStr(&CS_CATEGORY_LIST, SCT_str, cstr, SCT_Type);
          lSetList(cat, SCT_job_pending_ref, lCreateList("pending_jobs", REF_Type));
@@ -200,7 +182,6 @@ sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_lis
       job_ref = lCreateElem(REF_Type);
       lSetRef(job_ref, REF_ref, job);
       lAppendElem(job_ref_list, job_ref);
-
    }
 
    /* 
