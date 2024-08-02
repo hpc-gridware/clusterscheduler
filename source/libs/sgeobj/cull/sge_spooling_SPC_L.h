@@ -28,18 +28,42 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Spooling Context
 *
-* @todo add description
+* A spooling context describes the way how objects
+* are spooled (read and written).
+* 
+* A spooling context contains one or multiple rules for
+* spooling. A rule can for example describe a database connection.
+* 
+* It also contains a list of types that can be spooled.
+* A default entry for all types can be created; if type entries
+* for individual types exist, these entries will be used for spooling.
+* A type references one or multiple rules which will
+* be executed for writing or deleting data.
+* Exactly one rule can be defined to be the default rule
+* for reading objects.
+* +----------+       1:n       +----------+
+* | SPC_Type |----------------<| SPT_Type |
+* +----------+                 +----------+
+*      |                             |
+*      | 1                           |
+*      | :                           |
+*      | n                           |
+*      |                             |
+*      ^                             |
+* +----------+   1:n, one is default |
+* | SPR_Type |>----------------------+
+* +----------+
 *
-*    SGE_STRING(SPC_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SPC_name) - Name
+*    Unique name of the spooling context.
 *
-*    SGE_LIST(SPC_rules) - @todo add summary
-*    @todo add description
+*    SGE_LIST(SPC_rules) - Rules
+*    List of spooling rules.
 *
-*    SGE_LIST(SPC_types) - @todo add summary
-*    @todo add description
+*    SGE_LIST(SPC_types) - Types
+*    List of spoolable object types with references to rules.
 *
 */
 

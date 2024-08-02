@@ -1,15 +1,63 @@
 {
 	"className":	"SpoolingContext",
-	"summary":	"@todo add summary",
+	"summary":	"Spooling Context",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A spooling context describes the way how objects"
+         }, {
+			"line":	"are spooled (read and written)."
+         }, {
+			"line":	""
+         }, {
+			"line":	"A spooling context contains one or multiple rules for"
+         }, {
+			"line":	"spooling. A rule can for example describe a database connection."
+         }, {
+			"line":	""
+         }, {
+			"line":	"It also contains a list of types that can be spooled."
+         }, {
+			"line":	"A default entry for all types can be created; if type entries"
+         }, {
+			"line":	"for individual types exist, these entries will be used for spooling."
+         }, {
+			"line":	"A type references one or multiple rules which will"
+         }, {
+			"line":	"be executed for writing or deleting data."
+         }, {
+			"line":	"Exactly one rule can be defined to be the default rule"
+         }, {
+			"line":	"for reading objects."
+         }, {
+			"line":	"+----------+       1:n       +----------+"
+         }, {
+			"line":	"| SPC_Type |----------------<| SPT_Type |"
+         }, {
+			"line":	"+----------+                 +----------+"
+         }, {
+			"line":	"     |                             |"
+         }, {
+			"line":	"     | 1                           |"
+         }, {
+			"line":	"     | :                           |"
+         }, {
+			"line":	"     | n                           |"
+         }, {
+			"line":	"     |                             |"
+         }, {
+			"line":	"     ^                             |"
+         }, {
+			"line":	"+----------+   1:n, one is default |"
+         }, {
+			"line":	"| SPR_Type |>----------------------+"
+         }, {
+			"line":	"+----------+"
 		}],
 	"cullPrefix":	"SPC",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unique name of the spooling context."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +67,9 @@
 				}]
 		}, {
 			"name":	"rules",
-			"summary":	"@todo add summary",
+			"summary":	"Rules",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of spooling rules."
 				}],
 			"type":	"lListT",
 			"subClassName":	"SPR",
@@ -29,9 +77,9 @@
 			"flags":	[]
 		}, {
 			"name":	"types",
-			"summary":	"@todo add summary",
+			"summary":	"Types",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of spoolable object types with references to rules."
 				}],
 			"type":	"lListT",
 			"subClassName":	"SPT",
