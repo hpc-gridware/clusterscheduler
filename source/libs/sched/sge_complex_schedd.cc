@@ -50,6 +50,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_load.h"
 #include "sgeobj/sge_str.h"
 
 #include "sge_complex_schedd.h"
@@ -198,7 +199,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                   break;
             }
             sge_dstring_init(&ds, as_str, sizeof(as_str));
-            sge_dstring_sprintf(&ds, "%8.3f", (float)lGetDouble(cplx_el, CE_pj_doubleval));
+            sge_dstring_sprintf(&ds, "%8.3f", lGetDouble(cplx_el, CE_pj_doubleval));
             lSetString(cplx_el,CE_pj_stringval, as_str);
          } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
@@ -214,23 +215,14 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
    /** check for a load value */
    if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
        (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
-         const lListElem *ep_nproc=nullptr;
-         int nproc=1;
-
-         if (!cplx_el){
+         if (cplx_el == nullptr) {
             cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
-               if (!cplx_el){
+               if (cplx_el == nullptr) {
                   /* error */
                   DRETURN(nullptr);
                }         
             lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
             lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);
-         }
-
-         if ((ep_nproc = lGetElemStr(load_attr, HL_name, LOAD_ATTR_NUM_PROC))) {
-            const char *cp = lGetString(ep_nproc, HL_value);
-            if (cp)
-               nproc = MAX(1, atoi(lGetString(ep_nproc, HL_value)));
          }
 
          {
@@ -243,21 +235,17 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                lSetString(cplx_el, CE_stringval, load_value);
                lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_LOAD);
             } else { /* working on numerical values */
-               const lListElem *job_load;
                char err_str[256];
-               char sval[100];
                u_long32 dom_type = DOMINANT_TYPE_LOAD;
-               lList *load_adjustments = sconf_get_job_load_adjustments(); // @todo (CS-450) expensive, gives us a copy of the load adjustments
- 
-               job_load=lGetElemStr(load_adjustments, CE_name, attrname);
 
                if (parse_ulong_val(&dval, nullptr, type, load_value, nullptr, 0)) {
 
-               sge_strlcpy(sval, load_value, 100);
                /* --------------------------------
                   look for 'name' in our load_adjustments list
                */
-               if (job_load) {
+               lList *load_adjustments = sconf_get_job_load_adjustments(); // @todo (CS-450) expensive, gives us a copy of the load adjustments
+               const lListElem *job_load = lGetElemStr(load_adjustments, CE_name, attrname);
+               if (job_load != nullptr) {
                   const char *s;
                   double load_correction;
 
@@ -267,9 +255,12 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                   } else if (lc_factor) {
                      double old_dval;
                      u_long32 relop;
-                     if (!strncmp(attrname, "np_", 3) && nproc != 1 ) {
-                        DPRINTF("fillComplexFromHost: dividing lc_factor for \"%s\" with value %f by %d to %f\n", attrname, lc_factor, nproc, lc_factor / nproc);
-                        lc_factor /= nproc;
+                     if (strncmp(attrname, "np_", 3) == 0) {
+                        int nproc = load_list_get_nproc(load_attr);
+                        if (nproc != 1) {
+                           DPRINTF("fillComplexFromHost: dividing lc_factor for \"%s\" with value %f by %d to %f\n", attrname, lc_factor, nproc, lc_factor / nproc);
+                           lc_factor /= nproc;
+                        }
                      }
                      load_correction *= lc_factor;
 
@@ -277,17 +268,16 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                      if ( (relop = lGetUlong(cplx_el, CE_relop)) == CMPLXGE_OP || relop == CMPLXGT_OP){
                         old_dval = dval;
                         dval += load_correction;
-                     }   
-                     else{
+                     } else {
                         old_dval = dval;
                         dval -= load_correction;
                      }
 
-                     snprintf(sval, sizeof(sval), "%8.3f", dval);
                      DPRINTF("%s: uc: %f c(%f): %f\n", attrname, old_dval, lc_factor, dval);
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }
                }
+               lFreeList(&load_adjustments);
 
                /* we can have a user, who wants to override the incoming load value. This is no
                   problem for consumables, but for fixed values. A custom fixed value is a per
@@ -310,7 +300,6 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                   lSetDouble(cplx_el, CE_pj_doubleval, dval );
                }
             } /* end numerical load value */
-            lFreeList(&load_adjustments);
          }/* end block */
       }
    }

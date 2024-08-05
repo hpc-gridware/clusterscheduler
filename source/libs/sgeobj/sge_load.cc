@@ -58,3 +58,18 @@ sge_is_static_load_value(const char *name)
 
    DRETURN(ret);
 }
+
+int
+load_list_get_nproc(const lList *load_list) {
+   int nproc = 1;
+
+   const lListElem *ep_nproc = lGetElemStr(load_list, HL_name, LOAD_ATTR_NUM_PROC);
+   if (ep_nproc != nullptr) {
+      const char *cp = lGetString(ep_nproc, HL_value);
+      if (cp != nullptr) {
+         nproc = MAX(1, atoi(cp));
+      }
+   }
+
+   return nproc;
+}

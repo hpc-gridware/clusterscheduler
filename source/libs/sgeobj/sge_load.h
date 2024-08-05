@@ -35,3 +35,6 @@
 
 bool 
 sge_is_static_load_value(const char *name);
+
+int
+load_list_get_nproc(const lList *load_list);
