@@ -28,24 +28,24 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief JAPI Job
 *
-* @todo add description
+* Element holding per job information about JAPI session.
 *
-*    SGE_ULONG(JJ_jobid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JJ_jobid) - Job Id
+*    JAPI job id.
 *
-*    SGE_ULONG(JJ_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JJ_type) - Type
+*    Job type - analoguous to JB_type.
 *
-*    SGE_LIST(JJ_finished_tasks) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JJ_finished_tasks) - Finished Tasks
+*    List of finished job tasks.
 *
-*    SGE_LIST(JJ_not_yet_finished_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JJ_not_yet_finished_ids) - Not Yet Finished Ids
+*    Ids of not yet finished tasks.
 *
-*    SGE_LIST(JJ_started_task_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JJ_started_task_ids) - Started Task Ids
+*    Ids of started tasks.
 *
 */
 

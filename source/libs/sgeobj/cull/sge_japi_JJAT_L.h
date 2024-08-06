@@ -28,21 +28,21 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief JAPI Array Task
 *
-* @todo add description
+* Element holding per job array task information about JAPI session
 *
-*    SGE_ULONG(JJAT_task_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JJAT_task_id) - Task Id
+*    Array Task Id (equal to JAT_task_number).
 *
-*    SGE_ULONG(JJAT_stat) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JJAT_stat) - Stat
+*    Stat information provided by japi_wait().
 *
-*    SGE_LIST(JJAT_rusage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JJAT_rusage) - RUsage
+*    Resource usage information provided by japi_wait()
 *
-*    SGE_STRING(JJAT_failed_text) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JJAT_failed_text) - Failed Text
+*    Printable error text describing reason of job error.
 *
 */
 

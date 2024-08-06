@@ -1,15 +1,15 @@
 {
 	"className":	"JAPIJob",
-	"summary":	"@todo add summary",
+	"summary":	"JAPI Job",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Element holding per job information about JAPI session."
 		}],
 	"cullPrefix":	"JJ",
 	"attributes":	[{
 			"name":	"jobid",
-			"summary":	"@todo add summary",
+			"summary":	"Job Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"JAPI job id."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -19,17 +19,17 @@
 				}]
 		}, {
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job type - analoguous to JB_type."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"finished_tasks",
-			"summary":	"@todo add summary",
+			"summary":	"Finished Tasks",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of finished job tasks."
 				}],
 			"type":	"lListT",
 			"subClassName":	"JJAT",
@@ -37,9 +37,9 @@
 			"flags":	[]
 		}, {
 			"name":	"not_yet_finished_ids",
-			"summary":	"@todo add summary",
+			"summary":	"Not Yet Finished Ids",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Ids of not yet finished tasks."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RN",
@@ -47,9 +47,9 @@
 			"flags":	[]
 		}, {
 			"name":	"started_task_ids",
-			"summary":	"@todo add summary",
+			"summary":	"Started Task Ids",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Ids of started tasks."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RN",

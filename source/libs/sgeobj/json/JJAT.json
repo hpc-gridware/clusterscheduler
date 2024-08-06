@@ -1,31 +1,31 @@
 {
 	"className":	"JAPIArrayTask",
-	"summary":	"@todo add summary",
+	"summary":	"JAPI Array Task",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Element holding per job array task information about JAPI session"
 		}],
 	"cullPrefix":	"JJAT",
 	"attributes":	[{
 			"name":	"task_id",
-			"summary":	"@todo add summary",
+			"summary":	"Task Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Array Task Id (equal to JAT_task_number)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"stat",
-			"summary":	"@todo add summary",
+			"summary":	"Stat",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Stat information provided by japi_wait()."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"rusage",
-			"summary":	"@todo add summary",
+			"summary":	"RUsage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Resource usage information provided by japi_wait()"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -33,9 +33,9 @@
 			"flags":	[]
 		}, {
 			"name":	"failed_text",
-			"summary":	"@todo add summary",
+			"summary":	"Failed Text",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Printable error text describing reason of job error."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
