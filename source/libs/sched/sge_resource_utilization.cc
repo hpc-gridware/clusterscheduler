@@ -976,7 +976,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
       for_each_rw (ja_task, lGetList(jep, JB_ja_tasks)) {
          sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
-         assignment_init(&a, jep, ja_task, false);
+         assignment_init(&a, jep, ja_task, nullptr);
 
          a.start = lGetUlong64(ja_task, JAT_start_time);
 

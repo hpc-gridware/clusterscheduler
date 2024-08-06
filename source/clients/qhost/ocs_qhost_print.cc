@@ -311,7 +311,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** arch
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(arch_string, sge_get_dominant_stringval(lep, &dominant, &rs), 
                sizeof(arch_string)); 
@@ -324,7 +324,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** num_proc
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs),
                sizeof(num_proc)); 
@@ -338,7 +338,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
       /*
       ** nsoc (sockets)
       */
-      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_socket", centry_list, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_socket", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(socket));
@@ -351,7 +351,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
       /*
       ** nthr (threads)
       */
-      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_thread", centry_list, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_thread", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(thread));
@@ -365,7 +365,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
       /*
       ** ncor (cores)
       */
-      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_core", centry_list, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_core", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(core)); 
@@ -379,7 +379,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** load_avg
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(load_avg, sizeof(load_avg), "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -391,7 +391,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** mem_total
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_total, sizeof(mem_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -403,7 +403,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** mem_used
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_used, sizeof(mem_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -415,7 +415,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** swap_total
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_total, sizeof(swap_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -427,7 +427,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    /*
    ** swap_used
    */
-   lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_used, sizeof(swap_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);

@@ -117,11 +117,11 @@ typedef struct {
    const char* group;             /* group name (JB_group)                          */
    const char* project;           /* project name (JB_project)                      */
    const lListElem *ckpt;         /* the checkpoint interface (CK_Type)             */
-   lListElem  *gep;               /* the global host (EH_Type)                      */
-   u_long64   duration;           /* jobs time of the assignment                    */
-   lList      *load_adjustments;  /* shall load adjustmend be considered (CE_Type)  */
-   lList      *host_list;         /* the hosts (EH_Type)                            */
-   lList      *queue_list;        /* the queues (QU_Type)                           */
+   lListElem *gep;                /* the global host (EH_Type)                      */
+   u_long64 duration;             /* jobs time of the assignment                    */
+   lList *load_adjustments;       /* job load adjustments (CE_Type)                 */
+   lList *host_list;              /* the hosts (EH_Type)                            */
+   lList *queue_list;             /* the queues (QU_Type)                           */
    const lList *centry_list;      /* the complex entries (CE_Type)                  */
    const lList *acl_list;         /* the user sets (US_Type)                        */
    const lList *hgrp_list;        /* the host group list (HGRP_Type)                */
@@ -154,7 +154,7 @@ typedef struct {
 #define SGE_ASSIGNMENT_INIT {0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
 
-void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bool is_load_adj);
+void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);

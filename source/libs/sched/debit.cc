@@ -66,7 +66,7 @@ debit_job_from_queues(lListElem *job, lList *selected_queue_list, lList *global_
 
 static int
 debit_job_from_hosts(lListElem *job, lListElem *ja_task, lList *granted, lList *host_list, const lList *complex_list,
-                     int *sort_hostlist);
+                     const lList *load_adjustments, int *sort_hostlist);
 
 static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
@@ -160,7 +160,7 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
       if (a->pe) {
          pe_debit_slots(a->pe, a->slots, a->job_id);
       }
-      debit_job_from_hosts(a->job, a->ja_task, a->gdil, a->host_list, a->centry_list, sort_hostlist);
+      debit_job_from_hosts(a->job, a->ja_task, a->gdil, a->host_list, a->centry_list, a->load_adjustments, sort_hostlist);
       debit_job_from_queues(a->job, a->gdil, a->queue_list, a->centry_list, orders);
       debit_job_from_rqs(a->job, a->gdil, a->rqs_list, a->pe, a->centry_list, a->acl_list, a->hgrp_list);
       debit_job_from_ar(a->job, a->gdil, a->ar_list, a->centry_list);
@@ -264,20 +264,14 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
    DRETURN(ret);
 }
 
-static int debit_job_from_hosts(
-        lListElem *job,     /* JB_Type */
-        lListElem *ja_task, /* JAT_Type */
-        lList *granted,     /* JG_Type */
-        lList *host_list,   /* EH_Type */
-        const lList *centry_list, /* CE_Type */
-        int *sort_hostlist
-) {
+static int
+debit_job_from_hosts(lListElem *job, lListElem *ja_task, lList *granted, lList *host_list, const lList *centry_list,
+                     const lList *load_adjustments, int *sort_hostlist) {
    lSortOrder *so = nullptr;
    lListElem *hep;
    lListElem *global;
    const char *hnm = nullptr;
    const char *load_formula = nullptr;
-   lList *job_load_adjustments = sconf_get_job_load_adjustments();
    u_long64 load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
    bool is_master_task = true;
 
@@ -302,7 +296,7 @@ static int debit_job_from_hosts(
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, hnm);
       hep = host_list_locate(host_list, hnm);
 
-      if (load_adjustment_decay_time > 0 && lGetNumberOfElem(job_load_adjustments) > 0) {
+      if (load_adjustment_decay_time > 0 && lGetNumberOfElem(load_adjustments) > 0) {
          /* increase host load for each scheduled job slot */
          ulc_factor = lGetUlong(hep, EH_load_correction_factor);
          ulc_factor += 100 * slots;
@@ -328,10 +322,9 @@ static int debit_job_from_hosts(
 
       lResortElem(so, hep, host_list);
    }
-   sge_free(&load_formula);
 
+   sge_free(&load_formula);
    lFreeSortOrder(&so);
-   lFreeList(&job_load_adjustments);
 
    DRETURN(0);
 }

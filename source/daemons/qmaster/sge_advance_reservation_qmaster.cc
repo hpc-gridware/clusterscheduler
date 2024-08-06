@@ -1043,7 +1043,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
       lSetString(dummy_job, JB_group, lGetString(ar, AR_group));
    }
 
-   assignment_init(&a, dummy_job, nullptr, false);
+   assignment_init(&a, dummy_job, nullptr, nullptr);
    a.host_list = master_exechost_list;
    a.centry_list = master_centry_list;
    a.acl_list = master_userset_list;

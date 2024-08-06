@@ -244,7 +244,7 @@ load_np_value_adjustment(const char* name, lListElem *hep, double *load_correcti
 
 /* ---- Implementation ------------------------------------------------------------------------- */
 
-void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bool is_load_adj)
+void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments)
 {
    if (job != nullptr) {
       a->job         = job;
@@ -255,9 +255,7 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bo
       a->is_soft     = job_has_soft_requests(job);
    }
 
-   if (is_load_adj) {
-      a->load_adjustments = sconf_get_job_load_adjustments();
-   }
+   a->load_adjustments = load_adjustments;
 
    if (ja_task != nullptr) {
       a->ja_task     = ja_task;
@@ -271,10 +269,6 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
       return;
    }
 
-   if (dst->load_adjustments != nullptr) {
-      lFreeList(&dst->load_adjustments);
-   }
-
    if (move_gdil) {
       lFreeList(&(dst->gdil));
       lFreeList(&(dst->limit_list));
@@ -285,7 +279,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    memcpy(dst, src, sizeof(sge_assignment_t));
 
    if (src->load_adjustments != nullptr) {
-      dst->load_adjustments = lCopyList("cpy_load_adj", src->load_adjustments);
+      dst->load_adjustments = src->load_adjustments;
    }
 
    if (!move_gdil)
@@ -296,7 +290,6 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 
 void assignment_release(sge_assignment_t *a)
 {
-   lFreeList(&(a->load_adjustments));
    lFreeList(&(a->gdil));
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
@@ -1104,7 +1097,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 
    clear_resource_tags(requested_attr, MAX_TAG);
 
-   assignment_init(&a, nullptr, nullptr, false);
+   assignment_init(&a, nullptr, nullptr, nullptr);
    a.centry_list      = centry_list;
    a.host_list        = exechost_list;
 
@@ -2283,7 +2276,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
          }
       } else {
          /* load thesholds... */
-         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, DISPATCH_TIME_NOW, 0)) == nullptr ) {
+         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0)) == nullptr ) {
             if (reason)
                snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
             DRETURN(1);
@@ -2345,7 +2338,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
       /* check all thresholds */
       for_each_ep(tep, threshold) {
          const char *name;             /* complex attrib name */
-         const lListElem *cep;               /* actual complex attribute */
+         const lListElem *cep;         /* actual complex attribute */
          char dom_str[5];              /* dominance as string */
          u_long32 dom_val;             /* dominance as u_long */
          char buffer[MAX_STRING_SIZE]; /* buffer for one line */
@@ -3314,7 +3307,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
                continue;
             }
             sge_dstring_clear(&reason);
-            cplx_el = get_attribute_by_name(a->gep, hep, qep, attrname, a->centry_list, a->start, a->duration);
+            cplx_el = get_attribute_by_name(a->gep, hep, qep, attrname, a->centry_list, a->load_adjustments, a->start, a->duration);
             if (cplx_el == nullptr) {
                result = DISPATCH_MISSING_ATTR;
                sge_dstring_sprintf(&reason, MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S, attrname);
@@ -4376,8 +4369,8 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
             continue;
          }
          sge_dstring_clear(&reason);
-         cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, nullptr,
-                  DOMINANT_LAYER_HOST, 0, &reason, false, DISPATCH_TIME_NOW, 0);
+         cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments, nullptr,
+                                 DOMINANT_LAYER_HOST, 0, &reason, false, DISPATCH_TIME_NOW, 0);
          if (cplx_el != nullptr) {
             if (match_static_resource(1, rep, cplx_el, &reason, false) == DISPATCH_OK) {
                lSetUlong(rep, CE_tagged, HOST_TAG);
@@ -4552,7 +4545,8 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
                adj_value = lGetString(cep, CE_defaultval);
             }
 
-            if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->start, a->duration)) == nullptr) {
+            if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->load_adjustments, a->start,
+                                                a->duration)) == nullptr) {
                 /* no load value, no assigned consumable to queue, host, or global */
                 DPRINTF("the consumable " SFN " used in queue " SFN " as load threshold has no instance at queue, host or global level\n",
                          name, lGetString(qep, QU_full_name));
@@ -5024,8 +5018,9 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
                continue;
             }
             sge_dstring_clear(&reason);
-            cplx_el = get_attribute(attrname, ar_queue_config_attr, ar_queue_actual_attr, nullptr, a->centry_list, nullptr,
-                     DOMINANT_LAYER_QUEUE, 0, &reason, false, DISPATCH_TIME_NOW, 0);
+            cplx_el = get_attribute(attrname, ar_queue_config_attr, ar_queue_actual_attr, nullptr, a->centry_list,
+                                    a->load_adjustments, nullptr,
+                                    DOMINANT_LAYER_QUEUE, 0, &reason, false, DISPATCH_TIME_NOW, 0);
             if (cplx_el != nullptr) {
                if (match_static_resource(1, rep, cplx_el, &reason, false) == DISPATCH_OK) {
                   lSetUlong(rep, CE_tagged, PE_TAG);
@@ -5470,9 +5465,9 @@ sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
 
    /* find matching */
    *has_value_from_object = false;
-   if (( ep = get_attribute_by_name(global, host, q, attrname, centry_list, DISPATCH_TIME_NOW, 0)) &&
-         ((type=lGetUlong(ep, CE_valtype)) != TYPE_STR) &&
-         (type != TYPE_CSTR) && (type != TYPE_RESTR) && (type != TYPE_HOST) ) {
+   if (( ep = get_attribute_by_name(global, host, q, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0)) &&
+       ((type=lGetUlong(ep, CE_valtype)) != TYPE_STR) &&
+       (type != TYPE_CSTR) && (type != TYPE_RESTR) && (type != TYPE_HOST) ) {
 
          if ((lGetUlong(ep, CE_pj_dominant)&DOMINANT_TYPE_MASK)!=DOMINANT_TYPE_VALUE ) {
             parse_ulong_val(&tmp_dval, nullptr, type, lGetString(ep, CE_pj_stringval), nullptr, 0);
@@ -5524,7 +5519,7 @@ const lList *centry_list
    global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
    host = host_list_locate(exechost_list, lGetHost(q, QU_qhostname));
 
-   ep = get_attribute_by_name(global, host, q, attrname, centry_list, DISPATCH_TIME_NOW, 0);
+   ep = get_attribute_by_name(global, host, q, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
 
    /* first copy ... */
    if (ep && dst)
@@ -5604,8 +5599,8 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
     * thus we always assume zero consumable utilization here
     */
 
-   if (!(cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, queue, layer,
-                        lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
+   if (!(cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments, queue, layer,
+                                 lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
       DRETURN(DISPATCH_MISSING_ATTR);
    }
 
@@ -5836,8 +5831,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
 
    if (!no_centry) {
       lListElem *cplx_el;
-      if (!(cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, queue, layer,
-                           lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
+      if (!(cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, a->load_adjustments, queue, layer,
+                                    lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
          DRETURN(DISPATCH_MISSING_ATTR); /* does not exist */
       }
 

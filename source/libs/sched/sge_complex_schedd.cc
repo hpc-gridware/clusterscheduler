@@ -147,9 +147,10 @@ void monitor_dominance(char *str, u_long32 mask) {
 *     static lListElem* - the element one was looking for or nullptr
 *
 *******************************************************************************/
-lListElem* get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr, 
-   const lList *centry_list, const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
-   bool zero_utilization, u_long64 start_time, u_long64 duration)
+lListElem *
+get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
+              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, u_long32 layer,
+              double lc_factor, dstring *reason, bool zero_utilization, u_long64 start_time, u_long64 duration)
 {
    const lListElem *actual_el=nullptr;
    const lListElem *load_el=nullptr;
@@ -239,11 +240,22 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                u_long32 dom_type = DOMINANT_TYPE_LOAD;
 
                if (parse_ulong_val(&dval, nullptr, type, load_value, nullptr, 0)) {
-
-               /* --------------------------------
-                  look for 'name' in our load_adjustments list
-               */
-               lList *load_adjustments = sconf_get_job_load_adjustments(); // @todo (CS-450) expensive, gives us a copy of the load adjustments
+                  /* when nullptr is passed as load_adjustments, does it mean
+                   * - we do not need to consider them
+                   * - we always want to consider them and need to fetch them locally (old behaviour)
+                   * I would guess that we don't need to consider them in many cases, e.g. in client code.
+                   * But for safety reasons keep the old behaviour - in most cases, esp. in scheduler
+                   * we pass valid load_adjustments to this function and have overcome the issue CS-450.
+                   * @todo do a full testsuite run with LOAD_ADJUSTMENTS_LATE_FETCH unset and re-decide.
+                   */
+#define LOAD_ADJUSTMENTS_LATE_FETCH
+#ifdef LOAD_ADJUSTMENTS_LATE_FETCH
+               lList *local_load_adjustments = nullptr;
+               if (load_adjustments == nullptr) {
+                  load_adjustments = local_load_adjustments = sconf_get_job_load_adjustments();
+               }
+#endif
+               // look for 'name' in our load_adjustments list
                const lListElem *job_load = lGetElemStr(load_adjustments, CE_name, attrname);
                if (job_load != nullptr) {
                   const char *s;
@@ -277,7 +289,9 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }
                }
-               lFreeList(&load_adjustments);
+#ifdef LOAD_ADJUSTMENTS_LATE_FETCH
+               lFreeList(&local_load_adjustments);
+#endif
 
                /* we can have a user, who wants to override the incoming load value. This is no
                   problem for consumables, but for fixed values. A custom fixed value is a per
@@ -636,7 +650,8 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
    lList *list = nullptr;
 
    for_each_ep(elem, attrnames) {
-      attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, DISPATCH_TIME_NOW, 0);
+      attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, nullptr,
+                                   DISPATCH_TIME_NOW, 0);
       if (attr != nullptr) {
          if (list == nullptr) {
             list = lCreateList("attr", CE_Type);
@@ -1105,15 +1120,15 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 *
 *  FUNCTION
 *     It looks into the different configurations on host, global and queue and returns
-*     the attribute, which was asked for. It the attribut is defined multiple times, only
+*     the attribute, which was asked for. It the attribute is defined multiple times, only
 *     the valid one is returned. 
 *
 *  INPUTS
 *     lListElem* global    - the global host 
-*     lListElem *host      - a given host can be null, than only the  global host is important
-*     lListElem *queue     - a queue on the given host, can be null, than only the host and global ist important 
-*     const char* attrname - the attribut name one is looking ofr 
-*     lList *centry_list   - the system wide attribut config list 
+*     lListElem *host      - a given host can be nullptr, then only the global host is important
+*     lListElem *queue     - a queue on the given host, can be null, then only the host and global is important
+*     const char* attrname - the attribute name one is looking for
+*     lList *centry_list   - the system wide attribute config list
 *     char *reason         - memory for the error message 
 *     int reason_size      - the max length of an error message 
 *
@@ -1121,8 +1136,9 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 *     void lListElem* - the element one is looking for (a copy) or nullptr.
 *
 *******************************************************************************/
-lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host, const lListElem *queue, 
-    const char* attrname, const lList *centry_list, u_long64 start_time, u_long64 duration)
+lListElem *
+get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
+                      const lList *centry_list, const lList *load_adjustments, u_long64 start_time, u_long64 duration)
 {
    lListElem *global_el=nullptr;
    lListElem *host_el=nullptr;
@@ -1146,8 +1162,8 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
             lc_factor = ((double)lc_factor)/100;
          }   
       }
-      global_el = get_attribute(attrname, config_attr, actual_attr, load_attr, 
-                                centry_list, nullptr, DOMINANT_LAYER_GLOBAL,
+      global_el = get_attribute(attrname, config_attr, actual_attr, load_attr,
+                                centry_list, load_adjustments, nullptr, DOMINANT_LAYER_GLOBAL,
                                 lc_factor, nullptr, false, start_time, duration);
       ret_el = global_el;
    } 
@@ -1164,7 +1180,8 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
             lc_factor = ((double)lc_factor)/100;
          }
       }
-      host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, nullptr, DOMINANT_LAYER_HOST,
+      host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments, nullptr,
+                              DOMINANT_LAYER_HOST,
                               lc_factor, nullptr, false, start_time, duration);
       if (!global_el && host_el) {
          ret_el = host_el;
@@ -1182,8 +1199,9 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
       config_attr = lGetList(queue, QU_consumable_config_list);
       actual_attr = lGetList(queue, QU_resource_utilization);
       
-      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, queue, DOMINANT_LAYER_QUEUE,
-                              0.0, nullptr, false, start_time, duration);
+      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments, queue,
+                               DOMINANT_LAYER_QUEUE,
+                               0.0, nullptr, false, start_time, duration);
 
       if (!ret_el) {
          ret_el = queue_el;

@@ -120,12 +120,12 @@ static int
 dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders, lList **splitted_job_lists[]);
 
 static dispatch_t
-select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
-                    lList *pe_list, const lList *ckpt_list, const lList *centry_list, lList *host_list,
-                    lList *acl_list, lList **user_list, lList **group_list, order_t *orders,
-                    double *total_running_job_tickets, int *sort_hostlist, bool is_start,
-                    bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list,
-                    lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long64 now);
+select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task, lList *pe_list,
+                    const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,
+                    lList *load_adjustments, lList **user_list, lList **group_list, order_t *orders,
+                    double *total_running_job_tickets, int *sort_hostlist, bool is_start, bool is_reserve,
+                    bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list, lList *ar_list,
+                    sched_prof_t *pi, bool monitor_next_run, u_long64 now);
 
 void
 st_set_flag_new_global_conf(bool new_value) {
@@ -788,6 +788,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                        lists->centry_list,
                        lists->host_list,
                        lists->acl_list,
+                       job_load_adjustments,
                        &user_list,
                        &group_list,
                        orders,
@@ -1036,12 +1037,12 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 *          -2 will never get an assignment for that particular job
 ******************************************************************************/
 static dispatch_t
-select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
-                    lList *pe_list, const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,
-                    lList **user_list, lList **group_list, order_t *orders, double *total_running_job_tickets,
-                    int *sort_hostlist, bool is_start, bool is_reserve, bool is_schedule_based, lList **load_list,
-                    const lList *hgrp_list,
-                    lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long64 now) {
+select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task, lList *pe_list,
+                    const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,
+                    lList *load_adjustments, lList **user_list, lList **group_list, order_t *orders,
+                    double *total_running_job_tickets, int *sort_hostlist, bool is_start, bool is_reserve,
+                    bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list, lList *ar_list,
+                    sched_prof_t *pi, bool monitor_next_run, u_long64 now) {
    lListElem *granted_el;
    dispatch_t result = DISPATCH_NOT_AT_TIME;
    const char *pe_name, *ckpt_name;
@@ -1050,7 +1051,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
    DENTER(TOP_LAYER);
 
-   assignment_init(&a, job, ja_task, true);
+   assignment_init(&a, job, ja_task, load_adjustments);
    a.queue_list = *queue_list;
    a.host_list = host_list;
    a.centry_list = centry_list;

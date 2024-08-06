@@ -887,10 +887,9 @@ static const lList *get_job_load_adjustments()
 {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       
-   if (pos.job_load_adjustments!= -1) {
+   if (pos.job_load_adjustments != -1) {
       return lGetPosList(sc_ep, pos.job_load_adjustments); 
-   }   
-   else {
+   } else {
       return nullptr;
    }   
 }

@@ -306,8 +306,8 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
       attrname++;
    }
 
-   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, DISPATCH_TIME_NOW, 0))){
-      /* neither load or consumable available for that host */
+   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0))){
+      /* neither load nor consumable available for that host */
       DRETURN(1);
    }
 

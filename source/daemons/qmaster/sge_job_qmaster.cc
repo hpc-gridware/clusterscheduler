@@ -3222,7 +3222,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
-      assignment_init(&a, jep, nullptr, false);
+      assignment_init(&a, jep, nullptr, nullptr);
 
       DPRINTF("verify schedulability = %c\n", OPTION_VERIFY_STR[verify_mode]);
 
