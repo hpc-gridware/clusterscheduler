@@ -28,15 +28,15 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Named String Vector
 *
-* @todo add description
+* Used in the DRMAA library to implement vector job template attributes.
 *
-*    SGE_STRING(NSV_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(NSV_name) - Name
+*    Name of the string vector.
 *
-*    SGE_LIST(NSV_strings) - @todo add summary
-*    @todo add description
+*    SGE_LIST(NSV_strings) - Strings
+*    Strings of this string vector.
 *
 */
 
