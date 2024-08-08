@@ -1353,10 +1353,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                    lGetString(pep, PE_start_proc_args) : "none");
       fprintf(fp, "pe_stop=%s\n", pep != nullptr && lGetString(pep, PE_stop_proc_args) ?
                                   lGetString(pep, PE_stop_proc_args) : "none");
-#ifdef SGE_PQS_API
-      fprintf(fp, "pe_qsort=%s\n",   pep != nullptr && lGetString(pep, PE_qsort_args)?
-                                       lGetString(pep, PE_qsort_args):"none");
-#endif
 
       /* build path for stdout of pe scripts */
       sge_get_path(qualified_hostname,

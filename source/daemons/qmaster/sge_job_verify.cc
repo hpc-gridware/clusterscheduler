@@ -410,27 +410,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
             DRETURN(STATUS_EUNKNOWN);
          }
-
-#ifdef SGE_PQS_API
-#if 0
-         /* verify PE qsort_args */
-         if ((qsort_args=lGetString(pep, PE_qsort_argv)) != nullptr) {
-            sge_assignment_t a = SGE_ASSIGNMENT_INIT;
-            int ret;
-
-            a.job = jep;
-            a.job_id = 
-            a.ja_task_id =
-            a.slots = 
-            ret = sge_call_pe_qsort(&a, qsort_args, 1, err_str);
-            if (!ret) {
-               answer_list_add(alpp, err_str, STATUS_EUNKNOWN,
-                               ANSWER_QUALITY_ERROR);
-               DRETURN(STATUS_EUNKNOWN);
-            }
-         }
-#endif
-#endif
       }
    }
 
