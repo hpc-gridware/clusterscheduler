@@ -182,21 +182,6 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
       lSetString(new_pe, PE_urgency_slots, s);
    }
 
-#ifdef SGE_PQS_API
-   /* -------- PE_qsort_args */
-   if (lGetPosViaElem(pe, PE_qsort_args, SGE_NO_ABORT) >= 0) {
-      void *handle=nullptr, *fn=nullptr;
-
-      s = lGetString(pe, PE_qsort_args);
-
-      if ((ret=pe_validate_qsort_args(alpp, s, new_pe, &handle, &fn)) != STATUS_OK) {
-         DRETURN(ret);
-      }
-      lSetString(new_pe, PE_qsort_args, s);
-      /* lSetUlong(new_pe, PE_qsort_validated, 1); */
-   }
-#endif
-
    /* ---- PE_accounting_summary */
    attr_mod_bool(pe, new_pe, PE_accounting_summary, "accounting_summary");
 

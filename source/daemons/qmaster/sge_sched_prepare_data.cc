@@ -264,9 +264,6 @@ static const int pe_nm[] = {
         PE_control_slaves,
         PE_resource_utilization,
         PE_urgency_slots,
-#ifdef SGE_PQS_API
-        PE_qsort_args,
-#endif
         NoName
 };
 

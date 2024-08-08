@@ -36,9 +36,6 @@
 #include <cstdlib>
 #include <cfloat>
 #include <climits>
-#ifdef SGE_PQS_API
-#include <dlfcn.h>
-#endif
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -82,16 +79,10 @@
 #include "sge_select_queue.h"
 #include "uti/sge.h"
 #include "valid_queue_user.h"
-#ifdef SGE_PQS_API
-#include "sge_pqs_api.h"
-#endif
 
 #include "sgeobj/cull/sge_select_queue_LDR_L.h"
 #include "sgeobj/cull/sge_select_queue_QRL_L.h"
 #include "sgeobj/cull/sge_message_MES_L.h"
-#ifdef SGE_PQS_API
-#include "sge_varL.h"
-#endif
 
 #include "msg_common.h"
 #include "msg_schedd.h"
@@ -228,11 +219,6 @@ find_best_result(dispatch_t r1, dispatch_t r2);
 static lListElem
 *load_locate_elem(lList *load_list, lListElem *global_consumable, lListElem *host_consumable,
                   lListElem *queue_consumable, const char *limit);
-
-#ifdef SGE_PQS_API
-static int
-sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args);
-#endif
 
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
@@ -4907,10 +4893,6 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
    int pslots = a->slots;
    int pslots_qend = 0;
 
-#ifdef SGE_PQS_API
-   const char *qsort_args;
-#endif
-
    DENTER(TOP_LAYER);
 
    if (a == nullptr) {
@@ -4946,17 +4928,6 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
    }
 
    /* DG TODO here ok to create the rankfile list if neccessary? */
-
-#ifdef SGE_PQS_API
-   /* if dynamic qsort function was supplied, call it */
-   if ((qsort_args=lGetString(a->pe, PE_qsort_args)) != nullptr) {
-
-      ret = sge_call_pe_qsort(a, qsort_args);
-      if (ret!=0) {
-         DRETURN(ret);
-      }
-   }
-#endif
 
    DRETURN(ret);
 }
@@ -6551,312 +6522,6 @@ void sge_free_load_list(lList **load_list)
 
    DRETURN_VOID;
 }
-
-#ifdef SGE_PQS_API
-
-typedef struct lib_cache_s {
-   char *key;
-   char *lib_name;
-   char *fn_name;
-   void *lib_handle;
-   void *fn_handle;
-   struct lib_cache_s *next;
-} lib_cache_t;
-
-/****** sge_dlib() *************************************************************
-*  NAME
-*     sge_dlib() -- lookup, load, and cache function from a dynamic library
-*
-*  SYNOPSIS
-*     void *sge_dlib(const char *key, const char *lib_name, const char *fn_name,
-*                    lib_cache_t **lib_cache_list)
-*
-*  INPUTS
-*     const char *key - unique key for identifying function
-*     const char *lib_name - dynamic library name
-*     const char *fn_nam - function name
-*     lib_cache_t **lib_cache_list - cache list (if nullptr, we use a global cache)
-*
-*  RETURNS
-*     void * - the address of the function
-*
-*  NOTES
-*     MT-NOTE: sge_free_load_list() is not MT safe
-*
-*  SEE ALSO
-*
-*******************************************************************************/
-void *
-sge_dlib(const char *key, const char *lib_name, const char *fn_name,
-         lib_cache_t **lib_cache_list)
-{
-   static lib_cache_t *static_lib_cache_list = nullptr;
-   lib_cache_t **cache_list = nullptr;
-   lib_cache_t *cache = nullptr;
-   lib_cache_t *prev = nullptr;
-   lib_cache_t *new_cache = nullptr;
-   int replace = 0;
-   void *new_lib_handle = nullptr;
-   void *new_fn_handle = nullptr;
-   const char *error = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   /* Use user cache list if supplied */
-   if (lib_cache_list)
-      cache_list = lib_cache_list;
-   else
-      cache_list = &static_lib_cache_list;
-
-   /*
-    * Search based on supplied key. If found and the library name and function
-    * name match, return the function address. If the library or function
-    * do not match, then we will reload the library.
-    */
-   for (cache=*cache_list; cache; prev=cache, cache=cache->next) {
-      if (strcmp(key, cache->key)==0) {
-         if (strcmp(lib_name, cache->lib_name)==0 &&
-             strcmp(fn_name, cache->fn_name)==0) {
-            DRETURN(cache->fn_handle);
-         } else {
-            replace=1;
-            break;
-         }
-      }
-   }
-
-   /* open the library */
-   new_lib_handle = dlopen(lib_name, RTLD_LAZY);
-   if (!new_lib_handle) {
-      error = dlerror();
-      ERROR("Unable to open library %s for %s - %s\n", lib_name, key, error);
-      DRETURN(nullptr);
-   }
-
-   /* search library for the function name */
-   new_fn_handle = dlsym(new_lib_handle, fn_name);
-   if (((error = dlerror()) != nullptr) || !new_fn_handle) {
-      dlclose(new_lib_handle);
-      ERROR("Unable to locate function %s in library %s for %s - %s\n", fn_name, lib_name, key, error);
-      DRETURN(nullptr);
-   }
-
-   /* If we're replacing the old function, just delete it */
-   if (replace) {
-      dlclose(cache->lib_handle);
-      sge_free(&(cache->key));
-      sge_free(&(cache->lib_name));
-      sge_free(&(cache->fn_name));
-      if (prev == nullptr) {
-         *cache_list = cache->next;
-      }
-      else {
-         prev->next = cache->next;
-      }
-      sge_free(&cache);
-   }
-
-   /* cache the new function address */
-   if ((new_cache = (lib_cache_t *)sge_malloc(sizeof(lib_cache_t))) == nullptr ||
-       (new_cache->key = strdup(key)) == nullptr ||
-       (new_cache->lib_name = strdup(lib_name)) == nullptr ||
-       (new_cache->fn_name = strdup(fn_name)) == nullptr) {
-      ERROR("Memory allocation problem in sge_dl\n");
-      DRETURN(nullptr);
-   }
-   new_cache->lib_handle = new_lib_handle;
-   new_cache->fn_handle = new_fn_handle;
-   new_cache->next = *cache_list;
-   *cache_list = new_cache;
-
-   /* return the cached function address */
-   DRETURN(new_cache->fn_handle);
-}
-
-static void
-strcpy_replace(char *dp, const char *sp, lList *rlist)
-{
-   char *name = nullptr;
-   int done = 0;
-   int curly = 0;
-   const char *es = nullptr;
-
-   if (rlist == nullptr) {
-      strcpy(dp, sp);
-      return;
-   }
-
-   while (!done) {
-      if (*sp == 0) /* done means we make one last pass */
-         done = 1;
-      if (name && !isalnum(*sp) && *sp != '_') {
-         lListElem *res;
-         const char *s = "";
-         *dp = 0;
-         if ((res = lGetElemStr(rlist, CE_name, name)))
-            s = lGetString(res, CE_stringval);
-         /* handle ${varname} */
-         if (curly && *sp == '}')
-            sp++;
-         /* handle ${varname:-value} and ${varname:+value} */
-         else if (curly && *sp == ':') {
-            if (sp[1] == '-' || sp[1] == '+') {
-               const char *ep;
-               for (ep=sp+2; *ep; ep++) {
-                  if (*ep == '}') {
-                     if ((!*s && sp[1] == '-') ||
-                         (*s  && sp[1] == '+')) {
-                        s = sp+2;   /* mark substition string */
-                        es = ep;    /* mark end of substition string */
-                     }
-                     sp = ep+1;  /* point past varname */
-                     break;
-                  }
-               }
-            }
-         }
-         dp = name;
-         while (*s && s != es)
-            *dp++ = *s++;
-         name = nullptr;
-         *dp = 0;
-         curly = 0;
-         es = nullptr;
-      } else if (*sp == '$') {
-         sp++;
-         name = dp;
-         if (*sp == '{') {
-            curly = 1;
-            sp++;
-         }
-      } else
-         *dp++ = *sp++;
-   }
-}
-
-/****** sge_select_queue/sge_call_pe_qsort() **********************************
-*  NAME
-*     sge_call_pe_qsort() -- call the Parallel Environment qsort plug-in
-*
-*  SYNOPSIS
-*     void sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
-*
-*  INPUTS
-*     sge_assignment_t *a - PE assignment
-*     qsort_args - the PE qsort_args attribute
-*
-*  NOTES
-*     MT-NOTE: sge_call_pe_qsort() is not MT safe
-*
-*  SEE ALSO
-*
-*******************************************************************************/
-static int
-sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
-{
-   int ret = 0;
-   struct saved_vars_s *cntx = nullptr;
-   char *tok;
-   int argc = 0;
-   pqs_qsort_t pqs_qsort;
-   const char *pe_name = a->pe_name;
-   const char *lib_name;
-   const char *fn_name;
-   int num_queues = lGetNumberOfElem(a->queue_list);
-   char qsort_args_buf[4096];
-   const char *qsort_argv[1024];
-   char err_str[1024];
-
-   DENTER(TOP_LAYER);
-
-   err_str[0] = 0;
-
-   /*
-    * Copy qsort_args substituting any references to $<resource>
-    * with the corresponding requested value from the hard resource
-    * list of the job.
-    */
-
-   strcpy_replace(qsort_args_buf, qsort_args, lGetList(a->job, JB_hard_resource_list));
-
-   if ((lib_name = sge_strtok_r(qsort_args_buf, " ", &cntx)) &&
-       (fn_name = sge_strtok_r(nullptr, " ", &cntx)) &&
-       (pqs_qsort = sge_dlib(pe_name, lib_name, fn_name, nullptr))) {
-
-      pqs_params_t pqs_params;
-      pqs_queue_t *qp;
-      lListElem *q;
-
-      /*
-       * Build queue sort parameters
-       */
-      pqs_params.job_id = a->job_id;
-      pqs_params.task_id = a->ja_task_id;
-      pqs_params.slots = a->slots;
-      pqs_params.pe_name = pe_name;
-      pqs_params.pe_qsort_args = qsort_args_buf;
-      pqs_params.pe_qsort_argv = qsort_argv;
-      pqs_params.num_queues = num_queues;
-      pqs_params.qlist = (pqs_queue_t *)sge_malloc(num_queues * sizeof(pqs_queue_t));
-
-      qp = pqs_params.qlist;
-      for_each_ep(q, a->queue_list) {
-         qp->queue_name = lGetString(q, QU_qname);
-         qp->host_name = lGetHost(q, QU_qhostname);
-         qp->host_seqno = lGetUlong(q, QU_host_seq_no);
-         qp->queue_seqno = lGetUlong(q, QU_seq_no);
-         qp->available_slots = lGetUlong(q, QU_tag);
-         qp->soft_violations = lGetUlong(q, QU_soft_violation);
-         qp->new_seqno = 0;
-         qp++;
-      }
-
-      /*
-       * For convenience, convert qsort_args into an argument vector qsort_argv.
-       */
-      qsort_argv[argc++] = lib_name;
-      qsort_argv[argc++] = fn_name;
-      while ((tok = sge_strtok_r(nullptr, " ", &cntx)) &&
-             argc<(sizeof(qsort_argv)/sizeof(char *)-1)) {
-         qsort_argv[argc++] = tok;
-      }
-
-      /*
-       * Call the dynamic queue sort function
-       */
-
-      ret = (*pqs_qsort)(&pqs_params, 0, err_str, sizeof(err_str)-1);
-
-      if (err_str[0]) {
-         ERROR(err_str);
-      }
-
-      /*
-       * Update the queue list with the new sort order
-       */
-
-      if (ret == PQS_ASSIGNED) {
-         qp = pqs_params.qlist;
-         for_each_ep(q, a->queue_list) {
-            lSetUlong(q, QU_host_seq_no, qp->new_seqno);
-            qp++;
-         }
-      }
-
-      sge_free(&(pqs_params.qlist));
-   }
-   else {
-      ERROR("Unable to dynamically load PE qsort_args %s\n", qsort_args);
-      ret = 0; /* schedule anyway with normal queue/host sort */
-   }
-
-   if (cntx) {
-      sge_free_saved_vars(cntx);
-   }
-
-   DRETURN(ret);
-}
-#endif
 
 /****** sge_select_queue/match_static_advance_reservation() ********************
 *  NAME
