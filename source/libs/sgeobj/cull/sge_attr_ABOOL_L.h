@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Boolean
 *
-* @todo add description
+* Used for boolean attributes in the cluster queues.
+* Used for the queue rerun attribute.
 *
-*    SGE_HOST(ABOOL_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ABOOL_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_BOOL(ABOOL_value) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(ABOOL_value) - Value
+*    The boolean value.
 *
 */
 

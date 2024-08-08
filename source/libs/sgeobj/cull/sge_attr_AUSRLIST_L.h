@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute User Set List
 *
-* @todo add description
+* Used for user set list attributes in the cluster queues.
+* E.g. used for the queue owner, acl, xacl.
 *
-*    SGE_HOST(AUSRLIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AUSRLIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_LIST(AUSRLIST_value) - @todo add summary
-*    @todo add description
+*    SGE_LIST(AUSRLIST_value) - Value
+*    The user set list (list of US_Type).
 *
 */
 

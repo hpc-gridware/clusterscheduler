@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Centry List
 *
-* @todo add description
+* Used for complex entry list attributes in the cluster queues.
+* E.g. used for the queue complex_values, load_thresholds, suspend_thresholds.
 *
-*    SGE_HOST(ACELIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ACELIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_LIST(ACELIST_value) - @todo add summary
-*    @todo add description
+*    SGE_LIST(ACELIST_value) - Value
+*    The complex entry list (list of CE_Type).
 *
 */
 

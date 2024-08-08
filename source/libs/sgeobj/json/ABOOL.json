@@ -1,15 +1,17 @@
 {
 	"className":	"AttributeBoolean",
-	"summary":	"@todo add summary",
+	"summary":	"Attribute Boolean",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used for boolean attributes in the cluster queues."
+         }, {
+			"line":	"Used for the queue rerun attribute."
 		}],
 	"cullPrefix":	"ABOOL",
 	"attributes":	[{
 			"name":	"href",
-			"summary":	"@todo add summary",
+			"summary":	"Host Reference",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of a host or a host group."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -23,9 +25,9 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The boolean value."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{

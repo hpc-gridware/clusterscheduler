@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Subordinate List
 *
-* @todo add description
+* Used for subordinate list attributes in the cluster queues.
+* Used for the queue subordinate_list.
 *
-*    SGE_HOST(ASOLIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ASOLIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_LIST(ASOLIST_value) - @todo add summary
-*    @todo add description
+*    SGE_LIST(ASOLIST_value) - Value
+*    The subordinate list (list of SO_Type).
 *
 */
 

@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Interval
 *
-* @todo add description
+* Used for interval attributes in the cluster queues.
+* E.g. used for the queue suspend_interval and the notify interval.
 *
-*    SGE_HOST(AINTER_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AINTER_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_STRING(AINTER_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(AINTER_value) - Value
+*    The interval value (represented as string).
 *
 */
 

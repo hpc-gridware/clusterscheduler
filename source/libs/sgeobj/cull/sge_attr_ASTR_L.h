@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute String
 *
-* @todo add description
+* Used for string attributes in the cluster queues.
+* E.g. used for the queue tmpdir, shell, calendar, prolog, ...
 *
-*    SGE_HOST(ASTR_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ASTR_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_STRING(ASTR_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ASTR_value) - Value
+*    The string value.
 *
 */
 

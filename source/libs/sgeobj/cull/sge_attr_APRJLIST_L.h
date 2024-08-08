@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Project List
 *
-* @todo add description
+* Used for project list attributes in the cluster queues.
+* E.g. used for the queue projects, xprojects.
 *
-*    SGE_HOST(APRJLIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(APRJLIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_LIST(APRJLIST_value) - @todo add summary
-*    @todo add description
+*    SGE_LIST(APRJLIST_value) - Value
+*    The project list (list of PR_Type)
 *
 */
 

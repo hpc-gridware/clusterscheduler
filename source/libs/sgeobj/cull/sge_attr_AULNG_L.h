@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Ulong
 *
-* @todo add description
+* Used for ulong attributes in the cluster queues.
+* E.g. used for the queue seq_no and nsuspend.
 *
-*    SGE_HOST(AULNG_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AULNG_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_ULONG(AULNG_value) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(AULNG_value) - Value
+*    The ulong value.
 *
 */
 

@@ -571,7 +571,7 @@
 			"size_in_basic_units":	2,
 			"add_to_sge_all_lists":	true
 		}, {
-			"className":	"AttributeUlongList",
+			"className":	"AttributeUserSetList",
 			"cullPrefix":	"AUSRLIST",
 			"cullNameSpec":	"attr",
 			"size_in_basic_units":	2,

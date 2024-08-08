@@ -28,15 +28,17 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute String
 *
-* @todo add description
+* Used for string attributes in the cluster queues.
+* @todo Why to we have an ASTR type and an ASTRING type? They have the same definition.
+*       Looks as if ASTRING is not used at all, delete it.
 *
-*    SGE_HOST(ASTRING_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ASTRING_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_STRING(ASTRING_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ASTRING_value) - Value
+*    The string value.
 *
 */
 

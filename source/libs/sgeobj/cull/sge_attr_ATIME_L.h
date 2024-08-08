@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Time
 *
-* @todo add description
+* Used for date/time attributes in the cluster queues.
+* E.g. used for the queue h_rt, s_rt, h_cpu, ...
 *
-*    SGE_HOST(ATIME_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ATIME_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_STRING(ATIME_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ATIME_value) - Value
+*    The date/time value (represented as string).
 *
 */
 

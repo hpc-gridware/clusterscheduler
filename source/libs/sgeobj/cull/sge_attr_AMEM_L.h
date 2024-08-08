@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Memory
 *
-* @todo add description
+* Used for memory attributes in the cluster queues.
+* E.g. used for the queue s_fsize, h_fsize, s_data, s_stack, ...
 *
-*    SGE_HOST(AMEM_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AMEM_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_STRING(AMEM_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(AMEM_value) - Value
+*    The memory value (represented as string).
 *
 */
 

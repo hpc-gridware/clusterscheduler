@@ -1,15 +1,17 @@
 {
 	"className":	"AttributeProjectList",
-	"summary":	"@todo add summary",
+	"summary":	"Attribute Project List",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used for project list attributes in the cluster queues."
+         }, {
+			"line":	"E.g. used for the queue projects, xprojects."
 		}],
 	"cullPrefix":	"APRJLIST",
 	"attributes":	[{
 			"name":	"href",
-			"summary":	"@todo add summary",
+			"summary":	"Host Reference",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of a host or a host group."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -23,9 +25,9 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The project list (list of PR_Type)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PR",

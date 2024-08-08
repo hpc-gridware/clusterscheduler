@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute Queue Type List
 *
-* @todo add description
+* Used for queue type list attributes in the cluster queues.
+* Used for the qtype queue attribute.
 *
-*    SGE_HOST(AQTLIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AQTLIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_ULONG(AQTLIST_value) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(AQTLIST_value) - Value
+*    The queue type list (list of ulong values representing types).
 *
 */
 

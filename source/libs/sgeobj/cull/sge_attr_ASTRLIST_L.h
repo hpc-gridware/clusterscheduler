@@ -28,15 +28,16 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Attribute String List
 *
-* @todo add description
+* Used for string list attributes in the cluster queues.
+* E.g. used for the queue pe_list and ckpt_list.
 *
-*    SGE_HOST(ASTRLIST_href) - @todo add summary
-*    @todo add description
+*    SGE_HOST(ASTRLIST_href) - Host Reference
+*    Name of a host or a host group.
 *
-*    SGE_LIST(ASTRLIST_value) - @todo add summary
-*    @todo add description
+*    SGE_LIST(ASTRLIST_value) - Value
+*    The string list (list of ST_Type objects)
 *
 */
 
