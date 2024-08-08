@@ -180,15 +180,10 @@ static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList *
 static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp);
 static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp);
 
-int main(int argc, char *argv[]);
-
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
-int main(
-int argc,
-char **argv 
-) {
+int main(int argc, char *argv[]) {
    lList *alp = nullptr;
    lList *pcmdline = nullptr;
    lList *pfile = nullptr;
@@ -234,7 +229,6 @@ char **argv
    } else {
       qstat_env.qselect_mode = 0;
    }
-
 
    {
       dstring file = DSTRING_INIT;

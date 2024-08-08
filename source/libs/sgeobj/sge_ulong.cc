@@ -108,7 +108,7 @@ bool double_print_time_to_dstring(double value, dstring *string, bool with_micro
          }
 
          if (with_microseconds) {
-            int microseconds = floor(value) * 1000000;
+            int microseconds = int((value - floor(value)) * 1000000.0);
             sge_dstring_sprintf_append(string, ".%06d", microseconds);
          }
       }
