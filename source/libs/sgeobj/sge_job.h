@@ -38,6 +38,7 @@
 
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
+#include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 
@@ -415,11 +416,9 @@ bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *jo
 bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
                             const char *option); 
 
-bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                       int nm, const char *option);
+bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option);
 
-bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                    int nm, const char *option);   
+bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option);
 
 bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, 
                              const lList *acl_list, const char *option);
@@ -463,3 +462,42 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name);
 bool
 job_init_binding_elem(lListElem *jep);
 
+// Defines and Functions for Job Resource Sets (JRS_Type)
+
+#define JRS_SCOPE_GLOBAL 0
+#define JRS_SCOPE_MASTER 1
+#define JRS_SCOPE_SLAVE  2
+
+const lListElem *job_get_request_set(const lListElem *job, u_long32 scope);
+lListElem *job_get_request_setRW(lListElem *job, u_long32 scope);
+lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope);
+
+const lList *job_get_hard_resource_list(const lListElem *job);
+const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope);
+const lList *job_get_soft_resource_list(const lListElem *job);
+const lList *job_get_soft_resource_list(const lListElem *job, u_long32 scope);
+const lList *job_get_hard_queue_list(const lListElem *job);
+const lList *job_get_hard_queue_list(const lListElem *job, u_long32 scope);
+const lList *job_get_soft_queue_list(const lListElem *job);
+const lList *job_get_soft_queue_list(const lListElem *job, u_long32 scope);
+const lList *job_get_master_hard_queue_list(const lListElem *job);
+
+lList *job_get_hard_resource_listRW(lListElem *job);
+lList *job_get_hard_resource_listRW(lListElem *job, u_long32 scope);
+lList *job_get_soft_resource_listRW(lListElem *job);
+lList *job_get_soft_resource_listRW(lListElem *job, u_long32 scope);
+lList *job_get_hard_queue_listRW(lListElem *job);
+lList *job_get_hard_queue_listRW(lListElem *job, u_long32 scope);
+lList *job_get_soft_queue_listRW(lListElem *job);
+lList *job_get_soft_queue_listRW(lListElem *job, u_long32 scope);
+lList *job_get_master_hard_queue_listRW(lListElem *job);
+
+void job_set_hard_resource_list(lListElem *job, lList *resource_list);
+void job_set_hard_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
+void job_set_soft_resource_list(lListElem *job, lList *resource_list);
+void job_set_soft_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
+void job_set_hard_queue_list(lListElem *job, lList *queue_list);
+void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
+void job_set_soft_queue_list(lListElem *job, lList *queue_list);
+void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
+void job_set_master_hard_queue_list(lListElem *job, lList *queue_list);

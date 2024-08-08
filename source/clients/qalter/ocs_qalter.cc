@@ -490,13 +490,17 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_merge_stderr);
       }
 
-      parse_list_hardsoft(cmdline, "-l", job, JB_hard_resource_list, JB_soft_resource_list);
-      centry_list_remove_duplicates(lGetListRW(job, JB_hard_resource_list));
-      if (lGetList(job, JB_hard_resource_list))
-         nm_set(job_field, JB_hard_resource_list);
-      centry_list_remove_duplicates(lGetListRW(job, JB_soft_resource_list));
-      if (lGetList(job, JB_soft_resource_list))
-         nm_set(job_field, JB_soft_resource_list);
+      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
+      lList *lp = job_get_hard_resource_listRW(job);
+      if (lp != nullptr) {
+         centry_list_remove_duplicates(lp);
+         nm_set(job_field, JB_request_set_list);
+      }
+      lp = job_get_soft_resource_listRW(job);
+      if (lp != nullptr) {
+         centry_list_remove_duplicates(lp);
+         nm_set(job_field, JB_request_set_list);
+      }
 
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-m"))) {
          u_long32 ul;
@@ -571,17 +575,19 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_override_tickets);
       }
 
-      parse_list_hardsoft(cmdline, "-q", job,
-                           JB_hard_queue_list, JB_soft_queue_list);
-      if (lGetList(job, JB_hard_queue_list))
-         nm_set(job_field, JB_hard_queue_list);
-      if (lGetList(job, JB_soft_queue_list))
-         nm_set(job_field, JB_soft_queue_list);
+      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL,
+                          JRS_hard_queue_list, JRS_soft_queue_list);
+      if (job_get_hard_queue_list(job) != nullptr) {
+         nm_set(job_field, JB_request_set_list);
+      }
+      if (job_get_soft_queue_list(job) != nullptr) {
+         nm_set(job_field, JB_request_set_list);
+      }
 
-      parse_list_hardsoft(cmdline, "-masterq", job,
-                           JB_master_hard_queue_list, 0);
-      if (lGetList(job, JB_master_hard_queue_list))
-         nm_set(job_field, JB_master_hard_queue_list);
+      parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER,
+                          JRS_hard_queue_list, 0);
+      if (job_get_master_hard_queue_list(job) != nullptr)
+         nm_set(job_field, JB_request_set_list);
     
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-r"))) {
          lSetUlong(job, JB_restart, lGetInt(ep, SPA_argval_lIntT));
@@ -879,14 +885,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_stderr_path_list,
             JB_jid_request_list,
             JB_ja_ad_request_list,
-            JB_hard_resource_list,
-            JB_soft_resource_list,
+            JB_request_set_list,
             JB_mail_list,
             JB_stdout_path_list,
             JB_stdin_path_list,
             JB_pe_range,
-            JB_hard_queue_list,
-            JB_soft_queue_list,
             JB_shell_list,
             JB_env_list,
             JB_job_args,
@@ -895,7 +898,6 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_ja_tasks,
             JB_ja_structure,
             JB_user_list,
-            JB_master_hard_queue_list,
             JB_binding,
             NoName
          };

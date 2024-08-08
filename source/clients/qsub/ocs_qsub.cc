@@ -214,7 +214,6 @@ main(int argc, char **argv)
 
    alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, 
                                   qualified_hostname, opts_all, &job);
-
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_WARNING);
    if (tmp_ret > 0) {
       sge_exit(tmp_ret);

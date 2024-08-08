@@ -1143,37 +1143,34 @@ FPRINTF_ERROR:
    DRETURN(-1);
 }            
 
-int parse_list_hardsoft(
-lList *cmdline,
-const char *option,
-lListElem *job,
-int hard_field,
-int soft_field 
-) {
-   lList *hard_list = nullptr;
-   lList *soft_list = nullptr;
-   lList *lp = nullptr;
-   lListElem *ep = nullptr;
-
+void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_long32 scope, int hard_field,
+                         int soft_field) {
    DENTER(TOP_LAYER);
 
-   hard_list = lCopyList("job_hard_sublist", lGetList(job, hard_field));
-   if (soft_field) {
-      soft_list = lCopyList("job_soft_sublist", lGetList(job, soft_field));
+   lList *hard_list = nullptr;
+   lList *soft_list = nullptr;
+
+   lListElem *jrs = job_get_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      hard_list = lCopyList(nullptr, lGetList(jrs, hard_field));
+      if (soft_field) {
+         soft_list = lCopyList(nullptr, lGetList(jrs, soft_field));
+      }
    }
 
+   lListElem *ep;
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
-      lp = nullptr;
+      lList *lp = nullptr;
       lXchgList(ep, SPA_argval_lListT, &lp);
-      if (lp) {
+      if (lp != nullptr) {
          if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
-            if (!hard_list) {
+            if (hard_list == nullptr) {
                hard_list = lp;
             } else {
                lAddList(hard_list, &lp);
             }
          } else {
-            if (!soft_list) {
+            if (soft_list == nullptr) {
                soft_list = lp;
             } else {
                lAddList(soft_list, &lp);
@@ -1183,12 +1180,19 @@ int soft_field
       lRemoveElem(cmdline, &ep);
    }
 
-   lSetList(job, hard_field, hard_list);
-   if (soft_field) {
-      lSetList(job, soft_field, soft_list);
+   // now store back the request lists to the job
+   if (hard_list != nullptr || soft_list != nullptr) {
+      // create the job_request_set if necessary
+      if (jrs == nullptr) {
+         jrs = job_get_or_create_request_setRW(job, scope);
+      }
+      lSetList(jrs, hard_field, hard_list);
+      if (soft_field) {
+         lSetList(jrs, soft_field, soft_list);
+      }
    }
 
-   DRETURN(0);
+   DRETURN_VOID;
 }
 
 int 

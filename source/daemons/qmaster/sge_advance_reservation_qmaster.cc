@@ -1176,9 +1176,9 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
 
    lSetUlong64(dummy_job, JB_execution_time, lGetUlong64(ar, AR_start_time));
    lSetUlong64(dummy_job, JB_deadline, lGetUlong64(ar, AR_end_time));
-   lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
-   lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
-   lSetList(dummy_job, JB_master_hard_queue_list, lCopyList("", lGetList(ar, AR_master_queue_list)));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
+   job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
    lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
    lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
 
@@ -1279,8 +1279,8 @@ ar_do_reservation(lListElem *ar, bool incslots) {
 
    DENTER(TOP_LAYER);
 
-   lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
-   lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 

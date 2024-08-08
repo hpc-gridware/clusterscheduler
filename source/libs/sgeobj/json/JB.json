@@ -580,54 +580,17 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"hard_resource_list",
-			"summary":	"Hard resource list",
+			"name":	"request_set_list",
+			"summary":	"Request Set List",
 			"description":	[
-            { "line":	"Hard resource requirements/limits/restrictions (CE_Type)." },
-            { "line":	"(qsub -l resource_list)" }
+            { "line":	"List of request sets. 0 .. 3 request sets can exist: global, master, slave." },
+			   { "line":	"Sequential jobs can have a single job request set, the global one."},
+			   { "line":	"Parallel jobs can have up to 3 request sets: global requests,"},
+			   { "line":	"requests for the master task, requests for the slave tasks."}
             ],
 			"type":	"lListT",
-			"subClassName":	"CE",
-			"subCullPrefix":	"CE",
-			"flags":	[{
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"soft_resource_list",
-			"summary":	"Soft resource list",
-			"description":	[
-            { "line":	"Soft resource requirements/limits/restrictions (CE_Type)." },
-            { "line":	"(qsub -soft -l resource_list)" }
-            ],
-			"type":	"lListT",
-			"subClassName":	"CE",
-			"subCullPrefix":	"CE",
-			"flags":	[{
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"hard_queue_list",
-			"summary":	"Hard queue list",
-			"description":	[
-            { "line":	"Hard queue list (QR_Type)." },
-            { "line":	"(qsub/qselect -q dest_identifier)" }
-            ],
-			"type":	"lListT",
-			"subClassName":	"QR",
-			"subCullPrefix":	"QR",
-			"flags":	[{
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"soft_queue_list",
-			"summary":	"Soft queue list",
-			"description":	[
-            { "line":	"Soft queue list (QR_Type)." },
-            { "line":	"(qsub/qselect -soft -q dest_identifier)" }
-            ],
-			"type":	"lListT",
-			"subClassName":	"QR",
-			"subCullPrefix":	"QR",
+			"subClassName":	"JobRequestSet",
+			"subCullPrefix":	"JRS",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
@@ -675,19 +638,6 @@
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
-			"flags":	[{
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"master_hard_queue_list",
-			"summary":	"Master Hard Queue List",
-			"description":	[
-            { "line":	"Master queue list (QR_Type)." },
-            { "line":	"qsub -masterq queue_list" }
-         ],
-			"type":	"lListT",
-			"subClassName":	"QR",
-			"subCullPrefix":	"QR",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]

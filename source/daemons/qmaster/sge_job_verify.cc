@@ -147,7 +147,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* check for non-parallel job that define a master queue */
    if (ret == STATUS_OK) {
-      if (lGetList(jep, JB_master_hard_queue_list) != nullptr && lGetString(jep, JB_pe) == nullptr) {
+      if (job_get_master_hard_queue_list(jep) != nullptr && lGetString(jep, JB_pe) == nullptr) {
          ERROR(SFNMAX, MSG_JOB_MQNONPE);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
@@ -283,7 +283,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    /*
     * Following block should only be executed once, when the job has no job id.
     *
-    * At first  we try to find a job id which is not yet used. AFTER that we need
+    * At first, we try to find a job id which is not yet used. AFTER that we need
     * to set the submission time. Only this makes wure that forced separation 
     * in time is effective in case of job ID rollover.
     */
@@ -346,46 +346,45 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     * use the master_CEntry_list for all fills
     * JB_hard/soft_resource_list points to a CE_Type list
     */
-   {
-      if (centry_list_fill_request(lGetListRW(jep, JB_hard_resource_list),
-                                   alpp, master_centry_list, false, true,
-                                   false)) {
+   // need to handle all in JB_request_set_list
+   lListElem *jrs;
+   for_each_rw(jrs, lGetList(jep, JB_request_set_list)) {
+      u_long32 scope = lGetUlong(jrs, JRS_scope);
+      DPRINTF("request set of scope " sge_uu32 "\n", scope);
+
+      lList *hard_resource_list = lGetListRW(jrs, JRS_hard_resource_list);
+      if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetListRW(jep, JB_hard_resource_list), SGE_OBJ_JOB)) {
+      if (compress_ressources(alpp, hard_resource_list, SGE_OBJ_JOB)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+      if (!centry_list_is_correct(hard_resource_list, alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      if (centry_list_fill_request(lGetListRW(jep, JB_soft_resource_list),
-                                   alpp, master_centry_list, false, true,
-                                   false)) {
+      lList *soft_resource_list = lGetListRW(jrs, JRS_soft_resource_list);
+      if (centry_list_fill_request(soft_resource_list, alpp, master_centry_list, false, true, false)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetListRW(jep, JB_soft_resource_list), SGE_OBJ_JOB)) {
+      if (compress_ressources(alpp, soft_resource_list, SGE_OBJ_JOB)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (deny_soft_consumables(alpp, lGetListRW(jep, JB_soft_resource_list), master_centry_list)) {
+      if (deny_soft_consumables(alpp, soft_resource_list, master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetListRW(jep, JB_hard_resource_list), alpp)) {
+      if (!centry_list_is_correct(soft_resource_list, alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetListRW(jep, JB_soft_resource_list), alpp)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-   }
 
-   if (!qref_list_is_valid(lGetList(jep, JB_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list,
-                           master_centry_list)) {
-      DRETURN(STATUS_EUNKNOWN);
-   }
-   if (!qref_list_is_valid(lGetList(jep, JB_soft_queue_list), alpp, master_cqueue_list, master_hgroup_list,
-                           master_centry_list)) {
-      DRETURN(STATUS_EUNKNOWN);
-   }
-   if (!qref_list_is_valid(lGetList(jep, JB_master_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list,
-                           master_centry_list)) {
-      DRETURN(STATUS_EUNKNOWN);
+      lList *queue_list = lGetListRW(jrs, JRS_hard_queue_list);
+      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+      queue_list = lGetListRW(jrs, JRS_soft_queue_list);
+      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
    }
 
    /* 
@@ -442,7 +441,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       lListElem *ckpt_ep;
       int ckpt_err = 0;
 
-      /* request for non existing ckpt object will be refused */
+      /* request for non-existing ckpt object will be refused */
       if ((ckpt_name != nullptr)) {
          if (!(ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name)))
             ckpt_err = 1;
@@ -546,9 +545,9 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* project */
    {
-      int ret = job_verify_project(jep, alpp, ruser, group);
-      if (ret != STATUS_OK) {
-         DRETURN(ret);
+      int local_ret = job_verify_project(jep, alpp, ruser, group);
+      if (local_ret != STATUS_OK) {
+         DRETURN(local_ret);
       }
    }
 

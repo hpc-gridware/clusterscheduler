@@ -1153,8 +1153,8 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       *is queue contained in hard queue list ?
       */
       DPRINTF("queue contained in jobs hard queue list?\n");
-      if (lGetList(job, JB_hard_queue_list)) {
-         const lList *qref_list = lGetList(job, JB_hard_queue_list);
+      const lList *qref_list = job_get_hard_queue_list(job);
+      if (qref_list != nullptr) {
          const char *qname = nullptr;
          const char *qinstance_name = nullptr;
 
@@ -1577,8 +1577,8 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       }
    }
 
-   hard_queue_list = lGetList(a->job, JB_hard_queue_list);
-   master_hard_queue_list = lGetList(a->job, JB_master_hard_queue_list);
+   hard_queue_list = job_get_hard_queue_list(a->job);
+   master_hard_queue_list = job_get_master_hard_queue_list(a->job);
    if (hard_queue_list || master_hard_queue_list) {
       if (!centry_list_are_queues_requestable(a->centry_list)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -1706,7 +1706,7 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
 
    DENTER(TOP_LAYER);
    if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
-      const lList *res_list = lGetList(a->job, JB_hard_resource_list);
+      const lList *res_list = job_get_hard_resource_list(a->job);
       bool is_qinstance = object_has_type(queue_or_host, QU_Type);
 
       /* Optimization: Have a forced_centry_list in the assignment structure
@@ -1789,7 +1789,7 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
-   soft_requests = lGetListRW(a->job, JB_soft_resource_list);
+   soft_requests = job_get_soft_resource_listRW(a->job);
    clear_resource_tags(soft_requests, tag);
 
    job_id = a->job_id;
@@ -1826,8 +1826,8 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
       /*
        * check whether queue fulfills soft queue request of the job (-q)
        */
-      if (lGetList(a->job, JB_soft_queue_list)) {
-         const lList *qref_list = lGetList(a->job, JB_soft_queue_list);
+      const lList *qref_list = job_get_soft_queue_list(a->job);
+      if (qref_list != nullptr) {
          const lListElem *qr;
          const char *qinstance_name = nullptr;
 
@@ -2977,8 +2977,8 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
 
 
    /* detect if entire cluster queue ruled out due to -q */
-   if (qref_list_cq_rejected(lGetList(a->job, JB_hard_queue_list), cqname, nullptr, nullptr) &&
-         (!a->pe_name || !(master_hard_queue_list = lGetList(a->job, JB_master_hard_queue_list))
+   if (qref_list_cq_rejected(job_get_hard_queue_list(a->job), cqname, nullptr, nullptr) &&
+         (!a->pe_name || !(master_hard_queue_list = job_get_master_hard_queue_list(a->job))
          || qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr))) {
       DPRINTF("Cluster Queue \"%s\" is not contained in the hard queue list (-q) that "
             "was requested by job %d\n", cqname, (int)a->job_id);
@@ -3022,7 +3022,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
-   if ((hard_resource_list = lGetList(a->job, JB_hard_resource_list))) {
+   if ((hard_resource_list = job_get_hard_resource_list(a->job))) {
       dstring unsatisfied = DSTRING_INIT;
       if (request_cq_rejected(hard_resource_list, cq, a->centry_list,
                      (!a->pe_name || a->slots == 1)?true:false, &unsatisfied)) {
@@ -3250,7 +3250,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          if (a->pi) {
             a->pi->seq_hstat++;
          }
-         if (qref_list_eh_rejected(lGetList(a->job, JB_hard_queue_list), eh_name, a->hgrp_list)) {
+         if (qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list)) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
                            a->job_id, SCHEDD_INFO_NOTINHARDQUEUELST_S, eh_name);
             DPRINTF("Host \"%s\" is not contained in the hard queue list (-q) that "
@@ -3299,7 +3299,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
           * We are only interested in the static complexes on queue/host level.
           * These are tagged in this function. The result doesn't matter
           */
-         for_each_rw(rep, lGetList(a->job, JB_hard_resource_list)) {
+         for_each_rw(rep, job_get_hard_resource_listRW(a->job)) {
             const char *attrname = lGetString(rep, CE_name);
             lListElem *cplx_el = lGetElemStrRW(a->centry_list, CE_name, attrname);
 
@@ -3323,7 +3323,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          }
          if (result != DISPATCH_OK) {
             char buff[1024 + 1];
-            centry_list_append_to_string(lGetListRW(a->job, JB_hard_resource_list), buff, sizeof(buff) - 1);
+            centry_list_append_to_string(job_get_hard_resource_listRW(a->job), buff, sizeof(buff) - 1);
             if (*buff && (buff[strlen(buff) - 1] == '\n')) {
                buff[strlen(buff) - 1] = 0;
             }
@@ -3680,8 +3680,8 @@ static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
    lListElem *job = a->job;
-   bool have_masterq_request = lGetList(job, JB_master_hard_queue_list) != nullptr;
-   bool have_hard_queue_request = lGetList(job, JB_hard_queue_list) != nullptr;
+   bool have_masterq_request = job_get_master_hard_queue_list(job) != nullptr;
+   bool have_hard_queue_request = job_get_hard_queue_list(job) != nullptr;
 
    int accu_host_slots, accu_host_slots_qend;
    bool have_master_host, have_master_host_qend, suited_as_master_host;
@@ -3904,7 +3904,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            if (have_masterq_request && have_hard_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
                                  we need to allocate only one slot for the master task */
-                              if (qref_list_cq_rejected(lGetList(a->job, JB_hard_queue_list),
+                              if (qref_list_cq_rejected(job_get_hard_queue_list(a->job),
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots = MIN(slots, 1);
                               }
@@ -4019,7 +4019,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            if (have_masterq_request && have_hard_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
                                  we need to allocate only one slot for the master task */
-                              if (qref_list_cq_rejected(lGetList(a->job, JB_hard_queue_list),
+                              if (qref_list_cq_rejected(job_get_hard_queue_list(a->job),
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots_qend = MIN(slots_qend, 1);
                               }
@@ -4191,7 +4191,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
    int hslots = 0, hslots_qend = 0;
    const char *eh_name;
    dispatch_t result = DISPATCH_NEVER_CAT;
-   lList *hard_requests = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *load_list = lGetList(hep, EH_load_list);
    const lList *config_attr = lGetList(hep, EH_consumable_config_list);
    const lList *actual_attr = lGetList(hep, EH_resource_utilization);
@@ -4206,8 +4206,8 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
    if (a->pi)
       a->pi->par_hstat++;
 
-   if (!(qref_list_eh_rejected(lGetList(a->job, JB_hard_queue_list), eh_name, a->hgrp_list) &&
-        qref_list_eh_rejected(lGetList(a->job, JB_master_hard_queue_list), eh_name, a->hgrp_list)) &&
+   if (!(qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list) &&
+        qref_list_eh_rejected(job_get_master_hard_queue_list(a->job), eh_name, a->hgrp_list)) &&
                sge_host_match_static(a, hep) == DISPATCH_OK) {
 
       /* cause load be raised artificially to reflect load correction when
@@ -4355,7 +4355,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
       const lList *config_attr = lGetList(hep, EH_consumable_config_list);
       const lList *actual_attr = lGetList(hep, EH_resource_utilization);
       const lList *load_attr = lGetList(hep, EH_load_list);
-      lList *hard_resource_list = lGetListRW(a->job, JB_hard_resource_list);
+      lList *hard_resource_list = job_get_hard_resource_listRW(a->job);
       lListElem *rep;
       dstring reason = DSTRING_INIT;
 
@@ -4504,7 +4504,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
    const char *load_value, *limit_value, *adj_value;
    u_long32 type;
    bool is_np_adjustment = false;
-   const lList *requests = lGetList(a->job, JB_hard_resource_list);
+   const lList *requests = job_get_hard_resource_list(a->job);
 
    DENTER(TOP_LAYER);
 
@@ -4977,7 +4977,7 @@ static dispatch_t
 parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots_qend,
                     bool allow_non_requestable)
 {
-   lList *hard_requests = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *config_attr = lGetList(qep, QU_consumable_config_list);
    const lList *actual_attr = lGetList(qep, QU_resource_utilization);
    const char *qname = lGetString(qep, QU_full_name);
@@ -5002,7 +5002,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          const lList *ar_queue_config_attr;
          const lList *ar_queue_actual_attr;
          const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
-         lList *hard_resource_list = lGetListRW(a->job, JB_hard_resource_list);
+         lList *hard_resource_list = job_get_hard_resource_listRW(a->job);
          dstring reason = DSTRING_INIT;
 
          clear_resource_tags(hard_resource_list, QUEUE_TAG);
@@ -5089,7 +5089,7 @@ sequential_queue_time(u_long64 *start, const sge_assignment_t *a, int *violation
    char reason_buf[1024];
    dispatch_t result;
    u_long64 tmp_time = *start;
-   lList *hard_requests = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *config_attr = lGetList(qep, QU_consumable_config_list);
    const lList *actual_attr = lGetList(qep, QU_resource_utilization);
    const char *qname = lGetString(qep, QU_full_name);
@@ -5179,7 +5179,7 @@ sequential_queue_time(u_long64 *start, const sge_assignment_t *a, int *violation
 static dispatch_t
 sequential_host_time(u_long64 *start, const sge_assignment_t *a, int *violations, const lListElem *hep)
 {
-   lList *hard_requests = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *load_attr = lGetList(hep, EH_load_list);
    const lList *config_attr = lGetList(hep, EH_consumable_config_list);
    const lList *actual_attr = lGetList(hep, EH_resource_utilization);
@@ -5249,7 +5249,7 @@ sequential_global_time(u_long64 *start, const sge_assignment_t *a, int *violatio
    dstring reason; char reason_buf[1024];
    dispatch_t result = DISPATCH_NEVER_CAT;
    u_long64 tmp_time = *start;
-   lList *hard_request = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_request = job_get_hard_resource_listRW(a->job);
    const lList *load_attr = lGetList(a->gep, EH_load_list);
    const lList *config_attr = lGetList(a->gep, EH_consumable_config_list);
    const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);
@@ -5319,7 +5319,7 @@ static dispatch_t
 parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 {
    dispatch_t result = DISPATCH_NEVER_CAT;
-   lList *hard_request = lGetListRW(a->job, JB_hard_resource_list);
+   lList *hard_request = job_get_hard_resource_listRW(a->job);
    const lList *load_attr = lGetList(a->gep, EH_load_list);
    const lList *config_attr = lGetList(a->gep, EH_consumable_config_list);
    const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);

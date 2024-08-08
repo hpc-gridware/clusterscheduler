@@ -1542,7 +1542,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
 
             if (gdil_ep != nullptr) {
                lListElem *dummy_job = lCreateElem(JB_Type);
-               lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar_ep, AR_resource_list)));
+               job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar_ep, AR_resource_list)));
 
                while (gdil_ep != nullptr) {
                   rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,

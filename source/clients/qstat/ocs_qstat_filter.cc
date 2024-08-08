@@ -772,7 +772,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
                host = host_list_locate(qstat_env->exechost_list, lGetHost(qep, QU_qhostname));
                
                if (host != nullptr) {
-                  ret = sge_select_queue(lGetListRW(jep, JB_hard_resource_list), qep, 
+                  ret = sge_select_queue(job_get_hard_resource_listRW(jep), qep,
                                          host, qstat_env->exechost_list, qstat_env->centry_list, 
                                          true, 1, qstat_env->queue_user_list, qstat_env->acl_list, jep);
 
@@ -2224,7 +2224,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
 
       /* Handle the Hard Resources */
-      ret = job_handle_resources(lGetList(job, JB_hard_resource_list), qstat_env->centry_list, 
+      ret = job_handle_resources(job_get_hard_resource_list(job), qstat_env->centry_list,
                                  sge_job_slot_request(job, qstat_env->pe_list),
                                  handler,
                                  handler->report_hard_resources_started,
@@ -2279,7 +2279,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
       
       /* Handle the Soft Resources */
-      ret = job_handle_resources(lGetList(job, JB_soft_resource_list), qstat_env->centry_list, 
+      ret = job_handle_resources(job_get_soft_resource_list(job), qstat_env->centry_list,
                                  sge_job_slot_request(job, qstat_env->pe_list),
                                  handler,
                                  handler->report_soft_resources_started,
@@ -2291,7 +2291,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
       
       if (handler->report_hard_requested_queue) {
-         ql = lGetList(job, JB_hard_queue_list);
+         ql = job_get_hard_queue_list(job);
          if (ql) {
             if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, alpp))) {
                DPRINTF("handler->report_hard_requested_queues_started failed\n");
@@ -2311,7 +2311,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
       
       if (handler->report_soft_requested_queue) {
-         ql = lGetList(job, JB_soft_queue_list);
+         ql = job_get_soft_queue_list(job);
          if (ql) {
             if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, alpp))) {
                DPRINTF("handler->report_soft_requested_queue_started failed\n");
@@ -2331,7 +2331,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
       
       if (handler->report_master_hard_requested_queue) {
-         ql = lGetList(job, JB_master_hard_queue_list);
+         ql = job_get_master_hard_queue_list(job);
          if (ql){
             if (handler->report_master_hard_requested_queues_started && (ret=handler->report_master_hard_requested_queues_started(handler, alpp))) {
                DPRINTF("handler->report_master_hard_requested_queues_started failed\n");
@@ -2932,7 +2932,7 @@ void qstat_filter_add_core_attributes(qstat_env_t *qstat_env)
       JB_ja_z_ids,
       JB_ja_template,
       JB_execution_time,
-      JB_hard_queue_list,
+      JB_request_set_list,
       JB_project,
       NoName
    };
@@ -3059,8 +3059,7 @@ void qstat_filter_add_l_attributes(qstat_env_t *qstat_env)
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
-      JB_hard_resource_list,
-      JB_soft_resource_list,
+      JB_request_set_list,
       NoName
    };
    
@@ -3073,8 +3072,7 @@ void qstat_filter_add_pe_attributes(qstat_env_t *qstat_env)
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
-      JB_hard_resource_list,
-      JB_soft_resource_list,
+      JB_request_set_list,
       NoName
    };
    
@@ -3088,7 +3086,7 @@ void qstat_filter_add_q_attributes(qstat_env_t *qstat_env)
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
-      JB_hard_resource_list,
+      JB_request_set_list,
       NoName
    };
    
@@ -3100,11 +3098,7 @@ void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
-      JB_hard_resource_list,
-      JB_soft_resource_list,
-      JB_hard_queue_list,
-      JB_soft_queue_list,
-      JB_master_hard_queue_list,
+      JB_request_set_list,
       JB_jid_request_list,
       JB_ja_ad_request_list,
       JB_binding,
@@ -3140,7 +3134,7 @@ void qstat_filter_add_U_attributes(qstat_env_t *qstat_env)
 
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
-      JB_hard_resource_list,
+      JB_request_set_list,
       NoName
    };
 

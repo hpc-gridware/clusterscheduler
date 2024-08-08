@@ -19,6 +19,12 @@
 			"size_in_basic_units":	3,
 			"add_to_sge_all_lists":	true
 		}, {
+			"className":	"JobRequestSet",
+			"cullPrefix":	"JRS",
+			"cullNameSpec":	"job",
+			"size_in_basic_units":	2,
+			"add_to_sge_all_lists":	true
+		}, {
 			"className":	"QueueInstance",
 			"cullPrefix":	"QU",
 			"cullNameSpec":	"qinstance",

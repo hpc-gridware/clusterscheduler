@@ -621,7 +621,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetList(new_job, JB_hard_resource_list, resource_list);
+               job_set_hard_resource_list(new_job, resource_list);
             }
          }
          if (ret && strcmp("l_soft", param) == 0) {
@@ -637,7 +637,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetList(new_job, JB_soft_resource_list, resource_list);
+               job_set_soft_resource_list(new_job, resource_list);
             }
          }
       }
@@ -679,7 +679,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetList(new_job, JB_master_hard_queue_list, id_list);
+               job_set_master_hard_queue_list(new_job, id_list);
             }
          } else if (ret && strcmp("q_hard", param) == 0) {
             lList *id_list = nullptr;
@@ -695,7 +695,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetList(new_job, JB_hard_queue_list, id_list);
+               job_set_hard_queue_list(new_job, id_list);
             }
          } else if (ret && strcmp("q_soft", param) == 0) {
             lList *id_list = nullptr;
@@ -711,7 +711,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, dstring *c, dstrin
                }
             }
             if (ret) {
-               lSetList(new_job, JB_soft_queue_list, id_list);
+               job_set_soft_queue_list(new_job, id_list);
             }
          }
       }
@@ -1741,7 +1741,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * PARAM l_hard <centry_list>
     */
    {
-      const lList *l_hard_list = lGetList(old_job, JB_hard_resource_list);
+      const lList *l_hard_list = job_get_hard_resource_list(old_job);
 
       if (l_hard_list != nullptr) {
          sge_dstring_clear(&buffer);
@@ -1751,7 +1751,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
       }
    }
    {
-      const lList *l_soft_list = lGetList(old_job, JB_soft_resource_list);
+      const lList *l_soft_list = job_get_soft_resource_list(old_job);
 
       if (l_soft_list != nullptr) {
          sge_dstring_clear(&buffer);
@@ -1804,7 +1804,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * -masterq wc_queue_list (optional) 
     */
    {
-      const lList *master_hard_queue_list = lGetList(old_job, JB_master_hard_queue_list);
+      const lList *master_hard_queue_list = job_get_master_hard_queue_list(old_job);
 
       if (master_hard_queue_list != nullptr) {
          const lListElem *queue;
@@ -2079,7 +2079,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
     * TODO: EB: CLEANUP: make a function for the code blocks of -soft -q, -hard -q and -masterq
     */
    {
-      const lList *hard_queue_list = lGetList(old_job, JB_hard_queue_list);
+      const lList *hard_queue_list = job_get_hard_queue_list(old_job);
 
       if (hard_queue_list != nullptr) {
          const lListElem *queue;
@@ -2098,7 +2098,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, dstring *c, dstr
       }
    }
    {
-      const lList *soft_queue_list = lGetList(old_job, JB_soft_queue_list);
+      const lList *soft_queue_list = job_get_soft_queue_list(old_job);
 
       if (soft_queue_list != nullptr) {
          const lListElem *queue;
@@ -2704,14 +2704,10 @@ jsv_cull_attr2switch_name(int cull_attr, lListElem *job)
       ret = "j";
    } else if (cull_attr == JB_jobshare) {
       ret = "js";
-   } else if (cull_attr == JB_hard_resource_list) {
-      ret = "l_hard";
-   } else if (cull_attr == JB_soft_resource_list) {
-      ret = "l_soft";
+   } else if (cull_attr == JB_request_set_list) {
+      ret = "request_set";
    } else if (cull_attr == JB_mail_options) {
       ret = "m";
-   } else if (cull_attr == JB_master_hard_queue_list) {
-      ret = "masterq";
    } else if (cull_attr == JB_notify) {
       ret = "notify";
    } else if (cull_attr == JB_mail_list) {
@@ -2755,10 +2751,6 @@ jsv_cull_attr2switch_name(int cull_attr, lListElem *job)
       ret = "pe_name";
    } else if (cull_attr == JB_pe_range) {
       ret = "pe_min";
-   } else if (cull_attr == JB_hard_queue_list) {
-      ret = "q_hard";
-   } else if (cull_attr == JB_soft_queue_list) {
-      ret = "q_soft";
    } else if (cull_attr == JB_reserve) {
       ret = "R";
    } else if (cull_attr == JB_restart) {
@@ -2808,7 +2800,16 @@ jsv_is_modify_rejected(lList **answer_list, lListElem *job)
                const char *swch = jsv_cull_attr2switch_name(pointer->nm, job);
              
                if (swch != nullptr) {
-                  lAddElemStr(&got_switches, ST_name, swch, ST_Type);
+                  if (strcmp(swch, "request_set") == 0) {
+                     lAddElemStr(&got_switches, ST_name, "l_hard", ST_Type);
+                     lAddElemStr(&got_switches, ST_name, "l_soft", ST_Type);
+                     lAddElemStr(&got_switches, ST_name, "q_hard", ST_Type);
+                     lAddElemStr(&got_switches, ST_name, "q_soft", ST_Type);
+                     lAddElemStr(&got_switches, ST_name, "masterq", ST_Type);
+                  } else {
+                     lAddElemStr(&got_switches, ST_name, swch, ST_Type);
+
+                  }
                }
             }
 

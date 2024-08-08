@@ -1091,7 +1091,7 @@ setup_qmaster() {
             do nothing spectacular if the AD reqest list for this job is empty. */
          sge_task_depend_init(jep, &answer_list);
 
-         centry_list_fill_request(lGetListRW(jep, JB_hard_resource_list),
+         centry_list_fill_request(job_get_hard_resource_listRW(jep),
                                   nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY), false, true, false);
 
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 

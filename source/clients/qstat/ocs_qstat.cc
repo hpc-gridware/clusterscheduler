@@ -1906,15 +1906,14 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
          }
       }
    }
-   what = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I->%T%I%I%I%I->%T(%I%I%I%I%I%I%I)"
-            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I)",
+   what = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I->%T%I%I%I%I->%T(%I%I%I%I%I%I%I)"
+            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I)",
             JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time, 
             JB_owner, JB_uid, JB_group, JB_gid, JB_account, JB_merge_stderr, 
             JB_mail_list, JB_project, JB_notify, JB_job_name, 
             JB_stdout_path_list, 
             /**/
-            PN_Type, JB_jobshare, JB_hard_resource_list, JB_soft_resource_list,
-            JB_hard_queue_list, JB_soft_queue_list, JB_shell_list, 
+            PN_Type, JB_jobshare, JB_request_set_list, JB_shell_list,
             /**/
             PN_Type, JB_env_list, JB_job_args, JB_script_file, JB_ja_tasks,
             /**/
@@ -1932,7 +1931,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             JB_deadline, JB_execution_time, JB_checkpoint_name, 
             JB_checkpoint_attr, JB_checkpoint_interval, JB_directive_prefix, 
             JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority, 
-            JB_restart, JB_verify, JB_master_hard_queue_list, JB_script_size, 
+            JB_restart, JB_verify, JB_script_size,
             JB_pe, 
             RN_Type, JB_pe_range, JB_jid_request_list, 
             JB_verify_suitable_queues, JB_soft_wallclock_gmt,

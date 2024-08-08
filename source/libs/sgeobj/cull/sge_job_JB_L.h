@@ -213,21 +213,11 @@
 *    SGE_BOOL(JB_merge_stderr) - Merge stderr
 *    Merge stdout and stderr? ("qsub/qalter -j y|n")
 *
-*    SGE_LIST(JB_hard_resource_list) - Hard resource list
-*    Hard resource requirements/limits/restrictions (CE_Type).
-*    (qsub -l resource_list)
-*
-*    SGE_LIST(JB_soft_resource_list) - Soft resource list
-*    Soft resource requirements/limits/restrictions (CE_Type).
-*    (qsub -soft -l resource_list)
-*
-*    SGE_LIST(JB_hard_queue_list) - Hard queue list
-*    Hard queue list (QR_Type).
-*    (qsub/qselect -q dest_identifier)
-*
-*    SGE_LIST(JB_soft_queue_list) - Soft queue list
-*    Soft queue list (QR_Type).
-*    (qsub/qselect -soft -q dest_identifier)
+*    SGE_LIST(JB_request_set_list) - Request Set List
+*    List of request sets. 0 .. 3 request sets can exist: global, master, slave.
+*    Sequential jobs can have a single job request set, the global one.
+*    Parallel jobs can have up to 3 request sets: global requests,
+*    requests for the master task, requests for the slave tasks.
 *
 *    SGE_ULONG(JB_mail_options) - Mail options
 *    (qsub/qalter -m mail_options)
@@ -243,10 +233,6 @@
 *    SGE_LIST(JB_pe_range) - Requested Slot Range for Parallel Environment
 *    PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized
 *    (qsub/qalter -pe pe-name slot_range)
-*
-*    SGE_LIST(JB_master_hard_queue_list) - Master Hard Queue List
-*    Master queue list (QR_Type).
-*    qsub -masterq queue_list
 *
 *    SGE_STRING(JB_tgt) - Kerberos Client TGB
 *    Kerberos client TGT
@@ -427,15 +413,11 @@ enum {
    JB_stderr_path_list,
    JB_stdin_path_list,
    JB_merge_stderr,
-   JB_hard_resource_list,
-   JB_soft_resource_list,
-   JB_hard_queue_list,
-   JB_soft_queue_list,
+   JB_request_set_list,
    JB_mail_options,
    JB_mail_list,
    JB_pe,
    JB_pe_range,
-   JB_master_hard_queue_list,
    JB_tgt,
    JB_cred,
    JB_ja_structure,
@@ -515,15 +497,11 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_stderr_path_list, PN_Type, CULL_SPOOL)
    SGE_LIST(JB_stdin_path_list, PN_Type, CULL_SPOOL)
    SGE_BOOL(JB_merge_stderr, CULL_SPOOL)
-   SGE_LIST(JB_hard_resource_list, CE_Type, CULL_SPOOL)
-   SGE_LIST(JB_soft_resource_list, CE_Type, CULL_SPOOL)
-   SGE_LIST(JB_hard_queue_list, QR_Type, CULL_SPOOL)
-   SGE_LIST(JB_soft_queue_list, QR_Type, CULL_SPOOL)
+   SGE_LIST(JB_request_set_list, JRS_Type, CULL_SPOOL)
    SGE_ULONG(JB_mail_options, CULL_SPOOL)
    SGE_LIST(JB_mail_list, MR_Type, CULL_SPOOL)
    SGE_STRING(JB_pe, CULL_SPOOL)
    SGE_LIST(JB_pe_range, RN_Type, CULL_SPOOL)
-   SGE_LIST(JB_master_hard_queue_list, QR_Type, CULL_SPOOL)
    SGE_STRING(JB_tgt, CULL_DEFAULT)
    SGE_STRING(JB_cred, CULL_DEFAULT)
    SGE_LIST(JB_ja_structure, RN_Type, CULL_SPOOL)
@@ -603,15 +581,11 @@ NAMEDEF(JBN)
    NAME("JB_stderr_path_list")
    NAME("JB_stdin_path_list")
    NAME("JB_merge_stderr")
-   NAME("JB_hard_resource_list")
-   NAME("JB_soft_resource_list")
-   NAME("JB_hard_queue_list")
-   NAME("JB_soft_queue_list")
+   NAME("JB_request_set_list")
    NAME("JB_mail_options")
    NAME("JB_mail_list")
    NAME("JB_pe")
    NAME("JB_pe_range")
-   NAME("JB_master_hard_queue_list")
    NAME("JB_tgt")
    NAME("JB_cred")
    NAME("JB_ja_structure")

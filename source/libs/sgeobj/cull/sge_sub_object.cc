@@ -67,26 +67,14 @@ object_get_subtype(int nm)
       case JB_stdin_path_list:
          ret = PN_Type;
          break;
-      case JB_hard_resource_list:
-         ret = CE_Type;
-         break;
-      case JB_soft_resource_list:
-         ret = CE_Type;
-         break;
-      case JB_hard_queue_list:
-         ret = QR_Type;
-         break;
-      case JB_soft_queue_list:
-         ret = QR_Type;
+      case JB_request_set_list:
+         ret = JRS_Type;
          break;
       case JB_mail_list:
          ret = MR_Type;
          break;
       case JB_pe_range:
          ret = RN_Type;
-         break;
-      case JB_master_hard_queue_list:
-         ret = QR_Type;
          break;
       case JB_ja_structure:
          ret = RN_Type;
@@ -129,6 +117,18 @@ object_get_subtype(int nm)
          break;
       case JB_binding:
          ret = BN_Type;
+         break;
+      case JRS_hard_resource_list:
+         ret = CE_Type;
+         break;
+      case JRS_soft_resource_list:
+         ret = CE_Type;
+         break;
+      case JRS_hard_queue_list:
+         ret = QR_Type;
+         break;
+      case JRS_soft_queue_list:
+         ret = QR_Type;
          break;
       case QU_ckpt_list:
          ret = ST_Type;

@@ -326,7 +326,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                lSetUlong(tmp_dj_job, TACCDJ_core, running_slots);
                lSetUlong(tmp_dj_job, TACCDJ_host, running_slots / 16);
 
-               req_queue_list = lGetList(job, JB_hard_queue_list);
+               req_queue_list = job_get_hard_queue_list(job);
                if (req_queue_list != nullptr) {
                   qname = lGetString(lFirst(req_queue_list), QR_name);
                   lSetString(tmp_dj_job, TACCDJ_queue, qname);
@@ -460,7 +460,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          lSetUlong(tmp_dj_job, TACCDJ_core, pe_range_max * unf_tasks);
          lSetUlong(tmp_dj_job, TACCDJ_host, pe_range_max * unf_tasks / 16);
 
-         req_queue_list = lGetList(job, JB_hard_queue_list);
+         req_queue_list = job_get_hard_queue_list(job);
          if (req_queue_list != nullptr) {
             qname = lGetString(lFirst(req_queue_list), QR_name);
             lSetString(tmp_dj_job, TACCDJ_queue, qname);
@@ -544,7 +544,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          lSetString(tmp_dj_job, TACCDJ_state, "Unsched");
          lSetUlong(tmp_dj_job, TACCDJ_core, pe_range_max * unf_tasks);
          lSetUlong(tmp_dj_job, TACCDJ_host, pe_range_max * unf_tasks / 16);
-         req_queue_list = lGetList(job, JB_hard_queue_list);
+         req_queue_list = job_get_hard_queue_list(job);
          if (req_queue_list != nullptr) {
             qname = lGetString(lFirst(req_queue_list), QR_name);
             lSetString(tmp_dj_job, TACCDJ_queue, qname);

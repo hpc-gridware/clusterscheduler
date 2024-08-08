@@ -1671,7 +1671,7 @@ reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *j
    DENTER(BASIS_LAYER);
    const char *s;
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lListElem *res = lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, rlimit_name);
+   const lListElem *res = lGetElemStr(job_get_hard_resource_list(jep), CE_name, rlimit_name);
 
    if ((res != nullptr) && (s = lGetString(res, CE_stringval))) {
       DPRINTF("job reduces queue limit: %s = %s (was %s)\n", rlimit_name, s, lGetString(qep, nm));

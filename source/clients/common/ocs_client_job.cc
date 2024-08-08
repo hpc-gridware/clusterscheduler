@@ -214,19 +214,21 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("\n");
       }
 
-   if (lGetPosViaElem(job, JB_hard_resource_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_hard_resource_list)) {
+   if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
+      const lList *lp = job_get_hard_resource_list(job);
+      if (lp != nullptr) {
          printf("hard resource_list:         ");
-         sge_show_ce_type_list(lGetList(job, JB_hard_resource_list));
+         sge_show_ce_type_list(lp);
          printf("\n");
       }
 
-   if (lGetPosViaElem(job, JB_soft_resource_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_soft_resource_list)) {
+      lp = job_get_soft_resource_list(job);
+      if (lp != nullptr) {
          printf("soft resource_list:         ");
-         sge_show_ce_type_list(lGetList(job, JB_soft_resource_list));
+         sge_show_ce_type_list(lp);
          printf("\n");
       }
+   }
 
    if (lGetPosViaElem(job, JB_mail_options, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_mail_options)) {
@@ -288,23 +290,25 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       printf(sge_u32 "\n", lGetUlong(job, JB_jobshare));
    }
 
-   if (lGetPosViaElem(job, JB_hard_queue_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_hard_queue_list)) {
+   if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
+      const lList *lp = job_get_hard_queue_list(job);
+      if (lp != nullptr) {
          int fields[] = {QR_name, 0};
 
          delis[0] = " ";
          printf("hard_queue_list:            ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
-   if (lGetPosViaElem(job, JB_soft_queue_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_soft_queue_list)) {
+      lp = job_get_soft_queue_list(job);
+      if (lp != nullptr) {
          int fields[] = {QR_name, 0};
 
          delis[0] = " ";
          printf("soft_queue_list:            ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_soft_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       }
+   }
 
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_restart)) {
@@ -367,14 +371,16 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          uni_print_list(stdout, nullptr, 0, lGetList(job, JB_qs_args), fields, delis, 0);
       }
 
-   if (lGetPosViaElem(job, JB_master_hard_queue_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_master_hard_queue_list)) {
+   if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
+      const lList *lp = job_get_master_hard_queue_list(job);
+      if (lp != nullptr) {
          int fields[] = {QR_name, 0};
          delis[0] = " ";
          printf("master hard queue_list:     ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_master_hard_queue_list), fields, delis,
+         uni_print_list(stdout, nullptr, 0, lp, fields, delis,
                         FLG_NO_DELIS_STRINGS);
       }
+   }
 
    if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0)
       if (lGetList(job, JB_job_identifier_list)) {

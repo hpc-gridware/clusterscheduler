@@ -1162,7 +1162,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
-                  lList *job_centry_list = lGetListRW(a->job, JB_hard_resource_list);
+                  lList *job_centry_list = job_get_hard_resource_listRW(a->job);
                   lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
                   if (raw_centry == nullptr) {
                      DPRINTF("ignoring limit %s because not defined", limit_name);
@@ -1311,7 +1311,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       }
 
       is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED ? true : false;
-      job_centry_list = lGetList(a->job, JB_hard_resource_list);
+      job_centry_list = job_get_hard_resource_list(a->job);
       job_centry = centry_list_locate(job_centry_list, limit_name);
 
       /* check for implicit slot and default request */
