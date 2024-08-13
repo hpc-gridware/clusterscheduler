@@ -136,7 +136,7 @@ sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
 }
 
 /************************************************************************/
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
    int ret = 0;
    lList *pcmdline = nullptr;
    lList *answer_list = nullptr;
@@ -269,9 +269,9 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
          } else {
-            char **token = nullptr;
+            const char **token = nullptr;
 
-            token = stra_from_str(file_as_string, " \n\t");
+            token = (const char **)stra_from_str(file_as_string, " \n\t");
             *alpp = cull_parse_cmdline(QRSTAT, token, environ, ppcmdline, FLG_USE_PSEUDOS);
          }
       }

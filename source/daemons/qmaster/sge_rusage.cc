@@ -670,6 +670,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(writer, "priority", usage_list_get_ulong_usage(usage_list, "priority", 0));
 
       write_json(writer, "submission_time", submission_time);
+      write_json(writer, "submit_cmd_line", lGetString(job, JB_submission_command_line));
       if (ar != nullptr) {
          write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
       }

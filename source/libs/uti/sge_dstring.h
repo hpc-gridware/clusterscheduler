@@ -84,8 +84,6 @@ const char *sge_dstring_append_dstring(dstring *sb, const dstring *a);
 
 const char *sge_dstring_append_char(dstring *sb, const char a);
 
-const char *sge_dstring_append_time(dstring *sb, time_t time, bool as_xml);
-
 const char *sge_dstring_append_mailopt(dstring *sb, u_long32 mailopt);
 
 const char *sge_dstring_sprintf(dstring *sb, const char *fmt, ...);
@@ -113,3 +111,6 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, u_long32 number);
 bool sge_dstring_split(dstring *string, char character, dstring *before, dstring *after);
 
 void sge_dstring_strip_white_space_at_eol(dstring *string);
+
+const char *sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[],
+                                  bool quote_whitespace, bool quote_patterns);

@@ -55,7 +55,7 @@ extern char **environ;
 
 
 /************************************************************************/
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
    lList *pcmdline = nullptr;
    lList *alp = nullptr;
    lList *ar_lp = nullptr;

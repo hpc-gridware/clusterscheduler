@@ -68,13 +68,17 @@
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_binding.h"
+#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/sge_mailrec.h"
+#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"
 #include "msg_common.h"
 
-  
+
 /****** sgeobj/job/job_get_ja_task_template_pending() *************************
 *  NAME
 *     job_get_ja_task_template_pending() -- create a ja task template 
@@ -3828,5 +3832,372 @@ job_init_binding_elem(lListElem *jep)
    return ret;
 }
 
+static void
+job_add_str_to_command_line(dstring *dstr, const char *str) {
+   bool do_quote = sge_has_whitespace(str) || sge_is_pattern(str);
+   if (do_quote) {
+      sge_dstring_append_char(dstr, '\'');
+   }
+   sge_dstring_append(dstr, str);
+   if (do_quote) {
+      sge_dstring_append_char(dstr, '\'');
+   }
+}
 
+static void
+job_add_opt_to_comand_line(dstring *dstr, const char *opt, const char *value) {
+   if (opt != nullptr) {
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, opt);
+   }
+   if (value != nullptr) {
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, value);
+   }
+}
 
+static bool
+job_add_bool_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm, bool print_value) {
+   bool ret = false;
+   bool b = lGetBool(job, nm);
+   if (b == print_value) {
+      ret = true;
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, opt);
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, b ? "yes" : "no");
+   }
+
+   return ret;
+}
+
+static bool
+job_add_ulong_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm, long offset) {
+   bool ret = false;
+   long l = lGetUlong(job, nm) + offset;
+   if (l != 0) {
+      ret = true;
+      if (opt != nullptr) {
+         sge_dstring_append_char(dstr, ' ');
+         sge_dstring_append(dstr, opt);
+      }
+      sge_dstring_sprintf_append(dstr, " %ld", l);
+   }
+
+   return ret;
+}
+
+static bool
+job_add_time_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm) {
+   bool ret = true;
+   u_long64 time64 = lGetUlong64(job, nm);
+   if (time64 != 0) {
+      ret = true;
+      if (opt != nullptr) {
+         sge_dstring_append_char(dstr, ' ');
+         sge_dstring_append(dstr, opt);
+      }
+      sge_dstring_append_char(dstr, ' ');
+      DSTRING_STATIC(dstr_time, 64);
+      sge_dstring_append(dstr, sge_ctime64_date_time(time64, &dstr_time));
+   }
+
+   return ret;
+}
+
+static bool
+job_add_str_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm) {
+   bool ret = false;
+   const char *str = lGetString(job, nm);
+   if (str != nullptr) {
+      ret = true;
+      if (opt != nullptr) {
+         sge_dstring_append_char(dstr, ' ');
+         sge_dstring_append(dstr, opt);
+      }
+      sge_dstring_append_char(dstr, ' ');
+      job_add_str_to_command_line(dstr, str);
+   }
+
+   return ret;
+}
+
+static bool
+job_add_ce_list_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm) {
+   bool ret = false;
+   const lList *ce_list = lGetList(job, nm);
+   if (ce_list != nullptr) {
+      ret = true;
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, opt);
+      sge_dstring_append_char(dstr, ' ');
+      dstring local_dstr = DSTRING_INIT;
+      job_add_str_to_command_line(dstr, centry_list_append_to_dstring(ce_list, &local_dstr));
+      sge_dstring_free(&local_dstr);
+   }
+
+   return ret;
+}
+
+static bool
+job_add_list_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm, int lnm) {
+   bool ret = false;
+   const lList *lp = lGetList(job, nm);
+   if (lp != nullptr) {
+      ret = true;
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, opt);
+      sge_dstring_append_char(dstr, ' ');
+      const lListElem *ep;
+      bool first = true;
+      for_each_ep(ep, lp) {
+         if (first) {
+            first = false;
+         } else {
+            sge_dstring_append_char(dstr, ',');
+         }
+         sge_dstring_append(dstr, lGetString(ep, lnm));
+      }
+   }
+
+   return ret;
+}
+
+static bool
+job_add_host_str_list_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm, int hnm,
+                                          int snm) {
+   bool ret = false;
+   const lList *lp = lGetList(job, nm);
+   if (lp != nullptr) {
+      ret = true;
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, opt);
+      sge_dstring_append_char(dstr, ' ');
+      const lListElem *ep;
+      bool first = true;
+      for_each_ep(ep, lp) {
+         if (first) {
+            first = false;
+         } else {
+            sge_dstring_append_char(dstr, ',');
+         }
+         const char *host = lGetHost(ep, hnm);
+         const char *str = lGetString(ep, snm);
+         if (str != nullptr) {
+            if (host != nullptr) {
+               sge_dstring_append(dstr, host);
+               sge_dstring_append_char(dstr, ':');
+            }
+            sge_dstring_append(dstr, str);
+         }
+      }
+   }
+
+   return ret;
+}
+
+static bool
+job_add_name_value_list_opt_to_command_line(const lListElem *job, dstring *dstr, const char *opt, int nm, int nnm,
+                                            int vnm, const char *filter = nullptr) {
+   bool ret = false;
+   const lList *lp = lGetList(job, nm);
+   if (lp != nullptr) {
+      const lListElem *ep;
+      bool first = true;
+      for_each_ep(ep, lp) {
+         const char *name = lGetString(ep, nnm);
+         // apply filter to name, if name starts with filter, then skip this entry
+         if (filter != nullptr && strstr(name, filter) == name) {
+            continue;
+         }
+         if (first) {
+            first = false;
+            // if we get here for the first time then print the option string
+            sge_dstring_append_char(dstr, ' ');
+            sge_dstring_append(dstr, opt);
+            sge_dstring_append_char(dstr, ' ');
+            ret = true;
+         } else {
+            // additional variable, print the separator
+            sge_dstring_append_char(dstr, ',');
+         }
+         if (name != nullptr) {
+            sge_dstring_append(dstr, name);
+            sge_dstring_append_char(dstr, '=');
+
+            const char *value = lGetString(ep, vnm);
+            if (value != nullptr) {
+               sge_dstring_append(dstr, value);
+            }
+         }
+      }
+   }
+
+   return ret;
+}
+
+/**
+ * Based on the attributes of the job object the function generates a command line
+ * which can be used to submit an identical job (if no sge_request files and/or JSV are active).
+ * The command line is stored in the given dstring.
+ *
+ * @param[in] job      job used as template for the command line
+ * @param[in] dstr     dstring which will contain the command line
+ * @param[in] client   client name, this will become the first word in the command line
+ * @return the command line as string
+ */
+const char *
+job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client) {
+   // the submit client name
+   sge_dstring_copy_string(dstr, client);
+
+   // the submit options
+   job_add_str_opt_to_command_line(job, dstr, "-A", JB_account);
+   job_add_time_opt_to_command_line(job, dstr, "-a", JB_execution_time);
+   // -ac is covered by -sc
+   job_add_ulong_opt_to_command_line(job, dstr, "-ar", JB_ar, 0);
+   if (JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type))) {
+      job_add_opt_to_comand_line(dstr, "-b", "yes");
+   }
+   // -binding
+   const lListElem *binding;
+   for_each_ep(binding, lGetList(job, JB_binding)) {
+      sge_dstring_append(dstr, " -binding ");
+      binding_print_to_string(binding, dstr);
+   }
+
+   job_add_str_opt_to_command_line(job, dstr, "-C", JB_directive_prefix);
+
+   // checkpointing
+   if (job_add_str_opt_to_command_line(job, dstr, "-ckpt", JB_checkpoint_name)) {
+      u_long ckpt_attr = lGetUlong(job, JB_checkpoint_attr);
+      u_long ckpt_interval = lGetUlong(job, JB_checkpoint_interval);
+      if (ckpt_attr != 0 || ckpt_interval != 0) {
+         sge_dstring_append(dstr, " -c ");
+         if (ckpt_attr != 0) {
+            job_get_ckpt_attr(ckpt_attr, dstr);
+         }
+         if (ckpt_interval != 0) {
+            sge_dstring_sprintf_append(dstr, sge_uu32, ckpt_interval);
+         }
+      }
+   }
+
+   // -clear is not reflected in the job object
+   // -cwd is covered by -wd
+   // -dc is not reflected in the job object
+   job_add_time_opt_to_command_line(job, dstr, "-dl", JB_deadline);
+   job_add_host_str_list_opt_to_command_line(job, dstr, "-e", JB_stderr_path_list, PN_host, PN_path);
+   job_add_host_str_list_opt_to_command_line(job, dstr, "-o", JB_stdout_path_list, PN_host, PN_path);
+   job_add_host_str_list_opt_to_command_line(job, dstr, "-i", JB_stdin_path_list, PN_host, PN_path);
+   job_add_list_opt_to_command_line(job, dstr, "-hold_jid", JB_jid_request_list, JRE_job_name);
+   job_add_list_opt_to_command_line(job, dstr, "-hold_jid_ad", JB_ja_ad_request_list, JRE_job_name);
+   job_add_bool_opt_to_command_line(job, dstr, "-j", JB_merge_stderr, true);
+   job_add_ulong_opt_to_command_line(job, dstr, "-js", JB_jobshare, 0);
+   // -jsv is not reflected in the job object
+   job_add_ce_list_opt_to_command_line(job, dstr, "-hard -l", JB_hard_resource_list);
+   job_add_ce_list_opt_to_command_line(job, dstr, "-soft -l", JB_soft_resource_list);
+
+   u_long32 mailopt = lGetUlong(job, JB_mail_options);
+   if (mailopt > 0) {
+      sge_dstring_sprintf_append(dstr, " -m ");
+      sge_dstring_append_mailopt(dstr, mailopt);
+   }
+   const lList *mail_list = lGetList(job, JB_mail_list);
+   if (mail_list != nullptr) {
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, "-M");
+      sge_dstring_append_char(dstr, ' ');
+      const lListElem *ep;
+      bool first = true;
+      for_each_ep(ep, mail_list) {
+         if (first) {
+            first = false;
+         } else {
+            sge_dstring_append_char(dstr, ',');
+         }
+         sge_dstring_sprintf_append(dstr, "%s@%s", lGetString(ep, MR_user), lGetHost(ep, MR_host));
+      }
+   }
+
+   if (lGetBool(job, JB_notify)) {
+      job_add_opt_to_comand_line(dstr, "-notify", nullptr);
+   }
+   if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type))) {
+      job_add_opt_to_comand_line(dstr, "-now", "yes");
+   }
+   job_add_str_opt_to_command_line(job, dstr, "-N", JB_job_name);
+   job_add_str_opt_to_command_line(job, dstr, "-P", JB_project);
+   job_add_ulong_opt_to_command_line(job, dstr, "-p", JB_priority, -1024);
+   job_add_list_opt_to_command_line(job, dstr, "-masterq", JB_master_hard_queue_list, QR_name);
+   if (job_add_str_opt_to_command_line(job, dstr, "-pe", JB_pe)) {
+      sge_dstring_append_char(dstr, ' ');
+      DSTRING_STATIC(dstr_pe, 64);
+      range_list_print_to_string(lGetList(job, JB_pe_range), &dstr_pe, true, false, false);
+      sge_dstring_append_dstring(dstr, &dstr_pe);
+   }
+   u_long32 pty = lGetUlong(job, JB_pty);
+   if (pty < 2) { // 2 means: do not specify it but use the default for the client
+      job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
+   }
+   job_add_list_opt_to_command_line(job, dstr, "-hard -q", JB_hard_queue_list, QR_name);
+   job_add_list_opt_to_command_line(job, dstr, "-soft -q", JB_soft_queue_list, QR_name);
+
+   job_add_bool_opt_to_command_line(job, dstr, "-R", JB_reserve, true);
+   if (lGetUlong(job, JB_restart) == 2) {
+      job_add_opt_to_comand_line(dstr, "-r", "no");
+   } else {
+      job_add_opt_to_comand_line(dstr, "-r", "yes");
+   }
+   job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
+   job_add_host_str_list_opt_to_command_line(job, dstr, "-shell", JB_shell_list, PN_host, PN_path);
+   // -sync is not part of the job - it is only client behaviour
+   // -t option
+   if (job_is_array(job)) {
+      u_long32 start, end, step;
+      job_get_submit_task_ids(job, &start, &end, &step);
+      sge_dstring_sprintf_append(dstr, " -t " sge_u32 "-" sge_u32 ":" sge_u32, start, end, step);
+   }
+   job_add_ulong_opt_to_command_line(job, dstr, "-tc", JB_ja_task_concurrency, 0);
+   job_add_name_value_list_opt_to_command_line(job, dstr, "-v", JB_env_list, VA_variable, VA_value, VAR_PREFIX);
+   // -w has no effect on the later job execution
+   job_add_str_opt_to_command_line(job, dstr, "-wd", JB_cwd);
+   // -@ is not reflected in the job object
+
+   // command line to execute
+   job_add_str_opt_to_command_line(job, dstr, nullptr, JB_script_file);
+   const lListElem *ep;
+   for_each_ep (ep, lGetList(job, JB_job_args)) {
+      sge_dstring_append_char(dstr, ' ');
+      job_add_str_to_command_line(dstr, lGetString(ep, ST_name));
+   }
+
+   return sge_dstring_get_string(dstr);
+}
+
+/**
+ * Generates the effective command line from the job attributes
+ * and stores it in the job attribute JB_submission_command_line.
+ *
+ * @param[in] job      job used as template for the command line
+ * @param[in] client   client name, this will become the first word in the command line
+ */
+void job_set_command_line(lListElem *job, const char *client) {
+   dstring dstr = DSTRING_INIT;
+   lSetString(job, JB_submission_command_line, job_get_effective_command_line(job, &dstr, client));
+   sge_dstring_free(&dstr);
+}
+
+/**
+ * Formats the command line given as argument count and argument vector into one string
+ * and stores it in the job attribute JB_submission_command_line.
+ *
+ * @param[in] job    we store the result here
+ * @param[in] argc   the argument count
+ * @param[in] argv   the argument vector
+ */
+void job_set_command_line(lListElem *job, int argc, const char *argv[]) {
+   dstring dstr = DSTRING_INIT;
+   lSetString(job, JB_submission_command_line, sge_dstring_from_argv(&dstr, argc, argv, true, true));
+   sge_dstring_free(&dstr);
+}

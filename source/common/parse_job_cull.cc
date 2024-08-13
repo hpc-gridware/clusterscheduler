@@ -155,8 +155,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
       if (lGetInt(ep, SPA_argval_lIntT) == 1) {
          JOB_TYPE_SET_BINARY(jb_now);
-      }
-      else {
+      } else {
          JOB_TYPE_UNSET_BINARY(jb_now);
       }
       
@@ -952,7 +951,7 @@ u_long32 flags
                /*
                ** problem: error handling missing here and above
                */
-               alp = cull_parse_cmdline(prog_number, str_table, envp, &lp_new_opts, 0);
+               alp = cull_parse_cmdline(prog_number, (const char **)str_table, envp, &lp_new_opts, 0);
 
                for_each_rw (aep, alp) {
                   answer_quality_t quality;

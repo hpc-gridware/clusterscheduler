@@ -1,13 +1,13 @@
 {
 	"className":	"ClusterQueue",
-	"summary":	"@todo add summary",
+	"summary":	"Cluster Queue",
 	"description":	[{
 			"line":	"@todo add description"
 		}],
 	"cullPrefix":	"CQ",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -25,7 +25,7 @@
 				}]
 		}, {
 			"name":	"hostlist",
-			"summary":	"@todo add summary",
+			"summary":	"Host List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -39,7 +39,7 @@
 				}]
 		}, {
 			"name":	"qinstances",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Instances",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -51,7 +51,7 @@
 				}]
 		}, {
 			"name":	"seq_no",
-			"summary":	"@todo add summary",
+			"summary":	"Sequence Number",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -65,7 +65,7 @@
 				}]
 		}, {
 			"name":	"nsuspend",
-			"summary":	"@todo add summary",
+			"summary":	"NSuspend",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -79,7 +79,7 @@
 				}]
 		}, {
 			"name":	"job_slots",
-			"summary":	"@todo add summary",
+			"summary":	"Job Slots",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -93,7 +93,7 @@
 				}]
 		}, {
 			"name":	"rerun",
-			"summary":	"@todo add summary",
+			"summary":	"Rerun",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -107,7 +107,7 @@
 				}]
 		}, {
 			"name":	"s_fsize",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Filesize Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -121,7 +121,7 @@
 				}]
 		}, {
 			"name":	"h_fsize",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Filesize Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -135,7 +135,7 @@
 				}]
 		}, {
 			"name":	"s_data",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Data Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -149,7 +149,7 @@
 				}]
 		}, {
 			"name":	"h_data",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Data Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -163,7 +163,7 @@
 				}]
 		}, {
 			"name":	"s_stack",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Stack Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -177,7 +177,7 @@
 				}]
 		}, {
 			"name":	"h_stack",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Stack Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -191,7 +191,7 @@
 				}]
 		}, {
 			"name":	"s_core",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Core Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -205,7 +205,7 @@
 				}]
 		}, {
 			"name":	"h_core",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Core Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -219,7 +219,7 @@
 				}]
 		}, {
 			"name":	"s_rss",
-			"summary":	"@todo add summary",
+			"summary":	"Soft RSS Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -233,7 +233,7 @@
 				}]
 		}, {
 			"name":	"h_rss",
-			"summary":	"@todo add summary",
+			"summary":	"Hard RSS Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -247,7 +247,7 @@
 				}]
 		}, {
 			"name":	"s_vmem",
-			"summary":	"@todo add summary",
+			"summary":	"Soft VMEM Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -261,7 +261,7 @@
 				}]
 		}, {
 			"name":	"h_vmem",
-			"summary":	"@todo add summary",
+			"summary":	"Hard VMEM Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -275,7 +275,7 @@
 				}]
 		}, {
 			"name":	"s_rt",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Runtime Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -289,7 +289,7 @@
 				}]
 		}, {
 			"name":	"h_rt",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Runtime Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -303,7 +303,7 @@
 				}]
 		}, {
 			"name":	"s_cpu",
-			"summary":	"@todo add summary",
+			"summary":	"Soft CPU Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -317,7 +317,7 @@
 				}]
 		}, {
 			"name":	"h_cpu",
-			"summary":	"@todo add summary",
+			"summary":	"Hard CPU Limit",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -331,7 +331,7 @@
 				}]
 		}, {
 			"name":	"suspend_interval",
-			"summary":	"@todo add summary",
+			"summary":	"Suspend Interval",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -345,7 +345,7 @@
 				}]
 		}, {
 			"name":	"min_cpu_interval",
-			"summary":	"@todo add summary",
+			"summary":	"Min CPU Interval",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -359,7 +359,7 @@
 				}]
 		}, {
 			"name":	"notify",
-			"summary":	"@todo add summary",
+			"summary":	"Notify",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -373,7 +373,7 @@
 				}]
 		}, {
 			"name":	"tmpdir",
-			"summary":	"@todo add summary",
+			"summary":	"Tmp Directory",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -387,7 +387,7 @@
 				}]
 		}, {
 			"name":	"shell",
-			"summary":	"@todo add summary",
+			"summary":	"Shell",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -401,7 +401,7 @@
 				}]
 		}, {
 			"name":	"calendar",
-			"summary":	"@todo add summary",
+			"summary":	"Calendar",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -415,7 +415,7 @@
 				}]
 		}, {
 			"name":	"priority",
-			"summary":	"@todo add summary",
+			"summary":	"Priority",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -429,7 +429,7 @@
 				}]
 		}, {
 			"name":	"processors",
-			"summary":	"@todo add summary",
+			"summary":	"Processors",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -443,7 +443,7 @@
 				}]
 		}, {
 			"name":	"prolog",
-			"summary":	"@todo add summary",
+			"summary":	"Prolog",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -457,7 +457,7 @@
 				}]
 		}, {
 			"name":	"epilog",
-			"summary":	"@todo add summary",
+			"summary":	"Epilog",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -471,7 +471,7 @@
 				}]
 		}, {
 			"name":	"shell_start_mode",
-			"summary":	"@todo add summary",
+			"summary":	"Shell Start Mode",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -485,7 +485,7 @@
 				}]
 		}, {
 			"name":	"starter_method",
-			"summary":	"@todo add summary",
+			"summary":	"Starter Method",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -499,7 +499,7 @@
 				}]
 		}, {
 			"name":	"suspend_method",
-			"summary":	"@todo add summary",
+			"summary":	"Suspend Method",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -513,7 +513,7 @@
 				}]
 		}, {
 			"name":	"resume_method",
-			"summary":	"@todo add summary",
+			"summary":	"Resume Method",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -527,7 +527,7 @@
 				}]
 		}, {
 			"name":	"terminate_method",
-			"summary":	"@todo add summary",
+			"summary":	"Terminate Method",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -541,7 +541,7 @@
 				}]
 		}, {
 			"name":	"initial_state",
-			"summary":	"@todo add summary",
+			"summary":	"Initial State",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -555,7 +555,7 @@
 				}]
 		}, {
 			"name":	"pe_list",
-			"summary":	"@todo add summary",
+			"summary":	"PE List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -569,7 +569,7 @@
 				}]
 		}, {
 			"name":	"ckpt_list",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -583,7 +583,7 @@
 				}]
 		}, {
 			"name":	"owner_list",
-			"summary":	"@todo add summary",
+			"summary":	"Owner List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -597,7 +597,7 @@
 				}]
 		}, {
 			"name":	"acl",
-			"summary":	"@todo add summary",
+			"summary":	"Access List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -611,7 +611,7 @@
 				}]
 		}, {
 			"name":	"xacl",
-			"summary":	"@todo add summary",
+			"summary":	"X Access List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -625,7 +625,7 @@
 				}]
 		}, {
 			"name":	"projects",
-			"summary":	"@todo add summary",
+			"summary":	"Projects",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -639,7 +639,7 @@
 				}]
 		}, {
 			"name":	"xprojects",
-			"summary":	"@todo add summary",
+			"summary":	"X Projects",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -653,7 +653,7 @@
 				}]
 		}, {
 			"name":	"load_thresholds",
-			"summary":	"@todo add summary",
+			"summary":	"Load Thresholds",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -667,7 +667,7 @@
 				}]
 		}, {
 			"name":	"suspend_thresholds",
-			"summary":	"@todo add summary",
+			"summary":	"Suspend Thresholds",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -681,7 +681,7 @@
 				}]
 		}, {
 			"name":	"consumable_config_list",
-			"summary":	"@todo add summary",
+			"summary":	"Consumable Config List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -695,7 +695,7 @@
 				}]
 		}, {
 			"name":	"subordinate_list",
-			"summary":	"@todo add summary",
+			"summary":	"Subordinate List",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -709,7 +709,7 @@
 				}]
 		}, {
 			"name":	"qtype",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Type",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -723,7 +723,7 @@
 				}]
 		}, {
 			"name":	"tag",
-			"summary":	"@todo add summary",
+			"summary":	"Tag",
 			"description":	[{
 					"line":	"@todo add description"
 				}],

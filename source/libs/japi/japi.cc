@@ -1542,7 +1542,7 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
       DRETURN(drmaa_errno);
    }
 
-   /* add job arry to library session data */
+   /* add job array to library session data */
    drmaa_errno = japi_add_job(jobid, start, end, incr, true, diag);
 
    JAPI_UNLOCK_JOB_LIST();    

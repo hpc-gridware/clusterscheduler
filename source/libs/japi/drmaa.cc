@@ -2646,7 +2646,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       if (num_args != 0) { 
          sge_parse_args(value, args);
          opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_native, &alp,
-                                                 args, environ);
+                                                (const char **)args, environ);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2770,7 +2770,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       /* No need to free job_cat since it points to a string in an element
        * in jt->strings. */
       char *job_cat = nullptr;
-      char **args = nullptr;
+      const char **args = nullptr;
       lListElem *ep = nullptr;
       
       DPRINTF("Processing job category\n");
@@ -2806,11 +2806,10 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
 
-      
-      /* We need to document a standard practice for naming job categories so
+      /* We need to document a standard practice for naming job categories, so
        * they don't conflict with command names.  I think something like
        * <cat_name>.cat would work fine. */
-      args = sge_get_qtask_args(job_cat, &alp);
+      args = (const char **)sge_get_qtask_args(job_cat, &alp);
       
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
@@ -2831,7 +2830,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_job_cat, &alp,
                                                 args, environ);
          /* free the args string array */
-         sge_strafree(&args);
+         char **argsf = (char **)args;
+         sge_strafree(&argsf);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2935,6 +2935,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
    }
    lFreeList(&alp);
+   job_set_command_line(jt, "drmaa");
 
    *jtp = jt;
    lFreeList(&opts_all);
