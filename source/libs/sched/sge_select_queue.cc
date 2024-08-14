@@ -3148,8 +3148,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          DRETURN(result);
       }
    } else {
-      if (a->pi)
-         a->pi->seq_global++;
+      SCHED_PROF_INC(a->pi, seq_global);
       result = sequential_global_time(&tt_global, a, &global_violations);
       if (result != DISPATCH_OK && result != DISPATCH_MISSING_ATTR) {
          DRETURN(result);
@@ -3162,7 +3161,6 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       const char *eh_name;
       const char *qname, *cqname;
       u_long64 tt_rqs = 0;
-      bool is_global;
       const lListElem *hep;
 
       qname = lGetString(qep, QU_full_name);
@@ -3192,6 +3190,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       }
 
       if (!ar_ep) {
+         bool is_global;
          /* resource quota matching */
          if ((result = rqs_by_slots(a, cqname, eh_name, &tt_rqs, &is_global,
                   &rue_string, &limit_name, &rule_name, got_solution?tt_best:U_LONG64_MAX)) != DISPATCH_OK) {
@@ -3212,10 +3211,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 
       /* static cqueue matching */
       if (!lGetElemStr(unclear_cqueue_list, CTI_name, cqname)) {
-
-         if (a->pi) {
-            a->pi->seq_cqstat++;
-         }
+         SCHED_PROF_INC(a->pi, seq_cqstat);
          if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
             lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
             best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
@@ -3233,9 +3229,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          continue;
       }
       if (!lGetElemStr(unclear_host_list, CTI_name, eh_name)) {
-         if (a->pi) {
-            a->pi->seq_hstat++;
-         }
+         SCHED_PROF_INC(a->pi, seq_hstat);
          if (qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list)) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
                            a->job_id, SCHEDD_INFO_NOTINHARDQUEUELST_S, eh_name);
@@ -3263,10 +3257,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       }
 
       /* static queue matching */
-      if (a->pi) {
-         a->pi->seq_qstat++;
-      }
-
+      SCHED_PROF_INC(a->pi, seq_qstat);
       if (sge_queue_match_static(a, qep) != DISPATCH_OK) {
          if (skip_queue_list)
             lAddElemStr(&skip_queue_list, CTI_name, qname, CTI_Type);
@@ -3334,8 +3325,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          queue_violations = global_violations;
 
          /* dynamic host matching */
-         if (a->pi)
-            a->pi->seq_hdyn++;
+         SCHED_PROF_INC(a->pi, seq_hdyn);
          result = sequential_host_time(&tt_host, a, &queue_violations, hep);
          if (result != DISPATCH_OK && result != DISPATCH_MISSING_ATTR) {
             if (skip_host_list)
@@ -3353,8 +3343,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          }
 
          /* dynamic queue matching */
-         if (a->pi)
-            a->pi->seq_qdyn++;
+         SCHED_PROF_INC(a->pi, seq_qdyn);
          result = sequential_queue_time(&tt_queue, a, &queue_violations, qep);
          if (result != DISPATCH_OK) {
             DPRINTF("queue %s returned %d\n", qname, result);
@@ -3691,8 +3680,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
    u_long32 ar_id = lGetUlong(a->job, JB_ar);
    if (ar_id == 0) {
-      if (a->pi)
-         a->pi->par_global++;
+      SCHED_PROF_INC(a->pi, par_global);
       parallel_global_slots(a, &gslots, &gslots_qend);
    }
 
@@ -3738,8 +3726,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          }
 
          if (!lGetElemStr(unclear_cqueue_list, CTI_name, cqname)) {
-            if (a->pi) // @todo (CS-454) make one line macros for gathering these statistics
-               a->pi->par_cqstat++;
+            SCHED_PROF_INC(a->pi, par_cqstat);
             if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
                lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
                /* tag QI as unsuited */
@@ -4189,8 +4176,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
 
    clear_resource_tags(hard_requests, HOST_TAG);
 
-   if (a->pi)
-      a->pi->par_hstat++;
+   SCHED_PROF_INC(a->pi, par_hstat);
 
    if (!(qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list) &&
         qref_list_eh_rejected(job_get_master_hard_queue_list(a->job), eh_name, a->hgrp_list)) &&
@@ -4205,8 +4191,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
          }
       }
 
-      if (a->pi)
-         a->pi->par_hdyn++;
+      SCHED_PROF_INC(a->pi, par_hdyn);
 
       result = parallel_rc_slots_by_time(a, hard_requests, &hslots, &hslots_qend,
             config_attr, actual_attr, load_list, false, nullptr,
@@ -4959,8 +4944,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
 
    DENTER(TOP_LAYER);
 
-   if (a->pi)
-      a->pi->par_qstat++;
+   SCHED_PROF_INC(a->pi, par_qstat);
 
    if (sge_queue_match_static(a, qep) == DISPATCH_OK) {
       const lListElem *gdil;
@@ -5016,8 +5000,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
             || (((a->pi)?a->pi->par_rqs++:0), result = parallel_rqs_slots_by_time(a, &lslots, &lslots_qend, qep)) == DISPATCH_OK) {
             DPRINTF("verifing normal queue\n");
 
-            if (a->pi)
-               a->pi->par_qdyn++;
+            SCHED_PROF_INC(a->pi, par_qdyn);
 
             result = parallel_rc_slots_by_time(a, hard_requests, &qslots, &qslots_qend,
                   config_attr, actual_attr, nullptr, true, qep,

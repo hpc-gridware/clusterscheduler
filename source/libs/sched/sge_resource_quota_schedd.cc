@@ -1121,8 +1121,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
       dstring limit_name = DSTRING_INIT;
       lListElem *exec_host = host_list_locate(a->host_list, host);
 
-      if (a->pi)
-         a->pi->par_rqs++;
+      SCHED_PROF_INC(a->pi, par_rqs);
 
       for_each_ep(rqs, a->rqs_list) {
          lListElem *rule = nullptr;
@@ -1439,8 +1438,8 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
    *is_global = false;
 
-   if (a->pi && lGetNumberOfElem(a->rqs_list) > 0) {
-      a->pi->seq_rqs++;
+   if (lGetNumberOfElem(a->rqs_list) > 0) {
+      SCHED_PROF_INC(a->pi, seq_rqs);
    }
 
    for_each_ep(rqs, a->rqs_list) {

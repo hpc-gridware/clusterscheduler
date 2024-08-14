@@ -4,34 +4,42 @@ High level overview.
 
 #### Terminology
 
-`resource diagram`: A datastructure storing resource consumption over time. It contains resource (un)availability due to
+resource diagram
+: A datastructure storing resource consumption over time. It contains resource (un)availability due to
 running jobs consuming resources, resources being reserved by advance reservations and resource reservations, as well as
 queue calendars blocking resources.
 
-`category cache`: A datastructure caching per category information, e.g. skip lists containing hosts or queue instances
+category cache
+: A datastructure caching per category information, e.g. skip lists containing hosts or queue instances
 which are not suited for a given category.
 
 #### Environment variables influencing scheduler thread
 
-`SGE_PRINT_RESOURCE_UTILIZATION`: When set then at the beginning of every scheduling run
+SGE_PRINT_RESOURCE_UTILIZATION
+: When set then at the beginning of every scheduling run
 ([Function `dispatch_jobs()`](#dispatch-jobs)) the resource diagram is printed with `DPRINTF` calls. 
 
 #### Tagging of queues and resource requests
 
 QU_tag
 
-0 - unsuited for the job
+In Scheduler:
 
-1 - suited for the job and can provide this number of slots
+|   Value | Meaning              |
+|--------:|----------------------|
+|       0 | unsuited for the job |
+|    >= 1 |suited for the job and can provide this number of slots  |
+
+Also used in other places to tag queues for selection, e.g. in clients.
 
 QU_tagged4schedule
 
-0 - can be used only as slave queue
+| Value | Meaning              |
+|------:|----------------------|
+|     0 | can be used only as slave queue |
+|     1 |can be used as slave queue for now assignment, however as master for reservation  |
+|     2 |can be used as master for now and reservation |
 
-1 - can be used as slave queue for now assignment,
-    however as master for reservation
-
-2 - can be used as master for now and reservation
 
 #### Scheduler Main
 
@@ -265,6 +273,12 @@ Function `sequential_tag_queues_suitable4job`
   * evaluate the result, if it is "the best we can achieve" then break the loop
 * cleanup
 * store scheduler messages to the category cache
+
+> @todo queue tagging could probably be optimized:
+> * in case of now scheduling it should not be necessary at all, just return the first found queue somehow
+> * in case of reservation scheduling we could also return the best result and just take it instead of re-iterating
+>   over the queue list
+
 
 #### Debit Scheduled Job
 

@@ -106,6 +106,8 @@ typedef struct {
    int seq_qdyn;
 } sched_prof_t;
 
+#define SCHED_PROF_INC(pi, attrib) if (pi != nullptr) pi->attrib++
+
 typedef struct {
    /* ------ this section determines the assignment ------------------------------- */
    u_long32    job_id;            /* job id (convenience reasons)                   */
