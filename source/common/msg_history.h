@@ -60,6 +60,7 @@
 #define MSG_HISTORY_SHOWJOB_ACCOUNT          "account"
 #define MSG_HISTORY_SHOWJOB_PRIORITY         "priority"
 #define MSG_HISTORY_SHOWJOB_QSUBTIME         "qsub_time"
+#define MSG_HISTORY_SHOWJOB_SUBMITCMDLINE    "submit_cmd_line"
 #define MSG_HISTORY_SHOWJOB_STARTTIME        "start_time"
 #define MSG_HISTORY_SHOWJOB_ENDTIME          "end_time"
 #define MSG_HISTORY_SHOWJOB_NULL             "(nullptr)"

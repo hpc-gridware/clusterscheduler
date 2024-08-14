@@ -56,6 +56,7 @@ const char *sge_ctime64(u_long64 timestamp, dstring *dstr, bool is_xml, bool wit
 const char *sge_ctime64(u_long64 timestamp, dstring *dstr);
 const char *sge_ctime64_short(u_long64 timestamp, dstring *dstr);
 const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr);
+const char *sge_ctime64_date_time(u_long64 timestamp, dstring *dstr);
 
 const char *append_time(u_long64 i, dstring *buffer, bool is_xml);
 const char *append_time(time_t i, dstring *buffer, bool is_xml);

@@ -1013,5 +1013,19 @@
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
+		}, {
+			"name":	"submission_command_line",
+			"summary":	"Submission Command Line",
+			"description":	[{
+					"line":	"The submission command line as a string."
+               }, {
+					"line":	"Arguments which contain whitespace or wildcards are enclosed in single quotes,"
+               }, {
+					"line":	"so it should be possible to copy/paste the command line into a shell."
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
 		}]
 }

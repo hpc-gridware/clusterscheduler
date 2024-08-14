@@ -48,10 +48,10 @@ void opt_list_append_opts_from_default_files(u_long32 prog_number, const char *c
                                              lList **pcmdline, lList **answer_list, char **envp);
 
 void opt_list_append_opts_from_qsub_cmdline(u_long32 prog_number, lList **opts_cmdline, lList **answer_list,
-                                            char **argv, char **envp);
+                                            const char **argv, char **envp);
 
 void opt_list_append_opts_from_qalter_cmdline(u_long32 prog_number, lList **opts_cmdline, lList **answer_list,
-                                              char **argv, char **envp);
+                                              const char **argv, char **envp);
 
 void opt_list_append_opts_from_script(u_long32 prog_number, lList **opts_scriptfile, lList **answer_list,
                                       const lList *opts_cmdline, char **envp);

@@ -103,9 +103,6 @@ const char *append_time(u_long64 timestamp, dstring *dstr, bool is_xml) {
 *
 *  NOTES
 *     MT-NOTE: append_time() is MT safe if localtime_r() can be used
-*
-*     SHOULD BE REPLACED BY: sge_dstring_append_time()
-*
 ******************************************************************************/
 const char *append_time(time_t i, dstring *buffer, bool is_xml) {
    const char *ret;
@@ -223,30 +220,29 @@ const char *sge_ctime64_xml(u_long64 timestamp, dstring *dstr) {
    return sge_ctime64(timestamp, dstr, true, true);
 }
 
-#if 0
-/****** uti/time/sge_at_time() ************************************************
-*  NAME
-*     sge_at_time() -- ??? 
-*
-*  SYNOPSIS
-*     const char* sge_at_time(time_t i, dstring *buffer) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     time_t i - 0 or time value 
-*     dstring *buffer - buffer provided by caller
-*
-*  RESULT
-*     const char* - time string (current time if 'i' was 0) 
-*
-*  NOTES
-*     MT-NOTE: sge_at_time() is MT safe if localtime_r() can be used
-*
-*  SEE ALSO
-*     uti/time/sge_ctime() 
-******************************************************************************/
+const char *sge_ctime64_date_time(u_long64 timestamp, dstring *dstr) {
+   const char *ret;
+
+   if (timestamp == 0) {
+      timestamp = sge_get_gmt64();
+   }
+
+   const std::chrono::microseconds us{timestamp};
+   const std::chrono::seconds s = duration_cast<std::chrono::seconds>(us);
+   time_t t = (time_t)s.count();
+   struct tm tm{};
+
+   if (localtime_r(&t, &tm) == nullptr) {
+      ret = sge_strerror(errno, dstr);
+   } else {
+      ret = sge_dstring_sprintf(dstr, "%04d%02d%02d%02d%02d.%02d",
+                                1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday,
+                                tm.tm_hour, tm.tm_min, tm.tm_sec);
+   }
+
+   return ret;
+}
+
 const char *sge_at_time(time_t i, dstring *buffer) {
 #ifdef HAS_LOCALTIME_R
    struct tm tm_buffer{};
@@ -264,7 +260,6 @@ const char *sge_at_time(time_t i, dstring *buffer) {
                               tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
                               tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
-#endif
 
 /****** uti/time/duration_add_offset() ****************************************
 *  NAME

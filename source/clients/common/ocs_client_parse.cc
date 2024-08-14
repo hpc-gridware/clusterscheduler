@@ -357,7 +357,7 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
  *     void - None
  *******************************************************************************/
 void opt_list_append_opts_from_qsub_cmdline(u_long32 prog_number, lList **opts_cmdline, lList **answer_list,
-                                            char **argv, char **envp) {
+                                            const char **argv, char **envp) {
    lFreeList(answer_list);
    *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS);
 }
@@ -389,7 +389,7 @@ void opt_list_append_opts_from_qsub_cmdline(u_long32 prog_number, lList **opts_c
  *     void - None
  *******************************************************************************/
 void opt_list_append_opts_from_qalter_cmdline(u_long32 prog_number, lList **opts_cmdline, lList **answer_list,
-                                              char **argv, char **envp) {
+                                              const char **argv, char **envp) {
    lFreeList(answer_list);
    *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS | FLG_QALTER);
 }

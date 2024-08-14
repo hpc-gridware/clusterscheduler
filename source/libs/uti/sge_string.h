@@ -56,6 +56,8 @@ char *sge_strtok(const char *str, const char *delimitor);
 
 bool sge_is_pattern(const char *p);
 
+bool sge_has_whitespace(const char *s);
+
 bool sge_is_expression(const char *p);
 
 char *sge_strtok_r(const char *str, const char *delimitor,

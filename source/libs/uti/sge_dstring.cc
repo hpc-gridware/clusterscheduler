@@ -290,33 +290,6 @@ const char *sge_dstring_append_char(dstring *sb, const char a) {
    DRETURN(sb->s);
 }
 
-const char *sge_dstring_append_time(dstring *buffer, time_t time, bool as_xml) {
-   struct tm *tm;
-#ifdef HAS_LOCALTIME_R
-   struct tm tm_buffer;
-#endif
-
-   DENTER(DSTRING_LAYER);
-
-#ifdef HAS_LOCALTIME_R
-   tm = (struct tm *) localtime_r(&time, &tm_buffer);
-#else
-   tm = localtime(&i);
-#endif
-
-   if (as_xml) {
-      sge_dstring_sprintf_append(buffer, "%04d-%02d-%02dT%02d:%02d:%02d",
-                                 1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
-                                 tm->tm_hour, tm->tm_min, tm->tm_sec);
-   } else {
-      sge_dstring_sprintf_append(buffer, "%02d/%02d/%04d %02d:%02d:%02d",
-                                 tm->tm_mon + 1, tm->tm_mday, 1900 + tm->tm_year,
-                                 tm->tm_hour, tm->tm_min, tm->tm_sec);
-   }
-
-   DRETURN(buffer->s);
-}
-
 const char *sge_dstring_append_mailopt(dstring *sb, u_long32 mailopt) {
    DENTER(DSTRING_LAYER);
 
@@ -818,6 +791,38 @@ void sge_dstring_strip_white_space_at_eol(dstring *string) {
       }
    }
    DRETURN_VOID;
+}
+
+const char *
+sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[], bool quote_whitespace, bool quote_patterns) {
+   bool first = true;
+   for (int i = 0; i < argc; i++) {
+      if (first) {
+         first = false;
+      } else {
+         sge_dstring_append_char(dstr, ' ');
+      }
+      bool do_quote = false;
+      if (quote_whitespace) {
+         if (sge_has_whitespace(argv[i])) {
+            do_quote = true;
+         }
+      }
+      if (quote_patterns) {
+         if (sge_is_pattern(argv[i])) {
+            do_quote = true;
+         }
+      }
+      if (do_quote) {
+         sge_dstring_append_char(dstr, '\'');
+      }
+      sge_dstring_append(dstr, argv[i]);
+      if (do_quote) {
+         sge_dstring_append_char(dstr, '\'');
+      }
+   }
+
+   return sge_dstring_get_string(dstr);
 }
 
 #if 0 /* EB: DEBUG: */

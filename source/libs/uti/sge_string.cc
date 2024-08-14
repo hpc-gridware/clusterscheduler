@@ -894,6 +894,16 @@ bool sge_is_pattern(const char *s) {
    return false;
 }
 
+bool sge_has_whitespace(const char *s) {
+   char c;
+   while ((c = *s++)) {
+      if (isspace(c)) {
+         return true;
+      }
+   }
+   return false;
+}
+
 /****** uti/string/sge_is_expression() *******************************************
 *  NAME
 *     sge_is_expression() -- Test if string contains expressions & wildcard pattern

@@ -67,9 +67,9 @@
 #include "msg_common.h"
 
 static int var_list_parse_from_environment(lList **lpp, char **envp);
-static int sge_parse_checkpoint_interval(char *time_str); 
-static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
-                          lList **alp);
+static int sge_parse_checkpoint_interval(const char *time_str);
+static int set_yn_option (lList **opts, u_long32 opt, const char *arg, const char *value,
+                          lList **alpp);
 
 
 
@@ -107,13 +107,13 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
 **    MT-NOTE: cull_parse_cmdline() is MT safe
 */
 lList *cull_parse_cmdline(
-u_long32 prog_number,
-char **arg_list,
-char **envp,
-lList **pcmdline,
-u_long32 flags 
+        u_long32 prog_number,
+        const char **arg_list,
+        char **envp,
+        lList **pcmdline,
+        u_long32 flags
 ) {
-   char **sp;
+   const char **sp;
    lList *answer = nullptr;
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;
@@ -730,7 +730,7 @@ u_long32 flags
 
       if (!strcmp("-h", *sp)) {
             int hold;
-            char *cmd_switch;
+            const char *cmd_switch;
             const char *cmd_arg = "";
          is_hold_option = true;
          cmd_switch = *sp;
@@ -2038,7 +2038,7 @@ DTRACE;
 
 /***************************************************************************/
 static int sge_parse_checkpoint_interval(
-char *time_str 
+        const char *time_str
 ) {
    u_long32 seconds;
 
@@ -2143,7 +2143,7 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
 *  NOTES
 *     MT-NOTES: set_yn_option() is MT safe
 *******************************************************************************/
-static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
+static int set_yn_option (lList **opts, u_long32 opt, const char *arg, const char *value,
                           lList **alpp)
 {
    lListElem *ep_opt = nullptr;

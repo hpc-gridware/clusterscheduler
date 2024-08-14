@@ -95,6 +95,23 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("submission_time:            %s\n", sge_ctime64(ultime, &dstr));
       }
 
+   if (lGetPosViaElem(job, JB_submission_command_line, SGE_NO_ABORT) >= 0) {
+      const char *str = lGetString(job, JB_submission_command_line);
+      if (str != nullptr) {
+         printf("submit_cmd_line:            %s\n", str);
+
+         // generate and print the currently effective command line
+         char *copied_str = strdup(str);
+         const char *command = strtok(copied_str, " ");
+         if (command != nullptr) {
+            dstring dstr_cmd = DSTRING_INIT;
+            printf("effective_submit_cmd_line:  %s\n", job_get_effective_command_line(job, &dstr_cmd, command));
+            sge_dstring_free(&dstr_cmd);
+         }
+         sge_free(&copied_str);
+      }
+   }
+
 #if 0
    // @todo print for all running ja_tasks
    if (lGetPosViaElem(ja_task, JAT_start_time, SGE_NO_ABORT) >= 0)

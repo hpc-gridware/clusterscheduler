@@ -1403,7 +1403,8 @@ static void showjob(sge_rusage_type *dusage) {
 
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
-   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QSUBTIME,    sge_ctime64(dusage->submission_time, pdstr_buffer));
+   printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QSUBTIME, sge_ctime64(dusage->submission_time, pdstr_buffer));
+   printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_SUBMITCMDLINE, dusage->submission_command_line);
 
    if (dusage->start_time)
       printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime64(dusage->start_time, pdstr_buffer));
@@ -2234,6 +2235,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
 
       d->priority = read_json(document, "priority", (u_long32)0);
       d->submission_time = read_json(document, "submission_time", (u_long64)0);
+      d->submission_command_line = read_json(document, "submit_cmd_line", nullptr);
       //d->ar_submission_time = read_json(document, "ar_submission_time", (u_long64)0);
 
       //d->category = read_json(document, "category", NONE_STR);

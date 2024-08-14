@@ -501,3 +501,12 @@ void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
 void job_set_soft_queue_list(lListElem *job, lList *queue_list);
 void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
 void job_set_master_hard_queue_list(lListElem *job, lList *queue_list);
+
+const char *
+job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client);
+
+void
+job_set_command_line(lListElem *job, const char *client);
+
+void
+job_set_command_line(lListElem *job, int argc, const char *argv[]);

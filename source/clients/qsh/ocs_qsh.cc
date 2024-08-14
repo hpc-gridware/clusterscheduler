@@ -1328,7 +1328,7 @@ void block_notification_signals()
    DRETURN_VOID;
 }
 
-int main(int argc, char **argv) 
+int main(int argc, const char **argv)
 {
    u_long32 my_who = QSH; 
    lList *opts_cmdline = nullptr;
@@ -1666,6 +1666,8 @@ int main(int argc, char **argv)
       sge_prof_cleanup();
       sge_exit(1);
    }
+
+   job_set_command_line(job, argc, argv);
 
    if (is_qlogin) {
       /* get configuration from qmaster */

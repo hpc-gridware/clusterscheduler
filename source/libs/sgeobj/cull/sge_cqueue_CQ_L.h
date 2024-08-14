@@ -28,164 +28,164 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Cluster Queue
 *
 * @todo add description
 *
-*    SGE_STRING(CQ_name) - @todo add summary
+*    SGE_STRING(CQ_name) - Name
 *    @todo add description
 *
-*    SGE_LIST(CQ_hostlist) - @todo add summary
+*    SGE_LIST(CQ_hostlist) - Host List
 *    @todo add description
 *
-*    SGE_LIST(CQ_qinstances) - @todo add summary
+*    SGE_LIST(CQ_qinstances) - Queue Instances
 *    @todo add description
 *
-*    SGE_LIST(CQ_seq_no) - @todo add summary
+*    SGE_LIST(CQ_seq_no) - Sequence Number
 *    @todo add description
 *
-*    SGE_LIST(CQ_nsuspend) - @todo add summary
+*    SGE_LIST(CQ_nsuspend) - NSuspend
 *    @todo add description
 *
-*    SGE_LIST(CQ_job_slots) - @todo add summary
+*    SGE_LIST(CQ_job_slots) - Job Slots
 *    @todo add description
 *
-*    SGE_LIST(CQ_rerun) - @todo add summary
+*    SGE_LIST(CQ_rerun) - Rerun
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_fsize) - @todo add summary
+*    SGE_LIST(CQ_s_fsize) - Soft Filesize Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_fsize) - @todo add summary
+*    SGE_LIST(CQ_h_fsize) - Hard Filesize Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_data) - @todo add summary
+*    SGE_LIST(CQ_s_data) - Soft Data Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_data) - @todo add summary
+*    SGE_LIST(CQ_h_data) - Hard Data Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_stack) - @todo add summary
+*    SGE_LIST(CQ_s_stack) - Soft Stack Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_stack) - @todo add summary
+*    SGE_LIST(CQ_h_stack) - Hard Stack Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_core) - @todo add summary
+*    SGE_LIST(CQ_s_core) - Soft Core Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_core) - @todo add summary
+*    SGE_LIST(CQ_h_core) - Hard Core Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_rss) - @todo add summary
+*    SGE_LIST(CQ_s_rss) - Soft RSS Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_rss) - @todo add summary
+*    SGE_LIST(CQ_h_rss) - Hard RSS Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_vmem) - @todo add summary
+*    SGE_LIST(CQ_s_vmem) - Soft VMEM Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_vmem) - @todo add summary
+*    SGE_LIST(CQ_h_vmem) - Hard VMEM Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_rt) - @todo add summary
+*    SGE_LIST(CQ_s_rt) - Soft Runtime Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_rt) - @todo add summary
+*    SGE_LIST(CQ_h_rt) - Hard Runtime Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_s_cpu) - @todo add summary
+*    SGE_LIST(CQ_s_cpu) - Soft CPU Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_h_cpu) - @todo add summary
+*    SGE_LIST(CQ_h_cpu) - Hard CPU Limit
 *    @todo add description
 *
-*    SGE_LIST(CQ_suspend_interval) - @todo add summary
+*    SGE_LIST(CQ_suspend_interval) - Suspend Interval
 *    @todo add description
 *
-*    SGE_LIST(CQ_min_cpu_interval) - @todo add summary
+*    SGE_LIST(CQ_min_cpu_interval) - Min CPU Interval
 *    @todo add description
 *
-*    SGE_LIST(CQ_notify) - @todo add summary
+*    SGE_LIST(CQ_notify) - Notify
 *    @todo add description
 *
-*    SGE_LIST(CQ_tmpdir) - @todo add summary
+*    SGE_LIST(CQ_tmpdir) - Tmp Directory
 *    @todo add description
 *
-*    SGE_LIST(CQ_shell) - @todo add summary
+*    SGE_LIST(CQ_shell) - Shell
 *    @todo add description
 *
-*    SGE_LIST(CQ_calendar) - @todo add summary
+*    SGE_LIST(CQ_calendar) - Calendar
 *    @todo add description
 *
-*    SGE_LIST(CQ_priority) - @todo add summary
+*    SGE_LIST(CQ_priority) - Priority
 *    @todo add description
 *
-*    SGE_LIST(CQ_processors) - @todo add summary
+*    SGE_LIST(CQ_processors) - Processors
 *    @todo add description
 *
-*    SGE_LIST(CQ_prolog) - @todo add summary
+*    SGE_LIST(CQ_prolog) - Prolog
 *    @todo add description
 *
-*    SGE_LIST(CQ_epilog) - @todo add summary
+*    SGE_LIST(CQ_epilog) - Epilog
 *    @todo add description
 *
-*    SGE_LIST(CQ_shell_start_mode) - @todo add summary
+*    SGE_LIST(CQ_shell_start_mode) - Shell Start Mode
 *    @todo add description
 *
-*    SGE_LIST(CQ_starter_method) - @todo add summary
+*    SGE_LIST(CQ_starter_method) - Starter Method
 *    @todo add description
 *
-*    SGE_LIST(CQ_suspend_method) - @todo add summary
+*    SGE_LIST(CQ_suspend_method) - Suspend Method
 *    @todo add description
 *
-*    SGE_LIST(CQ_resume_method) - @todo add summary
+*    SGE_LIST(CQ_resume_method) - Resume Method
 *    @todo add description
 *
-*    SGE_LIST(CQ_terminate_method) - @todo add summary
+*    SGE_LIST(CQ_terminate_method) - Terminate Method
 *    @todo add description
 *
-*    SGE_LIST(CQ_initial_state) - @todo add summary
+*    SGE_LIST(CQ_initial_state) - Initial State
 *    @todo add description
 *
-*    SGE_LIST(CQ_pe_list) - @todo add summary
+*    SGE_LIST(CQ_pe_list) - PE List
 *    @todo add description
 *
-*    SGE_LIST(CQ_ckpt_list) - @todo add summary
+*    SGE_LIST(CQ_ckpt_list) - Checkpoint List
 *    @todo add description
 *
-*    SGE_LIST(CQ_owner_list) - @todo add summary
+*    SGE_LIST(CQ_owner_list) - Owner List
 *    @todo add description
 *
-*    SGE_LIST(CQ_acl) - @todo add summary
+*    SGE_LIST(CQ_acl) - Access List
 *    @todo add description
 *
-*    SGE_LIST(CQ_xacl) - @todo add summary
+*    SGE_LIST(CQ_xacl) - X Access List
 *    @todo add description
 *
-*    SGE_LIST(CQ_projects) - @todo add summary
+*    SGE_LIST(CQ_projects) - Projects
 *    @todo add description
 *
-*    SGE_LIST(CQ_xprojects) - @todo add summary
+*    SGE_LIST(CQ_xprojects) - X Projects
 *    @todo add description
 *
-*    SGE_LIST(CQ_load_thresholds) - @todo add summary
+*    SGE_LIST(CQ_load_thresholds) - Load Thresholds
 *    @todo add description
 *
-*    SGE_LIST(CQ_suspend_thresholds) - @todo add summary
+*    SGE_LIST(CQ_suspend_thresholds) - Suspend Thresholds
 *    @todo add description
 *
-*    SGE_LIST(CQ_consumable_config_list) - @todo add summary
+*    SGE_LIST(CQ_consumable_config_list) - Consumable Config List
 *    @todo add description
 *
-*    SGE_LIST(CQ_subordinate_list) - @todo add summary
+*    SGE_LIST(CQ_subordinate_list) - Subordinate List
 *    @todo add description
 *
-*    SGE_LIST(CQ_qtype) - @todo add summary
+*    SGE_LIST(CQ_qtype) - Queue Type
 *    @todo add description
 *
-*    SGE_ULONG(CQ_tag) - @todo add summary
+*    SGE_ULONG(CQ_tag) - Tag
 *    @todo add description
 *
 */
