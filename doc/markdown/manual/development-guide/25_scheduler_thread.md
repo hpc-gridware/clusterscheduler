@@ -34,11 +34,11 @@ Also used in other places to tag queues for selection, e.g. in clients.
 
 QU_tagged4schedule
 
-| Value | Meaning              |
-|------:|----------------------|
-|     0 | can be used only as slave queue |
-|     1 |can be used as slave queue for now assignment, however as master for reservation  |
-|     2 |can be used as master for now and reservation |
+| Value | Meaning                                                                          |
+|------:|----------------------------------------------------------------------------------|
+|     0 | can be used only as slave queue                                                  |
+|     1 | can be used as slave queue for now assignment, however as master for reservation |
+|     2 | can be used as slave queue and as master queue for now and reservation           |
 
 
 #### Scheduler Main
@@ -184,7 +184,7 @@ Returns (if possible) an assignment for a particular PE with a fixed slot count 
 
 Function `parallel_tag_queues_suitable4job()`.
 
-* untag all queue instances (value 0 = unsuited)
+* untag all queue instances (value 0 = 0 slots available = unsuited)
 * check global resources: `parallel_global_slots()`
 * first queue filtering step
   * loop over the queue list
@@ -210,6 +210,8 @@ Function `parallel_tag_hosts_queues()`.
 
 
 #### Parallel Host Slots
+
+Function `parallel_host_slots()`.
 
 Determines how many slots are available for a job at a given time.
 Tags available queue instances.

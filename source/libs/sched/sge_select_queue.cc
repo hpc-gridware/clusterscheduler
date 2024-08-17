@@ -268,10 +268,11 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
       dst->load_adjustments = src->load_adjustments;
    }
 
-   if (!move_gdil)
-      dst->gdil = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
-   else
+   if (move_gdil) {
       src->gdil = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
+   } else {
+      dst->gdil = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
+   }
 }
 
 void assignment_release(sge_assignment_t *a)
@@ -334,6 +335,35 @@ is_not_better(sge_assignment_t *a, u_long32 viola_best, u_long64 tt_best, u_long
       return true;
    return false;
 }
+
+#if 0
+static bool
+is_acceptable_result(sge_assignment_t *a) {
+   bool ret = false;
+
+   const lList *pe_range = lGetList(a->job, JB_pe_range);
+   int last = range_list_get_last_id(pe_range, nullptr);
+   if (a->slots == last) {
+      // we have the maximum number of slots we requested
+
+      if (!a->is_soft || a->soft_violations == 0) {
+         // we either have no soft request or all of them could be matched
+
+         // we have a perfectly matching pe
+         ret = true;
+      }
+   }
+
+   /* @todo (CS-452) need a way to break out of the loop, e.g. if
+    * + there are no soft requests
+    * + we have 0 soft violations (or reached a configurable acceptable number)
+    * + we request a fixed number of PE slots and we got an assignment
+    * + we request a range of PE slots and already got the maximum
+    */
+
+   return ret;
+}
+#endif
 
 /****** scheduler/sge_select_parallel_environment() ****************************
 *  NAME
@@ -467,6 +497,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
       u_long32 ar_id = lGetUlong(best->job, JB_ar);
 
       if (ar_id != 0) {
+         // we have an advance reservation
          result = match_static_advance_reservation(best);
          if (result != DISPATCH_OK) {
             DRETURN(result);
@@ -494,8 +525,8 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
                     best->pe_name, best->soft_violations, available_slots);
          }
       } else {
+         // we have no advance reservation
          for_each_rw(pe, pe_list) {
-
             if (!pe_is_matching(pe, pe_request)) {
                continue;
             }
@@ -504,6 +535,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             matched_pe_count++;
 
             if (best->gdil == nullptr) {
+               // first PE matching the requested name
                int available_slots = 0;
                best->pe = pe;
                best->pe_name = pe_name;
@@ -517,10 +549,14 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
                   continue;
                }
                DPRINTF("### first ### assignment in PE \"%s\" with %d soft violations\n", pe_name, best->soft_violations);
+               /* CS-452 shortcut
+               if (is_acceptable_result(best)) {
+                  break;
+               } */
             } else {
+               // another PE matching the requested name
                int available_slots = 0;
                sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
-
                assignment_copy(&tmp, best, false);
                tmp.pe = pe;
                tmp.pe_name = pe_name;
@@ -543,14 +579,11 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
                   DPRINTF("### better ### assignment in PE \"%s\" with %d soft violations\n",
                           pe_name, best->soft_violations);
                }
-               /* @todo (CS-452) need a way to break out of the loop, e.g. if
-                * - there are no soft requests
-                * - we have 0 soft violations (or reached a configurable acceptable number)
-                * - we request a fixed number of PE slots and we got an assignment
-                * - we request a range of PE slots and already got the maximum
-                */
-
                assignment_release(&tmp);
+               /* CS-452 shortcut
+               if (is_acceptable_result(best)) {
+                  break;
+               } */
             }
          }
       }
@@ -562,6 +595,8 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
       best_result = DISPATCH_NEVER_CAT;
    } else if (best->is_reservation && best->gdil) {
       int available_slots = 0;
+      // we searched for the earliest start time with the minimum slot count
+      // now try to maximize the slot count at the given time
       result = parallel_maximize_slots_pe(best, &available_slots);
       if (result != DISPATCH_OK) { /* ... should never happen */
          best_result = DISPATCH_NEVER_CAT;
@@ -1458,11 +1493,11 @@ match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstri
 *******************************************************************************/
 static void clear_resource_tags(lList *resources, u_long32 max_tag) {
 
-   lListElem *attr=nullptr;
-
-   for_each_rw (attr, resources){
-      if(lGetUlong(attr, CE_tagged) <= max_tag)
+   lListElem *attr;
+   for_each_rw (attr, resources) {
+      if (lGetUlong(attr, CE_tagged) <= max_tag) {
          lSetUlong(attr, CE_tagged, NO_TAG);
+      }
    }
 }
 
@@ -1762,10 +1797,8 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
                         const lList *load_attr, const lList *config_attr,
                         const lList *actual_attr, u_long32 layer, double lc_factor, u_long32 tag)
 {
-   u_long32 job_id;
    const char *queue_name = nullptr;
-   dstring reason;
-   char reason_buf[1024 + 1];
+   DSTRING_STATIC(reason, 1024 + 1);
    unsigned int soft_violation = violation;
    lList *soft_requests = nullptr;
    lListElem *attr;
@@ -1773,13 +1806,11 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
-
    soft_requests = job_get_soft_resource_listRW(a->job);
    clear_resource_tags(soft_requests, tag);
 
-   job_id = a->job_id;
-   if (queue) {
+   u_long32 job_id = a->job_id;
+   if (queue != nullptr) {
       queue_name = lGetString(queue, QU_full_name);
    }
 
@@ -1807,7 +1838,7 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
    }
 
    if (queue) {
-      DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation, reason_buf);
+      DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation, sge_dstring_get_string(&reason));
 
       /*
        * check whether queue fulfills soft queue request of the job (-q)
@@ -3430,7 +3461,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          }
          best_queue_result = find_best_result(result, best_queue_result);
       }
-   }
+   } // end loop over all qinstances
 
    lFreeList(&unclear_cqueue_list);
    lFreeList(&unclear_host_list);
@@ -3592,6 +3623,7 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
 {
    int violations;
 
+   // @todo CS-483 only compute soft violations for a host if EH_soft_violations == -1
    violations = compute_soft_violations(a, nullptr, 0,
          lGetList(a->gep, EH_load_list),
          lGetList(a->gep, EH_consumable_config_list),
@@ -3745,7 +3777,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          a->soft_violations = 0;
          for_each_rw (qep, a->queue_list) {
             lSetUlong(qep, QU_soft_violation, 0);
-            // @todo (CS-455) QU_tag is 0 as we reset-it in the beginning of this function, no need to set it to 0 here and in other places
             if (lGetUlong(qep, QU_tag) == 0 || !(hep = host_list_locate(a->host_list, lGetHost(qep, QU_qhostname)))) {
                continue;
             }
@@ -3825,13 +3856,11 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              */
             // @todo (CS-456) cheaper check: lGetUlong(EH_seq_no) == U_LONG32_MAX, we could possibly break out of the host loop
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
-               const void *iter = nullptr;
-
-               parallel_tag_hosts_queues(a, hep, &hslots, &hslots_qend,
-                   &suited_as_master_host, use_category, &unclear_cqueue_list);
+               parallel_tag_hosts_queues(a, hep, &hslots, &hslots_qend, &suited_as_master_host, use_category,
+                                         &unclear_cqueue_list);
 
                if (hslots >= minslots) {
-                  /* Now RQ limit debitation can be performed for each queue instance based on QU_tag.
+                  /* Now RQS limit debitation can be performed for each queue instance based on QU_tag.
                      While considering allocation_rule and master queue demand we try to get as
                      much from each queue as needed, but not more than 'maxslots'. When we are through
                      all queue instances and got not even 'minslots' the slots must be undebited. */
@@ -3843,11 +3872,12 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      maxslots = allocation_rule;
                   } else if (allocation_rule == ALLOC_RULE_FILLUP) {
                      maxslots = MIN(a->slots - accu_host_slots, hslots);
-                  } else {/* ALLOC_RULE_ROUNDROBIN */
+                  } else { // ALLOC_RULE_ROUNDROBIN
                      maxslots = 1;
                   }
 
                   /* debit on RQS limits */
+                  const void *iter = nullptr;
                   for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
                        qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
                      const char *qname = lGetString(qep, QU_full_name);
@@ -3869,14 +3899,24 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                               we need at least one slot on the masterq, thus we reduce by one slot
                               if we run out of slots
                              */
+                           /* @todo: understand the comment above:
+                            * - this qinstance is not suited as master queue
+                            * - but there might be another queue on the host which is suited as mster queue?
+                            * - therefore we reduce the amount of slots we can use in this queue for slave tasks by 1?
+                            *    - even if there is no other qinstance which could be used as master queue?
+                            *    - this might prevent using the queue only for slave tasks as we now have less slots?
+                            */
                            if (accu_host_slots + rqs_hslots + slots == a->slots) {
                               slots--;
                            }
                         } else {
-                           /* care for master tasks assignments of -masterq jobs */
+                           // this qinstance is suited as master queue
                            if (have_masterq_request && have_hard_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
-                                 we need to allocate only one slot for the master task */
+                               * we need to allocate only one slot for the master task
+                               */
+                              // @todo CS-400: if the masterq request is not contained in the slave queue request
+                              // @todo CS-400: fetch the hard_queue_list only once
                               if (qref_list_cq_rejected(job_get_hard_queue_list(a->job),
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots = MIN(slots, 1);
@@ -3887,14 +3927,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
                      slots_qend = 0;
                      if (ar_id == 0 && !a->is_advance_reservation) {
-                        DPRINTF("trying to debit %d slots in queue " SFQ "\n", slots, qname);
+                        DPRINTF("RQS: trying to debit %d slots in queue " SFQ "\n", slots, qname);
                         parallel_check_and_debit_rqs_slots(a, eh_name, lGetString(qep, QU_qname),
                               &slots, &slots_qend, &rule_name, &rue_name, &limit_name);
-                        DPRINTF("could debiting %d slots in queue " SFQ "\n", slots, qname);
+                        DPRINTF("RQS: could debiting %d slots in queue " SFQ "\n", slots, qname);
                      }
 
                      if (slots > 0) {
-
                         /* add gdil element for this queue */
                         if (!(gdil_ep=lGetElemStrRW(a->gdil, JG_qname, qname))) {
                            gdil_ep = lAddElemStr(&(a->gdil), JG_qname, qname, JG_Type);
@@ -3926,7 +3965,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      DPRINTF("reverting debitation since " SFQ " gets us only %d slots while min. %d are needed\n",
                            eh_name, rqs_hslots, minslots);
 
-                     /* must revert all RQS debitations */
+                     /* must revert all RQS debitations, rollback GDIL and soft violations */
                      for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
                           qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
                         slots = lGetUlong(qep, QU_tag);
@@ -3948,11 +3987,12 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      }
                      hslots = 0;
                   } else {
-                     if (got_master_queue)
+                     if (got_master_queue) {
                         have_master_host = true;
+                     }
                      accu_host_slots += rqs_hslots;
                   }
-               }
+               } // end: we have enough slots *now* on this host
 
                if (hslots_qend >= minslots && a->care_reservation && !a->is_reservation) {
                   bool got_master_queue_qend = have_master_host_qend;
@@ -3968,6 +4008,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                   }
 
                   /* debit on RQS limits */
+                  const void *iter = nullptr;
                   for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
                        qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
 
@@ -4036,16 +4077,18 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      }
                      hslots_qend = 0;
                   } else {
-                     if (got_master_queue_qend)
+                     if (got_master_queue_qend) {
                         have_master_host_qend = true;
+                     }
                      accu_host_slots_qend += rqs_hslots;
                   }
-               }
-            }
+               } // end: we have enough slots *later* on this host
+            } // end: we have at least one qinstance on this host
 
-            /* mark host as not suitable */
-            /* at least when accu_host_slots and accu_host_slots_qend < a->slots */
-            /* and only, if modify category is set */
+            /* mark host as not suitable
+             * at least when accu_host_slots and accu_host_slots_qend < a->slots
+             * and only, if modify category is set
+             */
             if (skip_host_list && use_category->mod_category) {
                if (hslots < minslots && hslots_qend < minslots) {
                   // @todo (CS-457) what if the host is already in the skip list? Can probably not happen here.
@@ -4054,8 +4097,10 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                }
             }
 
-            /* exit is possible when we (a) got the full slot amount or
-               (b) got full slot_qend amount and know full slot amount is not achievable anymore */
+            /* exit is possible when we
+             *    (a) got the full slot amount or
+             *    (b) got full slot_qend amount and know full slot amount is not achievable anymore
+             */
             if ((accu_host_slots >= a->slots && have_master_host) &&
                 (!a->care_reservation || a->is_reservation ||
                  (accu_host_slots_qend >= a->slots && have_master_host_qend))) {
@@ -4087,7 +4132,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       }
 
       /* could be interesting for future diagnosis that unveils what resources the job could get
-         as of now we got only negative diagnosis information i.e. reasons why/where no resources are/available */
+       * as of now we got only negative diagnosis information i.e. reasons why/where no resources are/available
+       */
 #if 0
       if (best_result != DISPATCH_OK) {
          dstring sched_info = DSTRING_INIT;
@@ -4174,25 +4220,43 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
 
    eh_name = lGetHost(hep, EH_name);
 
+   /* @todo CS-400, do this for
+    *    - global requests
+    *    - slave requests
+    *    - master requests
+    */
    clear_resource_tags(hard_requests, HOST_TAG);
 
    SCHED_PROF_INC(a->pi, par_hstat);
 
+   /* @todo CS-400 we check
+    *    - additionally: if global queue requests are matched
+    *    - if slave queue requests are matched
+    *    - if master queue requests are matched
+    *    ==> can we remember here a value for the QU_tagged4schedule?
+    *    - static host matching
+    */
+
    if (!(qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list) &&
         qref_list_eh_rejected(job_get_master_hard_queue_list(a->job), eh_name, a->hgrp_list)) &&
                sge_host_match_static(a, hep) == DISPATCH_OK) {
+      // this host is suited at least for slave tasks, possibly also for the master task
 
-      /* cause load be raised artificially to reflect load correction when
-         checking job requests */
+      // cause load be raised artificially to reflect load correction when checking job requests
       if (lGetPosViaElem(hep, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
-         u_long32 ulc_factor;
-         if ((ulc_factor=lGetUlong(hep, EH_load_correction_factor))) {
+         u_long32 ulc_factor = lGetUlong(hep, EH_load_correction_factor);
+         if (ulc_factor > 0) {
             lc_factor = ((double)ulc_factor)/100;
          }
       }
 
       SCHED_PROF_INC(a->pi, par_hdyn);
 
+      /* @todo CS-400 here we must check
+       *    - global requests
+       *    - slave requests (only if the global requests matched)
+       *    - master requests (only if suited as master host, see above)
+       */
       result = parallel_rc_slots_by_time(a, hard_requests, &hslots, &hslots_qend,
             config_attr, actual_attr, load_list, false, nullptr,
                DOMINANT_LAYER_HOST, lc_factor, HOST_TAG, false, eh_name, false);
@@ -4219,6 +4283,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
             hslots = t_max;
          }
 
+         // reduce by what we already booked on this host
          for (gdil = lGetElemHostFirst(a->gdil, JG_qhostname, eh_name, &iterator);
               gdil != nullptr;
               gdil = lGetElemHostNext(a->gdil, JG_qhostname, eh_name, &iterator)) {
@@ -4323,15 +4388,22 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
       parallel_host_slots(a, &hslots, &hslots_qend, hep, false);
    } else {
       // Scheduling a job into its AR
+      // @todo have we already made sure that we only get here when the AR actually has this host?
       const lList *config_attr = lGetList(hep, EH_consumable_config_list);
       const lList *actual_attr = lGetList(hep, EH_resource_utilization);
       const lList *load_attr = lGetList(hep, EH_load_list);
-      lList *hard_resource_list = job_get_hard_resource_listRW(a->job);
       lListElem *rep;
       dstring reason = DSTRING_INIT;
 
-      clear_resource_tags(hard_resource_list, HOST_TAG);
+      /* @todo CS-400 need to do this for
+       *    - the global hard resource list
+       *    - the slave hard resource list
+       *    - the master hard resource list
+       */
 
+      // in the request list tag requests with HOST_TAG which are available
+      lList *hard_resource_list = job_get_hard_resource_listRW(a->job);
+      clear_resource_tags(hard_resource_list, HOST_TAG);
       for_each_rw(rep, hard_resource_list) {
          const char *attrname = lGetString(rep, CE_name);
          lListElem *cplx_el = lGetElemStrRW(a->centry_list, CE_name, attrname);
@@ -4351,6 +4423,8 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
       }
       sge_dstring_free(&reason);
 
+      // sum up the number of slots which got granted to the AR as available slots
+      // @todo what if multiple jobs are running in the AR? => another reason for CS-430?
       {
          const lListElem *gdil_ep;
          const void *iterator = nullptr;
@@ -4383,6 +4457,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
 
       accu_queue_slots = accu_queue_slots_qend = 0;
 
+      // check and tag all qinstances on this host
       for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
           (qep = next_queue);
            next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
@@ -4406,7 +4481,6 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
          result = parallel_queue_slots(a, qep, &qslots, &qslots_qend, false);
 
          if (result == DISPATCH_OK && (qslots > 0 || qslots_qend > 0)) {
-
             /* could this host be a master host */
             if (!suited_as_master_host && lGetUlong(qep, QU_tagged4schedule)) {
                DPRINTF("HOST %s can be master host because of queue %s\n", eh_name, qname);
@@ -4884,6 +4958,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
+   // check how many slots are available in the PE and if this is enough
    if ((lGetUlong(a->job, JB_ar) == 0) && (ret = parallel_available_slots(a, &pslots, &pslots_qend)) != DISPATCH_OK) {
       *available_slots = MIN(pslots, pslots_qend);
       DRETURN(ret);
@@ -4912,7 +4987,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
       sconf_set_last_dispatch_type(DISPATCH_TYPE_PE);
    }
 
-   /* DG TODO here ok to create the rankfile list if neccessary? */
+   /* DG TODO here ok to create the rankfile list if necessary? */
 
    DRETURN(ret);
 }
@@ -4950,7 +5025,6 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
       const lListElem *gdil;
 
       u_long32 ar_id = lGetUlong(a->job, JB_ar);
-
       if (ar_id != 0) {
          lListElem *ar_queue;
          lListElem *rep;
@@ -4991,6 +5065,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
 
          DPRINTF("verifing AR queue\n");
          lSetUlong(ar_queue, QU_tagged4schedule, lGetUlong(qep, QU_tagged4schedule));
+         // @todo CS-400 need to do it for all 3 request lists?
          result = parallel_rc_slots_by_time(a, hard_requests, &qslots, &qslots_qend,
                ar_queue_config_attr, ar_queue_actual_attr, nullptr, true, ar_queue,
                DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG, false, lGetString(ar_queue, QU_full_name), false);
@@ -5002,12 +5077,18 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
 
             SCHED_PROF_INC(a->pi, par_qdyn);
 
+            /* @todo CS-400 need to do this for
+             *    - global requests
+             *    - slave requests
+             *    - master requests -> only if we do not yet have the master task, how to get this info?
+             */
             result = parallel_rc_slots_by_time(a, hard_requests, &qslots, &qslots_qend,
                   config_attr, actual_attr, nullptr, true, qep,
                   DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG, false, lGetString(qep, QU_full_name), false);
          }
       }
 
+      // we already have tasks running on this qinstance (round_robin), consider the already booked slots
       if ((gdil=lGetElemStr(a->gdil, JG_qname, lGetString(qep, QU_full_name))))
          qslots -= lGetUlong(gdil, JG_slots);
    }
@@ -5284,10 +5365,9 @@ parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
    clear_resource_tags(hard_request, GLOBAL_TAG);
 
-   /* check if job has access to any hosts globally */
+   /* check if job has access (from acls, projects) to any hosts globally */
    if (sge_host_match_static(a, a->gep) == DISPATCH_OK) {
-      /* cause global load be raised artificially to reflect load correction when
-         checking job requests */
+      /* cause global load be raised artificially to reflect load correction when checking job requests */
 
       if (lGetPosViaElem(a->gep, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
          u_long32 ulc_factor;
@@ -5296,6 +5376,8 @@ parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
          }
       }
 
+      // check if hard requests match global resources
+      // @todo CS-400 here we can only match requests of the global scope
       result = parallel_rc_slots_by_time(a, hard_request, &gslots,
                                 &gslots_qend, config_attr, actual_attr, load_attr,
                                 false, nullptr, DOMINANT_LAYER_GLOBAL, lc_factor, GLOBAL_TAG, false, SGE_GLOBAL_NAME, false);
@@ -5306,8 +5388,7 @@ parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
    if (result == DISPATCH_OK) {
       DPRINTF("\tparallel_global_slots() returns %d/%d\n", gslots, gslots_qend);
-   }
-   else {
+   } else {
       DPRINTF("\tparallel_global_slots() returns <error>\n");
    }
 
@@ -5353,14 +5434,15 @@ parallel_available_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
       DRETURN(result);
    }
 
-   if (!implicit_slots_request) {
+   // @todo CS-482 we should have the implicit slots request once, e.g. in the assignment structure
+   if (implicit_slots_request == nullptr) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }
 
-   /* PE slots should be stored in a PE_consumable_config_list ... */
+   // @todo CS-482 PE slots should be stored in a PE_consumable_config_list
    if (!implicit_total_list) {
       tep = lAddElemStr(&implicit_total_list, CE_name, SGE_ATTR_SLOTS, CE_Type);
    }
@@ -5377,7 +5459,7 @@ parallel_available_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
    if (ri_slots_by_time(a, slots, slots_qend,
          lGetList(a->pe, PE_resource_utilization), implicit_slots_request,
-         nullptr, implicit_total_list, nullptr, 0, 0, &reason, true, true, a->pe_name)) {
+         nullptr, implicit_total_list, nullptr, 0, 0, &reason, true, true, a->pe_name) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -5763,8 +5845,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
    lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
    bool allow_non_requestable, bool no_centry, const char *object_name)
 {
-   const char *name;
-   const lListElem *uep, *tep = nullptr;
+   const lListElem *tep = nullptr;
    u_long64 start = a->start;
    bool schedule_based = a->is_advance_reservation || a->is_schedule_based;
    int utilized = 0;
@@ -5778,8 +5859,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
 
    /* always assume zero consumable utilization in schedule based mode */
 
-   name = lGetString(request, CE_name);
-   uep = lGetElemStr(rue_list, RUE_name, name);
+   const char *name = lGetString(request, CE_name);
+   const lListElem *uep = lGetElemStr(rue_list, RUE_name, name);
 
    DPRINTF("\t\t%s: ri_slots_by_time(%s)\n", object_name, name);
 
@@ -5912,14 +5993,11 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
 
       if (*slots == 0 || *slots_qend == 0) {
          char dom_str[5];
-         dstring availability; char availability_text[1024];
-
-         sge_dstring_init(&availability, availability_text, sizeof(availability_text));
+         DSTRING_STATIC(availability, 1024);
 
          monitor_dominance(dom_str, DOMINANT_TYPE_CONSUMABLE | layer);
-         sge_dstring_sprintf(&availability, "%s:%s=%f", dom_str, lGetString(request, CE_name), (total - used));
          sge_dstring_append(reason, MSG_SCHEDD_ITOFFERSONLY);
-         sge_dstring_append(reason, availability_text);
+         sge_dstring_append(reason, sge_dstring_sprintf(&availability, "%s:%s=%f", dom_str, name, (total - used)));
 
          if ((a->duration != DISPATCH_TIME_NOW) &&
              (*slots != 0 && *slots_qend == 0)) {
@@ -5928,7 +6006,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
       }
 
       DPRINTF("\t\t%s: ri_slots_by_time: %s=%f has %d (%d) slots at time " sge_u64 "%s (avail: %f total: %f)\n",
-              object_name, lGetString(uep, RUE_name), request_val, *slots, *slots_qend, start,
+              object_name, name, request_val, *slots, *slots_qend, start,
               !a->is_reservation?" (= now)":"", total - used, total);
    }
 
@@ -5976,7 +6054,8 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
    }
 
    // if slots is defined on host level then check how much is available
-   if (tep) {
+   if (tep != nullptr) {
+      // @todo CS-482 not thread safe
       static lListElem *implicit_slots_request = nullptr;
       if (!implicit_slots_request) {
          implicit_slots_request = lCreateElem(CE_Type);
@@ -6005,18 +6084,25 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
    }
 
 
-   /* --- default request */
+   /* --- default requests except slots which we handled above */
    for_each_ep(actual, rue_list) {
       name = lGetString(actual, RUE_name);
-      if (!strcmp(name, SGE_ATTR_SLOTS)) {
+      if (strcmp(name, SGE_ATTR_SLOTS) == 0) {
          continue;
       }
       cep = centry_list_locate(a->centry_list, name);
 
+      /* @todo CS-440: is_requested: do we have to look it up in all 3 request lists?
+       *    - I wouldn't think so, but at the caller decide what result DISPATCH_NEVER_CAT means:
+       *       - for global requests: host/queue is not suited
+       *       - for slave requests: not suited for slave tasks
+       *          ==> but possibly suited for master task? We have no tag for that!!
+       *       - for master requests: not suited for master tasks
+       */
       if (!is_requested(requests, name)) {
          double request;
          const char *def_req = lGetString(cep, CE_defaultval);
-         if (def_req) {
+         if (def_req != nullptr) {
             // @todo (CS-459) we should have a CE_default_doubleval which gets filled once and is used here!
             parse_ulong_val(&request, nullptr, lGetUlong(cep, CE_valtype), def_req, nullptr, 0);
 
@@ -6057,9 +6143,10 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
                &reason, allow_non_requestable, false, object_name);
 
       if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
+         // @todo CS-400: if it is the global requests and CONSUMABLE_JOB: can still be used as slave queue
          if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-            lSetUlong(queue, QU_tagged4schedule, 0); // can only be used as slave queue
-            result = DISPATCH_MISSING_ATTR;
+            lSetUlong(queue, QU_tagged4schedule, 0);  // can only be used as slave queue
+            result = DISPATCH_MISSING_ATTR;           // further handling of the DISPATCH_MISSING_ATTR below
          } else if (!isRQ) {
             char buff[1024 + 1];
             centry_list_append_to_string(requests, buff, sizeof(buff) - 1);
@@ -6395,8 +6482,10 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
             lSetUlong(queue, QU_tagged4schedule, 1);
             is_alarm = true;
             is_category_alarm = true;
-         }
-         else {
+         } else {
+            /* @todo: CS-485 don't we have to set QU_tagged4schedule to 0 here? It could be 1 or 2 from the previous
+             *        parallel scheduling
+             */
             break;
          }
       }

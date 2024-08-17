@@ -139,7 +139,7 @@ dispatch_t pe_match_static(const sge_assignment_t *a)
    DENTER(TOP_LAYER);
 
    total_slots = (int)lGetUlong(a->pe, PE_slots);
-   if (total_slots == 0) { 
+   if (total_slots == 0) {
       /* because there are not enough PE slots in total */
       DPRINTF("total slots %d of PE \"%s\" not in range of job " sge_u32"\n", total_slots, a->pe_name, a->job_id);
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,

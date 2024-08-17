@@ -1274,8 +1274,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       }
 
 
-      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list,
-                                                     centry_list);
+      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list, centry_list);
 
       /* split queues into overloaded and non-overloaded queues */
       if (sge_split_queue_load(

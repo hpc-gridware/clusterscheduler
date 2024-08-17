@@ -138,13 +138,13 @@ typedef struct {
    u_long64   now;                /* now time for immediate jobs                    */
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
-   lList      *skip_cqueue_list;  /* cluster queues that need not be checked any more (CTI_Type) */ 
-   lList      *skip_host_list;    /* hosts that need not be checked any more (CTI_Type) */ 
+   lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
+   lList      *skip_host_list;    /* hosts that need not be checked anymore (CTI_Type) */
    /* ------ this section is the resulting assignment ----------------------------- */
    lListElem  *pe;                /* the parallel environment (PE_Type)             */
    const char* pe_name;           /* name of the PE                                 */
    lList      *gdil;              /* the resources (JG_Type)                        */
-   int        slots;              /* total number of slots                          */
+   int        slots;              /* total number of slots we do matching against   */
    u_long64   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
