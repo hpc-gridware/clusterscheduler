@@ -184,14 +184,16 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 *
 *  SYNOPSIS
 *     void 
-*     qinstance_list_set_tag(lList *this_list, u_long32 tag_value) 
+*     qinstance_list_set_tag(lList *queue_list, u_long32 tag_value, int tag_nm = QU_tag)
 *
 *  FUNCTION
-*     Tag a list of qinstances ("this_list") with "tag_value". 
+*     Tag a list of qinstances ("queue_list") with "tag_value".
+*     Examples for tags are QU_tag (default) and QU_tagged4schedule.
 *
 *  INPUTS
 *     lList *this_list   - QU_Type list
-*     u_long32 tag_value - unsingned long value (not a bitmask) 
+*     u_long32 tag_value - unsigned long value (not a bitmask)
+*     int tag_nm         - which tag attribute to use (default: QU_tag)
 *
 *  RESULT
 *     void - None
@@ -199,12 +201,11 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 *  NOTES
 *     MT-NOTE: qinstance_list_set_tag() is MT safe 
 *******************************************************************************/
-void
-qinstance_list_set_tag(lList *queue_list, u_long32 tag_value) {
+void qinstance_list_set_tag(lList *queue_list, u_long32 tag_value, int tag_nm) {
    if (queue_list != nullptr) {
       lListElem *qinstance;
       for_each_rw (qinstance, queue_list) {
-         lSetUlong(qinstance, QU_tag, tag_value);
+         lSetUlong(qinstance, tag_nm, tag_value);
       }
    }
 }

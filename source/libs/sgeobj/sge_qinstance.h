@@ -76,7 +76,7 @@ const char *
 qinstance_get_name(const lListElem *this_elem, dstring *string_buffer);
 
 void
-qinstance_list_set_tag(lList *this_list, u_long32 tag_value);
+qinstance_list_set_tag(lList *this_list, u_long32 tag_value, int tag_nm = QU_tag);
 
 void
 qinstance_increase_qversion(lListElem *this_elem);

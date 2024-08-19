@@ -6524,9 +6524,6 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
             is_alarm = true;
             is_category_alarm = true;
          } else {
-            /* @todo: CS-485 don't we have to set QU_tagged4schedule to 0 here? It could be 1 or 2 from the previous
-             *        parallel scheduling
-             */
             break;
          }
       }
