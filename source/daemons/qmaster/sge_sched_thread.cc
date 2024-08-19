@@ -1273,7 +1273,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          disabled_queues = nullptr;
       }
 
-
+      // @todo CS-486 better clear QU_tagged4schedule before calling sge_load_list_alarm
       bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list, centry_list);
 
       /* split queues into overloaded and non-overloaded queues */

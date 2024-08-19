@@ -1141,13 +1141,12 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 
             /* reuse earlier result */
             if ((rql=lGetElemStrRW(a->limit_list, RQL_name, limit_s))) {
-               u_long32 tagged4schedule = lGetUlong(rql, RQL_tagged4schedule);
                result = (dispatch_t)lGetInt(rql, RQL_result);
                tslots = MIN(tslots, lGetInt(rql, RQL_slots));
                tslots_qend = MIN(tslots_qend, lGetInt(rql, RQL_slots_qend));
 
-               // @todo CS-400: MIN could be mimicked by bitwise or
-               lSetUlong(qep, QU_tagged4schedule, MIN(tagged4schedule, lGetUlong(qep, QU_tagged4schedule)));
+               // build the minimum
+               lAndUlongBitMask(qep, QU_tagged4schedule, lGetUlong(rql, RQL_tagged4schedule));
 
                DPRINTF("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (cache)\n",
                        queue, host, result, tslots, tslots_qend, limit_s);
@@ -1156,7 +1155,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                int ttslots_qend = INT_MAX;
                
                u_long32 tagged_for_schedule_old = lGetUlong(qep, QU_tagged4schedule);  /* default value or set in match_static_queue() */
-               lSetUlong(qep, QU_tagged4schedule, 2);
+               lSetUlong(qep, QU_tagged4schedule, TAG4SCHED_ALL);
                
                for_each_rw(limit, lGetList(rule, RQR_limit)) {
                   const char *limit_name = lGetString(limit, RQRL_name);
@@ -1215,7 +1214,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                lSetUlong(rql, RQL_tagged4schedule, lGetUlong(qep, QU_tagged4schedule)); 
                
                /* reset QU_tagged4schedule if necessary */
-               lSetUlong(qep, QU_tagged4schedule, MIN(tagged_for_schedule_old, lGetUlong(qep, QU_tagged4schedule)));
+               lAndUlongBitMask(qep, QU_tagged4schedule, tagged_for_schedule_old);
 
                tslots = MIN(tslots, ttslots);
                tslots_qend = MIN(tslots_qend, ttslots_qend);

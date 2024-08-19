@@ -3271,14 +3271,14 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
          for_each_ep(cqueue, master_cqueue_list) {
             const char *cqname = lGetString(cqueue, CQ_name);
-            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-            const lListElem *qinstance;
 
             /* we sort out explicit -q -l requests on queues */
             if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
                continue;
             }
 
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            const lListElem *qinstance;
             for_each_ep(qinstance, qinstance_list) {
                /*
                 * When we are in POKE_VERIFY mode (qalter -w p) we may work on

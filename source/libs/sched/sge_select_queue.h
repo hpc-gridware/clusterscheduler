@@ -163,7 +163,6 @@ void assignment_clear_cache(sge_assignment_t *a);
 
 /* -------------------------------------------------------------------------------- */
 
-
 typedef enum {
    DISPATCH_NEVER = 4,  /* an error happend, no dispatch will ever work again */
    DISPATCH_MISSING_ATTR = 2, /* attribute does not exist */
@@ -172,6 +171,13 @@ typedef enum {
    DISPATCH_NEVER_CAT = -1,   /* assignment will never be possible for all jobs of that category */
    DISPATCH_NEVER_JOB = -2    /* assignment will never be possible for that particular job */
 } dispatch_t;
+
+#define TAG4SCHED_NONE
+#define TAG4SCHED_SLAVE          0b0001
+#define TAG4SCHED_MASTER         0b0010
+#define TAG4SCHED_SLAVE_LATER    0b0001 << 16
+#define TAG4SCHED_MASTER_LATER   0b0010 << 16
+#define TAG4SCHED_ALL TAG4SCHED_SLAVE|TAG4SCHED_MASTER|TAG4SCHED_SLAVE_LATER|TAG4SCHED_MASTER_LATER
 
 dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);

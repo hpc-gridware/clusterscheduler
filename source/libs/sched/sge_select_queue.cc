@@ -37,6 +37,7 @@
 #include <cfloat>
 #include <climits>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -227,6 +228,36 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
 
 static int
 load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction);
+
+static void
+print_tagged4schedule(const lListElem *qinstance) {
+   DENTER(TOP_LAYER);
+
+   if (DPRINTF_IS_ACTIVE) {
+      if (qinstance != nullptr) {
+         u_long32 bitmask = lGetUlong(qinstance, QU_tagged4schedule);
+         DSTRING_STATIC(dstr, 100);
+         if (ISSET(bitmask, TAG4SCHED_MASTER)) {
+            sge_dstring_append(&dstr, " MASTER");
+         }
+         if (ISSET(bitmask, TAG4SCHED_SLAVE)) {
+            sge_dstring_append(&dstr, " SLAVE");
+         }
+         if (ISSET(bitmask, TAG4SCHED_MASTER_LATER)) {
+            sge_dstring_append(&dstr, " LATER_MASTER");
+         }
+         if (ISSET(bitmask, TAG4SCHED_SLAVE_LATER)) {
+            sge_dstring_append(&dstr, " LATER_SLAVE");
+         }
+
+         DPRINTF("      QU_tagged4schedule: %s\n", sge_dstring_get_string(&dstr));
+      } else {
+         DPRINTF("      !!! nullptr passed as qinstance to print_tagged4schedule !!!\n");
+      }
+   }
+
+   DRETURN_VOID;
+}
 
 /* ---- Implementation ------------------------------------------------------------------------- */
 
@@ -420,7 +451,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 
    /* initialize all tags */
    for_each_rw(queue, best->queue_list) {
-      lSetUlong(queue, QU_tagged4schedule, 2); // = can be used as master for now and reservation
+      lSetUlong(queue, QU_tagged4schedule, TAG4SCHED_ALL); // = can be used as master and slave for now and reservation
    }
 
    if (best->is_reservation) { /* reservation scheduling */
@@ -1600,7 +1631,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 
    hard_queue_list = job_get_hard_queue_list(a->job);
    master_hard_queue_list = job_get_master_hard_queue_list(a->job);
-   if (hard_queue_list || master_hard_queue_list) {
+   if (hard_queue_list != nullptr || master_hard_queue_list != nullptr) {
       if (!centry_list_are_queues_requestable(a->centry_list)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_QUEUENOTREQUESTABLE_S, qinstance_name);
@@ -1611,13 +1642,13 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    /*
     * is this queue a candidate for being the master queue?
     */
-   if (master_hard_queue_list) {
+   if (master_hard_queue_list != nullptr) {
       if (qref_list_cq_rejected(master_hard_queue_list, lGetString(queue, QU_qname),
                      lGetHost(queue, QU_qhostname), a->hgrp_list)) {
          DPRINTF("Queue \"%s\" is not contained in the master hard "
                  "queue list (-masterq) that was requested by job %d\n",
                  qinstance_name, (int) a->job_id);
-         lSetUlong(queue, QU_tagged4schedule, 0);
+         lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
       } else {
          could_be_master = true;
       }
@@ -1626,7 +1657,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    /*
     * is queue contained in hard queue list ?
     */
-   if (hard_queue_list) {
+   if (hard_queue_list != nullptr) {
       if (!could_be_master && qref_list_cq_rejected(hard_queue_list, lGetString(queue, QU_qname),
                      lGetHost(queue, QU_qhostname), a->hgrp_list)) {
          DPRINTF("Queue \"%s\" is not contained in the hard "
@@ -1642,7 +1673,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    ** different checks for different job types:
    */
 
-   if (a->pe) { /* parallel job */
+   if (a->pe != nullptr) { /* parallel job */
       if (!qinstance_is_parallel_queue(queue)) {
          DPRINTF("Queue \"%s\" is not a parallel queue as requested by job %d\n", qinstance_name, (int)a->job_id);
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -1662,7 +1693,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       }
    }
 
-   if (a->ckpt) { /* ckpt job */
+   if (a->ckpt != nullptr) { /* ckpt job */
       /* is it a ckpt queue ? */
       if (!qinstance_is_checkpointing_queue(queue)) {
          DPRINTF("Queue \"%s\" is not a checkpointing queue as requested by job %d\n", qinstance_name, (int)a->job_id);
@@ -3886,14 +3917,14 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                         continue;
 
                      DPRINTF("tagged: %d maxslots: %d rqs_hslots: %d\n", (int)lGetUlong(qep, QU_tag), maxslots, rqs_hslots);
-                     DPRINTF("SLOT HARVESTING: %s soft violations: %d master: %d\n",
-                           lGetString(qep, QU_full_name), (int)lGetUlong(qep, QU_soft_violation), (int)lGetUlong(qep, QU_tagged4schedule));
+                     DPRINTF("SLOT HARVESTING: %s soft violations: %d master: " sge_u32 "\n",
+                           lGetString(qep, QU_full_name), (int)lGetUlong(qep, QU_soft_violation), lGetUlong(qep, QU_tagged4schedule));
 
                      /* how much is still needed */
                      slots = MIN(lGetUlong(qep, QU_tag), maxslots - rqs_hslots);
 
                      if (!have_master_host && !got_master_queue) {
-                        if (lGetUlong(qep, QU_tagged4schedule) < 2) {
+                        if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
                            /*
                               care for slave tasks assignments of -masterq jobs
                               we need at least one slot on the masterq, thus we reduce by one slot
@@ -3942,7 +3973,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            lSetUlong(gdil_ep, JG_slots, slots);
 
                            /* master queue must be at first position */
-                           if (!have_master_host && lGetUlong(qep, QU_tagged4schedule) == 2) {
+                           if (!have_master_host && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
                               lDechainElem(a->gdil, gdil_ep);
                               lInsertElem(a->gdil, nullptr, gdil_ep);
                               got_master_queue = true;
@@ -4019,7 +4050,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      slots_qend = MIN(lGetUlong64(qep, QU_tag_qend), maxslots - rqs_hslots);
 
                      if (!have_master_host_qend && !got_master_queue_qend) {
-                        if (lGetUlong(qep, QU_tagged4schedule) == 0) {
+                        if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER_LATER)) {
                            /*
                               care for slave tasks assignments of -masterq jobs
                               we need at least one slot on the masterq, thus we reduce by one slot
@@ -4049,7 +4080,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      }
 
                      if (slots_qend > 0) {
-                        if (!have_master_host_qend && lGetUlong(qep, QU_tagged4schedule) >= 1) {
+                        if (!have_master_host_qend && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER_LATER)) {
                            got_master_queue_qend = true;
                         }
                      }
@@ -4268,7 +4299,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
          for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
              (qep = next_queue);
               next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
-            lSetUlong(qep, QU_tagged4schedule, 1);
+            lClearUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER);
          }
          result = DISPATCH_OK;
       }
@@ -4482,7 +4513,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
 
          if (result == DISPATCH_OK && (qslots > 0 || qslots_qend > 0)) {
             /* could this host be a master host */
-            if (!suited_as_master_host && lGetUlong(qep, QU_tagged4schedule)) {
+            if (!suited_as_master_host && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER)) {
                DPRINTF("HOST %s can be master host because of queue %s\n", eh_name, qname);
                suited_as_master_host = true;
             }
@@ -6145,8 +6176,13 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
       if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
          // @todo CS-400: if it is the global requests and CONSUMABLE_JOB: can still be used as slave queue
          if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-            lSetUlong(queue, QU_tagged4schedule, 0);  // can only be used as slave queue
-            result = DISPATCH_MISSING_ATTR;           // further handling of the DISPATCH_MISSING_ATTR below
+            DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use qinstance %s as slave queue\n",
+                    name, lGetString(queue, QU_full_name));
+            lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);  // can only be used as slave queue
+            /* misuse of the DISPATCH_MISSING_ATTR
+             * add a new DISPATCH result, e.g. DISPATCH_HANDLE_CONSUMABLE_JOB
+             */
+            result = DISPATCH_MISSING_ATTR;
          } else if (!isRQ) {
             char buff[1024 + 1];
             centry_list_append_to_string(requests, buff, sizeof(buff) - 1);
@@ -6159,7 +6195,9 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
          }
       } else if (result == DISPATCH_NOT_AT_TIME) {
          if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-            lSetUlong(queue, QU_tagged4schedule, 1);
+            DPRINTF("===> CONSUMABLE_JOB %s does not match now - can still use qinstance %s as slave queue (and master later)\n",
+                    name, lGetString(queue, QU_full_name));
+            lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER);
          } else {
             char buff[1024 + 1];
             centry_list_append_to_string(requests, buff, sizeof(buff) - 1);
@@ -6175,7 +6213,6 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
       switch (result) {
          case DISPATCH_OK: /* the requested element does not exist */
          case DISPATCH_NOT_AT_TIME: /* will match later-on */
-
             ret = result;
 
             DPRINTF("%s: explicit request for %s gets us %d slots (%d later)\n",
@@ -6187,27 +6224,29 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
             max_slots_qend = MIN(max_slots_qend, avail_qend);
             DPRINTF("%s: parallel_rc_slots_by_time(%s) %d (%d later)\n", object_name, name,
                   (int)max_slots, (int)max_slots_qend);
+            print_tagged4schedule(queue);
             break;
 
          case DISPATCH_NEVER_CAT: /* the requested element does not exist */
-
             DPRINTF("%s: parallel_rc_slots_by_time(%s) <never cat>\n", object_name, name);
+            print_tagged4schedule(queue);
             *slots = *slots_qend = 0;
             DRETURN(DISPATCH_NEVER_CAT);
 
          case DISPATCH_NEVER_JOB: /* the requested element does not exist */
-
             DPRINTF("%s: parallel_rc_slots_by_time(%s) <never job>\n", object_name, name);
+            print_tagged4schedule(queue);
             *slots = *slots_qend = 0;
             DRETURN(DISPATCH_NEVER_JOB);
-
 
          case DISPATCH_MISSING_ATTR: /* the requested element does not exist */
             if (tag == QUEUE_TAG && lGetUlong(req, CE_tagged) == NO_TAG) {
                if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
                   max_slots      = MIN(max_slots,      avail);
                   max_slots_qend = MIN(max_slots_qend, avail_qend);
-                  lSetUlong(queue, QU_tagged4schedule, 0);
+                  // only suitable for slave tasks
+                  // @todo we did this already above, why repeat it? Can it get overwritten in between?
+                  lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
                } else {
                   DPRINTF("%s: parallel_rc_slots_by_time(%s) <never found>\n", object_name, name);
                   *slots = *slots_qend = 0;
@@ -6215,7 +6254,9 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
                }
             }
             DPRINTF("%s: parallel_rc_slots_by_time(%s) no such resource, but already satisfied\n", object_name, name);
+            print_tagged4schedule(queue);
             break;
+
          case DISPATCH_NEVER:
          default :
             DPRINTF("unexpected return code\n");

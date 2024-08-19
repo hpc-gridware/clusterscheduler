@@ -351,7 +351,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lInsertElem(resource_diagram, prev, end);
    }
 
-#if 1
+#if 0
    utilization_print(cr, "pe_slots");
    printf("this was before utilization_normalize()\n");
 #endif
@@ -363,7 +363,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 /* 
    Find element with specified time or the element before it 
 
-   If the element exists it is returned in 'hit'. Otherwise
+   If the element exists it is returned in 'hit'. Otherwise,
    the element before it is returned or nullptr if no such exists.
 
 */

@@ -5340,3 +5340,89 @@ int lGetPosName(const lDescr *dp, int pos) {
    return dp[pos].nm;
 }
 
+bool lMatchUlongBitMask(lListElem *ep, int nm, u_long32 bitmask) {
+   DENTER(CULL_BASIS_LAYER);
+
+   int pos = lGetPosViaElem(ep, nm, SGE_DO_ABORT);
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlongT)
+      incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
+                        lNm2Str(nm), multitypes[mt_get_type(ep->descr[pos].mt)]);
+
+   DRETURN((ep->cont[pos].ul & bitmask) > 0 ? true : false);
+}
+
+int lOrUlongBitMask(lListElem *ep, int nm, u_long32 bitmask) {
+   DENTER(CULL_BASIS_LAYER);
+
+   if (ep == nullptr) {
+      LERROR(LEELEMNULL);
+      DRETURN(-1);
+   }
+
+   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   if (pos < 0) {
+      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
+      DRETURN(-1);
+   }
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
+      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+      DRETURN(-1);
+   }
+
+   ep->cont[pos].ul |= bitmask;
+
+   DRETURN(0);
+}
+int lAndUlongBitMask(lListElem *ep, int nm, u_long32 bitmask) {
+   DENTER(CULL_BASIS_LAYER);
+
+   if (ep == nullptr) {
+      LERROR(LEELEMNULL);
+      DRETURN(-1);
+   }
+
+   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   if (pos < 0) {
+      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
+      DRETURN(-1);
+   }
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
+      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+      DRETURN(-1);
+   }
+
+   ep->cont[pos].ul &= bitmask;
+
+   DRETURN(0);
+}
+int lClearUlongBitMask(lListElem *ep, int nm, u_long32 bitmask) {
+   DENTER(CULL_BASIS_LAYER);
+
+   if (ep == nullptr) {
+      LERROR(LEELEMNULL);
+      DRETURN(-1);
+   }
+
+   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   if (pos < 0) {
+      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
+      DRETURN(-1);
+   }
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
+      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+      DRETURN(-1);
+   }
+
+   ep->cont[pos].ul &= ~bitmask;
+
+   DRETURN(0);
+
+}
+
