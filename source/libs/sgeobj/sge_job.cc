@@ -3827,6 +3827,23 @@ job_init_binding_elem(lListElem *jep)
    return ret;
 }
 
+bool job_parse_scope_string(const char *scope, char &scope_id) {
+   bool ret = true;
+
+   if (sge_strnullcasecmp(scope, "global") == 0) {
+      scope_id = JRS_SCOPE_GLOBAL;
+   } else if (sge_strnullcasecmp(scope, "master") == 0) {
+      scope_id = JRS_SCOPE_MASTER;
+   } else if (sge_strnullcasecmp(scope, "slave") == 0) {
+      scope_id = JRS_SCOPE_SLAVE;
+   } else {
+      scope_id = JRS_SCOPE_GLOBAL;
+      ret = false;
+   }
+
+   return ret;
+}
+
 const lListElem *job_get_request_set(const lListElem *job, u_long32 scope) {
    return lGetSubUlong(job, JRS_scope, scope, JB_request_set_list);
 }
@@ -3842,6 +3859,45 @@ lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope) {
    }
 
    return jrs;
+}
+
+/**
+ * Remove duplicate resource requests from the job request set list.
+ *
+ * @param job - the job to work on
+ * @return true if the job has any resource requests, else false
+ */
+bool job_request_set_remove_duplicates(lListElem *job) {
+   bool requests_found = false;
+
+   lListElem *jrs;
+   for_each_rw (jrs, lGetListRW(job, JB_request_set_list)) {
+      lList *lp = lGetListRW(jrs, JRS_hard_resource_list);
+      if (lp != nullptr) {
+         requests_found = true;
+         centry_list_remove_duplicates(lp);
+      }
+      lp = lGetListRW(jrs, JRS_soft_resource_list);
+      if (lp != nullptr) {
+         requests_found = true;
+         centry_list_remove_duplicates(lp);
+      }
+   }
+
+   return requests_found;
+}
+
+bool job_request_set_has_queue_requests(const lListElem *job) {
+   bool ret = false;
+   lListElem *jrs;
+   for_each_rw (jrs, lGetListRW(job, JB_request_set_list)) {
+      if (lGetList(jrs, JRS_hard_queue_list) != nullptr || lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+         ret = true;
+         break;
+      }
+   }
+
+   return ret;
 }
 
 const lList *job_get_hard_resource_list(const lListElem *job) {
@@ -4220,19 +4276,50 @@ job_add_name_value_list_opt_to_command_line(const lListElem *job, dstring *dstr,
 }
 
 static void
+job_add_resource_set_list_scope_to_command_line(const lListElem *scope_ep, dstring *dstr) {
+   job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-hard -l", JRS_hard_resource_list);
+   job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-soft -l", JRS_soft_resource_list);
+   job_add_list_opt_to_command_line(scope_ep, dstr, "-hard -q", JRS_hard_queue_list, QR_name);
+   job_add_list_opt_to_command_line(scope_ep, dstr, "-soft -q", JRS_soft_queue_list, QR_name);
+}
+
+const char *job_scope_name(u_long32 scope_id) {
+   const char *ret = "unknown";
+
+   switch (scope_id) {
+      case JRS_SCOPE_GLOBAL:
+         ret = "global";
+         break;
+      case JRS_SCOPE_MASTER:
+         ret = "master";
+         break;
+      case JRS_SCOPE_SLAVE:
+         ret = "slave";
+         break;
+   }
+
+   return ret;
+}
+
+const char *
+job_scope_name(const lListElem *scope_ep) {
+   const char *ret = "unknown";
+
+   if (scope_ep != nullptr) {
+      ret = job_scope_name(lGetUlong(scope_ep, JRS_scope));
+   }
+
+   return ret;
+}
+
+static void
 job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
    const lList *request_set_list = lGetList(job, JB_request_set_list);
    if (request_set_list != nullptr) {
-      const lListElem *global = lGetElemUlong(request_set_list, JRS_scope, JRS_SCOPE_GLOBAL);
-      if (global != nullptr) {
-         job_add_ce_list_opt_to_command_line(global, dstr, "-hard -l", JRS_hard_resource_list);
-         job_add_ce_list_opt_to_command_line(global, dstr, "-soft -l", JRS_soft_resource_list);
-         job_add_list_opt_to_command_line(global, dstr, "-hard -q", JRS_hard_queue_list, QR_name);
-         job_add_list_opt_to_command_line(global, dstr, "-soft -q", JRS_soft_queue_list, QR_name);
-      }
-      const lListElem *master = lGetElemUlong(request_set_list, JRS_scope, JRS_SCOPE_MASTER);
-      if (master != nullptr) {
-         job_add_list_opt_to_command_line(job, dstr, "-masterq", JRS_hard_queue_list, QR_name);
+      const lListElem *scope_ep;
+      for_each_ep (scope_ep, request_set_list) {
+         job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
+         job_add_resource_set_list_scope_to_command_line(scope_ep, dstr);
       }
    }
 }

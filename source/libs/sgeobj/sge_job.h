@@ -468,9 +468,16 @@ job_init_binding_elem(lListElem *jep);
 #define JRS_SCOPE_MASTER 1
 #define JRS_SCOPE_SLAVE  2
 
+bool job_parse_scope_string(const char *scope, char &scope_id);
+const char *job_scope_name(u_long32 scope_id);
+const char *job_scope_name(const lListElem *scope_ep);
+
 const lListElem *job_get_request_set(const lListElem *job, u_long32 scope);
 lListElem *job_get_request_setRW(lListElem *job, u_long32 scope);
 lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope);
+
+bool job_request_set_remove_duplicates(lListElem *job);
+bool job_request_set_has_queue_requests(const lListElem *job);
 
 const lList *job_get_hard_resource_list(const lListElem *job);
 const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope);

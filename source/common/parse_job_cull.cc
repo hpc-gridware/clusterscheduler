@@ -403,8 +403,9 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    parse_list_simple(cmdline, "-jid", *pjob, JB_job_identifier_list, 0, 0, FLG_LIST_APPEND);
 
    parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-   centry_list_remove_duplicates(job_get_hard_resource_listRW(*pjob));
-   centry_list_remove_duplicates(job_get_soft_resource_listRW(*pjob));
+   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+   job_request_set_remove_duplicates(*pjob);
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-m"))) {
       u_long32 ul;
@@ -488,6 +489,8 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    }
 
    parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
    parse_list_hardsoft(cmdline, "-masterq", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
    
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-R"))) {
@@ -502,6 +505,11 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-r"))) {
       lSetUlong(*pjob, JB_restart, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(cmdline, &ep);
+   }
+
+   /* not needed in job struct */
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-scope"))) {
       lRemoveElem(cmdline, &ep);
    }
 

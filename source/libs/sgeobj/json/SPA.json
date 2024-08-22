@@ -99,16 +99,24 @@
 		}, {
 			"name":	"argval_lCharT",
 			"summary":	"Parsed Char Argument",
-			"description":	[{
-					"line":	"If the option argument is a single char then this value is the commandline argument (first character of switch_arg)."
+			"description":	[
+				{
+					"line": "If the option argument is a single char then this value is the commandline argument (first character of switch_arg)."
+				}, {
+					"line": "In parsing of the job submission command line it is used to store the scope information,"
+				}, {
+					"line": "JRS_SCOPE_GLOBAL, JRS_SCOPE_MASTER, JRS_SCOPE_SLAVE."
 				}],
 			"type":	"lCharT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lIntT",
 			"summary":	"Parsed Int Argument",
-			"description":	[{
-					"line":	"If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer."
+			"description":	[
+				{
+					"line": "If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer."
+				}, {
+					"line": "In parsing of the job submission command line it is used to store the information if requests are hard or soft."
 				}],
 			"type":	"lIntT",
 			"flags":	[]

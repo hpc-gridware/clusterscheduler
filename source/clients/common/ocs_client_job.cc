@@ -232,18 +232,65 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       }
 
    if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
-      const lList *lp = job_get_hard_resource_list(job);
-      if (lp != nullptr) {
-         printf("hard resource_list:         ");
-         sge_show_ce_type_list(lp);
-         printf("\n");
-      }
+      const lList *jrs_list = lGetList(job, JB_request_set_list);
+      const lListElem *jrs;
+      for_each_ep (jrs, jrs_list) {
+         u_long32 scope = lGetUlong(jrs, JRS_scope);
+         const char *str_scope = nullptr;
+         DSTRING_STATIC(dstr_attrib, 32);
+         const char *str_attrib;
+         if (scope > JRS_SCOPE_GLOBAL) {
+            str_scope = job_scope_name(scope);
+         }
+         const lList *lp = lGetList(jrs, JRS_hard_resource_list);
+         if (lp != nullptr) {
+            if (str_scope == nullptr) {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "hard_resource_list:");
+            } else {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_resource_list:", str_scope);
+            }
+            printf("%-28s", str_attrib);
+            sge_show_ce_type_list(lp);
+            printf("\n");
+         }
 
-      lp = job_get_soft_resource_list(job);
-      if (lp != nullptr) {
-         printf("soft resource_list:         ");
-         sge_show_ce_type_list(lp);
-         printf("\n");
+         lp = lGetList(jrs, JRS_soft_resource_list);
+         if (lp != nullptr) {
+            if (str_scope == nullptr) {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "soft_resource_list:");
+            } else {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_resource_list:", str_scope);
+            }
+            printf("%-28s", str_attrib);
+            sge_show_ce_type_list(lp);
+            printf("\n");
+         }
+
+         lp = lGetList(jrs, JRS_hard_queue_list);
+         if (lp != nullptr) {
+            int fields[] = {QR_name, 0};
+            delis[0] = " ";
+            if (str_scope == nullptr) {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "hard_queue_list:");
+            } else {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_queue_list:", str_scope);
+            }
+            printf("%-28s", str_attrib);
+            uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+         }
+
+         lp = lGetList(jrs, JRS_soft_queue_list);
+         if (lp != nullptr) {
+            int fields[] = {QR_name, 0};
+            delis[0] = " ";
+            if (str_scope == nullptr) {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "soft_queue_list:");
+            } else {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_queue_list:", str_scope);
+            }
+            printf("%-28s", str_attrib);
+            uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+         }
       }
    }
 
@@ -307,26 +354,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       printf(sge_u32 "\n", lGetUlong(job, JB_jobshare));
    }
 
-   if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
-      const lList *lp = job_get_hard_queue_list(job);
-      if (lp != nullptr) {
-         int fields[] = {QR_name, 0};
-
-         delis[0] = " ";
-         printf("hard_queue_list:            ");
-         uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
-      }
-
-      lp = job_get_soft_queue_list(job);
-      if (lp != nullptr) {
-         int fields[] = {QR_name, 0};
-
-         delis[0] = " ";
-         printf("soft_queue_list:            ");
-         uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
-      }
-   }
-
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_restart)) {
          printf("restart:                    ");
@@ -388,17 +415,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          uni_print_list(stdout, nullptr, 0, lGetList(job, JB_qs_args), fields, delis, 0);
       }
 
-   if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
-      const lList *lp = job_get_master_hard_queue_list(job);
-      if (lp != nullptr) {
-         int fields[] = {QR_name, 0};
-         delis[0] = " ";
-         printf("master hard queue_list:     ");
-         uni_print_list(stdout, nullptr, 0, lp, fields, delis,
-                        FLG_NO_DELIS_STRINGS);
-      }
-   }
-
    if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0)
       if (lGetList(job, JB_job_identifier_list)) {
          int fields[] = {JRE_job_number, 0};
@@ -425,7 +441,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          dstring range_string = DSTRING_INIT;
 
          range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
-         printf("parallel environment:  %s range: %s\n", lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
+         printf("%-28s%s range: %s\n", "parallel_environment:", lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
          sge_dstring_free(&range_string);
       }
 

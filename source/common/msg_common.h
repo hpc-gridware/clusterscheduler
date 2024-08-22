@@ -78,6 +78,7 @@
 #define MSG_GDI_ARGUMENTSYNTAX_OA_FILE_LIST            "file_list               [host:]file[,[host:]file,...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_PRIORITY             "priority                -1023 - 1024"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_RESOURCE_LIST        "resource_list           resource[=value][,resource[=value],...]"
+#define MSG_GDI_ARGUMENTSYNTAX_OA_SCOPE_NAME           "scope_name              'global' 'master' 'slave'"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_SERVER               "server                  hostname"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_SERVER_LIST          "server_list             server[,server,...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_SIGNAL               "signal                  -int_val, symbolic names"
@@ -913,6 +914,10 @@
 #define MSG_GDI_UTEXT_suspend_remote_OPT                 _MESSAGE(23515, _("suspend qrsh client as also the process on execution host"))
 
 #define MSG_PARSE_FEATURENOTSUPPORTEDOS_S                _MESSAGE(23516, _("Unsupported: " SFQ " is not supported in the open source version"))
+
+#define MSG_GDI_USAGE_scope_OPT                          "[-scope scope_name]"
+#define MSG_GDI_UTEXT_scope_OPT                          _MESSAGE(23517, _("switch the request scope"))
+
 
 #define MSG_UNKNOWNREASON                 _MESSAGE(60000, _("<unknown reason>"))
 #define MSG_NOTYETIMPLEMENTED_S           _MESSAGE(60001, _("feature " SFQ " not yet implemented"))

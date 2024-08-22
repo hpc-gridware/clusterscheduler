@@ -491,14 +491,10 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
 
       parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-      lList *lp = job_get_hard_resource_listRW(job);
-      if (lp != nullptr) {
-         centry_list_remove_duplicates(lp);
-         nm_set(job_field, JB_request_set_list);
-      }
-      lp = job_get_soft_resource_listRW(job);
-      if (lp != nullptr) {
-         centry_list_remove_duplicates(lp);
+      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
+      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+
+      if (job_request_set_remove_duplicates(job)) {
          nm_set(job_field, JB_request_set_list);
       }
 
@@ -575,17 +571,14 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_override_tickets);
       }
 
-      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL,
-                          JRS_hard_queue_list, JRS_soft_queue_list);
-      if (job_get_hard_queue_list(job) != nullptr) {
-         nm_set(job_field, JB_request_set_list);
-      }
-      if (job_get_soft_queue_list(job) != nullptr) {
+      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
+      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
+      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
+      parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
+      if (job_request_set_has_queue_requests(job)) {
          nm_set(job_field, JB_request_set_list);
       }
 
-      parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER,
-                          JRS_hard_queue_list, 0);
       if (job_get_master_hard_queue_list(job) != nullptr)
          nm_set(job_field, JB_request_set_list);
     

@@ -1143,8 +1143,8 @@ FPRINTF_ERROR:
    DRETURN(-1);
 }            
 
-void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_long32 scope, int hard_field,
-                         int soft_field) {
+void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_long32 scope,
+                         int hard_field, int soft_field) {
    DENTER(TOP_LAYER);
 
    lList *hard_list = nullptr;
@@ -1158,26 +1158,32 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_l
       }
    }
 
-   lListElem *ep;
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
-      lList *lp = nullptr;
-      lXchgList(ep, SPA_argval_lListT, &lp);
-      if (lp != nullptr) {
-         if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
-            if (hard_list == nullptr) {
-               hard_list = lp;
+   lListElem *ep, *next_ep;
+   const void *iterator = nullptr;
+   next_ep = lGetElemStrFirstRW(cmdline, SPA_switch_val, option, &iterator);
+   while ((ep = next_ep) != nullptr) {
+      next_ep = lGetElemStrNextRW(cmdline, SPA_switch_val, option, &iterator);
+
+      if (int(lGetChar(ep, SPA_argval_lCharT)) == int(scope)) {
+         lList *lp = nullptr;
+         lXchgList(ep, SPA_argval_lListT, &lp);
+         if (lp != nullptr) {
+            if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
+               if (hard_list == nullptr) {
+                  hard_list = lp;
+               } else {
+                  lAddList(hard_list, &lp);
+               }
             } else {
-               lAddList(hard_list, &lp);
-            }
-         } else {
-            if (soft_list == nullptr) {
-               soft_list = lp;
-            } else {
-               lAddList(soft_list, &lp);
+               if (soft_list == nullptr) {
+                  soft_list = lp;
+               } else {
+                  lAddList(soft_list, &lp);
+               }
             }
          }
+         lRemoveElem(cmdline, &ep);
       }
-      lRemoveElem(cmdline, &ep);
    }
 
    // now store back the request lists to the job

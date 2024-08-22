@@ -120,7 +120,6 @@ lList *cull_parse_cmdline(
    int i_ret;
    u_long32 is_qalter = flags & FLG_QALTER;
    bool is_hold_option = false;
-   int hard_soft_flag = 0;
 
    DENTER(TOP_LAYER);
 
@@ -133,9 +132,11 @@ lList *cull_parse_cmdline(
    sp = arg_list;
 
    /* reset hard/soft flag */
-   hard_soft_flag = 0;
-   while (*sp) {
+   int hard_soft_flag = 0;
+   char scope_flag = JRS_SCOPE_GLOBAL;
 
+   while (*sp) {
+      DPRINTF("==> %s\n", *sp);
 /*----------------------------------------------------------------------------*/
       /* "-a date_time */
 
@@ -1013,6 +1014,7 @@ lList *cull_parse_cmdline(
          ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, *(sp - 1), *sp);
          lSetList(ep_opt, SPA_argval_lListT, resource_list);
          lSetInt(ep_opt, SPA_argval_lIntT, hard_soft_flag);
+         lSetChar(ep_opt, SPA_argval_lCharT, scope_flag);
 
          sp++;
          continue;
@@ -1072,6 +1074,7 @@ lList *cull_parse_cmdline(
          ep_opt = sge_add_arg(pcmdline, masterq_OPT, lListT, *(sp - 1), *sp);
          lSetList(ep_opt, SPA_argval_lListT, id_list);
          lSetInt(ep_opt, SPA_argval_lIntT, 0);
+         lSetChar(ep_opt, SPA_argval_lCharT, JRS_SCOPE_MASTER);
 
          sp++;
          continue;
@@ -1370,6 +1373,7 @@ DTRACE;
          ep_opt = sge_add_arg(pcmdline, q_OPT, lListT, *(sp - 1), *sp);
          lSetList(ep_opt, SPA_argval_lListT, id_list);
          lSetInt(ep_opt, SPA_argval_lIntT, hard_soft_flag);
+         lSetChar(ep_opt, SPA_argval_lCharT, scope_flag);
 
          sp++;
          continue;
@@ -1469,6 +1473,32 @@ DTRACE;
          lSetString(lep, VA_variable, "=");
          lInsertElem(variable_list, nullptr, lep);
          lSetList(ep_opt, SPA_argval_lListT, variable_list);
+
+         sp++;
+         continue;
+      }
+
+/*-----------------------------------------------------------------------------*/
+      /* "-scope" */
+
+      if (strcmp("-scope", *sp) == 0) {
+
+         DPRINTF("\"%s\"\n", *sp);
+
+         sp++;
+         if (*sp == nullptr) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-scope");
+            DRETURN(answer);
+         }
+
+         if (!job_parse_scope_string(*sp, scope_flag)) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_INVALIDOPTIONARGUMENT_SS, "-scope", *sp);
+            DRETURN(answer);
+         }
+
+         ep_opt = sge_add_noarg(pcmdline, scope_OPT, *(sp - 1), nullptr);
 
          sp++;
          continue;

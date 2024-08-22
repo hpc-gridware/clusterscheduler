@@ -87,6 +87,39 @@
 static bool
 check_binding_param_consistency(const lListElem *binding_elem);
 
+static bool
+sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, bool soft) {
+   bool ret = true;
+
+   const lList *global_requests;
+   if (soft) {
+      global_requests = job_get_soft_resource_list(jep);
+   } else {
+      global_requests = job_get_hard_resource_list(jep);
+   }
+
+   if (global_requests != nullptr) {
+      const lList *master_requests = job_get_hard_resource_list(jep, JRS_SCOPE_MASTER);
+      const lList *slave_requests = job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE);
+      const lListElem *ep;
+      for_each_ep(ep, global_requests) {
+         const char *name = lGetString(ep, CE_name);
+         if (lGetElemStr(master_requests, CE_name, name) != nullptr) {
+            ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "master");
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            ret = false;
+         }
+         if (lGetElemStr(slave_requests, CE_name, name) != nullptr) {
+            ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "slave");
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            ret = false;
+         }
+      }
+   }
+
+   return ret;
+}
+
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                       uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
@@ -147,9 +180,50 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* check for non-parallel job that define a master queue */
    if (ret == STATUS_OK) {
-      if (job_get_master_hard_queue_list(jep) != nullptr && lGetString(jep, JB_pe) == nullptr) {
-         ERROR(SFNMAX, MSG_JOB_MQNONPE);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      if (lGetString(jep, JB_pe) == nullptr) {
+         const lList *jrs_list = lGetList(jep, JB_request_set_list);
+         if (jrs_list != nullptr) {
+            const lListElem *jrs;
+            for_each_ep(jrs, jrs_list) {
+               if (lGetUlong(jrs, JRS_scope) > JRS_SCOPE_GLOBAL) {
+                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVENONPE);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                  ret = STATUS_EUNKNOWN;
+                  break;
+               }
+            }
+         }
+      }
+   }
+
+   // check for soft master or slave requests - we don't allow them (for now)
+   if (ret == STATUS_OK) {
+      const lList *jrs_list = lGetList(jep, JB_request_set_list);
+      if (jrs_list != nullptr) {
+         const lListElem *jrs;
+         for_each_ep(jrs, jrs_list) {
+            if (lGetUlong(jrs, JRS_scope) > JRS_SCOPE_GLOBAL) {
+               if (lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                  ret = STATUS_EUNKNOWN;
+                  break;
+               }
+               if (lGetList(jrs, JRS_soft_resource_list) != nullptr) {
+                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTREQ);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                  ret = STATUS_EUNKNOWN;
+                  break;
+               }
+            }
+         }
+      }
+   }
+
+   // verify that the there are no requests on the same variable in global scope and one of master or slave
+   if (ret == STATUS_OK) {
+      if (!sge_job_verify_global_master_slave_requests(alpp, jep, false) ||
+          !sge_job_verify_global_master_slave_requests(alpp, jep, true)) {
          ret = STATUS_EUNKNOWN;
       }
    }
@@ -198,7 +272,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       }
    }
 
-   /* set the jobs submittion time */
+   /* set the jobs submission time */
    if (ret == STATUS_OK) {
       lSetUlong64(jep, JB_submission_time, sge_get_gmt64());
    }
@@ -346,7 +420,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     * use the master_CEntry_list for all fills
     * JB_hard/soft_resource_list points to a CE_Type list
     */
-   // need to handle all in JB_request_set_list
    lListElem *jrs;
    for_each_rw(jrs, lGetList(jep, JB_request_set_list)) {
       u_long32 scope = lGetUlong(jrs, JRS_scope);

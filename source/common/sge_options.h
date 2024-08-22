@@ -68,6 +68,7 @@ enum {
    r_OPT,
    res_OPT,
    s_OPT,
+   scope_OPT,
    shell_OPT,
    soft_OPT,
    sync_OPT,
