@@ -88,6 +88,27 @@ static bool
 check_binding_param_consistency(const lListElem *binding_elem);
 
 static bool
+sge_job_verify_global_master_slave_queues(lList **alpp, const lListElem *jep) {
+   bool ret = true;
+
+   const lList *global_queue_requests = job_get_hard_queue_list(jep);
+   if (global_queue_requests != nullptr) {
+      if (job_get_hard_queue_list(jep, JRS_SCOPE_MASTER) != nullptr) {
+         ERROR(MSG_JOB_GLOBALMASTERSLAVEQ_S, "master");
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+      if (ret && job_get_hard_queue_list(jep, JRS_SCOPE_SLAVE) != nullptr) {
+         ERROR(MSG_JOB_GLOBALMASTERSLAVEQ_S, "slave");
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+   }
+
+   return ret;
+}
+
+static bool
 sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, bool soft) {
    bool ret = true;
 
@@ -104,12 +125,12 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, 
       const lListElem *ep;
       for_each_ep(ep, global_requests) {
          const char *name = lGetString(ep, CE_name);
-         if (lGetElemStr(master_requests, CE_name, name) != nullptr) {
+         if (centry_list_locate(master_requests, name) != nullptr) {
             ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "master");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
          }
-         if (lGetElemStr(slave_requests, CE_name, name) != nullptr) {
+         if (centry_list_locate(slave_requests, name) != nullptr) {
             ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "slave");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -120,6 +141,33 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, 
    return ret;
 }
 
+bool
+sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const lList *centry_list) {
+   bool ret = true;
+
+   // we only allow slave hard requests, no soft requests
+   const lList *request_list = job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE);
+   const lListElem *request;
+   for_each_ep(request, request_list) {
+      const char *name = lGetString(request, CE_name);
+      if (name != nullptr) {
+         INFO("==> checking slave request %s", name);
+         const lListElem *centry = centry_list_locate(centry_list, name);
+         if (centry != nullptr) {
+            INFO("==> found centry %s", name);
+            u_long32 consumable = lGetUlong(centry, CE_consumable);
+            if (consumable == CONSUMABLE_JOB) {
+               ERROR(MSG_JOB_SLAVEPERJOBREQUEST_S, name);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               ret = false;
+            }
+         }
+      }
+   }
+
+
+   return ret;
+}
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
                       uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
@@ -178,7 +226,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       }
    }
 
-   /* check for non-parallel job that define a master queue */
+   /* check for non-parallel job that define master requests */
    if (ret == STATUS_OK) {
       if (lGetString(jep, JB_pe) == nullptr) {
          const lList *jrs_list = lGetList(jep, JB_request_set_list);
@@ -224,6 +272,20 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    if (ret == STATUS_OK) {
       if (!sge_job_verify_global_master_slave_requests(alpp, jep, false) ||
           !sge_job_verify_global_master_slave_requests(alpp, jep, true)) {
+         ret = STATUS_EUNKNOWN;
+      }
+   }
+
+   // @todo check for slave requests of per job consumables (which are only granted to the master task)
+   if (ret == STATUS_OK) {
+      if (!sge_job_verify_slave_per_job_requests(alpp, jep, master_centry_list)) {
+         ret = STATUS_EUNKNOWN;
+      }
+   }
+
+   // verify that there are no hard queue requests in the global scope and one of master or slave
+   if (ret == STATUS_OK) {
+      if (!sge_job_verify_global_master_slave_queues(alpp, jep)) {
          ret = STATUS_EUNKNOWN;
       }
    }
