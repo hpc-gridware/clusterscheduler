@@ -1658,6 +1658,12 @@ int main(int argc, const char **argv)
    opt_list_merge_command_lines(&opts_all, &opts_defaults, &opts_scriptfile,
                                 &opts_cmdline);
 
+   opt_list_verify_scope(opts_all, &alp);
+   do_exit = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
+   if (do_exit > 0) {
+      sge_exit(1);
+   }
+
    alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &job);
    do_exit = parse_result_list(alp, &alp_error);
    lFreeList(&alp);

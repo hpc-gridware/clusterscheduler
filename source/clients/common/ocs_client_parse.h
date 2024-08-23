@@ -66,6 +66,8 @@ bool opt_list_has_X(lList *opts, const char *option);
 
 bool opt_list_is_X_true(lList *opts, const char *option);
 
+void opt_list_verify_scope(lList *opts, lList **alpp);
+
 bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user, lList **answer_list);
 
 const char *get_root_file_path(dstring *absolut_filename, const char *cell_root, const char *filename);

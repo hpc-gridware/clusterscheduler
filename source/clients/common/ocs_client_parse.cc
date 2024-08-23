@@ -660,6 +660,13 @@ bool opt_list_is_X_true(lList *opts, const char *option) {
    return ret;
 }
 
+void opt_list_verify_scope(lList *opts, lList **alpp) {
+   if (lGetElemStr(opts, SPA_switch_val, "-masterq") != nullptr &&
+       lGetElemStr(opts, SPA_switch_val, "-scope") != nullptr) {
+      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_EITHERSCOPEORMASTERX);
+   }
+}
+
 /****** read_defaults/get_root_file_path() *************************************
  *  NAME
  *     get_root_file_path() -- creates absolute filename for file in SGE_ROOT
