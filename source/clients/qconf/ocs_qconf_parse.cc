@@ -3390,7 +3390,7 @@ int sge_parse_qconf(char *argv[])
          }
 
          if ((ep != nullptr) &&
-            (userset_validate_entries(ep, &alp, 0) != STATUS_OK)) {
+            (userset_validate_entries(ep, &alp) != STATUS_OK)) {
             lFreeElem(&ep);
             answer_list_output(&alp);
             sge_parse_return = 1;
@@ -3490,7 +3490,7 @@ int sge_parse_qconf(char *argv[])
             sge_parse_return = 1;
          }
 
-         if ((ep != nullptr) && (userset_validate_entries(ep, &alp, 0) != STATUS_OK)) {
+         if ((ep != nullptr) && (userset_validate_entries(ep, &alp) != STATUS_OK)) {
             lFreeElem(&ep);
             answer_list_output(&alp);
             sge_parse_return = 1;

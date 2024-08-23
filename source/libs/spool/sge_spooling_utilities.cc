@@ -474,7 +474,7 @@ bool spool_default_validate_func(lList **answer_list,
       }
          break;
       case SGE_TYPE_USERSET:
-         if (userset_validate_entries(object, answer_list, 1) != STATUS_OK) {
+         if (userset_validate_entries(object, answer_list) != STATUS_OK) {
             ret = false;
          }
          break;

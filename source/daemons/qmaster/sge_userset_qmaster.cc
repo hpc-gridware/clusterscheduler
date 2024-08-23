@@ -109,7 +109,7 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
    }
 
    /* search for userset with this name and remove it from the list */
-   if (!(found = userset_list_locate(*userset_list, userset_name))) {
+   if (!(found = lGetElemStrRW(*userset_list, US_name, userset_name))) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -348,11 +348,11 @@ do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
    for_each_ep(np, new_users) {
       nname = lGetString(np, UE_name);
       if (nname && nname[0] == '@') {
-         if (sge_contained_in_access_list(nullptr, &nname[1], old_dep, &alp)) {
+         if (sge_contained_in_access_list(nullptr, &nname[1], nullptr, old_dep)) {
             DRETURN(alp);
          }
       } else {
-         if (sge_contained_in_access_list(nname, nullptr, old_dep, &alp)) {
+         if (sge_contained_in_access_list(nname, nullptr, nullptr, old_dep)) {
             DRETURN(alp);
          }
       }
@@ -370,6 +370,7 @@ do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
 int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
    const lListElem *dep;
    const char *owner, *group;
+   const lList *grp_list;
 
    DENTER(TOP_LAYER);
 
@@ -381,7 +382,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
       if (!(lGetUlong(dep, US_type) & US_DEPT))
          continue;
 
-      if (sge_contained_in_access_list(owner, nullptr, dep, nullptr)) {
+      if (sge_contained_in_access_list(owner, nullptr, nullptr, dep)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
          DPRINTF("user %s got department " SFQ "\n", owner, lGetString(dep, US_name));
 
@@ -392,12 +393,13 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
    /* the user does not appear in any department - now try to find
       our group in the department */
    group = lGetString(job, JB_group);
+   grp_list = lGetList(job, JB_grp_list);
    for_each_ep(dep, userset_list) {
       /* use only departments */
       if (!(lGetUlong(dep, US_type) & US_DEPT))
          continue;
 
-      if (sge_contained_in_access_list(nullptr, group, dep, nullptr)) {
+      if (sge_contained_in_access_list(nullptr, group, grp_list, dep)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
          DPRINTF("user %s got department \"%s\"\n", owner, lGetString(dep, US_name));
 
@@ -708,7 +710,7 @@ int userset_mod(lList **alpp, lListElem *new_userset,
    attr_mod_sub_list(alpp, new_userset, US_entries,
                      UE_name, userset, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
    /* interpret user/group names */
-   if (userset_validate_entries(new_userset, alpp, 0) != STATUS_OK) {
+   if (userset_validate_entries(new_userset, alpp) != STATUS_OK) {
       goto ERROR;
    }
 

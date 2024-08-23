@@ -317,8 +317,8 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
       sge_gdi_task_class_t *task;
 
       DPRINTF("packet->id = " sge_U32CFormat "\n", sge_u32c(packet->id));
-      DPRINTF("packet->host = " SFQ "\n", packet->host ? packet->host : "<null>");
-      DPRINTF("packet->commproc = " SFQ "\n", packet->commproc ? packet->commproc : "<null>");
+      DPRINTF("packet->host = " SFQ "\n", packet->host);
+      DPRINTF("packet->commproc = " SFQ "\n", packet->commproc);
       DPRINTF("packet->auth_info = " SFQ "\n", packet->auth_info ? packet->auth_info : "<null>");
       DPRINTF("packet->version = " sge_U32CFormat "\n", sge_u32c(packet->version));
       DPRINTF("packet->first_task = %p\n", packet->first_task);
@@ -382,14 +382,14 @@ sge_gdi_packet_create_base(lList **answer_list) {
          ret->is_gdi_request = true;
          ret->is_handled = false;
          ret->id = 0;
-         ret->host = nullptr;
-         ret->commproc = nullptr;
          ret->commproc_id = 0;
 
          ret->version = GRM_GDI_VERSION;
          ret->first_task = nullptr;
          ret->last_task = nullptr;
          ret->auth_info = nullptr;
+         ret->amount = 0;
+         ret->grp_array = nullptr;
          ret->next = nullptr;
          memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
       } else {
@@ -653,9 +653,8 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
       if (local_ret1 != 0 || local_ret2 != 0) {
          ret = false;
       }
-      sge_free(&((*packet)->host));
-      sge_free(&((*packet)->commproc));
-      sge_free(&((*packet)->auth_info));
+      sge_free(&(*packet)->auth_info);
+      sge_free(&(*packet)->grp_array);
       sge_free(packet);
    }
    DRETURN(ret);

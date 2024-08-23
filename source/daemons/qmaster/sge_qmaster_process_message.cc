@@ -211,19 +211,12 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
    sge_gdi_packet_class_t *packet = nullptr;
    bool local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
-   packet->host = sge_strdup(nullptr, aMsg->snd_host);
-   packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
+   strcpy(packet->host, aMsg->snd_host);
+   strcpy(packet->commproc, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;
    packet->is_gdi_request = true;
-
-   // check results of sge_strdup()
-   if (packet->host == nullptr || packet->commproc == nullptr) {
-      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
-      answer_list_add(&packet->first_task->answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      local_ret = false;
-   }
 
    // check GDI version
    if (local_ret) {
@@ -236,7 +229,8 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       DTRACE;
       local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
                                                  &(packet->uid), packet->user, sizeof(packet->user),
-                                                 &(packet->gid), packet->group, sizeof(packet->group));
+                                                 &(packet->gid), packet->group, sizeof(packet->group),
+                                                 &packet->amount, &packet->grp_array);
    }
 
    // check CSP mode if enabled
@@ -368,8 +362,8 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
     * it will be handled
     */
    sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
-   packet->host = sge_strdup(nullptr, aMsg->snd_host);
-   packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
+   strcpy(packet->host, aMsg->snd_host);
+   strcpy(packet->commproc, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;

@@ -125,25 +125,49 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("deadline:                   %s\n", sge_ctime64(ultime, &dstr));
       }
 
-   if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) >= 0) {
+   if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) > NoName) {
       if (lGetString(job, JB_owner))
          printf("owner:                      %s\n", lGetString(job, JB_owner));
       else
          printf("owner:                      %s\n", "");
    }
 
-   if (lGetPosViaElem(job, JB_uid, SGE_NO_ABORT) >= 0)
+   if (lGetPosViaElem(job, JB_uid, SGE_NO_ABORT) > NoName) {
       printf("uid:                        %d\n", (int) lGetUlong(job, JB_uid));
+   }
 
-   if (lGetPosViaElem(job, JB_group, SGE_NO_ABORT) >= 0) {
+   if (lGetPosViaElem(job, JB_group, SGE_NO_ABORT) > NoName) {
       if (lGetString(job, JB_group))
          printf("group:                      %s\n", lGetString(job, JB_group));
       else
          printf("group:                      %s\n", "");
    }
 
-   if (lGetPosViaElem(job, JB_gid, SGE_NO_ABORT) >= 0)
+   if (lGetPosViaElem(job, JB_gid, SGE_NO_ABORT) > NoName) {
       printf("gid:                        %d\n", (int) lGetUlong(job, JB_gid));
+   }
+
+   if (lGetPosViaElem(job, JB_grp_list, SGE_NO_ABORT) > NoName) {
+      const lListElem *grp_elem;
+      const lList *grp_list = lGetList(job, JB_grp_list);
+
+      printf("groups:                     ");
+      if (grp_list == nullptr) {
+         printf("NONE");
+      } else {
+         bool first = true;
+
+         for_each_ep(grp_elem, grp_list) {
+            if (first) {
+               first = false;
+            } else {
+               printf(", ");
+            }
+            printf(gid_t_fmt "(%s)", lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
+         }
+      }
+      printf("\n");
+   }
 
    {
       const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", nullptr};

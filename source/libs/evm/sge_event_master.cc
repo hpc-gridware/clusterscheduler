@@ -425,9 +425,8 @@ static void sge_event_master_process_add_event_client(const lListElem *request, 
    /* to be implemented later on - handling the internal event clients could become a little bit tricky */
 }
 
-int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *ruser, 
-                         char *rhost, event_client_update_func_t update_func,
-                         void *update_func_arg)
+int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, lList **alpp, lList **eclpp,
+                         event_client_update_func_t update_func, void *update_func_arg)
 {
    lListElem *ep = nullptr;
    u_long32 id;
@@ -514,12 +513,12 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    /* special event clients: we allow only one instance */
    /* if it already exists, delete the old one and register the new one */
    if (id > EV_ID_ANY && id < EV_ID_FIRST_DYNAMIC) {
-      /*
+      /*n
       ** we allow addition of a priviledged event client
       ** for internal clients (==> update_func != nullptr)
       ** and manager/operator
       */
-      if (update_func == nullptr && !manop_is_manager(ruser, master_manager_list)) {
+      if (update_func == nullptr && !manop_is_manager(packet, master_manager_list)) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          ERROR(SFNMAX, MSG_WRONG_USER_FORFIXEDID);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -577,7 +576,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, ruser, rhost, name, MSG_EVE_EVENTCLIENT);
+   INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, packet->user, packet->host, name, MSG_EVE_EVENTCLIENT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
@@ -1107,7 +1106,7 @@ sge_select_event_clients(const char *list_name, const lCondition *where, const l
 *
 *******************************************************************************/
 int
-sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t anUID, lList **alpp) {
+sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_client_id, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
@@ -1124,7 +1123,7 @@ sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t an
    client = get_event_client(event_client_id);
 
    if (client != nullptr) {
-      if (!manop_is_manager(anUser, master_manager_list) && (anUID != lGetUlong(client, EV_uid))) {
+      if (!manop_is_manager(packet, master_manager_list) && (packet->uid != lGetUlong(client, EV_uid))) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
                          ANSWER_QUALITY_ERROR);
@@ -1132,7 +1131,6 @@ sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t an
       }
 
       add_list_event_for_client(event_client_id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
-
       /* Print out a message about the event. */
       if (event_client_id == EV_ID_SCHEDD) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
@@ -1182,7 +1180,7 @@ sge_shutdown_event_client(u_long32 event_client_id, const char* anUser, uid_t an
 *               global_lock and internal ones.
 *
 *******************************************************************************/
-int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitoring_t *monitor)
+int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lList **alpp, monitoring_t *monitor)
 {
    const lListElem *client;
    int id = 0;
@@ -1190,7 +1188,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 
    DENTER(TOP_LAYER);
 
-   if (!manop_is_manager(anUser, master_manager_list)) {
+   if (!manop_is_manager(packet, master_manager_list)) {
       answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED, ANSWER_QUALITY_ERROR);
       DRETURN(EPERM);
    }

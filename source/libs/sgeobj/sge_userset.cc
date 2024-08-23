@@ -40,6 +40,7 @@
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_userset.h"
@@ -48,101 +49,13 @@
 
 #include "msg_common.h"
 
+#include <sge_str.h>
+
 const char* userset_types[] = {
    "ACL",   /* US_ACL   */
    "DEPT",  /* US_DEPT  */
    nullptr
 };
-
-/****** sgeobj/userset/userset_is_deadline_user() ******************************
-*  NAME
-*     userset_is_deadline_user() -- may user submit deadline jobs. 
-*
-*  SYNOPSIS
-*     bool userset_is_deadline_user(lList *lp, const char *username) 
-*
-*  FUNCTION
-*     Ask whether a given user is allowed to sumbit deadline jobs. 
-*
-*  INPUTS
-*     lList *lp            - US_Type 
-*     const char *username - user name
-*
-*  RESULT
-*     bool - result 
-*******************************************************************************/
-bool userset_is_deadline_user(const lList *lp, const char *username)
-{
-   DENTER(TOP_LAYER);
-   const lListElem *deadline_users = lGetElemStr(lp, US_name, DEADLINE_USERS);
-   if (deadline_users && lGetSubStr(deadline_users, UE_name, username, US_entries)) {
-      DRETURN(true); /* found user in deadline user list */
-   }
-   DRETURN(false);
-}
-
-/****** sge_userset/userset_is_ar_user() ***************************************
-*  NAME
-*     userset_is_ar_user() -- may user request advance reservations
-*
-*  SYNOPSIS
-*     bool userset_is_ar_user(lList *lp, const char *username) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lList *lp            - US_Type
-*     const char *username - user name
-*
-*  RESULT
-*     bool - true if user has permission
-*            false if user has no permission
-*  NOTES
-*     MT-NOTE: userset_is_ar_user() is MT safe 
-*******************************************************************************/
-bool userset_is_ar_user(const lList *lp, const char *username)
-{
-   const lListElem *ar_users;
-
-   DENTER(TOP_LAYER);
-
-   ar_users = lGetElemStr(lp, US_name, AR_USERS);
-
-   if (ar_users && lGetSubStr(ar_users, UE_name, username, US_entries)) {
-      DRETURN(true); /* found user in ar user list */
-   }
-
-   DRETURN(false);
-}
-
-/****** sgeobj/userset/userset_list_locate() **********************************
-*  NAME
-*     userset_list_locate() -- Find user in list 
-*
-*  SYNOPSIS
-*     lListElem* userset_list_locate(lList *lp, const char *name) 
-*
-*  FUNCTION
-*     Find user in list. 
-*
-*  INPUTS
-*     lList *lp        - US_Type list 
-*     const char *name - name 
-*
-*  RESULT
-*     lListElem* - nullptr or element pointer
-*******************************************************************************/
-lListElem *userset_list_locate(const lList *lp, const char *name) 
-{
-   lListElem *ep = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   ep = lGetElemStrRW(lp, US_name, name);
-
-   DRETURN(ep);
-}
 
 /****** sgeobj/userset/userset_list_validate_acl_list() ***********************
 *  NAME
@@ -164,11 +77,9 @@ lListElem *userset_list_locate(const lList *lp, const char *name)
 *     int - STATUS_OK, if everything is OK
 *******************************************************************************/
 int 
-userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list)
-{
-   const lListElem *usp;
-
+userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list) {
    DENTER(TOP_LAYER);
+   const lListElem *usp;
 
    for_each_ep(usp, acl_list) {
       if (!lGetElemStr(master_userset_list, US_name, lGetString(usp, US_name))) {
@@ -205,15 +116,13 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 *     MT-NOTE: userset_list_validate_access() is not MT safe 
 *
 *******************************************************************************/
-int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const lList *master_userset_list)
-{
-   const lListElem *usp;
-   char *user;
-
+int
+userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const lList *master_userset_list) {
    DENTER(TOP_LAYER);
 
+   const lListElem *usp;
    for_each_ep(usp, acl_list) {
-      user = (char *) lGetString(usp, nm);
+      char *user = (char *) lGetString(usp, nm);
       if (is_hgroup_name(user)){
          user++;  /* jump ower the @ sign */
          if (!lGetElemStr(master_userset_list, US_name, user)) {
@@ -242,30 +151,19 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
 *     lList **alpp       - answer list pointer, if answer is expected. 
 *                          In any case, errors are output using the 
 *                          ERROR macro.
-*     int start_up       - are we in the qmaster startup phase?
 *
 *  RESULT
 *     int - STATUS_OK, if everything is OK
 *******************************************************************************/
-int userset_validate_entries(lListElem *userset, lList **alpp, int start_up)
-{
-   const lListElem *ep;
-   int name_pos;
-
+int userset_validate_entries(lListElem *userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   /*
-      resolve cull names to positions
-      for faster access in loop
-   */
-
-   name_pos = lGetPosInDescr(UE_Type, UE_name);
-
+   const lListElem *ep;
+   int name_pos = lGetPosInDescr(UE_Type, UE_name);
    for_each_ep(ep, lGetList(userset, US_entries)) {
       if (!lGetPosString(ep, name_pos)) {
          ERROR(SFNMAX, MSG_US_INVALIDUSERNAME);
-         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, 
-                         ANSWER_QUALITY_ERROR);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
       }
    }
@@ -297,24 +195,17 @@ int userset_validate_entries(lListElem *userset, lList **alpp, int start_up)
 *     sgeobj/userset/userset_set_type_string()
 *******************************************************************************/
 const char *
-userset_get_type_string(const lListElem *userset, lList **answer_list, 
-                        dstring *buffer)
-{
-   u_long32 type;
-   int i;
-   bool append = false;
-   const char *ret;
-
+userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *buffer) {
    DENTER(TOP_LAYER);
 
-   
    SGE_CHECK_POINTER_NULL(userset, answer_list);
    SGE_CHECK_POINTER_NULL(buffer, answer_list);
 
-   type = lGetUlong(userset, US_type);
-   sge_dstring_clear(buffer);
+   bool append = false;
+   u_long32 type = lGetUlong(userset, US_type);
 
-   for (i = 0; userset_types[i] != nullptr; i++) {
+   sge_dstring_clear(buffer);
+   for (int i = 0; userset_types[i] != nullptr; i++) {
       if ((type & (1 << i)) != 0) {
          if (append) {
             sge_dstring_append(buffer, " ");
@@ -323,9 +214,7 @@ userset_get_type_string(const lListElem *userset, lList **answer_list,
          append = true;
       }
    }
-
-   ret = sge_dstring_get_string(buffer);
-   DRETURN(ret);
+   DRETURN(sge_dstring_get_string(buffer));
 }
 
 /****** sgeobj/userset/userset_set_type_string() ******************************
@@ -353,23 +242,20 @@ userset_get_type_string(const lListElem *userset, lList **answer_list,
 *     sgeobj/userset/userset_get_type_string()
 ******************************************************************************/
 bool 
-userset_set_type_string(lListElem *userset, lList **answer_list, 
-                        const char *value)
-{
-   bool ret = true;
-   u_long32 type = 0;
- 
+userset_set_type_string(lListElem *userset, lList **answer_list, const char *value) {
    DENTER(TOP_LAYER);
 
    SGE_CHECK_POINTER_FALSE(userset, answer_list);
+
+   bool ret = true;
+   u_long32 type = 0;
 
    if (value != nullptr && *value != 0) {
       if (!sge_parse_bitfield_str(value, userset_types, &type, 
                                   "userset type", answer_list, false)) {
          ret = false;
       }
-   }
-   else { /* value == nullptr || *value == 0 */
+   } else { /* value == nullptr || *value == 0 */
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEEMPTYSPEC_S , "userset type");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -381,13 +267,12 @@ userset_set_type_string(lListElem *userset, lList **answer_list,
 }
 
 const char *
-userset_list_append_to_dstring(const lList *this_list, dstring *string)
-{
+userset_list_append_to_dstring(const lList *this_list, dstring *string) {
    const char *ret = nullptr;
 
    DENTER(BASIS_LAYER);
    if (string != nullptr) {
-      const lListElem *elem = nullptr;
+      const lListElem *elem;
       bool printed = false;
 
       for_each_ep(elem, this_list) {
@@ -405,59 +290,75 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string)
    DRETURN(ret);
 }
 
+bool
+find_name_as_group(const char *group_name_without_prefix, const lList *user_group_list) {
+   DENTER(TOP_LAYER);
+   bool found = false;
 
+   dstring group_entry = DSTRING_INIT;
+   const char *group = sge_dstring_sprintf(&group_entry, "@%s", group_name_without_prefix);
+   if (lGetElemStr(user_group_list, UE_name, group) != nullptr) {
+      found = true;
+   } else if (sge_is_pattern(group_name_without_prefix)) {
+      const lListElem *acl_entry;
+      for_each_ep(acl_entry, user_group_list) {
+         const char *entry_name = lGetString(acl_entry, UE_name);
+         if (entry_name != nullptr && fnmatch(group, entry_name, 0) == 0) {
+            found = true;
+            break;
+         }
+      }
+   }
+   sge_dstring_free(&group_entry);
+   DRETURN(found);
+}
 
-/* sge_contained_in_access_list() returns 
-   1  yes it is contained in the acl
-   0  no 
+bool
+find_name_as_user(const char *user_name, const lList *user_group_list) {
+   DENTER(TOP_LAYER);
+   bool found = false;
+   if (lGetElemStr(user_group_list, UE_name, user_name) != nullptr) {
+      found = true;
+   } else if (sge_is_pattern(user_name)) {
+      const lListElem *acl_entry;
+      for_each_ep(acl_entry, user_group_list) {
+         const char *entry_name = lGetString(acl_entry, UE_name);
+         if (entry_name != nullptr && fnmatch(user_name, entry_name, 0) == 0) {
+            found = true;
+            break;
+         }
+      }
+   }
+   DRETURN(found);
+}
 
-   user, group: may be nullptr
-*/   
-int sge_contained_in_access_list(const char *user, const char *group, 
-                                 const lListElem *acl, lList **alpp) 
-{
+int
+sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl) {
+   DENTER(TOP_LAYER);
    bool found = false;
    const lList *user_list = lGetList(acl, US_entries);
 
-   DENTER(TOP_LAYER);
-   if (group != nullptr) {
-      dstring group_entry = DSTRING_INIT;
-
-      sge_dstring_sprintf(&group_entry, "@%s", group);
-      if (lGetElemStr(user_list, UE_name, sge_dstring_get_string(&group_entry)) != nullptr) {
-         found = true;
-      } else if (sge_is_pattern(group)) {
-         const lListElem *acl_entry;
-         const char *entry_name;
-         for_each_ep(acl_entry, user_list) {
-            entry_name = lGetString(acl_entry, UE_name);
-            if (entry_name != nullptr && fnmatch(sge_dstring_get_string(&group_entry), entry_name, 0) == 0) {
-               found = true;
-               break;
-            }
-         }
-      }
-      sge_dstring_free(&group_entry);
+   // user name
+   if (user != nullptr) {
+      found = find_name_as_user(user, user_list);
    }
-   if (!found && user != nullptr) {
-      if (lGetElemStr(user_list, UE_name, user) != nullptr) {
-         found = true;            
-      } else if (sge_is_pattern(user)) {
-         const lListElem *acl_entry;
-         const char *entry_name;
-         for_each_ep(acl_entry, user_list) {
-            entry_name = lGetString(acl_entry, UE_name);
-            if (entry_name != nullptr && fnmatch(user, entry_name, 0) == 0) {
-               found = true;
-               break;
-            }
+
+   // primary group name
+   if (!found && group != nullptr) {
+      found = find_name_as_group(group, user_list);
+   }
+
+   // supplementary groups
+   if (!found && grp_list != nullptr && mconf_get_enable_sup_grp_eval()) {
+      const lListElem *grp_elem;
+
+      for_each_ep(grp_elem, grp_list) {
+         found = find_name_as_group(lGetString(grp_elem, ST_name), user_list);
+         if (found) {
+            break;
          }
       }
    }
 
-   if (found) {
-      DRETURN(1);
-   }
-
-   DRETURN(0);
+   DRETURN(found ? 1 : 0);
 }

@@ -1244,3 +1244,123 @@ sge_has_admin_user() {
    gid_t gid;
    DRETURN(!(get_admin_user(&uid, &gid) == ESRCH));
 }
+
+/**
+ * @brief Returns supplementary groups of the executing user.
+ *
+ * Calling function is responsible to free grp_array.
+ *
+ * @param amount        of supplementary groups the user is part of
+ * @param grp_array     containing elements with the grp id and name
+ * @param err_str       variable where the function can store an error message
+ * @param err_str_len   length of the error string buffer
+ * @return              false in case on error or true in case of success
+ *                      if true is returned the also amount and grp_array will be set.
+ */
+bool
+ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_str_len) {
+   DENTER(TOP_LAYER);
+
+   // check input parameter
+   if (err_str == nullptr || err_str_len <= 0) {
+      // nothing we can do here. caller should have specified the string.
+      DRETURN(false);
+   }
+   if (amount == nullptr) {
+      snprintf(err_str, err_str_len, "invalid input parameter (amount).");
+      DRETURN(false);
+   }
+   if (grp_array == nullptr) {
+      snprintf(err_str, err_str_len, "invalid input parameter (grp_array).");
+      DRETURN(false);
+   }
+
+   // get maximum amount of supplementary group IDs
+   int max_groups = static_cast<int>(sge_sysconf(SGE_SYSCONF_NGROUPS_MAX));
+   if (max_groups == -1) {
+      snprintf(err_str, err_str_len, "sge_sysconf(SGE_SYSCONF_NGROUPS_MAX) failed.");
+      DRETURN(false);
+   }
+
+   // allocate buffer for group IDs
+   auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
+   if (grp_id_list == nullptr) {
+      snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group IDs");
+      DRETURN(false);
+   }
+
+   // fetch group IDs
+   int grp_ids = getgroups(max_groups, grp_id_list);
+   if (grp_ids == -1) {
+      snprintf(err_str, err_str_len, "getgroups() failed.");
+      sge_free(&grp_id_list);
+      DRETURN(false);
+   }
+   if (grp_ids == 0) {
+      // success case: user has no supplementary groups
+      *amount = 0;
+      *grp_array = nullptr;
+      sge_free(&grp_id_list);
+      DRETURN(true);
+   }
+
+   // fetch group names and store them with corresponding IDs in the array to be returned
+   auto array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(grp_ids * sizeof(ocs_grp_elem_t)));
+   if (array == nullptr) {
+       snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group information");
+       sge_free(&grp_id_list);
+       DRETURN(false);
+   }
+   for (int i = 0; i < grp_ids; i++) {
+      // try to get the name
+      array[i].id = grp_id_list[i];
+      int lret = sge_gid2group(grp_id_list[i], array[i].name, MAX_STRING_SIZE, 1);
+
+      // non-resolvable groups are no error. also OCS uses GIDs without name for job tracing
+      if (lret != 0) {
+          snprintf(array[i].name, MAX_STRING_SIZE, gid_t_fmt, grp_id_list[i]);
+      }
+   }
+   sge_free(&grp_id_list);
+   *amount = grp_ids;
+   *grp_array = array;
+   DRETURN(true);
+}
+
+/**
+ * @brief Fills a dstring with the information about user, group, supplementary group's similar to the id-command.
+ *
+ * As sise effect the string will be printed to
+ *
+ * @param dstr       Dstring that will contain the information
+ * @param uid        user ID
+ * @param username   user name
+ * @param gid        primary group ID
+ * @param groupname  primary group name
+ * @param amount     number of supplementary groups
+ * @param grp_array  array with entries for each sup-grp (ID and name)
+ */
+void
+ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
+               gid_t gid, const char *groupname, int amount, ocs_grp_elem_t *grp_array) {
+   DENTER(TOP_LAYER);
+   sge_dstring_sprintf(dstr, "uid=" uid_t_fmt "(%s) gid=" gid_t_fmt "(%s) groups=", uid, username, gid, groupname);
+   if (amount == 0) {
+      sge_dstring_sprintf_append(dstr, "NONE\n");
+   } else {
+      bool is_first = true;
+      for (int i = 0; i < amount; i++) {
+         if (is_first) {
+            is_first = false;
+         } else {
+            sge_dstring_append(dstr, ", ");
+         }
+         sge_dstring_sprintf_append(dstr, gid_t_fmt "(%s)", grp_array[i].id, grp_array[i].name);
+      }
+      sge_dstring_append_char(dstr, '\n');
+   }
+   DPRINTF("%s", sge_dstring_get_string(dstr));
+   DRETURN_VOID;
+}
+
+

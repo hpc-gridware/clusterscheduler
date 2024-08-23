@@ -33,12 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int sge_contained_in_access_list_(const char *user, const char *group, 
-                                         const lList *acl, const lList *acl_list);
+int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+                                  const lList *acl, const lList *acl_list);
 
-int sge_has_access(const char *user, const char *group, const lListElem *q, const lList *acl_list);
+int sge_has_access(const char *user, const char *group, const lList *grp_list, const lListElem *q, const lList *acl_list);
 
-int sge_has_access_(const char *user, const char *group, const lList *q_acl, 
+int sge_has_access_(const char *user, const char *group, const lList *grp_list, const lList *q_acl,
                     const lList *q_xacl, const lList *acl_list);
 
 bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list, const lList *xacl_list, const lList *master_userset_list);

@@ -136,6 +136,7 @@ static bool is_new_config = false;
 static bool forbid_reschedule = false;
 static bool forbid_apperror = false;
 static bool enable_forced_qdel = false;
+static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
@@ -653,6 +654,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       forbid_reschedule = false;
       forbid_apperror = false;
       enable_forced_qdel = false;
+      enable_sup_grp_eval = false;
       enable_enforce_master_limit = false;
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
@@ -720,6 +722,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL", &enable_forced_qdel)) {
             continue;
          } 
+         if (parse_bool_param(s, "ENABLE_SUP_GRP_EVAL", &enable_sup_grp_eval)) {
+            continue;
+         }
          if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &enable_enforce_master_limit)) {
             continue;
          } 
@@ -2470,6 +2475,15 @@ bool mconf_get_enable_forced_qdel() {
 
    ret = enable_forced_qdel;
 
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+
+}
+
+bool mconf_get_enable_sup_grp_eval() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = enable_sup_grp_eval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 

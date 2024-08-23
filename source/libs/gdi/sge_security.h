@@ -92,4 +92,5 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle);
 bool  
 sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_list,
                                uid_t *uid, char *user, size_t user_len,
-                               gid_t *gid, char *group, size_t group_len);
+                               gid_t *gid, char *group, size_t group_len,
+                               int *amount, ocs_grp_elem_t **grp_array);

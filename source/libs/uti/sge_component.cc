@@ -41,10 +41,16 @@ typedef struct {
 
    int component_id;
    char component_name[MAX_COMP_NAME];
-   uid_t uid;
-   gid_t gid;
-   char username[MAX_USER_GROUP];
-   char groupname[MAX_USER_GROUP];
+
+   uid_t uid;                          // user ID
+   gid_t gid;                          // primary group ID
+   char username[MAX_USER_GROUP];      // user name
+   char groupname[MAX_USER_GROUP];     // primary group name
+
+   bool supplementary_grp_initialized; // are the amount and grp_array initialized
+   int amount;                         // amount of supplementray groups
+   ocs_grp_elem_t *grp_array;          // array containing supplementray group IDs and names
+
    bool qmaster_internal;
    bool daemonized;
    char qualified_hostname[MAX_HOSTNAME];
@@ -98,6 +104,12 @@ set_qualified_hostname(sge_component_tl0_t *tl, const char *qualified_hostname) 
 static void
 set_qmaster_internal(sge_component_tl0_t *tl, bool qmaster_internal) {
    tl->qmaster_internal = qmaster_internal;
+}
+
+static void
+set_supplementray_groups(sge_component_tl0_t *tl, int amount, ocs_grp_elem_t *grp_array) {
+   tl->amount = amount;
+   tl->grp_array = grp_array;
 }
 
 static void
@@ -159,6 +171,10 @@ component_tl0_init(sge_component_tl0_t *tl) {
    SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0);
    set_username(tl, user);
    set_group_name(tl, group);
+
+   // supplementary groups are lazy initialized in component_get
+   tl->supplementary_grp_initialized = false;
+   set_supplementray_groups(tl, 0, nullptr);
 
    // setup short and long hostnames
    char *s = nullptr;
@@ -269,6 +285,27 @@ component_get_qualified_hostname() {
    return tl->qualified_hostname;
 }
 
+void
+component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array) {
+   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
+
+   // Lazy initialize of supplementary groups.
+   if (!tl->supplementary_grp_initialized) {
+      char err_str[MAX_STRING_SIZE];
+      int amount_l = 0;
+      ocs_grp_elem_t *grp_array_l = nullptr;
+      bool lret = ocs_get_groups(&amount_l, &grp_array_l, err_str, sizeof(err_str));
+      set_supplementray_groups(tl, amount_l, grp_array_l);
+      if (!lret) {
+         ERROR("%s", err_str);
+      }
+   }
+
+   // Pass values to caller
+   *amount = tl->amount;
+   *grp_array = tl->grp_array;
+}
+
 int
 component_get_thread_id() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -354,21 +391,27 @@ component_do_log() {
 
    DENTER(TOP_LAYER);
    DPRINTF("THREAD ===\n");
-   DPRINTF("   thread_name          >%s<\n", tl->thread_name);
-   DPRINTF("   thread_id            >%d<\n", tl->thread_id);
-   DPRINTF("   qmaster_internal     >%s<\n", tl->qmaster_internal);
+   DPRINTF("   thread_name                      >%s<\n", tl->thread_name);
+   DPRINTF("   thread_id                        >%d<\n", tl->thread_id);
+   DPRINTF("   qmaster_internal                 >%s<\n", tl->qmaster_internal);
    DPRINTF("COMPONENT ===\n");
-   DPRINTF("   component_id         >%d<\n", tl->component_id);
-   DPRINTF("   component_name       >%s<\n", tl->component_name);
-   DPRINTF("   daemonized           >%s<\n", tl->daemonized);
-   DPRINTF("   exit_func            >%p<\n", tl->exit_func);
+   DPRINTF("   component_id                     >%d<\n", tl->component_id);
+   DPRINTF("   component_name                   >%s<\n", tl->component_name);
+   DPRINTF("   daemonized                       >%s<\n", tl->daemonized);
+   DPRINTF("   exit_func                        >%p<\n", tl->exit_func);
    DPRINTF("USER ===\n");
-   DPRINTF("   uid                  >%d<\n", tl->uid);
-   DPRINTF("   gid                  >%d<\n", tl->gid);
-   DPRINTF("   username             >%s<\n", tl->username);
-   DPRINTF("   groupname            >%s<\n", tl->groupname);
+   DPRINTF("   uid                              >%d<\n", tl->uid);
+   DPRINTF("   gid                              >%d<\n", tl->gid);
+   DPRINTF("   username                         >%s<\n", tl->username);
+   DPRINTF("   groupname                        >%s<\n", tl->groupname);
+   DPRINTF("   supplementary_grp_initialized    >%0<\n", tl->supplementary_grp_initialized);
+   if (tl->supplementary_grp_initialized) {
+      for (int i = 0; i <= tl->amount; i++) {
+         DPRINTF("      grp_array               >%s< >%d<\n", tl->grp_array[i].name, tl->grp_array[i].id);
+      }
+   }
    DPRINTF("HOST ===\n");
-   DPRINTF("   qualified_hostname   >%s<\n", tl->qualified_hostname);
-   DPRINTF("   unqualified_hostname >%s<\n", tl->unqualified_hostname);
+   DPRINTF("   qualified_hostname               >%s<\n", tl->qualified_hostname);
+   DPRINTF("   unqualified_hostname             >%s<\n", tl->unqualified_hostname);
    DRETURN_VOID;
 }

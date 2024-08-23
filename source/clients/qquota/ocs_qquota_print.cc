@@ -200,7 +200,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                               qquota_filter.host = lGetString(host_ep, ST_name);
                            }
                          
-                           if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, qquota_filter.project,
+                           if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, nullptr ,qquota_filter.project,
                                                      qquota_filter.pe, qquota_filter.host,
                                                      qquota_filter.queue, userset_list, hgroup_list)) {
                               const lListElem *limit = nullptr;
@@ -248,8 +248,8 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                        if (is_hgroup_name(qquota_filter.user)) {
                                           lListElem *ugroup = nullptr;
 
-                                          if ((ugroup = userset_list_locate(userset_list, &qquota_filter.user[1])) != nullptr) {
-                                             if (sge_contained_in_access_list(user, nullptr, ugroup, nullptr) == 0) {
+                                          if ((ugroup = lGetElemStrRW(userset_list, US_name, &qquota_filter.user[1])) != nullptr) {
+                                             if (sge_contained_in_access_list(user, nullptr, nullptr, ugroup) == 0) {
                                                 continue;
                                              }
                                           }

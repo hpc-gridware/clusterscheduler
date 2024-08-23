@@ -43,12 +43,15 @@
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "comm/cl_commlib.h"
 
 #include "msg_qmaster.h"
+
+#include <uti/sge_rmon_macros.h>
 
 /****** sge_utility/verify_str_key() *******************************************
 *  NAME
@@ -303,4 +306,3 @@ int reresolve_qualified_hostname() {
    component_set_qualified_hostname(unique_hostname);
    return ret;
 }
-

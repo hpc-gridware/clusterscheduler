@@ -28,6 +28,14 @@ Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline
 (\\newline) characters. The backslash and the newline are replaced with
 a space (" ") character before any interpretation.
 
+Following predefined access lists gain access to specific functionalities of the xxQS_NAMExx system:
+
+## arusers
+Allows to submit, control and delete advance reservations (see qsub(1)).
+
+## deadlineusers
+Allows to specify a deadline for jobs (see qsub(1) -dl).
+
 # FORMAT
 
 The following list of *access_list* parameters specifies the
@@ -55,19 +63,24 @@ The current functional share of the department.
 
 ## **entries**
 
-The entries parameter contains the comma separated list of those UNIX
-users (see *user_name* in *sge_types*(1)) or those primary UNIX groups
-that are assigned to the access list or the department. Only a user's
-primary UNIX group is used; secondary groups are ignored. Only symbolic
-names are allowed. A group is differentiated from a user name by
-prefixing the group name with a '@' sign. Pure access lists allow
-enlisting any user or group in any access list.
+The entries parameter contains the comma separated list of those UNIX users (see *user_name* 
+in *sge_types*(1)) or those UNIX groups that are assigned to the access list or the department. 
 
-When using departments, each user or group enlisted may only be enlisted
-in one department, in order to ensure a unique assignment of jobs to
-departments. To jobs whose users do not match with any of the users or
-groups enlisted under entries the *defaultdepartment* is assigned, if
-existing.
+By default, only a user's primary UNIX group is considered to gain/reject access. 
+Supplementary groups are only considered if the parameter ENABLE_SUP_GRP_EVAL=1 is defined as 
+qmaster_param in the configuration. 
+
+Symbolic names are allowed. A group is differentiated from a username by
+prefixing the group name with a '@' sign. For UNIX groups that have no symbolic name it is allowed
+to specify the '@' character followed by the UNIX group ID.
+
+Pure access lists allow enlisting any user or group in any access list.
+
+When using departments, each user or group enlisted may only be enlisted in one department, in 
+order to ensure a unique assignment of jobs to departments. To jobs whose users do not match 
+with any of the users or groups enlisted under entries the *defaultdepartment* is assigned, if
+existing. Please note that even if ENABLE_SUP_GRP_EVAL=1 is defined, only the primary group
+is used to assign a department to users jobs.
 
 # SEE ALSO
 

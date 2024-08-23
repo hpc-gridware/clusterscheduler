@@ -390,8 +390,8 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             DPRINTF("-----> checking queue user: %s\n", name);
 
             DPRINTF("testing queue access lists\n");
-            q_access = (name[0] == '@') ? sge_has_access(nullptr, &name[1], qep, acl_list)
-                                        : sge_has_access(name, nullptr, qep, acl_list);
+            q_access = (name[0] == '@') ? sge_has_access(nullptr, &name[1], nullptr, qep, acl_list)
+                                        : sge_has_access(name, nullptr, nullptr, qep, acl_list);
             if (!q_access) {
                DPRINTF("no access\n");
             } else {
@@ -404,9 +404,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -418,9 +418,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -435,8 +435,8 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
 
             DPRINTF("testing host access lists\n");
-            h_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], h_acl, h_xacl, acl_list)
-                                        : sge_has_access_(name, nullptr, h_acl, h_xacl, acl_list);
+            h_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, h_acl, h_xacl, acl_list)
+                                        : sge_has_access_(name, nullptr, nullptr, h_acl, h_xacl, acl_list);
             if (!h_access) {
                DPRINTF("no access\n");
             } else {
@@ -449,9 +449,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -463,9 +463,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -480,8 +480,8 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
 
             DPRINTF("testing global host access lists\n");
-            gh_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], global_acl, global_xacl, acl_list)
-                                         : sge_has_access_(name, nullptr, global_acl, global_xacl, acl_list);
+            gh_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, global_acl, global_xacl, acl_list)
+                                         : sge_has_access_(name, nullptr, nullptr, global_acl, global_xacl, acl_list);
             if (!gh_access) {
                DPRINTF("no access\n");
             } else {
@@ -494,9 +494,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                        lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -508,9 +508,9 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
                      if ((prj = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], lGetList(prj, PR_acl),
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, lGetList(prj, PR_acl),
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj, PR_acl),
                                                                         lGetList(prj, PR_xacl), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
@@ -525,8 +525,11 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
 
             DPRINTF("testing cluster config access lists\n");
-            conf_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], config_acl, config_xacl, acl_list)
-                                           : sge_has_access_(name, nullptr, config_acl, config_xacl, acl_list);
+            if (name[0] == '@') {
+               conf_access = sge_has_access_(nullptr, &name[1], nullptr, config_acl, config_xacl, acl_list);
+            } else {
+               conf_access = sge_has_access_(name, nullptr, nullptr, config_acl, config_xacl, acl_list);
+            }
             if (!conf_access) {
                DPRINTF("no access\n");
             } else {

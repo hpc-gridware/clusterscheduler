@@ -33,8 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "gdi/sge_gdi_packet.h"
+
 #include "sgeobj/cull/sge_manop_UM_L.h"
 #include "sgeobj/cull/sge_manop_UO_L.h"
 
-bool manop_is_manager(const char *user_name, const lList *master_manager_list);
-bool manop_is_operator(const char *cp, const lList *master_manager_list, const lList *master_operator_list);
+bool user_list_is_user_grp_sgrp_in_list(const sge_gdi_packet_class_t *packet, const lList *usr_grp_sgrp_list, int nm);
+bool user_is_ar_user(const sge_gdi_packet_class_t *packet, const lList *ar_users_list);
+bool user_is_deadline_user(const sge_gdi_packet_class_t *packet, const lList *ar_users_list);
+bool manop_is_manager(const sge_gdi_packet_class_t *packet, const lList *master_manager_list);
+bool manop_is_operator(const sge_gdi_packet_class_t *packet, const lList *master_manager_list, const lList *master_operator_list);

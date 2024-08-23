@@ -20,5 +20,15 @@
 				}, {
 					"name":	"SPOOL_SUBLIST"
 				}]
+		},{
+			"name":	"id",
+			"summary":	"String ID",
+			"description":	[{
+					"line":	"allows to attach a ID to each string"
+					}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"HASH"
+				}]
 		}]
 }

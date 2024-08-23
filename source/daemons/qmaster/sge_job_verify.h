@@ -34,5 +34,5 @@
 /*___INFO__MARK_END__*/
 
 int
-sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost, uid_t uid, gid_t gid,
-                      char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
+                      sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);

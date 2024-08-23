@@ -40,28 +40,15 @@
 #define US_ACL       (1<<0)
 #define US_DEPT      (1<<1)
 
-/* 
- *  This is the list type we use to hold the 
- *  user set lists in the qmaster. These are also used as 
- *  (x)access lists.
- */
-
 /* special list element */
 #define DEADLINE_USERS     "deadlineusers"
 #define DEFAULT_DEPARTMENT "defaultdepartment"
 #define AR_USERS           "arusers"
 
-
 extern const char *userset_types[];
 
-bool userset_is_deadline_user(const lList *lp, const char *username);
-
-bool userset_is_ar_user(const lList *lp, const char *username);
-
-lListElem *userset_list_locate(const lList *lp, const char *name);
-
-int 
-userset_validate_entries(lListElem *userset, lList **alpp, int start_up);
+int
+userset_validate_entries(lListElem *object, lList **answer_list);
 
 int userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list);
 
@@ -76,5 +63,5 @@ userset_set_type_string(lListElem *userset, lList **answer_list, const char *val
 const char *
 userset_list_append_to_dstring(const lList *this_list, dstring *string);
 
-int sge_contained_in_access_list(const char *user, const char *group, 
-                                 const lListElem *acl, lList **alpp);
+int
+sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl);
