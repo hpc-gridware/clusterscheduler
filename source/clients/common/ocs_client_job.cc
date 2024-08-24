@@ -153,7 +153,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
       printf("groups:                     ");
       if (grp_list == nullptr) {
+#if defined(OGE_WITH_EXTENSIONS)
+         printf("NOT-AVAILABLE-IN-GCS");
+#else
          printf("NONE");
+#endif
       } else {
          bool first = true;
 

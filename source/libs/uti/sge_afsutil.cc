@@ -46,27 +46,15 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_unistd.h"
 
-/****** uti/afsutil/sge_read_token() ******************************************
-*  NAME
-*     sge_read_token() -- read token from file 
-*
-*  SYNOPSIS
-*     char* sge_read_token(const char *file) 
-*
-*  FUNCTION
-*     Read token from file, malloc buffer, add '\0' byte and
-*     return pointer to buffer.
-*
-*  INPUTS
-*     const char *file - filename 
-*
-*  NOTES
-*     MT-NOTE: sge_read_token() is MT safe
-*
-*  RESULT
-*     char* - pointer to a malloced buffer or 
-*             nullptr if error occured
-******************************************************************************/
+/**
+ * \brief Read token from file.
+ *
+ * \param[in] file Filename.
+ *
+ * \return Pointer to a malloced buffer or nullptr if error occurred.
+ *
+ * \note MT-NOTE: sge_read_token() is MT safe.
+ */
 char *sge_read_token(const char *file) {
    SGE_STRUCT_STAT sb;
    int fd;
@@ -99,35 +87,22 @@ char *sge_read_token(const char *file) {
    DRETURN(tokenbuf);
 }
 
-/****** uti/afsutil/sge_afs_extend_token() ************************************
-*  NAME
-*     sge_afs_extend_token() -- Extend an AFS token
-*
-*  SYNOPSIS
-*     int sge_afs_extend_token(const char *command, char *tokenbuf, 
-*                              const char *user, int token_extend_time, 
-*                              char *err_str) 
-*
-*  FUNCTION
-*     Call 'command', pipe content of 'tokenbuf' to 'command', using
-*     'user' as arg1 and 'token_extend_time' as arg2 
-*
-*  INPUTS
-*     const char *command   - command 
-*     char *tokenbuf        - input for command 
-*     const char *user      - 1st argument for command 
-*     int token_extend_time - 2nd argument for command 
-*     char *err_str         - error message 
-*
-*  NOTES
-*     MT-NOTE: sge_afs_extend_token() is not MT safe because it uses MT unsafe 
-*     MT-NOTE: sge_peopen()
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * \brief Extend an AFS token.
+ *
+ * \param[in] command Command to execute.
+ * \param[in] tokenbuf Input for the command.
+ * \param[in] user First argument for the command.
+ * \param[in] token_extend_time Second argument for the command.
+ * \param[out] err_str Error message.
+ * \param[in] err_str_size Size of the error message buffer.
+ *
+ * \return Error state:
+ * \retval 0 OK
+ * \retval -1 Error
+ *
+ * \note MT-NOTE: sge_afs_extend_token() is not MT safe because it uses MT unsafe sge_peopen().
+ */
 int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
                          int token_extend_time, char *err_str, size_t err_str_size) {
    pid_t command_pid;
@@ -166,30 +141,19 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
    return 0;
 }
 
-/****** uti/afsutil/sge_get_token_cmd() ***************************************
-*  NAME
-*     sge_get_token_cmd() -- Check if 'tokencmdname' is executable 
-*
-*  SYNOPSIS
-*     int sge_get_token_cmd(const char *tokencmdname, char *buf) 
-*
-*  FUNCTION
-*     Check if 'tokencmdname' exists and is executable. If an error
-*     occures write a error message into 'buf' if not nullptr.
-*     Otherwise write error messages to stderr.
-*
-*  INPUTS
-*     const char *tokencmdname - command 
-*     char *buf                - nullptr or buffer for error message
-*
-*  NOTES
-*     MT-NOTE: sge_get_token_cmd() is MT safe 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/**
+ * \brief Check if 'tokencmdname' is executable.
+ *
+ * \param[in] tokencmdname Command to check.
+ * \param[out] buf Buffer for error message, or nullptr.
+ * \param[in] buf_size Size of the error message buffer.
+ *
+ * \return Error state:
+ * \retval 0 OK
+ * \retval 1 Error
+ *
+ * \note MT-NOTE: sge_get_token_cmd() is MT safe.
+ */
 int sge_get_token_cmd(const char *tokencmdname, char *buf, size_t buf_size) {
    SGE_STRUCT_STAT sb{};
 

@@ -82,36 +82,19 @@ static void set_admin_user(const char *user_name, uid_t, gid_t);
 
 static int get_admin_user(uid_t *, gid_t *);
 
-/****** uti/uidgid/sge_is_start_user_superuser() *******************************
-*  NAME
-*     sge_is_start_user_superuser() -- return true/false is current real user
-*                                     is superuser (root/Administrator)
-*
-*  SYNOPSIS
-*     int sge_is_start_user_superuser()
-*
-*  FUNCTION
-*     Check the real user id to determine if it is the superuser. If so, return
-*     true, else return false. This function relies on getuid == 0 for UNIX.
-*     Other members of the Administrators group do not have the permission
-*     to "su" without password!
-*
-*  INPUTS
-*     NONE
-*
-*  RESULT
-*         true - root was start user
-*         false - otherwise
-*
-*  NOTES
-*     MT-NOTE: sge_is_start_user_superuser() is MT safe.
-* 
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
-******************************************************************************/
+/**
+ * \brief Return true/false if current real user is superuser (root/Administrator).
+ *
+ * \details
+ * Check the real user id to determine if it is the superuser. If so, return
+ * true, else return false. This function relies on getuid == 0 for UNIX.
+ * Other members of the Administrators group do not have the permission
+ * to "su" without password!
+ *
+ * \return
+ * true - root was start user
+ * false - otherwise
+ */
 bool
 sge_is_start_user_superuser() {
    DENTER(UIDGID_LAYER);
@@ -139,15 +122,6 @@ sge_is_start_user_superuser() {
 *         0 - OK
 *        -1 - Username does not exist
 *        -2 - Admin user was already set
-*
-*  NOTES
-*     MT-NOTE: sge_set_admin_username() is MT safe.
-* 
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
 int
 sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {

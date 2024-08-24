@@ -127,11 +127,13 @@ struct confel {                       /* cluster configuration parameters */
 
 typedef struct confel sge_conf_type;
 
-static sge_conf_type Master_Config = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                                       0, 0, 0, 0, 0, nullptr, nullptr, nullptr, 0, 0, 0, 0, nullptr,
-                                       nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
-                                       nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
-                                       0, 0, nullptr, 0, nullptr, nullptr, nullptr };
+static sge_conf_type Master_Config = {
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
+   nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
+   nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, nullptr, 0, nullptr, nullptr, nullptr
+};
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
 static bool forbid_apperror = false;
@@ -309,65 +311,70 @@ static int jsv_threshold = 5000;
 #define REPORTING_PARAMS          "accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
 
 static tConfEntry conf_entries[] = {
- { "execd_spool_dir",   1, nullptr,                1, nullptr },
- { "mailer",            1, MAILER,              1, nullptr },
- { "xterm",             1, "/usr/bin/X11/xterm",1, nullptr },
- { "load_sensor",       1, "none",              1, nullptr },
- { "prolog",            1, PROLOG,              1, nullptr },
- { "epilog",            1, EPILOG,              1, nullptr },
- { "shell_start_mode",  1, SHELL_START_MODE,    1, nullptr },
- { "login_shells",      1, LOGIN_SHELLS,        1, nullptr },
- { "min_uid",           0, MIN_UID,             1, nullptr },
- { "min_gid",           0, MIN_GID,             1, nullptr },
- { "user_lists",        0, "none",              1, nullptr },
- { "xuser_lists",       0, "none",              1, nullptr },
- { "projects",          0, "none",              1, nullptr },
- { "xprojects",         0, "none",              1, nullptr },
- { "load_report_time",  1, LOAD_LOG_TIME,       1, nullptr },
- { "max_unheard",       0, MAX_UNHEARD,         1, nullptr },
- { "loglevel",          0, LOGLEVEL,            1, nullptr },
- { "enforce_project",   0, "false",             1, nullptr },
- { "enforce_user",      0, "false",             1, nullptr },
- { "administrator_mail",0, "none",              1, nullptr },
- { "set_token_cmd",     1, "none",              1, nullptr },
- { "pag_cmd",           1, "none",              1, nullptr },
- { "token_extend_time", 1, "24:0:0",            1, nullptr },
- { "shepherd_cmd",      1, "none",              1, nullptr },
- { "qmaster_params",    0, "none",              1, nullptr },
- { "execd_params",      1, "none",              1, nullptr },
- { "reporting_params",  1, REPORTING_PARAMS,    1, nullptr },
- { "gid_range",         1, "none",              1, nullptr },
- { "finished_jobs",     0, FINISHED_JOBS,       1, nullptr },
- { "qlogin_daemon",     1, "none",              1, nullptr },
- { "qlogin_command",    1, "none",              1, nullptr },
- { "rsh_daemon",        1, "none",              1, nullptr },
- { "rsh_command",       1, "none",              1, nullptr },
- { "jsv_url",           0, "none",              1, nullptr },
- { "jsv_allowed_mod",   0, "none",              1, nullptr },
- { "rlogin_daemon",     1, "none",              1, nullptr },
- { "rlogin_command",    1, "none",              1, nullptr },
- { "reschedule_unknown",1, RESCHEDULE_UNKNOWN,  1, nullptr },
- { "max_aj_instances",  0, MAX_AJ_INSTANCES,    1, nullptr },
- { "max_aj_tasks",      0, MAX_AJ_TASKS,        1, nullptr },
- { "max_u_jobs",        0, MAX_U_JOBS,          1, nullptr },
- { "max_jobs",          0, MAX_JOBS,            1, nullptr },
- { "max_advance_reservations", 0, MAX_ADVANCE_RESERVATIONS, 1, nullptr },
- { REPRIORITIZE,        0, "1",                 1, nullptr },
- { "auto_user_oticket", 0, "0",                 1, nullptr },
- { "auto_user_fshare",  0, "0",                 1, nullptr },
- { "auto_user_default_project", 0, "none",      1, nullptr },
- { "auto_user_delete_time",     0, "0",         1, nullptr },
- { "delegated_file_staging",    0, "false",     1, nullptr },
- { "libjvm_path",       1, "",                  1, nullptr },
- { "additional_jvm_args", 1, "",                1, nullptr },
- { nullptr,                0, nullptr,                0, 0,   }
+ { "execd_spool_dir",            1, nullptr,                   1, nullptr},
+ { "mailer",                     1, MAILER,                    1, nullptr},
+ { "xterm",                      1, "/usr/bin/X11/xterm",      1, nullptr},
+ { "load_sensor",                1, "none",                    1, nullptr},
+ { "prolog",                     1, PROLOG,                    1, nullptr},
+ { "epilog",                     1, EPILOG,                    1, nullptr},
+ { "shell_start_mode",           1, SHELL_START_MODE,          1, nullptr},
+ { "login_shells",               1, LOGIN_SHELLS,              1, nullptr},
+ { "min_uid",                    0, MIN_UID,                   1, nullptr},
+ { "min_gid",                    0, MIN_GID,                   1, nullptr},
+ { "user_lists",                 0, "none",                    1, nullptr},
+ { "xuser_lists",                0, "none",                    1, nullptr},
+ { "projects",                   0, "none",                    1, nullptr},
+ { "xprojects",                  0, "none",                    1, nullptr},
+ { "load_report_time",           1, LOAD_LOG_TIME,             1, nullptr},
+ { "max_unheard",                0, MAX_UNHEARD,               1, nullptr},
+ { "loglevel",                   0, LOGLEVEL,                  1, nullptr},
+ { "enforce_project",            0, "false",                   1, nullptr},
+ { "enforce_user",               0, "false",                   1, nullptr},
+ { "administrator_mail",         0, "none",                    1, nullptr},
+ { "set_token_cmd",              1, "none",                    1, nullptr},
+ { "pag_cmd",                    1, "none",                    1, nullptr},
+ { "token_extend_time",          1, "24:0:0",                  1, nullptr},
+ { "shepherd_cmd",               1, "none",                    1, nullptr},
+ { "qmaster_params",             0, "none",                    1, nullptr},
+ { "execd_params",               1, "none",                    1, nullptr},
+ { "reporting_params",           1, REPORTING_PARAMS,          1, nullptr},
+ { "gid_range",                  1, "none",                    1, nullptr},
+ { "finished_jobs",              0, FINISHED_JOBS,             1, nullptr},
+ { "qlogin_daemon",              1, "none",                    1, nullptr},
+ { "qlogin_command",             1, "none",                    1, nullptr},
+ { "rsh_daemon",                 1, "none",                    1, nullptr},
+ { "rsh_command",                1, "none",                    1, nullptr},
+ { "jsv_url",                    0, "none",                    1, nullptr},
+ { "jsv_allowed_mod",            0, "none",                    1, nullptr},
+ { "rlogin_daemon",              1, "none",                    1, nullptr},
+ { "rlogin_command",             1, "none",                    1, nullptr},
+ { "reschedule_unknown",         1, RESCHEDULE_UNKNOWN,        1, nullptr},
+ { "max_aj_instances",           0, MAX_AJ_INSTANCES,          1, nullptr},
+ { "max_aj_tasks",               0, MAX_AJ_TASKS,              1, nullptr},
+ { "max_u_jobs",                 0, MAX_U_JOBS,                1, nullptr},
+ { "max_jobs",                   0, MAX_JOBS,                  1, nullptr},
+ { "max_advance_reservations",   0, MAX_ADVANCE_RESERVATIONS,  1, nullptr},
+ { REPRIORITIZE,                 0, "1",                       1, nullptr},
+ { "auto_user_oticket",          0, "0",                       1, nullptr},
+ { "auto_user_fshare",           0, "0",                       1, nullptr},
+ { "auto_user_default_project",  0, "none",                    1, nullptr},
+ { "auto_user_delete_time",      0, "0",                       1, nullptr},
+ { "delegated_file_staging",     0, "false",                   1, nullptr},
+ { "libjvm_path",                1, "",                        1, nullptr},
+ { "additional_jvm_args",        1, "",                        1, nullptr},
+ { nullptr,                      0, nullptr,                   0, nullptr}
 };
 
-/*-------------------------------------------------------
- * sge_set_defined_defaults
- * Initialize config list with compiled in values
- * set spool directorys from cell 
- *-------------------------------------------------------*/
+/**
+ * \brief Initialize config list with compiled in values.
+ *
+ * \details
+ * This function sets the spool directories from the cell and initializes
+ * the configuration list with compiled in values.
+ *
+ * \param cell_root The root directory of the cell.
+ * \param lpCfg Pointer to the configuration list.
+ */
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 {
    int i = 0; 
@@ -378,8 +385,7 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 
    pConf = getConfEntry("execd_spool_dir", conf_entries);
    if ( pConf->value == nullptr ) {
-      int size = strlen(cell_root) + strlen(SPOOL_DIR) + 2;
-
+      size_t size = strlen(cell_root) + strlen(SPOOL_DIR) + 2;
       auto new_value = (char *)sge_malloc(size * sizeof(char));
       snprintf(new_value, size, "%s/%s", cell_root, SPOOL_DIR);
       pConf->value = new_value;
@@ -399,19 +405,21 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
    DRETURN_VOID;
 }
 
-/*----------------------------------------------------*
- * chg_conf_val()
- * seeks for a config attribute "name", frees old 
- * value (if string) from *cpp and writes new value into *cpp
- * logging is done to file
- *----------------------------------------------------*/
-static void chg_conf_val(
-lList *lp_cfg,
-const char *name,
-char **cpp,
-u_long32 *val,
-int type 
-) {
+/**
+ * \brief Seeks for a config attribute "name", frees old value (if string) from *cpp and writes new value into *cpp.
+ *
+ * \details
+ * This function searches for a configuration attribute by its name, frees the old value if it is a string,
+ * and writes the new value into the provided pointer. Logging is done to a file.
+ *
+ * \param lp_cfg The configuration list.
+ * \param name The name of the configuration attribute.
+ * \param cpp Pointer to the old value to be replaced.
+ * \param val Pointer to the new value to be set.
+ * \param type The type of the value.
+ */
+static void
+chg_conf_val(lList *lp_cfg, const char *name, char **cpp, u_long32 *val, int type) {
    const lListElem *ep;
    const char *s;
 
@@ -434,27 +442,19 @@ int type
    }
 }
 
-
-/****** sge_conf/setConfFromCull() *********************************************
-*  NAME
-*     setConfFromCull() -- set the master configuration from cull
-*
-*  SYNOPSIS
-*     static void setConfFromCull(lList *lpCfg) 
-*
-*  FUNCTION
-*     set the master configuration from cull 
-*
-*  INPUTS
-*     lList *lpCfg         - configuration list
-*
-*  NOTES
-*     MT-NOTE: setConfFromCull() is not MT safe, caller needs LOCK_MASTER_CONF as write lock
-*
-*******************************************************************************/
-static void setConfFromCull(
-lList *lpCfg 
-) {
+/**
+ * \brief set the master configuration from cull
+ *
+ * \details
+ * This function sets the master configuration from cull.
+ *
+ * \param lpCfg The configuration list.
+ *
+ * \note
+ * MT-NOTE: setConfFromCull() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
+ */
+static void
+setConfFromCull(lList *lpCfg) {
    const lListElem *ep;
 
    DENTER(BASIS_LAYER);
@@ -548,14 +548,19 @@ lList *lpCfg
    DRETURN_VOID;
 }
 
-/*----------------------------------------------------*
- * getConfEntry()
- * return a pointer to the config element "name"
- *----------------------------------------------------*/
-static tConfEntry *getConfEntry(
-const char *name,
-tConfEntry conf[] 
-) {
+/**
+ * \brief getConfEntry
+ *
+ * \details
+ * Return a pointer to the config element "name".
+ *
+ * \param name The name of the configuration element.
+ * \param conf The array of configuration entries.
+ *
+ * \return A pointer to the configuration entry.
+ */
+static tConfEntry *
+getConfEntry(const char *name, tConfEntry conf[]) {
  int i;
    
  DENTER(BASIS_LAYER);
@@ -569,30 +574,22 @@ tConfEntry conf[]
  DRETURN(nullptr);
 }
 
-/****** sge_conf/merge_configuration() *****************************************
-*  NAME
-*     merge_configuration() -- merge global and local configuration
-*
-*  SYNOPSIS
-*     int merge_configuration(lListElem *global, lListElem *local, lList **lpp) 
-*
-*  FUNCTION
-*     Merge global and local configuration and set lpp list and
-*     set conf struct from lpp
-*
-*  INPUTS
-*     lListElem *global - global configuration
-*     lListElem *local  - local configuration
-*     lList **lpp       - target configuration
-*
-*  RESULT
-*     int - 0 success
-*          -2 no global configuration
-*
-*  NOTES
-*     MT-NOTE: merge_configuration() is MT safe 
-*
-*******************************************************************************/
+/**
+ * \brief merge global and local configuration
+ *
+ * \details
+ * Merge global and local configuration and set lpp list and
+ * set conf struct from lpp.
+ *
+ * \param global Global configuration.
+ * \param local Local configuration.
+ * \param lpp Target configuration.
+ *
+ * \return 0 on success, -2 if no global configuration.
+ *
+ * \note
+ * MT-NOTE: merge_configuration() is MT safe.
+ */
 int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_root, lListElem *global, lListElem *local, lList **lpp) {
    const lList *cl;
    const lListElem *elem;
@@ -742,7 +739,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_time_param(s, "MONITOR_TIME", &monitor_time)) {
             continue;
          }
-         /* EB: TODO: CLEANUP: add parse_int_param() */
          if (!strncasecmp(s, "MAX_DYN_EC", sizeof("MAX_DYN_EC")-1)) {
             max_dynamic_event_clients = atoi(&s[sizeof("MAX_DYN_EC=")-1]);
             continue;
@@ -1093,17 +1089,15 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    DRETURN(0);
 }
 
-/****** sge_conf/sge_show_conf() ***********************************************
-*  NAME
-*     sge_show_conf() -- in debug mode prints out the master configuration
-*
-*  SYNOPSIS
-*     void sge_show_conf() 
-*
-*  NOTES
-*     MT-NOTE: sge_show_conf() is MT safe 
-*
-*******************************************************************************/
+/**
+ * \brief sge\_show\_conf
+ *
+ * \details
+ * In debug mode, prints out the master configuration.
+ *
+ * \note
+ * MT-NOTE: sge\_show\_conf() is MT safe.
+ */
 void sge_show_conf()
 {
    const lListElem *ep;
@@ -1184,18 +1178,15 @@ void sge_show_conf()
    DRETURN_VOID;
 }
 
-
-/****** sge_conf/clean_conf() **************************************************
-*  NAME
-*     clean_conf() -- frees the whole master configuration
-*
-*  SYNOPSIS
-*     static void clean_conf()
-*
-*  NOTES
-*     MT-NOTE: clean_conf() is not MT safe, caller needs LOCK_MASTER_CONF as write lock 
-*
-*******************************************************************************/
+/**
+ * \brief clean\_conf
+ *
+ * \details
+ * Frees the whole master configuration.
+ *
+ * \note
+ * MT-NOTE: clean\_conf() is not MT safe, caller needs LOCK\_MASTER\_CONF as write lock.
+ */
 static void clean_conf() {
 
    DENTER(BASIS_LAYER);
@@ -1240,27 +1231,17 @@ static void clean_conf() {
    DRETURN_VOID;
 }
 
-/****** sge_conf/conf_update_thread_profiling() ********************************
-*  NAME
-*     conf_update_thread_profiling() -- enable/disable profiling for thread
-*
-*  SYNOPSIS
-*     void conf_update_thread_profiling(const char *thread_name) 
-*
-*  FUNCTION
-*     Enables or disables profiling for thread(s) according to the actual
-*     global config, qmaster_params.
-*
-*     If no thread name (nullptr pointer) is given, profiling information of all
-*     threads is updated.
-*     If a name is given, all threads with that name are updated.
-*
-*  INPUTS
-*     const char *thread_name - thread name, nullptr for all threads
-*
-*  NOTES
-*     MT-NOTE: conf_update_thread_profiling() is MT safe 
-*******************************************************************************/
+/**
+ * \brief
+ * Enables or disables profiling for thread(s) according to the actual
+ * global config, qmaster_params.
+ *
+ * If no thread name (nullptr pointer) is given, profiling information of all
+ * threads is updated.
+ * If a name is given, all threads with that name are updated.
+ *
+ * \param thread_name Thread name, nullptr for all threads.
+ */
 void conf_update_thread_profiling(const char *thread_name) 
 {
    DENTER(BASIS_LAYER);
@@ -2484,6 +2465,9 @@ bool mconf_get_enable_sup_grp_eval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    bool ret = enable_sup_grp_eval;
+#if defined(OGE_WITH_EXTENSIONS)
+   ret = false;
+#endif
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
