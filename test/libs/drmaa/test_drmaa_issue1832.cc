@@ -194,7 +194,7 @@ validate_jobs(drmaa_job_ids_t *jobids_a, int chunks_a, drmaa_job_ids_t *jobids_b
    ids_a = (char **)sge_malloc(sizeof(char *)*BULK_SIZE/chunks_a);
    ids_b = (char **)sge_malloc(sizeof(char *)*BULK_SIZE/chunks_b);
    if (!ids_a || !ids_b) {
-      fprintf(stderr, "malloc() failed\n");
+      fprintf(stderr, "sge_malloc() failed\n");
       exit(1);
    }
 

@@ -172,6 +172,7 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
    } else {
       int size = get_pw_buffer_size();
       char *buffer = sge_malloc(size);
+      SGE_ASSERT(buffer != nullptr);
 
       struct passwd pw_struct{};
       struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
@@ -381,6 +382,7 @@ sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    do {
       DPRINTF("name: %s retries: %d\n", user, retries);
@@ -441,6 +443,7 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 
    size = get_group_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    do {
       if (!retries--) {
@@ -501,6 +504,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    /* max retries that are made resolving user name */
    while (getpwuid_r(uid, &pw_entry, buffer, size, &pw) != 0 || !pw) {
@@ -554,6 +558,7 @@ sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
 
    size = get_group_buffer_size();
    buf = sge_malloc(size);
+   SGE_ASSERT(buf != nullptr);
 
    gr = sge_getgrgid_r(gid, &gr_entry, buf, size, retries);
    // TODO: We need to handle the case when the OS is unable to resolve the GID to a name.
@@ -586,6 +591,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
 
       size = get_group_buffer_size();
       buf = sge_malloc(size);
+      SGE_ASSERT(buf != nullptr);
 
       /* max retries that are made resolving group name */
       while (getgrgid_r(gid, &gr_entry, buf, size, &gr) != 0) {
@@ -860,6 +866,7 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
                            int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
    int size = get_pw_buffer_size();
    char *buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
    int ret = _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp, err_str, err_str_size, use_qsub_gid,
                                      qsub_gid, buffer, size, skip_silently);
    sge_free(&buffer);

@@ -44,6 +44,8 @@
 #include "uti/sge_htable.h"
 #include "uti/sge_rmon_macros.h"
 
+#include <sge_log.h>
+
 #ifdef SGE_USE_PROFILING
 #include "uti/sge_profiling.h"
 #endif
@@ -229,6 +231,8 @@ htable sge_htable_create(int size,
                          int (*compare_func)(const void *, const void *)) {
    auto ht = (htable) sge_malloc(sizeof(htable_rec));
 
+   SGE_ASSERT(ht != nullptr);
+
    ht->size = size;
    ht->mask = (1 << size) - 1;
    ht->table = (Bucket **) calloc(ht->mask + 1, sizeof(Bucket *));
@@ -334,7 +338,9 @@ void sge_htable_store(htable table, const void *key, const void *data) {
       }
    }
    bucket = (Bucket *) sge_malloc(sizeof(Bucket));
+   SGE_ASSERT(bucket != nullptr);
    bucket->key = table->dup_func(key);
+   SGE_ASSERT(bucket->key != nullptr);
    bucket->data = data;
    bucket->next = *head;
    *head = bucket;

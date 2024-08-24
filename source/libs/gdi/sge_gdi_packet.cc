@@ -216,54 +216,55 @@ sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long3
    DENTER(TOP_LAYER);
 
    auto *task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
-   if (task != nullptr) {
-      task->id = ((packet->last_task != nullptr) ? (packet->last_task->id + 1) : 1);
-      task->command = command;
-      task->target = target;
-      task->next = nullptr;
-      task->do_select_pack_simultaneous = false;
-      if (do_copy) {
-         if (enumeration != nullptr && *enumeration != nullptr) {
-            task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
-                               lSelect("", *lp, nullptr, *enumeration) : nullptr);
-         } else {
-            task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
-                               lCopyList("", *lp) : nullptr);
-         }
-         task->answer_list = (((a_list != nullptr) && (*a_list != nullptr)) ?
-                              lCopyList("", *a_list) : nullptr);
-         task->condition = (((condition != nullptr) && (*condition != nullptr)) ?
-                            lCopyWhere(*condition) : nullptr);
-         task->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ?
-                              lCopyWhat(*enumeration) : nullptr);
-      } else {
-         if ((lp != nullptr) && (*lp != nullptr)) {
-            task->data_list = *lp;
-            *lp = nullptr;
-         } else {
-            task->data_list = nullptr;
-         }
-         if ((a_list != nullptr) && (*a_list != nullptr)) {
-            task->answer_list = *a_list;
-            *a_list = nullptr;
-         } else {
-            task->answer_list = nullptr;
-         }
-         if ((condition != nullptr) && (*condition != nullptr)) {
-            task->condition = *condition;
-            *condition = nullptr;
-         } else {
-            task->condition = nullptr;
-         }
-         if ((enumeration != nullptr) && (*enumeration != nullptr)) {
-            task->enumeration = *enumeration;
-            *enumeration = nullptr;
-         } else {
-            task->enumeration = nullptr;
-         }
-      }
-   } else {
+   if (task == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
+      DRETURN(nullptr);
+   }
+
+   task->id = ((packet->last_task != nullptr) ? (packet->last_task->id + 1) : 1);
+   task->command = command;
+   task->target = target;
+   task->next = nullptr;
+   task->do_select_pack_simultaneous = false;
+   if (do_copy) {
+      if (enumeration != nullptr && *enumeration != nullptr) {
+         task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
+                            lSelect("", *lp, nullptr, *enumeration) : nullptr);
+      } else {
+         task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
+                            lCopyList("", *lp) : nullptr);
+      }
+      task->answer_list = (((a_list != nullptr) && (*a_list != nullptr)) ?
+                           lCopyList("", *a_list) : nullptr);
+      task->condition = (((condition != nullptr) && (*condition != nullptr)) ?
+                         lCopyWhere(*condition) : nullptr);
+      task->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ?
+                           lCopyWhat(*enumeration) : nullptr);
+   } else {
+      if ((lp != nullptr) && (*lp != nullptr)) {
+         task->data_list = *lp;
+         *lp = nullptr;
+      } else {
+         task->data_list = nullptr;
+      }
+      if ((a_list != nullptr) && (*a_list != nullptr)) {
+         task->answer_list = *a_list;
+         *a_list = nullptr;
+      } else {
+         task->answer_list = nullptr;
+      }
+      if ((condition != nullptr) && (*condition != nullptr)) {
+         task->condition = *condition;
+         *condition = nullptr;
+      } else {
+         task->condition = nullptr;
+      }
+      if ((enumeration != nullptr) && (*enumeration != nullptr)) {
+         task->enumeration = *enumeration;
+         *enumeration = nullptr;
+      } else {
+         task->enumeration = nullptr;
+      }
    }
    DRETURN(task);
 }
@@ -371,33 +372,32 @@ sge_gdi_packet_class_t *
 sge_gdi_packet_create_base(lList **answer_list) {
    DENTER(TOP_LAYER);
    auto ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
-   if (ret != nullptr) {
-      int local_ret1;
-      int local_ret2;
-
-      local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
-      local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
-      if (local_ret1 == 0 && local_ret2 == 0) {
-         ret->is_intern_request = false;
-         ret->is_gdi_request = true;
-         ret->is_handled = false;
-         ret->id = 0;
-         ret->commproc_id = 0;
-
-         ret->version = GRM_GDI_VERSION;
-         ret->first_task = nullptr;
-         ret->last_task = nullptr;
-         ret->auth_info = nullptr;
-         ret->amount = 0;
-         ret->grp_array = nullptr;
-         ret->next = nullptr;
-         memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      }
-   } else {
+   if (ret == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_SGETEXT_NOMEM);
+      DRETURN(nullptr);
    }
+
+   int local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
+   int local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
+   if (local_ret1 != 0 || local_ret2 != 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
+      sge_free(&ret);
+      DRETURN(nullptr);
+   }
+
+   ret->is_intern_request = false;
+   ret->is_gdi_request = true;
+   ret->is_handled = false;
+   ret->id = 0;
+   ret->commproc_id = 0;
+   ret->version = GRM_GDI_VERSION;
+   ret->first_task = nullptr;
+   ret->last_task = nullptr;
+   ret->auth_info = nullptr;
+   ret->amount = 0;
+   ret->grp_array = nullptr;
+   ret->next = nullptr;
+   memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
    DRETURN(ret);
 }
 

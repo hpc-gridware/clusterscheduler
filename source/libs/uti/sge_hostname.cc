@@ -403,6 +403,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
        * doesn't need to be freed first. */
       if (he != nullptr) {
          he = sge_copy_hostent(&re);
+         SGE_ASSERT(he != nullptr);
       }
    }
 #endif
@@ -416,21 +417,20 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
       struct hostent *help_he = nullptr;
 
       he = (struct hostent *)sge_malloc (sizeof (struct hostent));
-      if (he != nullptr) {
-         memset(he, 0, sizeof(struct hostent));
-         /* On Solaris, this function returns the pointer to my struct on success
-          * and nullptr on failure. */
-         help_he = gethostbyname_r(name, he, buffer, 4096, &l_errno);
-         
-         /* Since he contains pointers into buffer, and buffer goes away when we
-          * exit this code block, we make a deep copy to return. */
-         if (help_he != nullptr) {
-            struct hostent *new_he = sge_copy_hostent(he);
-            sge_free(&he);
-            he = new_he;
-         } else {
-            sge_free(&he);
-         }
+      SGE_ASSERT(he != nullptr);
+      memset(he, 0, sizeof(struct hostent));
+      /* On Solaris, this function returns the pointer to my struct on success
+       * and nullptr on failure. */
+      help_he = gethostbyname_r(name, he, buffer, 4096, &l_errno);
+
+      /* Since he contains pointers into buffer, and buffer goes away when we
+       * exit this code block, we make a deep copy to return. */
+      if (help_he != nullptr) {
+         struct hostent *new_he = sge_copy_hostent(he);
+         sge_free(&he);
+         he = new_he;
+      } else {
+         sge_free(&he);
       }
    }
 #endif

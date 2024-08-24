@@ -2277,8 +2277,8 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       }
       
       /* We have to add one to the size of the array for the nullptr terminator. */
-      sync_job_ids = (const char**)sge_malloc (sizeof (char *) *
-                                           (lGetNumberOfElem (sync_list) + 1));
+      sync_job_ids = (const char**)sge_malloc (sizeof (char *) * (lGetNumberOfElem (sync_list) + 1));
+      SGE_ASSERT(sync_job_ids != nullptr);
       
       for_each_ep(ep, sync_list) {
          sync_job_ids[count] = lGetString (ep, ST_name);

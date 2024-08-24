@@ -658,13 +658,12 @@ sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
 /* --------------- qstat stdout handler --------------------------------------*/
 
 
-static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp) 
-{
+static int
+qstat_stdout_init(qstat_handler_t *handler, lList **alpp) {
+   DENTER(TOP_LAYER);
    int ret = 0;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)sge_malloc(sizeof(qstat_stdout_ctx_t));
-   
-   DENTER(TOP_LAYER);
-   
+
    if (ctx == nullptr) {
       answer_list_add(alpp, "malloc of qstat_stdout_ctx failed",
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -683,11 +682,9 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
    handler->report_queue_suspend_alarm = qstat_stdout_queue_suspend_alarm;
    handler->report_queue_message = qstat_stdout_queue_message;
    handler->report_queue_resource = qstat_stdout_queue_resource;
-   
    handler->report_pending_jobs_started = qstat_stdout_pending_jobs_started;
    handler->report_finished_jobs_started = qstat_stdout_finished_jobs_started;
    handler->report_error_jobs_started = qstat_stdout_error_jobs_started;
-   
    handler->destroy = qstat_stdout_destroy;
    
    if((ret=job_stdout_init(&(handler->job_handler), alpp))) {

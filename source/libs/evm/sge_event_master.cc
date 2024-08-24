@@ -2367,6 +2367,7 @@ static void build_subscription(lListElem *event_el)
    DPRINTF("rebuild event mask for client(id): %s(" sge_u32")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id));
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
+   SGE_ASSERT(sub_array != nullptr);
    memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE); 
 
    for (i = 0; i < sgeE_EVENTSIZE; i++) {

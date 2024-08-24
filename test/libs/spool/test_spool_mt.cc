@@ -223,7 +223,9 @@ int main(int argc, char *argv[])
 
    /* allocate memory for pthreads and arguments */
    t = (pthread_t *)sge_malloc(threads * sizeof(pthread_t));
+   SGE_ASSERT(t != nullptr);
    args = (int *)sge_malloc(threads * sizeof(int));
+   SGE_ASSERT(args != nullptr);
 
    DPRINTF("writing to database %s from %d threads\n", url, threads);
 

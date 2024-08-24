@@ -46,6 +46,8 @@
 
 #include "msg_common.h"
 
+#include <sge_log.h>
+
 enum {
    TEST_host = 1,
    TEST_string,
@@ -255,6 +257,7 @@ int main(int argc, char *argv[]) {
           (u_long32) pb.mem_size / 1024);
 
    buffer = sge_malloc(pb.bytes_used);
+   SGE_ASSERT(buffer != nullptr);
    memcpy(buffer, pb.head_ptr, pb.bytes_used);
    if ((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
       printf("initializing packbuffer from packed data failed: %s\n", cull_pack_strerror(pack_ret));
@@ -289,6 +292,7 @@ int main(int argc, char *argv[]) {
    }
 
    buffer = sge_malloc(pb.bytes_used);
+   SGE_ASSERT(buffer != nullptr);
    memcpy(buffer, pb.head_ptr, pb.bytes_used);
    if ((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
       printf("initializing packbuffer from partially packed data failed: %s\n", cull_pack_strerror(pack_ret));

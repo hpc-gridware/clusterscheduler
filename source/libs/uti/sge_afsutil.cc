@@ -80,8 +80,7 @@ char *sge_read_token(const char *file) {
    }
 
    size = sb.st_size + 1;
-   if (((SGE_OFF_T) size != sb.st_size + 1)
-       || (tokenbuf = sge_malloc(size)) == nullptr) {
+   if (((SGE_OFF_T) size != sb.st_size + 1) || (tokenbuf = sge_malloc(size)) == nullptr) {
       DRETURN(nullptr);
    }
 

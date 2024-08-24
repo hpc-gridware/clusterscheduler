@@ -299,6 +299,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
 
       size = get_pw_buffer_size();
       buffer = sge_malloc(size);
+      SGE_ASSERT(buffer != nullptr);
       pw = sge_getpwnam_r(user_name, &pw_struct, buffer, size);
       if (!pw) {
          CRITICAL(MSG_SEC_USERNOTFOUND_S, user_name);
@@ -1121,6 +1122,7 @@ struct dispatch_entry *de
 
       pw_buffer_size = get_pw_buffer_size();
       pw_buffer = sge_malloc(pw_buffer_size);
+      SGE_ASSERT(pw_buffer != nullptr);
       pw = sge_getpwnam_r(lGetString(jelem, JB_owner), &pw_struct, pw_buffer, pw_buffer_size);
 
       if (pw) {
@@ -1257,6 +1259,7 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle) {
    // encrypt and store the information
    size_t size = sge_dstring_strlen(&buffer_unencrypted) * 3;
    char *obuffer = sge_malloc(size);
+   SGE_ASSERT(obuffer != nullptr);
    if (sge_encrypt(sge_dstring_get_string(&buffer_unencrypted), obuffer, size)) {
       packet_handle->auth_info = sge_strdup(nullptr, obuffer);
    } else {

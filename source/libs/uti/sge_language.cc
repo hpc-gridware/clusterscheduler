@@ -47,6 +47,8 @@
 
 #include "basis_types.h"
 
+#include <sge_log.h>
+
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 
 /* MT-NOTE: language_mutex guards all language module function calls */
@@ -185,6 +187,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       /* no package name given, using default one */
       if (packName == nullptr) {
          packName = sge_malloc(sizeof(char) * (strlen(SGE_DEFAULT_PACKAGE) + strlen(sge_get_arch()) + 2));
+         SGE_ASSERT(packName != nullptr);
          sprintf(packName, "%s/%s", sge_get_arch(), SGE_DEFAULT_PACKAGE);
       }
 
@@ -216,6 +219,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
             locDir = strdup("/usr/lib/locale");
          } else {
             locDir = sge_malloc(sizeof(char) * (strlen(root) + strlen(SGE_DEFAULT_LOCALEDIR) + 100));
+            SGE_ASSERT(locDir != nullptr);
             sprintf(locDir, "%s/%s", root, SGE_DEFAULT_LOCALEDIR);
          }
          sge_free(&root);
@@ -265,6 +269,7 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       /* packName, locDir and language strings are now surely not nullptr,
          so we can now try to setup the choosen language package (*.mo - file) */
       pathName = sge_malloc(sizeof(char) * (strlen(locDir) + strlen(language) + strlen(packName) + 100));
+      SGE_ASSERT(pathName != nullptr);
       sprintf(pathName, "%s/%s/LC_MESSAGES/%s.mo", locDir, language, packName);
       DPRINTF_("locale directory: >%s<\n", locDir);
       DPRINTF_("package file:     >%s.mo<\n", packName);
@@ -671,25 +676,26 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
          gettext_return_string = sge_gettext__((char *) msg_str);
 
          org_message = sge_malloc(strlen(msg_str) + 1);
+         SGE_ASSERT(org_message != nullptr);
          trans_message = sge_malloc(strlen(gettext_return_string) + 1 + 8); /* max "(99999) "*/
+         SGE_ASSERT(trans_message != nullptr);
          new_mp = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
-         if (new_mp != nullptr && org_message != nullptr && trans_message != nullptr) {
-            DPRINTF_("add new hash table entry for message id: %d\n", msg_id);
-            new_mp->id = msg_id;
-            new_mp->category = 0;
-            new_mp->counter = 1;
-            strcpy(org_message, msg_str);
-            new_mp->message = org_message;
-            if (msg_id <= 99999) {
-               sprintf(trans_message, "[%d] %s", msg_id, gettext_return_string);
-            } else {
-               sprintf(trans_message, "%s", gettext_return_string);
-            }
-            new_mp->local_message = trans_message;
-
-            sge_htable_store(sge_message_hash_table, &key, new_mp);
-            DRETURN_(new_mp->local_message);
+         SGE_ASSERT(new_mp != nullptr);
+         DPRINTF_("add new hash table entry for message id: %d\n", msg_id);
+         new_mp->id = msg_id;
+         new_mp->category = 0;
+         new_mp->counter = 1;
+         strcpy(org_message, msg_str);
+         new_mp->message = org_message;
+         if (msg_id <= 99999) {
+            sprintf(trans_message, "[%d] %s", msg_id, gettext_return_string);
+         } else {
+            sprintf(trans_message, "%s", gettext_return_string);
          }
+         new_mp->local_message = trans_message;
+
+         sge_htable_store(sge_message_hash_table, &key, new_mp);
+         DRETURN_(new_mp->local_message);
       } else {
          /* check element */
          DPRINTF_("using old hash entry for message id: %d\n", msg_id);

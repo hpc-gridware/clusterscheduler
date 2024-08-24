@@ -179,6 +179,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 
          size = get_pw_buffer_size();
          buffer = sge_malloc(size);
+         SGE_ASSERT(buffer != nullptr);
          if (!(pw = sge_getpwnam_r(user, &pw_struct, buffer, size))) {
             snprintf(err_str, sizeof(err_str), MSG_SYSTEM_NOUSERFOUND_SS, user, strerror(errno));
             snprintf(err_str, sizeof(err_str), "\n");

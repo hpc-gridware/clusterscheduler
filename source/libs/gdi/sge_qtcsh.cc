@@ -103,6 +103,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
 
    pw_buffer_size = get_pw_buffer_size();
    pw_buffer = sge_malloc(pw_buffer_size);
+   SGE_ASSERT(pw_buffer != nullptr);
    pwd = sge_getpwnam_r(user_name, &pw_struct, pw_buffer, pw_buffer_size);
    
    /* user settings */
@@ -153,6 +154,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    
       /* build task name with leading '!' for search operation */
       ro_task_name = sge_malloc(strlen(task_name) + 2);
+      SGE_ASSERT(ro_task_name != nullptr);
       ro_task_name[0] = '!';
       strcpy(&ro_task_name[1], task_name);
 
@@ -185,6 +187,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
       task_name = lGetString(cep, CF_name);
       if (task_name[0] == '!') {
          char *t = sge_malloc(strlen(task_name));
+         SGE_ASSERT(t != nullptr);
          strcpy(t, &task_name[1]);
          lSetString(cep, CF_name, t);
          sge_free(&t);
@@ -271,6 +274,7 @@ char **sge_get_qtask_args(char *taskname, lList **answer_list)
    }
 
    char **args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));
+   SGE_ASSERT(args != nullptr);
    memset(args, 0, sizeof(char *) * (num_args + 1));
    sge_parse_args (value, args);
    
