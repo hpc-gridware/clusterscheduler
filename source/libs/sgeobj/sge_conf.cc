@@ -2464,9 +2464,9 @@ bool mconf_get_enable_forced_qdel() {
 bool mconf_get_enable_sup_grp_eval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   bool ret = enable_sup_grp_eval;
+   bool ret = false;
 #if defined(OGE_WITH_EXTENSIONS)
-   ret = false;
+   ret = enable_sup_grp_eval;
 #endif
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

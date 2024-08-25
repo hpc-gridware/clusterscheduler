@@ -148,16 +148,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_grp_list, SGE_NO_ABORT) > NoName) {
+      printf("groups:                     ");
+#if defined(OGE_WITH_EXTENSIONS)
       const lListElem *grp_elem;
       const lList *grp_list = lGetList(job, JB_grp_list);
 
-      printf("groups:                     ");
       if (grp_list == nullptr) {
-#if defined(OGE_WITH_EXTENSIONS)
-         printf("NOT-AVAILABLE-IN-GCS");
-#else
          printf("NONE");
-#endif
       } else {
          bool first = true;
 
@@ -170,6 +167,9 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             printf(gid_t_fmt "(%s)", lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
          }
       }
+#else
+      printf("NOT-AVAILABLE-IN-OCS");
+#endif
       printf("\n");
    }
 
