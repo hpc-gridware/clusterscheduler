@@ -537,18 +537,17 @@ bool
 qref_list_cq_rejected(const lList *qref_list, const char *cqname,
       const char *hostname, const lList *hgroup_list)
 {
-   const lListElem *qref_pattern = nullptr;
-
    DENTER(TOP_LAYER);
 
-   if (!cqname) {
+   if (cqname == nullptr) {
       DRETURN(true);
    }
 
-   if (!qref_list) {
+   if (qref_list == nullptr) {
       DRETURN(false);
    }
 
+   const lListElem *qref_pattern;
    for_each_ep(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
       if (!qref_cq_rejected(name, cqname, hostname, hgroup_list)) {

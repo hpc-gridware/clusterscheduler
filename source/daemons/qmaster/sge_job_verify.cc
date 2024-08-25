@@ -250,13 +250,15 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       if (jrs_list != nullptr) {
          const lListElem *jrs;
          for_each_ep(jrs, jrs_list) {
-            if (lGetUlong(jrs, JRS_scope) > JRS_SCOPE_GLOBAL) {
+            // we do not allow master soft queue requests
+            if (lGetUlong(jrs, JRS_scope) == JRS_SCOPE_MASTER) {
                if (lGetList(jrs, JRS_soft_queue_list) != nullptr) {
                   ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
                   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret = STATUS_EUNKNOWN;
                   break;
                }
+               // we do not allow master and slave soft resource requests
                if (lGetList(jrs, JRS_soft_resource_list) != nullptr) {
                   ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTREQ);
                   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

@@ -1146,7 +1146,7 @@ FPRINTF_ERROR:
 void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_long32 scope,
                          int hard_field, int soft_field) {
    DENTER(TOP_LAYER);
-
+   bool handled_option = false;
    lList *hard_list = nullptr;
    lList *soft_list = nullptr;
 
@@ -1183,6 +1183,7 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_l
             }
          }
          lRemoveElem(cmdline, &ep);
+         handled_option = true;
       }
    }
 
@@ -1195,6 +1196,21 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_l
       lSetList(jrs, hard_field, hard_list);
       if (soft_field) {
          lSetList(jrs, soft_field, soft_list);
+      }
+   }
+
+   // in case of masterq: the global -q requests become the slave -q requests
+   if (handled_option && sge_strnullcmp(option, "-masterq") == 0) {
+      lListElem *global = lGetSubUlongRW(job, JRS_scope, JRS_SCOPE_GLOBAL, JB_request_set_list);
+      if (global != nullptr) {
+         lList *global_queue_requests = nullptr;
+         lXchgList(global, JRS_hard_queue_list, &global_queue_requests);
+         job_set_hard_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
+         // also swap the soft requests, should there be any
+         // this will then trigger an error as we do not support soft slave queue requests
+         global_queue_requests = nullptr;
+         lXchgList(global, JRS_soft_queue_list, &global_queue_requests);
+         job_set_soft_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
       }
    }
 

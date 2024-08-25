@@ -1205,7 +1205,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       *is queue contained in hard queue list ?
       */
       DPRINTF("queue contained in jobs hard queue list?\n");
-      const lList *qref_list = job_get_hard_queue_list(job);
+      const lList *qref_list = job_get_hard_queue_list(job); // @todo CS-400 where is sge_select_queue() called?
       if (qref_list != nullptr) {
          const char *qname = nullptr;
          const char *qinstance_name = nullptr;
@@ -1532,6 +1532,29 @@ static void clear_resource_tags(lList *resources, u_long32 max_tag) {
    }
 }
 
+static void
+get_hard_queue_lists(const lListElem *job, const lList *&hard_queue_list, const lList *&master_hard_queue_list) {
+   master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
+   if (master_hard_queue_list != nullptr) {
+      // if we have master queue requests, then work on the soft slave queue requests
+      hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
+   } else {
+      // if we have no master queue requests (or it is a sequential job), then work on the global soft queue requests
+      hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+   }
+}
+
+static void
+get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
+   const lList *master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
+   if (master_hard_queue_list != nullptr) {
+      // if we have master queue requests, then work on the soft slave queue requests
+      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_SLAVE);
+   } else {
+      // if we have no master queue requests (or it is a sequential job), then work on the global soft queue requests
+      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
+   }
+}
 
 /****** sge_select_queue/sge_queue_match_static() ************************
 *  NAME
@@ -1568,7 +1591,6 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    u_long32 ar_id;
    const lList *projects;
    lListElem *ar_ep;
-   const lList *hard_queue_list, *master_hard_queue_list;
    const char *qinstance_name = lGetString(queue, QU_full_name);
    bool could_be_master = false;
 
@@ -1629,8 +1651,9 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       }
    }
 
-   hard_queue_list = job_get_hard_queue_list(a->job);
-   master_hard_queue_list = job_get_master_hard_queue_list(a->job);
+   const lList *master_hard_queue_list;
+   const lList *hard_queue_list;
+   get_hard_queue_lists(a->job, hard_queue_list, master_hard_queue_list);
    if (hard_queue_list != nullptr || master_hard_queue_list != nullptr) {
       if (!centry_list_are_queues_requestable(a->centry_list)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -1868,13 +1891,14 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
       }
    }
 
-   if (queue) {
+   if (queue != nullptr) {
       DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation, sge_dstring_get_string(&reason));
 
       /*
        * check whether queue fulfills soft queue request of the job (-q)
        */
-      const lList *qref_list = job_get_soft_queue_list(a->job);
+      const lList *qref_list;
+      get_soft_queue_list(a->job, qref_list);
       if (qref_list != nullptr) {
          const lListElem *qr;
          const char *qinstance_name = nullptr;
@@ -3016,26 +3040,28 @@ static bool access_cq_rejected(const char *user, const char *group,
 *******************************************************************************/
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
 {
-   const lList *hard_resource_list, *master_hard_queue_list;
-   const lListElem *cq;
-   const char *project, *pe_name;
-   u_long32 ar_id;
-
    DENTER(TOP_LAYER);
 
+   const lList *master_hard_queue_list, *global_or_slave_queue_list;
+   get_hard_queue_lists(a->job, global_or_slave_queue_list, master_hard_queue_list);
 
-   /* detect if entire cluster queue ruled out due to -q */
-   if (qref_list_cq_rejected(job_get_hard_queue_list(a->job), cqname, nullptr, nullptr) &&
-         (!a->pe_name || !(master_hard_queue_list = job_get_master_hard_queue_list(a->job))
-         || qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr))) {
-      DPRINTF("Cluster Queue \"%s\" is not contained in the hard queue list (-q) that "
-            "was requested by job %d\n", cqname, (int)a->job_id);
+   // @todo here we could already tag the queue instances (QU_tagged4schedule)
+   bool global_or_slave_cqueue_rejected = qref_list_cq_rejected(global_or_slave_queue_list, cqname, nullptr, nullptr);
+   bool master_queue_rejected = qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr);
+
+   // sequential job and global requests rejected
+   // or parallel job and both slave and master requests rejected
+   bool is_pe_job = a->pe_name != nullptr;
+   if (global_or_slave_cqueue_rejected && (!is_pe_job || master_queue_rejected)) {
+      DPRINTF("Cluster Queue " SFQ " is not contained in hard " SFN " queue requests of job " sge_u32 "\n",
+              cqname, master_queue_rejected ? "slave and master" : "global", a->job_id);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                      SCHEDD_INFO_NOTINHARDQUEUELST_S, cqname);
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
    /* check if cqueue was reserved for AR job */
+   u_long32 ar_id;
    ar_id = lGetUlong(a->job, JB_ar);
    if (ar_id != 0) {
       const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
@@ -3067,9 +3093,11 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
       }
    }
 
-   cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
+   const lListElem *cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
+   // @todo CS-400 we now have multiple resource lists, same handling as with queues above
+   const lList *hard_resource_list;
    if ((hard_resource_list = job_get_hard_resource_list(a->job))) {
       dstring unsatisfied = DSTRING_INIT;
       if (request_cq_rejected(hard_resource_list, cq, a->centry_list,
@@ -3086,7 +3114,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    }
 
    /* detect if entire cluster queue ruled out due to -P */
-   project = a->project;
+   const char *project = a->project;
    if (project_cq_rejected(project, cq)) {
       DPRINTF("Cluster queue \"%s\" does not work for -P %s job %d\n", cqname, project?project:"<no project>", (int)a->job_id);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id, SCHEDD_INFO_HASNOPRJ_S, "cluster queue", cqname);
@@ -3101,6 +3129,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    }
 
    /* detect if entire cluster queue ruled out due to -pe */
+   const char *pe_name;
    if (a->pe && (pe_name=a->pe_name) && pe_cq_rejected(pe_name, cq)) {
       DPRINTF("Cluster queue " SFQ " does not reference PE " SFQ "\n", cqname, pe_name);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id, SCHEDD_INFO_NOTINQUEUELSTOFPE_SS, cqname, pe_name);
@@ -3718,8 +3747,10 @@ static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
    lListElem *job = a->job;
-   bool have_masterq_request = job_get_master_hard_queue_list(job) != nullptr;
-   bool have_hard_queue_request = job_get_hard_queue_list(job) != nullptr;
+   const lList *hard_queue_list, *master_hard_queue_list;
+   get_hard_queue_lists(job, hard_queue_list, master_hard_queue_list);
+   bool have_masterq_request = master_hard_queue_list != nullptr;
+   bool have_hard_queue_request = hard_queue_list != nullptr;
 
    int accu_host_slots, accu_host_slots_qend;
    bool have_master_host, have_master_host_qend, suited_as_master_host;
@@ -3757,14 +3788,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          DPRINTF("GLOBAL will <category_never> get us %d slots (%d)\n", gslots, gslots_qend);
       }
    } else {
-      lList *skip_host_list = nullptr;
-
       // cluster queues which are not rejected at cluster queue level
       // no need to repeat the cluster queue checks but need to check on lower level
       lList *unclear_cqueue_list = nullptr;
 
       int last_accu_host_slots, last_accu_host_slots_qend;
 
+      lList *skip_host_list = nullptr;
       if (use_category->use_category) {
          skip_host_list = lGetListRW(use_category->cache, CCT_ignore_hosts);
       }
@@ -3783,7 +3813,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
          /* try to foreclose the cluster queue */
          if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname)) { // @todo (CS-453) why is the skip_cqueue_list not cached?
-            lSetUlong(qep, QU_tag, 0);
+            lSetUlong(qep, QU_tag, 0);    // @todo why set it? It is already 0 from clean_up_parallel_job() above. Similar cases below.
             DPRINTF("(1) skip cluster queue %s\n", cqname);
             continue;
          }
@@ -3886,6 +3916,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              * which have at least one free slot, which are not unknown, several alarms
              */
             // @todo (CS-456) cheaper check: lGetUlong(EH_seq_no) == U_LONG32_MAX, we could possibly break out of the host loop
+            // @todo suited_as_master_host is never used
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
                parallel_tag_hosts_queues(a, hep, &hslots, &hslots_qend, &suited_as_master_host, use_category,
                                          &unclear_cqueue_list);
@@ -3948,7 +3979,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                                */
                               // @todo CS-400: if the masterq request is not contained in the slave queue request
                               // @todo CS-400: fetch the hard_queue_list only once
-                              if (qref_list_cq_rejected(job_get_hard_queue_list(a->job),
+                              if (qref_list_cq_rejected(hard_queue_list,
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots = MIN(slots, 1);
                               }
@@ -4064,7 +4095,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            if (have_masterq_request && have_hard_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
                                  we need to allocate only one slot for the master task */
-                              if (qref_list_cq_rejected(job_get_hard_queue_list(a->job),
+                              if (qref_list_cq_rejected(hard_queue_list,
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots_qend = MIN(slots_qend, 1);
                               }
@@ -4268,8 +4299,10 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
     *    - static host matching
     */
 
-   if (!(qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list) &&
-        qref_list_eh_rejected(job_get_master_hard_queue_list(a->job), eh_name, a->hgrp_list)) &&
+   const lList *hard_queue_list, *master_hard_queue_list;
+   get_hard_queue_lists(a->job, hard_queue_list, master_hard_queue_list);
+   if (!(qref_list_eh_rejected(hard_queue_list, eh_name, a->hgrp_list) &&
+        qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list)) &&
                sge_host_match_static(a, hep) == DISPATCH_OK) {
       // this host is suited at least for slave tasks, possibly also for the master task
 
