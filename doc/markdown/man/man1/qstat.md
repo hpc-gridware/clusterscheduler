@@ -535,4 +535,4 @@ xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_shepherd(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro*(1) for a full statement of rights and permissions.
+See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.
