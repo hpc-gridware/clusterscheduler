@@ -840,7 +840,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
 
       debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
-      if (job_get_contribution(jep, nullptr, name, &dval, dcep) && dval != 0.0) {
+      if (job_get_contribution(jep, nullptr, name, &dval, dcep, is_master_task) && dval != 0.0) {
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval,
             lGetUlong(jep, JB_job_number), task_id, tag, obj_name, type, for_job_scheduling, false);
@@ -935,7 +935,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
 
          debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
-         if (job_get_contribution(jep, nullptr, centry_name, &dval, raw_centry) && dval != 0.0) {
+         if (job_get_contribution(jep, nullptr, centry_name, &dval, raw_centry, is_master_task) && dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
             utilization_add(rue_elem, start_time, duration, debit_slots * dval,
                lGetUlong(jep, JB_job_number), task_id, RQS_TAG, obj_name, type, true, false);

@@ -963,7 +963,7 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
       debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
       if (job) {
-         bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry);
+         bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry, is_master_task);
          if (tmp_ret && dval != 0.0) {
             DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);

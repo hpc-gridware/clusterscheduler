@@ -398,13 +398,15 @@ int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_li
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 
-lListElem *
-job_get_request(const lListElem *this_elem, const char *centry_name);
+const lListElem *
+job_get_request(const lListElem *job, const char *centry_name);
+
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, bool is_master_task);
 
 bool
-job_get_contribution(const lListElem *this_elem, lList **answer_list,
-                     const char *name, double *value,
-                     const lListElem *implicit_centry);
+job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
+                     const lListElem *complex_definition, bool is_master_task);
 
 /* unparse functions */
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 

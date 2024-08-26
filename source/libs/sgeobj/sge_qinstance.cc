@@ -1002,6 +1002,7 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
       *just_check = true;
    }
 
+   // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
       name = lGetString(cr_config, CE_name);
       dval = 0;
@@ -1029,7 +1030,7 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
       debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
       if (jep != nullptr) {
-         bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);
+         bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep, is_master_task);
          if (tmp_ret && dval != 0.0) {
             if (just_check == nullptr) {
                DPRINTF("debiting %f of %s on %s %s for %d slots\n", dval, name,

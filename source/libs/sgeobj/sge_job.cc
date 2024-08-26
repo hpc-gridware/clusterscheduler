@@ -2634,39 +2634,64 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 *  NOTES
 *     MT-NOTE: job_get_request() is MT safe 
 *******************************************************************************/
-lListElem *
-job_get_request(const lListElem *this_elem, const char *centry_name) 
+const lListElem *
+job_get_request(const lListElem *job, const char *centry_name)
 {
-   lListElem *ret = nullptr;
-
    DENTER(TOP_LAYER);
-   const lList *hard_centry_list = job_get_hard_resource_list(this_elem);
-   ret = lGetElemStrRW(hard_centry_list, CE_name, centry_name);
-   if (ret == nullptr) {
-      const lList *soft_centry_list = job_get_soft_resource_list(this_elem);
 
-      ret = lGetElemStrRW(soft_centry_list, CE_name, centry_name);
+   const lListElem *ret;
+
+   const lList *hard_centry_list = job_get_hard_resource_list(job);
+   ret = lGetElemStr(hard_centry_list, CE_name, centry_name);
+   if (ret == nullptr) {
+      const lList *soft_centry_list = job_get_soft_resource_list(job);
+      ret = lGetElemStr(soft_centry_list, CE_name, centry_name);
    }
    DRETURN(ret);
 }
 
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, bool is_master_task) {
+   DENTER(TOP_LAYER);
+   const lListElem *ret = nullptr;
+
+   // a request can be either global
+   const lList *request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
+   if (request_list != nullptr) {
+      ret = lGetElemStr(request_list, CE_name, name);
+   }
+
+   // or (only for pe-jobs) a master or slave request
+   if (ret == nullptr) {
+      request_list = job_get_hard_resource_list(job, is_master_task ? JRS_SCOPE_MASTER : JRS_SCOPE_SLAVE);
+      if (request_list != nullptr) {
+         ret = lGetElemStr(request_list, CE_name, name);
+      }
+   }
+
+   DRETURN(ret);
+}
+
 bool
-job_get_contribution(const lListElem *this_elem, lList **answer_list,
-                     const char *name, double *value,
-                     const lListElem *implicit_centry)
+job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
+                     const lListElem *complex_definition, bool is_master_task)
 {
    bool ret = true;
-   lListElem *centry = nullptr;
+   const lListElem *centry = nullptr;
    const char *value_string = nullptr;
    char error_str[256];
    
    DENTER(TOP_LAYER);
-   centry = job_get_request(this_elem, name);
+
+   // we only consider *hard* requests (consumables), there are no soft consumables
+   centry = job_get_hard_request(job, name, is_master_task);
    if (centry != nullptr) {
+      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
       value_string = lGetString(centry, CE_stringval);
-   }
-   if (value_string == nullptr) {
-      value_string = lGetString(implicit_centry, CE_defaultval); 
+   } else {
+      // if the job did not request the consumable, there might still be a default request
+      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
+      value_string = lGetString(complex_definition, CE_defaultval);
    }
    if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
                          error_str, sizeof(error_str)-1))) {
