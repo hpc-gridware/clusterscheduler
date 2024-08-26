@@ -161,7 +161,7 @@ Here we use *CLion* as example because it provides full integration with CMake t
 4) Set up a new profile (see the picture below). Set the build type. Omit the `-S` switch and the `-DMAKE_BUILD_TYPE` 
    in the *CMake options*. They are implicitly defined by the IDE. Accept your changes and close the dialog window.
  
-   ![Clion's CMake Settings](file://__IMAGE_DIR__/clion_settings_cmake.png)
+   ![Clion's CMake Settings](__INPUT_DIR__/clion_settings_cmake.png)
 
 5) In the *Project Browser* select the *CMakeLists.txt* file within the
    *clusterscheduler* folder, open the context menu and select "Load CMake Project". This step tells Clion the location of 

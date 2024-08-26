@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ $# -ne 8 ]; then
-   echo "usage: $0 <source directory> <input_directory> <target directory> <target man page> <template> <release> <date>"
+if [ $# -ne 9 ]; then
+   echo "usage: $0 <source directory> <input_directory> <target directory> <target man page> <template> <release> <date> <located_in_gcs_extensions>"
    exit 1
 fi
 
@@ -13,10 +13,13 @@ TEMPLATE=$5
 SECTION=$6
 RELEASE=$7
 DATE=$8
+LOCATED_IN_GCS_EXTENSIONS=$9
 
-# Independent if INPUT_DIR is located in gcs-extensions repository
-# then template files will also be taken from oge-extensions
-COMMON_DIR="../gcs-extensions/doc/markdown/manual"
+if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
+   COMMON_DIR="../clusterscheduler/doc/markdown/manual"
+else
+   COMMON_DIR="../gcs-extensions/doc/markdown/manual"
+fi
 
 if [ $TEMPLATE = "NONE" ]; then
    TEMPLATE_FILE=""

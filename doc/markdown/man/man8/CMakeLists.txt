@@ -22,7 +22,7 @@
 
 # build all man pages from section 8
 set(PAGES sge_execd sge_qmaster sge_shadowd sge_shepherd)
-build_markdown_man("8" PAGES)
+build_markdown_man("8" PAGES "0")
 
 # target for building all troff man pages from section 8
 # @todo is there a better way of listing them? Didn't find an easily comprehensible way to use foreach().

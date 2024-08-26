@@ -21,7 +21,7 @@
 # clusterscheduler/doc/markdown/manual/release-notes
 
 # build release notes
-build_markdown_manual("release-notes" "Release Notes")
+build_markdown_manual("release-notes" "Release Notes" "0")
 
 # target for building release notes
 add_custom_target(releasenotes ALL DEPENDS

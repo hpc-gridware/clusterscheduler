@@ -3,8 +3,8 @@
 # generate PDF from markdown manuals
 # see also https://jdhao.github.io/2019/05/30/markdown2pdf_pandoc/
 
-if [ $# -ne 7 ]; then
-   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <release> <date>"
+if [ $# -ne 8 ]; then
+   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <release> <date> <located_in_gcs_extensions>"
    exit 1
 fi
 
@@ -15,10 +15,14 @@ MANUAL=$4
 TITLE=$5
 RELEASE=$6
 DATE=$7
+LOCATED_IN_GCS_EXTENSIONS=$8
 
-# Independent if INPUT_DIR is located in the clusterscheduler or oge-extensions repository
-# common files for the manuals will be taken from the clusterscheduler repository
-COMMON_DIR="../clusterscheduler/doc/markdown/manual"
+if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
+   COMMON_DIR="../clusterscheduler/doc/markdown/manual"
+else
+   COMMON_DIR="../gcs-extensions/doc/markdown/manual"
+fi
+
 SETTINGS_FILE="${SOURCE_DIR}/${COMMON_DIR}/head.tex"
 TITLE_PAGE="${SOURCE_DIR}/${COMMON_DIR}/titlepage.md"
 COPYRIGHT_PAGE="${SOURCE_DIR}/${COMMON_DIR}/copyright.md"
@@ -47,7 +51,7 @@ OPTIONS="$OPTIONS --number-sections"
 OPTIONS="$OPTIONS -V subparagraph"
 
 cat ${TITLE_PAGE} ${COPYRIGHT_PAGE} ${DEFINITIONS_PAGE} ${MANUAL_FILES} | \
-    sed -e "s~__IMAGE_DIR__~${INPUT_DIR}~g" \
+    sed -e "s~__INPUT_DIR__~${INPUT_DIR}~g" \
         -e "s/__RELEASE__/${QSNAME} ${RELEASE}/g" \
         -e "s/__DATE__/${DATE}/g" \
         -e "s/__TITLE__/${TITLE}/g" \
