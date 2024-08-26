@@ -207,7 +207,7 @@ static int
 resource_cmp(u_long32 relop, double req, double src_dl);
 
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host);
+job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance);
 
 static void
 clear_resource_tags(lList *resources, u_long32 max_tag);
@@ -1555,7 +1555,6 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
       soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
    }
 }
-
 /****** sge_select_queue/sge_queue_match_static() ************************
 *  NAME
 *     sge_queue_match_static() -- Do matching that depends not on time.
@@ -1766,7 +1765,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
-   if (job_is_forced_centry_missing(a, queue)) {
+   if (job_is_forced_centry_missing(a, queue, true)) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -1774,47 +1773,58 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 }
 
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host)
+job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance)
 {
    bool ret = false;
    const lListElem *centry;
 
    DENTER(TOP_LAYER);
    if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
-      const lList *res_list = job_get_hard_resource_list(a->job);
-      bool is_qinstance = object_has_type(queue_or_host, QU_Type);
-
       /* Optimization: Have a forced_centry_list in the assignment structure
        * and only iterate over this list.
        */
       for_each_ep(centry, a->centry_list) {
          const char *name = lGetString(centry, CE_name);
          bool is_forced = lGetUlong(centry, CE_requestable) == REQU_FORCED ? true : false;
-
-         if (!is_forced || is_requested(res_list, name)) {
-            /* if requested or not forced we are always fine */
+         if (!is_forced) {
+            // no forced attribute - nothing to do
             continue;
          }
 
-         if (is_qinstance) {
-            if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
-               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                              SCHEDD_INFO_NOTREQFORCEDRES_SS,
-                              name, lGetString(queue_or_host, QU_full_name));
-               ret = true;
+         bool might_be_missing = true;
+         const lListElem *jrs;
+         for_each_ep (jrs, lGetList(a->job, JB_request_set_list)) {
+            const lList *res_list = lGetList(jrs, JRS_hard_resource_list);
+            if (is_requested(res_list, name)) {
+               // if requested we are fine
+               might_be_missing = false;
                break;
-            }
-         } else {
-            if (host_is_centry_a_complex_value(queue_or_host, centry)) {
-               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                              SCHEDD_INFO_NOFORCEDRES_SS,
-                              name, lGetHost(queue_or_host, EH_name));
-               ret = true;
-               break;
-
             }
          }
-      }
+
+         if (might_be_missing) {
+            // the forced centry was not requested, we need to check if it is defined
+            // in the complex values of the given queue or host object
+            if (is_qinstance) {
+               if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
+                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                                 SCHEDD_INFO_NOTREQFORCEDRES_SS,
+                                 name, lGetString(queue_or_host, QU_full_name));
+                  ret = true;
+                  break;
+               }
+            } else {
+               if (host_is_centry_a_complex_value(queue_or_host, centry)) {
+                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                                 SCHEDD_INFO_NOFORCEDRES_SS,
+                                 name, lGetHost(queue_or_host, EH_name));
+                  ret = true;
+                  break;
+
+               }
+            }
+         }
+      } // end loop over all complex definitions
    }
    DRETURN(ret);
 }
@@ -1854,13 +1864,11 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
    const char *queue_name = nullptr;
    DSTRING_STATIC(reason, 1024 + 1);
    unsigned int soft_violation = violation;
-   lList *soft_requests = nullptr;
-   lListElem *attr;
    u_long64 start_time = DISPATCH_TIME_NOW;
 
    DENTER(TOP_LAYER);
 
-   soft_requests = job_get_soft_resource_listRW(a->job);
+   lList *soft_requests = job_get_soft_resource_listRW(a->job);
    clear_resource_tags(soft_requests, tag);
 
    u_long32 job_id = a->job_id;
@@ -1869,10 +1877,10 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
    }
 
    /* count number of soft violations for _one_ slot of this job */
-
+   lListElem *attr;
    for_each_rw (attr, soft_requests) {
-      switch (ri_time_by_slots(a, attr, load_attr, config_attr, actual_attr, queue,
-                      &reason, false, 1, layer, lc_factor, &start_time, queue_name?queue_name:"no queue")) {
+      switch (ri_time_by_slots(a, attr, load_attr, config_attr, actual_attr, queue, &reason, false, 1, layer,
+                               lc_factor, &start_time, queue_name?queue_name:"no queue")) {
             /* no match */
             case DISPATCH_NEVER_CAT:
                soft_violation++;
@@ -1880,35 +1888,35 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
             /* element not found */
             case DISPATCH_MISSING_ATTR:
             case DISPATCH_NOT_AT_TIME:
+               // we are checking on queue layer (the top layer)
+               //                      and the attribute hasn't matched on a lower layer (global, exechost)
                if (tag == QUEUE_TAG && lGetUlong(attr, CE_tagged) == NO_TAG) {
                   soft_violation++;
                }
                break;
             /* everything is fine */
             default:
-               if (lGetUlong(attr, CE_tagged) < tag)
+               // tag the attribute to remember that it has matched on this layer
+               if (lGetUlong(attr, CE_tagged) < tag) {
                   lSetUlong(attr, CE_tagged, tag);
+               }
       }
    }
 
    if (queue != nullptr) {
-      DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation, sge_dstring_get_string(&reason));
+      DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation,
+              sge_dstring_get_string(&reason));
 
-      /*
-       * check whether queue fulfills soft queue request of the job (-q)
-       */
+       // check whether queue fulfills soft queue request of the job (-q)
       const lList *qref_list;
       get_soft_queue_list(a->job, qref_list);
       if (qref_list != nullptr) {
+         const char *qinstance_name = lGetString(queue, QU_full_name);
          const lListElem *qr;
-         const char *qinstance_name = nullptr;
-
-         qinstance_name = lGetString(queue, QU_full_name);
-
          for_each_ep(qr, qref_list) {
             if (qref_cq_rejected(lGetString(qr, QR_name), lGetString(queue, QU_qname), lGetHost(queue, QU_qhostname), a->hgrp_list)) {
-               DPRINTF("Queue \"%s\" is not contained in the soft queue list (-q) that was requested by job %d\n",
-                        qinstance_name, (int) job_id);
+               DPRINTF("Queue \"%s\" is not contained in the soft queue list (-q) that was requested by job " sge_u32 "\n",
+                        qinstance_name, job_id);
                soft_violation++;
             }
          }
@@ -1991,7 +1999,7 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
       }
    }
 
-   if (job_is_forced_centry_missing(a, host)) {
+   if (job_is_forced_centry_missing(a, host, false)) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -3016,6 +3024,29 @@ static bool access_cq_rejected(const char *user, const char *group,
    DRETURN(rejected);
 }
 
+bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char *cqname, const lListElem *cq,
+                                                const lList *hard_resource_list, const char *scope_name) {
+   DENTER(TOP_LAYER);
+
+   bool rejected = false;
+
+   if (hard_resource_list != nullptr) {
+      dstring unsatisfied = DSTRING_INIT;
+      if (request_cq_rejected(hard_resource_list, cq, a->centry_list,
+                              (!a->pe_name || a->slots == 1)?true:false, &unsatisfied)) {
+         rejected = true;
+         DPRINTF("Cluster Queue " SFQ " can not fulfill " SFN " resource request (-l " SFN ") that "
+                 "was requested by job " sge_u32 "\n", cqname, scope_name, sge_dstring_get_string(&unsatisfied), a->job_id);
+         schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                        SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, // @todo CS-400 add info which tasks cannot run (any, master, slave)?
+                        sge_dstring_get_string(&unsatisfied),
+                        cqname, "of cluster queue");
+         sge_dstring_free(&unsatisfied);
+      }
+   }
+
+   DRETURN(rejected);
+}
 /****** sge_select_queue/cqueue_match_static() *********************************
 *  NAME
 *     cqueue_match_static() -- Does cluster queue match the job?
@@ -3096,21 +3127,18 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    const lListElem *cq = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
-   // @todo CS-400 we now have multiple resource lists, same handling as with queues above
-   const lList *hard_resource_list;
-   if ((hard_resource_list = job_get_hard_resource_list(a->job))) {
-      dstring unsatisfied = DSTRING_INIT;
-      if (request_cq_rejected(hard_resource_list, cq, a->centry_list,
-                     (!a->pe_name || a->slots == 1)?true:false, &unsatisfied)) {
-         DPRINTF("Cluster Queue \"%s\" can not fulfill resource request (-l %s) that "
-               "was requested by job %d\n", cqname, sge_dstring_get_string(&unsatisfied), (int)a->job_id);
-         schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                        SCHEDD_INFO_CANNOTRUNINQUEUE_SSS,
-                        sge_dstring_get_string(&unsatisfied),
-                        cqname, "of cluster queue");
-         sge_dstring_free(&unsatisfied);
-         DRETURN(DISPATCH_NEVER_CAT);
-      }
+   const lList *hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL);
+   if (cqueue_match_static_resource_list_rejected(a, cqname, cq, hard_resource_list, "global")) {
+      // if global requests do not match, we can rule out the cluster queue
+      DRETURN(DISPATCH_NEVER_CAT);
+   }
+   const lList *master_hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER);
+   const lList *slave_hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE);
+   if (cqueue_match_static_resource_list_rejected(a, cqname, cq, master_hard_resource_list, "master") &&
+       cqueue_match_static_resource_list_rejected(a, cqname, cq, slave_hard_resource_list, "slave")) {
+      // if both master and slave requests do not match, we cannot run any tasks in this cluster queue
+      // @todo here we could already tag queue instances
+      DRETURN(DISPATCH_NEVER_CAT);
    }
 
    /* detect if entire cluster queue ruled out due to -P */
@@ -3977,10 +4005,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                               /* if the masterq request is not contained in the hard queue request
                                * we need to allocate only one slot for the master task
                                */
-                              // @todo CS-400: if the masterq request is not contained in the slave queue request
-                              // @todo CS-400: fetch the hard_queue_list only once
                               if (qref_list_cq_rejected(hard_queue_list,
-                                  lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
+                                  lGetString(qep, QU_qname), eh_name, a->hgrp_list)) {
                                  slots = MIN(slots, 1);
                               }
                            }
@@ -4250,6 +4276,29 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    DRETURN(best_result);
 }
 
+static int already_booked_on_host(const lList *gdil, const char *host_name) {
+   int ret = 0;
+
+   const void *iterator = nullptr;
+   const lListElem *gdil_ep;
+   for (gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, host_name, &iterator);
+        gdil_ep != nullptr;
+        gdil_ep = lGetElemHostNext(gdil, JG_qhostname, host_name, &iterator)) {
+      ret += lGetUlong(gdil_ep, JG_slots);
+   }
+
+   return ret;
+}
+
+static void host_clear_qinstance_tags(lList *queue_list, const char *host_name, u_long32 bitmask) {
+   const void *queue_iterator = nullptr;
+   lListElem *next_queue, *qep;
+   for (next_queue = lGetElemHostFirstRW(queue_list, QU_qhostname, host_name, &queue_iterator);
+        (qep = next_queue);
+        next_queue = lGetElemHostNextRW(queue_list, QU_qhostname, host_name, &queue_iterator)) {
+      lClearUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER);
+   }
+}
 
 /****** sge_select_queue/parallel_host_slots() ******************************
 *  NAME
@@ -4266,80 +4315,61 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 *  RESULT
 *******************************************************************************/
 static dispatch_t
-parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
-      lListElem *hep, bool allow_non_requestable) {
-
-   int hslots = 0, hslots_qend = 0;
-   const char *eh_name;
-   dispatch_t result = DISPATCH_NEVER_CAT;
-   lList *hard_requests = job_get_hard_resource_listRW(a->job);
-   const lList *load_list = lGetList(hep, EH_load_list);
-   const lList *config_attr = lGetList(hep, EH_consumable_config_list);
-   const lList *actual_attr = lGetList(hep, EH_resource_utilization);
-   double lc_factor = 0;
-
+parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend, lListElem *hep, bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
-   eh_name = lGetHost(hep, EH_name);
-
-   /* @todo CS-400, do this for
-    *    - global requests
-    *    - slave requests
-    *    - master requests
-    */
-   clear_resource_tags(hard_requests, HOST_TAG);
+   int hslots = 0, hslots_qend = 0;
+   dispatch_t result = DISPATCH_NEVER_CAT;
+   const char *eh_name = lGetHost(hep, EH_name);
 
    SCHED_PROF_INC(a->pi, par_hstat);
 
-   /* @todo CS-400 we check
-    *    - additionally: if global queue requests are matched
-    *    - if slave queue requests are matched
-    *    - if master queue requests are matched
-    *    ==> can we remember here a value for the QU_tagged4schedule?
-    *    - static host matching
-    */
-
    const lList *hard_queue_list, *master_hard_queue_list;
    get_hard_queue_lists(a->job, hard_queue_list, master_hard_queue_list);
-   if (!(qref_list_eh_rejected(hard_queue_list, eh_name, a->hgrp_list) &&
-        qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list)) &&
-               sge_host_match_static(a, hep) == DISPATCH_OK) {
+   bool rejected_as_slave , rejected_as_master;
+   rejected_as_master = rejected_as_slave = qref_list_eh_rejected(hard_queue_list, eh_name, a->hgrp_list);
+   if (master_hard_queue_list != nullptr) {
+      rejected_as_master = qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list);
+   }
+   // @todo remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
+   if (!(rejected_as_master && rejected_as_slave) &&
+       sge_host_match_static(a, hep) == DISPATCH_OK) {
       // this host is suited at least for slave tasks, possibly also for the master task
 
       // cause load be raised artificially to reflect load correction when checking job requests
+      double lc_factor = 0.0;
       if (lGetPosViaElem(hep, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
          u_long32 ulc_factor = lGetUlong(hep, EH_load_correction_factor);
          if (ulc_factor > 0) {
-            lc_factor = ((double)ulc_factor)/100;
+            lc_factor = ulc_factor / 100.0;
          }
       }
 
       SCHED_PROF_INC(a->pi, par_hdyn);
+
+      const lList *load_list = lGetList(hep, EH_load_list);
+      const lList *config_attr = lGetList(hep, EH_consumable_config_list);
+      const lList *actual_attr = lGetList(hep, EH_resource_utilization);
 
       /* @todo CS-400 here we must check
        *    - global requests
        *    - slave requests (only if the global requests matched)
        *    - master requests (only if suited as master host, see above)
        */
+      lList *hard_requests = job_get_hard_resource_listRW(a->job);
+      // we call this function per host and we really need to clear the resource tags with every call
+      clear_resource_tags(hard_requests, HOST_TAG);
+
       result = parallel_rc_slots_by_time(a, hard_requests, &hslots, &hslots_qend,
             config_attr, actual_attr, load_list, false, nullptr,
                DOMINANT_LAYER_HOST, lc_factor, HOST_TAG, false, eh_name, false);
 
       if (result == DISPATCH_NOT_AT_TIME) {
-         const void *queue_iterator = nullptr;
-         lListElem *next_queue, *qep;
-
-         for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
-             (qep = next_queue);
-              next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
-            lClearUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER);
-         }
+         host_clear_qinstance_tags(a->queue_list, eh_name, TAG4SCHED_MASTER);
          result = DISPATCH_OK;
       }
 
       if (hslots > 0) {
-         const void *iterator = nullptr;
-         const lListElem *gdil;
          int t_max = parallel_max_host_slots(a, hep);
          if (t_max<hslots) {
             DPRINTF("\tparallel_host_slots(%s) threshold load adjustment reduces slots"
@@ -4348,11 +4378,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
          }
 
          // reduce by what we already booked on this host
-         for (gdil = lGetElemHostFirst(a->gdil, JG_qhostname, eh_name, &iterator);
-              gdil != nullptr;
-              gdil = lGetElemHostNext(a->gdil, JG_qhostname, eh_name, &iterator)) {
-            hslots -= lGetUlong(gdil, JG_slots);
-         }
+         hslots -= already_booked_on_host(a->gdil, eh_name);
       }
    }
 
@@ -4361,8 +4387,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
 
    if (result == DISPATCH_OK) {
       DPRINTF("\tparallel_host_slots(%s) returns %d/%d\n", eh_name, hslots, hslots_qend);
-   }
-   else {
+   } else {
       DPRINTF("\tparallel_host_slots(%s) returns <error>\n", eh_name);
    }
 
@@ -4536,7 +4561,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
             continue;
          }
 
-         if (skip_queue_list && lGetElemStr(skip_queue_list, CTI_name, qname)){
+         if (skip_queue_list && lGetElemStr(skip_queue_list, CTI_name, qname)) {
             DPRINTF("skipped due to queue instance %s\n", qname);
             continue;
          }
@@ -4585,9 +4610,9 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
 }
 
 /*
- * Determine maximum number of host_slots as limited
- * by queue load thresholds. The maximum only considers
- * thresholds with load adjustments
+ * Determine maximum number of host_slots as limited by queue load thresholds.
+ * Goal is to prevent the queue(s) on the host to go into load alarm.
+ * The maximum only considers thresholds with load adjustments
  *
  * for each queue Q at this host {
  *    for each threshold T of a queue {
@@ -4602,28 +4627,26 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
  */
 static int
 parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
-   int avail_h = 0, avail_q;
-   int avail;
-   lListElem *next_queue, *qep, *centry = nullptr;
-   const lListElem *lv;
-   const lListElem *lc;
-   const lListElem *tr, *fv, *cep;
+   int avail_h = 0;
    const char *eh_name = lGetHost(host, EH_name);
-   const void *queue_iterator = nullptr;
-   const char *load_value, *limit_value, *adj_value;
-   u_long32 type;
-   bool is_np_adjustment = false;
-   const lList *requests = job_get_hard_resource_list(a->job);
 
    DENTER(TOP_LAYER);
 
+   const void *queue_iterator = nullptr;
+   lListElem *next_queue, *qep;
    for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
        (qep = next_queue);
         next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
-      const lList *load_thresholds = lGetList(qep, QU_load_thresholds);
-      avail_q = INT_MAX;
+      int avail_q = INT_MAX;
 
+      const lList *load_thresholds = lGetList(qep, QU_load_thresholds);
+      const lListElem *tr;
       for_each_ep(tr, load_thresholds) {
+         bool is_np_adjustment = false;
+         lListElem *centry = nullptr;
+         const lListElem *cep;
+         const lListElem *lv, *fv, *lc;
+         const char *load_value, *limit_value, *adj_value;
          double load, threshold, adjustment;
          const char *name = lGetString(tr, CE_name);
          if ((cep = centry_list_locate(a->centry_list, name)) == nullptr) {
@@ -4647,8 +4670,12 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             adj_value = lGetString(lc, CE_stringval);
 
          } else { /* work on a consumable */
-
-            if ((lc = lGetElemStr(requests, CE_name, name)) != nullptr) {
+            // we might have different requests (global or (master and slave)). Use the highest one to make sure
+            // that queues will not go into load alarm.
+            // BUT: E.g. in case of a high request for the master and low (no) requests for the slaves this could
+            // possibly prevent a job from starting!
+            lc = job_get_highest_hard_request(a->job, name);
+            if (lc != nullptr) {
                adj_value = lGetString(lc, CE_stringval);
             } else { /* is default value */
                adj_value = lGetString(cep, CE_defaultval);
@@ -4666,7 +4693,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
          }
 
          limit_value = lGetString(tr, CE_stringval);
-         type = lGetUlong(cep, CE_valtype);
+         u_long32 type = lGetUlong(cep, CE_valtype);
 
          /* get the needed values. If the load value is not a number, ignore it */
          switch (type) {
@@ -4716,12 +4743,12 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             the alarm state. For this behavior we have to add 1 to the
             available slots. However, this is not true for consumables
             as load threshold*/
-         avail = (threshold - load)/adjustment;
+         int avail = (threshold - load)/adjustment;
          if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO) {
             avail++;
          }
          avail_q = MIN(avail, avail_q);
-      }
+      } // end loop over all load thresholds
 
       avail_h = MAX(avail_h, avail_q);
    }
@@ -5095,7 +5122,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          const lList *ar_queue_config_attr;
          const lList *ar_queue_actual_attr;
          const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
-         lList *hard_resource_list = job_get_hard_resource_listRW(a->job);
+         lList *hard_resource_list = job_get_hard_resource_listRW(a->job); // @todo CS-400 for all request_lists
          dstring reason = DSTRING_INIT;
 
          clear_resource_tags(hard_resource_list, QUEUE_TAG);
@@ -5153,6 +5180,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
       }
 
       // we already have tasks running on this qinstance (round_robin), consider the already booked slots
+      // @todo in case of round robin: don't we cache the number of possible slots in QU_tag? Really re-calculate them over and over again?
       if ((gdil=lGetElemStr(a->gdil, JG_qname, lGetString(qep, QU_full_name))))
          qslots -= lGetUlong(gdil, JG_slots);
    }
@@ -5417,22 +5445,15 @@ sequential_global_time(u_long64 *start, const sge_assignment_t *a, int *violatio
 static dispatch_t
 parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 {
-   dispatch_t result = DISPATCH_NEVER_CAT;
-   lList *hard_request = job_get_hard_resource_listRW(a->job);
-   const lList *load_attr = lGetList(a->gep, EH_load_list);
-   const lList *config_attr = lGetList(a->gep, EH_consumable_config_list);
-   const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);
-   double lc_factor=0.0;
-   int gslots = 0, gslots_qend = 0;
-
    DENTER(TOP_LAYER);
 
-   clear_resource_tags(hard_request, GLOBAL_TAG);
+   dispatch_t result = DISPATCH_NEVER_CAT;
+   int gslots = 0, gslots_qend = 0;
 
    /* check if job has access (from acls, projects) to any hosts globally */
    if (sge_host_match_static(a, a->gep) == DISPATCH_OK) {
       /* cause global load be raised artificially to reflect load correction when checking job requests */
-
+      double lc_factor=0.0;
       if (lGetPosViaElem(a->gep, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
          u_long32 ulc_factor;
          if ((ulc_factor=lGetUlong(a->gep, EH_load_correction_factor))) {
@@ -5440,11 +5461,25 @@ parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
          }
       }
 
+      const lList *load_attr = lGetList(a->gep, EH_load_list);
+      const lList *config_attr = lGetList(a->gep, EH_consumable_config_list);
+      const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);
+
       // check if hard requests match global resources
-      // @todo CS-400 here we can only match requests of the global scope
-      result = parallel_rc_slots_by_time(a, hard_request, &gslots,
-                                &gslots_qend, config_attr, actual_attr, load_attr,
-                                false, nullptr, DOMINANT_LAYER_GLOBAL, lc_factor, GLOBAL_TAG, false, SGE_GLOBAL_NAME, false);
+      // @todo CS-400 need to check all 3 request lists
+      // -> if the master requests do not match on the global host: the job cannot run
+      // -> if the global requests do not match on the global host: the job cannot run
+      //    -> else take the minimum of global and slave requests
+      // still we might have issues when there is a big request from the master task for e.g. memory
+      // and small requests for memory from the slave tasks -> we might not be able to start the computed
+      // number of slave tasks unless resources are all matched again and we somehow take into account
+      // what got consumed by the master task
+      lList *hard_requests = job_get_hard_resource_listRW(a->job);
+      clear_resource_tags(hard_requests, GLOBAL_TAG);
+
+      result = parallel_rc_slots_by_time(a, hard_requests, &gslots, &gslots_qend,
+                                         config_attr, actual_attr, load_attr, false, nullptr, DOMINANT_LAYER_GLOBAL,
+                                         lc_factor, GLOBAL_TAG, false, SGE_GLOBAL_NAME, false);
    }
 
    *slots      = gslots;

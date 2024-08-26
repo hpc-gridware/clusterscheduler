@@ -3925,6 +3925,25 @@ bool job_request_set_has_queue_requests(const lListElem *job) {
    return ret;
 }
 
+const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name) {
+   const lListElem *ret = nullptr;
+   double max_request = 0.0;
+
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
+      const lListElem *request = lGetSubStr(jrs, CE_name, request_name, JRS_hard_resource_list);
+      if (request != nullptr) {
+         double request_value = lGetDouble(request, CE_doubleval);
+         if (request_value > max_request) {
+            ret = request;
+            max_request = request_value;
+         }
+      }
+   }
+
+   return ret;
+}
+
 const lList *job_get_hard_resource_list(const lListElem *job) {
    return job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
 }

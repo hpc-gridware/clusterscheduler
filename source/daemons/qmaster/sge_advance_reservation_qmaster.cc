@@ -1081,6 +1081,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
          continue;
       }
 
+      // @todo some of the check below (pe, acl/xacl are already done in cqueue_match_static(). Do we need to repeat them on qinstance layer?
       for_each_ep(qinstance, qinstance_list) {
          const char *cal_name;
 

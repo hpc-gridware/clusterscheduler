@@ -131,11 +131,13 @@ void monitor_dominance(char *str, u_long32 mask) {
 *
 *  INPUTS
 *     const char *attrname - attribute name one is looking for 
-*     lList *config_attr   - user defined attributes (CE_Type)
+*     lList *config_attr   - user defined attributes (CE_Type), this is
+*                            a host's / queue's complex_values list:
+*                            EH_consumable_config_list, QU_consumable_config_list
 *     lList *actual_attr   - current usage of consumables (RUE_Type)
 *     lList *load_attr     - load attributes 
 *     lList *centry_list   - the system wide attribute configuration 
-*     lListElem *queue     - the current queue, or null, if one works on hosts 
+*     lListElem *queue     - the current queue, or nullptr, if one works on hosts
 *     u_long32 layer       - the current layer 
 *     double lc_factor     - the load correction value 
 *     dstring *reason      - space for error messages or nullptr
@@ -152,11 +154,9 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
               const lList *centry_list, const lList *load_adjustments, const lListElem *queue, u_long32 layer,
               double lc_factor, dstring *reason, bool zero_utilization, u_long64 start_time, u_long64 duration)
 {
-   const lListElem *actual_el=nullptr;
-   const lListElem *load_el=nullptr;
-   lListElem *cplx_el=nullptr;
-
    DENTER(BASIS_LAYER);
+
+   lListElem *cplx_el = nullptr; // this is what we return
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr != nullptr) {
@@ -170,16 +170,21 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          }
          lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_FIXED);
          lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
-         lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp,CE_doubleval) ); 
-         lSetString(cplx_el, CE_stringval, lGetString(temp,CE_stringval) );
+         lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp, CE_doubleval));
+         lSetString(cplx_el, CE_stringval, lGetString(temp, CE_stringval));
       }
    }
+
+   // @todo CS-400: if a master_used_list is given and it contains the attribute
+   //               this is what is already used by the master task
+   //               subtract it from CE_doubleval, generate new CE_stringval
 
    if (cplx_el != nullptr && lGetUlong(cplx_el, CE_consumable) != CONSUMABLE_NO) {
       lSetUlong(cplx_el, CE_pj_dominant, layer | DOMINANT_TYPE_CONSUMABLE);
       lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
+         const lListElem *actual_el;
          if (actual_attr != nullptr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))) {
             dstring ds;
             char as_str[20];
@@ -207,14 +212,15 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
             lFreeElem(&cplx_el);
             DRETURN(nullptr);
          }
-      } else{
+      } else {
          lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval)); 
          lSetString(cplx_el,CE_pj_stringval, lGetString(cplx_el, CE_stringval));
       }
    }
 
    /** check for a load value */
-   if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
+   const lListElem *load_el;
+   if (load_attr != nullptr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
        (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
          if (cplx_el == nullptr) {
             cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
@@ -335,6 +341,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          lFreeElem(&cplx_el);
       }
    }
+
    DRETURN(cplx_el);
 }
 

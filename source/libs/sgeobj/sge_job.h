@@ -481,6 +481,8 @@ lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope);
 bool job_request_set_remove_duplicates(lListElem *job);
 bool job_request_set_has_queue_requests(const lListElem *job);
 
+const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name);
+
 const lList *job_get_hard_resource_list(const lListElem *job);
 const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope);
 const lList *job_get_soft_resource_list(const lListElem *job);

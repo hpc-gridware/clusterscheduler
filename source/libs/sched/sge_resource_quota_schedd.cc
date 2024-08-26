@@ -1161,14 +1161,18 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
-                  lList *job_centry_list = job_get_hard_resource_listRW(a->job);
-                  lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
                   if (raw_centry == nullptr) {
                      DPRINTF("ignoring limit %s because not defined", limit_name);
                      continue;
                   } else {
                      DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
                   }
+
+                  lList *job_centry_list = job_get_hard_resource_listRW(a->job); // @todo CS-400 need to check all request lists
+                  // @todo do we really need to pass the whole job_centry_list info functions below,
+                  //       or could we create a sub-list with just the one job_entry element?
+                  //       And would we have to copy-back info like CE_tagged?
+                  lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
 
                   /* found a rule, now check limit */
                   if (lGetUlong(raw_centry, CE_consumable)) {
@@ -1297,8 +1301,6 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    limit_list = lGetList(rule, RQR_limit);
    for_each_rw(limit, limit_list) {
       bool       is_forced = false;
-      const lList      *job_centry_list = nullptr;
-      lListElem  *job_centry = nullptr;
       const char *limit_name = lGetString(limit, RQRL_name);
       lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
 
@@ -1309,9 +1311,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
       }
 
-      is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED ? true : false;
-      job_centry_list = job_get_hard_resource_list(a->job);
-      job_centry = centry_list_locate(job_centry_list, limit_name);
+      is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED;
+      lList *job_centry_list = job_get_hard_resource_listRW(a->job);
+      // @todo CS-400: we only need job_centry. Have a function searching it in the 3 possible request lists
+      lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
 
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
