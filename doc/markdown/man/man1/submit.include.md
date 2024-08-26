@@ -441,7 +441,7 @@ after a restart or migration of the job, however.
 
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
 *e*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
-
+   
 -hard  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
 
