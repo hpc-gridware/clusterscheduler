@@ -164,7 +164,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                printf(", ");
             }
-            printf(gid_t_fmt "(%s)", lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
+            printf(gid_t_fmt "(%s)", (gid_t) lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
          }
       }
 #else
