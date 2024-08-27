@@ -821,7 +821,8 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 /* ------------------------- */
 void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lListElem *jr)
 {
-   char *exec_file, *script_file, *tmpdir, *job_owner, *qname; 
+   DENTER(TOP_LAYER);
+   char *exec_file, *script_file, *tmpdir, *job_owner, *qname;
    dstring jobdir = DSTRING_INIT;
    char fname[SGE_PATH_MAX];
    char err_str_buffer[1024];
@@ -830,8 +831,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
    lListElem *jep = nullptr, *petep = nullptr, *jatep = nullptr;
    const char *pe_task_id_str; 
    const char *sge_root = bootstrap_get_sge_root();
-
-   DENTER(TOP_LAYER);
+   bool do_rm_active_dir = true;
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
 
@@ -842,7 +842,17 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
 
    pe_task_id_str = jr?lGetString(jr, JR_pe_task_id_str):nullptr;
 
-   /* try to find this job in our job list */ 
+   // check if job should be kept active
+   {
+      keep_active_t keep_active = mconf_get_keep_active();
+      bool job_failed = lGetUlong(jr, JR_failed) != 0 ? true : false;
+
+      if (keep_active == KEEP_ACTIVE_TRUE || getenv("SGE_KEEP_ACTIVE") || (keep_active == KEEP_ACTIVE_ERROR && job_failed)) {
+         do_rm_active_dir = false;
+      }
+   }
+
+   /* try to find this job in our job list */
    if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep)) {
       lListElem *master_q;
       int used_slots;
@@ -874,7 +884,6 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
          reaper_sendmail(jep, jr);
       }
 
-
       /*
       ** security hook
       */
@@ -890,11 +899,9 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
          delete_credentials(sge_root, jep);
 
       /* remove job/task active dir */
-      if (!mconf_get_keep_active() && !getenv("SGE_KEEP_ACTIVE")) {
-         sge_get_active_job_file_path(&jobdir,
-                                      job_id, ja_task_id, pe_task_id,
-                                      nullptr);
+      if (do_rm_active_dir) {
          DPRINTF("removing active dir: %s\n", sge_dstring_get_string(&jobdir));
+         sge_get_active_job_file_path(&jobdir, job_id, ja_task_id, pe_task_id, nullptr);
          if (sge_rmdir(sge_dstring_get_string(&jobdir), &err_str)) {
             ERROR(MSG_FILE_CANTREMOVEDIRECTORY_SS, sge_dstring_get_string(&jobdir), err_str_buffer);
          }
@@ -999,9 +1006,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
 #ifdef KERBEROS
          krb_destroy_forwarded_tgt(job_id);
 #endif
-         sge_get_active_job_file_path(&jobdir,
-                                      job_id, ja_task_id, pe_task_id,
-                                      nullptr);
+         sge_get_active_job_file_path(&jobdir, job_id, ja_task_id, pe_task_id, nullptr);
          if (SGE_STAT(sge_dstring_get_string(&jobdir), &statbuf)) {
             ERROR(MSG_SHEPHERD_CANTFINDACTIVEJOBSDIRXFORREAPINGJOBY_SU, sge_dstring_get_string(&jobdir), sge_u32c(job_id));
          } else {
@@ -1020,9 +1025,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
             }
 
             /* do not remove xterm or qlogin starter ! */
-            if ((script_file = get_conf_val("script_file")) 
-                  && strcasecmp(script_file, "INTERACTIVE")
-                  && strcasecmp(script_file, "QLOGIN")) {
+            if ((script_file = get_conf_val("script_file")) && strcasecmp(script_file, "INTERACTIVE") && strcasecmp(script_file, "QLOGIN")) {
                if ((exec_file = get_conf_val("exec_file"))) {
                   DPRINTF("removing exec_file %s\n", exec_file);
                   unlink(exec_file);
@@ -1030,9 +1033,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
             }
             
             /* tmpdir */
-            if ((!(tmpdir = get_conf_val("queue_tmpdir"))) || 
-                 (!(qname = get_conf_val("queue"))) || 
-             (!(job_owner = get_conf_val("job_owner")))) {
+            if ((!(tmpdir = get_conf_val("queue_tmpdir"))) || (!(qname = get_conf_val("queue"))) || (!(job_owner = get_conf_val("job_owner")))) {
                ERROR(MSG_SHEPHERD_INCORRECTCONFIGFILEFORJOBXY_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
             } else {
                DPRINTF("removing queue_tmpdir %s\n", tmpdir);
@@ -1045,8 +1046,8 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
             job_remove_spool_file(job_id, ja_task_id, nullptr, SPOOL_WITHIN_EXECD);
          }
 
-         /* active dir */
-         if (!mconf_get_keep_active() && !getenv("SGE_KEEP_ACTIVE")) {
+         /* remove job/task active dir */
+         if (do_rm_active_dir) {
             DPRINTF("removing active dir: %s\n", sge_dstring_get_string(&jobdir));
             if (sge_rmdir(sge_dstring_get_string(&jobdir), &err_str)) {
                ERROR(MSG_FILE_CANTREMOVEDIRECTORY_SS, sge_dstring_get_string(&jobdir), err_str_buffer);

@@ -317,11 +317,11 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
    result = sge_mkdir(path, 0755, false, false);
    if (result == -1) {
       /* if it already exists and keep_active: try to rename it */
-      if (errno == EEXIST && mconf_get_keep_active() && lGetUlong(ja_task, JAT_job_restarted) > 0) {
+      if (errno == EEXIST && mconf_get_keep_active() != KEEP_ACTIVE_FALSE && lGetUlong(ja_task, JAT_job_restarted) > 0) {
          dstring new_path = DSTRING_INIT;
-         int i, success = 0;
+         int success = 0;
 
-         for (i = 0; i < 10; i++) {
+         for (int i = 0; i < 10; i++) {
             sge_dstring_sprintf(&new_path, "%s.%d", path, i);
             if (rename(path, sge_dstring_get_string(&new_path)) == 0) {
                success = 1;

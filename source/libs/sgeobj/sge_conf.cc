@@ -168,7 +168,8 @@ static bool enable_mtrace = false;
 static long ptf_max_priority = -999;
 static long ptf_min_priority = -999;
 static int max_dynamic_event_clients = 1000;
-static bool keep_active = false;
+
+static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
 static u_long32 script_timeout = 120;
 #ifdef LINUX
 static bool enable_binding = true;
@@ -844,7 +845,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       notify_susp_type = 1;
       ptf_max_priority = -999;
       ptf_min_priority = -999;
-      keep_active = false;
+      keep_active = KEEP_ACTIVE_FALSE;
       script_timeout = 120;
 #ifdef LINUX
       enable_binding = true;
@@ -895,8 +896,19 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                continue;
             }
          }
-         if (parse_bool_param(s, "KEEP_ACTIVE", &keep_active)) {
-            continue;
+         {
+            if (strncasecmp(s, "KEEP_ACTIVE", sizeof("KEEP_ACTIVE")-1) == 0) {
+               const char *keep_active_value = &s[sizeof("KEEP_ACTIVE=")-1];
+
+               if (strncasecmp(keep_active_value, "ERROR", sizeof("ERROR")-1) == 0) {
+                  keep_active = KEEP_ACTIVE_ERROR;
+               } else if (strncasecmp(keep_active_value, TRUE_STR, sizeof(TRUE_STR)-1) == 0) {
+                  keep_active = KEEP_ACTIVE_TRUE;
+               } else {
+                  keep_active = KEEP_ACTIVE_FALSE;
+               }
+               continue;
+            }
          }
          if (parse_time_param(s, "SCRIPT_TIMEOUT", &script_timeout)) {
             continue;
@@ -2018,8 +2030,8 @@ bool mconf_get_sharetree_reserved_usage() {
    DRETURN(ret);
 }
 
-bool mconf_get_keep_active() {
-   bool ret;
+keep_active_t mconf_get_keep_active() {
+   keep_active_t ret;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
