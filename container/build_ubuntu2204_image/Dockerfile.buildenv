@@ -49,6 +49,8 @@ RUN apt-get update && apt-get install -y \
     libhwloc-dev \
     rapidjson-dev \
     vim \
+    default-jdk \
+    maven \
     && rm -rf /var/lib/apt/lists/*
 
 # Install a specific version of cmake if it is necessary. Here, install cmake 3.27.9 manually if needed.

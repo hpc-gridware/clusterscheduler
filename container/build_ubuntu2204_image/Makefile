@@ -43,7 +43,7 @@ push-dependency-image:
 build-lastest-version-image:
 	@echo "Building image with latest Open Cluster Scheduler..."
 	if [ -z "$(BUILD_TIME)" ]; then \
-		@echo "Please set BUILD_TIME to the image tag of the Ubuntu 22.04 dep. image"; \
+		€echo "Please set BUILD_TIME to the image tag of the Ubuntu 22.04 dep. image"; \
 		exit 1; \
 	fi
 	$(eval BUILD_COMMIT:=$(shell git rev-parse --short HEAD))
