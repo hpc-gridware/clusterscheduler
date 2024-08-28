@@ -536,16 +536,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         } else {
                            printf("id   : %s\n", "nullptr");
                         } 
-                        if (packet->host) {
-                           printf("host   : %s\n", packet->host);
-                        } else {
-                           printf("host   : %s\n", "nullptr");
-                        }
-                        if (packet->commproc) {
-                           printf("commproc   : %s\n", packet->commproc);
-                        } else {
-                           printf("commproc   : %s\n", "nullptr");
-                        }
+                        printf("host   : %s\n", packet->host);
+                        printf("commproc   : %s\n", packet->commproc);
                         if (packet->version) {
                            printf("version   : " sge_U32CFormat "\n", sge_u32c(packet->version));
                         } else {

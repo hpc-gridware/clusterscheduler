@@ -56,7 +56,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 
 /* funtions called via gdi and inside the qmaster */
 int
-ar_del(lListElem *ep, lList **alpp, lList **ar_list, const char *ruser, const char *rhost, monitoring_t *monitor);
+ar_del(const sge_gdi_packet_class_t *packet, lListElem *ep, lList **alpp, lList **ar_list, monitoring_t *monitor);
 
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);

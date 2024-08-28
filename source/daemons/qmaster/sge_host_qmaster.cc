@@ -446,10 +446,15 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
       }
 
       /* ---- EH_consumable_config_list */
-      if (attr_mod_threshold(alpp, ep, new_host,
-                             sub_command, SGE_ATTR_COMPLEX_VALUES,
-                             SGE_OBJ_EXECHOST)) {
-         goto ERROR;
+      if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
+         if (attr_mod_threshold(alpp, ep, new_host,
+                                sub_command, SGE_ATTR_COMPLEX_VALUES,
+                                SGE_OBJ_EXECHOST)) {
+            goto ERROR;
+         }
+         if (changed) {
+            update_qversion = true;
+         }
       }
 
       /* ---- EH_acl */
@@ -532,6 +537,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
                            sub_command, "report_variables",
                            SGE_OBJ_EXECHOST, 0, nullptr);
 
+
          /* check if all report_variables are valid complex variables */
          for_each_ep(var, lGetList(ep, EH_report_variables)) {
             const char *name = lGetString(var, STU_name);
@@ -548,9 +554,8 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
 
          for_each_rw(ar, master_ar_list) {
             if (lGetElemHost(lGetList(ar, AR_granted_slots), JG_qhostname, host)) {
-               if (!sge_ar_have_users_access(nullptr, ar, host, lGetList(ep, EH_acl),
-                                             lGetList(ep, EH_xacl),
-                                             master_userset_list)) {
+               if (!sge_ar_have_users_access(nullptr, ar, host, lGetList(new_host, EH_acl),
+                                             lGetList(new_host, EH_xacl), master_userset_list)) {
                   ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id)));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   goto ERROR;
@@ -989,7 +994,7 @@ sge_gdi_kill_exechost(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
 
    DENTER(GDI_LAYER);
 
-   if (!manop_is_manager(packet->user, master_manager_list)) {
+   if (!manop_is_manager(packet, master_manager_list)) {
       ERROR(SFNMAX, MSG_OBJ_SHUTDOWNPERMS);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;

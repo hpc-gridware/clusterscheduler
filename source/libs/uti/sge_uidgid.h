@@ -48,6 +48,11 @@
 #  define MAX_NIS_RETRIES 10
 #endif
 
+typedef struct {
+    gid_t id;
+    char name[MAX_STRING_SIZE];
+} ocs_grp_elem_t;
+
 bool
 sge_is_start_user_superuser();
 
@@ -103,3 +108,12 @@ get_group_buffer_size();
 
 int
 get_pw_buffer_size();
+
+bool
+ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_str_len);
+
+void
+ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
+               gid_t gid, const char *groupname, int amount, ocs_grp_elem_t *grp_array);
+
+

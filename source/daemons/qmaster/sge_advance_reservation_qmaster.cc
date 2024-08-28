@@ -472,8 +472,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
 int
-ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
-       const char *rhost, monitoring_t *monitor) {
+ar_del(const sge_gdi_packet_class_t *packet, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
@@ -483,7 +482,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
    DENTER(TOP_LAYER);
 
-   if (!ep || !ruser || !rhost) {
+   if (!ep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
@@ -504,8 +503,8 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
       const lListElem *user;
 
       for_each_ep(user, user_list) {
-         if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(ruser, master_manager_list)) {
-            ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all advance reservations");
+         if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(packet, master_manager_list)) {
+            ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, "modify all advance reservations");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeWhere(&ar_where);
@@ -522,7 +521,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
    } else if (sge_is_pattern(id_str)) {
       /* if no userlist and wildcard jobs was requested only delete the own ars */
       lCondition *new_where = nullptr;
-      new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, ruser);
+      new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, packet->user);
       if (ar_where == nullptr) {
          ar_where = new_where;
       } else {
@@ -576,7 +575,7 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (manop_is_manager(ruser, master_manager_list)) {
+   if (manop_is_manager(packet, master_manager_list)) {
       has_manager_privileges = true;
    }
 
@@ -594,8 +593,8 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
       removed_one = true;
 
-      if (!has_manager_privileges && strcmp(ruser, lGetString(ar, AR_owner))) {
-         ERROR(MSG_DELETEPERMS_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
+      if (!has_manager_privileges && strcmp(packet->user, lGetString(ar, AR_owner))) {
+         ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          continue;
       }
@@ -624,14 +623,14 @@ ar_del(lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
 
          lRemoveElem(*master_ar_list, &ar);
 
-         INFO(MSG_JOB_DELETEX_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
+         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          sge_event_spool(alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true);
       } else {
-         INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_AR, sge_u32c(ar_id));
+         INFO(MSG_JOB_REGDELX_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          sge_event_spool(alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,

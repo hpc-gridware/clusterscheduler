@@ -82,36 +82,19 @@ static void set_admin_user(const char *user_name, uid_t, gid_t);
 
 static int get_admin_user(uid_t *, gid_t *);
 
-/****** uti/uidgid/sge_is_start_user_superuser() *******************************
-*  NAME
-*     sge_is_start_user_superuser() -- return true/false is current real user
-*                                     is superuser (root/Administrator)
-*
-*  SYNOPSIS
-*     int sge_is_start_user_superuser()
-*
-*  FUNCTION
-*     Check the real user id to determine if it is the superuser. If so, return
-*     true, else return false. This function relies on getuid == 0 for UNIX.
-*     Other members of the Administrators group do not have the permission
-*     to "su" without password!
-*
-*  INPUTS
-*     NONE
-*
-*  RESULT
-*         true - root was start user
-*         false - otherwise
-*
-*  NOTES
-*     MT-NOTE: sge_is_start_user_superuser() is MT safe.
-* 
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
-******************************************************************************/
+/**
+ * \brief Return true/false if current real user is superuser (root/Administrator).
+ *
+ * \details
+ * Check the real user id to determine if it is the superuser. If so, return
+ * true, else return false. This function relies on getuid == 0 for UNIX.
+ * Other members of the Administrators group do not have the permission
+ * to "su" without password!
+ *
+ * \return
+ * true - root was start user
+ * false - otherwise
+ */
 bool
 sge_is_start_user_superuser() {
    DENTER(UIDGID_LAYER);
@@ -139,15 +122,6 @@ sge_is_start_user_superuser() {
 *         0 - OK
 *        -1 - Username does not exist
 *        -2 - Admin user was already set
-*
-*  NOTES
-*     MT-NOTE: sge_set_admin_username() is MT safe.
-* 
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
 int
 sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
@@ -172,6 +146,7 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
    } else {
       int size = get_pw_buffer_size();
       char *buffer = sge_malloc(size);
+      SGE_ASSERT(buffer != nullptr);
 
       struct passwd pw_struct{};
       struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
@@ -381,6 +356,7 @@ sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    do {
       DPRINTF("name: %s retries: %d\n", user, retries);
@@ -441,6 +417,7 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 
    size = get_group_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    do {
       if (!retries--) {
@@ -501,6 +478,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
 
    /* max retries that are made resolving user name */
    while (getpwuid_r(uid, &pw_entry, buffer, size, &pw) != 0 || !pw) {
@@ -554,6 +532,7 @@ sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
 
    size = get_group_buffer_size();
    buf = sge_malloc(size);
+   SGE_ASSERT(buf != nullptr);
 
    gr = sge_getgrgid_r(gid, &gr_entry, buf, size, retries);
    // TODO: We need to handle the case when the OS is unable to resolve the GID to a name.
@@ -586,6 +565,7 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
 
       size = get_group_buffer_size();
       buf = sge_malloc(size);
+      SGE_ASSERT(buf != nullptr);
 
       /* max retries that are made resolving group name */
       while (getgrgid_r(gid, &gr_entry, buf, size, &gr) != 0) {
@@ -860,6 +840,7 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
                            int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
    int size = get_pw_buffer_size();
    char *buffer = sge_malloc(size);
+   SGE_ASSERT(buffer != nullptr);
    int ret = _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp, err_str, err_str_size, use_qsub_gid,
                                      qsub_gid, buffer, size, skip_silently);
    sge_free(&buffer);
@@ -1244,3 +1225,123 @@ sge_has_admin_user() {
    gid_t gid;
    DRETURN(!(get_admin_user(&uid, &gid) == ESRCH));
 }
+
+/**
+ * @brief Returns supplementary groups of the executing user.
+ *
+ * Calling function is responsible to free grp_array.
+ *
+ * @param amount        of supplementary groups the user is part of
+ * @param grp_array     containing elements with the grp id and name
+ * @param err_str       variable where the function can store an error message
+ * @param err_str_len   length of the error string buffer
+ * @return              false in case on error or true in case of success
+ *                      if true is returned the also amount and grp_array will be set.
+ */
+bool
+ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_str_len) {
+   DENTER(TOP_LAYER);
+
+   // check input parameter
+   if (err_str == nullptr || err_str_len <= 0) {
+      // nothing we can do here. caller should have specified the string.
+      DRETURN(false);
+   }
+   if (amount == nullptr) {
+      snprintf(err_str, err_str_len, "invalid input parameter (amount).");
+      DRETURN(false);
+   }
+   if (grp_array == nullptr) {
+      snprintf(err_str, err_str_len, "invalid input parameter (grp_array).");
+      DRETURN(false);
+   }
+
+   // get maximum amount of supplementary group IDs
+   int max_groups = static_cast<int>(sge_sysconf(SGE_SYSCONF_NGROUPS_MAX));
+   if (max_groups == -1) {
+      snprintf(err_str, err_str_len, "sge_sysconf(SGE_SYSCONF_NGROUPS_MAX) failed.");
+      DRETURN(false);
+   }
+
+   // allocate buffer for group IDs
+   auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
+   if (grp_id_list == nullptr) {
+      snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group IDs");
+      DRETURN(false);
+   }
+
+   // fetch group IDs
+   int grp_ids = getgroups(max_groups, grp_id_list);
+   if (grp_ids == -1) {
+      snprintf(err_str, err_str_len, "getgroups() failed.");
+      sge_free(&grp_id_list);
+      DRETURN(false);
+   }
+   if (grp_ids == 0) {
+      // success case: user has no supplementary groups
+      *amount = 0;
+      *grp_array = nullptr;
+      sge_free(&grp_id_list);
+      DRETURN(true);
+   }
+
+   // fetch group names and store them with corresponding IDs in the array to be returned
+   auto array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(grp_ids * sizeof(ocs_grp_elem_t)));
+   if (array == nullptr) {
+       snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group information");
+       sge_free(&grp_id_list);
+       DRETURN(false);
+   }
+   for (int i = 0; i < grp_ids; i++) {
+      // try to get the name
+      array[i].id = grp_id_list[i];
+      int lret = sge_gid2group(grp_id_list[i], array[i].name, MAX_STRING_SIZE, 1);
+
+      // non-resolvable groups are no error. also OCS uses GIDs without name for job tracing
+      if (lret != 0) {
+          snprintf(array[i].name, MAX_STRING_SIZE, gid_t_fmt, grp_id_list[i]);
+      }
+   }
+   sge_free(&grp_id_list);
+   *amount = grp_ids;
+   *grp_array = array;
+   DRETURN(true);
+}
+
+/**
+ * @brief Fills a dstring with the information about user, group, supplementary group's similar to the id-command.
+ *
+ * As sise effect the string will be printed to
+ *
+ * @param dstr       Dstring that will contain the information
+ * @param uid        user ID
+ * @param username   user name
+ * @param gid        primary group ID
+ * @param groupname  primary group name
+ * @param amount     number of supplementary groups
+ * @param grp_array  array with entries for each sup-grp (ID and name)
+ */
+void
+ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
+               gid_t gid, const char *groupname, int amount, ocs_grp_elem_t *grp_array) {
+   DENTER(TOP_LAYER);
+   sge_dstring_sprintf(dstr, "uid=" uid_t_fmt "(%s) gid=" gid_t_fmt "(%s) groups=", uid, username, gid, groupname);
+   if (amount == 0) {
+      sge_dstring_sprintf_append(dstr, "NONE\n");
+   } else {
+      bool is_first = true;
+      for (int i = 0; i < amount; i++) {
+         if (is_first) {
+            is_first = false;
+         } else {
+            sge_dstring_append(dstr, ", ");
+         }
+         sge_dstring_sprintf_append(dstr, gid_t_fmt "(%s)", grp_array[i].id, grp_array[i].name);
+      }
+      sge_dstring_append_char(dstr, '\n');
+   }
+   DPRINTF("%s", sge_dstring_get_string(dstr));
+   DRETURN_VOID;
+}
+
+

@@ -472,7 +472,8 @@ enum {
    JB_pty,
    JB_ja_task_concurrency,
    JB_binding,
-   JB_submission_command_line
+   JB_submission_command_line,
+   JB_grp_list
 };
 
 LISTDEF(JB_Type)
@@ -562,6 +563,7 @@ LISTDEF(JB_Type)
    SGE_ULONG(JB_ja_task_concurrency, CULL_SPOOL)
    SGE_LIST(JB_binding, BN_Type, CULL_SPOOL)
    SGE_STRING(JB_submission_command_line, CULL_SPOOL)
+   SGE_LIST(JB_grp_list, ST_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(JBN)
@@ -651,6 +653,7 @@ NAMEDEF(JBN)
    NAME("JB_ja_task_concurrency")
    NAME("JB_binding")
    NAME("JB_submission_command_line")
+   NAME("JB_grp_list")
 NAMEEND
 
 #define JB_SIZE sizeof(JBN)/sizeof(char *)

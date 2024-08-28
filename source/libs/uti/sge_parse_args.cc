@@ -38,20 +38,21 @@
 #include "uti/sge_sl.h"
 #include "uti/sge_string.h"
 
+#include <sge_log.h>
+
 /* This method counts the number of arguments in the string using a quick and
  * dirty algorithm.  The algorithm may incorrectly report the number of arguments
  * to be too large because it does not parse quotations correctly. 
  * MT-NOTE: sge_quick_count_num_args() is MT safe
  */
-int sge_quick_count_num_args(
-        const char *args /* The argument string to count by whitespace tokens */
-) {
+int sge_quick_count_num_args(const char *args) {
+   DENTER(TOP_LAYER);
    int num_args = 0;
    char *resreq = sge_malloc(strlen(args) + 1);
    char *s;
    struct saved_vars_s *context = nullptr;
 
-   DENTER(TOP_LAYER);
+   SGE_ASSERT(resreq != nullptr);
 
    /* This function may return a larger number than required since it does not
     * parse quotes.  This is ok, however, since it's current usage is for

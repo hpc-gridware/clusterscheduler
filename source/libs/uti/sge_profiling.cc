@@ -1552,6 +1552,7 @@ static void init_array(pthread_t num) {
       } else if (theInfo[i] == nullptr) {
 
          theInfo[i] = (sge_prof_info_t *) sge_malloc((SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
+         SGE_ASSERT(theInfo[i] != nullptr);
          memset(theInfo[i], 0, (SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
 
          for (c = 0; c <= SGE_PROF_ALL; c++) {

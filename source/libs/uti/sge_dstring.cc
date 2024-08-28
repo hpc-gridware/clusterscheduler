@@ -47,6 +47,8 @@
 #include "uti/sge_string.h"
 #include "uti/sge_varargs.h"
 
+#include <sge_log.h>
+
 #define REALLOC_CHUNK   1024
 
 #define DSTRING_LAYER BASIS_LAYER
@@ -142,6 +144,7 @@ sge_dstring_allocate(dstring *sb, size_t request) {
       sb->s = (char *)sge_realloc(sb->s, sb->size * sizeof(char), 1);
    } else {
       sb->s = sge_malloc(sb->size * sizeof(char));
+      SGE_ASSERT(sb->s != nullptr);
       sb->s[0] = '\0';
    }
 }

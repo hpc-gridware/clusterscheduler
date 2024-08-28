@@ -143,6 +143,9 @@ component_get_qualified_hostname();
 void
 component_set_qualified_hostname(const char *qualified_hostname);
 
+void
+component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array);
+
 const char *
 component_get_unqualified_hostname();
 

@@ -1,583 +1,447 @@
 # NAME
 
-qsub -  
-submit a batch job to xxQS_NAMExx.
+`qsub` - submit a batch job to xxQS_NAMExx.
 
-qsh -  
-submit an interactive X-windows session to xxQS_NAMExx.
+`qsh` - submit an interactive X-windows session to xxQS_NAMExx.
 
-qlogin -  
-submit an interactive login session to xxQS_NAMExx.
+`qlogin` - submit an interactive login session to xxQS_NAMExx.
 
-qrsh -  
-submit an interactive rsh session to xxQS_NAMExx.
+`qrsh` - submit an interactive rsh session to xxQS_NAMExx.
 
-qalter -  
-modify a pending or running batch job of xxQS_NAMExx.
+`qalter` - modify a pending or running batch job of xxQS_NAMExx.
 
-qresub -  
-submit a copy of an existing xxQS_NAMExx job.
+`qresub` - submit a copy of an existing xxQS_NAMExx job.
 
 # SYNTAX
 
-**qsub** \[ **options** \] \[ **command** \[ **command_args** \] \| --
-\[ **command_args** \]\]
+`qsub` \[ *options* \] \[ *command* \[ *command_args* \] \| -- \[ *command_args* \]\]
 
-**qsh** \[ **options** \] \[ **-- xterm_args** \]
+`qsh` \[ *options* \] \[ -- *xterm_args* \]
 
-**qlogin** \[ **options** \]
+`qlogin` \[ *options* \]
 
-**qrsh** \[ **options** \] \[ **command** \[ **command_args** \]\]
+`qrsh` \[ *options* \] \[ *command* \[ *command_args* \]\]
 
-**qalter** \[ **options** \] **wc_job_range_list** \[ **--** \[
-**command_args** \]\]
+`qalter` \[ *options* \] *wc_job_range_list* \[ -- \[ *command_args* \]\]
 
-**qalter** \[ **options** \] **-u user_list \| -uall** \[ **--** \[
-**command_args** \]\]
+`qalter` \[ *options* \] `-u` *user_list* \| -`uall` \[ -- \[ *command_args* \]\]
 
-**qresub** \[ **options** \] **job_id_list**
+`qresub` \[ *options* \] *job_id_list*
 
 # DESCRIPTION
 
-*Qsub* submits batch jobs to the xxQS_NAMExx queuing system. xxQS_NAMExx
-supports single- and multiple-node jobs. **Command** can be a path to a
-binary or a script (see **-b** below) which contains the commands to be
-run by the job using a shell (for example, *sh*(1) or *csh*(1)).
-Arguments to the command are given as **command_args** to *qsub .* If
-**command** is handled as a script then it is possible to embed flags in
-the script. If the first two characters of a script line either match
-'#$' or are equal to the prefix string defined with the **-C** option
-described below, the line is parsed for embedded command flags.
+`qsub` submits batch jobs to the xxQS_NAMExx queuing system. xxQS_NAMExx supports single- and multiple-node jobs. 
+*Command* can be a path to a binary or a script (see `-b` below) which contains the commands to be run by the job 
+using a shell (for example, sh(1) or csh(1)). Arguments to the command are given as *command_args* to `qsub`. If
+*command* is handled as a script then it is possible to embed flags in the script. If the first two characters of 
+a script line either match '#$' or are equal to the prefix string defined with the `-C` option described below, 
+the line is parsed for embedded command flags.
 
-*Qsh* submits an interactive X-windows session to xxQS_NAMExx. An
-*xterm*(1) is brought up from the executing machine with the display
-directed either to the X-server indicated by the DISPLAY environment
-variable or as specified with the *-display qsh* option. Interactive
-jobs are not spooled if no resource is available to execute them. They
-are either dispatched to a suitable machine for execution immediately or
-the user submitting the job is notified by *qsh* that appropriate
-resources to execute the job are not available. **xterm_args** are
-passed to the *xterm*(1) executable. Note, however, that the *-e* and
-*-ls* xterm options do not work with *qsh .*
+`Qsh` submits an interactive X-windows session to xxQS_NAMExx. A xterm(1) is brought up from the executing machine 
+with the display directed either to the X-server indicated by the DISPLAY environment variable or as specified with 
+the `-display` `qsh` option. Interactive jobs are not spooled if no resource is available to execute them. They
+are either dispatched to a suitable machine for execution immediately or the user submitting the job is notified by 
+`qsh` that appropriate resources to execute the job are not available. *xterm_args* are passed to the xterm(1) 
+executable. Note, however, that the `-e` and `-ls` xterm options do not work with `qsh`.
 
-*Qlogin* is similar to *qsh* in that it submits an interactive job to
-the queuing system. It does not open an *xterm*(1) window on the X
-display, but uses the current terminal for user I/O. Usually, *qlogin*
-establishes a *telnet*(1) connection with the remote host, using
-standard client- and server-side commands. These commands can be
-configured with the **qlogin_daemon** (server-side, xxQS_NAMExx
-*telnetd* if not set, otherwise something like /usr/sbin/in.telnetd) and
-**qlogin_command** (client-side, xxQS_NAMExx *telnet* if not set,
-otherwise something like /usr/bin/telnet) parameters in the global and
-local configuration settings of *xxqs_name_sxx_conf*(5). The client
-side command is automatically parameterized with the remote host name
-and port number to which to connect, resulting in an invocation like
+`qlogin` is similar to *qsh* in that it submits an interactive job to the queuing system. It does not open a xterm(1) 
+window on the X display, but uses the current terminal for user I/O. Usually, `qlogin` establishes a connection with 
+the remote host, using standard client- and server-side commands. These commands can be configured with the 
+*qlogin_daemon* (server-side, xxQS_NAMExx *telnetd* if not set, otherwise something like /usr/sbin/in.telnetd) and
+*qlogin_command* (client-side, xxQS_NAMExx *telnet* if not set, otherwise something like /usr/bin/telnet) 
+parameters in the global and local configuration settings of xxqs_name_sxx_conf(5). The client side command is 
+automatically parameterized with the remote host name and port number to which to connect, resulting in an 
+invocation like
 
-> /usr/bin/telnet my_exec_host 2442
+    /usr/bin/telnet my_exec_host 2442
 
-for example. *Qlogin* is invoked exactly like *qsh* and its jobs can
-only run on INTERACTIVE queues. *Qlogin* jobs can only be used if the
-*xxqs_name_sxx_execd*(8) is running under the root account.
+for example. `qlogin` is invoked exactly like `qsh` and its jobs can only run on INTERACTIVE queues. `qlogin` jobs 
+can only be used if the xxqs_name_sxx_execd(8) is running under the root account.
 
-*Qrsh* is similar to *qlogin* in that it submits an interactive job to
-the queuing system. It uses the current terminal for user I/O. Usually,
-*qrsh* establishes a *rsh*(1) connection with the remote host. If no
-command is given to *qrsh*, an *rlogin*(1) session is established. The
-server-side commands used can be configured with the **rsh_daemon** and
-**rlogin_daemon** parameters in the global and local configuration
-settings of *xxqs_name_sxx_conf*(5). An xxQS_NAMExx *rshd* or *rlogind*
-is used if the parameters are not set. If the parameters are set, they
-should be set to something like /usr/sbin/in.rshd or
-/usr/sbin/in.rlogind. On the client-side, the **rsh_command** and
-**rlogin_command** parameters can be set in the global and local
-configuration settings of *xxqs_name_sxx_conf*(5). If they are not set,
-special xxQS_NAMExx *rsh*(1) and *rlogin*(1) binaries delivered with
-xxQS_NAMExx are used. Use the cluster configuration parameters to
-integrate mechanisms like *ssh* or the *rsh*(1) and *rlogin*(1)
-facilities supplied with the operating system.
+`qrsh` is similar to `qlogin` in that it submits an interactive job to the queuing system. It uses the current 
+terminal for user I/O. Usually, `qrsh` establishes a rsh(1) connection with the remote host. If no
+command is given to `qrsh`, an rlogin(1) session is established. The server-side commands used can be configured with 
+the *rsh_daemon* and *rlogin_daemon* parameters in the global and local configuration settings of xxqs_name_sxx_conf(5). 
+An xxQS_NAMExx `rshd` or `rlogind` is used if the parameters are not set. If the parameters are set, they should be 
+set to something like `/usr/sbin/in.rshd` or `/usr/sbin/in.rlogind`. On the client-side, the *rsh_command* and
+*rlogin_command* parameters can be set in the global and local configuration settings of xxqs_name_sxx_conf(5). If 
+they are not set, special xxQS_NAMExx rsh*(1) and rlogin(1) binaries delivered with xxQS_NAMExx are used. Use the 
+cluster configuration parameters to integrate mechanisms like `ssh` or the rsh(1) and rlogin(1) facilities supplied 
+with the operating system.
 
-*Qrsh* jobs can only run in INTERACTIVE queues unless the option **-now
-no** is used (see below). They can also only be run, if the
-*xxqs_name_sxx_execd*(8) is running under the root account.
+`qrsh` jobs can only run in INTERACTIVE queues unless the option `-now no` is used (see below). They can also only be 
+run, if the xxqs_name_sxx_execd(8) is running under the root account.
 
-*Qrsh* provides an additional useful feature for integrating with
-interactive tools providing a specific command shell. If the environment
-variable **QRSH_WRAPPER** is set when *qrsh* is invoked, the command
-interpreter pointed to by **QRSH_WRAPPER** will be executed to run
-*qrsh* commands instead of the users login shell or any shell specified
-in the *qrsh* command-line. The options **-cwd**, **-v**, **-V**, and
-**-display** only apply to batch jobs.
+`qrsh` provides an additional useful feature for integrating with interactive tools providing a specific command 
+shell. If the environment variable *QRSH_WRAPPER* is set when `qrsh` is invoked, the command interpreter pointed 
+to by *QRSH_WRAPPER* will be executed to run `qrsh` commands instead of the users login shell or any shell specified
+in the `qrsh` command-line. The options `-cwd`, `-v`, `-V`, and `-display` only apply to batch jobs.
 
-*Qalter* can be used to change the attributes of pending jobs. For array
-jobs with a mix of running and pending tasks (see the **-t** option
-below), modification with *qalter* only affects the pending tasks.
-*Qalter* can change most of the characteristics of a job (see the
-corresponding statements in the OPTIONS section below), including those
-which were defined as embedded flags in the script file (see above).
-Some submit options, such as the job script, cannot be changed with I.
-qalter.
+`qalter` can be used to change the attributes of pending jobs. For array jobs with a mix of running and pending 
+tasks (see the `-t` option below), modification with `qalter` only affects the pending tasks. `qalter` can change 
+most of the characteristics of a job (see the corresponding statements in the OPTIONS section below), including those
+which were defined as embedded flags in the script file (see above). Some submit options, such as the job script, 
+cannot be changed with `qalter`.
 
-*Qresub* allows the user to create jobs as copies of existing pending or
-running jobs. The copied jobs will have exactly the same attributes as
-the ones from which they were copied, except with a new job ID and with
-a cleared hold state. The only modification to the copied jobs supported
-by *qresub* is assignment of a new hold state with the **-h** option.
-This option can be used to first copy a job and then change its
-attributes via *qalter*.
+`qresub` allows the user to create jobs as copies of existing pending or running jobs. The copied jobs will have 
+exactly the same attributes as the ones from which they were copied, except with a new job ID and with
+a cleared hold state. The only modification to the copied jobs supported by `qresub` is assignment of a new hold 
+state with the `-h` option. This option can be used to first copy a job and then change its attributes via `qalter`.
 
-Only a manager can use *qresub* on jobs submitted by another user.
-Regular users can only use *qresub* on their own jobs.
+Only a manager can use `qresub` on jobs submitted by another user. Regular users can only use `qresub` on their own jobs.
 
-For *qsub*, *qsh*, *qrsh*, and *qlogin* the administrator and the user
-may define default request files (see *xxqs_name_sxx_request*(5)) which
-can contain any of the options described below. If an option in a
-default request file is understood by *qsub* and *qlogin* but not by
-*qsh* the option is silently ignored if *qsh* is invoked. Thus you can
-maintain shared default request files for both *qsub* and *qsh*.
+For `qsub`, `qsh`, `qrsh`, and `qlogin` the administrator and the user may define default request files (see 
+xxqs_name_sxx_request(5)) which can contain any of the options described below. If an option in a default request 
+file is understood by `qsub` and `qlogin` but not by `qsh` the option is silently ignored if `qsh` is invoked. 
+Thus you can maintain shared default request files for both `qsub` and `qsh`.
 
-A cluster wide default request file may be placed under
-$xxQS_NAME_Sxx_ROOT/$xxQS_NAME_Sxx_CELL/common/xxqs_name_sxx_request.
-User private default request files are processed under the locations
-$HOME/.xxqs_name_sxx_request and $cwd/.xxqs_name_sxx_request. The
-working directory local default request file has the highest precedence,
-then the home directory located file and then the cluster global file.
-The option arguments, the embedded script flags and the options in the
-default request files are processed in the following order:
+A cluster wide default request file may be placed under $xxQS_NAME_Sxx_ROOT/$xxQS_NAME_Sxx_CELL/common/xxqs_name_sxx_request.
+User private default request files are processed under the locations $HOME/.xxqs_name_sxx_request and 
+$cwd/.xxqs_name_sxx_request. The working directory local default request file has the highest precedence,
+then the home directory located file and then the cluster global file. The option arguments, the embedded script 
+flags and the options in the default request files are processed in the following order:
 
->     left to right in the script line,
->     left to right in the default request files,
->     from top to bottom of the script file (qsub only),
->     from top to bottom of default request files,
->     from left to right of the command line.
+* left to right in the script line, 
+* left to right in the default request files, 
+* from top to bottom of the script file (`qsub` only), 
+* from top to bottom of default request files, 
+* from left to right of the command line.
 
-In other words, the command line can be used to override the embedded
-flags and the default request settings. The embedded flags, however,
-will override the default settings.
+In other words, the command line can be used to override the embedded flags and the default request settings. 
+The embedded flags, however, will override the default settings.
 
-**Note**, that the *-clear* option can be used to discard any previous
-settings at any time in a default request file, in the embedded script
-flags, or in a command-line option. It is, however, not available with
-*qalter*.
+Note, that the `-clear` option can be used to discard any previous settings at any time in a default request file, 
+in the embedded script flags, or in a command-line option. It is, however, not available with `qalter`.
 
-The options described below can be requested either hard or soft. By
-default, all requests are considered hard until the **-soft** option
-(see below) is encountered. The hard/soft status remains in effect until
-its counterpart is encountered again. If all the hard requests for a job
-cannot be met, the job will not be scheduled. Jobs which cannot be run
-at the present time remain spooled.
+The options described below can be requested either hard or soft. By default, all requests are considered hard 
+until the `-soft` option (see below) is encountered. The hard/soft status remains in effect until its counterpart 
+is encountered again. If all the hard requests for a job cannot be met, the job will not be scheduled. Jobs which 
+cannot be run at the present time remain spooled.
 
 # OPTIONS
 
--@ optionfile  
-Forces *qsub*, *qrsh*, *qsh*, or *qlogin* to use the options contained
-in **optionfile**. The indicated file may contain all valid options.
-Comment lines must start with a "#" sign.
+## -@ *optionfile*
 
--a date_time  
-Available for *qsub* and *qalter* only.
+Forces `qsub`, `qrsh`, `qsh`, or `qlogin` to use the options contained in *optionfile*. The indicated file may 
+contain all valid options. Comment lines must start with a "#" sign.
 
-Defines or redefines the time and date at which a job is eligible for
-execution. **Date_time** conforms to \[\[CC\]\]YY\]MMDDhhmm\[.SS\], for
-the details, please see **Date_time** in: *sge_types*(1).
+## -a *date_time*
 
-If this option is used with *qsub* or if a corresponding value is
-specified in *qmon* then a parameter named **a** and the value in the
-format CCYYMMDDhhmm.SS will be passed to the defined JSV instances (see
-**-jsv** option below or find more information concerning JSV in
-*jsv*(1))
+Available for `qsub` and `qalter` only.
 
--ac variable\[=value\],...  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+Defines or redefines the time and date at which a job is eligible for execution. *Date_time* conforms to 
 
-Adds the given name/value pair(s) to the job's context. **Value** may be
-omitted. xxQS_NAMExx appends the given argument to the list of context
-variables for the job. Multiple **-ac**, **-dc**, and **-sc** options
-may be given. The order is important here.
+    [[CC]]YY]MMDDhhmm[.SS]
 
-The outcome of the evaluation of all **-ac**, **-dc**, and **-sc**
-options or corresponding values in *qmon* is passed to defined JSV
-instances as parameter with the name **ac**. (see **-jsv** option below
-or find more information concerning JSV in *jsv*(1))
+For the details, please see *date_time* in: xxqs_name_sxx_types(1).
 
-*QALTER* allows changing this option even while the job executes.
+If this option is used with `qsub` then a parameter named *a* and the value in the format CCYYMMDDhhmm.SS will be 
+passed to the defined JSV instances (see `-jsv` option below or find more information concerning JSV in 
+xxqs_name_sxx_jsv(1))
 
--ar ar_id  
-Available for *qsub*, *qalter*, *qrsh*, *qsh*, or *qlogin* only.
+## -ac *variable*\[=*value*\],...
 
-Assigns the submitted job to be a part of an existing Advance
-Reservation. The complete list of existing Advance Reservations can be
-obtained using the *qrstat*(1) command.
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Note that the **-ar** option adds implicitly the **-w e** option if not
-otherwise requested.
+Adds the given name/value pair(s) to the job's context. *Value* may be omitted. xxQS_NAMExx appends the given 
+argument to the list of context variables for the job. Multiple `-ac`, `-dc`, and `-sc` options may be given. 
+The order is important here.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job however.
+The outcome of the evaluation of all `-ac`, `-dc`, and `-sc` is passed to defined JSV instances as parameter with the 
+name *ac*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**ar**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+`qlater` allows changing this option even while the job executes.
 
--A account_string  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+## -ar *ar_id*  
 
-Identifies the account to which the resource consumption of the job
-should be charged. The **account_string** should conform to the **name**
-definition in M sge_types 1 . In the absence of this parameter
-xxQS_NAMExx will place the default account string "xxqs_name_sxx" in the
-accounting record of the job.
+Available for `qsub`, `qalter`, `qrsh`, `qsh`, or `qlogin` only.
 
-*Qalter* allows changing this option even while the job executes.
+Assigns the submitted job to be a part of an existing Advance Reservation. The complete list of existing 
+Advance Reservations can be obtained using the qrstat(1) command.
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**A**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+Note that the `-ar` option adds implicitly the `-w e` option if not otherwise requested.
 
--binding \[ binding_instance \] binding_strategy  
-A job can request a specific processor core binding (processor affinity)
-with this parameter. This request is neither a hard nor a soft request,
-it is a hint for the execution host to do this if possible. Please note
-that the requested binding strategy is not used for resource selection
-within xxQS_NAMExx. As a result an execution host might be selected
-where xxQS_NAMExx does not even know the hardware topology and therefore
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
+after a restart or migration of the job, however.
+
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*ar*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -A *account_string*
+
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
+
+Identifies the account to which the resource consumption of the job should be charged. The *account_string* should 
+conform to the *name* definition in xxqs_name_sxx_types(1) . In the absence of this parameter xxQS_NAMExx will place 
+the default account string "ocs" in the accounting record of the job.
+
+`qalter` allows changing this option even while the job executes.
+
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*A*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -binding [ *binding_instance* ] *binding_strategy*
+
+A job can request a specific processor core binding (processor affinity) with this parameter. This request is 
+neither a hard nor a soft request, it is a hint for the execution host to do this if possible. Please note
+that the requested binding strategy is not used for resource selection within xxQS_NAMExx. As a result an 
+execution host might be selected where xxQS_NAMExx does not even know the hardware topology and therefore
 is not able to apply the requested binding.
 
-To enforce xxQS_NAMExx to select hardware on which the binding can be
-applied please use the **-l** switch in combination with the complex
-attribute **m_topology**.
+To enforce xxQS_NAMExx to select hardware on which the binding can be applied please use the `-l` switch in 
+combination with the complex attribute *m_topology*.
 
-**binding_instance** is an optional parameter. It might either be
-**env**, **pe** or **set** depending on which instance should accomplish
-the job to core binding. If the value for **binding_instance** is not
-specified then **set** will be used.
+*binding_instance* is an optional parameter. It might either be *env*, *pe* or *set* depending on which instance 
+should accomplish the job to core binding. If the value for *binding_instance* is not specified then *set* will be used.
 
-**env** means that the environment variable **SGE_BINDING** will be
-exported to the job environment of the job. This variable contains the
-selected operating system internal processor numbers. They might be more
-than selected cores in presence of SMT or CMT because each core could be
-represented by multiple processor identifiers. The processor numbers are
-space separated.
+*env* means that the environment variable *SGE_BINDING* will be exported to the job environment of the job. 
+This variable contains the selected operating system internal processor numbers. They might be more than selected 
+cores in presence of SMT or CMT because each core could be represented by multiple processor identifiers. 
+The processor numbers are space separated.
 
-**pe** means that the information about the selected cores appears in
-the fourth column of the **pe_hostfile**. Here the logical core and
-socket numbers are printed (they start at 0 and have no holes) in colon
-separated pairs (i.e. 0,0:1,0 which means core 0 on socket 0 and core 0
-on socket 1). For more information about the $pe_hostfile check
-*xxqs_name_sxx_pe*(5)
+*pe* means that the information about the selected cores appears in the fourth column of the *pe_hostfile*. Here the 
+logical core and socket numbers are printed (they start at 0 and have no holes) in colon separated pairs 
+(i.e. 0,0:1,0 which means core 0 on socket 0 and core 0 on socket 1). For more information about the $pe_hostfile check
+xxqs_name_sxx_pe(5)
 
-**set** (default if nothing else is specified). The binding strategy is
-applied by xxQS_NAMExx. How this is achieved depends on the underlying
-hardware architecture of the execution host where the submitted job will
-be started.
+*set* (default if nothing else is specified). The binding strategy is applied by xxQS_NAMExx. How this is achieved 
+depends on the underlying hardware architecture of the execution host where the submitted job will be started.
 
-On Solaris 10 hosts a processor set will be created where the job can
-exclusively run in. Because of operating system limitations at least one
-core must remain unbound. This resource could of course used by an
-unbound job.
+On Solaris 10 hosts a processor set will be created where the job can exclusively run in. Because of operating 
+system limitations at least one core must remain unbound. This resource could of course used by an unbound job.
 
-On Linux hosts a processor affinity mask will be set to restrict the job
-to run exclusively on the selected cores. The operating system allows
-other unbound processes to use these cores. Please note that on Linux
-the binding requires a Linux kernel version of 2.6.16 or greater. It
-might be even possible to use a kernel with lower version number but in
-that case additional kernel patches have to be applied. The
-**loadcheck** tool in the utilbin directory can be used to check if the
-hosts capabilities. You can also use the **-sep** in combination with
-**-cb** of *qconf*(5) command to identify if xxQS_NAMExx is able to
-recognize the hardware topology.
+On Linux hosts a processor affinity mask will be set to restrict the job to run exclusively on the selected cores. 
+The operating system allows other unbound processes to use these cores. Please note that on Linux the binding 
+requires a Linux kernel version of 2.6.16 or greater. It might be even possible to use a kernel with lower version 
+number but in that case additional kernel patches have to be applied. The *loadcheck* tool in the utilbin directory 
+can be used to check if the hosts capabilities. You can also use the `-sep` in combination with `-cb` of qconf(5) 
+command to identify if xxQS_NAMExx is able to recognize the hardware topology.
 
-Possible values for **binding_strategy** are as follows:
+Possible values for *binding_strategy* are as follows:
 
         linear:<amount>[:<socket>,<core>]
         striding:<amount>:<n>[:<socket>,<core>]
         explicit:[<socket>,<core>;...]<socket>,<core>
 
-For the binding strategy linear and striding there is an optional socket
-and core pair attached. These denotes the mandatory starting point for
-the first core to bind on.
+For the binding strategy linear and striding there is an optional socket and core pair attached. This denotes the
+mandatory starting point for the first core to bind on.
 
-**linear** means that xxQS_NAMExx tries to bind the job on **amount**
-successive cores. If **socket** and **core** is omitted then xxQS_NAMExx
-first allocates successive cores on the first empty socket found. Empty
-means that there are no jobs bound to the socket by xxQS_NAMExx. If this
-is not possible or is not sufficient xxQS_NAMExx tries to find (further)
-cores on the socket with the most unbound cores and so on. If the amount
-of allocated cores is lower than requested cores, no binding is done for
-the job. If **socket** and **core** is specified then xxQS_NAMExx tries
-to find amount of empty cores beginning with this starting point. If
-this is not possible then binding is not done.
+*linear* means that xxQS_NAMExx tries to bind the job on *amount* successive cores. If *socket* and *core* is 
+omitted then xxQS_NAMExx first allocates successive cores on the first empty socket found. Empty means that there 
+are no jobs bound to the socket by xxQS_NAMExx. If this is not possible or is not sufficient xxQS_NAMExx tries to 
+find (further) cores on the socket with the most unbound cores and so on. If the amount of allocated cores is 
+lower than requested cores, no binding is done for the job. If *socket* and *core* is specified then xxQS_NAMExx tries
+to find amount of empty cores beginning with this starting point. If this is not possible then binding is not done.
 
-**striding** means that xxQS_NAMExx tries to find cores with a certain
-offset. It will select **amount** of empty cores with a offset of **n**
--1 cores in between. Start point for the search algorithm is socket 0
-core 0. As soon as **amount** cores are found they will be used to do
-the job binding. If there are not enough empty cores or if correct
+*striding* means that xxQS_NAMExx tries to find cores with a certain offset. It will select *amount* of empty cores 
+with an offset of *n* -1 cores in between. Start point for the search algorithm is socket 0 core 0. As soon as 
+*amount* cores are found they will be used to do the job binding. If there are not enough empty cores or if correct
 offset cannot be achieved then there will be no binding done.
 
-**explicit** binds the specified sockets and cores that are mentioned in
-the provided socket/core list. Each socket/core pair has to be specified
-only once. If a socket/core pair is already in use by a different job
+*explicit* binds the specified sockets and cores that are mentioned in the provided socket/core list. 
+Each socket/core pair has to be specified only once. If a socket/core pair is already in use by a different job
 the whole binding request will be ignored.
 
-**Qalter** allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+*Qalter* allows changing this option even while the job executes. The modified parameter will only be in effect after 
+a restart or migration of the job, however.
 
-If this option or a corresponding value in qmon is specified then these
-values will be passed to defined JSV instances as parameters with the
-names **binding_strategy**, **binding_type**, **binding_amount**,
-**binding_step**, **binding_socket**, **binding_core**,
-**binding_exp_n**, **binding_exp_socket\<id>**,
-**binding_exp_core\<id>**.
+If this option is specified then these values will be passed to defined JSV instances as parameters with the
+names *binding_strategy*, *binding_type*, *binding_amount*, *binding_step*, *binding_socket*, *binding_core*,
+*binding_exp_n*, *binding_exp_socket\<id>*, *binding_exp_core\<id>*.
 
-Please note that the length of the socket/core value list of the
-explicit binding is reported as **binding_exp_n**. **\<id>** will be
-replaced by the position of the socket/core pair within the explicit
-list (0 \<= **id** \< **binding_exp_n**). The first socket/core pair of
-the explicit binding will be reported with the parameter names
-**binding_exp_socket0** and binding_exp_core0.
+Please note that the length of the socket/core value list of the explicit binding is reported as *binding_exp_n*. 
+*\<id>* will be replaced by the position of the socket/core pair within the explicit 
+list (0 \<= *id* \< *binding_exp_n*). The first socket/core pair of the explicit binding will be reported with the 
+parameter names *binding_exp_socket0* and *binding_exp_core0*.
 
-Values that do not apply for the specified binding will not be reported
-to JSV. E.g. **binding_step** will only be reported for the striding
-binding and all **binding_exp\_\*** values will passed to JSV if
-explicit binding was specified. (see -jsv option below or find more
-information concerning JSV in jsv(1))
+Values that do not apply for the specified binding will not be reported to JSV. E.g. *binding_step* will only be
+reported for the striding binding and all *binding_exp_** values will be passed to JSV if explicit binding was 
+specified. (see -jsv option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
--b y\[es\]\|n\[o\]  
-Available for *qsub*, *qrsh* only. *Qalter* does not allow changing this
-option. This option cannot be embedded in the script file itself.
+## -b y\[es\]\|n\[o\]
 
-Gives the user the possibility to indicate explicitly whether
-**command** should be treated as binary or script. If the value of
-**-b** is 'y', then **command** may be a binary or script. The
-**command** might not be accessible from the submission host. Nothing
-except the path of the **command** will be transferred from the
-submission host to the execution host. Path aliasing will be applied to
-the path of **command** before **command** will be executed.
+Available for `qsub`, `qrsh` only. `qalter` does not allow changing this option. This option cannot be embedded 
+in the script file itself.
 
-If the value of **-b** is 'n' then **command** needs to be a script and
-it will be handled as script. The script file has to be accessible by
-the submission host. It will be transferred to the execution host.
-*qsub*/*qrsh* will search directive prefixes within script.
+Gives the user the possibility to indicate explicitly whether *command* should be treated as binary or script. 
+If the value of `-b` is 'y', then *command* may be a binary or script. The *command* might not be accessible from 
+the submission host. Nothing except the path of the *command* will be transferred from the submission host to the 
+execution host. Path aliasing will be applied to the path of *command* before *command* will be executed.
 
-*qsub* will implicitly use **-b n** whereas *qrsh* will apply the **-b
-y** option if nothing else is specified.
+If the value of `-b` is 'n' then *command* needs to be a script, and it will be handled as script. The script file 
+has to be accessible by the submission host. It will be transferred to the execution host. `qsub`/`qrsh` will search 
+directive prefixes within script.
 
-The value specified with this option or the corresponding value
-specified in *qmon* will only be passed to defined JSV instances if the
-value is *yes*. The name of the parameter will be **b**. The value will
-be **y** also when then long form **yes** was specified during
-submission. (see **-jsv** option below or find more information
-concerning JSV in *jsv*(1))
+`qsub` will implicitly use `-b n` whereas `qrsh` will apply the `-b y` option if nothing else is specified.
 
-Please note that submission of **command** as script (**-b n**) can have
-a significant performance impact, especially for short running jobs and
-big job scripts. Script submission adds a number of operations to the
-submission process: The job script needs to be
+The value specified with this option will only be passed to defined JSV instances if the value is *yes*. The name of 
+the parameter will be *b*. The value will be *y* also when then long form *yes* was specified during submission. 
+(see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
-    - parsed at client side (for special comments)
-    - transferred from submit client to qmaster
-    - spooled in qmaster
-    - transferred to execd at job execution
-    - spooled in execd
-    - removed from spooling both in execd and qmaster once the job is done
+Please note that submission of *command* as script (`-b n`) can have a significant performance impact, especially for 
+short running jobs and big job scripts. Script submission adds a number of operations to the submission process: The 
+job script needs to be
 
-If job scripts are available on the execution nodes, e.g. via NFS,
-binary submission can be the better choice.
+* parsed at client side (for special comments)
+* transferred from submit client to qmaster
+* spooled in qmaster
+* transferred to execd at job execution
+* spooled in execd
+* removed from spooling both in execd and qmaster once the job is done
 
--c occasion_specifier  
-Available for *qsub* and *qalter* only.
+If job scripts are available on the execution nodes, e.g. via NFS, binary submission can be the better choice.
 
-Defines or redefines whether the job should be checkpointed, and if so,
-under what circumstances. The specification of the checkpointing
-occasions with this option overwrites the definitions of the *when*
-parameter in the checkpointing environment (see *checkpoint*(5))
-referenced by the *qsub -ckpt* switch. Possible values for
-**occasion_specifier** are
+## -c *occasion_specifier*
 
-    n	no checkpoint is performed.
-    s	checkpoint when batch server is shut down.
-    m	checkpoint at minimum CPU interval.
-    x	checkpoint when job gets suspended.
-    <interval>	checkpoint in the specified time interval.
+Available for `qsub` and `qalter` only.
 
-The minimum CPU interval is defined in the queue configuration (see
-*queue_conf*(5) for details). \<interval> has to be specified in the
-format hh:mm:ss. The maximum of \<interval> and the queue's minimum CPU
-interval is used if \<interval> is specified. This is done to ensure
-that a machine is not overloaded by checkpoints being generated too
-frequently.
+Defines or redefines whether the job should be checkpointed, and if so, under what circumstances. The specification 
+of the checkpointing occasions with this option overwrites the definitions of the *when* parameter in the 
+checkpointing environment (see xxqs_name_sxx_checkpoint(5)) referenced by the `qsub -ckpt` switch. Possible values for
+*occasion_specifier* are
 
-The value specified with this option or the corresponding value
-specified in *qmon* will be passed to defined JSV instances. The
-\<interval> will be available as parameter with the name **c_interval**.
-The character sequence specified will be available as parameter with the
-name **c_occasion**. Please note that if you change **c_occasion** via
-JSV then the last setting of **c_interval** will be overwritten and vice
-versa. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+* n	- no checkpoint is performed. 
+* s	- checkpoint when batch server is shut down.
+* m	- checkpoint at minimum CPU interval.
+* x	- checkpoint when job gets suspended.
+* \<interval\> - checkpoint in the specified time interval.
 
--ckpt ckpt_name  
-Available for *qsub* and *qalter* only.
+The minimum CPU interval is defined in the queue configuration (see xxqs_name_sxx_queue_conf(5) for details). 
+\<interval\> has to be specified in the format hh:mm:ss. The maximum of \<interval\> and the queue's minimum CPU
+interval is used if \<interval> is specified. This is done to ensure that a machine is not overloaded by 
+checkpoints being generated too frequently.
 
-Selects the checkpointing environment (see *checkpoint*(5)) to be used
-for checkpointing the job. Also declares the job to be a checkpointing
-job.
+The value specified with this option will be passed to defined JSV instances. The \<interval> will be available as 
+parameter with the name *c_interval*. The character sequence specified will be available as parameter with the
+name *c_occasion*. Please note that if you change *c_occasion* via JSV then the last setting of *c_interval* will 
+be overwritten and vice versa. (see **-jsv** option below or find more information concerning JSV 
+in xxqs_name_sxx_jsv(1))
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**ckpt**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+## -ckpt *ckpt_name*
 
--clear  
-Available for *qsub*, *qsh*, *qrsh*, and *qlogin* only.
+Available for `qsub` and `qalter` only.
 
-Causes all elements of the job to be reset to the initial default status
-prior to applying any modifications (if any) appearing in this specific
-command.
+Selects the checkpointing environment (see xxqs_name_sxx_checkpoint(5)) to be used for checkpointing the job. Also 
+declares the job to be a checkpointing job.
 
--cwd  
-Available for *qsub*, *qsh*, *qrsh* and *qalter* only.
+If this option then this value will be passed to defined JSV instances as parameter with the name *ckpt*. 
+(see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
-Execute the job from the current working directory. This switch will
-activate xxQS_NAMExx's path aliasing facility, if the corresponding
-configuration files are present (see *xxqs_name_sxx_aliases*(5)).
+## -clear  
+Available for `qsub`, `qsh`, `qrsh`, and `qlogin` only.
 
-In the case of *qalter*, the previous definition of the current working
-directory will be overwritten if *qalter* is executed from a different
-directory than the preceding *qsub* or *qalter*.
+Causes all elements of the job to be reset to the initial default status prior to applying any modifications 
+(if any) appearing in this specific command.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+## -cwd  
+Available for `qsub`, `qsh`, `qrsh` and `qalter` only.
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**cwd**. The value of this parameter will be the absolute path to the
-current working directory. JSV scripts can remove the path from jobs
-during the verification process by setting the value of this parameter
-to an empty string. As a result the job behaves as if **-cwd** was not
-specified during job submission. (see **-jsv** option below or find more
-information concerning JSV in *jsv*(1))
+Execute the job from the current working directory. This switch will activate xxQS_NAMExx's path aliasing facility, 
+if the corresponding configuration files are present (see xxqs_name_sxx_aliases(5)).
 
--C prefix_string  
-Available for *qsub* and *qrsh* with script submission (**-b n**).
+In the case of `qalter`, the previous definition of the current working directory will be overwritten if `qalter` 
+is executed from a different directory than the preceding `qsub` or `qalter`.
 
-*Prefix_string* defines the prefix that declares a directive in the
-job's command. The prefix is not a job attribute, but affects the
-behavior of *qsub* and *qrsh*. If **prefix** is a null string, the
-command will not be scanned for embedded directives.  
-The directive prefix consists of two ASCII characters which, when
-appearing in the first two bytes of a script line, indicate that what
-follows is an xxQS_NAMExx command. The default is "#$".  
-The user should be aware that changing the first delimiting character
-can produce unforeseen side effects. If the script file contains
-anything other than a "#" character in the first byte position of the
-line, the shell processor for the job will reject the line and may exit
-the job prematurely.  
-If the -C option is present in the script file, it is ignored.
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect after 
+a restart or migration of the job, however.
 
--dc variable,...  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*cwd*. The value of this parameter will be the absolute path to the current working directory. JSV scripts can 
+remove the path from jobs during the verification process by setting the value of this parameter
+to an empty string. As a result the job behaves as if `-cwd` was not specified during job submission. (see `-jsv` 
+option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
-Removes the given variable(s) from the job's context. Multiple **-ac**,
-**-dc**, and **-sc** options may be given. The order is important.
+## -C *prefix_string*
 
-*Qalter* allows changing this option even while the job executes.
+Available for `qsub` and `qrsh` with script submission (`-b n`).
 
-The outcome of the evaluation of all **-ac**, **-dc**, and **-sc**
-options or corresponding values in *qmon* is passed to defined JSV
-instances as parameter with the name **ac**. (see **-jsv** option below
-or find more information concerning JSV in *jsv*(1))
+*Prefix_string* defines the prefix that declares a directive in the job's command. The prefix is not a job attribute, 
+but affects the behavior of `qsub` and `qrsh`. If *prefix* is a null string, the command will not be scanned for 
+embedded directives. The directive prefix consists of two ASCII characters which, when appearing in the first 
+two bytes of a script line, indicate that what follows is an xxQS_NAMExx command. The default is "#$". The user 
+should be aware that changing the first delimiting character can produce unforeseen side effects. If the script 
+file contains anything other than a "#" character in the first byte position of the line, the shell processor for 
+the job will reject the line and may exit the job prematurely. If the `-C` option is present in the script file, 
+it is ignored.
 
--display display_specifier  
-Available for *qsh* and *qrsh with command*.
+## -dc *variable*,...  
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Directs *xterm*(1) to use **display_specifier** in order to contact the
-X server. The **display_specifier** has to contain the hostname part of
-the display name (e.g. myhost:1). Local display names (e.g. :0) cannot
-be used in grid environments. Values set with the **-display** option
-overwrite settings from the submission environment and from **-v**
+Removes the given variable(s) from the job's context. Multiple `-ac`, `-dc`, and `-sc` options may be given. 
+The order is important.
+
+`qalter` allows changing this option even while the job executes.
+
+The outcome of the evaluation of all `-ac`, `-dc`, and `-sc` options are passed to defined JSV instances as 
+parameter with the name **ac**. (see `-jsv` option below or find more information concerning JSV 
+in xxqs_name_sxx_jsv(1))
+
+## -display *display_specifier*
+Available for `qsh` and `qrsh (with command)`.
+
+Directs xterm(1) to use *display_specifier* in order to contact the X server. The *display_specifier* has to contain 
+the hostname part of the display name (e.g. myhost:1). Local display names (e.g. :0) cannot be used in grid 
+environments. Values set with the `-display` option overwrite settings from the submission environment and from `-v`
 command line options.
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**display**. This value will also be available in the job environment
-which might optionally be passed to JSV scripts. The variable name will
-be **DISPLAY**. (see **-jsv** option below or find more information
-concerning JSV in *jsv*(1))
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*display*. This value will also be available in the job environment which might optionally be passed to JSV scripts. 
+The variable name will be *DISPLAY*. (see `-jsv` option below or find more information concerning JSV 
+in xxqs_name_sxx_jsv(1))
 
--dl date_time  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+## -dl *date_time* 
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Specifies the deadline initiation time in \[\[CC\]YY\]MMDDhhmm\[.SS\]
-format (see **-a** option above). The deadline initiation time is the
-time at which a deadline job has to reach top priority to be able to
-complete within a given deadline. Before the deadline initiation time
-the priority of a deadline job will be raised steadily until it reaches
-the maximum as configured by the xxQS_NAMExx administrator.
+Specifies the deadline initiation time in 
 
-This option is applicable only for users allowed to submit deadline
-jobs.
+    [[CC]YY]MMDDhhmm[.SS]
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**dl**. The format for the date_time value is CCYYMMDDhhmm.SS (see
-**-jsv** option below or find more information concerning JSV in
-*jsv*(1))
+format (see `-a` option above). The deadline initiation time is the time at which a deadline job has to reach 
+top priority to be able to complete within a given deadline. Before the deadline initiation time the priority 
+of a deadline job will be raised steadily until it reaches the maximum as configured by the xxQS_NAMExx administrator.
+
+This option is applicable only for users allowed to submit deadline jobs.
+
+If this option or a corresponding value in `qmon` is specified then this value will be passed to defined JSV 
+instances as parameter with the name `dl`. The format for the date_time value is CCYYMMDDhhmm.SS (see `-jsv` 
+option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -e \[\[hostname\]:\]path,...  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
 
-Defines or redefines the path used for the standard error stream of the
-job. For *qsh*, *qrsh* and *qlogin* only the standard error stream of
-prolog and epilog is redirected. If the **path** constitutes an absolute
-path name, the error-path attribute of the job is set to **path**,
-including the **hostname**. If the path name is relative, xxQS_NAMExx
-expands **path** either with the current working directory path (if the
-**-cwd** switch (see above) is also specified) or with the home
-directory path. If **hostname** is present, the standard error stream
-will be placed in the corresponding location only if the job runs on the
-specified host. If the path contains a ":" without a **hostname**, a
-leading ":" has to be specified.
+Defines or redefines the path used for the standard error stream of the job. For `qsh`, `qrsh` and `qlogin` only 
+the standard error stream of prolog and epilog is redirected. If the *path* constitutes an absolute path name, 
+the error-path attribute of the job is set to *path*, including the *hostname*. If the path name is relative, 
+xxQS_NAMExx expands *path* either with the current working directory path (if the *-cwd* switch (see above) 
+is also specified) or with the home directory path. If *hostname* is present, the standard error stream will be 
+placed in the corresponding location only if the job runs on the specified host. If the path contains a ":" without 
+a *hostname*, a leading ":" has to be specified.
 
-By default the file name for interactive jobs is */dev/null*. For batch
-jobs the default file name has the form *job_name.*e*job_id* and
-*job_name.*e*job_id*.**task_id** for array job tasks (see **-t** option
-below).
+As default the file name for interactive jobs is */dev/null*. For batch jobs the default file name has the form 
+*<job_name>.e<job_id>* and *<job_name>.e<job_id>*. *task_id* for array job tasks (see `-t` option below).
 
-If **path** is a directory, the standard error stream of the job will be
-put in this directory under the default file name. If the pathname
-contains certain pseudo environment variables, their value will be
-expanded at runtime of the job and will be used to constitute the
-standard error stream path name. The following pseudo environment
+If *path* is a directory, the standard error stream of the job will be put in this directory under the default 
+file name. If the pathname contains certain pseudo environment variables, their value will be expanded at runtime 
+of the job and will be used to constitute the standard error stream path name. The following pseudo environment
 variables are supported currently:
 
-    $HOME	home directory on execution machine
-    $USER	user ID of job owner
-    $JOB_ID	current job ID
-    $JOB_NAME	current job name (see -N option)
-    $HOSTNAME	name of the execution host
-    $TASK_ID	array job task index number
+* $HOME - home directory on execution machine
+* $USER	- user ID of job owner
+* $JOB_ID - current job ID
+* $JOB_NAME	- current job name (see -N option)
+* $HOSTNAME	- name of the execution host
+* $TASK_ID - array job task index number
 
-Alternatively to $HOME the tilde sign "\~" can be used as common in
-*csh*(1) or *ksh*(1). Note, that the "\~" sign also works in
-combination with user names, so that "\~\<user>" expands to the home
-directory of \<user>. Using another user ID than that of the job owner
-requires corresponding permissions, of course.
+Alternatively to $HOME the tilde sign "\~" can be used as common in csh(1) or ksh(1). Note, that the "\~" sign also 
+works in combination with user names, so that "\~\<user>" expands to the home directory of \<user>. Using another 
+user ID than that of the job owner requires corresponding permissions, of course.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
+after a restart or migration of the job, however.
 
-If this option or a corresponding value in *qmon* is specified then this
-value will be passed to defined JSV instances as parameter with the name
-**e**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
-
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*e*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+   
 -hard  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
 
@@ -600,7 +464,7 @@ corresponding **-q** and **-l** resource requirements will be passed to
 defined JSV instances as parameter with the names **q_hard** and
 **l_hard**. Find for information in the sections describing **-q** and
 **-l**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -h \| -h {u\|s\|o\|n\|U\|O\|S}...  
 Available for *qsub* (only **-h**), *qrsh*, *qalter* and *qresub* (hold
@@ -646,7 +510,7 @@ If this option is specified with *qsub* or during the submission of a
 job in *qmon* then the parameter **h** with the value **u** will be
 passed to the defined JSV instances indicating that the job will be in
 user hold after the submission finishes. (see **-jsv** option below or
-find more information concerning JSV in *jsv*(1))
+find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -help  
 Prints a listing of all options.
@@ -676,7 +540,7 @@ of the job, however.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **hold_jid**. (see **-jsv** option below or find more information
-concerning JSV in *jsv*(1))
+concerning JSV in xxqs_name_sxx_jsv(1))
 
 -hold_jid_ad wc_job_list  
 Available for *qsub*, *qrsh*, and *qalter* only. See *sge_types*(1).
@@ -708,7 +572,7 @@ of the job, however.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **hold_jid_ad**. (see **-jsv** option below or find more information
-concerning JSV in *jsv*(1))
+concerning JSV in xxqs_name_sxx_jsv(1))
 
 -i \[\[hostname\]:\]file,...  
 Available for *qsub*, and *qalter* only.
@@ -738,7 +602,7 @@ of the job, however.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **i**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -inherit  
 Available only for *qrsh* and *qmake*(1).
@@ -772,7 +636,7 @@ xxQS_NAME_Sxx_QMASTER_PORT" either as a command argument or an embedded
 directive.
 
 This parameter is not available in the JSV context. (see **-jsv** option
-below or find more information concerning JSV in *jsv*(1))
+below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -j y\[es\]\|n\[o\]  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -791,7 +655,7 @@ specified in *qmon* will only be passed to defined JSV instances if the
 value is *yes*. The name of the parameter will be **j**. The value will
 be **y** also when then long form **yes** was specified during
 submission. (see **-jsv** option below or find more information
-concerning JSV in *jsv*(1))
+concerning JSV in xxqs_name_sxx_jsv(1))
 
 -js job_share  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -826,7 +690,7 @@ tickets for each job.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **js**. (see **-jsv** option below or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -jsv jsv_url  
 Available for *qsub*, *qsh*, *qrsh* and *qlogin* only.
@@ -842,7 +706,7 @@ The JSV instance which is directly passed with the command-line of a
 client is executed as first to verify the job specification. After that
 the JSV instance which might have been defined in various sge_request
 files will be triggered to check the job. Find more details in man page
-*jsv*(1) and *sge_request*(5).
+xxqs_name_sxx_jsv(1) and *sge_request*(5).
 
 The syntax of the **jsv_url** is specified in *sge_types(1).*()
 
@@ -872,7 +736,7 @@ instances as parameter with the names **l_hard** and **l_soft**. If
 regular expressions will be used for resource requests, then these
 expressions will be passed as they are. Also shortcut names will not be
 expanded. (see **-jsv** option above or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -m b\|e\|a\|s\|n,...  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -911,7 +775,7 @@ Default is the job owner at the originating host.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **M**. (see **-jsv** option above or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -masterq wc_queue_list  
 Available for *qsub*, *qrsh*, *qsh*, *qlogin* and *qalter*. Only
@@ -935,7 +799,7 @@ of the job, however.
 If this option or a corresponding value in *qmon* is specified the this
 hard resource requirement will be passed to defined JSV instances as
 parameter with the name **masterq**. (see **-jsv** option above or find
-more information concerning JSV in *jsv*(1))
+more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -notify  
 Available for *qsub*, *qrsh* (with command) and *qalter* only.
@@ -959,7 +823,7 @@ kernels.
 
 Only if this option is used the parameter named **notify** with the
 value **y** will be passed to defined JSV instances. (see **-jsv**
-option above or find more information concerning JSV in *jsv*(1))
+option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -now y\[es\]\|n\[o\]  
 Available for *qsub*, *qsh*, *qlogin* and *qrsh*.
@@ -981,7 +845,7 @@ specified in *qmon* will only be passed to defined JSV instances if the
 value is *yes*. The name of the parameter will be **now**. The value
 will be **y** also when then long form **yes** was specified during
 submission. (see **-jsv** option above or find more information
-concerning JSV in *jsv*(1))
+concerning JSV in xxqs_name_sxx_jsv(1))
 
 -N name  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -1007,7 +871,7 @@ removing the directory pathname.
 The value specified with this option or the corresponding value
 specified in *qmon* will be passed to defined JSV instances as parameter
 with the name *N*. (see **-jsv** option above or find more information
-concerning JSV in *jsv*(1))
+concerning JSV in xxqs_name_sxx_jsv(1))
 
 -noshell  
 Available only for *qrsh* with a command line.
@@ -1054,7 +918,7 @@ of the job, however.
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **o**. (see **-jsv** option above or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -ot override_tickets  
 Available for *qalter* only.
@@ -1072,7 +936,7 @@ specific project. (see **-aprj** option to *qconf*(1)).
 If this option or a corresponding value in *qmon* is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **ot**. (see **-jsv** option above or find more information concerning
-JSV in *jsv*(1))
+JSV in xxqs_name_sxx_jsv(1))
 
 -p priority  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -1089,7 +953,7 @@ dispatched by the xxQS_NAMExx scheduler.
 If this option or a corresponding value in *qmon* is specified and the
 priority is not 0 then this value will be passed to defined JSV
 instances as parameter with the name **p**. (see **-jsv** option above
-or find more information concerning JSV in *jsv*(1))
+or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -pe parallel_environment n\[-\[m\]\]\|\[-\]m,...  
 Available for *qsub***, ***qsh***, ***qrsh***, ***qlogin*** and**
@@ -1109,7 +973,7 @@ parallel environment** and the values **pe_min and pe_max represent the
 values n and m which** have been provided with the **-pe option. A
 missing specification of m** will be expanded as value 9999999 in JSV
 scripts and it represents the value infinity. (see **-jsv option above
-or find more information concerning JSV in** *jsv*(1))
+or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -pty y\[es\]\|n\[o\]  
 Available for *qrsh*** and ***qlogin*** only.**
@@ -1121,7 +985,7 @@ start the job in a pty, *qrsh with a command* starts the job without a
 pty.
 
 This parameter is not available in the JSV context. (see **-jsv option
-above or find more information concerning JSV in** *jsv*(1))
+above or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -q wc_queue_list  
 Available for *qsub***, ***qrsh***, ***qsh***, ***qlogin*** and
@@ -1143,7 +1007,7 @@ instances as parameters with the names **q_hard and** **q_soft. If
 regular expressions will be used for resource requests,** then these
 expressions will be passed as they are. Also shortcut names will not be
 expanded. (see **-jsv option above or find more information concerning
-JSV in** *jsv*(1))
+JSV in** xxqs_name_sxx_jsv(1))
 
 -R y\[es\]\|n\[o\]  
 Available for *qsub***, ***qrsh***, ***qsh***, ***qlogin*** and
@@ -1163,7 +1027,7 @@ specified in *qmon*** will only be passed to defined JSV instances if
 the value is ***yes***.** The name of the parameter will be **R. The
 value will be y also** when then long form **yes was specified during
 submission.** (see **-jsv option above or find more information
-concerning JSV in** *jsv*(1))
+concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -r y\[es\]\|n\[o\]  
 Available for *qsub*** and ***qalter*** only.**
@@ -1183,7 +1047,7 @@ specified in *qmon*** will only be passed to defined JSV instances if
 the value is ***yes***.** The name of the parameter will be **r. The
 value will be y also** when then long form **yes was specified during
 submission.** (see **-jsv option above or find more information
-concerning JSV in** *jsv*(1))
+concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -sc variable\[=value\],...  
 Available for *qsub***, ***qsh***, ***qrsh***, ***qlogin*** and**
@@ -1203,7 +1067,7 @@ execution context in its environment.
 The outcome of the evaluation of all **-ac, -dc, and -sc** options or
 corresponding values in *qmon*** is passed to defined JSV** instances as
 parameter with the name **ac.** (see **-jsv option above or find more
-information concerning JSV in** *jsv*(1))
+information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -shell y\[es\]\|n\[o\]  
 Available only for *qsub***.**
@@ -1236,7 +1100,7 @@ specified in *qmon*** will only be passed to defined JSV instances if
 the value is ***yes***.** The name of the parameter will be **shell. The
 value will be y also** when then long form **yes was specified during
 submission.** (see **-jsv option above or find more information
-concerning JSV in** *jsv*(1))
+concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -soft  
 Available for *qsub***, ***qsh***, ***qrsh***, ***qlogin*** and**
@@ -1261,7 +1125,7 @@ the corresponding **-q and -l resource requirements will be** passed to
 defined JSV instances as parameter with the names **q_soft and**
 **l_soft. Find for information in the sections describing -q and -l.**
 (see **-jsv option above or find more information concerning JSV in**
-*jsv*(1))
+xxqs_name_sxx_jsv(1))
 
 -sync y\[es\]\|n\[o\]  
 Available for *qsub***.**
@@ -1291,7 +1155,7 @@ job's tasks will be canceled.
 
 Information that this switch was specified during submission is not
 available in the JSV context. (see **-jsv option above or find more
-information concerning JSV in** *jsv*(1))
+information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -S \[\[hostname\]:\]pathname,...  
 Available for *qsub***, ***qsh*** and ***qalter***.**
@@ -1315,7 +1179,7 @@ will only be in effect after a restart or migration of the job, however.
 If this option or a corresponding value in *qmon*** is specified then**
 this value will be passed to defined JSV instances as parameter with the
 name **S.** (see **-jsv option above or find more information concerning
-JSV in** *jsv*(1))
+JSV in** xxqs_name_sxx_jsv(1))
 
 -t n\[-m\[:s\]\]  
 Available for *qsub*** and ***qalter*** only.**
@@ -1373,7 +1237,7 @@ all tasks into the same file, but the result of this is undefined.
 If this option or a corresponding value in *qmon*** is specified then**
 this value will be passed to defined JSV instances as parameters with
 the name **t_min, t_max and t_step** (see **-jsv option above or find
-more information concerning JSV in** *jsv*(1))
+more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 # 
 
@@ -1387,7 +1251,7 @@ per job.
 If this option or a corresponding value in qmon is specified then this
 value will be passed to defined JSV instances as parameter with the name
 **tc. (see -jsv option above or find more information concerning JSV
-in** *jsv*(1))
+in** xxqs_name_sxx_jsv(1))
 
 -terse  
 Available for *qsub*** only.**
@@ -1400,7 +1264,7 @@ get** the job-id.
 
 Information that this switch was specified during submission is not
 available in the JSV context. (see **-jsv option above or find more
-information concerning JSV in** *jsv*(1))
+information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -u username,...  
 Available for *qalter*** only. Changes are only made on those** jobs
@@ -1429,7 +1293,7 @@ All environment variables specified with **-v, -V or the** DISPLAY
 variable provided with **-display will be exported to the** defined JSV
 instances only optionally when this is requested explicitly during the
 job submission verification. (see **-jsv option above or find more
-information concerning JSV in** *jsv*(1))
+information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -verbose  
 Available only for *qrsh*** and** *qmake*(1).
@@ -1460,7 +1324,7 @@ All environment variables specified with **-v, -V or the** DISPLAY
 variable provided with **-display will be exported to the** defined JSV
 instances only optionally when this is requested explicitly during the
 job submission verification. (see **-jsv option above or find more
-information concerning JSV in** *jsv*(1))
+information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -w e\|w\|n\|p\|v  
 Available for *qsub***, ***qsh***, ***qrsh***, ***qlogin*** and
@@ -1507,7 +1371,7 @@ configuration files are present (see *xxqs_name_sxx_aliases*(5)).
 modified parameter will only be in effect after a restart or migration
 of the job, however. The parameter value will be available in defined
 JSV instances as parameter with the name **cwd** (see **-cwd switch
-above or find more information concerning JSV in** *jsv*(1))
+above or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 command  
 Available for *qsub*** and ***qrsh*** only.**
@@ -1518,7 +1382,7 @@ input.
 
 The command will be available in defined JSV instances as parameter with
 the name **CMDNAME** (see **-jsv option above or find more information
-concerning JSV in** *jsv*(1))
+concerning JSV in** xxqs_name_sxx_jsv(1))
 
 command_args  
 Available for *qsub***, ***qrsh*** and ***qalter*** only.**
@@ -1534,7 +1398,7 @@ The number of command arguments is provided to configured JSV instances
 as parameter with the name **CMDARGS. Also the argument values** can by
 accessed. Argument names have the format **CMDARG\<number> where**
 **\<number> is a integer between 0 and CMDARGS - 1.** (see **-jsv option
-above or find more information concerning JSV in** *jsv*(1))
+above or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 xterm_args  
 Available for *qsh*** only.**
@@ -1545,7 +1409,7 @@ configuration. For details, refer to *xxqs_name_sxx_conf*(5)).
 Information concerning **xterm_args will be available in JSV context
 as** parameters with the name **CMDARGS and CMDARG\<number>. Find more
 ** information above in section **command_args. ** (see **-jsv option
-above or find more information concerning JSV in** *jsv*(1))
+above or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 # ENVIRONMENTAL VARIABLES
 

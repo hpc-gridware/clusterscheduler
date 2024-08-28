@@ -24,7 +24,7 @@
 set(PAGES sge_access_list sge_accounting sge_aliases sge_bootstrap sge_calendar_conf sge_checkpoint sge_complex
       sge_conf sge_host_aliases sge_host_conf sge_hostgroup sge_pe sge_priority sge_project sge_qstat sge_qtask
       sge_queue_conf sge_reporting sge_request sge_resource_quota sge_sched_conf sge_share_tree sge_user)
-build_markdown_man("5" PAGES)
+build_markdown_man("5" PAGES "0")
 
 # target for building all troff man pages from section 5
 # @todo is there a better way of listing them? Didn't find an easily comprehensible way to use foreach().

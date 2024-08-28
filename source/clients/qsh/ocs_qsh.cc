@@ -1896,8 +1896,12 @@ int main(int argc, const char **argv)
        * attributes in the job so that the information is available
        * in the JSV client context
        */
+      int amount;
+      ocs_grp_elem_t *grp_array;
+      component_get_supplementray_groups(&amount, &grp_array);
       job_set_owner_and_group(job, component_get_uid(), component_get_gid(),
-                              component_get_username(), component_get_groupname());
+                              component_get_username(), component_get_groupname(),
+                              amount, grp_array);
 
       lp_jobs = lCreateList("submitted jobs", JB_Type);
       lAppendElem(lp_jobs, job);

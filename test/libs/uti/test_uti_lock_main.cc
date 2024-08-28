@@ -40,6 +40,8 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 
+#include <sge_log.h>
+
 /****** test_sge_lock_main/main() **********************************************
 *  NAME
 *     main() -- Generic skeleton for lock API test programs. 
@@ -78,6 +80,7 @@ int main(int argc, char *argv[]) {
 
    thrd_count = get_thrd_demand();
    t = (pthread_t *) sge_malloc(thrd_count * sizeof(pthread_t));
+   SGE_ASSERT(t != nullptr);
 
    for (i = 1; i <= thrd_count; i++) {
       for (j = 0; j < i; j++) {

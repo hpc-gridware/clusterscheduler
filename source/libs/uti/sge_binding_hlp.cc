@@ -42,6 +42,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
+#include <sge_log.h>
+
 #if defined(BINDING_SOLARIS)
 #  include <sys/processor.h>
 #  include <sys/types.h>
@@ -912,6 +914,8 @@ check_explicit_binding_string(const char *expl, int amount,
    /* pointer to the first position of all <socket,core> pairs */
    int pair_number = 0;
    char **pairs = (char **)sge_malloc(sizeof(char *) * amount);
+   SGE_ASSERT(pairs != nullptr);
+
    char *pair = nullptr;
 
    if (expl == nullptr || amount == 0) {

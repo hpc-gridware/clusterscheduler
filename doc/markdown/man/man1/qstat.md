@@ -32,9 +32,9 @@ line can be used to override the flags contained in the files.
 
 # OPTIONS
 
-## -explain a\|A\|c\|E  
+## -explain *a*\|*A*\|*c*\|*E*  
 The character *c* displays the reason for the c(onfiguration ambiguous) state of a queue instance. *a* shows the 
-reason for the alarm state. Suspend alarm state reasons will be displayed by *A*. *E* displays the reason for a 
+reason for the a(larm state). Suspend alarm state reasons will be displayed by *A*. *E* displays the reason for a 
 queue instance error state.
 
 The output format for the alarm reasons is one line per reason containing the resource value and threshold. 
@@ -48,7 +48,7 @@ Displays additional information for each job related to the job ticket policy sc
 Specifies a "full" format display of information. The `-f` option causes summary information on all queues to be 
 displayed along with the queued job list.
 
-## -F \[resource_name,...\]  
+## -F \[*resource_name*,...\]  
 Like in the case of `-f` information is displayed on all jobs as well as queues. In addition, `qstat` will present 
 a detailed listing of the current resource availability per queue with respect to all resources (if the option 
 argument is omitted) or with respect to those resources contained in the resource_name list. Please refer to the 
@@ -116,7 +116,7 @@ will disappear in combination with the parameters `-r` and `-j`.
 Please note that this command line switch is intended to provide backward compatibility and will be removed in the 
 next major release.
 
-## -pe pe_name,...  
+## -pe *pe_name*,...  
 Displays status information with respect to queues which are attached to at least one of the parallel environments 
 enlisted in the comma separated option argument. Status information for jobs is displayed either for those which 
 execute in one of the selected queues or which are pending and might get scheduled to those queues in principle.
@@ -128,7 +128,7 @@ Displays additional information for each job related to the job priorities in ge
 Specifies a wildcard expression queue list to which job information is to be displayed. Find the definition of 
 *wc_queue_list* in xxqs_name_sxx_types(1).
 
-## -qs {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}  
+## -qs {*a*\|*c*\|*d*\|*o*\|*s*\|*u*\|*A*\|*C*\|*D*\|*E*\|*S*}  
 Allows for the filtering of queue instances according to state.
 
 ## -r  
@@ -136,7 +136,7 @@ Prints extended information about the resource requirements of the displayed job
 
 Please refer to the *OUTPUT FORMATS* sub-section *Expanded Format* below for detailed information.
 
-## -s {p\|r\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}\[+\]  
+## -s {*p*\|*r*\|*s*\|*z*\|*hu*\|*ho*\|*hs*\|*hd*\|*hj*\|*ha*\|*h*\|*a*}\[+\]  
 Prints only jobs in the specified state, any combination of states is possible. `-s` *prs* corresponds to the regular 
 `qstat` output without `-s` at all. To show recently finished jobs, use `-s` *z*. To display jobs in 
 user/operator/system/array-dependency hold, use the `-s` *hu*/*ho*/*hs*/*hd* option. The `-s` *ha* option shows jobs 
@@ -222,7 +222,7 @@ Following the header line a line is printed for each job consisting of
 
 -   the name of the job.
 
--   the user name of the job owner.
+-   the username of the job owner.
 
 -   the status of the job - one of d(eletion), E(rror), h(old), r(unning), R(estarted), s(uspended), S(uspended), 
     t(ransfering), T(hreshold) or w(aiting).
@@ -230,7 +230,7 @@ Following the header line a line is printed for each job consisting of
 The state d(eletion) indicates that a qdel(1) has been used to initiate job deletion. The states t(ransfering) 
 and r(unning) indicate that a job is about to be executed or is already executing, whereas the states s(uspended), 
 S(uspended) and T(hreshold) show that an already running jobs has been suspended. The s(uspended) state is caused 
-by suspending the job via the *qmod*(1) command, the S(uspended) state indicates that the queue containing the job 
+by suspending the job via the qmod(1) command, the S(uspended) state indicates that the queue containing the job 
 is suspended and therefore the job is also suspended and the T(hreshold) state shows that at least one suspend 
 threshold of the corresponding queue was exceeded (see xxqs_name_sxx_queue_conf(5)) and that the job has been 
 suspended as a consequence. The state R(estarted) indicates that the job was restarted. This can be caused by a job 
@@ -257,7 +257,7 @@ error is shown by the `qstat -j` *job_list* option.
 -   the array job task id. Will be empty for non-array jobs. See the `-t` option to qsub(1) and the `-g` above for 
     additional information.
 
-    If the **-t** option is supplied, each status line always contains parallel job task information as if `-g` *t* 
+    If the `-t` option is supplied, each status line always contains parallel job task information as if `-g` *t* 
     were specified and each line contains the following parallel job subtask information:
 
 -   the parallel task ID (do not confuse parallel tasks with array job tasks),
@@ -306,123 +306,90 @@ via the calendar facility of xxQS_NAMExx (see xxqs_name_sxx_calendar_conf(5)), w
 indicates, that the queue has been suspended via subordination to another queue (see xxqs_name_sxx_queue_conf(5) 
 for details). When suspending a queue (regardless of the cause) all jobs executing in that queue are suspended too.
 
-If an E(rror) state is displayed for a queue, *xxqs_name_sxx_execd*(8)
-on that host was unable to locate the *xxqs_name_sxx_shepherd*(8)
-executable on that host in order to start a job. Please check the error
-logfile of that *xxqs_name_sxx_execd*(8) for leads on how to resolve
-the problem. Please enable the queue afterwards via the **-c** option of
-the *qmod*(1) command manually.
+If an E(rror) state is displayed for a queue, xxqs_name_sxx_execd(8) on that host was unable to locate the 
+xxqs_name_sxx_shepherd(8) executable on that host in order to start a job. Please check the error logfile of that 
+xxqs_name_sxx_execd(8) for leads on how to resolve the problem. Please enable the queue afterward via the `-c` option 
+of the qmod(1) command manually.
 
-If the c(onfiguration ambiguous) state is displayed for a queue instance
-this indicates that the configuration specified for this queue instance
-in *sge_conf*(5) is ambiguous. This state is cleared when the
-configuration becomes unambiguous again. This state prevents further
-jobs from being scheduled to that queue instance. Detailed reasons why a
-queue instance entered the c(onfiguration ambiguous) state can be found
-in the *sge_qmaster*(8) messages file and are shown by the qstat
--explain switch. For queue instances in this state the cluster queue's
+If the c(onfiguration ambiguous) state is displayed for a queue instance this indicates that the configuration 
+specified for this queue instance in xxqs_name_sxx_conf(5) is ambiguous. This state is cleared when the configuration 
+becomes unambiguous again. This state prevents further jobs from being scheduled to that queue instance. Detailed 
+reasons why a queue instance entered the c(onfiguration ambiguous) state can be found in the xxqs_name_sxx_qmaster(8) 
+messages file and are shown by the `qstat -explain` switch. For queue instances in this state the cluster queue's
 default settings are used for the ambiguous attribute.
 
-If an o(rphaned) state is displayed for a queue instance, it indicates
-that the queue instance is no longer demanded by the current cluster
-queue's configuration or the host group configuration. The queue
-instance is kept because jobs which not yet finished jobs are still
-associated with it, and it will vanish from qstat output when these jobs
-have finished. To quicken vanishing of an orphaned queue instance
-associated job(s) can be deleted using *qdel*(1). A queue instance in
-(o)rphaned state can be revived by changing the cluster queue
-configuration accordingly to cover that queue instance. This state
-prevents from scheduling further jobs to that queue instance.
+If an o(rphaned) state is displayed for a queue instance, it indicates that the queue instance is no longer demanded 
+by the current cluster queue's configuration or the host group configuration. The queue instance is kept because jobs 
+which not yet finished jobs are still associated with it, and it will vanish from qstat output when these jobs have 
+finished. To quicken vanishing of an orphaned queue instance associated job(s) can be deleted using qdel(1). A 
+queue instance in (o)rphaned state can be revived by changing the cluster queue configuration accordingly to cover 
+that queue instance. This state prevents from scheduling further jobs to that queue instance.
 
-If the **-F** option was used, resource availability information is
-printed following the queue status line. For each resource (as selected
-in an option argument to **-F** or for all resources if the option
-argument was omitted) a single line is displayed with the following
-format:
+If the `-F` option was used, resource availability information is printed following the queue status line. For each 
+resource (as selected in an option argument to **-F** or for all resources if the option argument was omitted) a 
+single line is displayed with the following format:
 
--   a one letter specifier indicating whether the current resource
-    availability value was dominated by either  
-    \`**g**' - a cluster global,  
-    \`**h**' - a host total or  
-    \`**q**' - a queue related resource consumption.
+-   a one letter specifier indicating whether the current resource availability value was dominated by either  
+    *g* - a cluster global,  
+    *h* - a host total or  
+    *q* - a queue related resource consumption.
 
--   a second one letter specifier indicating the source for the current
-    resource availability value, being one of  
-    \`**l**' - a load value reported for the resource,  
-    \`**L**' - a load value for the resource after administrator defined
-    load scaling has been applied,  
-    \`**c**' - availability derived from the consumable resources
-    facility (see *complexes*(5)),  
-    \`**f**' - a fixed availability definition derived from a
-    non-consumable complex attribute or a fixed resource limit.
+-   a second one letter specifier indicating the source for the current resource availability value, being one of  
+    *l* - a load value reported for the resource,  
+    *L* - a load value for the resource after administrator defined load scaling has been applied,  
+    *c* - availability derived from the consumable resources facility (see xxqs_name_sxx_complexes(5)),  
+    *f* - a fixed availability definition derived from a non-consumable complex attribute or a fixed resource limit.
 
--   after a colon the name of the resource on which information is
-    displayed.
+-   after a colon the name of the resource on which information is displayed.
 
 -   after an equal sign the current resource availability value.
 
-The displayed availability values and the sources from which they derive
-are always the minimum values of all possible combinations. Hence, for
-example, a line of the form "qf:h_vmem=4G" indicates that a queue
-currently has a maximum availability in virtual memory of 4 Gigabyte,
-where this value is a fixed value (e.g. a resource limit in the queue
-configuration) and it is queue dominated, i.e. the host in total may
-have more virtual memory available than this, but the queue doesn't
-allow for more. Contrarily a line "hl:h_vmem=4G" would also indicate an
-upper bound of 4 Gigabyte virtual memory availability, but the limit
-would be derived from a load value currently reported for the host. So
-while the queue might allow for jobs with higher virtual memory
-requirements, the host on which this particular queue resides currently
-only has 4 Gigabyte available.
+The displayed availability values and the sources from which they derive are always the minimum values of all possible 
+combinations. Hence, for example, a line of the form "qf:h_vmem=4G" indicates that a queue currently has a maximum 
+availability in virtual memory of 4 Gigabyte, where this value is a fixed value (e.g. a resource limit in the queue
+configuration) and it is queue dominated, i.e. the host in total may have more virtual memory available than this, 
+but the queue doesn't allow for more. Contrarily a line "hl:h_vmem=4G" would also indicate an upper bound of 4 
+Gigabyte virtual memory availability, but the limit would be derived from a load value currently reported for the host. 
+So while the queue might allow for jobs with higher virtual memory requirements, the host on which this particular 
+queue resides currently only has 4 Gigabyte available.
 
-If the **-explain** option was used with the character 'a' or 'A',
-information about resources is displayed, that violate load or suspend
-thresholds.  
-The same format as with the **-F** option is used with following
-extensions:
+If the `-explain` option was used with the character *a* or *A*, information about resources is displayed, that 
+violate load or suspend thresholds. The same format as with the `-F` option is used with following extensions:
 
--   the line starts with the keyword \`alarm'  
+-   the line starts with the keyword *alarm*  
 
 -   appended to the resource value is the type and value of the
     appropriate threshold
 
-After the queue status line (in case of **-f**) or the resource
-availability information (in case of **-F**) a single line is printed
-for each job running currently in this queue. Each job status line
-contains
+After the queue status line (in case of `-f`) or the resource availability information (in case of `-F`) a single 
+line is printed for each job running currently in this queue. Each job status line contains
 
 -   the job ID,
 
--   the priority of the job determining its position in the pending jobs
-    list. The priority value is determined dynamically based on ticket
-    and urgency policy set-up (see also *sge_priority*(5) ).
+-   the priority of the job determining its position in the pending jobs list. The priority value is determined 
+    dynamically based on ticket and urgency policy set-up (see also *sge_priority*(5) ).
 
 -   the job name,
 
 -   the job owner name,
 
--   the status of the job - one of t(ransfering), r(unning),
-    R(estarted), s(uspended), S(uspended) or T(hreshold) (see the
-    **Reduced Format** section for detailed information),
+-   the status of the job - one of t(ransfering), r(unning), R(estarted), s(uspended), S(uspended) or T(hreshold) 
+    (see the *Reduced Format* section for detailed information),
 
 -   the submission or start time and date of the job.
 
--   the number of job slots or the function of parallel job tasks if
-    **-g t** is specified.
+-   the number of job slots or the function of parallel job tasks if `-g` *t* is specified.
 
-Without **-g t** option the number of slots occupied per queue resp.
-requested by the job is displayed. For pending parallel jobs with a PE
-slot range request, the assumed future slot allocation is displayed.
-With **-g t** option the function of the running jobs (MASTER or SLAVE -
-the latter for parallel jobs only) is displayed.
+Without `-g` *t* option the number of slots occupied per queue resp. requested by the job is displayed. For pending 
+parallel jobs with a PE slot range request, the assumed future slot allocation is displayed. With `-g` *t* option 
+the function of the running jobs (MASTER or SLAVE - the latter for parallel jobs only) is displayed.
 
-If the **-t** option is supplied, each job status line also contains
+If the `-t` option is supplied, each job status line also contains
 
 -   the task ID,
 
--   the status of the task - one of r(unning), R(estarted), s(uspended),
-    S(uspended), T(hreshold), w(aiting), h(old), or x(exited) (see the
-    **Reduced Format** section for detailed information),
+-   the status of the task - one of r(unning), R(estarted), s(uspended), S(uspended), T(hreshold), w(aiting), h(old), 
+    or x(exited) (see the *Reduced Format* section for detailed information),
 
 -   the cpu, memory, and I/O usage,
 
@@ -430,49 +397,38 @@ If the **-t** option is supplied, each job status line also contains
 
 -   and the failure code and message for the task.
 
-Following the list of queue sections a *PENDING JOBS* list may be
-printed in case jobs are waiting for being assigned to a queue. A status
-line for each waiting job is displayed being similar to the one for the
-running jobs. The differences are that the status for the jobs is
-w(aiting) or h(old), that the submit time and date is shown instead of
+Following the list of queue sections a *PENDING JOBS* list may be printed in case jobs are waiting for being assigned 
+to a queue. A status line for each waiting job is displayed being similar to the one for the running jobs. The 
+differences are that the status for the jobs is w(aiting) or h(old), that the submit time and date is shown instead of
 the start time and that no function is displayed for the jobs.
 
-In very rare cases, e.g. if *xxqs_name_sxx_qmaster*(8) starts up from
-an inconsistent state in the job or queue spool files or if the **clean
-queue** (**-cq**) option of *qconf*(1) is used, *qstat* cannot assign
-jobs to either the running or pending jobs section of the output. In
-this case as job status inconsistency (e.g. a job has a running status
-but is not assigned to a queue) has been detected. Such jobs are printed
-in an *ERROR JOBS* section at the very end of the output. The ERROR JOBS
-section should disappear upon restart of *xxqs_name_sxx_qmaster*(8).
-Please contact your xxQS_NAMExx support representative if you feel
-uncertain about the cause or effects of such jobs.
+In very rare cases, e.g. if xxqs_name_sxx_qmaster(8) starts up from an inconsistent state in the job or queue spool 
+files or if the clean queue (`-cq`) option of qconf(1) is used, `qstat` cannot assign jobs to either the running or 
+pending jobs section of the output. In this case as job status inconsistency (e.g. a job has a running status
+but is not assigned to a queue) has been detected. Such jobs are printed in an *ERROR JOBS* section at the very end 
+of the output. The ERROR JOBS section should disappear upon restart of xxqs_name_sxx_qmaster(8). Please contact your 
+xxQS_NAMExx support representative if you feel uncertain about the cause or effects of such jobs.
 
-## **Expanded Format (with -r)**
+## Expanded Format (with -r)
 
-If the **-r** option was specified together with *qstat*, the following
-information for each displayed job is printed (a single line for each of
-the following job characteristics):
+If the `-r` option was specified together with `qstat`, the following information for each displayed job is printed 
+(a single line for each of the following job characteristics):
 
 -   The job and master queue name.
 
--   The hard and soft resource requirements of the job as specified with
-    the *qsub*(1) **-l** option. The per resource addend when
-    determining the jobs urgency contribution value is printed (see also
-    *sge_priority*(5)).
+-   The hard and soft resource requirements of the job as specified with the qsub(1) `-l` option. The per resource 
+    addend when determining the jobs urgency contribution value is printed (see also xxqs_name_sxx_priority(5)).
 
 -   The requested parallel environment including the desired queue slot
-    range (see **-pe** option of *qsub*(1)).
+    range (see `-pe` option of qsub(1)).
 
--   The requested checkpointing environment of the job (see the
-    *qsub*(1) **-ckpt** option).
+-   The requested checkpointing environment of the job (see the qsub(1) `-ckpt` option).
 
--   In case of running jobs, the granted parallel environment with the
-    granted number of queue slots.
+-   In case of running jobs, the granted parallel environment with the granted number of queue slots.
 
 -   The requested job binding parameters.
 
-## **Enhanced Output (with -ext)**
+## Enhanced Output (with -ext)
 
 For each job the following additional items are displayed:
 
@@ -480,12 +436,11 @@ ntckts
 The total number of tickets in normalized fashion.
 
 project  
-The project to which the job is assigned as specified in the *qsub*(1)
-**-P** option.
+The project to which the job is assigned as specified in the qsub(1) `-P` option.
 
 department  
-The department, to which the user belongs (use the **-sul** and **-su**
-options of *qconf*(1) to display the current department definitions).
+The department, to which the user belongs (use the `-sul` and `-su` options of qconf(1) to display the current 
+department definitions).
 
 cpu  
 The current accumulated CPU usage of the job in seconds.
@@ -500,11 +455,10 @@ tckts
 The total number of tickets assigned to the job currently
 
 ovrts  
-The override tickets as assigned by the **-ot** option of *qalter*(1).
+The override tickets as assigned by the `-ot` option of qalter(1).
 
 otckt  
-The override portion of the total number of tickets assigned to the job
-currently
+The override portion of the total number of tickets assigned to the job currently
 
 ftckt  
 The functional portion of the total number of tickets assigned to the
@@ -517,10 +471,9 @@ currently
 share  
 The share of the total system to which the job is entitled currently.
 
-## **Enhanced Output (with -urg)**
+## Enhanced Output (with -urg)
 
-For each job the following additional urgency policy related items are
-displayed (see also *sge_priority*(5)):
+For each job the following additional urgency policy related items are displayed (see also _xxqs_name_sxx_priority(5)):
 
 nurg  
 The jobs total urgency value in normalized fashion.
@@ -529,25 +482,20 @@ urg
 The jobs total urgency value.
 
 rrcontr  
-The urgency value contribution that reflects the urgency that is related
-to the jobs overall resource requirement.
+The urgency value contribution that reflects the urgency that is related to the jobs overall resource requirement.
 
 wtcontr  
-The urgency value contribution that reflects the urgency related to the
-jobs waiting time.
+The urgency value contribution that reflects the urgency related to the jobs waiting time.
 
 dlcontr  
-The urgency value contribution that reflects the urgency related to the
-jobs deadline initiation time.
+The urgency value contribution that reflects the urgency related to the jobs deadline initiation time.
 
 deadline  
-The deadline initiation time of the job as specified with the *qsub*(1)
-**-dl** option.
+The deadline initiation time of the job as specified with the qsub(1) `-dl` option.
 
-## **Enhanced Output (with -pri)**
+## Enhanced Output (with -pri)
 
-For each job, the following additional job priority related items are
-displayed (see also *sge_priority*(5)):
+For each job, the following additional job priority related items are displayed (see also xxqs_name_sxx_priority(5)):
 
 nurg  
 The job's total urgency value in normalized fashion.
@@ -563,53 +511,28 @@ The job's **-p** priority as specified by the user.
 
 # ENVIRONMENTAL VARIABLES
 
-xxQS_NAME_Sxx_ROOT  
-Specifies the location of the xxQS_NAMExx standard configuration files.
-
-xxQS_NAME_Sxx_CELL  
-If set, specifies the default xxQS_NAMExx cell. To address a xxQS_NAMExx
-cell *qstat* uses (in the order of precedence):
-
-> The name of the cell specified in the environment variable
-> xxQS_NAME_Sxx_CELL, if it is set.
->
-> The name of the default cell, i.e. **default**.
-
-xxQS_NAME_Sxx_DEBUG_LEVEL  
-If set, specifies that debug information should be written to stderr. In
-addition the level of detail in which debug information is generated is
-defined.
-
-xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
-expected to listen for communication requests. Most installations will
-use a services map entry for the service "sge_qmaster" instead to define
-that port.
+For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
 SGE_LONG_QNAMES  
-Qstat does display queue names up to 30 characters. If that is to much
-or not enough, one can set a custom length with this variable. The
-minimum display length is 10 characters. If one does not know the best
-display length, one can set SGE_LONG_QNAMES to -1 and qstat will figure
-out the best length.
+`qstat` does display queue names up to 30 characters. If that is too much or not enough, one can set a custom length 
+with this variable. The minimum display length is 10 characters. If one does not know the best display length, one 
+can set *SGE_LONG_QNAMES* to -1 and `qstat` will figure out the best length.
 
 # FILES
 
-    <xxqs_name_sxx_root>/<cell>/common/act_qmaster
-    	xxQS_NAMExx master host file
-    <xxqs_name_sxx_root>/<cell>/common/xxqs_name_sxx_qstat
-    	cluster qstat default options
-    $HOME/.xxqs_name_sxx_qstat	
-    	user qstat default options
+For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
+
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/xxqs_name_sxx_qstat
+qstat default options
+
+## $HOME/.xxqs_name_sxx_qstat
+user qstat default options
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro*(1), *qalter*(1), *qconf*(1), *qhold*(1),
-*qhost*(1), *qmod*(1), *qsub*(1), *queue_conf*(5),
-*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_qmaster*(8),
-*xxqs_name_sxx_shepherd*(8).
+xxqs_name_sxx_intro(1), qalter(1), qconf(1), qhold(1), qhost(1), qmod(1), qsub(1), xxqs_name_sxx_queue_conf(5),
+xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_shepherd(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro*(1) for a full statement of rights and
-permissions.
+See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.

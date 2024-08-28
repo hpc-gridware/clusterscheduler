@@ -1255,8 +1255,12 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
     * Set owner and group so that information will be available in
     * client JSV scripts
     */
+   int amount;
+   ocs_grp_elem_t *grp_array;
+   component_get_supplementray_groups(&amount, &grp_array);
    job_set_owner_and_group(job, component_get_uid(), component_get_gid(),
-                           component_get_username(), component_get_groupname());
+                           component_get_username(), component_get_groupname(),
+                           amount, grp_array);
 
    /* use GDI to submit job for this session */
    alp = sge_gdi(SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
@@ -2273,8 +2277,8 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       }
       
       /* We have to add one to the size of the array for the nullptr terminator. */
-      sync_job_ids = (const char**)sge_malloc (sizeof (char *) *
-                                           (lGetNumberOfElem (sync_list) + 1));
+      sync_job_ids = (const char**)sge_malloc (sizeof (char *) * (lGetNumberOfElem (sync_list) + 1));
+      SGE_ASSERT(sync_job_ids != nullptr);
       
       for_each_ep(ep, sync_list) {
          sync_job_ids[count] = lGetString (ep, ST_name);

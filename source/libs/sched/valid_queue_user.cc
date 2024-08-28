@@ -55,24 +55,23 @@
       0 for false
 
 */
-int sge_has_access(const char *user, const char *group, const lListElem *q,
-                   const lList *acl_list) 
-{
-   return sge_has_access_(user, group, 
-         lGetList(q, QU_acl), lGetList(q, QU_xacl), acl_list);
+int
+sge_has_access(const char *user, const char *group, const lList *grp_list,
+               const lListElem *q, const lList *acl_list) {
+   return sge_has_access_(user, group, grp_list, lGetList(q, QU_acl), lGetList(q, QU_xacl), acl_list);
 }
 
 /* needed to test also sge_queue_type structures without converting the
 ** whole queue
 */
-int sge_has_access_(const char *user, const char *group, const lList *q_acl,
-                    const lList *q_xacl, const lList *acl_list) 
-{
+int
+sge_has_access_(const char *user, const char *group, const lList *grp_list,
+                const lList *q_acl, const lList *q_xacl, const lList *acl_list) {
    int ret;
 
    DENTER(TOP_LAYER);
 
-   ret = sge_contained_in_access_list_(user, group, q_xacl, acl_list);
+   ret = sge_contained_in_access_list_(user, group, grp_list, q_xacl, acl_list);
    if (ret < 0 || ret == 1) { /* also deny when an xacl entry was not found in acl_list */
       DRETURN(0);
    }
@@ -81,7 +80,7 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
        DRETURN(1);
    }
 
-   ret = sge_contained_in_access_list_(user, group, q_acl, acl_list);
+   ret = sge_contained_in_access_list_(user, group, grp_list, q_acl, acl_list);
    if (ret < 0) {
       DRETURN(0);
    }
@@ -102,17 +101,17 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
 
    user, group: may be nullptr
 */
-int sge_contained_in_access_list_(const char *user, const char *group,
-                                         const lList *acl, const lList *acl_list) 
-{
-   const lListElem *acl_search, *acl_found;
-
+int
+sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+                              const lList *acl, const lList *acl_list) {
    DENTER(TOP_LAYER);
 
+   const lListElem *acl_search;
    for_each_ep(acl_search, acl) {
-      if ((acl_found=lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name)))) {
+      const lListElem *acl_found = lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name));
+      if (acl_found != nullptr) {
          /* ok - there is such an access list */
-         if (sge_contained_in_access_list(user, group, acl_found, nullptr)) {
+         if (sge_contained_in_access_list(user, group, grp_list, acl_found)) {
             DRETURN(1);
          } 
       } else {
@@ -162,8 +161,8 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
 
       DPRINTF("check permissions for user %s\n", user);
       if (!is_hgroup_name(user)) {
-         if (sge_has_access_(user, lGetString(acl_entry, ARA_group), acl_list, xacl_list,
-                             master_userset_list) == 0) {
+         if (sge_has_access_(user, lGetString(acl_entry, ARA_group), nullptr,
+                             acl_list, xacl_list,master_userset_list) == 0) {
              answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
             break;

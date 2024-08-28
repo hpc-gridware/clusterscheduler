@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+#include "uti/sge_uidgid.h"
+
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_str_ST_L.h"
@@ -51,3 +53,6 @@ str_list_is_valid(const lList *this_list, lList **answer_list);
 
 bool
 str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username);
+
+lList *
+grp_list_array2list(int amount, ocs_grp_elem_t *grp_array);

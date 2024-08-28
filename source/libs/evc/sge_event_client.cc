@@ -122,7 +122,7 @@
 *
 *  SEE ALSO
 *     Eventclient/Client/ec_prepare_registration()
-*     Eventclient/Server/sge_add_event_client()
+*     Eventclient/Server/()
 ****************************************************************************
 */
 /****** Eventclient/-Subscription ***************************************
@@ -1314,7 +1314,6 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
    DRETURN(ret);
 }
 
-
 static bool
 ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp) {
    bool ret = true;
@@ -1354,17 +1353,18 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 
       if (evc_local && evc_local->add_func) {
          lList *eclp = nullptr;
-         const char *ruser = nullptr;
-         const char *rhost = nullptr;
 
-         ruser = bootstrap_get_admin_user();
-         rhost = gdi_get_act_master_host(false);
+         // for internal request we create a pseudo packet just containing
+         // information required for potential error message
+         sge_gdi_packet_class_t pseudo_packet;
+         strcpy(pseudo_packet.user, bootstrap_get_admin_user());
+         strcpy(pseudo_packet.host, gdi_get_act_master_host(false));
+
          /*
          ** set busy handling, sets EV_changed to true if it is really changed
          */
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
-         evc_local->add_func(sge_evc->ec, &alp, &eclp, (char*)ruser, (char*)rhost,
-                             evc_local->update_func, evc_local->update_func_arg);
+         evc_local->add_func(&pseudo_packet, sge_evc->ec, &alp, &eclp, evc_local->update_func, evc_local->update_func_arg);
          if (eclp) {
             sge_evc->ec_reg_id = lGetUlong(lFirst(eclp), EV_id);
             lFreeList(&eclp);

@@ -57,6 +57,7 @@ void *do_malloc(void *);
 int main(int argc, char *argv[]) {
    int ret = EXIT_SUCCESS;
 
+   set_thread_name(pthread_self(), "test_uti_profiling.do_test");
    /* First with profiling enabled */
    printf("Testing with profiling enabled.\n");
    ret = do_test();
@@ -78,6 +79,8 @@ int main(int argc, char *argv[]) {
    if (ret == EXIT_SUCCESS) {
       ret = test_params();
    }
+
+   sge_prof_cleanup();
 
    return ret;
 }
@@ -204,15 +207,14 @@ int do_test() {
    }
 
    sge_dstring_free(&error);
-   sge_prof_cleanup();
 
    return EXIT_SUCCESS;
 }
 
 void *do_sleep(void *p) {
-
-
    dstring error = DSTRING_INIT;
+
+   set_thread_name(pthread_self(), "test_uti_profiling.do_sleep");
 
 /*   if (thread_prof_active_by_id(pthread_self())) {*/
 
@@ -301,6 +303,7 @@ void *do_calc(void *p) {
    double x, y, z;
    dstring error = DSTRING_INIT;
 
+   set_thread_name(pthread_self(), "test_uti_profiling.do_calc");
 
    /*if (thread_prof_active_by_id(pthread_self())) {   */
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {
@@ -360,6 +363,8 @@ void *do_calc2(void *p) {
    int x, y;
    dstring error = DSTRING_INIT;
 
+   set_thread_name(pthread_self(), "test_uti_profiling.do_calc2");
+
    /*if (thread_prof_active_by_id(pthread_self())) {*/
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {
       fprintf(stderr, SFNMAX, sge_dstring_get_string(&error));
@@ -409,6 +414,8 @@ void *do_malloc(void *p) {
    int count = 90000;
    int i;
    dstring error = DSTRING_INIT;
+
+   set_thread_name(pthread_self(), "test_uti_profiling.do_malloc");
 
    /*if (thread_prof_active_by_id(pthread_self())) {*/
    if (!prof_start(SGE_PROF_CUSTOM1, &error)) {

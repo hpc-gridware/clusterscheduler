@@ -589,6 +589,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
       DRETURN(n);
    }
    is_found = (bool *) sge_malloc(sizeof(bool) * n);
+   SGE_ASSERT(is_found != nullptr);
    memset(is_found, false, n * sizeof(bool));
 
    while (fgets(buf, sizeof(buf), fp)) {
@@ -838,6 +839,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
       DRETURN(n);
    }
    is_found = (bool *) sge_malloc(sizeof(bool) * n);
+   SGE_ASSERT(is_found != nullptr);
    memset(is_found, false, n * sizeof(bool));
 
    while (fgets(buf, sizeof(buf), fp)) {

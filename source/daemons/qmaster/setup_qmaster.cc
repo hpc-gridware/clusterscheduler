@@ -917,11 +917,12 @@ setup_qmaster() {
    DPRINTF("manager_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER), SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   if (!manop_is_manager("root", master_manager_list)) {
-      ep = lAddElemStr(ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER), UM_name, "root", UM_Type);
+   const char *root_user = "root";
+   lList **master_manager_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
+   if (lGetElemStr(*master_manager_list, UM_name, root_user) == nullptr) {
+      ep = lAddElemStr(master_manager_list, UM_name, root_user, UM_Type);
 
-      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_MANAGER, true)) {
+      if (!spool_write_object(&answer_list, spooling_context, ep, root_user, SGE_TYPE_MANAGER, true)) {
          answer_list_output(&answer_list);
          CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
          DRETURN(-1);
@@ -936,14 +937,13 @@ setup_qmaster() {
    answer_list_output(&answer_list);
 
    DPRINTF("operator_list----------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR),
-                   SGE_TYPE_OPERATOR);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR), SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   if (!manop_is_operator("root", master_manager_list, master_operator_list)) {
-      ep = lAddElemStr(ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR), UO_name, "root", UO_Type);
+   lList **master_operator_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
+   if (lGetElemStr(*master_operator_list, UO_name, root_user) == nullptr) {
+      ep = lAddElemStr(master_operator_list, UO_name, root_user, UO_Type);
 
-      if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_OPERATOR, true)) {
+      if (!spool_write_object(&answer_list, spooling_context, ep, root_user, SGE_TYPE_OPERATOR, true)) {
          answer_list_output(&answer_list);
          CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEOPERATORLIST);
          DRETURN(-1);
@@ -1376,7 +1376,7 @@ static void init_categories() {
          lSetBool(prj, PR_consider_with_categories, true);
 
    for_each_ep(ep, u_list)
-      if ((acl = userset_list_locate(master_userset_list, lGetString(ep, US_name))))
+      if ((acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name))))
          lSetBool(acl, US_consider_with_categories, true);
 
    lFreeList(&p_list);

@@ -84,6 +84,7 @@ sge_err_get_object(sge_err_object_t **object) {
    *object = (sge_err_object_t *)pthread_getspecific(sge_err_key);
    if (*object == nullptr) {
       sge_err_object_t *new_object = (sge_err_object_t *) sge_malloc(sizeof(sge_err_object_t));
+      SGE_ASSERT(new_object != nullptr);
       int pthread_ret = pthread_setspecific(sge_err_key, (void *) new_object);
 
       if (pthread_ret == 0) {

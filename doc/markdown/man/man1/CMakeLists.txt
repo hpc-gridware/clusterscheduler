@@ -22,14 +22,14 @@
 
 # build special man pages including submit.md
 set(SUBMIT_PAGES qalter qlogin qresub qrsh qsh qsub submit)
-build_markdown_man_from_template("1" "submit.include" SUBMIT_PAGES)
+build_markdown_man_from_template("1" "submit.include" SUBMIT_PAGES "0")
 
 set(HOSTNAME_PAGES gethostbyaddr gethostbyname gethostname getservbyname sge_hostnameutils)
-build_markdown_man_from_template("1" "gethost.include" HOSTNAME_PAGES)
+build_markdown_man_from_template("1" "gethost.include" HOSTNAME_PAGES "0")
 
 # build all other man pages from section 1
 set(PAGES qacct qconf qdel qhold qhost qmake qmod qping qquota qrdel qrls qrstat qrsub qselect qstat sge_ckpt sge_intro sge_jsv sge_types)
-build_markdown_man("1" PAGES)
+build_markdown_man("1" PAGES "0")
 
 # target for building all troff man pages from section 1
 # @todo is there a better way of listing them? Didn't find an easily comprehensible way to use foreach().

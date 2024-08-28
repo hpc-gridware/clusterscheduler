@@ -44,6 +44,9 @@
 
 #include "drmaa.h"
 
+#include <uti/sge_log.h>
+#include <uti/sge_stdlib.h>
+
 /* program defaults */
 int njobs    = 100;
 int nthreads = 1;
@@ -238,7 +241,8 @@ int main(int argc, char *argv[])
              return 1;
       } else {
          pthread_t *ids = nullptr;
-         ids = (pthread_t *)malloc(sizeof (pthread_t) * nthreads);
+         ids = (pthread_t *)sge_malloc(sizeof (pthread_t) * nthreads);
+         SGE_ASSERT(ids != nullptr);
 
          for (i = 0; i < nthreads; i++) {
             if (pthread_create(&ids[i], nullptr, submit_jobs, nullptr)) {

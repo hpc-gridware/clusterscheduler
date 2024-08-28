@@ -147,9 +147,9 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
 *******************************************************************************/
 static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
 {
-   return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr) &&
-           rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, a->user, a->acl_list, nullptr, a->group) &&
-           rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, nullptr, nullptr, nullptr, nullptr))?true:false;
+   return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr, nullptr) &&
+           rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, a->user, a->acl_list, nullptr, a->group, a->grp_list) &&
+           rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, nullptr, nullptr, nullptr, nullptr, nullptr))?true:false;
 }
 
 
@@ -255,7 +255,7 @@ static bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_as
 {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr)) {
+          rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
          return true;
       }
    }
@@ -293,7 +293,7 @@ static bool host_shadowed_by(const char *host, const lListElem *rule, sge_assign
 {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr)) {
+          rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr, nullptr)) {
          return true;
       }
    }
@@ -387,7 +387,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(lGetObject(prev, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr)) {
+         if (rqs_filter_match(lGetObject(prev, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
             exclude = false;
             break;
          }
@@ -448,7 +448,7 @@ static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(lGetObject(prev, RQR_filter_hosts), FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr)) {
+         if (rqs_filter_match(lGetObject(prev, RQR_filter_hosts), FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr)) {
             exclude = false;
             break;
          }
@@ -495,7 +495,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
-      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr) && !cqueue_shadowed_by(cqname, rule, a))
+      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr) && !cqueue_shadowed_by(cqname, rule, a))
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
    }
 
@@ -531,7 +531,7 @@ static void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
       hname = lGetHost(eh, EH_name);
       if (lGetElemStr(a->skip_host_list, CTI_name, hname))
          continue;
-      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr) && !host_shadowed_by(hname, rule, a))
+      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr) && !host_shadowed_by(hname, rule, a))
          lAddElemStr(&(a->skip_host_list), CTI_name, hname, CTI_Type);
    }
 
@@ -826,7 +826,7 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 *     MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe 
 *
 *******************************************************************************/
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *acl_list)
+bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list)
 {
    bool ret = false;
    const lListElem *ep;
@@ -838,7 +838,7 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
       for_each_ep(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
-             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, nullptr, group)) {
+             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, nullptr, group, grp_list)) {
             ret = true;
             break;
          }
@@ -885,6 +885,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
+   const lList *grp_list = a->grp_list;
    const char* project = a->project;
    const char* pe = a->pe_name;
 
@@ -898,7 +899,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
          continue;
       }
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
          const lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
@@ -925,7 +926,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
             continue;
          }
          sge_dstring_clear(rule_name);
-         rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
          if (rule != nullptr) {
             lListElem *rql;
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
@@ -948,6 +949,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
    const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
+   const lList *grp_list = a->grp_list;
    const char* project = a->project;
    const char* pe = a->pe_name;
 
@@ -960,7 +962,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
          continue;
       }
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
          lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
@@ -1112,6 +1114,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
    if (lGetNumberOfElem(a->rqs_list) != 0) {
       const char* user = a->user;
       const char* group = a->group;
+      const lList *grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
       lListElem *rql;
@@ -1132,7 +1135,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
             continue;
          }
          sge_dstring_clear(&rule_name);
-         rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, &rule_name);
+         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, &rule_name);
          if (rule != nullptr) {
             lListElem *limit = nullptr;
             const char *limit_s;
@@ -1447,6 +1450,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       u_long64 tt_rqs = a->start;
       const char *user = a->user;
       const char *group = a->group;
+      const lList *grp_list = a->grp_list;
       const char *project = a->project;
       const lListElem *rule;
 
@@ -1455,7 +1459,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
 
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, project, nullptr, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
          const char *limit;
          lListElem *rql;

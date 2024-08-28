@@ -31,33 +31,33 @@
 
 set(ATTRIBUTES_PAGES drmaa_attributes drmaa_get_attribute_names drmaa_get_next_attr_name drmaa_get_num_attr_names
       drmaa_get_vector_attribute_names drmaa_release_attr_names)
-build_markdown_man_from_template("3" "drmaa_attributes.include" ATTRIBUTES_PAGES)
+build_markdown_man_from_template("3" "drmaa_attributes.include" ATTRIBUTES_PAGES "0")
 
 set(JOBCONTROL_PAGES drmaa_control drmaa_jobcontrol drmaa_job_ps)
-build_markdown_man_from_template("3" "drmaa_jobcontrol.include" JOBCONTROL_PAGES)
+build_markdown_man_from_template("3" "drmaa_jobcontrol.include" JOBCONTROL_PAGES "0")
 
 set(JOBTEMPLATE_PAGES drmaa_allocate_job_template drmaa_delete_job_template drmaa_get_attribute
       drmaa_get_next_attr_value drmaa_get_num_attr_values drmaa_get_vector_attribute drmaa_jobtemplate
       drmaa_release_attr_values drmaa_set_attribute drmaa_set_vector_attribute)
-build_markdown_man_from_template("3" "drmaa_jobtemplate.include" JOBTEMPLATE_PAGES)
+build_markdown_man_from_template("3" "drmaa_jobtemplate.include" JOBTEMPLATE_PAGES "0")
 
 set(MISC_PAGES drmaa_get_contact drmaa_get_DRMAA_implementation drmaa_get_DRM_system drmaa_misc
       drmaa_strerror drmaa_version)
-build_markdown_man_from_template("3" "drmaa_misc.include" MISC_PAGES)
+build_markdown_man_from_template("3" "drmaa_misc.include" MISC_PAGES "0")
 
 set(SESSION_PAGES drmaa_exit drmaa_init drmaa_session)
-build_markdown_man_from_template("3" "drmaa_session.include" SESSION_PAGES)
+build_markdown_man_from_template("3" "drmaa_session.include" SESSION_PAGES "0")
 
 set(SUBMIT_PAGES drmaa_get_next_job_id drmaa_get_num_job_ids drmaa_release_job_ids drmaa_run_bulk_jobs
       drmaa_run_job drmaa_submit)
-build_markdown_man_from_template("3" "drmaa_submit.include" SUBMIT_PAGES)
+build_markdown_man_from_template("3" "drmaa_submit.include" SUBMIT_PAGES "0")
 
 set(WAIT_PAGES drmaa_synchronize drmaa_wait drmaa_wcoredump drmaa_wexitstatus drmaa_wifaborted
       drmaa_wifexited drmaa_wifsignaled drmaa_wtermsig)
-build_markdown_man_from_template("3" "drmaa_wait.include" WAIT_PAGES)
+build_markdown_man_from_template("3" "drmaa_wait.include" WAIT_PAGES "0")
 
 set(PAGES jsv_script_interface)
-build_markdown_man("3" PAGES)
+build_markdown_man("3" PAGES "0")
 
 # target for building all troff man pages from section 3
 # @todo is there a better way of listing them? Didn't find an easily comprehensible way to use foreach().

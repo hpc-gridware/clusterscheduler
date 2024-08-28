@@ -37,6 +37,8 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_monitor.h"
 
+#include "gdi/sge_gdi_packet.h"
+
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "sgeobj/cull/sge_event_EVS_L.h"
 #include "sgeobj/cull/sge_event_ET_L.h"
@@ -94,11 +96,10 @@ typedef int (*evm_mod_func_t)(
  *  EventMaster/sge_add_event_client_local
  **/
 typedef int (*evm_add_func_t)(
+   const sge_gdi_packet_class_t *packet,
    lListElem *clio,                        /* the new event client */
    lList **alpp,                           /* the answer list */
    lList **eclpp,                          /* list with added event client elem */
-   char *ruser,                            /* request user or <admin_user> for internal ec */
-   char *rhost,                            /* request host or <master_host> for internal ec */
    event_client_update_func_t update_func, /* the event client update_func */
    void *update_func_arg                   /* additional argument passed to update_func */
 );

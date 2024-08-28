@@ -110,7 +110,7 @@ proper queues to match this request if it would be requested by a `qsub`. A more
 This options impacts the queues selection for reservation. With the `-now y` option, only queues with the 
 qtype "INTERACTIVE" assigned will be considered for reservation. `-now n` is the default for `qrsub`.
 
-## -N name  
+## -N *name*  
 The name of the AR. The name, if requested, must conform to *name* as defined in xxqs_name_sxx_types(1). 
 Invalid names will be denied at submit time.
 

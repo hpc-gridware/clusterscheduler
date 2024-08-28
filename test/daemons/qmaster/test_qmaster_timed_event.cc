@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
 
    sge_prof_set_enabled(false);
 
+   te_init();
+
    printf("%s: delete_nonexistent_event ----------------------------------\n", __func__);
 
    test_delete_nonexistent_event();

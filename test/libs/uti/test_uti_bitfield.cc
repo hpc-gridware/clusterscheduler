@@ -46,6 +46,8 @@
 #include "uti/sge_bitfield.h"
 #include "uti/sge_stdlib.h"
 
+#include <sge_log.h>
+
 const unsigned int test_bf_max_size = 100;
 unsigned int test_bf_loops = 1000;
 
@@ -266,7 +268,9 @@ main(int argc, char *argv[]) {
 
    /* create array to hold bitfields, to be used per test loop */
    b1 = (bitfield *) sge_malloc(test_bf_loops * sizeof(bitfield));
+   SGE_ASSERT(b1 != nullptr);
    b2 = (bitfield *) sge_malloc(test_bf_loops * sizeof(bitfield));
+   SGE_ASSERT(b2 != nullptr);
    printf("performing %d loops per action\n", test_bf_loops);
 
    /* test nullpointer actions */

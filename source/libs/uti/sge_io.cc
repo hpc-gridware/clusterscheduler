@@ -350,6 +350,7 @@ char *sge_bin2string(FILE *fp, int size) {
       size = chunksize;
 
    dstbuf = sge_malloc(size + 1);
+   SGE_ASSERT(dstbuf != nullptr);
    dstbuflen = size;
    lastpos = 0;
 

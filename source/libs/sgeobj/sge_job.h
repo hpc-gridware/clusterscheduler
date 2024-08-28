@@ -41,6 +41,8 @@
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 
+#include <gdi/sge_gdi_packet_type.h>
+
 /* Job states moved in from def.h */
 #define JIDLE                                0x00000000
 /* #define JENABLED                             0x00000008 */
@@ -393,7 +395,7 @@ int job_check_qsh_display(const lListElem *job,
                           lList **answer_list, 
                           bool output_warning);
 
-int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
+int job_check_owner(const sge_gdi_packet_class_t *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 
@@ -421,7 +423,7 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_ele
 bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem, 
                                     int nm, const char *option);   
 
-bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, 
+bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
                              const lList *acl_list, const char *option);
 
 bool job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify);
@@ -443,7 +445,7 @@ job_set_no_shell(lListElem *job, bool is_no_shell);
 
 bool
 job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
-                        const char *user, const char *group);
+                        const char *user, const char *grouprp, int amount, ocs_grp_elem_t *grp_array);
 
 bool  
 job_get_ckpt_attr(int op, dstring *string);

@@ -60,7 +60,9 @@
 #include "uti/sge.h"
 
 static bool 
-rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope);
+rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value,
+                          const lList *master_userset_list, const lList *master_hgroup_list,
+                          const char *group, bool is_xscope, const lList *grp_list);
 
 /****** sge_resource_quota/rqs_parse_filter_from_string() *************************
 *  NAME
@@ -805,6 +807,7 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
    const char* hostname = lGetHost(granted, JG_qhostname);
    const char* username = lGetString(job, JB_owner);
    const char* groupname = lGetString(job, JB_group);
+   const lList *grp_list = lGetList(job, JB_grp_list);
    char *qname = nullptr;
    const char *queue_instance = lGetString(granted, JG_qname);
    const char* project = lGetString(job, JB_project);
@@ -818,7 +821,7 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
    /* remove the host name part of the queue instance name */
    qname = cqueue_get_name_from_qinstance(queue_instance);
 
-   rule = rqs_get_matching_rule(rqs, username, groupname, project, pename, hostname, qname, acl_list, hgrp_list, nullptr);
+   rule = rqs_get_matching_rule(rqs, username, groupname, grp_list, project, pename, hostname, qname, acl_list, hgrp_list, nullptr);
 
    if (rule != nullptr) {
       /* debit usage */
@@ -869,9 +872,9 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
 *
 *******************************************************************************/
 lListElem *
-rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const char *project,
-                                  const char* pe, const char *host, const char *queue,
-                                  const lList *userset_list, const lList* hgroup_list, dstring *rule_name)
+rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const lList *grp_list,
+                      const char *project, const char* pe, const char *host, const char *queue,
+                      const lList *userset_list, const lList* hgroup_list, dstring *rule_name)
 {
    lListElem *rule = nullptr;
    const lList *rule_list = lGetList(rqs, RQS_rule);
@@ -882,7 +885,7 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
    for_each_rw (rule, rule_list) {
       i++;
 
-      if (!rqs_is_matching_rule(rule, user, group, project, pe, host, queue, userset_list, hgroup_list)) {
+      if (!rqs_is_matching_rule(rule, user, group, grp_list, project, pe, host, queue, userset_list, hgroup_list)) {
          continue;
       }
       if (lGetString(rule, RQR_name)) {
@@ -1019,7 +1022,9 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
 *     sge_resource_quota/rqs_match_user_host_scope()
 *******************************************************************************/
 static bool 
-rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope) {
+rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value,
+                          const lList *master_userset_list, const lList *master_hgroup_list,
+                          const char *group, bool is_xscope, const lList *grp_list) {
 
    bool found = false;
    const lListElem *ep;
@@ -1056,8 +1061,8 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                   /* the userset name does not contain the preattached \@ sign */
                   group_name++; 
                   if (!sge_is_pattern(group_name)) {
-                     if ((group_ep = userset_list_locate(master_userset_list, group_name)) != nullptr) {
-                        if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
+                     if ((group_ep = lGetElemStrRW(master_userset_list, US_name, group_name)) != nullptr) {
+                        if (sge_contained_in_access_list(query, group, grp_list, group_ep) == 1) {
                            found = true;
                            break;
                         }
@@ -1065,7 +1070,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                   } else {
                      for_each_rw(group_ep, master_userset_list) {
                         if (fnmatch(group_name, lGetString(group_ep, US_name), 0) == 0) {
-                           if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
+                           if (sge_contained_in_access_list(query, group, grp_list, group_ep) == 1) {
                               found = true;
                               break;
                            }
@@ -1173,7 +1178,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                group_name++;
                for_each_ep(group_ep, master_userset_list) {
                   if (fnmatch(group_name, lGetString(group_ep, US_name), 0) == 0) {
-                     if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
+                     if (sge_contained_in_access_list(query, group, grp_list, group_ep) == 1) {
                         found = true;
                         break;
                      }
@@ -1243,27 +1248,29 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 *
 *******************************************************************************/
 bool
-rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, const lList *master_userset_list, const lList *master_hgroup_list)
+rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
+                     const char *project, const char *pe, const char *host, const char *queue,
+                     const lList *master_userset_list, const lList *master_hgroup_list)
 {
       DENTER(TOP_LAYER);
 
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group, grp_list)) {
          DPRINTF("user doesn't match\n");
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr, nullptr)) {
          DPRINTF("project doesn't match\n");
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr, nullptr)) {
          DPRINTF("pe doesn't match\n");
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr, nullptr)) {
          DPRINTF("queue doesn't match\n");
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr, nullptr)) {
          DPRINTF("host doesn't match\n");
          DRETURN(false);
       }
@@ -1299,7 +1306,7 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
 *     MT-NOTE: rqs_match_host_scope() is MT safe 
 *******************************************************************************/
 static bool 
-rqs_match_host_scope(const lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope) 
+rqs_match_host_scope(const lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope, const lList *grp_list)
 {
    const lListElem *ep;
 
@@ -1310,7 +1317,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
    }
    
    if (sge_is_pattern(name) || is_hgroup_name(name)) {
-      DRETURN(rqs_match_user_host_scope(scope, FILTER_HOSTS, name, nullptr, master_hgroup_list, nullptr, is_xscope));
+      DRETURN(rqs_match_user_host_scope(scope, FILTER_HOSTS, name, nullptr, master_hgroup_list, nullptr, is_xscope, grp_list));
    }
 
    /* at this stage we know 'name' is a simple hostname */
@@ -1353,7 +1360,8 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
 *
 *******************************************************************************/
 bool 
-rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group) {
+rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
+                 const lList *master_hgroup_list, const char *group, const lList *grp_list) {
    bool ret = true;
    const lListElem* ep;
 
@@ -1367,9 +1375,9 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
          case FILTER_HOSTS:
             DPRINTF("matching hosts with %s\n", value);
             /* inverse logic because of xscope */
-            ret = rqs_match_host_scope(xscope, value, master_hgroup_list, true) ? false: true;
+            ret = rqs_match_host_scope(xscope, value, master_hgroup_list, true, grp_list) ? false: true;
             if (ret && scope != nullptr) {
-               if (!rqs_match_host_scope(scope, value, master_hgroup_list, false)) {
+               if (!rqs_match_host_scope(scope, value, master_hgroup_list, false, grp_list)) {
                   ret = false;
                }
             }
@@ -1379,9 +1387,9 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
          {  
             DPRINTF("matching users or hosts with %s\n", value);
             /* inverse logic because of xscope */
-            ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, nullptr, group, true) ? false: true;
+            ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, nullptr, group, true, grp_list) ? false: true;
             if (ret && scope != nullptr) {
-               if (!rqs_match_user_host_scope(scope, filter_type, value, master_userset_list, nullptr, group, false)) {
+               if (!rqs_match_user_host_scope(scope, filter_type, value, master_userset_list, nullptr, group, false, grp_list)) {
                   ret = false;
                }
             }
