@@ -1056,7 +1056,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
    lAppendElem(tmp_rue_list, tmp_rue_elem);
 
-   result = parallel_rc_slots_by_time(a, requests, slots, 
+   result = parallel_rc_slots_by_time(a, slots,
                                       slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
                                       false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG,
                                       false, SGE_RQS_NAME, true);

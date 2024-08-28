@@ -55,8 +55,9 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
 
 lListElem *
 get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
-              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, u_long32 layer,
-              double lc_factor, dstring *reason, bool zero_utilization, u_long64 start_time, u_long64 duration);
+              const lList *centry_list, const lList *load_adjustments, const lList *additional_usage,
+              const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason, bool zero_utilization,
+              u_long64 start_time, u_long64 duration);
 
 int string_base_cmp(u_long32 type, const char *s1, const char *s2);
 int string_base_cmp_old(u_long32 type, const char *s1, const char *s2);

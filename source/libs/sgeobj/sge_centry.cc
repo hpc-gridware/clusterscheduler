@@ -789,13 +789,14 @@ centry_list_are_queues_requestable(const lList *this_list) {
 
 const char *
 centry_list_append_to_dstring(const lList *this_list, dstring *string) {
+   DENTER(CENTRY_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(CENTRY_LAYER);
    if (string != nullptr) {
-      const lListElem *elem = nullptr;
       bool printed = false;
 
+      const lListElem *elem;
       for_each_ep(elem, this_list) {
          if (printed) {
             sge_dstring_append(string, ",");
@@ -811,6 +812,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
       }
       ret = sge_dstring_get_string(string);
    }
+
    DRETURN(ret);
 }
 

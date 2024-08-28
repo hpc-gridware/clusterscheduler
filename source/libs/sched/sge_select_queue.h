@@ -206,10 +206,10 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
 int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
 
 dispatch_t
-parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests, 
-                 int *slots, int *slots_qend, const lList *total_list, const lList *rue_list, const lList *load_attr, 
-                 bool force_slots, lListElem *queue, u_long32 layer, double lc_factor, u_long32 tag,
-                 bool allow_non_requestable, const char *object_name, bool isRQ);
+parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const lList *total_list,
+                          const lList *rue_list, const lList *load_attr, bool force_slots, lListElem *queue,
+                          u_long32 layer, double lc_factor, u_long32 tag, bool allow_non_requestable,
+                          const char *object_name, bool isRQ);
 
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
