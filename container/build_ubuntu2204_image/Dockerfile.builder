@@ -33,8 +33,9 @@ RUN git clone https://github.com/hpc-gridware/clusterscheduler /clusterscheduler
 # Build and install Open Cluster Scheduler in /opt/cs
 WORKDIR /build
 
-# Need Java for JNI
-RUN cmake -DWITH_JNI=OFF -S /clusterscheduler/clusterscheduler
+# Add java home for cmake
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+RUN cmake -S /clusterscheduler/clusterscheduler
 RUN make 3rdparty
 RUN make install
 
@@ -45,6 +46,8 @@ ARG BUILD_TIME=unknown
 
 RUN apt-get update && apt-get install -y \
     binutils \
+    default-jdk \
+    maven \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Open Cluster Scheduler from the builder image.
