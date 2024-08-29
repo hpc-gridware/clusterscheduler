@@ -2665,8 +2665,25 @@ job_get_hard_request(const lListElem *job, const char *name, bool is_master_task
    if (ret == nullptr) {
       request_list = job_get_hard_resource_list(job, is_master_task ? JRS_SCOPE_MASTER : JRS_SCOPE_SLAVE);
       if (request_list != nullptr) {
+         // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
          ret = lGetElemStr(request_list, CE_name, name);
       }
+   }
+
+   DRETURN(ret);
+}
+
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, u_long32 scope) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *ret = nullptr;
+
+   // a request can be either global
+   const lList *request_list = job_get_hard_resource_list(job, scope);
+   if (request_list != nullptr) {
+      // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
+      ret = lGetElemStr(request_list, CE_name, name);
    }
 
    DRETURN(ret);
@@ -2680,11 +2697,42 @@ job_get_contribution(const lListElem *job, lList **answer_list, const char *name
    const lListElem *centry = nullptr;
    const char *value_string = nullptr;
    char error_str[256];
-   
+
    DENTER(TOP_LAYER);
 
    // we only consider *hard* requests (consumables), there are no soft consumables
    centry = job_get_hard_request(job, name, is_master_task);
+   if (centry != nullptr) {
+      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
+      value_string = lGetString(centry, CE_stringval);
+   } else {
+      // if the job did not request the consumable, there might still be a default request
+      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
+      value_string = lGetString(complex_definition, CE_defaultval);
+   }
+   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
+                         error_str, sizeof(error_str)-1))) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
+      ret = false;
+   }
+
+   DRETURN(ret);
+}
+
+bool
+job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
+                              const lListElem *complex_definition, u_long32 scope)
+{
+   bool ret = true;
+   const lListElem *centry = nullptr;
+   const char *value_string = nullptr;
+   char error_str[256];
+   
+   DENTER(TOP_LAYER);
+
+   // we only consider *hard* requests (consumables), there are no soft consumables
+   centry = job_get_hard_request(job, name, scope);
    if (centry != nullptr) {
       // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
       value_string = lGetString(centry, CE_stringval);

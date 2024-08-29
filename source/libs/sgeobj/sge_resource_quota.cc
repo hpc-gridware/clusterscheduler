@@ -923,59 +923,112 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
 *  NOTES
 *     MT-NOTE: rqs_debit_rule_usage() is MT safe 
 *******************************************************************************/
+// @todo: pass rue_name as const char *
 int
 rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list,
                      const char *obj_name, bool is_master_task, bool do_per_host_booking)
 {
-   const lList *limit_list;
-   lListElem *limit;
-   const char *centry_name;
+   DENTER(TOP_LAYER);
    int mods = 0;
 
-   DENTER(TOP_LAYER);
+   lListElem *limit;
+   for_each_rw(limit, lGetListRW(rule, RQR_limit)) {
 
-   limit_list = lGetList(rule, RQR_limit);
+      const char *centry_name = lGetString(limit, RQRL_name);
 
-   for_each_rw(limit, limit_list) {
-      lListElem *raw_centry;
-      lListElem *rue_elem;
-      double dval;
-      int debit_slots;
-
-      centry_name = lGetString(limit, RQRL_name);
-      
-      if (!(raw_centry = centry_list_locate(centry_list, centry_name))) {
+      lListElem *raw_centry = centry_list_locate(centry_list, centry_name);
+      if (raw_centry == nullptr) {
          /* ignoring not defined centry */
          continue;
       }
 
       u_long32 consumable = lGetUlong(raw_centry, CE_consumable);
-      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) {
          continue;
       }
 
-      rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
+      lListElem *rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
       if (rue_elem == nullptr) {
          rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
       }
 
-      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
 
-      if (job) {
-         bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry, is_master_task);
-         if (tmp_ret && dval != 0.0) {
+      if (job != nullptr) {
+         bool did_booking = false;
+         int debit_slots = consumable_get_debit_slots(consumable, slots);
+
+         // has contribution from global requests? Then we can do the booking for master and slave task in one step.
+         double dval = 0.0;
+         bool tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_GLOBAL);
+         if (tmp_ret) {
             DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);
-            lAddDouble(rue_elem, RUE_utilized_now, debit_slots * dval);
-            mods++;
-         } else if (lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
+            if (dval != 0.0) {
+               lAddDouble(rue_elem, RUE_utilized_now, debit_slots * dval);
+               mods++;
+            }
+            did_booking = true;
+         } else {
+            // no global contribution, need to check master and slave
+            int slave_debit_slots = debit_slots;
+            if (is_master_task) {
+               // if the master task is part of this booking, check if we have a master request
+               dval = 0.0;
+               tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_MASTER);
+               if (tmp_ret) {
+                  DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
+                          obj_name, sge_dstring_get_string(rue_name), slot_signum(debit_slots));
+                  if (dval != 0.0) {
+                     // book it for one slot (the master task)
+                     lAddDouble(rue_elem, RUE_utilized_now, slot_signum(debit_slots) * dval);
+                     mods++;
+                  }
+                  did_booking = true;
+
+                  // if we did the master task booking
+                  // reduce the slot count by one
+                  // @todo: CS-400 here we have to respect job_is_first_task:
+                  //        if it is false, do *not* reduce slot count,
+                  //        unless slots == +-1, then we are only booking the master task here
+                  // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
+                  if (slave_debit_slots > 0) {
+                     slave_debit_slots--;
+                  } else {
+                     slave_debit_slots++;
+                  }
+               }
+            }
+            // now do booking for the (remaining) slave tasks, if any
+            if (slave_debit_slots != 0) {
+               dval = 0.0;
+               tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE);
+               if (tmp_ret) {
+                  DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
+                          obj_name, sge_dstring_get_string(rue_name), slave_debit_slots);
+                  if (dval != 0.0) {
+                     // book it for the remaining slave tasks
+                     lAddDouble(rue_elem, RUE_utilized_now, slave_debit_slots * dval);
+                     mods++;
+                  }
+                  did_booking = true;
+               }
+            }
+         }
+
+         // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
+         if (!did_booking && lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
             dval = 1.0;
             DPRINTF("debiting (non-exclusive) %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);
             lAddDouble(rue_elem, RUE_utilized_now_nonexclusive, debit_slots * dval);
             mods++;
          }
+
+         // If the booking element's value is back to 0, it is no longer needed. Remove it.
+         // @todo: is non-existance of the booking element important for some RQS algorithm? If not, keep it
+         //        as we do in the other places where we do booking (rc_debit_consumable, rc_|rqs_add_job_utilization)
+         //        This can spare us a significant number of malloc and free calls.
          if (lGetDouble(rue_elem, RUE_utilized_now) == 0 && lGetDouble(rue_elem, RUE_utilized_now_nonexclusive) == 0
               && !lGetList(rue_elem, RUE_utilized) && !lGetList(rue_elem, RUE_utilized_nonexclusive)) {
             rue_elem = lDechainElem(lGetListRW(limit, RQRL_usage), rue_elem);
