@@ -359,7 +359,7 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
       lListElem *job = nullptr;
 
       /* if the job was a 'short-runner' omit the warning */
-      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
+      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
          /* check if the job was a short-runner */  
          u_long64 time_since_started = sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time);
          if (time_since_started <= sge_gmt32_to_gmt64(2)) {
@@ -726,7 +726,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
          lListElem *master_queue = nullptr;
 
          /* search job and ja_task */
-         if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
+         if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
             master_queue = responsible_queue(job, ja_task, nullptr);
          }
 
@@ -847,13 +847,15 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
       keep_active_t keep_active = mconf_get_keep_active();
       bool job_failed = lGetUlong(jr, JR_failed) != 0 ? true : false;
 
-      if (keep_active == KEEP_ACTIVE_TRUE || getenv("SGE_KEEP_ACTIVE") || (keep_active == KEEP_ACTIVE_ERROR && job_failed)) {
+      if (keep_active == KEEP_ACTIVE_TRUE ||
+          sge_getenv("SGE_KEEP_ACTIVE") ||
+          (keep_active == KEEP_ACTIVE_ERROR && job_failed)) {
          do_rm_active_dir = false;
       }
    }
 
    /* try to find this job in our job list */
-   if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep)) {
+   if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep, false)) {
       lListElem *master_q;
       int used_slots;
    
@@ -1167,143 +1169,178 @@ void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname)
    DRETURN_VOID;
 }
 
-/************************************************************************
- Look for old jobs hanging around on disk and report them to the qmaster.
- This is used at execd startup time.
- We have to call it cyclic cause there may be jobs alive while execd went
- down and up. If such a job exits we get no SIGCLD from shepherd.
- If startup is true this is the first call of the execd. We produce more
- output for the administrator the first time.
- ************************************************************************/
-int clean_up_old_jobs(int startup)
-{
-   SGE_STRUCT_DIRENT *dent = nullptr;
-   DIR *cwd = nullptr;
-   char dir[SGE_PATH_MAX];
-   pid_t pids[10000];   /* a bunch of processes */
-   int npids;           /* number of running processes */
-   char *jobdir;
-   u_long32 jobid, jataskid;
-   static int lost_children = 1;
-   lListElem *jep, *petep, *jatep = nullptr;
-
+/**
+ * @brief Triggers the cleanup of the active jobs directory and triggers sync of job states with qmaster.
+ *
+ * @param startup true if execd is in startup phase
+ * @param number_of_shpeherd number of shepherds that have been found
+ * @param shepherd_pids array of pids of the shepherds
+ * @return true if the cleanup was successful
+ */
+static bool
+cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pids) {
    DENTER(TOP_LAYER);
 
-   if (startup) {
-      INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS);
+   // check if keep_active is set.
+   bool keep_active_is_set = false;
+   keep_active_t keep_active = mconf_get_keep_active();
+   if (keep_active == KEEP_ACTIVE_TRUE || sge_getenv("SGE_KEEP_ACTIVE") || keep_active == KEEP_ACTIVE_ERROR) {
+      keep_active_is_set = true;
    }
 
-   /* 
-      If we get an empty master job list we know that
-      it is no longer necessary to pass this code
-     
-      Getting job information by parsing ps-output 
-      is very expensive. The aim is to get informed
-      about jobs that were started by the execd 
-      running before we were started. Jobs that
-      were started by us are our childs and we
-      get a cheap SIGCLD informing us about the
-      jobs exit. 
-       
-      So if we arrive here and an empty master job list
-      we know all jobs that were our "lost children" 
-      exited and there is no need for ps-commands.
-
-   */
-   if (mconf_get_simulate_jobs() || lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0 || !lost_children) {
-      if (lost_children) {
-         if (startup) {
-            INFO(SFNMAX, MSG_SHEPHERD_NOOLDJOBSATSTARTUP);
-         } else {
-            INFO(SFNMAX, MSG_SHEPHERD_NOMOREOLDJOBSAFTERSTARTUP);
-         }
-         /* 
-          * Now setting lost_children to 0 which disables further pid checking
-          * for the whole runtime of the execd
-          */
-         lost_children = 0;
-      }
-      /* all children exited */
-      DRETURN(0);
-   }
-
-   /* Get pids of running jobs. So we can look for running shepherds. */
-   npids = sge_get_pids(pids, 10000, SGE_SHEPHERD, PSCMD);
-   if (npids == -1) {
-      ERROR(SFNMAX, MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND);
-      DRETURN(-1);
-   }
-
-   DPRINTF("found %d running processes\n", npids);
-
-   /* We read the job information from active dir. There is one subdir for each
-      started job. Shepherd writes exit_status and usage to this directory.
-      Cause maybe shepherd was killed while execd was down we have to look into
-      the process table too. */
-
-   if (!(cwd=opendir(ACTIVE_DIR))) {
+   // process all active job directories to sync state with qmaster or remove active job directories
+   DIR *cwd = opendir(ACTIVE_DIR);
+   if (cwd == nullptr) {
       ERROR(MSG_FILE_CANTOPENDIRECTORYX_SS, ACTIVE_DIR, strerror(errno));
-      DRETURN(-1);
+      DRETURN(false);
    }
+   SGE_STRUCT_DIRENT *dent;
+   while ((dent = SGE_READDIR(cwd)) != nullptr) {
+      char string[256];
+      const char *job_directory = dent->d_name;
+      strcpy(string, job_directory);
 
-   while ((dent=SGE_READDIR(cwd))) {
-      char string[256], *token, *endp;
-      u_long32 tmp_id;
-
-      jobdir = dent->d_name;    /* jobdir is the jobid.jataskid converted to string */
-      strcpy(string, jobdir);
-
-      if (!strcmp(jobdir, ".") || !strcmp(jobdir, "..") )
+      // skip directories "." and ".."
+      if (!strcmp(job_directory, ".") || !strcmp(job_directory, "..")) {
          continue;
+      }
 
-      jobid = jataskid = 0;
-      if ((token = strtok(string, " ."))) {
-         tmp_id = strtol(token, &endp, 10);
-         if (*endp == '\0') {
-            jobid = tmp_id;
-            if ((token = strtok(nullptr, " \n\t"))) {
-               tmp_id = strtol(token, &endp, 10);
-               if (*endp == '\0') {
-                  jataskid = tmp_id;
+      // parse jid and tid from directory name (<jid>.<tid>)
+      u_long32 jid = 0;
+      u_long32 tid = 0;
+      if (const char *token = strtok(string, " ."); token != nullptr) {
+         char *end;
+         u_long32 tmp_id = strtol(token, &end, 10);
+         if (*end == '\0') {
+            jid = tmp_id;
+            token = strtok(nullptr, " \n\t");
+            if (token != nullptr) {
+               tmp_id = strtol(token, &end, 10);
+               if (*end == '\0') {
+                  tid = tmp_id;
                }
             }
          }
       }
 
-      if (!jobid || !jataskid) {
-         /* someone left his garbage in our directory */
-         WARNING(MSG_SHEPHERD_XISNOTAJOBDIRECTORY_S, jobdir);
+      // skip directories that are not job directories (should not happen)
+      // but we have to handle this case if someone has writen garbage to the active jobs directory
+      if (!jid || !tid) {
+         WARNING(MSG_SHEPHERD_XISNOTAJOBDIRECTORY_S, job_directory);
          continue;
       }
 
-      /* seek job to this jobdir */
-      if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep)) {
-         /* missing job in job dir but not in active job dir */
-         if (startup) {
-            ERROR(MSG_SHEPHERD_FOUNDACTIVEJOBDIRXWHILEMISSINGJOBDIRREMOVING_S, jobdir);
-         }
-         /* remove active jobs directory */
-         DPRINTF("+++++++++++++++++++ remove active jobs directory ++++++++++++++++++\n");
-         {
+      // remove active job directory for jobs that are not in the job list
+      // or sync state with qmaster for jobs depending on shepherd and job state
+      lListElem *jep, *ja_task = nullptr;
+      bool ignore_missing_job_task = true; // missing job and task are expected. no need for error logging
+      bool found_job_and_task = execd_get_job_ja_task(jid, tid, &jep, &ja_task, ignore_missing_job_task);
+      if (!found_job_and_task) {
+
+         // we have an active job directory for a job that is not in the job list
+         // if keep_active is not set we remove the active job directory
+         if (!keep_active_is_set) {
+            if (startup) {
+               ERROR(MSG_SHEPHERD_FOUNDACTIVEJOBDIRXWHILEMISSINGJOBDIRREMOVING_S, job_directory);
+            }
+
             char path[SGE_PATH_MAX];
-            snprintf(path, sizeof(path), ACTIVE_DIR"/%s", jobdir);
+            snprintf(path, sizeof(path), ACTIVE_DIR"/%s", job_directory);
             sge_rmdir(path, nullptr);
+            INFO("removed active jobs directory %s\n", path);
          }
-         continue;
-      }
-      if (lGetUlong(jatep, JAT_status) != JSLAVE) {
-         snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, jobdir);
-         examine_job_task_from_file(startup, dir, jep, jatep, nullptr, pids, npids);
-      }
-      for_each_rw (petep, lGetList(jatep, JAT_task_list)) {
-         snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, jobdir, lGetString(petep, PET_id));
-         examine_job_task_from_file(startup, dir, jep, jatep, petep, pids, npids);
-      }
-   }    /* while (dent=SGE_READDIR(cwd)) */
+      } else {
 
+         // here we have a job and task that is still in the job list
+         // check if shepherd is still running and handle state changes
+         // by syncing state via job report with qmaster
+         char dir[SGE_PATH_MAX];
+         if (lGetUlong(ja_task, JAT_status) != JSLAVE) {
+            snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
+            examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids, number_of_shpeherd);
+         }
+         lListElem *pe_task;
+         for_each_rw (pe_task, lGetList(ja_task, JAT_task_list)) {
+            snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, lGetString(pe_task, PET_id));
+            examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids, number_of_shpeherd);
+         }
+      }
+   }
+
+   // close directory
    closedir(cwd);
+   DRETURN(true);
+}
 
-   DRETURN(0);
+
+/**
+ * \brief Enforces the cleanup of old jobs.
+ *
+ * This function is called when the keep active setting changes to enforce the cleanup of old jobs.
+ */
+static bool enforce_cleanup_old_jobs = true;
+void set_enforce_cleanup_old_jobs() {
+   enforce_cleanup_old_jobs = true;
+}
+
+/**
+ * \brief Cleans up old jobs and reports them to the qmaster.
+ *
+ * This function is called at execd startup time and also in regular intervals to
+ *
+ * - look for old jobs hanging around in the active jobs directory on disk
+ * - to check if the shepherd is still running for jobs
+ * - to identify jobs that have exited without sending a SIGCLD to the execd (e.g. due to execd downtime)
+ * - to report the updated job state to the qmaster
+ *
+ * All this needs only to be done once during the lifetime of the execd process and should be repeated
+ * only if KEEP_ACTIVE has been changed.
+ *
+ * During startup, the function produces more output.
+ *
+ * \param startup Indicates if execd is in the startup phase.
+ * \return true if the cleanup was successful, false otherwise.
+ */
+bool
+clean_up_old_jobs(bool startup) {
+   DENTER(TOP_LAYER);
+
+   static bool cleanup_already_done = false;
+   if (enforce_cleanup_old_jobs) {
+      // No early exit (e.g. when KEEP_ACTIVE has been changed). We need to process entries
+      // in active jobs directory so that we can get rid of old jobs that are not in the job list
+      enforce_cleanup_old_jobs = false;
+   } else if (cleanup_already_done || mconf_get_simulate_jobs() ||
+              lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
+      // Do early exit:
+      // - if cleanup was already done
+      // - if there are no jobs to process (0 jobs or only simulated jobs)
+      DRETURN(true);
+   }
+   cleanup_already_done = true;
+
+   if (startup) {
+      INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS);
+   } else {
+      INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBSAFTER);
+   }
+
+   // expensive operation: find all shepherd processes via ps command
+   // @todo EB: the array size is fixed to 10000, we should use a dynamic data structure instead
+   //           a fixed size is no good idea. Also the gid-range is no good indicator because
+   //           in case of multiple execds on one host (side by side upgrade)
+   pid_t shepherd_pids[10000];
+   int number_of_shepherd = sge_get_pids(shepherd_pids, sizeof(shepherd_pids), SGE_SHEPHERD, PSCMD);
+   if (number_of_shepherd == -1) {
+      ERROR(SFNMAX, MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND);
+      DRETURN(false);
+   }
+   INFO("Found %d shepherd processes. Starting cleanup of active jobs directory and (re)sync of job states.", number_of_shepherd);
+
+   // Check for old jobs. Either remove them or report them to the qmaster depending on the state.
+   cleanup_jobs_and_states(startup, number_of_shepherd, shepherd_pids);
+
+   DRETURN(true);
 }
 
 static void 
@@ -1682,7 +1719,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
    /* build reserved usage if required */ 
    r_cpu = r_mem = r_maxvmem = 0.0;
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
       double wallclock;
       if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
          // reserved usage
@@ -2019,7 +2056,7 @@ void execd_slave_job_exit(u_long32 job_id, u_long32 ja_task_id)
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
 
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task)) {
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
       /* kill possibly still running tasks */
       signal_job(job_id, ja_task_id, SGE_SIGKILL);
 

@@ -1122,9 +1122,19 @@ Instead the group membership of the submit user should be reduced.
 <!-- -->
 
 KEEP_ACTIVE  
-This value should only be set for debugging purposes. If set to true,
-the execution daemon will not remove the spool directory maintained by
-*xxqs_name_sxx_shepherd*(8) for a job.
+
+During normal operation, the spool directory for a job on the execution host is removed after a job terminates. This
+has the consequence that also low level information about the job execution is removed. To change this behavior, the
+parameter *KEEP_ACTIVE* can be set to *true* or *error*. *true* means that the spool directory is not removed 
+independent if the job terminated with or without error. *error* means that the spool directory is not removed 
+for failing jobs only. The default value is *false*. In this case the spool directory is removed for all jobs at the end
+of the job execution.
+
+This parameter provides a way to debug failing jobs by keeping the spool directory. It is not recommended to set this
+parameter to *true* for productive systems, because it can lead to a large number of spool directories on the execution
+hosts. To get rid of all kept spool directories, the administrator can set the parameter to *false*. This will trigger
+the deletion of all previously kept spool directories within the first minute after an execution daemon has received 
+the new setting.
 
 <!-- -->
 

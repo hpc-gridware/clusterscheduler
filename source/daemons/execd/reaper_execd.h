@@ -41,9 +41,10 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down);
 lListElem *execd_job_start_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general);
 lListElem *execd_job_run_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general);
 void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname);
-int clean_up_old_jobs(int startup);
+bool clean_up_old_jobs(bool startup);
 void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lListElem *jr);
 void reaper_sendmail(lListElem *jep, lListElem *jr);
 
 void execd_slave_job_exit(u_long32 job_id, u_long32 ja_task_id);
 int count_master_tasks(const lList *lp, u_long32 job_id);
+void set_enforce_cleanup_old_jobs();

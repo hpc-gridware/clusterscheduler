@@ -613,7 +613,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    jobid    = lGetUlong(petrep, PETR_jobid);
    jataskid = lGetUlong(petrep, PETR_jataskid);
 
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep)) {
+   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
       goto Error;
    }
 
