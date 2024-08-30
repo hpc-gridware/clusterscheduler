@@ -54,6 +54,7 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
@@ -796,7 +797,7 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
 *
 *******************************************************************************/
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const char *pename,
+rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const lListElem *pe,
                      const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
                      bool is_master_task, bool do_per_host_booking)
 {
@@ -818,16 +819,22 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
    /* remove the host name part of the queue instance name */
    qname = cqueue_get_name_from_qinstance(queue_instance);
 
-   rule = rqs_get_matching_rule(rqs, username, groupname, project, pename, hostname, qname, acl_list, hgrp_list, nullptr);
+   const char *pe_name = nullptr;
+   if (pe != nullptr) {
+      pe_name = lGetString(pe, PE_name);
+   }
+
+   rule = rqs_get_matching_rule(rqs, username, groupname, project, pe_name, hostname, qname, acl_list, hgrp_list, nullptr);
 
    if (rule != nullptr) {
       /* debit usage */
       dstring rue_name = DSTRING_INIT;
 
       rqs_get_rue_string(&rue_name, rule, username, project,
-                                hostname, qname, pename);
+                         hostname, qname, pe_name);
 
-      mods = rqs_debit_rule_usage(job, rule, &rue_name, slots, centry_list, lGetString(rqs, RQS_name), is_master_task,
+      mods = rqs_debit_rule_usage(job, pe, rule, &rue_name, slots, centry_list, lGetString(rqs, RQS_name),
+                                  is_master_task,
                                   do_per_host_booking);
 
       sge_dstring_free(&rue_name);
@@ -925,8 +932,8 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
 *******************************************************************************/
 // @todo: pass rue_name as const char *
 int
-rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list,
-                     const char *obj_name, bool is_master_task, bool do_per_host_booking)
+rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
+                     const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking)
 {
    DENTER(TOP_LAYER);
    int mods = 0;
@@ -967,9 +974,9 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
             if (dval != 0.0) {
                lAddDouble(rue_elem, RUE_utilized_now, debit_slots * dval);
                mods++;
+               did_booking = true;
             }
-            did_booking = true;
-         } else {
+         } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
             int slave_debit_slots = debit_slots;
             if (is_master_task) {
@@ -983,20 +990,12 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
                      // book it for one slot (the master task)
                      lAddDouble(rue_elem, RUE_utilized_now, slot_signum(debit_slots) * dval);
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
 
                   // if we did the master task booking
-                  // reduce the slot count by one
-                  // @todo: CS-400 here we have to respect job_is_first_task:
-                  //        if it is false, do *not* reduce slot count,
-                  //        unless slots == +-1, then we are only booking the master task here
-                  // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
-                  if (slave_debit_slots > 0) {
-                     slave_debit_slots--;
-                  } else {
-                     slave_debit_slots++;
-                  }
+                  // adjust the slot count for the slave booking
+                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
             }
             // now do booking for the (remaining) slave tasks, if any
@@ -1010,8 +1009,8 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
                      // book it for the remaining slave tasks
                      lAddDouble(rue_elem, RUE_utilized_now, slave_debit_slots * dval);
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
                }
             }
          }

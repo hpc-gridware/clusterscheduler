@@ -950,6 +950,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
@@ -964,6 +965,15 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = jatep ? lGetUlong(jatep, JAT_task_number) : 0;
    session = lGetString(jep, JB_session);
+
+   const char *pe_name = nullptr;
+   const lListElem *pe = nullptr;
+   if (jatep != nullptr) {
+      pe_name = lGetString(jatep, JAT_granted_pe);
+      if (pe_name != nullptr) {
+         pe = pe_list_locate(master_pe_list, pe_name);
+      }
+   }
 
    switch (mode) {
       case COMMIT_ST_SENT: {
@@ -1023,7 +1033,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                }
 
                /* debit consumable resources */
-               if (debit_host_consumable(jep, jatep, global_host_ep, master_centry_list, tmp_slot, master_task, do_per_host_booking,
+               if (debit_host_consumable(jep, jatep, pe, global_host_ep, master_centry_list, tmp_slot, master_task,
+                                         do_per_host_booking,
                                          nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
@@ -1032,14 +1043,16 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   answer_list_output(&answer_list);
                }
                host = host_list_locate(master_exechost_list, queue_hostname);
-               if (debit_host_consumable(jep, jatep, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
+               if (debit_host_consumable(jep, jatep, pe, host, master_centry_list, tmp_slot, master_task,
+                                         do_per_host_booking, nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                                 queue_hostname, nullptr, nullptr, host);
                   ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, jep, now);
                   answer_list_output(&answer_list);
                }
-               qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr);
+               qinstance_debit_consumable(queue, jep, pe, master_centry_list, tmp_slot, master_task,
+                                          do_per_host_booking, nullptr);
                ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, jep, now);
                answer_list_output(&answer_list);
                /* this info is not spooled */
@@ -1048,7 +1061,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                if (ar_id == 0) {
                   /* debit resource quota set */
                   for_each_rw(rqs, master_rqs_list) {
-                     if (rqs_debit_consumable(rqs, jep, gdil_ep, lGetString(jatep, JAT_granted_pe), master_centry_list,
+                     if (rqs_debit_consumable(rqs, jep, gdil_ep, pe, master_centry_list,
                                               master_userset_list, master_hgroup_list, tmp_slot, master_task, do_per_host_booking) > 0) {
                         /* this info is not spooled */
                         sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs);
@@ -1057,7 +1070,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                } else {
                   /* debit in advance reservation */
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-                  if (qinstance_debit_consumable(queue, jep, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
+                  if (qinstance_debit_consumable(queue, jep, pe, master_centry_list, tmp_slot, master_task,
+                                                 do_per_host_booking, nullptr) > 0) {
                      dstring buffer = DSTRING_INIT;
                      /* this info is not spooled */
                      sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
@@ -1109,14 +1123,10 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          /* add a reschedule unknown list entry to all slave
             hosts where a part of that job ran */
          {
-            const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-            const char *pe_name = lGetString(jep, JB_pe);
-
-            if (pe_name) {
-               const lListElem *pe = pe_list_locate(master_pe_list, pe_name);
+            if (pe_name != nullptr) {
                const lListElem *granted_queue;
 
-               if (pe && lGetBool(pe, PE_control_slaves)) {
+               if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
                   bool is_master = true;
 
                   for_each_ep(granted_queue, lGetList(jatep, JAT_granted_destin_identifier_list)) {
@@ -1555,6 +1565,15 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
+   const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+   lListElem *pe = nullptr;
+   if (pe_name != nullptr) {
+      pe = pe_list_locate(master_pe_list, pe_name);
+      if (pe == nullptr) {
+         ERROR(MSG_OBJ_UNABLE2FINDPE_S, pe_name);
+      }
+   }
+
    /* free granted resources of the queue */
    const char *last_hostname = nullptr;
    const lListElem *gdil_ep;
@@ -1581,24 +1600,23 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             lListElem *host;
 
             /* undebit consumable resources */
-            if (debit_host_consumable(job, ja_task, global_host_ep, master_centry_list, -tmp_slot, master_task,
+            if (debit_host_consumable(job, ja_task, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
                                       do_per_host_booking, nullptr) > 0) {
                /* this info is not spooled */
-               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                             "global", nullptr, nullptr, global_host_ep);
+               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, job, now);
                answer_list_output(&answer_list);
             }
             host = host_list_locate(master_exechost_list, queue_hostname);
-            if (debit_host_consumable(job, ja_task, host, master_centry_list, -tmp_slot, master_task,
+            if (debit_host_consumable(job, ja_task, pe, host, master_centry_list, -tmp_slot, master_task,
                                       do_per_host_booking, nullptr) > 0) {
                /* this info is not spooled */
-               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                             queue_hostname, nullptr, nullptr, host);
+               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, queue_hostname, nullptr, nullptr, host);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, job, now);
                answer_list_output(&answer_list);
             }
-            qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr);
+            qinstance_debit_consumable(queue, job, pe, master_centry_list, -tmp_slot, master_task,
+                                       do_per_host_booking, nullptr);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, job, now);
             /* this info is not spooled */
             qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
@@ -1607,7 +1625,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                /* undebit resource quota set */
                for_each_rw(rqs, master_rqs_list) {
                   DPRINTF("undebiting rqs %s\n", lGetString(rqs, RQS_name));
-                  if (rqs_debit_consumable(rqs, job, gdil_ep, lGetString(ja_task, JAT_granted_pe),
+                  if (rqs_debit_consumable(rqs, job, gdil_ep, pe,
                                            master_centry_list, master_userset_list, master_hgroup_list,
                                            -tmp_slot, master_task, do_per_host_booking) > 0) {
                      /* this info is not spooled */
@@ -1618,12 +1636,12 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             } else {
                /* undebit in advance reservation */
                lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-               if (qinstance_debit_consumable(queue, job, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0) {
+               if (qinstance_debit_consumable(queue, job, pe, master_centry_list, -tmp_slot, master_task,
+                                              do_per_host_booking, nullptr) > 0) {
                   dstring buffer = DSTRING_INIT;
                   /* this info is not spooled */
                   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
-                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
-                                sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
+                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
                   sge_dstring_free(&buffer);
                }
             }
@@ -1633,18 +1651,11 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    }
 
    /* free granted resources of the parallel environment */
-   if (lGetString(ja_task, JAT_granted_pe)) {
+   if (pe != nullptr) {
       if (incslots) {
-         lListElem *pe = pe_list_locate(master_pe_list, lGetString(ja_task, JAT_granted_pe));
-
-         if (!pe) {
-            ERROR(MSG_OBJ_UNABLE2FINDPE_S, lGetString(ja_task, JAT_granted_pe));
-         } else {
-            pe_debit_slots(pe, -pe_slots, job_id);
-            /* this info is not spooled */
-            sge_add_event(0, sgeE_PE_MOD, 0, 0,
-                          lGetString(ja_task, JAT_granted_pe), nullptr, nullptr, pe);
-         }
+         pe_debit_slots(pe, -pe_slots, job_id);
+         /* this info is not spooled */
+         sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(ja_task, JAT_granted_pe), nullptr, nullptr, pe);
       }
       lSetString(ja_task, JAT_granted_pe, nullptr);
    }

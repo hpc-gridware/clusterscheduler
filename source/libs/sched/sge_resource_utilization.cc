@@ -76,9 +76,9 @@ static void utilization_find_time_or_prevstart_or_prev(const lList *diagram,
       u_long64 time, lListElem **hit, lListElem **before);
 
 static int 
-rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *rule, dstring rue_name,
-                        const lList *centry_list, int slots, const char *obj_name, u_long64 start_time,
-                        u_long64 duration, bool is_master_task, bool do_per_host_booking);
+rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *rule,
+                        dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
+                        u_long64 start_time, u_long64 duration, bool is_master_task, bool do_per_host_booking);
 
 static void add_calendar_to_schedule(lList *queue_list, u_long64 now);
 
@@ -706,7 +706,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       }
 
       /* global */
-      rc_add_job_utilization(a->job, a->ja_task_id, type, a->gep, a->centry_list, a->slots,
+      rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, a->slots,
                              EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
                              a->start, a->duration, GLOBAL_TAG, for_job_scheduling, true, true);
 
@@ -725,7 +725,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          /* hosts */
          if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
-            rc_add_job_utilization(a->job, a->ja_task_id, type, hep, a->centry_list, slots,
+            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
                                    EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
                                    a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
          }
@@ -740,7 +740,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
              * schedule runs: running/suspneded/migrating jobs.
              * 
              */
-            rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
+            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                    QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                    a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, false);
          }
@@ -759,7 +759,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
                rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue, pe);
 
-               rqs_add_job_utilization(a->job, a->ja_task_id, type, rule, rue_name,
+               rqs_add_job_utilization(a->job, a->pe, a->ja_task_id, type, rule, rue_name,
                                        a->centry_list, slots, lGetString(rqs, RQS_name),
                                        a->start, a->duration, is_master_task, do_per_host_booking);
             }
@@ -784,7 +784,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
             if ((qep = lGetSubStrRW(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
-               rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
+               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                       a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
@@ -796,10 +796,10 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    DRETURN(0);
 }
 
-int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *ep, const lList *centry_list,
-                           int slots, int config_nm, int actual_nm, const char *obj_name, u_long64 start_time,
-                           u_long64 duration, u_long32 tag, bool for_job_scheduling, bool is_master_task,
-                           bool do_per_host_booking)
+int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
+                           const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
+                           u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
+                           bool is_master_task, bool do_per_host_booking)
 {
    lListElem *cr, *cr_config, *dcep;
    int mods = 0;
@@ -852,9 +852,9 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
             utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag, obj_name, type,
                             for_job_scheduling, false);
             mods++;
+            did_booking = true;
          }
-         did_booking = true;
-      } else {
+      } else if (pe != nullptr) {
          // no global contribution, need to check master and slave
          int slave_debit_slots = debit_slots;
          if (is_master_task) {
@@ -867,20 +867,10 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
                   utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
                                   obj_name, type, for_job_scheduling, false);
                   mods++;
+                  did_booking = true;
                }
-               did_booking = true;
 
-               // if we did the master task booking
-               // reduce the slot count by one
-               // @todo: CS-400 here we have to respect job_is_first_task:
-               //        if it is false, do *not* reduce slot count,
-               //        unless slots == +-1, then we are only booking the master task here
-               // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
-               if (slave_debit_slots > 0) {
-                  slave_debit_slots--;
-               } else {
-                  slave_debit_slots++;
-               }
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
             }
          }
 
@@ -894,8 +884,8 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
                   utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
                                   obj_name, type, for_job_scheduling, false);
                   mods++;
+                  did_booking = true;
                }
-               did_booking = true;
             }
          }
       }
@@ -951,9 +941,9 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
 *     sge_resource_utilization/add_job_utilization()
 *******************************************************************************/
 static int 
-rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *rule, dstring rue_name,
-                        const lList *centry_list, int slots, const char *obj_name, u_long64 start_time,
-                        u_long64 duration, bool is_master_task, bool do_per_host_booking)
+rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *rule,
+                        dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
+                        u_long64 start_time, u_long64 duration, bool is_master_task, bool do_per_host_booking)
 {
    DENTER(TOP_LAYER);
 
@@ -999,9 +989,9 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
                utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
                                RQS_TAG, obj_name, type, true, false);
                mods++;
+               did_booking = true;
             }
-            did_booking = true;
-         } else {
+         } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
             int slave_debit_slots = debit_slots;
             if (is_master_task) {
@@ -1014,20 +1004,12 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
                      utilization_add(rue_elem, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id,
                                      RQS_TAG, obj_name, type, true, false);
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
 
                   // if we did the master task booking
-                  // reduce the slot count by one
-                  // @todo: CS-400 here we have to respect job_is_first_task:
-                  //        if it is false, do *not* reduce slot count,
-                  //        unless slots == +-1, then we are only booking the master task here
-                  // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
-                  if (slave_debit_slots > 0) {
-                     slave_debit_slots--;
-                  } else {
-                     slave_debit_slots++;
-                  }
+                  // adjust the slot count for the slave booking
+                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
             }
 
@@ -1041,8 +1023,8 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
                      utilization_add(rue_elem, start_time, duration, slave_debit_slots * dval, job_id, task_id,
                                      RQS_TAG, obj_name, type, true, false);
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
                }
             }
          }

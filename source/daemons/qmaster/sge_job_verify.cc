@@ -278,7 +278,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       }
    }
 
-   // @todo check for slave requests of per job consumables (which are only granted to the master task)
+   // check for slave requests of per job consumables (which are only granted to the master task)
    if (ret == STATUS_OK) {
       if (!sge_job_verify_slave_per_job_requests(alpp, jep, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
@@ -291,6 +291,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
          ret = STATUS_EUNKNOWN;
       }
    }
+
+   // @todo verify that per per host requests are not in both master and slave requests
 
    /* check for qsh without DISPLAY set */
    if (ret == STATUS_OK) {

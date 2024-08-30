@@ -72,11 +72,11 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list);
 bool rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, const char *project, const char *host, const char *queue, const char* pe);
 
 int
-rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list,
-                     const char *obj_name, bool is_master_task, bool do_per_host_booking);
+rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
+                     const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking);
 
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const char *pename,
+rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const lListElem *pe,
                      const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
                      bool is_master_task, bool do_per_host_booking);
 

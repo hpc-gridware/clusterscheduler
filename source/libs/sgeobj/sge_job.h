@@ -411,6 +411,9 @@ bool
 job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
                               const lListElem *complex_definition, u_long32 scope);
 
+void
+adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots);
+
 /* unparse functions */
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
                                int nm, const char *option);

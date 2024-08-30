@@ -703,9 +703,9 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *     MT-NOTE: qinstance_debit_consumable() is MT safe 
 *******************************************************************************/
 int
-qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list, int slots,
-                           bool is_master_task, bool do_per_host_booking, bool *just_check) {
-   return rc_debit_consumable(jep, qep, centry_list, slots,
+qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
+                           int slots, bool is_master_task, bool do_per_host_booking, bool *just_check) {
+   return rc_debit_consumable(jep, pe, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
                               lGetString(qep, QU_qname), is_master_task, do_per_host_booking, just_check);
@@ -855,7 +855,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);
 
    /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, true, nullptr);
+   qinstance_debit_consumable(this_elem, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
    if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true,
@@ -993,6 +993,7 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
 
    DRETURN(ret);
 }
+
 /****** lib/sgeobj/debit_consumable() ****************************************
 *  NAME
 *     rc_debit_consumable() -- Debit/Undebit consumables from resource container
@@ -1041,9 +1042,9 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
 *     consumable resources of the 'ep' object has not changed.
 ******************************************************************************/
 int
-rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list, int slots, int config_nm,
-                    int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
-                    bool *just_check) {
+rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, const lList *centry_list, int slots,
+                    int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
+                    bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
 
    int mods = 0;
@@ -1104,10 +1105,16 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
                   break;
                }
                mods++;
+               did_booking = true;
             }
+#if 0
             // Even if the request was 0.0, we have handled it and count it as booked.
-            did_booking = true;
-         } else {
+            if (!(dval == 0.0 && is_exclusive)) {
+               // a request exclusive=false must lead to handling exclusive below
+               did_booking = true;
+            }
+#endif
+         } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
             int slave_debit_slots = debit_slots;
             double master_dval = 0.0;
@@ -1125,20 +1132,12 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
                         break;
                      }
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
 
                   // if we did the master task booking
-                  // reduce the slot count by one
-                  // @todo: CS-400 here we have to respect job_is_first_task:
-                  //        if it is false, do *not* reduce slot count,
-                  //        unless slots == +-1, then we are only booking the master task here
-                  // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
-                  if (slave_debit_slots > 0) {
-                     slave_debit_slots--;
-                  } else {
-                     slave_debit_slots++;
-                  }
+                  // adjust the slot count for the slave booking
+                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
             }
 
@@ -1157,8 +1156,8 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
                         break;
                      }
                      mods++;
+                     did_booking = true;
                   }
-                  did_booking = true;
                }
             }
          }

@@ -2728,6 +2728,7 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
    const lListElem *centry = nullptr;
    const char *value_string = nullptr;
    char error_str[256];
+   bool is_default_request = false;
    
    DENTER(TOP_LAYER);
 
@@ -2740,15 +2741,46 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
       value_string = lGetString(complex_definition, CE_defaultval);
+      is_default_request = true;
    }
-   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
-                         error_str, sizeof(error_str)-1))) {
+   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string, error_str, sizeof(error_str)-1))) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str); 
       ret = false; 
    }
+   if (is_default_request && *value == 0) {
+      DPRINTF("job_get_contribution_by_scope: default request for %s is 0, ignoring\n", name);
+      ret = false;
+   }
    
    DRETURN(ret);
+}
+
+// adjust the slot count used for debiting of slave tasks
+// called when we just debited the master task
+// we need to reduce the slot count by one
+// exception:
+//    - the pe setting job_is_first_task = false (in this case there was no slot for the master task)
+//    - unless the slot count is already +-1, then we had a single master task without slave task
+//      @todo really? What if there is the master task and one slave task in the qinstance?
+//        unless slots == +-1, then we are only booking the master task here
+//        ==> reason for the alleged bug CS-547 we will always have a slave task with the master task
+//            when job_is_first_task = false?
+// for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
+void
+adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
+   bool job_is_first_task = true;
+   if (pe != nullptr) {
+      job_is_first_task = lGetBool(pe, PE_job_is_first_task);
+   }
+
+   if (job_is_first_task /* || abs(slave_debit_slots) == 1 */) {
+      if (slave_debit_slots > 0) {
+         slave_debit_slots--;
+      } else {
+         slave_debit_slots++;
+      }
+   }
 }
 
 /****** sge_job/sge_unparse_acl_dstring() **************************************
