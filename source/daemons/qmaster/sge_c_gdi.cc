@@ -1446,6 +1446,7 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
       case SGE_HGRP_LIST:
       case SGE_RQS_LIST:
       case SGE_MASTER_EVENT:
+      case SGE_DUMMY_LIST:
 
          /* host must be SGE_AH_LIST */
          if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
