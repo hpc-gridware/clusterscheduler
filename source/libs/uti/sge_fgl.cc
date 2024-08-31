@@ -393,6 +393,7 @@ void fgl_lock() {
 
          // create data lock and initialize reference rounter 
          fgl_lck = (fgl_lck_t *) sge_malloc(sizeof(fgl_lck_t));
+         SGE_ASSERT(fgl_lck != nullptr);
 #if USE_FIFO_LOCK
          sge_fifo_lock_init(&fgl_lck->lck);
 #else

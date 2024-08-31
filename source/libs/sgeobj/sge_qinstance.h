@@ -36,6 +36,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_dstring.h"
+#include "gdi/sge_gdi_packet.h"
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 
 /* 
@@ -82,8 +83,8 @@ void
 qinstance_increase_qversion(lListElem *this_elem);
 
 bool
-qinstance_check_owner(const lListElem *queue, const char *user_name, const lList *master_manager_list,
-                      const lList *master_operator_list);
+qinstance_check_owner(const sge_gdi_packet_class_t *packet, const lListElem *queue,
+                      const lList *master_manager_list, const lList *master_operator_list);
 
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem,

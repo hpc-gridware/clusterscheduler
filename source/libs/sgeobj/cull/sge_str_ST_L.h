@@ -39,15 +39,18 @@
 */
 
 enum {
-   ST_name = ST_LOWERBOUND
+   ST_name = ST_LOWERBOUND,
+   ST_id
 };
 
 LISTDEF(ST_Type)
    SGE_STRING(ST_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_SUBLIST)
+   SGE_ULONG(ST_id, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(STN)
    NAME("ST_name")
+   NAME("ST_id")
 NAMEEND
 
 #define ST_SIZE sizeof(STN)/sizeof(char *)

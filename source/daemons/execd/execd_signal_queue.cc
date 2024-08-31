@@ -562,7 +562,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
    DENTER(TOP_LAYER);
 
    /* search appropriate array task and job */
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep)) {
+   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
       DRETURN(1);
    }
 

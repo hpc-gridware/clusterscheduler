@@ -69,6 +69,8 @@
 #include "ocs_client_job.h"
 #include "msg_common.h"
 
+#include <uti/sge_log.h>
+
 #define JOB_CHUNK 8
 #define NTHREADS 3
 #define NBULKS 3
@@ -5733,6 +5735,7 @@ static int **job_run_sequence_parse(const char *jrs_str)
       numbers_used = 0;
 
       group = (int *)sge_malloc(sizeof(int *)*(NUMBER_CHUNK+1));
+      SGE_ASSERT(group != nullptr);
 
       /* sequence numbers within a group are delimited by comma ',' */
       for (s=strtok_r(group_str, ",", &iter_comma); s; s=strtok_r(nullptr, ",", &iter_comma)) {

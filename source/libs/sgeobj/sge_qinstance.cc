@@ -256,20 +256,21 @@ qinstance_increase_qversion(lListElem *this_elem) {
 *     bool - true, if the user is owner, else false
 ******************************************************************************/
 bool
-qinstance_check_owner(const lListElem *this_elem, const char *user_name, const lList *master_manager_list,
-                      const lList *master_operator_list) {
+qinstance_check_owner(const sge_gdi_packet_class_t *packet, const lListElem *this_elem,
+                      const lList *master_manager_list, const lList *master_operator_list) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
+   if (packet == nullptr) {
+      DRETURN(false);
+   }
    if (this_elem == nullptr) {
       ret = false;
-   } else if (user_name == nullptr) {
-      ret = false;
-   } else if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
+   } else if (manop_is_operator(packet, master_manager_list, master_operator_list)) {
       ret = true;
    } else {
       const lList *owner_list = lGetList(this_elem, QU_owner_list);
-      if (lGetElemStr(owner_list, US_name, user_name) != nullptr) {
+      if (lGetElemStr(owner_list, US_name, packet->user) != nullptr) {
          ret = true;
       }
    }

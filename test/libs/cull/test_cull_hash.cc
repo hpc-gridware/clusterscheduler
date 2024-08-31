@@ -54,6 +54,8 @@
 
 #include "uti/sge_profiling.h"
 
+#include <sge_log.h>
+
 #ifdef TEST_USE_JOBL
 #include "sge_jobL.h"
 int NM_ULONG  = JB_job_number;
@@ -341,6 +343,7 @@ int main(int argc, char *argv[]) {
 
    /* create name array */
    names = (const char **) sge_malloc(num_names * sizeof(const char *));
+   SGE_ASSERT(names != nullptr);
 
    /* build random names */
    for (i = 0; i < num_names; i++) {

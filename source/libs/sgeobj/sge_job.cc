@@ -73,6 +73,7 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"
@@ -2282,17 +2283,13 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 *            0, if the user is the job owner
 *            1, if the user is not the job owner
 ******************************************************************************/
-int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list) 
+int job_check_owner(const sge_gdi_packet_class_t *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list)
 {
    const lListElem *job;
 
    DENTER(TOP_LAYER);
 
-   if (!user_name) {
-      DRETURN(-1);
-   }
-
-   if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
+   if (manop_is_operator(packet, master_manager_list, master_operator_list)) {
       DRETURN(0);
    }
 
@@ -2301,7 +2298,7 @@ int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_li
       DRETURN(-1);
    }
 
-   if (strcmp(user_name, lGetString(job, JB_owner)) != 0) {
+   if (strcmp(packet->user, lGetString(job, JB_owner)) != 0) {
       DRETURN(1);
    }
 
@@ -2808,7 +2805,7 @@ adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
 *     MT-NOTE: sge_unparse_acl_dstring() is MT safe 
 *
 *******************************************************************************/
-bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, 
+bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
                              const lList *acl_list, const char *option) 
 {
    bool first = true;
@@ -2818,7 +2815,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
 
    for_each_ep(elem, acl_list) {
       if (lGetBool(elem, US_consider_with_categories) &&
-          sge_contained_in_access_list(owner, group, elem, nullptr)) {
+          sge_contained_in_access_list(owner, group, grp_list, elem)) {
          if (first) {      
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append_char(category_str, ' ');
@@ -3687,10 +3684,11 @@ job_set_no_shell(lListElem *job, bool is_binary) {
    return ret;
 }
 
+
 /* TODO: EB: JSV: add doc */
 bool
 job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
-                        const char *user, const char *group) {
+                        const char *user, const char *group, int amount, ocs_grp_elem_t *grp_array) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -3698,6 +3696,8 @@ job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
    lSetUlong(job, JB_uid, uid);
    lSetString(job, JB_group, group);
    lSetUlong(job, JB_gid, gid);
+   lSetList(job, JB_grp_list, grp_list_array2list(amount, grp_array));
+
    DRETURN(ret);
 }
 

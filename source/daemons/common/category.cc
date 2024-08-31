@@ -120,6 +120,7 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
 
    const char *owner = nullptr;
    const char *group = nullptr;
+   const lList *grp_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -149,15 +150,11 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
    /*
    ** owner -> acl
    */
-   owner = lGetPosString(job, lGetPosViaElem(job, JB_owner, SGE_NO_ABORT));
-   
-   DTRACE;
+   owner = lGetString(job, JB_owner);
+   group = lGetString(job, JB_group);
+   grp_list = lGetList(job, JB_grp_list);
 
-   group = lGetPosString(job, lGetPosViaElem(job, JB_group, SGE_NO_ABORT));
-
-   DTRACE;
-
-   sge_unparse_acl_dstring(category_str, owner, group, acl_list, "-U");
+   sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
    DTRACE;
  
@@ -169,7 +166,7 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
       Some users are only referenced by the unix group. Their jobs could be grouped
       together by referencing only the group in the category string
    */
-   if (sge_user_is_referenced_in_rqs(rqs_list, lGetString(job, JB_owner), lGetString(job, JB_group), acl_list)) {
+   if (sge_user_is_referenced_in_rqs(rqs_list, lGetString(job, JB_owner), lGetString(job, JB_group), lGetList(job, JB_grp_list), acl_list)) {
       if (sge_dstring_strlen(category_str) > 0) {
          sge_dstring_append(category_str, " ");
       }

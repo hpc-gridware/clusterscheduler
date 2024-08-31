@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ $# -ne 8 ]; then
-   echo "usage: $0 <source directory> <input_directory> <target directory> <target man page> <template> <release> <date>"
+if [ $# -ne 9 ]; then
+   echo "usage: $0 <source directory> <input_directory> <target directory> <target man page> <template> <release> <date> <located_in_gcs_extensions>"
    exit 1
 fi
 
@@ -13,15 +13,18 @@ TEMPLATE=$5
 SECTION=$6
 RELEASE=$7
 DATE=$8
+LOCATED_IN_GCS_EXTENSIONS=$9
 
-# Independent if INPUT_DIR is located in gcs-extensions repository
-# then template files will also be taken from oge-extensions
-COMMON_DIR="../gcs-extensions/doc/markdown/manual"
+if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
+   COMMON_DIR="../clusterscheduler/doc/markdown/man"
+else
+   COMMON_DIR="../gcs-extensions/doc/markdown/man"
+fi
 
 if [ $TEMPLATE = "NONE" ]; then
    TEMPLATE_FILE=""
 else
-   TEMPLATE_FILE="${SOURCE_DIR}/${COMMON_DIR}/${TEMPLATE}.md"
+   TEMPLATE_FILE="${SOURCE_DIR}/${COMMON_DIR}/man${SECTION}/${TEMPLATE}.md"
 fi
 
 PAGE_FILE="${INPUT_DIR}/${PAGE}.md"
@@ -34,6 +37,7 @@ QSPREFIX_UPPER="SGE"
 PANDOC=pandoc
 OPTIONS="--standalone --to man"
 
+echo "pandox_man.sh: ${PAGE_FILE} ${TEMPLATE_FILE} ${OUTPUT_FILE}"
 cat ${PAGE_FILE} ${TEMPLATE_FILE} | \
     sed -e "s/__RELEASE__/${QSNAME} ${RELEASE}/g" \
         -e "s/__DATE__/${DATE}/g" -e "s/xxQS_NAMExx/${QSNAME}/g" \

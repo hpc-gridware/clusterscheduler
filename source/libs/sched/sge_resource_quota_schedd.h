@@ -41,7 +41,7 @@
 bool rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry);
 
 
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *acl_list);
+bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list);
 
 /* parallel assignments */
 dispatch_t parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lListElem *qep);

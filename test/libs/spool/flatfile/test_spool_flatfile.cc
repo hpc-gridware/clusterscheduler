@@ -55,6 +55,8 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 
+#include <sge_log.h>
+
 #define allow_delete_time_modification
 
 static int diff(const char *file1, const char *file2);
@@ -641,6 +643,7 @@ static int diff(const char *file1, const char *file2)
 {
    int ret = 1;
    char **argv =(char **)sge_malloc(sizeof(char *) * 4);
+   SGE_ASSERT(argv != nullptr);
    const char *path = "/usr/bin/diff";
 
    if(file1 == nullptr || file2 == nullptr) {

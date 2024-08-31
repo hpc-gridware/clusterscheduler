@@ -81,7 +81,9 @@ rmon_helper_t *rmon_get_helper() {
     auto *helper = (rmon_helper_t *) pthread_getspecific(rmon_helper_key);
     if (helper == nullptr) {
         helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
-
+        if (helper == nullptr) {
+           abort();
+        }
         memset(helper, 0, sizeof(rmon_helper_t));
         pthread_setspecific(rmon_helper_key, helper);
     }

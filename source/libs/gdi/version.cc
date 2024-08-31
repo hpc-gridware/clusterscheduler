@@ -84,7 +84,7 @@ const char GE_SHORTNAME[] = "OCS";
 #  include "copyright.h"
 #endif
 
-#if !(ADD_COPYRIGHT || ADD_UNIVA_COPYRIGHT)
+#if !(ADD_COPYRIGHT || ADD_HPC_GRIDWARE_COPYRIGHT)
 extern const char SFLN_ELN[] = "\n\
    Cluster Scheduler is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
@@ -97,7 +97,7 @@ Florida State University in creating the DQS program.\n";
 
 #endif
 
-#ifndef ADD_UNIVA_COPYRIGHT
+#ifndef ADD_HPC_GRIDWARE_COPYRIGHT
 
 extern const char SISSL[] = "\n\
 The Contents of this file are made available subject to the terms of\n\
@@ -126,4 +126,4 @@ Copyright: 2001 by Sun Microsystems, Inc.\n\
 \n\
 All Rights Reserved.\n"; 
 
-#endif /* ADD_UNIVA_COPYRIGHT */
+#endif

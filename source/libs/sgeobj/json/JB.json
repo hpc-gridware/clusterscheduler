@@ -1027,5 +1027,17 @@
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
+		}, {
+			"name":	"grp_list",
+			"summary":	"Supplementary Group List",
+			"description":	[{
+					"line":	"list if supplementary groups and corresponding ID's"
+			   }],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"",
+			"flags":	[{
+					"name":	"SPOOL"
+			   }]
 		}]
 }

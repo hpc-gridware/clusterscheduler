@@ -253,6 +253,7 @@ char *sge_strtok(const char *str, const char *delimitor) {
          static_str = sge_malloc(n + 1);
          alloc_len = n;
       }
+      SGE_ASSERT(static_str != nullptr);
       strcpy(static_str, str);
       saved_cp = static_str;
    } else {

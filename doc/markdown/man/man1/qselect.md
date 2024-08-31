@@ -27,18 +27,18 @@ attributes on a set of queues.
 ## -help  
 Prints a listing of all options.
 
-## -l resource\[=value\],...  
+## -l *resource*\[=*value*\],...  
 Defines the resources to be granted by the queues which should be included in the queue list output. Matching is 
 performed on queues based on non-mutable resource availability information only. That means load values are always 
 ignored except the so-called static load values (i.e. *arch*, *num_proc*, *mem_total*, *swap_total* and 
 *virtual_total*) ones. Also, consumable utilization is ignored. If there are multiple `-l` resource requests they will 
 be concatenated by a logical AND: a queue needs to offer all resources to be displayed.
 
-## -pe pe_name,...  
+## -pe *pe_name*,...  
 Includes queues into the output which are attached to at least one of the parallel environments enlisted in the comma 
 separated option argument.
 
-## -q wc_queue,...  
+## -q *wc_queue*,...  
 Directly specifies the wildcard expression queue list to be included in the output. This option usually is only 
 meaningful in conjunction with another `qselect` option to extract a subset of queue names from a list given by `-q`. 
 Description of *wc_queue* can be found in xxqs_name_sxx_types(1).
@@ -46,7 +46,7 @@ Description of *wc_queue* can be found in xxqs_name_sxx_types(1).
 ## -qs {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}  
 This option allows to filter for queue instances in certain states.
 
-## -U user,...  
+## -U *user*,...  
 Includes the queues to which the specified users have access in the `qselect` output.
 
 # EXAMPLES

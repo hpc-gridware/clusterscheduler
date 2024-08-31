@@ -37,6 +37,8 @@
 #include "drmaa.h"
 #include "uti/sge_stdlib.h"
 
+#include <uti/sge_log.h>
+
 static drmaa_job_template_t *create_job_template(const char *job_path);
 
 int main(int argc, char *argv[])
@@ -72,6 +74,7 @@ int main(int argc, char *argv[])
     * nullptr. */
    buffer_size = 256 * sizeof(void*);
    buffer = sge_malloc(buffer_size);
+   SGE_ASSERT(buffer != nullptr);
    memset(buffer, 255, buffer_size);
    sge_free(&buffer);
    

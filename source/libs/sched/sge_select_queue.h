@@ -117,6 +117,7 @@ typedef struct {
                                   /* unknown verification is missing)               */
    const char* user;              /* user name (JB_owner)                           */
    const char* group;             /* group name (JB_group)                          */
+   const lList *grp_list;         /* supplementary grp list (JB_grp_list)           */
    const char* project;           /* project name (JB_project)                      */
    const lListElem *ckpt;         /* the checkpoint interface (CK_Type)             */
    lListElem *gep;                /* the global host (EH_Type)                      */
@@ -153,7 +154,7 @@ typedef struct {
    sched_prof_t *pi;
 } sge_assignment_t;
 
-#define SGE_ASSIGNMENT_INIT {0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
+#define SGE_ASSIGNMENT_INIT {0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);

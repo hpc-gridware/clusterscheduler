@@ -269,6 +269,7 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lL
       a->job         = job;
       a->user        = lGetString(job, JB_owner);
       a->group       = lGetString(job, JB_group);
+      a->grp_list    = lGetList(job, JB_grp_list);
       a->project     = lGetString(job, JB_project);
       a->job_id      = lGetUlong(job, JB_job_number);
       a->is_soft     = job_has_soft_requests(job);
@@ -1162,8 +1163,11 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          const char *name = lGetString(qu, ST_name);
          DPRINTF("-----> checking queue user: %s\n", name );
          q_access |= (name[0]=='@')?
-                     sge_has_access(nullptr, &name[1], queue, acl_list):
-                     sge_has_access(name, nullptr, queue, acl_list);
+                     sge_has_access(nullptr, &name[1], nullptr, queue, acl_list):
+                     sge_has_access(name, nullptr, nullptr, queue, acl_list);
+         if (q_access) {
+            break;
+         }
       }
       if (q_access == 0) {
          DPRINTF("no access\n");
@@ -1625,7 +1629,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    }
 
    /* check if job owner has access rights to the queue */
-   if (!sge_has_access(a->user, a->group, queue, a->acl_list)) {
+   if (!sge_has_access(a->user, a->group, a->grp_list, queue, a->acl_list)) {
       DPRINTF("Job %d has no permission for queue %s\n", (int)a->job_id, qinstance_name);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
                      a->job_id, SCHEDD_INFO_HASNOPERMISSION_SS,
@@ -1975,7 +1979,7 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
    eh_name = lGetHost(host, EH_name);
 
    /* check if job owner has access rights to the host */
-   if (!sge_has_access_(a->user, a->group, lGetList(host, EH_acl),
+   if (!sge_has_access_(a->user, a->group, a->grp_list, lGetList(host, EH_acl),
          lGetList(host, EH_xacl), a->acl_list)) {
       DPRINTF("Job %d has no permission for host %s\n", (int)a->job_id, eh_name);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -2999,6 +3003,7 @@ static bool interactive_cq_rejected(const lListElem *cq)
    DRETURN(rejected);
 }
 
+bool sge_contained_in_access_list_(const char * user, const char * group, const lList *grp_list,  const lList * acl, const lList * list, const lList * acl_list);
 /****** sge_select_queue/access_cq_rejected() **********************************
 *  NAME
 *     access_cq_rejected() -- Check, if cluster queue rejects user/project
@@ -3022,8 +3027,9 @@ static bool interactive_cq_rejected(const lListElem *cq)
 *  NOTES
 *     MT-NOTE: access_cq_rejected() is MT safe
 *******************************************************************************/
-static bool access_cq_rejected(const char *user, const char *group,
-      const lList *acl_list, const lListElem *cq)
+static bool
+access_cq_rejected(const char *user, const char *group, const lList *grp_list,
+                   const lList *acl_list, const lListElem *cq)
 {
    const lListElem *alist;
    bool rejected;
@@ -3033,7 +3039,7 @@ static bool access_cq_rejected(const char *user, const char *group,
    /* rejected, if user/group is excluded by each "xacl" profile */
    rejected = true;
    for_each_ep(alist, lGetList(cq, CQ_xacl)) {
-      if (!sge_contained_in_access_list_(user, group, lGetList(alist, AUSRLIST_value), acl_list)) {
+      if (!sge_contained_in_access_list_(user, group, grp_list, lGetList(alist, AUSRLIST_value), acl_list)) {
          rejected = false;
          break;
       }
@@ -3046,7 +3052,7 @@ static bool access_cq_rejected(const char *user, const char *group,
    rejected = true;
    for_each_ep(alist, lGetList(cq, CQ_acl)) {
       const lList *t = lGetList(alist, AUSRLIST_value);
-      if (!t || sge_contained_in_access_list_(user, group, t, acl_list)) {
+      if (!t || sge_contained_in_access_list_(user, group, grp_list, t, acl_list)) {
          rejected = false;
          break;
       }
@@ -3181,7 +3187,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    }
 
    /* detect if entire cluster queue ruled out due to user_list/xuser_lists */
-   if (access_cq_rejected(a->user, a->group, a->acl_list, cq)) {
+   if (access_cq_rejected(a->user, a->group, a->grp_list, a->acl_list, cq)) {
       DPRINTF("Job %d has no permission for cluster queue %s\n", (int)a->job_id, cqname);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id, SCHEDD_INFO_HASNOPERMISSION_SS, "cluster queue", cqname);
       DRETURN(DISPATCH_NEVER_CAT);
@@ -6837,7 +6843,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
                   const char *acl_name = ++user;
                   const lListElem *userset_list = lGetElemStr(a->acl_list, US_name, acl_name);
 
-                  if (sge_contained_in_access_list(a->user, a->group, userset_list, nullptr) == 1) {
+                  if (sge_contained_in_access_list(a->user, a->group, a->grp_list, userset_list) == 1) {
                      break;
                   }
                }
@@ -6867,7 +6873,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
                   const char *acl_name = ++user;
                   const lListElem *userset_list = lGetElemStr(a->acl_list, US_name, acl_name);
 
-                  if (sge_contained_in_access_list(a->user, a->group, userset_list, nullptr) == 1) {
+                  if (sge_contained_in_access_list(a->user, a->group, a->grp_list, userset_list) == 1) {
                      break;
                   }
                }

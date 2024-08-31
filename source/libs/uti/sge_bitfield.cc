@@ -38,6 +38,8 @@
 #include "uti/sge_bitfield.h"
 #include "uti/sge_stdlib.h"
 
+#include <sge_log.h>
+
 /****** uti/bitfield/--Bitfield ****************************************
 *  NAME
 *     Bitfield -- A variable size bitfield implementation
@@ -127,6 +129,7 @@ sge_bitfield_new(unsigned int size) {
 
    /* allocate storage for bitfield object */
    bf = (bitfield *) sge_malloc(sizeof(bitfield));
+   SGE_ASSERT(bf != nullptr);
    if (bf != nullptr) {
       /* initialize bitfield, on errors, free bitfield */
       if (!sge_bitfield_init(bf, size)) {

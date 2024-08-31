@@ -21,7 +21,7 @@
 # clusterscheduler/doc/markdown/manual/installation-guide
 
 # build installation guide
-build_markdown_manual("installation-guide" "Installation and Upgrade Guide")
+build_markdown_manual("installation-guide" "Installation and Upgrade Guide" "0")
 
 # target for building installation guide
 add_custom_target(installationguide ALL DEPENDS

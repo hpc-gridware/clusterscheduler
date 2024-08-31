@@ -18,7 +18,7 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-function(build_markdown_manual file title)
+function(build_markdown_manual file title located_in_extensions)
    string(TIMESTAMP DATETIME "%Y-%m-%d")
    add_custom_command(
          OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file}.pdf
@@ -29,6 +29,6 @@ function(build_markdown_manual file title)
          ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/markdown/manual/head.tex
          ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/scripts/pandoc_manual.sh
          COMMAND ${CMAKE_SOURCE_DIR}/doc/scripts/pandoc_manual.sh ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
-         ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME}
+         ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME} ${located_in_extensions}
    )
 endfunction()

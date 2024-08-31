@@ -44,6 +44,7 @@
 typedef struct {
    const char* users;
    const char* group;
+   const lList *grp_list;
    const char* projects;
    const char* pes;
    const char* hosts;
@@ -65,98 +66,98 @@ int main(int argc, char *argv[])
 
    filter_test_t positiv_test[] = {
    /* simple search */
-      {{"user1,user2,user3", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "project1,project2,project3", nullptr, nullptr, nullptr}, {"*", "staff", "project2", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "pe1,pe2,pe3", nullptr, nullptr}, {"*", "staff", "*", "pe3", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "h1,h2,h3", nullptr}, {"*", "staff", "*", "*", "h3", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue1,queue2,queue3"}, {"*", "staff", "*", "*", "*", "queue1"}, false},
+      {{"user1,user2,user3", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "project1,project2,project3", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project2", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "pe1,pe2,pe3", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe3", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "h1,h2,h3", nullptr}, {"*", "staff", nullptr, "*", "*", "h3", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "queue1,queue2,queue3"}, {"*", "staff", nullptr, "*", "*", "*", "queue1"}, false},
    /* wildcard search */
-      {{"user1,user2,user3", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "*", "staff", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "project1,project2,project3", nullptr, nullptr, nullptr}, {"*", "staff", "project*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "pe1,pe2,pe3", nullptr, nullptr}, {"*", "staff", "*", "pe*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "h1,h2,h3", nullptr}, {"*", "staff", "*", "*", "h*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue1,queue2,queue3"}, {"*", "staff", "*", "*", "*", "que*"}, false},
+      {{"user1,user2,user3", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "*", nullptr, "staff", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "project1,project2,project3", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "pe1,pe2,pe3", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "h1,h2,h3", nullptr}, {"*", "staff", nullptr, "*", "*", "h*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "queue1,queue2,queue3"}, {"*", "staff", nullptr, "*", "*", "*", "que*"}, false},
    /* wildcard definition */
-      {{"user*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "project*", nullptr, nullptr, nullptr}, {"*", "staff", "project2", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "pe*", nullptr, nullptr}, {"*", "staff", "*", "pe3", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "h*", nullptr}, {"*", "staff", "*", "*", "h1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue*"}, {"*", "staff", "*", "*", "*", "queue1"}, false},
+      {{"user*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "project*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project2", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "pe*", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe3", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "h*", nullptr}, {"*", "staff", nullptr, "*", "*", "h1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "queue*"}, {"*", "staff", nullptr, "*", "*", "*", "queue1"}, false},
    /* wildcard definition, wildcard search */
-      {{"user*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"u*", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "project*", nullptr, nullptr, nullptr}, {"*", "staff", "pro*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "pe*", nullptr, nullptr}, {"*", "staff", "*", "p*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "host*", nullptr}, {"*", "staff", "*", "*", "h*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue*"}, {"*", "staff", "*", "*", "*", "qu*"}, false},
+      {{"user*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"u*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "project*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "pro*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "pe*", nullptr, nullptr}, {"*", "staff", nullptr, "*", "p*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "host*", nullptr}, {"*", "staff", nullptr, "*", "*", "h*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "queue*"}, {"*", "staff", nullptr, "*", "*", "*", "qu*"}, false},
    /* hostgroup definition*/
-      {{nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", "*", "*", "host1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", "*", "*", "ho*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "@hgr*", nullptr}, {"*", "staff", "*", "*", "host1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "@hgr*", nullptr}, {"*", "staff", "*", "*", "hos*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", "*", "*", "@hgrp1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "host1", nullptr}, {"*", "staff", "*", "*", "@hgrp1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", "*", "*", "@hgrp1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "host1", nullptr}, {"*", "staff", "*", "*", "@hgrp*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", "*", "*", "@hgrp*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", "*", "*", "@hgrp*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "host1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "ho*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "@hgr*", nullptr}, {"*", "staff", nullptr, "*", "*", "host1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "@hgr*", nullptr}, {"*", "staff", nullptr, "*", "*", "hos*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "host1", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "host1", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "ho*", nullptr}, {"*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "@hgrp*", "*"}, false},
    /* userset definition */
-      {{"@userset1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"@userset1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"use*", "staff", "*", "*", "*", "*"}, false},
-      {{"@users*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"@users*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", "*", "*", "*", "*"}, false},
-      {{"user1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"@userset1", "staff", "*", "*", "*", "*"}, false},
-      {{"us*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"@userset1", "staff", "*", "*", "*", "*"}, false},
-      {{"user1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"@use*", "staff", "*", "*", "*", "*"}, false},
-      {{"use*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"@use*", "staff", "*", "*", "*", "*"}, false},
-      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "*", "*", "*", "*", "*"}, false},
-      {{"!@user*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "*", "*", "*", "*", "*"}, false},
+      {{"@userset1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@userset1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"use*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@users*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@users*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"user1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"@userset1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"us*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"@userset1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"user1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"@use*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"use*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"@use*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "*", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@user*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "*", nullptr, "*", "*", "*", "*"}, false},
    /* project definition */
-      {{nullptr, nullptr, "!*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "!*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, nullptr, "*", "*", "*"}, false},
    /* end test */
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "staff", "*", "*", "*", "*"}, true},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "*", "*", "*", "*"}, true},
    };
 
    filter_test_t negativ_test[] = {
    /* simple search */
-      {{"*,!user3", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", "*", "*", "*", "*"}, false},
-      {{"user1,user2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "*,!project2", nullptr, nullptr, nullptr}, {"*", "staff", "project2", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "project1,project3", nullptr, nullptr, nullptr}, {"*", "staff", "project2", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "*,!pe3", nullptr, nullptr}, {"*", "staff", "*", "pe3", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "pe1,pe2", nullptr, nullptr}, {"*", "staff", "*", "pe3", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "*,!h3", nullptr}, {"*", "staff", "*", "*", "h3", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "h1,h2", nullptr}, {"*", "staff", "*", "*", "h3", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "*,!queue1"}, {"*", "staff", "*", "*", "*", "queue1"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue2,queue3"}, {"*", "staff", "*", "*", "*", "queue1"}, false},
+      {{"*,!user3", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"user1,user2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user3", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "*,!project2", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project2", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "project1,project3", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project2", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "*,!pe3", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe3", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "pe1,pe2", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe3", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "*,!h3", nullptr}, {"*", "staff", nullptr, "*", "*", "h3", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "h1,h2", nullptr}, {"*", "staff", nullptr, "*", "*", "h3", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "*,!queue1"}, {"*", "staff", nullptr, "*", "*", "*", "queue1"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "queue2,queue3"}, {"*", "staff", nullptr, "*", "*", "*", "queue1"}, false},
    /* wildcard definition, wildcard search */
-      {{"!us*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", "*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, "!pro*", nullptr, nullptr, nullptr}, {"*", "staff", "project*", "*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, "!p*", nullptr, nullptr}, {"*", "staff", "*", "pe*", "*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!h*", nullptr}, {"*", "staff", "*", "*", "hos*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!qu*"}, {"*", "staff", "*", "*", "*", "que*"}, false},
+      {{"!us*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "!pro*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project*", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, "!p*", nullptr, nullptr}, {"*", "staff", nullptr, "*", "pe*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!h*", nullptr}, {"*", "staff", nullptr, "*", "*", "hos*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "!qu*"}, {"*", "staff", nullptr, "*", "*", "*", "que*"}, false},
    /* hostgroup definition*/
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", "*", "*", "host1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", "*", "*", "ho*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgr*", nullptr}, {"*", "staff", "*", "*", "host1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!@hgr*", nullptr}, {"*", "staff", "*", "*", "hos*", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!hgrp1", nullptr}, {"*", "staff", "*", "*", "hgrp1", "*"}, false},
-      {{nullptr, nullptr, nullptr, nullptr, "!hgrp*", nullptr}, {"*", "staff", "*", "*", "hgrp*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "host1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "ho*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgr*", nullptr}, {"*", "staff", nullptr, "*", "*", "host1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!@hgr*", nullptr}, {"*", "staff", nullptr, "*", "*", "hos*", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!hgrp1", nullptr}, {"*", "staff", nullptr, "*", "*", "hgrp1", "*"}, false},
+      {{nullptr, nullptr, nullptr, nullptr, nullptr, "!hgrp*", nullptr}, {"*", "staff", nullptr, "*", "*", "hgrp*", "*"}, false},
    /* userset definition */
-      {{"!@userset1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"!@userset1", nullptr, nullptr, nullptr, nullptr, nullptr}, {"use*", "staff", "*", "*", "*", "*"}, false},
-      {{"!@users*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"!@users*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", "*", "*", "*", "*"}, false},
-      {{"!@userset2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"@userset1,!@userset2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", "*", "*", "*", "*"}, false},
-      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@userset1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@userset1", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"use*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@users*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@users*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user*", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"!@userset2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@userset1,!@userset2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", "staff", nullptr, "*", "*", "*", "*"}, false},
+      {{"@user*2", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"user1", nullptr, nullptr, "*", "*", "*", "*"}, false},
    /* project definition */
-      {{nullptr, nullptr, "*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "*", "*", "*"}, false},
-      {{nullptr, nullptr, "!*", nullptr, nullptr, nullptr}, {"*", "staff", "project1", "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, nullptr, "*", "*", "*"}, false},
+      {{nullptr, nullptr, nullptr, "!*", nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "project1", "*", "*", "*"}, false},
    /* end test */
-      {{"!*", nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "staff", "*", "*", "*", "*"}, true},
+      {{"!*", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}, {"*", "staff", nullptr, "*", "*", "*", "*"}, true},
    };
 
    lList *hgroup_list;
@@ -208,7 +209,7 @@ int main(int argc, char *argv[])
       if (rqs_parse_filter_from_string(&filter, rule_filter.queues, nullptr)) {
          lSetObject(rule, RQR_filter_queues, filter);
       }
-      if(!rqs_is_matching_rule(rule, query_filter.users, query_filter.group, query_filter.projects, 
+      if(!rqs_is_matching_rule(rule, query_filter.users, query_filter.group, query_filter.grp_list, query_filter.projects,
                                 query_filter.pes, query_filter.hosts, query_filter.queues,
                                 userset_list, hgroup_list)) {
          printf("positiv filter matching failed (test %d)\n", i+1);
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
       if (rqs_parse_filter_from_string(&filter, rule_filter.queues, nullptr)) {
          lSetObject(rule, RQR_filter_queues, filter);
       }
-      if (rqs_is_matching_rule(rule, query_filter.users, query_filter.group, query_filter.projects, 
+      if (rqs_is_matching_rule(rule, query_filter.users, query_filter.group, query_filter.grp_list, query_filter.projects,
                                 query_filter.pes, query_filter.hosts, query_filter.queues,
                                 userset_list, hgroup_list)) {
          printf("negativ filter matching failed (test %d)\n", i+1);

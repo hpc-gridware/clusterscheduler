@@ -361,7 +361,7 @@ int main(int argc, char **argv)
    job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
-   clean_up_old_jobs(1);
+   clean_up_old_jobs(true);
    execd_trash_load_report();
    sge_set_flush_lr_flag(true);
 
@@ -686,7 +686,7 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 *  NOTES
 *     MT-NOTE: execd_get_job_ja_task() is MT safe 
 *******************************************************************************/
-bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job, lListElem **ja_task)
+bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task)
 {
    const void *iterator = nullptr;
 
@@ -704,11 +704,16 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
        */
       *job = lGetElemUlongNextRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
-   
-   if (*job == nullptr) {
-      ERROR(MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id));
-   } else if (*ja_task == nullptr) {
-      ERROR(MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
+
+   // check if we should report an error in the message file
+   // when cleanup of the active jobs directories is done then missing
+   // references are expected (e.g. because KEEP_ACTIVE changed
+   if (!ignore_missing_job_task) {
+      if (*job == nullptr) {
+         ERROR(MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id));
+      } else if (*ja_task == nullptr) {
+         ERROR(MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
+      }
    }
 
    *job = nullptr;

@@ -518,7 +518,7 @@ int do_ck_to_do(bool is_qmaster_down) {
 
    if (next_old_job <= now) {
       next_old_job = now + sge_gmt32_to_gmt64(OLD_JOB_INTERVAL);
-      clean_up_old_jobs(0);
+      clean_up_old_jobs(false);
    }
 
    /* check for end of simulated jobs */

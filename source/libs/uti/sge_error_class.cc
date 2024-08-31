@@ -38,6 +38,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
+#include <sge_log.h>
+
 typedef struct sge_error_message_str sge_error_message_t;
 
 struct sge_error_message_str {
@@ -97,6 +99,7 @@ sge_error_class_t *sge_error_class_create() {
    memset(ret, 0, sizeof(sge_error_class_t));
 
    ret->sge_error_handle = sge_malloc(sizeof(sge_error_t));
+   SGE_ASSERT(ret->sge_error_handle != nullptr);
    memset(ret->sge_error_handle, 0, sizeof(sge_error_t));
 
    ret->has_error = sge_error_has_error;
@@ -213,10 +216,12 @@ static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_cla
 
    auto *et = (sge_error_t *) ec->sge_error_handle;
    auto *elem = (sge_error_iterator_t *) sge_malloc(sizeof(sge_error_iterator_t));
+   SGE_ASSERT(elem != nullptr);
    elem->current = et->first;
    elem->is_first_flag = true;
 
    auto ret = (sge_error_iterator_class_t *) sge_malloc(sizeof(sge_error_iterator_class_t));
+   SGE_ASSERT(ret != nullptr);
    ret->sge_error_iterator_handle = elem;
    ret->get_message = sge_error_iterator_get_message;
    ret->get_quality = sge_error_iterator_get_quality;
@@ -234,7 +239,7 @@ static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_
    DENTER(TOP_LAYER);
 
    auto *error = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
-
+   SGE_ASSERT(error != nullptr);
    error->error_quality = error_quality;
    error->error_type = error_type;
 

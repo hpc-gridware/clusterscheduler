@@ -147,8 +147,8 @@ dispatch_t pe_match_static(const sge_assignment_t *a)
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
-   if (!sge_has_access_(a->user, a->group, lGetList(a->pe, PE_user_list), 
-            lGetList(a->pe, PE_xuser_list), a->acl_list)) {
+   if (!sge_has_access_(a->user, a->group, a->grp_list,
+                        lGetList(a->pe, PE_user_list), lGetList(a->pe, PE_xuser_list), a->acl_list)) {
       DPRINTF("job %d has no access to parallel environment \"%s\"\n", (int)a->job_id, a->pe_name);
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                      SCHEDD_INFO_NOACCESSTOPE_S, a->pe_name);

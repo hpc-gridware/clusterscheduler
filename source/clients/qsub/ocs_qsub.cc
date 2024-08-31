@@ -225,6 +225,12 @@ main(int argc, const char **argv)
       lWriteElemTo(job, stdout);
    }
 
+   job_set_command_line(job, argc, argv);
+
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
+      lWriteElemTo(job, stdout);
+   }
+
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_WARNING);
    if (tmp_ret > 0) {
       sge_exit(tmp_ret);

@@ -162,6 +162,7 @@ static const int job_nm[] = {
         JB_request_set_list,
         JB_owner,
         JB_group,
+        JB_grp_list,
         JB_ja_n_h_ids,
         JB_ja_template,
         JB_type,
@@ -740,7 +741,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
 
    u = lGetString(event, ET_strkey);
    new_ep = lFirst(lGetList(event, ET_new_version));
-   old_ep = userset_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), u);
+   old_ep = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), US_name, u);
 
    switch (action) {
       case SGE_EMA_ADD:

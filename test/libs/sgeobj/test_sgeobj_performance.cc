@@ -30,6 +30,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_job.h"
 
+#include <sge_log.h>
+
 /*
  * @todo: make it a C++ program
  *    - make the random array a class, e.g. derived from std::list
@@ -55,7 +57,8 @@ load_rand_file(const char *filename)
       fprintf(stderr, "error opening file %s for reading\n", filename);
       ret = false;
    } else {
-      random_array = (u_long32 *)malloc(num_jobs * sizeof(u_long32));
+      random_array = (u_long32 *)sge_malloc(num_jobs * sizeof(u_long32));
+      SGE_ASSERT(random_array != nullptr);
       for (int i = 0; i < num_jobs; i++) {
          char *str;
          if ((str = fgets(line, sizeof(line), fp)) != nullptr) {
@@ -81,7 +84,8 @@ create_rand_file(const char *filename)
    srand(time(0));
 
    // fill in a sequence of job ids into an array
-   random_array = (u_long32 *)malloc(num_jobs * sizeof(u_long32));
+   random_array = (u_long32 *)sge_malloc(num_jobs * sizeof(u_long32));
+   SGE_ASSERT(random_array != nullptr);
    for (int i = 0; i < num_jobs; i++) {
       random_array[i] = i + 1;
    }

@@ -53,6 +53,8 @@
 #include "load_avg.h"
 #include "msg_common.h"
 
+#include <reaper_execd.h>
+
 #ifdef COMPILE_DC
 #  include "ptf.h"
 #endif
@@ -68,21 +70,27 @@ int do_get_new_conf(struct_msg_t *aMsg)
    int ret;
    bool use_qidle = mconf_get_use_qidle();
    u_long32 dummy; /* always 0 */ 
-   char* old_spool = nullptr;
-   char* spool_dir = nullptr;
-   u_long32 old_reprioritization_enabled = mconf_get_reprioritize(); 
+   u_long32 old_reprioritization_enabled = mconf_get_reprioritize();
 
    DENTER(TOP_LAYER);
 
    unpackint(&(aMsg->buf), &dummy);
 
-   old_spool = mconf_get_execd_spool_dir();  
+   const char *old_spool = mconf_get_execd_spool_dir();
+   keep_active_t old_keep_active = mconf_get_keep_active();
 
    ret = gdi_get_merged_configuration(&Execd_Config_List);
   
-   spool_dir = mconf_get_execd_spool_dir(); 
+   const char *spool_dir = mconf_get_execd_spool_dir();
    if (strcmp(old_spool, spool_dir)) {
       WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir");
+   }
+
+   // if the keep_active flag has changed, we need to enforce cleanup of old jobs
+   // to get rid of old active jobs directories
+   keep_active_t keep_active = mconf_get_keep_active();
+   if (old_keep_active != keep_active) {
+      set_enforce_cleanup_old_jobs();
    }
 
 #ifdef COMPILE_DC

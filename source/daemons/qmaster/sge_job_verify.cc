@@ -84,6 +84,8 @@
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
 
+#include <sge_str.h>
+
 static bool
 check_binding_param_consistency(const lListElem *binding_elem);
 
@@ -151,10 +153,8 @@ sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const 
    for_each_ep(request, request_list) {
       const char *name = lGetString(request, CE_name);
       if (name != nullptr) {
-         INFO("==> checking slave request %s", name);
          const lListElem *centry = centry_list_locate(centry_list, name);
          if (centry != nullptr) {
-            INFO("==> found centry %s", name);
             u_long32 consumable = lGetUlong(centry, CE_consumable);
             if (consumable == CONSUMABLE_JOB) {
                ERROR(MSG_JOB_SLAVEPERJOBREQUEST_S, name);
@@ -168,9 +168,40 @@ sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const 
 
    return ret;
 }
+
+bool
+sge_job_verify_per_host_requests(lList **alpp, const lListElem *jep, const lList *master_centry_list) {
+   bool ret = true;
+
+   const lList *master_request_list = job_get_hard_resource_list(jep, JRS_SCOPE_MASTER);
+   const lList *slave_request_list = job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE);
+   if (master_request_list != nullptr && slave_request_list != nullptr) {
+      const lListElem *master_request;
+      for_each_ep (master_request, master_request_list) {
+         const char *name = lGetString(master_request, CE_name);
+         if (name != nullptr) {
+            const lListElem *centry = centry_list_locate(master_centry_list, name);
+            if (centry != nullptr) {
+               u_long32 consumable = lGetUlong(centry, CE_consumable);
+               if (consumable == CONSUMABLE_HOST) {
+                  if (lGetElemStr(slave_request_list, CE_name, name) != nullptr) {
+                     ERROR(MSG_JOB_PERHOSTINBOTHMASTERSLAVE_S, name);
+                     answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                     ret = false;
+                     break;
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   return ret;
+}
+
 int
-sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
-                      uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
+                      sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
 
@@ -189,7 +220,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
    lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
-   if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
+   if (jep == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
@@ -197,8 +228,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* check min_uid */
    if (ret == STATUS_OK) {
-      if (uid < mconf_get_min_uid()) {
-         ERROR(MSG_JOB_UID2LOW_II, (int) uid, (int) mconf_get_min_uid());
+      if (packet->uid < mconf_get_min_uid()) {
+         ERROR(MSG_JOB_UID2LOW_II, (int) packet->uid, (int) mconf_get_min_uid());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -206,22 +237,22 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
    /* check min_gid */
    if (ret == STATUS_OK) {
-      if (gid < mconf_get_min_gid()) {
-         ERROR(MSG_JOB_GID2LOW_II, (int) gid, (int) mconf_get_min_gid());
+      if (packet->gid < mconf_get_min_gid()) {
+         ERROR(MSG_JOB_GID2LOW_II, (int) packet->gid, (int) mconf_get_min_gid());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
    }
 
-   /* 
-    * adjust user and group    
+   /*
+    * adjust user and group
     *
     * we cannot rely on the information we got from the client
     * therefore we fill in the data we got from communication
     * library.
     */
    if (ret == STATUS_OK) {
-      if (!job_set_owner_and_group(jep, uid, gid, ruser, group)) {
+      if (!job_set_owner_and_group(jep, packet->uid, packet->gid, packet->user, packet->group, packet->amount, packet->grp_array)) {
          ret = STATUS_EUNKNOWN;
       }
    }
@@ -292,7 +323,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       }
    }
 
-   // @todo verify that per per host requests are not in both master and slave requests
+   // verify that per per host requests are not in both master and slave requests
+   if (ret == STATUS_OK) {
+      if (!sge_job_verify_per_host_requests(alpp, jep, master_centry_list)) {
+         ret = STATUS_EUNKNOWN;
+      }
+   }
 
    /* check for qsh without DISPLAY set */
    if (ret == STATUS_OK) {
@@ -467,10 +503,10 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    {
       lList *user_lists = mconf_get_user_lists();
       lList *xuser_lists = mconf_get_xuser_lists();
+      lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
-      if (!sge_has_access_(ruser, lGetString(jep, JB_group), /* read */
-                           user_lists, xuser_lists, master_userset_list)) {
-         ERROR(MSG_JOB_NOPERMS_SS, ruser, rhost);
+      if (!sge_has_access_(packet->user, packet->group, grp_list, user_lists, xuser_lists, master_userset_list)) {
+         ERROR(MSG_JOB_NOPERMS_SS, packet->user, packet->host);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
          lFreeList(&xuser_lists);
@@ -478,6 +514,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       }
       lFreeList(&user_lists);
       lFreeList(&xuser_lists);
+      lFreeList(&grp_list);
    }
 
    /* 
@@ -607,13 +644,14 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    {
       const lListElem *cqueue = nullptr;
       int has_permissions = 0;
+      lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          const lListElem *qinstance = nullptr;
 
          for_each_ep(qinstance, qinstance_list) {
-            if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {
+            if (sge_has_access(packet->user, packet->group, grp_list, qinstance, master_userset_list)) {
                DPRINTF("job has access to queue " SFQ "\n", lGetString(qinstance, QU_qname));
                has_permissions = 1;
                break;
@@ -623,8 +661,9 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
             break;
          }
       }
+      lFreeList(&grp_list);
       if (has_permissions == 0) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NOTINANYQ_S, ruser);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NOTINANYQ_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
    }
@@ -634,7 +673,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
       char *enforce_user = mconf_get_enforce_user();
 
       if (enforce_user && !strcasecmp(enforce_user, "auto")) {
-         int status = sge_add_auto_user(ruser, alpp, monitor);
+         int status = sge_add_auto_user(packet->user, alpp, monitor);
 
          if (status != STATUS_OK) {
             sge_free(&enforce_user);
@@ -644,8 +683,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
 
       /* ensure user exists if enforce_user flag is set */
       if (enforce_user && !strcasecmp(enforce_user, "true") &&
-          !user_list_locate(master_user_list, ruser)) {
-         ERROR(MSG_JOB_USRUNKNOWN_S, ruser);
+          !user_list_locate(master_user_list, packet->user)) {
+         ERROR(MSG_JOB_USRUNKNOWN_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          sge_free(&enforce_user);
          DRETURN(STATUS_EUNKNOWN);
@@ -654,17 +693,17 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
    }
 
    /* set default project */
-   if (!lGetString(jep, JB_project) && ruser && master_user_list) {
+   if (!lGetString(jep, JB_project) && master_user_list) {
       lListElem *uep = nullptr;
-      if ((uep = user_list_locate(master_user_list, ruser))) {
+      if ((uep = user_list_locate(master_user_list, packet->user))) {
          lSetString(jep, JB_project, lGetString(uep, UU_default_project));
       }
    }
 
    /* project */
    {
-      int local_ret = job_verify_project(jep, alpp, ruser, group);
-      if (local_ret != STATUS_OK) {
+      int local_ret = job_verify_project(jep, alpp, packet->user, packet->group, lGetList(jep, JB_grp_list));
+      if (ret != STATUS_OK) {
          DRETURN(local_ret);
       }
    }
@@ -679,8 +718,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     * If it is a deadline job the user has to be a deadline user
     */
    if (lGetUlong64(jep, JB_deadline) > 0) {
-      if (!userset_is_deadline_user(master_userset_list, ruser)) {
-         ERROR(MSG_JOB_NODEADLINEUSER_S, ruser);
+      if (!user_is_deadline_user(packet, master_userset_list)) {
+         ERROR(MSG_JOB_NODEADLINEUSER_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -760,7 +799,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp, char *ruser, ch
     * jobs with higher priority than 0 (=BASE_PRIORITY)
     */
    if (lGetUlong(jep, JB_priority) > BASE_PRIORITY &&
-       !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
+       !manop_is_operator(packet, master_manager_list, master_operator_list)) {
       ERROR(SFNMAX, MSG_JOB_NONADMINPRIO);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);

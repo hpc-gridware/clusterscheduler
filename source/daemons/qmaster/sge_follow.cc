@@ -356,7 +356,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DPRINTF("Queue version: %d\n", q_version);
 
             /* ensure that the jobs owner has access to this queue */
-            if (!sge_has_access_(lGetString(jep, JB_owner), lGetString(jep, JB_group),
+            if (!sge_has_access_(lGetString(jep, JB_owner), lGetString(jep, JB_group), lGetList(jep, JB_grp_list),
                                  lGetList(qep, QU_acl), lGetList(qep, QU_xacl),
                                  master_userset_list)) {
                ERROR(MSG_JOB_JOBACCESSQ_US, sge_u32c(job_number), q_name);

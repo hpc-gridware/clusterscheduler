@@ -91,34 +91,32 @@
 *******************************************************************************/
 void
 sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
-   uid_t uid;
-   gid_t gid;
-   char username[128];
-   char groupname[128];
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-
    DENTER(GDI_LAYER);
 
-   if (!sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username),
-                                      &gid, groupname, sizeof(groupname))) {
+   if (!sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
+                                      &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
       ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
 
-   DPRINTF("uid/username = %d/%s, gid/groupname = %d/%s\n", (int) uid, username, (int) gid, groupname);
+   // show information in debug output
+   dstring dbg_msg = DSTRING_INIT;
+   ocs_id2dstring(&dbg_msg, packet->uid, packet->user, packet->gid, packet->group, packet->amount, packet->grp_array);
+   sge_dstring_free(&dbg_msg);
 
-   if (!manop_is_manager(username, master_manager_list)) {
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   if (!manop_is_manager(packet, master_manager_list)) {
       ERROR(SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
 
    if (sge_qmaster_shutdown_via_signal_thread(0) == 0) {
-      INFO(MSG_SGETEXT_KILL_SSS, username, packet->host, prognames[QMASTER]);
+      INFO(MSG_SGETEXT_KILL_SSS, packet->user, packet->host, prognames[QMASTER]);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
-      ERROR(MSG_SGETEXT_KILL_FAILED_SSS, username, packet->host, prognames[QMASTER]);
+      ERROR(MSG_SGETEXT_KILL_FAILED_SSS, packet->user, packet->host, prognames[QMASTER]);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
 

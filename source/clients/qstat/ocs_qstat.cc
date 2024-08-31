@@ -658,13 +658,12 @@ sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
 /* --------------- qstat stdout handler --------------------------------------*/
 
 
-static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp) 
-{
+static int
+qstat_stdout_init(qstat_handler_t *handler, lList **alpp) {
+   DENTER(TOP_LAYER);
    int ret = 0;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)sge_malloc(sizeof(qstat_stdout_ctx_t));
-   
-   DENTER(TOP_LAYER);
-   
+
    if (ctx == nullptr) {
       answer_list_add(alpp, "malloc of qstat_stdout_ctx failed",
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -683,11 +682,9 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
    handler->report_queue_suspend_alarm = qstat_stdout_queue_suspend_alarm;
    handler->report_queue_message = qstat_stdout_queue_message;
    handler->report_queue_resource = qstat_stdout_queue_resource;
-   
    handler->report_pending_jobs_started = qstat_stdout_pending_jobs_started;
    handler->report_finished_jobs_started = qstat_stdout_finished_jobs_started;
    handler->report_error_jobs_started = qstat_stdout_error_jobs_started;
-   
    handler->destroy = qstat_stdout_destroy;
    
    if((ret=job_stdout_init(&(handler->job_handler), alpp))) {
@@ -1907,7 +1904,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       }
    }
    what = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I->%T%I%I%I%I->%T(%I%I%I%I%I%I%I)"
-            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I%I%I%I)",
+            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T)",
             JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time, JB_submission_command_line,
             JB_owner, JB_uid, JB_group, JB_gid, JB_account, JB_merge_stderr, 
             JB_mail_list, JB_project, JB_notify, JB_job_name, 
@@ -1936,8 +1933,8 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             RN_Type, JB_pe_range, JB_jid_request_list, JB_ja_ad_request_list,
             JB_verify_suitable_queues, JB_soft_wallclock_gmt,
             JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
-            JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty);
-
+            JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+            JB_grp_list, RN_Type);
    /* get job list */
    alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
    lFreeWhere(&where);

@@ -34,8 +34,11 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
+#include "uti/sge_uidgid.h"
 
 #include "cull/cull.h"
+
+#include "comm/cl_communication.h"
 
 typedef struct _sge_gdi_task_class_t sge_gdi_task_class_t;
 
@@ -121,8 +124,8 @@ struct _sge_gdi_packet_class_t {
     * to the correct external communication partner using the
     * commlib infrastructure
     */
-   char *host;
-   char *commproc;
+   char host[CL_MAXHOSTNAMELEN_LENGTH];
+   char commproc[CL_MAXHOSTNAMELEN_LENGTH];
    u_short commproc_id;
    u_long32 response_id;
 
@@ -162,6 +165,8 @@ struct _sge_gdi_packet_class_t {
    gid_t gid;
    char user[128];
    char group[128];
+   int amount;
+   ocs_grp_elem_t *grp_array;
 
    /*
     * Packbuffer used for GDI GET requests to directly store the 

@@ -47,6 +47,12 @@
 #define GID_RANGE_NOT_ALLOWED_ID 100
 #define RLIMIT_UNDEFINED -9999
 
+typedef enum {
+   KEEP_ACTIVE_TRUE = 0,
+   KEEP_ACTIVE_FALSE,
+   KEEP_ACTIVE_ERROR
+} keep_active_t;
+
 typedef int (*tDaemonizeFunc)(void *ctx);
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
@@ -119,7 +125,7 @@ bool mconf_get_do_credentials();
 bool mconf_get_do_authentication();
 bool mconf_get_acct_reserved_usage();
 bool mconf_get_sharetree_reserved_usage();
-bool mconf_get_keep_active();
+keep_active_t mconf_get_keep_active();
 bool mconf_get_enable_binding();
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();
@@ -149,6 +155,7 @@ int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
 std::string mconf_get_usage_patterns();
 bool mconf_get_enable_forced_qdel();
+bool mconf_get_enable_sup_grp_eval();
 bool mconf_get_enable_forced_qdel_if_unknown();
 bool mconf_get_enable_enforce_master_limit();
 bool mconf_get_enable_test_sleep_after_request();

@@ -1500,9 +1500,9 @@ static bool get_topology_solaris(char** topology, int* length)
    int core = 0;
 
    /* topology particels */
-   char* S = "S"; /* socket */
-   char* C = "C"; /* core   */
-   char* T = "T"; /* thread */
+   const char* S = "S"; /* socket */
+   const char* C = "C"; /* core   */
+   const char* T = "T"; /* thread */
    
    bool retval = true;
    
@@ -1645,7 +1645,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
    }
 
    /* get pointer to the cpu_info kstat */
-   cpu_info = kstat_lookup(kstat, "cpu_info", -1, nullptr);
+   cpu_info = kstat_lookup(kstat, (char *)"cpu_info", -1, nullptr);
 
    /* loop over all cpu_info entries */
    for (; cpu_info != nullptr; cpu_info = cpu_info->ks_next) {
@@ -1662,7 +1662,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
       }   
 
       /* get the chip_id which reflects the socket */
-      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, "chip_id");
+      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, (char *)"chip_id");
       if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;
@@ -1671,7 +1671,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
 
       /* get the core_id which reflects the core and threads 
          when multiple same core ids are on one chip_id */
-      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, "core_id");
+      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, (char *)"core_id");
       if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;

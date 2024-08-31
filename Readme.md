@@ -36,7 +36,9 @@ Our immediate focus is on laying a robust foundation for the future of cluster s
 - **Usage Reporting**: Enhance online usage reporting and introduce customizable accounting values.
 - **Security Measures**: Implement request limits to guard against denial-of-service attacks.
 - **Container Builds**: Facilitate container-based builds.
-  To further improve usability and maintainability, we plan to remove outdated or rarely-used components:
+- **Container Support**: Support for HPC container runtimes like Apptainer/Singularity, podman, Sarus, ...
+
+To further improve usability and maintainability, we plan to remove outdated or rarely-used components:
 - **GUI Modernization**: Discontinue the old Motif-based GUI.
 - **Shell Simplification**: Remove qtcsh, aligning with other commercial schedulers.
 - **Code Simplification**: Phase out complex components like the JGDI interface and its associated services.

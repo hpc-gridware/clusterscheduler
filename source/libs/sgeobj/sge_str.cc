@@ -221,3 +221,17 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
    }
    DRETURN(ret);
 }
+
+lList *
+grp_list_array2list(int amount, ocs_grp_elem_t *grp_array) {
+   DENTER(TOP_LAYER);
+   lList *grp_list = nullptr;
+
+   for(int i = 0; i < amount; i++) {
+      lListElem *new_grp = lAddElemStr(&grp_list, ST_name, grp_array[i].name, ST_Type);
+
+      lSetUlong(new_grp, ST_id, grp_array[i].id);
+   }
+   DRETURN(grp_list);
+}
+

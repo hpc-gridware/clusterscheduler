@@ -640,7 +640,7 @@ sge_add_default_user_nodes( lListElem *root_node,
             /*
             ** check if user would be allowed
             */
-            has_access = sge_has_access_(user_name, nullptr, acl, xacl, userset_list);
+            has_access = sge_has_access_(user_name, nullptr, nullptr, acl, xacl, userset_list);
 
             if (has_access && 
                 ((dnode=search_userprj_node(root_node, user_name, 

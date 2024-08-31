@@ -753,8 +753,8 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
                continue;
             }
 
-            rule = rqs_get_matching_rule(rqs, a->user, a->group, a->project, pe, eh_name, queue, a->acl_list,
-                                          a->hgrp_list, nullptr);
+            rule = rqs_get_matching_rule(rqs, a->user, a->group, a->grp_list, a->project, pe, eh_name, queue, a->acl_list,
+                                         a->hgrp_list, nullptr);
             if (rule != nullptr) {
 
                rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue, pe);

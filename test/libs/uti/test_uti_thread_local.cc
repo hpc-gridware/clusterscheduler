@@ -41,12 +41,15 @@
 
 #include "uti/sge_stdlib.h"
 
+#include <sge_log.h>
+
 static pthread_key_t thread_local_key;
 
 void init_local_storage(int thread) {
    char *data = (char *)pthread_getspecific(thread_local_key);
    if (data == nullptr) {
       data = sge_malloc(100);
+      SGE_ASSERT(data != nullptr);
       snprintf(data, 100, "Thread %d", thread);
       pthread_setspecific(thread_local_key, data);
    }

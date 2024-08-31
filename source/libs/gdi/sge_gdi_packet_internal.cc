@@ -726,18 +726,15 @@ bool
 sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
-   /* 
-    * here the packet gets a unique request id and source for host
-    * user and group is initialized
-    */
    packet->id = gdi_data_get_next_request_id();
-   packet->commproc = strdup(prognames[QMASTER]);      
-   packet->host = strdup(gdi_get_act_master_host(false));
+   strncpy(packet->commproc, prognames[QMASTER], sizeof(packet->commproc)-1);
+   strncpy(packet->host, gdi_get_act_master_host(false), sizeof(packet->host)-1);
    packet->is_intern_request = true;
 
-   bool ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
-                                             &(packet->uid), packet->user, sizeof(packet->user),
-                                             &(packet->gid), packet->group, sizeof(packet->group));
+   bool ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
+                                             &packet->uid, packet->user, sizeof(packet->user),
+                                             &packet->gid, packet->group, sizeof(packet->group),
+                                             &packet->amount, &packet->grp_array);
 
    /* 
     * append the packet to the packet list of the worker threads
