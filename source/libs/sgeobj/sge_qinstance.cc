@@ -1134,11 +1134,11 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                      mods++;
                      did_booking = true;
                   }
-
-                  // if we did the master task booking
-                  // adjust the slot count for the slave booking
-                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
+
+               // if we did the master task booking
+               // adjust the slot count for the slave booking
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
             }
 
             // now do booking for the (remaining) slave tasks, if any

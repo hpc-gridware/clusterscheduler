@@ -869,9 +869,9 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
                   mods++;
                   did_booking = true;
                }
-
-               adjust_slave_task_debit_slots(pe, slave_debit_slots);
             }
+
+            adjust_slave_task_debit_slots(pe, slave_debit_slots);
          }
 
          // now do booking for the (remaining) slave tasks, if any
@@ -1006,11 +1006,11 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
                      mods++;
                      did_booking = true;
                   }
-
-                  // if we did the master task booking
-                  // adjust the slot count for the slave booking
-                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
+
+               // if we did the master task booking
+               // adjust the slot count for the slave booking
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
             }
 
             // now do booking for the (remaining) slave tasks, if any

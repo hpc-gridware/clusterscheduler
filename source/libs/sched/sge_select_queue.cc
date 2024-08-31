@@ -6283,7 +6283,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
    lListElem *jrs;
    for_each_rw (jrs, lGetListRW(a->job, JB_request_set_list)) {
       u_long32 scope = lGetUlong(jrs, JRS_scope);
-      DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests\n", job_scope_name(scope));
+      DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests\n", object_name, job_scope_name(scope));
 
       lList *requests = lGetListRW(jrs, JRS_hard_resource_list);
       for_each_rw (req, requests) {
@@ -6295,8 +6295,8 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             // if we are checking global requests, and it is a CONSUMABLE_JOB:
             // special handling: the queue can still be used as slave queue
             if (scope == JRS_SCOPE_GLOBAL && lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-               DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use qinstance %s as slave queue\n",
-                       name, lGetString(queue, QU_full_name));
+               DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use %s %s as slave queue\n",
+                       name, queue == nullptr ? "host" : "qinstance", object_name);
                lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
                /* misuse of the DISPATCH_MISSING_ATTR
                 * add a new DISPATCH result, e.g. DISPATCH_HANDLE_CONSUMABLE_JOB
@@ -6312,8 +6312,8 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             // @todo do we want to untag in other situations, e.g. global requests do not match: untag all?
          } else if (result == DISPATCH_NOT_AT_TIME) {
             if (scope == JRS_SCOPE_GLOBAL && lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-               DPRINTF("===> CONSUMABLE_JOB %s does not match now - can still use qinstance %s as slave queue (and master later)\n",
-                       name, lGetString(queue, QU_full_name));
+               DPRINTF("===> CONSUMABLE_JOB %s does not match now - can still use %s %s as slave queue (and master later)\n",
+                       name, queue == nullptr ? "host" : "qinstance", object_name);
                lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER);
             } else {
                DSTRING_STATIC(dstr, 1024);

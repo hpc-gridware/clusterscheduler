@@ -992,11 +992,11 @@ rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstri
                      mods++;
                      did_booking = true;
                   }
-
-                  // if we did the master task booking
-                  // adjust the slot count for the slave booking
-                  adjust_slave_task_debit_slots(pe, slave_debit_slots);
                }
+
+               // if we did the master task booking
+               // adjust the slot count for the slave booking
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
             }
             // now do booking for the (remaining) slave tasks, if any
             if (slave_debit_slots != 0) {
