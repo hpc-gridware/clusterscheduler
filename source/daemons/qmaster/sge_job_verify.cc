@@ -131,11 +131,13 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, 
             ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "master");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
+            break;
          }
          if (centry_list_locate(slave_requests, name) != nullptr) {
             ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "slave");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
+            break;
          }
       }
    }
@@ -160,6 +162,7 @@ sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const 
                ERROR(MSG_JOB_SLAVEPERJOBREQUEST_S, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
+               break;
             }
          }
       }
@@ -196,6 +199,56 @@ sge_job_verify_per_host_requests(lList **alpp, const lListElem *jep, const lList
       }
    }
 
+   return ret;
+}
+
+static bool job_verify_soft_master_slave_requests(lList **alpp, const lListElem *jep) {
+   bool ret = true;
+
+   const lList *jrs_list = lGetList(jep, JB_request_set_list);
+   if (jrs_list != nullptr) {
+      const lListElem *jrs;
+      for_each_ep(jrs, jrs_list) {
+         // we do not allow master soft queue requests
+         if (lGetUlong(jrs, JRS_scope) == JRS_SCOPE_MASTER) {
+            if (lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+               ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               ret = false;
+               break;
+            }
+            // we do not allow master and slave soft resource requests
+            if (lGetList(jrs, JRS_soft_resource_list) != nullptr) {
+               ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTREQ);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               ret = false;
+               break;
+            }
+         }
+      }
+   }
+
+   return ret;
+}
+
+static bool
+job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep) {
+   bool ret = true;
+
+   if (lGetString(jep, JB_pe) == nullptr) {
+      const lList *jrs_list = lGetList(jep, JB_request_set_list);
+      if (jrs_list != nullptr) {
+         const lListElem *jrs;
+         for_each_ep(jrs, jrs_list) {
+            if (lGetUlong(jrs, JRS_scope) != JRS_SCOPE_GLOBAL) {
+               ERROR(SFNMAX, MSG_JOB_MASTERSLAVENONPE);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               ret = false;
+               break;
+            }
+         }
+      }
+   }
    return ret;
 }
 
@@ -257,47 +310,72 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   /* check for non-parallel job that define master requests */
+   /*
+    * fill name and shortcut for all requests
+    * fill numeric values for all bool, time, memory and int type requests
+    * use the master_CEntry_list for all fills
+    * JB_hard/soft_resource_list points to a CE_Type list
+    */
+   lListElem *jrs;
+   for_each_rw(jrs, lGetList(jep, JB_request_set_list)) {
+      u_long32 scope = lGetUlong(jrs, JRS_scope);
+      DPRINTF("request set of scope " sge_uu32 "\n", scope);
+
+      lList *hard_resource_list = lGetListRW(jrs, JRS_hard_resource_list);
+      if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      if (compress_ressources(alpp, hard_resource_list, SGE_OBJ_JOB)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      if (!centry_list_is_correct(hard_resource_list, alpp)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+
+      lList *soft_resource_list = lGetListRW(jrs, JRS_soft_resource_list);
+      if (centry_list_fill_request(soft_resource_list, alpp, master_centry_list, false, true, false)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      if (compress_ressources(alpp, soft_resource_list, SGE_OBJ_JOB)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      if (deny_soft_consumables(alpp, soft_resource_list, master_centry_list)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      if (!centry_list_is_correct(soft_resource_list, alpp)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+
+      lList *queue_list = lGetListRW(jrs, JRS_hard_queue_list);
+      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+      queue_list = lGetListRW(jrs, JRS_soft_queue_list);
+      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+         ret = STATUS_EUNKNOWN;
+         break;
+      }
+   }
+
+   /* check for non-parallel job that define master or slave requests */
    if (ret == STATUS_OK) {
-      if (lGetString(jep, JB_pe) == nullptr) {
-         const lList *jrs_list = lGetList(jep, JB_request_set_list);
-         if (jrs_list != nullptr) {
-            const lListElem *jrs;
-            for_each_ep(jrs, jrs_list) {
-               if (lGetUlong(jrs, JRS_scope) > JRS_SCOPE_GLOBAL) {
-                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVENONPE);
-                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                  ret = STATUS_EUNKNOWN;
-                  break;
-               }
-            }
-         }
+      if (!job_verify_non_pe_soft_master_slave_requests(alpp, jep)) {
+         ret = STATUS_EUNKNOWN;
       }
    }
 
    // check for soft master or slave requests - we don't allow them (for now)
    if (ret == STATUS_OK) {
-      const lList *jrs_list = lGetList(jep, JB_request_set_list);
-      if (jrs_list != nullptr) {
-         const lListElem *jrs;
-         for_each_ep(jrs, jrs_list) {
-            // we do not allow master soft queue requests
-            if (lGetUlong(jrs, JRS_scope) == JRS_SCOPE_MASTER) {
-               if (lGetList(jrs, JRS_soft_queue_list) != nullptr) {
-                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
-                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                  ret = STATUS_EUNKNOWN;
-                  break;
-               }
-               // we do not allow master and slave soft resource requests
-               if (lGetList(jrs, JRS_soft_resource_list) != nullptr) {
-                  ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTREQ);
-                  answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                  ret = STATUS_EUNKNOWN;
-                  break;
-               }
-            }
-         }
+      if (!job_verify_soft_master_slave_requests(alpp, jep)) {
+         ret = STATUS_EUNKNOWN;
       }
    }
 
@@ -323,7 +401,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   // verify that per per host requests are not in both master and slave requests
+   // verify that per host requests are not in both master and slave requests
    if (ret == STATUS_OK) {
       if (!sge_job_verify_per_host_requests(alpp, jep, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
@@ -456,6 +534,13 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       lFreeList(&temp);
    }
 
+#if 0
+   // if verification failed so far, we don't need to continue
+   if (ret != STATUS_OK) {
+      //DRETURN(ret);
+   }
+#endif
+
    /*
     * Following block should only be executed once, when the job has no job id.
     *
@@ -517,53 +602,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       lFreeList(&grp_list);
    }
 
-   /* 
-    * fill name and shortcut for all requests
-    * fill numeric values for all bool, time, memory and int type requests
-    * use the master_CEntry_list for all fills
-    * JB_hard/soft_resource_list points to a CE_Type list
-    */
-   lListElem *jrs;
-   for_each_rw(jrs, lGetList(jep, JB_request_set_list)) {
-      u_long32 scope = lGetUlong(jrs, JRS_scope);
-      DPRINTF("request set of scope " sge_uu32 "\n", scope);
-
-      lList *hard_resource_list = lGetListRW(jrs, JRS_hard_resource_list);
-      if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      if (compress_ressources(alpp, hard_resource_list, SGE_OBJ_JOB)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      if (!centry_list_is_correct(hard_resource_list, alpp)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-
-      lList *soft_resource_list = lGetListRW(jrs, JRS_soft_resource_list);
-      if (centry_list_fill_request(soft_resource_list, alpp, master_centry_list, false, true, false)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      if (compress_ressources(alpp, soft_resource_list, SGE_OBJ_JOB)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      if (deny_soft_consumables(alpp, soft_resource_list, master_centry_list)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      if (!centry_list_is_correct(soft_resource_list, alpp)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-
-      lList *queue_list = lGetListRW(jrs, JRS_hard_queue_list);
-      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      queue_list = lGetListRW(jrs, JRS_soft_queue_list);
-      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-   }
-
-   /* 
+   /*
     * here we test (if requested) the parallel environment exists.
     * if not the job is refused
     */
@@ -703,7 +742,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    /* project */
    {
       int local_ret = job_verify_project(jep, alpp, packet->user, packet->group, lGetList(jep, JB_grp_list));
-      if (ret != STATUS_OK) {
+      if (local_ret != STATUS_OK) {
          DRETURN(local_ret);
       }
    }

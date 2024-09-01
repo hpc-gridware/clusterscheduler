@@ -943,7 +943,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    u_long64 now = sge_get_gmt64();
    const char *session;
    lList *answer_list = nullptr;
-   const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
    lListElem *rqs = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -963,7 +962,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    DENTER(TOP_LAYER);
 
    jobid = lGetUlong(jep, JB_job_number);
-   jataskid = jatep ? lGetUlong(jatep, JAT_task_number) : 0;
+   jataskid = jatep != nullptr ? lGetUlong(jatep, JAT_task_number) : 0;
    session = lGetString(jep, JB_session);
 
    const char *pe_name = nullptr;
@@ -993,6 +992,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          global_host_ep = host_list_locate(master_exechost_list, "global");
          const char *last_hostname = nullptr;
          const lListElem *gdil_ep;
+         const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
          for_each_rw(gdil_ep, gdil) {
             lListElem *ar = nullptr;
             u_long32 ar_id = lGetUlong(jep, JB_ar);
