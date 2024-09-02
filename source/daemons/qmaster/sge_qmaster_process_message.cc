@@ -72,9 +72,6 @@ static void
 do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
-do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor);
-
-static void
 do_report_request(struct_msg_t *, monitoring_t *monitor);
 
 static void
@@ -91,6 +88,83 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag, u_long32
 #ifdef SOLARIS
 #pragma no_inline(do_gdi_packet, do_c_ack, do_report_request)
 #endif
+
+/**
+ * @brief Stores a packet in a request queue for further processing by a different thread
+ *
+ * @param message The message containing the data required to create a packet/task
+ * @param data_list The list containing the request data (GDI objects/Report or ACK data)
+ * @param type The type of the packet
+ */
+static void
+ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_request_type_t type) {
+   // create a GDI packet to transport the list to a thread that is able to handle it
+   sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
+   strcpy(packet->host, message->snd_host);
+   strcpy(packet->commproc, message->snd_name);
+   packet->commproc_id = message->snd_id;
+   packet->response_id = message->request_mid;
+   packet->is_intern_request = false;
+   packet->request_type = type;
+
+   // Append a pseudo GDI task
+   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &data_list, nullptr, nullptr, nullptr, false);
+
+   // Put the packet into the task queue so that workers can handle it
+   sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+}
+
+/**
+ * @brief Handles an incoming ACK request.
+ *
+ * After validation of the sender, the ACK request is stored in the task queue for further processing by a worker thread.
+ *
+ * @param message The message containing the ACK request
+ * @param monitor The monitoring object
+ */
+static void
+do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   while (pb_unused(&(message->buf)) > 0) {
+      lListElem *ack = nullptr;
+
+      // get the ACK element
+      if (cull_unpack_elem(&message->buf, &ack, nullptr)) {
+         ERROR("failed unpacking ACK");
+         DRETURN_VOID;
+      }
+
+      // check the tag and the sender
+      u_long32 ack_tag = lGetUlong(ack, ACK_type);
+      if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
+         // accept only ack requests from admin or root
+         const char *admin_user = bootstrap_get_admin_user();
+         const char *component = component_get_component_name();
+         if (!sge_security_verify_unique_identifier(true, admin_user, component, 0,
+                                                    message->snd_host, message->snd_name, message->snd_id)) {
+            ERROR("ACK request from unexpected sender");
+            lFreeElem(&ack);
+            DRETURN_VOID;
+         }
+      } else if (ack_tag == ACK_EVENT_DELIVERY) {
+         // TODO: here we should check if the event belongs to the user who send the request
+         ;
+      } else {
+         // unknown tag
+         ERROR(MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag));
+         lFreeElem(&ack);
+         DRETURN_VOID;
+      }
+
+      // store the request for a handling thread
+      // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
+      lList *ack_list = lCreateList("ACK list", lGetElemDescr(ack));
+      lAppendElem(ack_list, ack);
+      ocs_store_packet(message, ack_list, PACKET_ACK_REQUEST);
+   }
+}
+
 
 /****** qmaster/sge_qmaster_process_message/sge_qmaster_process_message() ******
 *  NAME
@@ -151,7 +225,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
             break;
          case TAG_ACK_REQUEST:
             MONITOR_INC_ACK(monitor);
-            do_c_ack(&msg, monitor);
+            do_c_ack_request(&msg, monitor);
             break;
          case TAG_EVENT_CLIENT_EXIT:
             MONITOR_INC_ECE(monitor);
@@ -216,7 +290,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;
-   packet->is_gdi_request = true;
+   packet->request_type = PACKET_GDI_REQUEST;
 
    // check GDI version
    if (local_ret) {
@@ -357,27 +431,8 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   /*
-    * create a GDI packet to transport the list to the worker where
-    * it will be handled
-    */
-   sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
-   strcpy(packet->host, aMsg->snd_host);
-   strcpy(packet->commproc, aMsg->snd_name);
-   packet->commproc_id = aMsg->snd_id;
-   packet->response_id = aMsg->request_mid;
-   packet->is_intern_request = false;
-   packet->is_gdi_request = false;
-
-   /* 
-    * Append a pseudo GDI task
-    */
-   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &rep, nullptr, nullptr, nullptr, false);
-
-   /*
-    * Put the packet into the task queue so that workers can handle it
-    */
-   sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+   // store the request for a handling thread
+   ocs_store_packet(aMsg, rep, PACKET_REPORT_REQUEST);
 
    DRETURN_VOID;
 } /* do_report_request */
@@ -439,76 +494,50 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* do_event_client_exit() */
 
-
-/****************************************************
- Master code.
- Handle ack requests
- Ack requests can be packed together in one packet.
-
- These are:
- - an execd sends an ack for a received job
- - an execd sends an ack for a signal delivery
- - the schedd sends an ack for received events
-
- if the counterpart uses the dispatcher ack_tag is the
- TAG we sent to the counterpart.
- ****************************************************/
-static void
-do_c_ack(struct_msg_t *aMsg, monitoring_t *monitor) {
-   u_long32 ack_tag, ack_ulong, ack_ulong2;
-   const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = component_get_component_name();
-   lListElem *ack = nullptr;
-
+/**
+ * @brief handles an ACK request.
+ *
+ * Requires the global lock to get access to the main data store.
+ *
+ * Handles:
+ *    - an execd sends an ack for a received job
+ *    - an execd sends an ack for a signal delivery
+ *    - an external event client sends an ack for received events
+ *
+ * @param packet
+ * @param task
+ * @param monitor *
+ * @param packet Pseudo GDI packet that contains an ACK request
+ * @param task Pseudo GDI task containing the ACK list with one ACK element
+ * @param monitor Monitoring object
+ */
+void
+sge_c_ack(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+   // extract information from the task about the ACK
+   lList *ack_list = task->data_list;
+   const lListElem *ack = lFirst(ack_list);
+   u_long32 ack_tag = lGetUlong(ack, ACK_type);
+   u_long32 ack_ulong = lGetUlong(ack, ACK_id);
+   u_long32 ack_ulong2 = lGetUlong(ack, ACK_id2);
+   const char *ack_str = lGetString(ack, ACK_str);
+   DPRINTF("ack_ulong=%ld, ack_ulong2=%ld, ack_str=%s\n", ack_ulong, ack_ulong2, ack_str);
 
-   /* Do some validity tests */
-   while (pb_unused(&(aMsg->buf)) > 0) {
-      if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
-         ERROR("failed unpacking ACK");
-         SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-         DRETURN_VOID;
-      }
-      ack_tag = lGetUlong(ack, ACK_type);
-      ack_ulong = lGetUlong(ack, ACK_id);
-      ack_ulong2 = lGetUlong(ack, ACK_id2);
+   switch (ack_tag) {
+   case ACK_SIGJOB:
+   case ACK_SIGQUEUE:
+      sge_c_job_ack(packet->host, packet->commproc, ack_tag, ack_ulong, ack_ulong2, ack_str, monitor);
+      break;
 
-      DPRINTF("ack_ulong = %ld, ack_ulong2 = %ld\n", ack_ulong, ack_ulong2);
-      switch (ack_tag) { /* send by dispatcher */
-         case ACK_SIGJOB:
-         case ACK_SIGQUEUE:
-            MONITOR_EACK(monitor);
-            /*
-            ** accept only ack requests from admin or root
-            */
-            if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                                               aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-               DRETURN_VOID;
-            }
-            /* an execd sends a job specific acknowledge ack_ulong == jobid of received job */
-            sge_c_job_ack(aMsg->snd_host, aMsg->snd_name, ack_tag, ack_ulong, ack_ulong2, lGetString(ack, ACK_str),
-                          monitor);
-            break;
-
-         case ACK_EVENT_DELIVERY:
-            /*
-            ** TODO: in this case we should check if the event belongs to the user
-            **       who send the request
-            */
-            sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
-            break;
-
-         default:
-            WARNING(MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag));
-            break;
-      }
-      lFreeElem(&ack);
+   case ACK_EVENT_DELIVERY:
+      // @TODO: is the global lock also here required?
+      sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+      break;
+   default:
+      // not possible. has been filtered by listener thread already
+      ;
    }
-
-   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
    DRETURN_VOID;
 }
 

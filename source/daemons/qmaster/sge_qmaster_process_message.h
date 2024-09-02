@@ -40,3 +40,7 @@
 
 void 
 sge_qmaster_process_message(monitoring_t *monitor);
+
+void
+sge_c_ack(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+

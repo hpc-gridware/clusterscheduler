@@ -638,6 +638,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
    if (!getridofjob) {
       if (!mconf_get_simulate_jobs()) {
          job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD);
+         // set_enforce_cleanup_old_jobs();
       }
       /* write mail */
       if (send_mail == 1) {

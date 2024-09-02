@@ -386,7 +386,7 @@ sge_gdi_packet_create_base(lList **answer_list) {
    }
 
    ret->is_intern_request = false;
-   ret->is_gdi_request = true;
+   ret->request_type = PACKET_GDI_REQUEST;
    ret->is_handled = false;
    ret->id = 0;
    ret->commproc_id = 0;
