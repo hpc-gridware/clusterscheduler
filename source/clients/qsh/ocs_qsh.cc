@@ -1658,6 +1658,12 @@ int main(int argc, const char **argv)
    opt_list_merge_command_lines(&opts_all, &opts_defaults, &opts_scriptfile,
                                 &opts_cmdline);
 
+   opt_list_verify_scope(opts_all, &alp);
+   do_exit = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
+   if (do_exit > 0) {
+      sge_exit(1);
+   }
+
    alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &job);
    do_exit = parse_result_list(alp, &alp_error);
    lFreeList(&alp);
@@ -1669,6 +1675,10 @@ int main(int argc, const char **argv)
 
    job_set_command_line(job, argc, argv);
 
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
+      lWriteElemTo(job, stdout);
+   }
+
    if (is_qlogin) {
       /* get configuration from qmaster */
       if ((client_name = get_client_name(is_rsh, is_rlogin, inherit_job)) == nullptr) {
@@ -1679,11 +1689,6 @@ int main(int argc, const char **argv)
    
    if (!existing_job) {
       DPRINTF("Everything ok\n");
-#ifndef NO_SGE_COMPILE_DEBUG
-      if (rmon_mlgetl(&RMON_DEBUG_ON, TOP_LAYER) & INFOPRINT) { 
-         lWriteElemTo(job, stdout);
-      }
-#endif
 
       if (lGetUlong(job, JB_verify)) {
          cull_show_job(job, 0, false); 
@@ -2331,7 +2336,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
             strcmp(cp, "-p") && strcmp(cp, "-pe") && strcmp(cp, "-q") && strcmp(cp, "-v") &&
             strcmp(cp, "-V") && strcmp(cp, "-display") && strcmp(cp, "-verify") &&
             strcmp(cp, "-soft") && strcmp(cp, "-M") && strcmp(cp, "-verbose") &&
-            strcmp(cp, "-ac") && strcmp(cp, "-dc") && strcmp(cp, "-sc") &&
+            strcmp(cp, "-ac") && strcmp(cp, "-dc") && strcmp(cp, "-sc") && strcmp(cp, "-scope") &&
             strcmp(cp, "-S") && strcmp(cp, "-w") && strcmp(cp, "-js") && strcmp(cp, "-R") &&
             strcmp(cp, "-o") && strcmp(cp, "-e") && strcmp(cp, "-j") && strcmp(cp, "-wd") &&
             strcmp(cp, "-jsv")

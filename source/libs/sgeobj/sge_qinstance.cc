@@ -184,14 +184,16 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 *
 *  SYNOPSIS
 *     void 
-*     qinstance_list_set_tag(lList *this_list, u_long32 tag_value) 
+*     qinstance_list_set_tag(lList *queue_list, u_long32 tag_value, int tag_nm = QU_tag)
 *
 *  FUNCTION
-*     Tag a list of qinstances ("this_list") with "tag_value". 
+*     Tag a list of qinstances ("queue_list") with "tag_value".
+*     Examples for tags are QU_tag (default) and QU_tagged4schedule.
 *
 *  INPUTS
 *     lList *this_list   - QU_Type list
-*     u_long32 tag_value - unsingned long value (not a bitmask) 
+*     u_long32 tag_value - unsigned long value (not a bitmask)
+*     int tag_nm         - which tag attribute to use (default: QU_tag)
 *
 *  RESULT
 *     void - None
@@ -199,12 +201,11 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 *  NOTES
 *     MT-NOTE: qinstance_list_set_tag() is MT safe 
 *******************************************************************************/
-void
-qinstance_list_set_tag(lList *queue_list, u_long32 tag_value) {
+void qinstance_list_set_tag(lList *queue_list, u_long32 tag_value, int tag_nm) {
    if (queue_list != nullptr) {
       lListElem *qinstance;
       for_each_rw (qinstance, queue_list) {
-         lSetUlong(qinstance, QU_tag, tag_value);
+         lSetUlong(qinstance, tag_nm, tag_value);
       }
    }
 }
@@ -703,9 +704,9 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
 *     MT-NOTE: qinstance_debit_consumable() is MT safe 
 *******************************************************************************/
 int
-qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lList *centry_list, int slots,
-                           bool is_master_task, bool do_per_host_booking, bool *just_check) {
-   return rc_debit_consumable(jep, qep, centry_list, slots,
+qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
+                           int slots, bool is_master_task, bool do_per_host_booking, bool *just_check) {
+   return rc_debit_consumable(jep, pe, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
                               lGetString(qep, QU_qname), is_master_task, do_per_host_booking, just_check);
@@ -855,7 +856,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);
 
    /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, true, nullptr);
+   qinstance_debit_consumable(this_elem, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
    if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true,
@@ -933,6 +934,66 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
    DRETURN(ret);
 }
 
+// returns true, false in case of just_check and the check fails
+static bool
+rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, const char *obj_name, int slots,
+                                       lListElem *booking_ep, bool *just_check) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   /*
+    * The job doesn't request the exclusive complex, but it still has effect:
+    * A job actually requesting to run exclusive will not be dispatched
+    * to this host - scheduler checks if there is a job running either
+    * requesting the exclusive resource or a job not requesting it is
+    * blocking the host.
+    *
+    * For the consumable check (just_check != nullptr) this means that
+    * we check if the resource is actually in use (RU_utilized_now).
+    */
+   double request = 1.0;
+   if (just_check == nullptr) {
+      DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", request, name,
+              obj_type, obj_name, slots);
+      lAddDouble(booking_ep, RUE_utilized_now_nonexclusive, slots * request);
+   } else {
+      double actual_value = booking_ep == nullptr ? 0 : lGetDouble(booking_ep, RUE_utilized_now);
+      if (actual_value > 0) {
+         ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, request, name, obj_type, obj_name, slots);
+         *just_check = false;
+         ret = false;
+      }
+   }
+
+   DRETURN(ret);
+}
+
+static bool
+rc_debit_consumable_explicit_request(const char *name, const char *obj_type, const char *obj_name, int slots,
+                                     double request, const lListElem *capacity_ep, lListElem *booking_ep,
+                                     bool is_exclusive, bool *just_check) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   if (just_check == nullptr) {
+      DPRINTF("debiting %f of %s on %s %s for %d slots\n", request, name, obj_type, obj_name, slots);
+      lAddDouble(booking_ep, RUE_utilized_now, slots * request);
+   } else {
+      double actual_value = booking_ep == nullptr ? 0 : lGetDouble(booking_ep, RUE_utilized_now);
+      double config_value = lGetDouble(capacity_ep, CE_doubleval);
+      /* for exclusive consumables ignore the number of slots */
+      if (is_exclusive) {
+         slots = 1;
+      }
+      if ((config_value - actual_value - slots * request) < 0) {
+         ERROR(MSG_CAPACITYEXCEEDED_FSSSIF, request, name, obj_type, obj_name, slots, config_value - actual_value);
+         *just_check = false;
+         ret = false;
+      }
+   }
+
+   DRETURN(ret);
+}
 
 /****** lib/sgeobj/debit_consumable() ****************************************
 *  NAME
@@ -982,16 +1043,12 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
 *     consumable resources of the 'ep' object has not changed.
 ******************************************************************************/
 int
-rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list, int slots, int config_nm,
-                    int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
-                    bool *just_check) {
-   lListElem *cr, *dcep;
-   const lListElem *cr_config;
-   double dval;
-   const char *name;
-   int mods = 0;
-
+rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, const lList *centry_list, int slots,
+                    int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
+                    bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
+
+   int mods = 0;
 
    if (ep == nullptr) {
       DRETURN(0);
@@ -1002,77 +1059,114 @@ rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_lis
       *just_check = true;
    }
 
+   // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
+   const lListElem *cr_config;
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
-      name = lGetString(cr_config, CE_name);
-      dval = 0;
+      lListElem *cr, *dcep;
+      const char *name = lGetString(cr_config, CE_name);
 
-      /* search default request */
+      // search complex definition (with default request)
       if (!(dcep = centry_list_locate(centry_list, name))) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       }
 
       u_long32 consumable = lGetUlong(dcep, CE_consumable);
-      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
-         continue;
-      }
 
       // ensure attribute is in actual list
       // @todo we could do this only if jep == nullptr - this is the call to initialize booking
-      cr = lGetSubStrRW(ep, RUE_name, name, actual_nm);
-      if (just_check == nullptr && cr == nullptr) {
-         cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
-         /* RUE_utilized_now is implicitly set to zero */
+      if (consumable != CONSUMABLE_NO) {
+         cr = lGetSubStrRW(ep, RUE_name, name, actual_nm);
+         if (just_check == nullptr && cr == nullptr) {
+            cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
+            /* RUE_utilized_now is implicitly set to zero */
+         }
       }
 
-      int debit_slots;
-      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-
       if (jep != nullptr) {
-         bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);
-         if (tmp_ret && dval != 0.0) {
-            if (just_check == nullptr) {
-               DPRINTF("debiting %f of %s on %s %s for %d slots\n", dval, name,
-                       (config_nm == QU_consumable_config_list) ? "queue" : "host", obj_name, debit_slots);
-               lAddDouble(cr, RUE_utilized_now, debit_slots * dval);
-            } else {
-               double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
-               double config_value = lGetDouble(cr_config, CE_doubleval);
-               /* for exclusive consumables ignore the number of slots */
-               if (lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP) {
-                  debit_slots = 1;
-               }
-               if ((config_value - actual_value - debit_slots * dval) < 0) {
-                  ERROR(MSG_CAPACITYEXCEEDED_FSSSIF, dval, name, (config_nm==QU_consumable_config_list)?"queue":"host", obj_name, debit_slots, config_value - actual_value);
-                  *just_check = false;
+         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) { // todo: remove last param, no longer used
+            continue;
+         }
+
+         bool did_booking = false;
+         bool is_exclusive = lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP;
+         const char *obj_type = config_nm == QU_consumable_config_list ? "queue" : "host";
+
+         int debit_slots = consumable_get_debit_slots(consumable, slots);
+
+         // has contribution from global requests? Then we can do the booking for master and slave task in one step.
+         double dval = 0.0;
+         bool tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL);
+         if (tmp_ret) {
+            // the resource was requested
+            DPRINTF("===> rc_debit_consumable(): we have GLOBAL %s request: %f for %d slots\n", name, dval, debit_slots);
+            if (dval != 0.0) {
+               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, cr_config, cr,
+                                                         is_exclusive, just_check)) {
                   break;
+               }
+               mods++;
+               did_booking = true;
+            }
+#if 0
+            // Even if the request was 0.0, we have handled it and count it as booked.
+            if (!(dval == 0.0 && is_exclusive)) {
+               // a request exclusive=false must lead to handling exclusive below
+               did_booking = true;
+            }
+#endif
+         } else if (pe != nullptr) {
+            // no global contribution, need to check master and slave
+            int slave_debit_slots = debit_slots;
+            double master_dval = 0.0;
+            if (is_master_task) {
+               // if the master task is part of this booking, check if we have a master request
+               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &master_dval, dcep, JRS_SCOPE_MASTER);
+               if (tmp_ret) {
+                  // we have a master request
+                  DPRINTF("===> rc_debit_consumable(): we have MASTER %s request: %f for %d slots\n", name, dval,
+                          slot_signum(debit_slots));
+                  if (master_dval != 0.0) {
+                     // book it for one slot
+                     if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slot_signum(debit_slots),
+                                                               master_dval, cr_config, cr, is_exclusive, just_check)) {
+                        break;
+                     }
+                     mods++;
+                     did_booking = true;
+                  }
+               }
+
+               // if we did the master task booking
+               // adjust the slot count for the slave booking
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
+            }
+
+            // now do booking for the (remaining) slave tasks, if any
+            if (slave_debit_slots != 0) {
+               double slave_dval = 0.0;
+               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
+               if (tmp_ret && slave_dval != 0.0) {
+                  // we have a slave request
+                  DPRINTF("===> rc_debit_consumable(): we have SLAVE %s request: %f for %d slots\n", name, dval, slave_debit_slots);
+                  if (slave_dval != 0.0) {
+                     // in case of just_check: need to check, if sum of master dval + slave dval fits on the resource
+                     if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slave_debit_slots,
+                                                               just_check == nullptr ? slave_dval : master_dval + slave_dval,
+                                                               cr_config, cr, is_exclusive, just_check)) {
+                        break;
+                     }
+                     mods++;
+                     did_booking = true;
+                  }
                }
             }
-            mods++;
-         } else if (lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP) {
-            /*
-             * The job doesn't request the exclusive complex, but it still has effect:
-             * A job actually requesting to run exclusive will not be dispatched
-             * to this host - scheduler checks if there is a job running either
-             * requesting the exclusive resource or a job not requesting it is
-             * blocking the host.
-             *
-             * For the consumable check (just_check != nullptr) this means that
-             * we check if the resource is actually in use (RU_utilized_now).
-             */
-            dval = 1.0;
-            if (just_check == nullptr) {
-               DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", dval, name,
-                       (config_nm == QU_consumable_config_list) ? "queue" : "host",
-                       obj_name, debit_slots);
-               lAddDouble(cr, RUE_utilized_now_nonexclusive, debit_slots * dval);
-            } else {
-               double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
-               if (actual_value > 0) {
-                  ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, dval, name, (config_nm==QU_consumable_config_list)?"queue":"host", obj_name, debit_slots);
-                  *just_check = false;
-                  break;
-               }
+         }
+
+         // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
+         if (!did_booking && is_exclusive) {
+            if (!rc_debit_consumable_implicit_exclusive(name, obj_type, obj_name, debit_slots, cr, just_check)) {
+               break;
             }
             mods++;
          }

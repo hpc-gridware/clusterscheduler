@@ -24,6 +24,7 @@
 /* Definition of new names */
 
 #include "sgeobj/cull/sge_job_JB_L.h"
+#include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_AH_L.h"
@@ -167,6 +168,7 @@ lNameSpace nmv[] = {
 */
 
    {JB_LOWERBOUND, JB_SIZE, JBN, JB_Type},
+   {JRS_LOWERBOUND, JRS_SIZE, JRSN, JRS_Type},
    {QU_LOWERBOUND, QU_SIZE, QUN, QU_Type},
    {EH_LOWERBOUND, EH_SIZE, EHN, EH_Type},
    {AH_LOWERBOUND, AH_SIZE, AHN, AH_Type},

@@ -179,28 +179,28 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
    /*
    ** -hard -q qlist
    */
-   sge_unparse_queue_list_dstring(category_str, job, lGetPosViaElem(job, JB_hard_queue_list, SGE_NO_ABORT), "-q");  
+   sge_unparse_queue_list_dstring(category_str, job_get_hard_queue_listRW(job), "-q");
 
    DTRACE;
 
    /*
    ** -masterq qlist
    */
-   sge_unparse_queue_list_dstring(category_str, job, lGetPosViaElem(job, JB_master_hard_queue_list, SGE_NO_ABORT), "-masterq");
+   sge_unparse_queue_list_dstring(category_str, job_get_master_hard_queue_listRW(job), "-masterq");
 
    DTRACE;
 
    /*
    ** -l rlist (hard resource list)
    */
-   sge_unparse_resource_list_dstring(category_str, job, lGetPosViaElem(job, JB_hard_resource_list, SGE_NO_ABORT), "-l");
+   sge_unparse_resource_list_dstring(category_str, job_get_hard_resource_listRW(job), "-l");
 
    DTRACE;
    
    /*
    ** -soft -l rlist
    */
-   sge_unparse_resource_list_dstring(category_str, job, lGetPosViaElem(job, JB_soft_resource_list, SGE_NO_ABORT), "-soft -l");
+   sge_unparse_resource_list_dstring(category_str, job_get_soft_resource_listRW(job), "-soft -l");
 
    DTRACE;
 

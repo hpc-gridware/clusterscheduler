@@ -725,6 +725,10 @@ request multiple **-l** options to be soft or hard both in the same
 command line. In case of a serial job multiple **-l** switches refine
 the definition for the sought queue.
 
+With parallel jobs (see **-pe** option above) the **-l** option can be
+applied to the whole job, to the master tasks or to the slave tasks only by
+using the **-scope** option.
+
 *Qalter* allows changing the value of this option even while the job is
 running, but only if the initial list of resources does not contain a
 resource that is marked as consumable. However the modification will
@@ -781,9 +785,13 @@ JSV in xxqs_name_sxx_jsv(1))
 Available for *qsub*, *qrsh*, *qsh*, *qlogin* and *qalter*. Only
 meaningful for parallel jobs, i.e. together with the -pe option.
 
+This option is deprecated. 
+Use the `-scope master -q we_queue_list` instead,
+see **-scope** option below.
+
 Defines or redefines a list of cluster queues, queue domains and queue
-instances which may be used to become the so called *master queue* of
-this parallel job. A more detailed description of *wc_queue_list* can be
+instances which may be used to become the so-called *master queue* of
+a parallel job. A more detailed description of *wc_queue_list* can be
 found in *sge_types*(1). The *master queue* is defined as the queue
 where the parallel job is started. The other queues to which the
 parallel job spawns tasks are called *slave queues*. A parallel job only
@@ -796,7 +804,7 @@ merged with requirements derived from the **-l** option described above.
 modified parameter will only be in effect after a restart or migration
 of the job, however.
 
-If this option or a corresponding value in *qmon* is specified the this
+If this option is specified the 
 hard resource requirement will be passed to defined JSV instances as
 parameter with the name **masterq**. (see **-jsv** option above or find
 more information concerning JSV in xxqs_name_sxx_jsv(1))
@@ -972,7 +980,7 @@ configured** JSV instances where **pe_name will be the name of the
 parallel environment** and the values **pe_min and pe_max represent the
 values n and m which** have been provided with the **-pe option. A
 missing specification of m** will be expanded as value 9999999 in JSV
-scripts and it represents the value infinity. (see **-jsv option above
+scripts, and it represents the value infinity. (see **-jsv option above
 or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -pty y\[es\]\|n\[o\]  
@@ -997,6 +1005,10 @@ description of *wc_queue_list*** in** *sge_types*(1). This parameter
 has all the properties of a resource request and will be merged with
 requirements derived from the **-l option** described above.
 
+With parallel jobs (see **-pe** option above) the **-q** option can be
+applied to the whole job, to the master queue or to the slave queues by
+using the **-scope** option.
+
 *Qalter* allows changing this option even while the job executes. The
 modified parameter will only be in effect after a restart or migration
 of the job, however.
@@ -1020,7 +1032,7 @@ job reservation might be disabled using max_reservation in
 *sched_conf*(5) and might be limited only to a certain number of high
 priority jobs.
 
-By default jobs are submitted with the **-R n option.**
+By default, jobs are submitted with the **-R n option.**
 
 The value specified with this option or the corresponding value
 specified in *qmon*** will only be passed to defined JSV instances if
@@ -1068,6 +1080,48 @@ The outcome of the evaluation of all **-ac, -dc, and -sc** options or
 corresponding values in *qmon*** is passed to defined JSV** instances as
 parameter with the name **ac.** (see **-jsv option above or find more
 information concerning JSV in** xxqs_name_sxx_jsv(1))
+
+-scope global\|master\|slave
+
+Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+
+Defines the scope of the **-l** and **-q** options when submitting
+parallel jobs (see option **-pe** above).  
+The default scope is the global scope. The global scope applies the
+**-l** and **-q** options to the whole job and all its tasks.  
+The master scope applies the **-l** and **-q** only
+to the master task of the job (usually the job script).  
+The slave scope applies the **-l** and **-q** options only to the slave
+tasks of the job.
+
+Example:
+```
+qsub -pe mpi 16 -l h_rt=3600 -scope master -q io.q -l memory=1G \
+-scope slave -q compute.q -l memory=4G,gpu=1 my_mpi_job.sh
+```
+We submit a 16 times parallel job using the mpi parallel environment.  
+The job runtime is (globally) limited to 1 hour.  
+The master task shall run in the io.q queue with a memory limit of 1G.  
+The slave tasks shall run in the compute.q queue with a memory limit
+of 4G and one GPU.
+
+Using the **-scope** switch has a few constaints:
+* It cannot be used with sequential jobs.
+* Soft queue (**-q**) or resource requests (**-l**) are only allowed 
+  in the global scope.
+* Resource requests (**-l** option) for a specific variable can be done 
+  either in the global scope, or in master and slave scope.
+* Per host resource requests on a specific variable can only be done in
+  one scope, either in global, in master or in slave scope.
+
+*Qalter* allows changing this option even while the job executes. The
+modified parameter will only be in effect after a restart or migration
+of the job, however.
+
+The request `-scope master -q wc_queue_list` replaces the deprecated
+`-masterq wc_queue_list` option.
+
+Modifying scope specific requests via JSV is not yet available.
 
 -shell y\[es\]\|n\[o\]  
 Available only for *qsub***.**

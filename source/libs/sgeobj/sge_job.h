@@ -38,6 +38,7 @@
 
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
+#include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 
@@ -399,13 +400,21 @@ int job_check_owner(const sge_gdi_packet_class_t *packet, u_long32 job_id, lList
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 
-lListElem *
-job_get_request(const lListElem *this_elem, const char *centry_name);
+const lListElem *
+job_get_request(const lListElem *job, const char *centry_name);
+
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, bool is_master_task);
 
 bool
-job_get_contribution(const lListElem *this_elem, lList **answer_list,
-                     const char *name, double *value,
-                     const lListElem *implicit_centry);
+job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
+                     const lListElem *complex_definition, bool is_master_task);
+bool
+job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
+                              const lListElem *complex_definition, u_long32 scope);
+
+void
+adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots);
 
 /* unparse functions */
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
@@ -417,11 +426,9 @@ bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *jo
 bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
                             const char *option); 
 
-bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                       int nm, const char *option);
+bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option);
 
-bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                    int nm, const char *option);   
+bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option);
 
 bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
                              const lList *acl_list, const char *option);
@@ -465,6 +472,55 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name);
 bool
 job_init_binding_elem(lListElem *jep);
 
+// Defines and Functions for Job Resource Sets (JRS_Type)
+
+#define JRS_SCOPE_GLOBAL 0
+#define JRS_SCOPE_MASTER 1
+#define JRS_SCOPE_SLAVE  2
+
+bool job_parse_scope_string(const char *scope, char &scope_id);
+const char *job_scope_name(u_long32 scope_id);
+const char *job_scope_name(const lListElem *scope_ep);
+
+const lListElem *job_get_request_set(const lListElem *job, u_long32 scope);
+lListElem *job_get_request_setRW(lListElem *job, u_long32 scope);
+lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope);
+
+bool job_request_set_remove_duplicates(lListElem *job);
+bool job_request_set_has_queue_requests(const lListElem *job);
+
+const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name);
+
+const lList *job_get_hard_resource_list(const lListElem *job);
+const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope);
+const lList *job_get_soft_resource_list(const lListElem *job);
+const lList *job_get_soft_resource_list(const lListElem *job, u_long32 scope);
+const lList *job_get_hard_queue_list(const lListElem *job);
+const lList *job_get_hard_queue_list(const lListElem *job, u_long32 scope);
+const lList *job_get_soft_queue_list(const lListElem *job);
+const lList *job_get_soft_queue_list(const lListElem *job, u_long32 scope);
+const lList *job_get_master_hard_queue_list(const lListElem *job);
+
+lList *job_get_hard_resource_listRW(lListElem *job);
+lList *job_get_hard_resource_listRW(lListElem *job, u_long32 scope);
+lList *job_get_soft_resource_listRW(lListElem *job);
+lList *job_get_soft_resource_listRW(lListElem *job, u_long32 scope);
+lList *job_get_hard_queue_listRW(lListElem *job);
+lList *job_get_hard_queue_listRW(lListElem *job, u_long32 scope);
+lList *job_get_soft_queue_listRW(lListElem *job);
+lList *job_get_soft_queue_listRW(lListElem *job, u_long32 scope);
+lList *job_get_master_hard_queue_listRW(lListElem *job);
+
+void job_set_hard_resource_list(lListElem *job, lList *resource_list);
+void job_set_hard_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
+void job_set_soft_resource_list(lListElem *job, lList *resource_list);
+void job_set_soft_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
+void job_set_hard_queue_list(lListElem *job, lList *queue_list);
+void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
+void job_set_soft_queue_list(lListElem *job, lList *queue_list);
+void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
+void job_set_master_hard_queue_list(lListElem *job, lList *queue_list);
+
 const char *
 job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client);
 
@@ -473,3 +529,4 @@ job_set_command_line(lListElem *job, const char *client);
 
 void
 job_set_command_line(lListElem *job, int argc, const char *argv[]);
+

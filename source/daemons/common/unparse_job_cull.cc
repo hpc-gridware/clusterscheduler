@@ -68,7 +68,7 @@ static int sge_unparse_account_string(lListElem *job, lList **pcmdline, lList **
 static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp);
 static int sge_unparse_pe(lListElem *job, lList **pcmdline, lList **alpp);
 
-static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, lList **alpp);
+static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pcmdline, lList **alpp);
 static int sge_unparse_string_option(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp);
 
 lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
@@ -241,12 +241,10 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    /*
    ** -l
    */
-   if (sge_unparse_resource_list(job, JB_hard_resource_list,
-            pcmdline, &answer) != 0) {
+   if (sge_unparse_resource_list(job_get_hard_resource_listRW(job), true, pcmdline, &answer) != 0) {
       DRETURN(answer);
    }
-   if (sge_unparse_resource_list(job, JB_soft_resource_list,
-            pcmdline, &answer) != 0) {
+   if (sge_unparse_resource_list(job_get_soft_resource_listRW(job), false, pcmdline, &answer) != 0) {
       DRETURN(answer);
    }
 
@@ -374,11 +372,11 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    ** exec-string is suppressed because uni_print_list can't do this
    ** is not in the manual anyway
    */
-   if ((lp = lGetList(job, JB_hard_queue_list))) {
+   if ((lp = job_get_hard_resource_list(job)) != nullptr) {
       int fields[] = { QR_name, 0 };
       const char *delis[] = {"@", ",", nullptr};
 
-      ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
+      sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
@@ -391,11 +389,11 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
       lSetList(ep_opt, SPA_argval_lListT, lCopyList("hard queue list", lp));      
       lSetInt(ep_opt, SPA_argval_lIntT, 1); /* means hard */
    }
-   if ((lp = lGetList(job, JB_soft_queue_list))) {
+   if ((lp = job_get_soft_queue_list(job)) != nullptr) {
       int fields[] = { QR_name, 0 };
       const char *delis[] = {"@", ",", nullptr};
 
-      ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
+      sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
       ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
@@ -649,26 +647,21 @@ lList **alpp
 
 
 /*-------------------------------------------------------------------------*/
-static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, lList **alpp)
+static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pcmdline, lList **alpp)
 {
-   lList *lp;
    int ret = 0;
    char str[MAX_STRING_SIZE];
 
    DENTER(TOP_LAYER);
 
-   if ((lp = lGetListRW(job, nm))) {
-      lListElem *ep_opt;
-      int hard = (nm == JB_hard_resource_list);
-
+   if (resource_list != nullptr) {
       if (hard) {
-         ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
-      }
-      else {
-         ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
+         sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
+      } else {
+         sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
       }
 
-      ret = centry_list_append_to_string(lp, str, sizeof(str) - 1);
+      ret = centry_list_append_to_string(resource_list, str, sizeof(str) - 1);
       if (ret) {
          DPRINTF("Error %d formatting hard_resource_list as -l\n", ret);
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -678,12 +671,12 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
       if (*str && (str[strlen(str) - 1] == '\n')) {
          str[strlen(str) - 1] = 0;
       }
-      ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, "-l", str);
+      lListElem *ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, "-l", str);
 
       if (hard)
-         lSetList(ep_opt, SPA_argval_lListT, lCopyList("hard res", lp));
+         lSetList(ep_opt, SPA_argval_lListT, lCopyList(nullptr, resource_list));
       else
-         lSetList(ep_opt, SPA_argval_lListT, lCopyList("soft res", lp));
+         lSetList(ep_opt, SPA_argval_lListT, lCopyList(nullptr, resource_list));
 
       if (hard) 
          lSetInt(ep_opt, SPA_argval_lIntT, 1); /* means hard */

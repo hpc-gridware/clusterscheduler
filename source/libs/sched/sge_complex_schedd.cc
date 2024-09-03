@@ -131,11 +131,13 @@ void monitor_dominance(char *str, u_long32 mask) {
 *
 *  INPUTS
 *     const char *attrname - attribute name one is looking for 
-*     lList *config_attr   - user defined attributes (CE_Type)
+*     lList *config_attr   - user defined attributes (CE_Type), this is
+*                            a host's / queue's complex_values list:
+*                            EH_consumable_config_list, QU_consumable_config_list
 *     lList *actual_attr   - current usage of consumables (RUE_Type)
 *     lList *load_attr     - load attributes 
 *     lList *centry_list   - the system wide attribute configuration 
-*     lListElem *queue     - the current queue, or null, if one works on hosts 
+*     lListElem *queue     - the current queue, or nullptr, if one works on hosts
 *     u_long32 layer       - the current layer 
 *     double lc_factor     - the load correction value 
 *     dstring *reason      - space for error messages or nullptr
@@ -149,14 +151,13 @@ void monitor_dominance(char *str, u_long32 mask) {
 *******************************************************************************/
 lListElem *
 get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
-              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, u_long32 layer,
-              double lc_factor, dstring *reason, bool zero_utilization, u_long64 start_time, u_long64 duration)
+              const lList *centry_list, const lList *load_adjustments, const lList *additional_usage,
+              const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason, bool zero_utilization,
+              u_long64 start_time, u_long64 duration)
 {
-   const lListElem *actual_el=nullptr;
-   const lListElem *load_el=nullptr;
-   lListElem *cplx_el=nullptr;
-
    DENTER(BASIS_LAYER);
+
+   lListElem *cplx_el = nullptr; // this is what we return
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr != nullptr) {
@@ -170,8 +171,23 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          }
          lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_FIXED);
          lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
-         lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp,CE_doubleval) ); 
-         lSetString(cplx_el, CE_stringval, lGetString(temp,CE_stringval) );
+         lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp, CE_doubleval));
+         lSetString(cplx_el, CE_stringval, lGetString(temp, CE_stringval));
+      }
+   }
+
+   // optionally we have to subtract capacity from an additional_usage list
+   // this can e.g. be the usage of the just scheduled master task when trying to schedule slave tasks
+   if (cplx_el != nullptr && additional_usage != nullptr) {
+      const lListElem *add_usage_ep = lGetElemStr(additional_usage, CE_name, attrname);
+      if (add_usage_ep != nullptr) {
+         double doubleval = lGetDouble(cplx_el, CE_doubleval) - lGetDouble(add_usage_ep, CE_doubleval);
+         if (doubleval < 0.0) { // should not happen, but better be on the safe side
+            doubleval = 0.0;
+         }
+         lSetUlong(cplx_el, CE_doubleval, doubleval);
+         DSTRING_STATIC(ds, 20);
+         lSetString(cplx_el, CE_stringval, sge_dstring_sprintf(&ds, "%8.3f", doubleval));
       }
    }
 
@@ -180,15 +196,16 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
       lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
+         const lListElem *actual_el;
          if (actual_attr != nullptr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))) {
-            dstring ds;
-            char as_str[20];
+            DSTRING_STATIC(ds, 20);
             double utilized = zero_utilization ? 0 : utilization_max(actual_el, start_time, duration, false);
+            double pj_doubleval;
 
             switch (lGetUlong(cplx_el, CE_relop)) {
                case CMPLXGE_OP:
                case CMPLXGT_OP:
-                     lSetDouble(cplx_el, CE_pj_doubleval, utilized); 
+                     pj_doubleval = utilized;
                break;
 
                case CMPLXEQ_OP:
@@ -196,25 +213,25 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                case CMPLXLE_OP:
                case CMPLXNE_OP:
                default:
-                  lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval) - utilized);
+                  pj_doubleval = lGetDouble(cplx_el, CE_doubleval) - utilized;
                   break;
             }
-            sge_dstring_init(&ds, as_str, sizeof(as_str));
-            sge_dstring_sprintf(&ds, "%8.3f", lGetDouble(cplx_el, CE_pj_doubleval));
-            lSetString(cplx_el,CE_pj_stringval, as_str);
+            lSetDouble(cplx_el, CE_pj_doubleval, pj_doubleval);
+            lSetString(cplx_el, CE_pj_stringval, sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
          } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
             lFreeElem(&cplx_el);
             DRETURN(nullptr);
          }
-      } else{
+      } else {
          lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval)); 
-         lSetString(cplx_el,CE_pj_stringval, lGetString(cplx_el, CE_stringval));
+         lSetString(cplx_el, CE_pj_stringval, lGetString(cplx_el, CE_stringval));
       }
    }
 
    /** check for a load value */
-   if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
+   const lListElem *load_el;
+   if (load_attr != nullptr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
        (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
          if (cplx_el == nullptr) {
             cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
@@ -335,6 +352,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          lFreeElem(&cplx_el);
       }
    }
+
    DRETURN(cplx_el);
 }
 
@@ -1162,9 +1180,8 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
             lc_factor = ((double)lc_factor)/100;
          }   
       }
-      global_el = get_attribute(attrname, config_attr, actual_attr, load_attr,
-                                centry_list, load_adjustments, nullptr, DOMINANT_LAYER_GLOBAL,
-                                lc_factor, nullptr, false, start_time, duration);
+      global_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments, nullptr, nullptr,
+                                DOMINANT_LAYER_GLOBAL, lc_factor, nullptr, false, start_time, duration);
       ret_el = global_el;
    } 
 
@@ -1181,8 +1198,7 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
          }
       }
       host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments, nullptr,
-                              DOMINANT_LAYER_HOST,
-                              lc_factor, nullptr, false, start_time, duration);
+                              nullptr, DOMINANT_LAYER_HOST, lc_factor, nullptr, false, start_time, duration);
       if (!global_el && host_el) {
          ret_el = host_el;
       } else if (global_el && host_el) {
@@ -1199,9 +1215,8 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
       config_attr = lGetList(queue, QU_consumable_config_list);
       actual_attr = lGetList(queue, QU_resource_utilization);
       
-      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments, queue,
-                               DOMINANT_LAYER_QUEUE,
-                               0.0, nullptr, false, start_time, duration);
+      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments, nullptr,
+                               queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time, duration);
 
       if (!ret_el) {
          ret_el = queue_el;

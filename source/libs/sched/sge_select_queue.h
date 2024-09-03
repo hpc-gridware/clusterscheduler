@@ -106,6 +106,8 @@ typedef struct {
    int seq_qdyn;
 } sched_prof_t;
 
+#define SCHED_PROF_INC(pi, attrib) if (pi != nullptr) pi->attrib++
+
 typedef struct {
    /* ------ this section determines the assignment ------------------------------- */
    u_long32    job_id;            /* job id (convenience reasons)                   */
@@ -137,13 +139,13 @@ typedef struct {
    u_long64   now;                /* now time for immediate jobs                    */
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
-   lList      *skip_cqueue_list;  /* cluster queues that need not be checked any more (CTI_Type) */ 
-   lList      *skip_host_list;    /* hosts that need not be checked any more (CTI_Type) */ 
+   lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
+   lList      *skip_host_list;    /* hosts that need not be checked anymore (CTI_Type) */
    /* ------ this section is the resulting assignment ----------------------------- */
    lListElem  *pe;                /* the parallel environment (PE_Type)             */
    const char* pe_name;           /* name of the PE                                 */
    lList      *gdil;              /* the resources (JG_Type)                        */
-   int        slots;              /* total number of slots                          */
+   int        slots;              /* total number of slots we do matching against   */
    u_long64   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
@@ -162,7 +164,6 @@ void assignment_clear_cache(sge_assignment_t *a);
 
 /* -------------------------------------------------------------------------------- */
 
-
 typedef enum {
    DISPATCH_NEVER = 4,  /* an error happend, no dispatch will ever work again */
    DISPATCH_MISSING_ATTR = 2, /* attribute does not exist */
@@ -171,6 +172,13 @@ typedef enum {
    DISPATCH_NEVER_CAT = -1,   /* assignment will never be possible for all jobs of that category */
    DISPATCH_NEVER_JOB = -2    /* assignment will never be possible for that particular job */
 } dispatch_t;
+
+#define TAG4SCHED_NONE
+#define TAG4SCHED_SLAVE          0b0001
+#define TAG4SCHED_MASTER         0b0010
+#define TAG4SCHED_SLAVE_LATER    0b0001 << 16
+#define TAG4SCHED_MASTER_LATER   0b0010 << 16
+#define TAG4SCHED_ALL TAG4SCHED_SLAVE|TAG4SCHED_MASTER|TAG4SCHED_SLAVE_LATER|TAG4SCHED_MASTER_LATER
 
 dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);
@@ -199,10 +207,10 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
 int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
 
 dispatch_t
-parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests, 
-                 int *slots, int *slots_qend, const lList *total_list, const lList *rue_list, const lList *load_attr, 
-                 bool force_slots, lListElem *queue, u_long32 layer, double lc_factor, u_long32 tag,
-                 bool allow_non_requestable, const char *object_name, bool isRQ);
+parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const lList *total_list,
+                          const lList *rue_list, const lList *load_attr, bool force_slots, lListElem *queue,
+                          u_long32 layer, double lc_factor, u_long32 tag, bool allow_non_requestable,
+                          const char *object_name, bool isRQ);
 
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,

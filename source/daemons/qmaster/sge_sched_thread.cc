@@ -1273,9 +1273,10 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          disabled_queues = nullptr;
       }
 
+      // clear the QU_tagged4schedule - we re/mis-use it in sge_load_list_alarm() and sge_split_queue_load()
+      qinstance_list_set_tag(*queue_list, 0, QU_tagged4schedule);
 
-      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list,
-                                                     centry_list);
+      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list, centry_list);
 
       /* split queues into overloaded and non-overloaded queues */
       if (sge_split_queue_load(

@@ -43,6 +43,7 @@
 #include "cull/cull_multitype.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 
 #include "category.h"
@@ -457,9 +458,8 @@ static lListElem *test_create_job(data_entry_t *test, int count)
       if (test->hard_resource_list != nullptr) {
          lList *requests = test_create_request(test->hard_resource_list, count);
          if (requests != nullptr) {
-            lSetList(job, JB_hard_resource_list, requests);
-         }
-         else {
+            job_set_hard_resource_list(job, requests);
+         } else {
             lFreeElem(&job);
             goto end;
          }
@@ -467,9 +467,8 @@ static lListElem *test_create_job(data_entry_t *test, int count)
       if (test->soft_resource_list != nullptr) {
          lList *requests = test_create_request(test->soft_resource_list, count);
          if (requests != nullptr) {
-            lSetList(job, JB_soft_resource_list, requests);
-         }
-         else {
+            job_set_soft_resource_list(job, requests);
+         } else {
             lFreeElem(&job);
             goto end;
          }
@@ -477,9 +476,8 @@ static lListElem *test_create_job(data_entry_t *test, int count)
       if (test->hard_queue_list != nullptr) {
          lList *queues = test_create_queue(test->hard_queue_list, count);
          if (queues != nullptr) {
-            lSetList(job, JB_hard_queue_list, queues);
-         }
-         else {
+            job_set_hard_queue_list(job, queues);
+         } else {
             lFreeElem(&job);
             goto end;
          }
@@ -487,9 +485,8 @@ static lListElem *test_create_job(data_entry_t *test, int count)
       if (test->hard_master_queue_list != nullptr) {
          lList *queues = test_create_queue(test->hard_master_queue_list, count);
          if (queues != nullptr) {
-            lSetList(job, JB_master_hard_queue_list, queues);
-         }
-         else {
+            job_set_master_hard_queue_list(job, queues);
+         } else {
             lFreeElem(&job);
             goto end;
          }

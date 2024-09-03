@@ -55,6 +55,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_conf.h"
 
@@ -1108,11 +1109,12 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
       const lList *job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
       const lList *centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
       const lList *ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
       lListElem *ep = nullptr;
 
       lSetList(this_elem, QU_resource_utilization, nullptr);
       qinstance_set_conf_slots_used(this_elem);
-      qinstance_debit_consumable(this_elem, nullptr, centry_list, 0, true, true, nullptr);
+      qinstance_debit_consumable(this_elem, nullptr, nullptr, centry_list, 0, true, true, nullptr);
 
       for_each_rw(ep, job_list) {
          const lList *ja_task_list = lGetList(ep, JB_ja_tasks);
@@ -1121,6 +1123,12 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
          for_each_ep(ja_task, ja_task_list) {
             const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
             const lListElem *gdil_ep = lGetElemStr(gdil, JG_qname, name);
+
+            const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+            const lListElem *pe = nullptr;
+            if (pe_name != nullptr) {
+               pe = pe_list_locate(master_pe_list, pe_name);
+            }
 
             if (gdil_ep != nullptr) {
                int slots = lGetUlong(gdil_ep, JG_slots);
@@ -1138,7 +1146,8 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                }
 
                if (slots > 0) {
-                  qinstance_debit_consumable(this_elem, ep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
+                  qinstance_debit_consumable(this_elem, ep, pe, centry_list, slots, is_master_task,
+                                             do_per_host_booking, nullptr);
                }
             }
          }
@@ -1155,9 +1164,15 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                is_master_task = true;
             }
 
-            lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ep, AR_resource_list)));
+            const char *pe_name = lGetString(ep, AR_granted_pe);
+            const lListElem *pe = nullptr;
+            if (pe_name != nullptr) {
+               pe = pe_list_locate(master_pe_list, pe_name);
+            }
 
-            rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+            job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ep, AR_resource_list)));
+
+            rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                    this_elem, centry_list, lGetUlong(gdil_ep, JG_slots),
                                    QU_consumable_config_list, QU_resource_utilization, name,
                                    lGetUlong64(ep, AR_start_time), lGetUlong64(ep, AR_duration),

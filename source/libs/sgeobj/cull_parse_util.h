@@ -54,7 +54,8 @@
 
 int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var, int nm_value, u_long32 flags);
 
-int parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, int hard_field, int soft_field);
+void
+parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, u_long32 scope, int hard_field, int soft_field);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, lDescr *descr, int *interpretation_rule);
 

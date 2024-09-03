@@ -908,7 +908,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          printf(QSTAT_INDENT "Checkpoint Env.:  %s\n", lGetString(job, JB_checkpoint_name));
 
       sge_show_ce_type_list_line_by_line(QSTAT_INDENT "Hard Resources:   ", QSTAT_INDENT2,
-                                         lGetList(job, JB_hard_resource_list), true, centry_list,
+                                         job_get_hard_resource_list(job), true, centry_list,
                                          sge_job_slot_request(job, pe_list));
 
       /* display default requests if necessary */
@@ -947,9 +947,9 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       }
 
       sge_show_ce_type_list_line_by_line(QSTAT_INDENT "Soft Resources:   ", QSTAT_INDENT2,
-                                         lGetList(job, JB_soft_resource_list), false, nullptr, 0);
+                                         job_get_soft_resource_list(job), false, nullptr, 0);
 
-      ql = lGetList(job, JB_hard_queue_list);
+      ql = job_get_hard_queue_list(job);
       if (ql) {
          printf(QSTAT_INDENT "Hard requested queues: ");
          for_each_ep(qrep, ql) {
@@ -958,7 +958,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          }
       }
 
-      ql = lGetList(job, JB_soft_queue_list);
+      ql = job_get_soft_queue_list(job);
       if (ql) {
          printf(QSTAT_INDENT "Soft requested queues: ");
          for_each_ep(qrep, ql) {
@@ -966,7 +966,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
       }
-      ql = lGetList(job, JB_master_hard_queue_list);
+      ql = job_get_master_hard_queue_list(job);
       if (ql) {
          printf(QSTAT_INDENT "Master task hard requested queues: ");
          for_each_ep(qrep, ql) {

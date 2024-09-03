@@ -1080,6 +1080,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
          continue;
       }
 
+      // @todo some of the check below (pe, acl/xacl are already done in cqueue_match_static(). Do we need to repeat them on qinstance layer?
       for_each_ep(qinstance, qinstance_list) {
          const char *cal_name;
 
@@ -1175,9 +1176,9 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
 
    lSetUlong64(dummy_job, JB_execution_time, lGetUlong64(ar, AR_start_time));
    lSetUlong64(dummy_job, JB_deadline, lGetUlong64(ar, AR_end_time));
-   lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
-   lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
-   lSetList(dummy_job, JB_master_hard_queue_list, lCopyList("", lGetList(ar, AR_master_queue_list)));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
+   job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
    lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
    lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
 
@@ -1278,10 +1279,18 @@ ar_do_reservation(lListElem *ar, bool incslots) {
 
    DENTER(TOP_LAYER);
 
-   lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
-   lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+
+   lListElem *pe = nullptr;
+   if (granted_pe != nullptr) {
+      pe = pe_list_locate(master_pe_list, granted_pe);
+      if (pe == nullptr) {
+         ERROR(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
+      }
+   }
 
    const lListElem *gdil_ep;
    const char *last_hostname = nullptr;
@@ -1307,7 +1316,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       pe_slots += tmp_slots;
 
       /* reserve global host */
-      if (rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
@@ -1319,7 +1328,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
 
       /* reserve exec host */
       lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
-      if (rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
                                  duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
@@ -1329,7 +1338,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       }
 
       /* reserve queue instance */
-      rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
                              QUEUE_TAG, false, is_master_task, do_per_host_booking);
@@ -1340,17 +1349,11 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       is_master_task = false;
    }
 
-   if (granted_pe != nullptr) {
-      lListElem *pe = pe_list_locate(master_pe_list, granted_pe);
-
-      if (!pe) {
-         ERROR(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
-      } else {
-         utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
-                         duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
-         sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe);
-      }
+   if (pe != nullptr) {
+      utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
+                      duration, pe_slots, 0, 0, PE_TAG, granted_pe,
+                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
+      sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe);
    }
 
    lFreeElem(&dummy_job);
@@ -1687,7 +1690,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
       qinstance_set_conf_slots_used(queue);
 
       /* initialize QU_resource_utilization */
-      qinstance_debit_consumable(queue, nullptr, master_centry_list, 0, true, true, nullptr);
+      qinstance_debit_consumable(queue, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
 
       /* initialize QU_state */
       {

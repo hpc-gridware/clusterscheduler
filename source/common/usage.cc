@@ -131,9 +131,11 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
      case OA_FILE_LIST:
          return MSG_GDI_ARGUMENTSYNTAX_OA_FILE_LIST; 
      case OA_PRIORITY:
-         return MSG_GDI_ARGUMENTSYNTAX_OA_PRIORITY; 
-     case OA_RESOURCE_LIST:
-         return MSG_GDI_ARGUMENTSYNTAX_OA_RESOURCE_LIST; 
+         return MSG_GDI_ARGUMENTSYNTAX_OA_PRIORITY;
+      case OA_RESOURCE_LIST:
+         return MSG_GDI_ARGUMENTSYNTAX_OA_RESOURCE_LIST;
+      case OA_SCOPE_NAME:
+         return MSG_GDI_ARGUMENTSYNTAX_OA_SCOPE_NAME;
      case OA_SERVER:
          return MSG_GDI_ARGUMENTSYNTAX_OA_SERVER; 
      case OA_SERVER_LIST:
@@ -1076,6 +1078,11 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
 
    if (VALID_OPT(sconfl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sconfl_OPT, MSG_GDI_UTEXT_sconfl_OPT);
+   }
+
+   if (VALID_OPT(scope_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_scope_OPT, MSG_GDI_UTEXT_scope_OPT);
+      MARK(OA_SCOPE_NAME);
    }
 
    if (VALID_OPT(se_OPT, prog_number)) {

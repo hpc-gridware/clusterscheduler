@@ -883,12 +883,15 @@ void job_add_as_zombie(lListElem *zombie, lList **answer_list,
 bool job_has_soft_requests(lListElem *job) 
 {
    bool ret = false;
-   
-   if (lGetList(job, JB_soft_resource_list) != nullptr ||
-       lGetList(job, JB_soft_queue_list) != nullptr) {
-      ret = true;
+   const lListElem *jrs;
+   for_each_ep(jrs, lGetList(job, JB_request_set_list)) {
+      if (lGetList(jrs, JRS_soft_resource_list) != nullptr ||
+          lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+         ret = true;
+         break;
+      }
    }
-
+   
    return ret;
 }
 
@@ -2628,50 +2631,153 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 *  NOTES
 *     MT-NOTE: job_get_request() is MT safe 
 *******************************************************************************/
-lListElem *
-job_get_request(const lListElem *this_elem, const char *centry_name) 
+const lListElem *
+job_get_request(const lListElem *job, const char *centry_name)
 {
-   lListElem *ret = nullptr;
-
    DENTER(TOP_LAYER);
-   const lList *hard_centry_list = lGetList(this_elem, JB_hard_resource_list);
-   ret = lGetElemStrRW(hard_centry_list, CE_name, centry_name);
-   if (ret == nullptr) {
-      const lList *soft_centry_list = lGetList(this_elem, JB_soft_resource_list);
 
-      ret = lGetElemStrRW(soft_centry_list, CE_name, centry_name);
+   const lListElem *ret;
+
+   const lList *hard_centry_list = job_get_hard_resource_list(job);
+   ret = lGetElemStr(hard_centry_list, CE_name, centry_name);
+   if (ret == nullptr) {
+      const lList *soft_centry_list = job_get_soft_resource_list(job);
+      ret = lGetElemStr(soft_centry_list, CE_name, centry_name);
    }
    DRETURN(ret);
 }
 
-/* EB: ADOC: add commets */
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, bool is_master_task) {
+   DENTER(TOP_LAYER);
+   const lListElem *ret = nullptr;
+
+   // a request can be either global
+   const lList *request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
+   if (request_list != nullptr) {
+      ret = lGetElemStr(request_list, CE_name, name);
+   }
+
+   // or (only for pe-jobs) a master or slave request
+   if (ret == nullptr) {
+      request_list = job_get_hard_resource_list(job, is_master_task ? JRS_SCOPE_MASTER : JRS_SCOPE_SLAVE);
+      if (request_list != nullptr) {
+         // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
+         ret = lGetElemStr(request_list, CE_name, name);
+      }
+   }
+
+   DRETURN(ret);
+}
+
+const lListElem *
+job_get_hard_request(const lListElem *job, const char *name, u_long32 scope) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *ret = nullptr;
+
+   // a request can be either global
+   const lList *request_list = job_get_hard_resource_list(job, scope);
+   if (request_list != nullptr) {
+      // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
+      ret = lGetElemStr(request_list, CE_name, name);
+   }
+
+   DRETURN(ret);
+}
 
 bool
-job_get_contribution(const lListElem *this_elem, lList **answer_list,
-                     const char *name, double *value,
-                     const lListElem *implicit_centry)
+job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
+                     const lListElem *complex_definition, bool is_master_task)
 {
    bool ret = true;
-   lListElem *centry = nullptr;
+   const lListElem *centry = nullptr;
    const char *value_string = nullptr;
    char error_str[256];
-   
+
    DENTER(TOP_LAYER);
-   centry = job_get_request(this_elem, name);
+
+   // we only consider *hard* requests (consumables), there are no soft consumables
+   centry = job_get_hard_request(job, name, is_master_task);
    if (centry != nullptr) {
+      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
       value_string = lGetString(centry, CE_stringval);
-   }
-   if (value_string == nullptr) {
-      value_string = lGetString(implicit_centry, CE_defaultval); 
+   } else {
+      // if the job did not request the consumable, there might still be a default request
+      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
+      value_string = lGetString(complex_definition, CE_defaultval);
    }
    if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
                          error_str, sizeof(error_str)-1))) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
+      ret = false;
+   }
+
+   DRETURN(ret);
+}
+
+bool
+job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
+                              const lListElem *complex_definition, u_long32 scope)
+{
+   bool ret = true;
+   const lListElem *centry = nullptr;
+   const char *value_string = nullptr;
+   char error_str[256];
+   bool is_default_request = false;
+   
+   DENTER(TOP_LAYER);
+
+   // we only consider *hard* requests (consumables), there are no soft consumables
+   centry = job_get_hard_request(job, name, scope);
+   if (centry != nullptr) {
+      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
+      value_string = lGetString(centry, CE_stringval);
+   } else {
+      // if the job did not request the consumable, there might still be a default request
+      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
+      value_string = lGetString(complex_definition, CE_defaultval);
+      is_default_request = true;
+   }
+   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string, error_str, sizeof(error_str)-1))) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str); 
       ret = false; 
    }
+   if (is_default_request && *value == 0) {
+      DPRINTF("job_get_contribution_by_scope: default request for %s is 0, ignoring\n", name);
+      ret = false;
+   }
    
    DRETURN(ret);
+}
+
+// adjust the slot count used for debiting of slave tasks
+// called when we just debited the master task
+// we need to reduce the slot count by one
+// exception:
+//    - the pe setting job_is_first_task = false (in this case there was no slot for the master task)
+//    - unless the slot count is already +-1, then we had a single master task without slave task
+//      @todo really? What if there is the master task and one slave task in the qinstance?
+//        unless slots == +-1, then we are only booking the master task here
+//        ==> reason for the alleged bug CS-547 we will always have a slave task with the master task
+//            when job_is_first_task = false?
+// for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
+void
+adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
+   bool job_is_first_task = true;
+   if (pe != nullptr) {
+      job_is_first_task = lGetBool(pe, PE_job_is_first_task);
+   }
+
+   if (job_is_first_task /* || abs(slave_debit_slots) == 1 */) {
+      if (slave_debit_slots > 0) {
+         slave_debit_slots--;
+      } else {
+         slave_debit_slots++;
+      }
+   }
 }
 
 /****** sge_job/sge_unparse_acl_dstring() **************************************
@@ -2754,18 +2860,16 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
 *     MT-NOTE: sge_unparse_queue_list_dstring() is MT safe 
 *
 *******************************************************************************/
-bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                    int nm, const char *option) 
+bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option)
 {
-   bool first = true;
-   lList *print_list = nullptr;
-   const lListElem *sub_elem = nullptr;
-   
-   DENTER(TOP_LAYER);  
+   DENTER(TOP_LAYER);
   
-   if ((print_list = lGetPosList(job_elem, nm)) != nullptr) {
-      lPSortList(print_list, "%I+", QR_name);
-      for_each_ep(sub_elem, print_list) {
+   if (queue_list != nullptr) {
+      lPSortList(queue_list, "%I+", QR_name);
+
+      bool first = true;
+      const lListElem *sub_elem;
+      for_each_ep(sub_elem, queue_list) {
          if (first) {      
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append_char(category_str, ' ');
@@ -2774,8 +2878,7 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem,
             sge_dstring_append_char(category_str, ' ');
             sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
             first = false;
-         }
-         else {
+         } else {
             sge_dstring_append_char(category_str, ',');
             sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
          }
@@ -2809,19 +2912,16 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem,
 *     MT-NOTE: sge_unparse_resource_list_dstring() is MT safe 
 *
 *******************************************************************************/
-bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_elem, 
-                                       int nm, const char *option) 
+bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option)
 {
-   bool first = true;
-   lList *print_list = nullptr;
-   const lListElem *sub_elem = nullptr;
-   
-   DENTER(TOP_LAYER); 
+   DENTER(TOP_LAYER);
 
-   if ((print_list = lGetPosList(job_elem, nm)) != nullptr) {
-      lPSortList(print_list, "%I+", CE_name);
+   if (resource_list != nullptr) {
+      lPSortList(resource_list, "%I+", CE_name);
 
-       for_each_ep(sub_elem, print_list) {
+       bool first = true;
+       const lListElem *sub_elem;
+       for_each_ep(sub_elem, resource_list) {
          if (first) {
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append(category_str, " ");
@@ -2833,8 +2933,7 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_ele
             sge_dstring_append(category_str, "=");
             sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
             first = false;
-         }
-         else {
+         } else {
             sge_dstring_append(category_str, ",");
             sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
             sge_dstring_append(category_str, "=");
@@ -3485,7 +3584,8 @@ bool job_get_wallclock_limit(u_long64 *limit, const lListElem *jep) {
 
    DENTER(TOP_LAYER);
 
-   if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_H_RT))) {
+   const lList *hard_resource_list = job_get_hard_resource_list(jep);
+   if ((ep=lGetElemStr(hard_resource_list, CE_name, SGE_ATTR_H_RT))) {
       if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
@@ -3494,7 +3594,7 @@ bool job_get_wallclock_limit(u_long64 *limit, const lListElem *jep) {
       got_duration = true;
    }
    
-   if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_S_RT))) {
+   if ((ep=lGetElemStr(hard_resource_list, CE_name, SGE_ATTR_S_RT))) {
       if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
@@ -3794,7 +3894,7 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name)
 {
    lListElem *cep = nullptr;
    u_long32 consumable;
-   const lList *request_list = lGetList(jep, JB_hard_resource_list);
+   const lList *request_list = job_get_hard_resource_list(jep);
 
    if (request_list != nullptr) {
       cep = centry_list_locate(request_list, resource_name);
@@ -3830,6 +3930,269 @@ job_init_binding_elem(lListElem *jep)
       ret = false;
    }
    return ret;
+}
+
+bool job_parse_scope_string(const char *scope, char &scope_id) {
+   bool ret = true;
+
+   if (sge_strnullcasecmp(scope, "global") == 0) {
+      scope_id = JRS_SCOPE_GLOBAL;
+   } else if (sge_strnullcasecmp(scope, "master") == 0) {
+      scope_id = JRS_SCOPE_MASTER;
+   } else if (sge_strnullcasecmp(scope, "slave") == 0) {
+      scope_id = JRS_SCOPE_SLAVE;
+   } else {
+      scope_id = JRS_SCOPE_GLOBAL;
+      ret = false;
+   }
+
+   return ret;
+}
+
+const lListElem *job_get_request_set(const lListElem *job, u_long32 scope) {
+   return lGetSubUlong(job, JRS_scope, scope, JB_request_set_list);
+}
+
+lListElem *job_get_request_setRW(lListElem *job, u_long32 scope) {
+   return lGetSubUlongRW(job, JRS_scope, scope, JB_request_set_list);
+}
+
+lListElem *job_get_or_create_request_setRW(lListElem *job, u_long32 scope) {
+   lListElem *jrs = lGetSubUlongRW(job, JRS_scope, scope, JB_request_set_list);
+   if (jrs == nullptr) {
+      jrs = lAddSubUlong(job, JRS_scope, scope, JB_request_set_list, JRS_Type);
+   }
+
+   return jrs;
+}
+
+/**
+ * Remove duplicate resource requests from the job request set list.
+ *
+ * @param job - the job to work on
+ * @return true if the job has any resource requests, else false
+ */
+bool job_request_set_remove_duplicates(lListElem *job) {
+   bool requests_found = false;
+
+   lListElem *jrs;
+   for_each_rw (jrs, lGetListRW(job, JB_request_set_list)) {
+      lList *lp = lGetListRW(jrs, JRS_hard_resource_list);
+      if (lp != nullptr) {
+         requests_found = true;
+         centry_list_remove_duplicates(lp);
+      }
+      lp = lGetListRW(jrs, JRS_soft_resource_list);
+      if (lp != nullptr) {
+         requests_found = true;
+         centry_list_remove_duplicates(lp);
+      }
+   }
+
+   return requests_found;
+}
+
+bool job_request_set_has_queue_requests(const lListElem *job) {
+   bool ret = false;
+   lListElem *jrs;
+   for_each_rw (jrs, lGetListRW(job, JB_request_set_list)) {
+      if (lGetList(jrs, JRS_hard_queue_list) != nullptr || lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+         ret = true;
+         break;
+      }
+   }
+
+   return ret;
+}
+
+const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name) {
+   const lListElem *ret = nullptr;
+   double max_request = 0.0;
+
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
+      const lListElem *request = lGetSubStr(jrs, CE_name, request_name, JRS_hard_resource_list);
+      if (request != nullptr) {
+         double request_value = lGetDouble(request, CE_doubleval);
+         if (request_value > max_request) {
+            ret = request;
+            max_request = request_value;
+         }
+      }
+   }
+
+   return ret;
+}
+
+const lList *job_get_hard_resource_list(const lListElem *job) {
+   return job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
+}
+const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope) {
+   const lList *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetList(jrs, JRS_hard_resource_list);
+   }
+   return ret;
+}
+
+const lList *job_get_soft_resource_list(const lListElem *job) {
+   return job_get_soft_resource_list(job, JRS_SCOPE_GLOBAL);
+}
+const lList *job_get_soft_resource_list(const lListElem *job, u_long32 scope) {
+   const lList *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetList(jrs, JRS_soft_resource_list);
+   }
+   return ret;
+}
+
+const lList *job_get_hard_queue_list(const lListElem *job) {
+   return job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+}
+const lList *job_get_hard_queue_list(const lListElem *job, u_long32 scope) {
+   const lList *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetList(jrs, JRS_hard_queue_list);
+   }
+   return ret;
+}
+
+const lList *job_get_soft_queue_list(const lListElem *job) {
+   return job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
+}
+const lList *job_get_soft_queue_list(const lListElem *job, u_long32 scope) {
+   const lList *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetList(jrs, JRS_soft_queue_list);
+   }
+   return ret;
+}
+
+const lList *job_get_master_hard_queue_list(const lListElem *job) {
+   const lList *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, JRS_SCOPE_MASTER);
+   if (jrs != nullptr) {
+      ret = lGetList(jrs, JRS_hard_queue_list);
+   }
+   return ret;
+}
+
+lList *job_get_hard_resource_listRW(lListElem *job) {
+   return job_get_hard_resource_listRW(job, JRS_SCOPE_GLOBAL);
+}
+lList *job_get_hard_resource_listRW(lListElem *job, u_long32 scope) {
+   lList *ret = nullptr;
+   lListElem *jrs = job_get_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetListRW(jrs, JRS_hard_resource_list);
+   }
+   return ret;
+}
+
+lList *job_get_soft_resource_listRW(lListElem *job) {
+   return job_get_soft_resource_listRW(job, JRS_SCOPE_GLOBAL);
+}
+lList *job_get_soft_resource_listRW(lListElem *job, u_long32 scope) {
+   lList *ret = nullptr;
+   lListElem *jrs = job_get_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetListRW(jrs, JRS_soft_resource_list);
+   }
+   return ret;
+}
+
+lList *job_get_hard_queue_listRW(lListElem *job) {
+   return job_get_hard_queue_listRW(job, JRS_SCOPE_GLOBAL);
+}
+lList *job_get_hard_queue_listRW(lListElem *job, u_long32 scope) {
+   lList *ret = nullptr;
+   lListElem *jrs = job_get_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetListRW(jrs, JRS_hard_queue_list);
+   }
+   return ret;
+}
+
+lList *job_get_soft_queue_listRW(lListElem *job) {
+   return job_get_soft_queue_listRW(job, JRS_SCOPE_GLOBAL);
+}
+lList *job_get_soft_queue_listRW(lListElem *job, u_long32 scope) {
+   lList *ret = nullptr;
+   lListElem *jrs = job_get_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetListRW(jrs, JRS_soft_queue_list);
+   }
+   return ret;
+}
+
+lList *job_get_master_hard_queue_listRW(lListElem *job) {
+   lList *ret = nullptr;
+   lListElem *jrs = job_get_request_setRW(job, JRS_SCOPE_MASTER);
+   if (jrs != nullptr) {
+      ret = lGetListRW(jrs, JRS_hard_queue_list);
+   }
+   return ret;
+}
+
+void job_set_hard_resource_list(lListElem *job, lList *resource_list) {
+   job_set_hard_resource_list(job, resource_list, JRS_SCOPE_GLOBAL);
+}
+void job_set_hard_resource_list(lListElem *job, lList *resource_list, u_long32 scope) {
+   if (resource_list != nullptr) {
+      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+      if (jrs != nullptr) {
+         lSetList(jrs, JRS_hard_resource_list, resource_list);
+      }
+   }
+}
+
+void job_set_soft_resource_list(lListElem *job, lList *resource_list) {
+   job_set_soft_resource_list(job, resource_list, JRS_SCOPE_GLOBAL);
+}
+void job_set_soft_resource_list(lListElem *job, lList *resource_list, u_long32 scope) {
+   if (resource_list != nullptr) {
+      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+      if (jrs != nullptr) {
+         lSetList(jrs, JRS_soft_resource_list, resource_list);
+      }
+   }
+}
+
+void job_set_hard_queue_list(lListElem *job, lList *queue_list) {
+   job_set_hard_queue_list(job, queue_list, JRS_SCOPE_GLOBAL);
+}
+void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope) {
+   if (queue_list != nullptr) {
+      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+      if (jrs != nullptr) {
+         lSetList(jrs, JRS_hard_queue_list, queue_list);
+      }
+   }
+}
+
+void job_set_soft_queue_list(lListElem *job, lList *queue_list) {
+   job_set_soft_queue_list(job, queue_list, JRS_SCOPE_GLOBAL);
+}
+void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope) {
+   if (queue_list != nullptr) {
+      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+      if (jrs != nullptr) {
+         lSetList(jrs, JRS_soft_queue_list, queue_list);
+      }
+   }
+}
+
+void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
+   if (queue_list != nullptr) {
+      lListElem *jrs = job_get_or_create_request_setRW(job, JRS_SCOPE_MASTER);
+      if (jrs != nullptr) {
+         lSetList(jrs, JRS_hard_queue_list, queue_list);
+      }
+   }
 }
 
 static void
@@ -4036,6 +4399,55 @@ job_add_name_value_list_opt_to_command_line(const lListElem *job, dstring *dstr,
    return ret;
 }
 
+static void
+job_add_resource_set_list_scope_to_command_line(const lListElem *scope_ep, dstring *dstr) {
+   job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-hard -l", JRS_hard_resource_list);
+   job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-soft -l", JRS_soft_resource_list);
+   job_add_list_opt_to_command_line(scope_ep, dstr, "-hard -q", JRS_hard_queue_list, QR_name);
+   job_add_list_opt_to_command_line(scope_ep, dstr, "-soft -q", JRS_soft_queue_list, QR_name);
+}
+
+const char *job_scope_name(u_long32 scope_id) {
+   const char *ret = "unknown";
+
+   switch (scope_id) {
+      case JRS_SCOPE_GLOBAL:
+         ret = "global";
+         break;
+      case JRS_SCOPE_MASTER:
+         ret = "master";
+         break;
+      case JRS_SCOPE_SLAVE:
+         ret = "slave";
+         break;
+   }
+
+   return ret;
+}
+
+const char *
+job_scope_name(const lListElem *scope_ep) {
+   const char *ret = "unknown";
+
+   if (scope_ep != nullptr) {
+      ret = job_scope_name(lGetUlong(scope_ep, JRS_scope));
+   }
+
+   return ret;
+}
+
+static void
+job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
+   const lList *request_set_list = lGetList(job, JB_request_set_list);
+   if (request_set_list != nullptr) {
+      const lListElem *scope_ep;
+      for_each_ep (scope_ep, request_set_list) {
+         job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
+         job_add_resource_set_list_scope_to_command_line(scope_ep, dstr);
+      }
+   }
+}
+
 /**
  * Based on the attributes of the job object the function generates a command line
  * which can be used to submit an identical job (if no sge_request files and/or JSV are active).
@@ -4095,8 +4507,6 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    job_add_bool_opt_to_command_line(job, dstr, "-j", JB_merge_stderr, true);
    job_add_ulong_opt_to_command_line(job, dstr, "-js", JB_jobshare, 0);
    // -jsv is not reflected in the job object
-   job_add_ce_list_opt_to_command_line(job, dstr, "-hard -l", JB_hard_resource_list);
-   job_add_ce_list_opt_to_command_line(job, dstr, "-soft -l", JB_soft_resource_list);
 
    u_long32 mailopt = lGetUlong(job, JB_mail_options);
    if (mailopt > 0) {
@@ -4129,7 +4539,6 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    job_add_str_opt_to_command_line(job, dstr, "-N", JB_job_name);
    job_add_str_opt_to_command_line(job, dstr, "-P", JB_project);
    job_add_ulong_opt_to_command_line(job, dstr, "-p", JB_priority, -1024);
-   job_add_list_opt_to_command_line(job, dstr, "-masterq", JB_master_hard_queue_list, QR_name);
    if (job_add_str_opt_to_command_line(job, dstr, "-pe", JB_pe)) {
       sge_dstring_append_char(dstr, ' ');
       DSTRING_STATIC(dstr_pe, 64);
@@ -4140,9 +4549,6 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (pty < 2) { // 2 means: do not specify it but use the default for the client
       job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
    }
-   job_add_list_opt_to_command_line(job, dstr, "-hard -q", JB_hard_queue_list, QR_name);
-   job_add_list_opt_to_command_line(job, dstr, "-soft -q", JB_soft_queue_list, QR_name);
-
    job_add_bool_opt_to_command_line(job, dstr, "-R", JB_reserve, true);
    if (lGetUlong(job, JB_restart) == 2) {
       job_add_opt_to_comand_line(dstr, "-r", "no");
@@ -4163,6 +4569,9 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    // -w has no effect on the later job execution
    job_add_str_opt_to_command_line(job, dstr, "-wd", JB_cwd);
    // -@ is not reflected in the job object
+
+   // requests
+   job_add_resource_set_list_to_command_line(job, dstr);
 
    // command line to execute
    job_add_str_opt_to_command_line(job, dstr, nullptr, JB_script_file);

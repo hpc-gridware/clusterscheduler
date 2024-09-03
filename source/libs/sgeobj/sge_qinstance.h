@@ -77,7 +77,7 @@ const char *
 qinstance_get_name(const lListElem *this_elem, dstring *string_buffer);
 
 void
-qinstance_list_set_tag(lList *this_list, u_long32 tag_value);
+qinstance_list_set_tag(lList *this_list, u_long32 tag_value, int tag_nm = QU_tag);
 
 void
 qinstance_increase_qversion(lListElem *this_elem);
@@ -121,8 +121,8 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
                                  const lListElem *calendar);
 
 int
-qinstance_debit_consumable(lListElem *this_elem, const lListElem *job, const lList *centry_list, int slots,
-                           bool is_master_task, bool do_per_host_booking, bool *just_check);
+qinstance_debit_consumable(lListElem *this_elem, const lListElem *job, const lListElem *pe, const lList *centry_list,
+                           int slots, bool is_master_task, bool do_per_host_booking, bool *just_check);
 
 bool
 qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message);
@@ -137,9 +137,9 @@ int queue_reference_list_validate(lList **alpp, lList *qr_list,
                                   const char *obj_name);
 
 int
-rc_debit_consumable(const lListElem *jep, lListElem *ep, const lList *centry_list, int slots, int config_nm,
-                    int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
-                    bool *just_check);
+rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, const lList *centry_list, int slots,
+                    int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
+                    bool do_per_host_booking, bool *just_check);
 
 //lListElem *
 //explicit_job_request(lListElem *jep, const char *name);

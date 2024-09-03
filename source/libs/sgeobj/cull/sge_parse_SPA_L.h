@@ -73,9 +73,12 @@
 *
 *    SGE_CHAR(SPA_argval_lCharT) - Parsed Char Argument
 *    If the option argument is a single char then this value is the commandline argument (first character of switch_arg).
+*    In parsing of the job submission command line it is used to store the scope information,
+*    JRS_SCOPE_GLOBAL, JRS_SCOPE_MASTER, JRS_SCOPE_SLAVE.
 *
 *    SGE_INT(SPA_argval_lIntT) - Parsed Int Argument
 *    If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer.
+*    In parsing of the job submission command line it is used to store the information if requests are hard or soft.
 *
 *    SGE_STRING(SPA_argval_lStringT) - String Argument
 *    The commandline argument (same value as the switch_arg attribute)

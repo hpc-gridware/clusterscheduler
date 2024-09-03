@@ -305,9 +305,10 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lRemoveElem(cmdline, &ep);
    }
 
-   parse_list_hardsoft(cmdline, "-l", *pjob, JB_hard_resource_list, JB_soft_resource_list);
-   centry_list_remove_duplicates(lGetListRW(*pjob, JB_hard_resource_list));
-   centry_list_remove_duplicates(lGetListRW(*pjob, JB_soft_resource_list));
+   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+   job_request_set_remove_duplicates(*pjob);
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-m"))) {
       u_long32 ul;
@@ -380,11 +381,10 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lRemoveElem(cmdline, &ep);
    }
 
-   parse_list_hardsoft(cmdline, "-q", *pjob, 
-                        JB_hard_queue_list, JB_soft_queue_list);
-
-   parse_list_hardsoft(cmdline, "-masterq", *pjob, 
-                        JB_master_hard_queue_list, 0);
+   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-masterq", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-R"))) {
       lSetBool(*pjob, JB_reserve, lGetInt(ep, SPA_argval_lIntT));
@@ -395,24 +395,29 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 
    /* context switches are sensitive to order */
    ep = lFirstRW(cmdline);
-   while(ep)
-      if(!strcmp(lGetString(ep, SPA_switch_val), "-ac") ||
-         !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
-         !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
-         lListElem* temp;
-         if(!lGetList(*pjob, JB_context)) {
+   while(ep) {
+      if (!strcmp(lGetString(ep, SPA_switch_val), "-ac") ||
+          !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
+          !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
+         lListElem *temp;
+         if (!lGetList(*pjob, JB_context)) {
             lSetList(*pjob, JB_context, lCopyList("context", lGetList(ep, SPA_argval_lListT)));
-         }
-         else {
+         } else {
             lList *copy = lCopyList("context", lGetList(ep, SPA_argval_lListT));
             lAddList(lGetListRW(*pjob, JB_context), &copy);
          }
          temp = lNextRW(ep);
          lRemoveElem(cmdline, &ep);
          ep = temp;
-      }
-      else
+      } else {
          ep = lNextRW(ep);
+      }
+   }
+
+   /* not needed in job struct */
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-scope"))) {
+      lRemoveElem(cmdline, &ep);
+   }
 
    /* not needed in job struct */
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-soft"))) {

@@ -67,6 +67,7 @@
 #define MSG_WARNING                          _MESSAGE(1005, _("warning: "))
 #define MSG_COMMON_help_OPT_USAGE            _MESSAGE(1006, _("print this help"))
 #define MSG_COMMON_xml_OPT_USAGE             _MESSAGE(1007, _("display the information in XML format"))
+#define MSG_EITHERSCOPEORMASTERX             _MESSAGE(1008, _("do not mix -scope options with -masterq options"))
 
 #define MSG_QSTAT_HELP_WCCQ                  _MESSAGE(1030, _("wildcard expression matching a cluster queue"))
 #define MSG_QSTAT_HELP_WCHOST                _MESSAGE(1031, _("wildcard expression matching a host"))

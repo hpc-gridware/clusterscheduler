@@ -76,9 +76,9 @@ static void utilization_find_time_or_prevstart_or_prev(const lList *diagram,
       u_long64 time, lListElem **hit, lListElem **before);
 
 static int 
-rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *rule, dstring rue_name,
-                        const lList *centry_list, int slots, const char *obj_name, u_long64 start_time,
-                        u_long64 duration, bool is_master_task, bool do_per_host_booking);
+rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *rule,
+                        dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
+                        u_long64 start_time, u_long64 duration, bool is_master_task, bool do_per_host_booking);
 
 static void add_calendar_to_schedule(lList *queue_list, u_long64 now);
 
@@ -351,7 +351,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lInsertElem(resource_diagram, prev, end);
    }
 
-#if 1
+#if 0
    utilization_print(cr, "pe_slots");
    printf("this was before utilization_normalize()\n");
 #endif
@@ -363,7 +363,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 /* 
    Find element with specified time or the element before it 
 
-   If the element exists it is returned in 'hit'. Otherwise
+   If the element exists it is returned in 'hit'. Otherwise,
    the element before it is returned or nullptr if no such exists.
 
 */
@@ -706,7 +706,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       }
 
       /* global */
-      rc_add_job_utilization(a->job, a->ja_task_id, type, a->gep, a->centry_list, a->slots,
+      rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, a->slots,
                              EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
                              a->start, a->duration, GLOBAL_TAG, for_job_scheduling, true, true);
 
@@ -725,7 +725,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          /* hosts */
          if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
-            rc_add_job_utilization(a->job, a->ja_task_id, type, hep, a->centry_list, slots,
+            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
                                    EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
                                    a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
          }
@@ -740,7 +740,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
              * schedule runs: running/suspneded/migrating jobs.
              * 
              */
-            rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
+            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                    QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                    a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, false);
          }
@@ -759,7 +759,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
                rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue, pe);
 
-               rqs_add_job_utilization(a->job, a->ja_task_id, type, rule, rue_name,
+               rqs_add_job_utilization(a->job, a->pe, a->ja_task_id, type, rule, rue_name,
                                        a->centry_list, slots, lGetString(rqs, RQS_name),
                                        a->start, a->duration, is_master_task, do_per_host_booking);
             }
@@ -784,7 +784,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
             if ((qep = lGetSubStrRW(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
-               rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
+               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                       a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
@@ -796,30 +796,30 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    DRETURN(0);
 }
 
-int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *ep, const lList *centry_list,
-                           int slots, int config_nm, int actual_nm, const char *obj_name, u_long64 start_time,
-                           u_long64 duration, u_long32 tag, bool for_job_scheduling, bool is_master_task,
-                           bool do_per_host_booking)
+int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
+                           const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
+                           u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
+                           bool is_master_task, bool do_per_host_booking)
 {
    lListElem *cr, *cr_config, *dcep;
    int mods = 0;
 
    DENTER(TOP_LAYER);
 
-   if (!ep) {
+   if (ep == nullptr) {
       ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
-   if (!slots) {
+   if (slots == 0) {
       ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
+   u_long32 job_id = lGetUlong(jep, JB_job_number);
+
    for_each_rw (cr_config, lGetList(ep, config_nm)) {
       const char *name = lGetString(cr_config, CE_name);
-      double dval = 0.0;
-      int debit_slots;
 
       /* search default request */  
       if (!(dcep = centry_list_locate(centry_list, name))) {
@@ -828,28 +828,74 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
       }
 
       u_long32 consumable = lGetUlong(dcep, CE_consumable);
-      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
+
+      if (consumable != CONSUMABLE_NO) {
+         /* ensure attribute is in actual list */
+         if (!(cr = lGetSubStrRW(ep, RUE_name, name, actual_nm))) {
+            cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
+            /* CE_double is implicitly set to zero */
+         }
+      }
+
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) {
          continue;
       }
 
-      /* ensure attribute is in actual list */
-      if (!(cr = lGetSubStrRW(ep, RUE_name, name, actual_nm))) {
-         cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
-         /* CE_double is implicitly set to zero */
+      bool did_booking = false;
+      int debit_slots = consumable_get_debit_slots(consumable, slots);
+
+      // has contribution from global requests? Then we can do the booking for master and slave task in one step.
+      double dval = 0.0;
+      if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL)) {
+         if (dval != 0.0) {
+            /* update RUE_utilized resource diagram to reflect jobs utilization */
+            utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag, obj_name, type,
+                            for_job_scheduling, false);
+            mods++;
+            did_booking = true;
+         }
+      } else if (pe != nullptr) {
+         // no global contribution, need to check master and slave
+         int slave_debit_slots = debit_slots;
+         if (is_master_task) {
+            // if the master task is part of this booking, check if we have a master request
+            dval = 0.0;
+            if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_MASTER)) {
+               if (dval != 0.0) {
+                  /* update RUE_utilized resource diagram to reflect jobs utilization */
+                  // book it for one slot (the master task)
+                  utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
+                                  obj_name, type, for_job_scheduling, false);
+                  mods++;
+                  did_booking = true;
+               }
+            }
+
+            adjust_slave_task_debit_slots(pe, slave_debit_slots);
+         }
+
+         // now do booking for the (remaining) slave tasks, if any
+         if (slave_debit_slots != 0) {
+            dval = 0.0;
+            if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_SLAVE)) {
+               if (dval != 0.0) {
+                  /* update RUE_utilized resource diagram to reflect jobs utilization */
+                  // book it for the remaining slave tasks
+                  utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
+                                  obj_name, type, for_job_scheduling, false);
+                  mods++;
+                  did_booking = true;
+               }
+            }
+         }
       }
 
-      debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-
-      if (job_get_contribution(jep, nullptr, name, &dval, dcep) && dval != 0.0) {
-         /* update RUE_utilized resource diagram to reflect jobs utilization */
-         utilization_add(cr, start_time, duration, debit_slots * dval,
-            lGetUlong(jep, JB_job_number), task_id, tag, obj_name, type, for_job_scheduling, false);
-         mods++;
-      } else if (lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP) {
+      // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
+      if (!did_booking && lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP) {
          dval = 1.0;
          /* update RUE_utilized resource diagram to reflect jobs utilization */
-         utilization_add(cr, start_time, duration, debit_slots * dval,
-            lGetUlong(jep, JB_job_number), task_id, tag, obj_name, type, for_job_scheduling, true);
+         utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
+                         obj_name, type, for_job_scheduling, true);
          mods++;
       }
    }
@@ -895,27 +941,23 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, l
 *     sge_resource_utilization/add_job_utilization()
 *******************************************************************************/
 static int 
-rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lListElem *rule, dstring rue_name,
-                        const lList *centry_list, int slots, const char *obj_name, u_long64 start_time,
-                        u_long64 duration, bool is_master_task, bool do_per_host_booking)
+rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *rule,
+                        dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
+                        u_long64 start_time, u_long64 duration, bool is_master_task, bool do_per_host_booking)
 {
-   const lList *limit_list;
-   lListElem *limit;
-   const char *centry_name;
-   int mods = 0;
-
    DENTER(TOP_LAYER);
 
-   if (jep != nullptr) {
-      limit_list = lGetList(rule, RQR_limit);
+   int mods = 0;
 
-      for_each_rw (limit, limit_list) {
+   if (jep != nullptr) {
+      u_long32 job_id = lGetUlong(jep, JB_job_number);
+
+      lListElem *limit;
+      for_each_rw (limit, lGetListRW(rule, RQR_limit)) {
          lListElem *raw_centry;
          lListElem *rue_elem;
-         double dval = 0.0;
-         int debit_slots;
 
-         centry_name = lGetString(limit, RQRL_name);
+         const char *centry_name = lGetString(limit, RQRL_name);
          
          if (!(raw_centry = centry_list_locate(centry_list, centry_name))) {
             /* ignoring not defined centry */
@@ -923,27 +965,75 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, lLis
          }
 
          u_long32 consumable = lGetUlong(raw_centry, CE_consumable);
-         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
+
+         if (consumable != CONSUMABLE_NO) {
+            rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage);
+            if (rue_elem == nullptr) {
+               rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage, RUE_Type);
+               /* RUE_utilized_now is implicitly set to zero */
+            }
+         }
+
+         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) {
             continue;
          }
 
-         rue_elem = lGetSubStrRW(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage);
-         if(rue_elem == nullptr) {
-            rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage, RUE_Type);
-            /* RUE_utilized_now is implicitly set to zero */
+         bool did_booking = false;
+         int debit_slots = consumable_get_debit_slots(consumable, slots);
+
+         // has contribution from global requests? Then we can do the booking for master and slave task in one step.
+         double dval = 0.0;
+         if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_GLOBAL)) {
+            if (dval != 0.0) {
+               /* update RUE_utilized resource diagram to reflect jobs utilization */
+               utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
+                               RQS_TAG, obj_name, type, true, false);
+               mods++;
+               did_booking = true;
+            }
+         } else if (pe != nullptr) {
+            // no global contribution, need to check master and slave
+            int slave_debit_slots = debit_slots;
+            if (is_master_task) {
+               // if the master task is part of this booking, check if we have a master request
+               dval = 0.0;
+               if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_MASTER)) {
+                  if (dval != 0.0) {
+                     /* update RUE_utilized resource diagram to reflect jobs utilization */
+                     // book it for one slot (the master task)
+                     utilization_add(rue_elem, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id,
+                                     RQS_TAG, obj_name, type, true, false);
+                     mods++;
+                     did_booking = true;
+                  }
+               }
+
+               // if we did the master task booking
+               // adjust the slot count for the slave booking
+               adjust_slave_task_debit_slots(pe, slave_debit_slots);
+            }
+
+            // now do booking for the (remaining) slave tasks, if any
+            if (slave_debit_slots != 0) {
+               dval = 0.0;
+               if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE)) {
+                  if (dval != 0.0) {
+                     /* update RUE_utilized resource diagram to reflect jobs utilization */
+                     // book it for the remaining slave tasks
+                     utilization_add(rue_elem, start_time, duration, slave_debit_slots * dval, job_id, task_id,
+                                     RQS_TAG, obj_name, type, true, false);
+                     mods++;
+                     did_booking = true;
+                  }
+               }
+            }
          }
 
-         debit_slots = consumable_get_debit_slots(consumable, slots, is_master_task, do_per_host_booking);
-
-         if (job_get_contribution(jep, nullptr, centry_name, &dval, raw_centry) && dval != 0.0) {
-            /* update RUE_utilized resource diagram to reflect jobs utilization */
-            utilization_add(rue_elem, start_time, duration, debit_slots * dval,
-               lGetUlong(jep, JB_job_number), task_id, RQS_TAG, obj_name, type, true, false);
-            mods++;
-         } else if (lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
+         // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
+         if (!did_booking && lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
             dval = 1.0;
-            utilization_add(rue_elem, start_time, duration, debit_slots * dval,
-               lGetUlong(jep, JB_job_number), task_id, RQS_TAG, obj_name, type, true, true);
+            utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
+                            RQS_TAG, obj_name, type, true, true);
             mods++;
          }
       }

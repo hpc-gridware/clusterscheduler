@@ -151,7 +151,7 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job,
    lList *granted_resources_list = nullptr;
 
    // loop over the hard resource requests
-   const lList *hard_requests = lGetList(job, JB_hard_resource_list);
+   const lList *hard_requests = job_get_hard_resource_list(job);
    const lListElem *request;
    for_each_ep(request, hard_requests) {
       const char *name = lGetString(request, CE_name);

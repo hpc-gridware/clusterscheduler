@@ -644,7 +644,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                 * Find the jobs wallclock limit
                 */
                {
-                  const lList *cplxl = lGetList(job, JB_hard_resource_list);
+                  const lList *cplxl = job_get_hard_resource_list(job);
                   const lListElem *cple = lGetElemStr(cplxl, CE_name, SGE_ATTR_H_RT);
 
                   if (cple != nullptr) {

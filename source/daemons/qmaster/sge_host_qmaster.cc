@@ -62,6 +62,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "comm/commlib.h"
@@ -1469,6 +1470,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    /* ---- attribute EH_consumable_config_list */
    if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
@@ -1505,7 +1507,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
 
          // initialize booking
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
+         debit_host_consumable(nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
 
          // do the resource booking
          for_each_rw (jep, master_job_list) {
@@ -1516,6 +1518,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                int slots;
                bool is_master_task = false;
                const void *iterator = nullptr;
+               const char *pe_name = lGetString(jatep, JAT_granted_pe);
+               const lListElem *pe = nullptr;
+               if (pe_name != nullptr) {
+                  pe = pe_list_locate(master_pe_list, pe_name);
+               }
 
                if (global_host || (lFirst(gdil) == lGetElemHostFirst(gdil, JG_qhostname, host, &iterator))) {
                   is_master_task = true;
@@ -1525,8 +1532,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
 
                if (slots > 0) {
                   // do_per_host_booking is true, we book on one host once
-                  debit_host_consumable(jep, jatep, tmp_elem, master_centry_list, slots, is_master_task, true,
-                                        nullptr);
+                  debit_host_consumable(jep, jatep, pe, tmp_elem, master_centry_list, slots, is_master_task, true, nullptr);
                }
             }
          }
@@ -1545,12 +1551,18 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
             // we book per host consumables once
             bool do_per_host_booking = true;
 
+            const char *pe_name = lGetString(ar_ep, AR_granted_pe);
+            const lListElem *pe = nullptr;
+            if (pe_name != nullptr) {
+               pe = pe_list_locate(master_pe_list, pe_name);
+            }
+
             if (gdil_ep != nullptr) {
                lListElem *dummy_job = lCreateElem(JB_Type);
-               lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar_ep, AR_resource_list)));
+               job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar_ep, AR_resource_list)));
 
                while (gdil_ep != nullptr) {
-                  rc_add_job_utilization(dummy_job, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                  rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                          tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
                                          EH_consumable_config_list, EH_resource_utilization, host,
                                          lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),

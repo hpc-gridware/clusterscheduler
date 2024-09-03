@@ -943,7 +943,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    DRETURN_VOID;
 }
 
-void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue, 
+void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue,
       int slots, int slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
    const lListElem *rqs, *rule;
@@ -1058,7 +1058,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
    lAppendElem(tmp_rue_list, tmp_rue_elem);
 
-   result = parallel_rc_slots_by_time(a, requests, slots, 
+   result = parallel_rc_slots_by_time(a, slots,
                                       slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
                                       false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG,
                                       false, SGE_RQS_NAME, true);
@@ -1119,13 +1119,13 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
       const char* pe = a->pe_name;
       lListElem *rql;
       const lListElem *rqs;
-      dstring rule_name = DSTRING_INIT;
-      dstring rue_string = DSTRING_INIT;
-      dstring limit_name = DSTRING_INIT;
+      // @todo can we used static dstrings? What size would be needed?
+      dstring dstr_rule_name = DSTRING_INIT;
+      dstring dstr_rue_string = DSTRING_INIT;
+      dstring dstr_limit_name = DSTRING_INIT;
       lListElem *exec_host = host_list_locate(a->host_list, host);
 
-      if (a->pi)
-         a->pi->par_rqs++;
+      SCHED_PROF_INC(a->pi, par_rqs);
 
       for_each_ep(rqs, a->rqs_list) {
          lListElem *rule = nullptr;
@@ -1134,23 +1134,22 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
          if (!lGetBool(rqs, RQS_enabled)) {
             continue;
          }
-         sge_dstring_clear(&rule_name);
-         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, &rule_name);
+         sge_dstring_clear(&dstr_rule_name);
+         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, &dstr_rule_name);
          if (rule != nullptr) {
             lListElem *limit = nullptr;
             const char *limit_s;
-            rqs_get_rue_string(&rue_string, rule, user, project, host, queue, pe);
-            sge_dstring_sprintf(&limit_name, "%s=%s", sge_dstring_get_string(&rule_name), sge_dstring_get_string(&rue_string));
-            limit_s = sge_dstring_get_string(&limit_name);
+            rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
+            limit_s = sge_dstring_sprintf(&dstr_limit_name, "%s=%s", sge_dstring_get_string(&dstr_rule_name), sge_dstring_get_string(&dstr_rue_string));
 
             /* reuse earlier result */
             if ((rql=lGetElemStrRW(a->limit_list, RQL_name, limit_s))) {
-              u_long32 tagged4schedule = lGetUlong(rql, RQL_tagged4schedule); 
                result = (dispatch_t)lGetInt(rql, RQL_result);
                tslots = MIN(tslots, lGetInt(rql, RQL_slots));
                tslots_qend = MIN(tslots_qend, lGetInt(rql, RQL_slots_qend));
 
-               lSetUlong(qep, QU_tagged4schedule, MIN(tagged4schedule, lGetUlong(qep, QU_tagged4schedule)));
+               // build the minimum
+               lAndUlongBitMask(qep, QU_tagged4schedule, lGetUlong(rql, RQL_tagged4schedule));
 
                DPRINTF("parallel_rqs_slots_by_time(%s@%s) result %d slots %d slots_qend %d for " SFQ " (cache)\n",
                        queue, host, result, tslots, tslots_qend, limit_s);
@@ -1159,14 +1158,12 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                int ttslots_qend = INT_MAX;
                
                u_long32 tagged_for_schedule_old = lGetUlong(qep, QU_tagged4schedule);  /* default value or set in match_static_queue() */
-               lSetUlong(qep, QU_tagged4schedule, 2);
+               lSetUlong(qep, QU_tagged4schedule, TAG4SCHED_ALL);
                
                for_each_rw(limit, lGetList(rule, RQR_limit)) {
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
-                  lList *job_centry_list = lGetListRW(a->job, JB_hard_resource_list);
-                  lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
                   if (raw_centry == nullptr) {
                      DPRINTF("ignoring limit %s because not defined", limit_name);
                      continue;
@@ -1174,15 +1171,21 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                      DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
                   }
 
+                  lList *job_centry_list = job_get_hard_resource_listRW(a->job); // @todo CS-400 need to check all request lists
+                  // @todo do we really need to pass the whole job_centry_list info functions below,
+                  //       or could we create a sub-list with just the one job_entry element?
+                  //       And would we have to copy-back info like CE_tagged?
+                  lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
+
                   /* found a rule, now check limit */
                   if (lGetUlong(raw_centry, CE_consumable)) {
 
-                     rqs_get_rue_string(&rue_string, rule, user, project, host, queue, pe);
+                     rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
 
                      if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
                         int tttslots = INT_MAX;
                         int tttslots_qend = INT_MAX;
-                        result = parallel_limit_slots_by_time(a, job_centry_list, &tttslots, &tttslots_qend, raw_centry, limit, &rue_string, qep);
+                        result = parallel_limit_slots_by_time(a, job_centry_list, &tttslots, &tttslots_qend, raw_centry, limit, &dstr_rue_string, qep);
                         ttslots = MIN(ttslots, tttslots);
                         ttslots_qend = MIN(ttslots_qend, tttslots_qend);
                         if (result == DISPATCH_NOT_AT_TIME) {
@@ -1217,8 +1220,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                lSetInt(rql, RQL_slots_qend, ttslots_qend);
                lSetUlong(rql, RQL_tagged4schedule, lGetUlong(qep, QU_tagged4schedule)); 
                
-               /* reset tagged4schedule if necessary */
-               lSetUlong(qep, QU_tagged4schedule, MIN(tagged_for_schedule_old, lGetUlong(qep, QU_tagged4schedule)));
+               /* reset QU_tagged4schedule if necessary */
+               lAndUlongBitMask(qep, QU_tagged4schedule, tagged_for_schedule_old);
 
                tslots = MIN(tslots, ttslots);
                tslots_qend = MIN(tslots_qend, ttslots_qend);
@@ -1228,8 +1231,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                DPRINTF("RQS PARALLEL SORT OUT\n");
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                               SCHEDD_INFO_CANNOTRUNRQSGLOBAL_SS,
-                     sge_dstring_get_string(&rue_string), sge_dstring_get_string(&rule_name));
-               rqs_exceeded_sort_out_par(a, rule, &rule_name, queue, host);
+                     sge_dstring_get_string(&dstr_rue_string), sge_dstring_get_string(&dstr_rule_name));
+               rqs_exceeded_sort_out_par(a, rule, &dstr_rule_name, queue, host);
             }
 
             if (result != DISPATCH_OK || tslots == 0) {
@@ -1237,9 +1240,9 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
             }
          }
       }
-      sge_dstring_free(&rue_string);
-      sge_dstring_free(&rule_name);
-      sge_dstring_free(&limit_name);
+      sge_dstring_free(&dstr_rue_string);
+      sge_dstring_free(&dstr_rule_name);
+      sge_dstring_free(&dstr_limit_name);
    }
 
    *slots = tslots;
@@ -1301,8 +1304,6 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    limit_list = lGetList(rule, RQR_limit);
    for_each_rw(limit, limit_list) {
       bool       is_forced = false;
-      const lList      *job_centry_list = nullptr;
-      lListElem  *job_centry = nullptr;
       const char *limit_name = lGetString(limit, RQRL_name);
       lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
 
@@ -1313,9 +1314,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          DPRINTF("checking limit %s\n", lGetString(raw_centry, CE_name));
       }
 
-      is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED ? true : false;
-      job_centry_list = lGetList(a->job, JB_hard_resource_list);
-      job_centry = centry_list_locate(job_centry_list, limit_name);
+      is_forced = lGetUlong(raw_centry, CE_requestable) == REQU_FORCED;
+      lList *job_centry_list = job_get_hard_resource_listRW(a->job);
+      // @todo CS-400: we only need job_centry. Have a function searching it in the 3 possible request lists
+      lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
 
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
@@ -1442,8 +1444,8 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
    *is_global = false;
 
-   if (a->pi && lGetNumberOfElem(a->rqs_list) > 0) {
-      a->pi->seq_rqs++;
+   if (lGetNumberOfElem(a->rqs_list) > 0) {
+      SCHED_PROF_INC(a->pi, seq_rqs);
    }
 
    for_each_ep(rqs, a->rqs_list) {

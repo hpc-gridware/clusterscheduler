@@ -789,13 +789,14 @@ centry_list_are_queues_requestable(const lList *this_list) {
 
 const char *
 centry_list_append_to_dstring(const lList *this_list, dstring *string) {
+   DENTER(CENTRY_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(CENTRY_LAYER);
    if (string != nullptr) {
-      const lListElem *elem = nullptr;
       bool printed = false;
 
+      const lListElem *elem;
       for_each_ep(elem, this_list) {
          if (printed) {
             sge_dstring_append(string, ",");
@@ -811,6 +812,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
       }
       ret = sge_dstring_get_string(string);
    }
+
    DRETURN(ret);
 }
 
@@ -1614,7 +1616,7 @@ const char *sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dst
    DRETURN(s);
 }
 
-static int slot_signum(int slots) {
+int slot_signum(int slots) {
    int ret = 0;
 
    if (slots > 0) {
@@ -1631,10 +1633,10 @@ static int slot_signum(int slots) {
  *
  * @param[in] consumable type, e.g. CONSUMABLE_NO, CONSUMABLE_YES, ...
  * @param[in] is_master_task is booking done for the master task of a parallel job (or the one task of a sequential job)
- * @param[in] do_per_host_booking shall booking be done for a per host consumable (true only for the first task on a host)
+ * @param[in] do_per_host_booking shall booking be done for a per-host consumable (true only for the first task on a host)
  * @return true, if booking shall be done, else false
  */
-bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking) {
+bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking, bool some_booking_done) {
    bool ret = true;
 
    switch (consumable) {
@@ -1647,7 +1649,9 @@ bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per
          }
          break;
       case CONSUMABLE_HOST:
-         if (!do_per_host_booking) {
+         // if we do not do per_host_booking,
+         // or we already did the booking for a per-host variable
+         if (!do_per_host_booking || some_booking_done) {
             ret = false;
          }
          break;
@@ -1664,10 +1668,8 @@ bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per
  *
  * @param[in] consumable type, e.g. CONSUMABLE_NO, CONSUMABLE_YES, ...
  * @param[in] slots, the number of slots (tasks) which shall be booked on a resource
- * @param[in] is_master_task is booking done for the master task of a parallel job (or the one task of a sequential job)
- * @param[in] do_per_host_booking shall booking be done for a per host consumable (true only for the first task on a host)
  */
-int consumable_get_debit_slots(u_long32 consumable, int slots, bool is_master_task, bool do_per_host_booking) {
+int consumable_get_debit_slots(u_long32 consumable, int slots) {
    // default: CONSUMABLE_YES
    int ret = slots;
 

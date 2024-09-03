@@ -215,7 +215,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    sge_qeti_t *iter = nullptr;
    lListElem *next_queue, *qep;
    const lListElem *hep;
-   const lList *requests = lGetList(a->job, JB_hard_resource_list);
+   const lList *requests = job_get_hard_resource_list(a->job);
 
    DENTER(TOP_LAYER);
 

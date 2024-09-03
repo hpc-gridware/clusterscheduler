@@ -184,8 +184,7 @@ main(int argc, const char **argv)
       opt_list_append_opts_from_script(prog_number,
                                        &opts_scriptfile, &alp, 
                                        opts_cmdline, environ);
-      tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S,
-                                           MSG_WARNING);
+      tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S, MSG_WARNING);
       if (tmp_ret > 0) {
          sge_exit(tmp_ret);
       }
@@ -196,6 +195,12 @@ main(int argc, const char **argv)
     */
    opt_list_merge_command_lines(&opts_all, &opts_defaults, 
                                 &opts_scriptfile, &opts_cmdline);
+
+   opt_list_verify_scope(opts_all, &alp);
+   tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
+   if (tmp_ret > 0) {
+      sge_exit(tmp_ret);
+   }
 
    /* If "-sync y" is set, wait for the job to end. */   
    /* Remove all -sync switches since cull_parse_job_parameter()
@@ -214,6 +219,11 @@ main(int argc, const char **argv)
 
    alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, 
                                   qualified_hostname, opts_all, &job);
+   job_set_command_line(job, argc, argv);
+
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
+      lWriteElemTo(job, stdout);
+   }
 
    job_set_command_line(job, argc, argv);
 

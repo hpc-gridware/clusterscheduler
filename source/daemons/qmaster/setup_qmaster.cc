@@ -63,6 +63,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_quota.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_cqueue.h"
@@ -1091,7 +1092,7 @@ setup_qmaster() {
             do nothing spectacular if the AD reqest list for this job is empty. */
          sge_task_depend_init(jep, &answer_list);
 
-         centry_list_fill_request(lGetListRW(jep, JB_hard_resource_list),
+         centry_list_fill_request(job_get_hard_resource_listRW(jep),
                                   nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY), false, true, false);
 
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 
@@ -1243,6 +1244,7 @@ static void debit_all_jobs_from_qs() {
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
    const lListElem *gdi;
    const char *queue_name;
@@ -1251,8 +1253,7 @@ static void debit_all_jobs_from_qs() {
    lListElem *jep;
    lListElem *next_jep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
    while ((jep = next_jep)) {
-
-      /* may be we have to delete this job */
+      /* maybe we have to delete this job */
       next_jep = lNextRW(jep);
 
       lListElem *jatep = nullptr;
@@ -1261,8 +1262,13 @@ static void debit_all_jobs_from_qs() {
          bool master_task = true;
          next_jatep = lNextRW(jatep);
 
-         /* don't look at states - we only trust in 
-            "granted destin. ident. list" */
+         const char *pe_name = lGetString(jatep, JAT_granted_pe);
+         const lListElem *pe = nullptr;
+         if (pe_name != nullptr) {
+            pe = pe_list_locate(master_pe_list, pe_name);
+         }
+
+         /* don't look at states - we only trust in "granted destin. ident. list" */
          const char *last_hostname = nullptr;
          for_each_ep(gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             u_long32 ar_id = lGetUlong(jep, JB_ar);
@@ -1282,22 +1288,31 @@ static void debit_all_jobs_from_qs() {
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdi, JG_qhostname));
                /* debit in all layers */
                lListElem *rqs = nullptr;
-               debit_host_consumable(jep, jatep, host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
-                                                                  SGE_GLOBAL_NAME), master_centry_list, slots,
+               debit_host_consumable(jep, jatep, pe,
+                                     host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
+                                                      SGE_GLOBAL_NAME), master_centry_list, slots,
                                      master_task, do_per_host_booking, nullptr);
-               debit_host_consumable(jep, jatep, host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
-                                                                  lGetHost(qep, QU_qhostname)), master_centry_list,
+               debit_host_consumable(jep, jatep, pe,
+                                     host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
+                                                      lGetHost(qep, QU_qhostname)), master_centry_list,
                                      slots, master_task, do_per_host_booking, nullptr);
-               qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
+               qinstance_debit_consumable(qep, jep, pe, master_centry_list, slots, master_task,
+                                          do_per_host_booking, nullptr);
                for_each_rw (rqs, master_rqs_list) {
-                  rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list,
+                  rqs_debit_consumable(rqs, jep, gdi, pe, master_centry_list,
                                        *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
                                        *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), slots, master_task, do_per_host_booking);
                }
                if (ar != nullptr) {
+                  const char *ar_pe_name = lGetString(ar, AR_granted_pe);
+                  const lListElem *ar_pe = nullptr;
+                  if (ar_pe_name != nullptr) {
+                     ar_pe = lGetElemStr(master_pe_list, PE_name, ar_pe_name);
+                  }
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);
                   if (queue != nullptr) {
-                     qinstance_debit_consumable(queue, jep, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
+                     qinstance_debit_consumable(queue, jep, ar_pe, master_centry_list, slots, master_task,
+                                                do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
                            sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
