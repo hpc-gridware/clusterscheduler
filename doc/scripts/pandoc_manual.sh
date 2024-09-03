@@ -3,8 +3,8 @@
 # generate PDF from markdown manuals
 # see also https://jdhao.github.io/2019/05/30/markdown2pdf_pandoc/
 
-if [ $# -ne 8 ]; then
-   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <release> <date> <located_in_gcs_extensions>"
+if [ $# -ne 9 ]; then
+   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <release> <date> <located_in_gcs_extensions> <build_open_source_version>"
    exit 1
 fi
 
@@ -16,6 +16,7 @@ TITLE=$5
 RELEASE=$6
 DATE=$7
 LOCATED_IN_GCS_EXTENSIONS=$8
+BUILD_OPEN_SOURCE_VERSION=$9
 
 if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
    COMMON_DIR="../clusterscheduler/doc/markdown/manual"
@@ -32,7 +33,11 @@ DEFINITIONS_PAGE="${SOURCE_DIR}/${COMMON_DIR}/typographic_conventions.md"
 MANUAL_FILES="${INPUT_DIR}/*.md"
 OUTPUT_FILE="${OUTPUT_DIR}/${MANUAL}.pdf"
 
-QSNAME="Open Cluster Scheduler"
+if [ ${BUILD_OPEN_SOURCE_VERSION} -eq 1 ]; then
+   QSNAME="Open Cluster Scheduler"
+else
+   QSNAME="Gridware Cluster Scheduler"
+fi
 QSPREFIX_LOWER="sge"
 QSPREFIX_UPPER="SGE"
 QSCOMPANYNAME="HPC-Gridware"
