@@ -783,12 +783,17 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "ENABLE_RESCHEDULE_SLAVE", &enable_reschedule_slave)) {
             continue;
          }
+
+         // if enabled does not change submit time when a job is rescheduled
          if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR", &old_reschedule_behavior)) {
             continue;
          }
+
+         // if enabled does not change submit time when a job array task is rescheduled
          if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB", &old_reschedule_behavior_array_job)) {
             continue;
          }
+
          if (parse_int_param(s, "jsv_threshold", &jsv_threshold, TYPE_TIM)) {
             if (jsv_threshold < 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
