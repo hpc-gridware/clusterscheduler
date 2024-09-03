@@ -67,6 +67,7 @@
 #include "sge_c_report.h"
 #include "sge_thread_main.h"
 #include "sge_thread_worker.h"
+#include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
 
 static void
@@ -222,13 +223,13 @@ sge_worker_main(void *arg) {
          /*
           * prepare buffer for sending an answer 
           */
-         if (!packet->is_intern_request && packet->is_gdi_request) {
+         if (!packet->is_intern_request && packet->request_type == PACKET_GDI_REQUEST) {
             init_packbuffer(&(packet->pb), 0, 0);
          }
 
          MONITOR_MESSAGES(p_monitor);
 
-         if (packet->is_gdi_request) {
+         if (packet->request_type == PACKET_GDI_REQUEST) {
             /*
              * test if a write lock is necessary
              */
@@ -243,6 +244,7 @@ sge_worker_main(void *arg) {
                task = task->next;
             }
          } else {
+            // PACKET_REPORT_REQUEST or PACKET_ACK_REQUEST
             is_only_read_request = false;
          }
 
@@ -260,20 +262,22 @@ sge_worker_main(void *arg) {
          INFO("======================");
 #endif
 
-         if (packet->is_gdi_request) {
-            /*
-             * do the GDI request
-             */
+         // handle the request (GDI/Report/Ack ...
+         if (packet->request_type == PACKET_GDI_REQUEST) {
             task = packet->first_task;
             while (task != nullptr) {
                sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
 
                task = task->next;
             }
-         } else {
+         } else if (packet->request_type == PACKET_REPORT_REQUEST) {
             task = packet->first_task;
-            sge_c_report(packet->host, packet->commproc, packet->commproc_id,
-                         task->data_list, p_monitor);
+            sge_c_report(packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+         } else if (packet->request_type == PACKET_ACK_REQUEST) {
+            task = packet->first_task;
+            sge_c_ack(packet, task, p_monitor);
+         } else {
+            DPRINTF("unknown request type %d\n", packet->request_type);
          }
 
 #ifdef OBSERVE
@@ -301,7 +305,7 @@ sge_worker_main(void *arg) {
             SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          }
 
-         if (packet->is_gdi_request) {
+         if (packet->request_type == PACKET_GDI_REQUEST) {
             /*
              * Send the answer to the client
              */

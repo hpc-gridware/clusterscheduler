@@ -44,6 +44,13 @@ typedef struct _sge_gdi_task_class_t sge_gdi_task_class_t;
 
 typedef struct _sge_gdi_packet_class_t sge_gdi_packet_class_t;
 
+// request types that can be encapsulated into packages/tasks
+typedef enum {
+   PACKET_GDI_REQUEST,
+   PACKET_REPORT_REQUEST,
+   PACKET_ACK_REQUEST
+} gdi_packet_request_type_t;
+
 struct _sge_gdi_task_class_t {
    /*
     * id identifying the GDI packet uniquely within the
@@ -106,11 +113,8 @@ struct _sge_gdi_packet_class_t {
     */
    bool is_intern_request;
 
-   /*
-    * true if the packet contains a GDI request otherwise
-    * is containes a report request
-    */
-   bool is_gdi_request;
+   // request_type GID/Report/ACK/...
+   gdi_packet_request_type_t request_type;
 
    /*
     * unique id identifying this packet uniquely in the context

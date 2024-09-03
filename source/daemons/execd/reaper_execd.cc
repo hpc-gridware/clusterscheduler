@@ -1276,7 +1276,10 @@ cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pi
 /**
  * \brief Enforces the cleanup of old jobs.
  *
- * This function is called when the keep active setting changes to enforce the cleanup of old jobs.
+ * This function can be called to enforce the expensive handling of clean_up_old_jobs()
+ * This is required when
+ *    - the keep active setting changes
+ *    - or when state changes (delete, reschedule) are triggered during downtime of the execution daemon
  */
 static bool enforce_cleanup_old_jobs = true;
 void set_enforce_cleanup_old_jobs() {
@@ -1294,7 +1297,7 @@ void set_enforce_cleanup_old_jobs() {
  * - to report the updated job state to the qmaster
  *
  * All this needs only to be done once during the lifetime of the execd process and should be repeated
- * only if KEEP_ACTIVE has been changed.
+ * in situations where set_enforce_cleanup_old_jobs() is called.
  *
  * During startup, the function produces more output.
  *
@@ -1305,19 +1308,19 @@ bool
 clean_up_old_jobs(bool startup) {
    DENTER(TOP_LAYER);
 
-   static bool cleanup_already_done = false;
-   if (enforce_cleanup_old_jobs) {
-      // No early exit (e.g. when KEEP_ACTIVE has been changed). We need to process entries
-      // in active jobs directory so that we can get rid of old jobs that are not in the job list
-      enforce_cleanup_old_jobs = false;
-   } else if (cleanup_already_done || mconf_get_simulate_jobs() ||
-              lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
+   // No early exit when
+   // - enforce_cleanup_old_jobs is set
+   //    - during startup
+   //    - when KEEP_ACTIVE has been changed
+   // - simulate_jobs is set
+   // - there are no jobs in the job list
+   if (!enforce_cleanup_old_jobs || mconf_get_simulate_jobs() ||
+       lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
       // Do early exit:
       // - if cleanup was already done
       // - if there are no jobs to process (0 jobs or only simulated jobs)
       DRETURN(true);
    }
-   cleanup_already_done = true;
 
    if (startup) {
       INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS);
