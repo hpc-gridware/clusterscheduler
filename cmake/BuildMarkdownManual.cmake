@@ -19,6 +19,11 @@
 #___INFO__MARK_END_NEW__
 
 function(build_markdown_manual file title located_in_extensions)
+   if (PROJECT_FEATURES MATCHES "gcs-extensions")
+        set(build_open_source_version 0)
+   else()
+        set(build_open_source_version 1)
+   endif ()
    string(TIMESTAMP DATETIME "%Y-%m-%d")
    add_custom_command(
          OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file}.pdf
@@ -28,7 +33,6 @@ function(build_markdown_manual file title located_in_extensions)
          ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/markdown/manual/typographic_conventions.md
          ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/markdown/manual/head.tex
          ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/scripts/pandoc_manual.sh
-         COMMAND ${CMAKE_SOURCE_DIR}/doc/scripts/pandoc_manual.sh ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
-         ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME} ${located_in_extensions}
+         COMMAND ${CMAKE_SOURCE_DIR}/doc/scripts/pandoc_manual.sh ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME} ${located_in_extensions} ${build_open_source_version}
    )
 endfunction()

@@ -207,13 +207,13 @@ xxqs_name_sxx_pe(5)
 *set* (default if nothing else is specified). The binding strategy is applied by xxQS_NAMExx. How this is achieved 
 depends on the underlying hardware architecture of the execution host where the submitted job will be started.
 
-On Solaris 10 hosts a processor set will be created where the job can exclusively run in. Because of operating 
+On Solaris hosts a processor set will be created where the job can exclusively run in. Because of operating 
 system limitations at least one core must remain unbound. This resource could of course used by an unbound job.
 
 On Linux hosts a processor affinity mask will be set to restrict the job to run exclusively on the selected cores. 
 The operating system allows other unbound processes to use these cores. Please note that on Linux the binding 
 requires a Linux kernel version of 2.6.16 or greater. It might be even possible to use a kernel with lower version 
-number but in that case additional kernel patches have to be applied. The *loadcheck* tool in the utilbin directory 
+number but in that case additional kernel patches have to be applied. The `loadcheck` tool in the utilbin directory 
 can be used to check if the hosts capabilities. You can also use the `-sep` in combination with `-cb` of qconf(5) 
 command to identify if xxQS_NAMExx is able to recognize the hardware topology.
 
@@ -242,7 +242,7 @@ offset cannot be achieved then there will be no binding done.
 Each socket/core pair has to be specified only once. If a socket/core pair is already in use by a different job
 the whole binding request will be ignored.
 
-*Qalter* allows changing this option even while the job executes. The modified parameter will only be in effect after 
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect after 
 a restart or migration of the job, however.
 
 If this option is specified then these values will be passed to defined JSV instances as parameters with the
@@ -258,7 +258,7 @@ Values that do not apply for the specified binding will not be reported to JSV. 
 reported for the striding binding and all *binding_exp_** values will be passed to JSV if explicit binding was 
 specified. (see -jsv option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
-## -b y\[es\]\|n\[o\]
+## -b *y\[es\]* \| *n\[o\]*
 
 Available for `qsub`, `qrsh` only. `qalter` does not allow changing this option. This option cannot be embedded 
 in the script file itself.
