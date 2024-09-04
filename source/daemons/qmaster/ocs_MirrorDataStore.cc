@@ -269,9 +269,10 @@ namespace ocs {
          DPRINTF("registered at event mirror and subscribed events\n");
       }
 
-      // do not exit even if shutdown event is received. We want th thread only to terminate in the cancellation
+      // do not exit even if event client shutdown event is received. We want the thread only to terminate in the cancellation
       // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
       // cleanup (free of data store memory and more) at the cancellation point
+      bool do_qmaster_shutdown = false;
       while (true) {
          lList *event_list = nullptr;
 
@@ -291,7 +292,12 @@ namespace ocs {
          // did we receive a shutdown event?
          bool do_shutdown = false;
          if (event_list != nullptr) {
-            do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+            // if we receive a shutdown event for the event client we will re-register with the next iteration of the main loop
+            bool do_event_client_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+
+            // if we receive a qmaster shutdown event we will terminate this qmaster thread
+            do_qmaster_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_QMASTER_GOES_DOWN) != nullptr);
+            do_shutdown = do_event_client_shutdown || do_qmaster_shutdown;
 
             if (do_shutdown) {
                DPRINTF("received event to shutdown\n");
@@ -355,14 +361,22 @@ namespace ocs {
          evc->ec_commit(evc, nullptr);
 
          // pthread cancellation point (functions are pushed in reverse order of execution)
-         int execute = 0;
-         pthread_cleanup_push(thread_cleanup_monitor, &monitor);
-         pthread_cleanup_push(thread_cleanup_data_store, nullptr);
-         pthread_cleanup_push(thread_cleanup_event_client, evc);
-         pthread_testcancel();
-         pthread_cleanup_pop(execute); // event client registration
-         pthread_cleanup_pop(execute); // data store that was filled by this mirror
-         pthread_cleanup_pop(execute); // monitor
+         // As soon as we know that qmaster will shut down we will not reiterate the main loop
+         // We just wait here for the final termination signal to do the cleanup.
+         do {
+            int execute = 0;
+            pthread_cleanup_push(thread_cleanup_monitor, &monitor);
+            pthread_cleanup_push(thread_cleanup_data_store, nullptr);
+            pthread_cleanup_push(thread_cleanup_event_client, evc);
+            pthread_testcancel();
+            pthread_cleanup_pop(execute); // event client registration
+            pthread_cleanup_pop(execute); // data store that was filled by this mirror
+            pthread_cleanup_pop(execute); // monitor
+
+            if (do_qmaster_shutdown) {
+               usleep(500);
+            }
+         } while (do_qmaster_shutdown);
          DPRINTF("passed cancellation point\n");
       }
 
