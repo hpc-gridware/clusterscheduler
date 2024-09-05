@@ -981,7 +981,10 @@ rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstri
             }
          } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
-            int slave_debit_slots = debit_slots;
+            // we use the original slots value for slave_debit_slots
+            // reason: for host consumables, debit_slots is 1, which will be adjusted below to 0
+            //         if we have then a slave request for a host consumable, it will not be booked!
+            int slave_debit_slots = slots;
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
                dval = 0.0;
@@ -1010,6 +1013,7 @@ rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstri
                           obj_name, sge_dstring_get_string(rue_name), slave_debit_slots);
                   if (dval != 0.0) {
                      // book it for the remaining slave tasks
+                     slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                      lAddDouble(rue_elem, RUE_utilized_now, slave_debit_slots * dval);
                      mods++;
                      did_booking = true;

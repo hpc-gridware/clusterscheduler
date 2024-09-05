@@ -1188,7 +1188,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    if (result == DISPATCH_OK) {
       // create the granted resource list containing all granted consumables
       // including RSMAPs and the info which RSMAP ids were granted
-      add_granted_resource_list(ja_task, job, a.gdil, host_list);
+      add_granted_resource_list(ja_task, job, a.pe, a.gdil, host_list);
 
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {
