@@ -1093,13 +1093,14 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
          const char *obj_type = config_nm == QU_consumable_config_list ? "queue" : "host";
 
          int debit_slots = consumable_get_debit_slots(consumable, slots);
+         DPRINTF("===> rc_debit_consumable(): %s: %s: debit_slots: %d\n", obj_name, name, debit_slots);
 
          // has contribution from global requests? Then we can do the booking for master and slave task in one step.
          double dval = 0.0;
          bool tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL);
          if (tmp_ret) {
             // the resource was requested
-            DPRINTF("===> rc_debit_consumable(): we have GLOBAL %s request: %f for %d slots\n", name, dval, debit_slots);
+            DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name, dval, debit_slots);
             if (dval != 0.0) {
                if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, cr_config, cr,
                                                          is_exclusive, just_check)) {
@@ -1117,14 +1118,17 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
 #endif
          } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
-            int slave_debit_slots = debit_slots;
+            // we use the original slots value for slave_debit_slots
+            // reason: for host consumables, debit_slots is 1, which will be adjusted below to 0
+            //         if we have then a slave request for a host consumable, it will not be booked!
+            int slave_debit_slots = slots;
             double master_dval = 0.0;
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
                tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &master_dval, dcep, JRS_SCOPE_MASTER);
                if (tmp_ret) {
                   // we have a master request
-                  DPRINTF("===> rc_debit_consumable(): we have MASTER %s request: %f for %d slots\n", name, dval,
+                  DPRINTF("===> rc_debit_consumable(): %s: we have MASTER %s request: %f for %d slots\n", obj_name, name, master_dval,
                           slot_signum(debit_slots));
                   if (master_dval != 0.0) {
                      // book it for one slot
@@ -1148,7 +1152,8 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
                if (tmp_ret && slave_dval != 0.0) {
                   // we have a slave request
-                  DPRINTF("===> rc_debit_consumable(): we have SLAVE %s request: %f for %d slots\n", name, dval, slave_debit_slots);
+                  slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
+                  DPRINTF("===> rc_debit_consumable(): %s: we have SLAVE %s request: %f for %d slots\n", obj_name, name, slave_dval, slave_debit_slots);
                   if (slave_dval != 0.0) {
                      // in case of just_check: need to check, if sum of master dval + slave dval fits on the resource
                      if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slave_debit_slots,

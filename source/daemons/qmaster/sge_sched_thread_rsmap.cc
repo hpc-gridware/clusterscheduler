@@ -29,6 +29,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
 
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_monitoring_level.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
 #include "sge_sched_thread_rsmap.h"
@@ -36,13 +39,14 @@
 static bool
 gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, const lList *host_list,
                        u_long32 amount) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
    const lListElem *host = host_list_locate(host_list, host_name);
    if (host == nullptr) {
       ret = false;
    }
-
+   DPRINTF("      ==> gru_add_free_rsmap_ids: %s, %s, %d\n", name, host_name, amount);
    if (ret) {
       const lListElem *resource_definition = lGetSubStr(host, CE_name, name, EH_consumable_config_list);
       const lListElem *resource_utilization = lGetSubStr(host, RUE_name, name, EH_resource_utilization);
@@ -65,14 +69,23 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
                   free_amount -= lGetUlong(used_ep, RESL_amount);
                }
                if (free_amount > 0) {
-                  lListElem *resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+                  // we might call this function multiple times, e.g. if we have requested a RSMAP
+                  // both for mater and slave tasks - then resl already exists when booking the slave tasks
+                  lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
+                  if (resl == nullptr) {
+                     resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+                  }
                   if (free_amount >= amount) {
-                     lSetUlong(resl, RESL_amount, amount);
+                     DPRINTF("      ==> gru_add_free_rsmap_ids: id %s, amount %d\n", id, amount);
+                     lAddUlong(resl, RESL_amount, amount);
+                     //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + amount);
                      amount = 0;
                      // we are done
                      break;
                   } else {
-                     lSetUlong(resl, RESL_amount, free_amount);
+                     DPRINTF("      ==> gru_add_free_rsmap_ids: id %s, amount %d\n", id, free_amount);
+                     lAddUlong(resl, RESL_amount, free_amount);
+                     //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + free_amount);
                      amount -= free_amount;
                   }
                }
@@ -86,12 +99,14 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
       }
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 static bool
-gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 type,
+gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 consumable, u_long32 type,
                      const char *host_name, const lList *host_list, double amount, u_long32 slots) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
    // try to get the resource from the local host, if not available, then from the global host
@@ -102,30 +117,46 @@ gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 
       if (host == nullptr || lGetSubStr(host, CE_name, name, EH_consumable_config_list) == nullptr) {
          // may never happen, the global host must exist and the resource must be defined somewhere on host level
          // @todo what about queue resources?
-         return false;
+         DPRINTF("gru_list_add_request: resource %s not found on host %s\n", name, host_name);
+         DRETURN(false);
       }
    }
-
+   DPRINTF("  ==> gru_list_add_request: booking %s: " sge_u32 " * %f from %host %s\n", name, slots, amount, host_name);
    lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {
+      DPRINTF("   -> adding new GRU\n");
       gru = lAddElemStr(granted_resources_list, GRU_name, name, GRU_Type);
+      if (gru != nullptr) {
+         // initialize GRU element
+         lSetHost(gru, GRU_host, host_name);
+
+         if (type == TYPE_RSMAP) {
+            lSetUlong(gru, GRU_type, GRU_RESOURCE_MAP_TYPE);
+         } else {
+            lSetUlong(gru, GRU_type, GRU_HARD_REQUEST_TYPE);
+         }
+      }
+   } else {
+      // if we have already booked a per-host consumable in the global host - don't repeat it
+      if (consumable == CONSUMABLE_HOST && sge_strnullcmp(host_name, SGE_GLOBAL_NAME) == 0) {
+         DPRINTF("   ==> gru_list_add_request: skipping subsequent per-host consumable %s on global host\n", name);
+         DRETURN(true); // this is OK
+      }
    }
    if (gru != nullptr) {
-      lSetHost(gru, GRU_host, host_name);
-      lSetDouble(gru, GRU_amount, amount * slots);
-
+      // do the booking
+      DPRINTF("   ==> gru_list_add_request: booking %f * %d\n", amount, slots);
+      lAddDouble(gru, GRU_amount, amount * slots);
       if (type == TYPE_RSMAP) {
-         lSetUlong(gru, GRU_type, GRU_RESOURCE_MAP_TYPE);
          ret = gru_add_free_rsmap_ids(gru, name, host_name, host_list, amount * slots);
-      } else {
-         lSetUlong(gru, GRU_type, GRU_HARD_REQUEST_TYPE);
       }
    } else {
       // couldn't malloc gru?
+      DPRINTF("gru_list_add_request: couldn't malloc GRU\n");
       ret = false;
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -140,59 +171,104 @@ gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 
  * @param host_list
  * @return true in case of success, false in case of errors
  */
-bool add_granted_resource_list(lListElem *ja_task, const lListElem *job,
-                               const lList *gdil, const lList *host_list) {
+bool add_granted_resource_list(lListElem *ja_task, const lListElem *job, const lListElem *pe, const lList *gdil,
+                               const lList *host_list) {
+   DENTER(TOP_LAYER);
+
    // check input parameters
    if (ja_task == nullptr || job == nullptr || gdil == nullptr || host_list == nullptr) {
-      return false;
+      DRETURN(false);
    }
 
    bool ret = true;
    lList *granted_resources_list = nullptr;
 
-   // loop over the hard resource requests
-   const lList *hard_requests = job_get_hard_resource_list(job);
-   const lListElem *request;
-   for_each_ep(request, hard_requests) {
-      const char *name = lGetString(request, CE_name);
+   // loop over the gdil and figure out the hosts
+   // Attention: One host can appear multiple times in gdil (for different queue instances)!
+   const lListElem *gdil_ep;
+   bool is_master_task = true;
+   const char *last_host = nullptr;
+   for_each_ep(gdil_ep, gdil) {
+      int slots = lGetUlong(gdil_ep, JG_slots);
+      const char *host_name = lGetHost(gdil_ep, JG_qhostname);
+      DPRINTF("gdil_ep: %s, %d slots %s\n", host_name, slots, is_master_task ? ", master task" : "");
 
-      u_long32 type = lGetUlong(request, CE_valtype);
-      u_long32 consumable = lGetUlong(request, CE_consumable);
-      double amount = lGetDouble(request, CE_doubleval);
-      // we only add consumables to the granted resources list
-      if (consumable == CONSUMABLE_NO) {
-         continue;
-      }
+      // book the global resources
+      const lListElem *request;
+      for_each_ep (request, job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL)) {
+         u_long32 consumable = lGetUlong(request, CE_consumable);
 
-      // loop over the gdil and figure out the hosts
-      // Attention: One host can appear multiple times in gdil (for different queue instances)!
-      const lListElem *gdil_ep;
-      const char *last_host = nullptr;
-      for_each_ep(gdil_ep, gdil) {
-         const char *host_name = lGetHost(gdil_ep, JG_qhostname);
-
-         if (consumable == CONSUMABLE_HOST && sge_strnullcmp(last_host, host_name) == 0) {
-            // we book HOST consumables only once per host
+         if (consumable == CONSUMABLE_NO ||
+             (consumable == CONSUMABLE_JOB && !is_master_task) ||
+             (consumable == CONSUMABLE_HOST && sge_strnullcmp(last_host, host_name) == 0)) {
             continue;
          }
-         last_host = host_name;
 
-         u_long32 slots = lGetUlong(gdil_ep, JG_slots);
-         if (consumable == CONSUMABLE_JOB || consumable == CONSUMABLE_HOST) {
-            // we consume only once for the master task / once per host
-            slots = 1;
-         }
-
-         ret = gru_list_add_request(&granted_resources_list, name, type, host_name, host_list, amount, slots);
+         int debit_slots = consumable_get_debit_slots(consumable, slots);
+         const char *name = lGetString(request, CE_name);
+         u_long32 type = lGetUlong(request, CE_valtype);
+         double amount = lGetDouble(request, CE_doubleval);
+         DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
+         ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount, debit_slots);
          if (!ret) {
             break;
          }
+      }
+      if (!ret) {
+         break;
+      }
 
-         if (consumable == CONSUMABLE_JOB) {
-            // for job consumables only the resources of the master task (first gdil entry) are used
+      // book the master resources
+      if (is_master_task) {
+         for_each_ep (request, job_get_hard_resource_list(job, JRS_SCOPE_MASTER)) {
+            u_long32 consumable = lGetUlong(request, CE_consumable);
+
+            if (consumable == CONSUMABLE_NO) {
+               continue;
+            }
+
+            int debit_slots = 1;
+            const char *name = lGetString(request, CE_name);
+            u_long32 type = lGetUlong(request, CE_valtype);
+            double amount = lGetDouble(request, CE_doubleval);
+            DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
+            ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount,
+                                       debit_slots);
+            if (!ret) {
+               break;
+            }
+         }
+         // we booked a master task, what remains are the slave tasks (one less slot)
+         is_master_task = false;
+         adjust_slave_task_debit_slots(pe, slots);
+      }
+      if (!ret) {
+         break;
+      }
+
+      // book slave resources
+      for_each_ep (request, job_get_hard_resource_list(job, JRS_SCOPE_SLAVE)) {
+         u_long32 consumable = lGetUlong(request, CE_consumable);
+
+         if (consumable == CONSUMABLE_NO) {
+            continue;
+         }
+
+         int debit_slots = consumable_get_debit_slots(consumable, slots);
+         const char *name = lGetString(request, CE_name);
+         u_long32 type = lGetUlong(request, CE_valtype);
+         double amount = lGetDouble(request, CE_doubleval);
+         DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
+         ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount, debit_slots);
+         if (!ret) {
             break;
          }
       }
+      if (!ret) {
+         break;
+      }
+
+      last_host = host_name;
    }
 
    // if we had some consumables, add the list to the ja_task
@@ -204,6 +280,6 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job,
       lFreeList(&granted_resources_list);
    }
 
-   return ret;
+   DRETURN(ret);
 }
 

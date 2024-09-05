@@ -856,7 +856,10 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
          }
       } else if (pe != nullptr) {
          // no global contribution, need to check master and slave
-         int slave_debit_slots = debit_slots;
+         // we use the original slots value for slave_debit_slots
+         // reason: for host consumables, debit_slots is 1, which will be adjusted below to 0
+         //         if we have then a slave request for a host consumable, it will not be booked!
+         int slave_debit_slots = slots;
          if (is_master_task) {
             // if the master task is part of this booking, check if we have a master request
             dval = 0.0;
@@ -881,6 +884,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
                if (dval != 0.0) {
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for the remaining slave tasks
+                  slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                   utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
                                   obj_name, type, for_job_scheduling, false);
                   mods++;
@@ -993,7 +997,10 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
             }
          } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
-            int slave_debit_slots = debit_slots;
+            // we use the original slots value for slave_debit_slots
+            // reason: for host consumables, debit_slots is 1, which will be adjusted below to 0
+            //         if we have then a slave request for a host consumable, it will not be booked!
+            int slave_debit_slots = slots;
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
                dval = 0.0;
@@ -1020,6 +1027,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
                   if (dval != 0.0) {
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for the remaining slave tasks
+                     slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                      utilization_add(rue_elem, start_time, duration, slave_debit_slots * dval, job_id, task_id,
                                      RQS_TAG, obj_name, type, true, false);
                      mods++;
