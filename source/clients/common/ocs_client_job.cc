@@ -744,7 +744,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          /* print out granted resources */
          resource_ids = sge_dstring_get_string(&task_resources);
 
-         printf("%-12s %11d:   %s\n", first_task ? "resource map" : " ",
+         printf("%-12s %11d:   %s\n", first_task ? "resource_map" : " ",
                 (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
          if (first_task) {
             first_task = false;
