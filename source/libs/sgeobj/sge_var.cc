@@ -986,9 +986,11 @@ void var_list_filter_env_list(lList *env_list, lList **answer_list)
    /* LD_PRELOAD */
    ep = lGetElemStrRW(env_list, VA_variable, "LD_PRELOAD");
    if (ep != nullptr) {
-      lRemoveElem(env_list, &ep);
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,
-                              MSG_REMOVED_ENV_VAR_S, "LD_PRELOAD");
+      if (!mconf_get_enable_submit_ld_preload()) {
+         lRemoveElem(env_list, &ep);
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,
+                                 MSG_REMOVED_ENV_VAR_S, "LD_PRELOAD");
+      }
    }
 
    /* other potentially dangerous variables */

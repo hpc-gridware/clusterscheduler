@@ -1098,6 +1098,36 @@ connections. The default for **qmaster_params** is none.
 This value is a global configuration parameter only. It cannot be
 overwritten by the execution host local configuration.
 
+<!-- -->
+
+"ENABLE_SUBMIT_LD_PRELOAD  
+Beginning with version 8.0.1p3 of Univa Grid Engine the environment
+variable LD_PRELOAD by default may no longer be set
+via submit option -v or -V.
+
+It is automatically removed from the environment of the submitted job,
+even if **qmaster_param** *ENABLE_SUBMIT_LIB_PATH* is set to TRUE.
+
+Setting LD_PRELOAD could be misused to execute malicious code from
+user jobs, if the execution environment contained methods (e.g. prolog)
+to be executed as the root user, or if the old interactive job support
+(e.g. via ssh) was configured.
+
+Should it be necessary to allow setting
+LD_PRELOAD via submit option -v or -V, this can be enabled again by
+setting *ENABLE_SUBMIT_LD_PRELOAD* to TRUE.
+
+In general the correct job environment should be set up in the job
+script or in a prolog, making the use of the -v or -V option for this
+purpose unnecessary.
+
+Changing **qmaster_params** will take immediate effect, except
+gdi_timeout, gdi_retries, cl_ping, these will take effect only for new
+connections. The default for **qmaster_params** is none.
+
+This value is a global configuration parameter only. It cannot be
+overwritten by the execution host local configuration.
+
 ## **execd_params**
 
 This is used for passing additional parameters to the xxQS_NAMExx
