@@ -801,7 +801,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
                            u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
                            bool is_master_task, bool do_per_host_booking)
 {
-   lListElem *cr, *cr_config, *dcep;
+   lListElem *cr = nullptr, *cr_config, *dcep;
    int mods = 0;
 
    DENTER(TOP_LAYER);
@@ -959,7 +959,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
       lListElem *limit;
       for_each_rw (limit, lGetListRW(rule, RQR_limit)) {
          lListElem *raw_centry;
-         lListElem *rue_elem;
+         lListElem *rue_elem = nullptr;
 
          const char *centry_name = lGetString(limit, RQRL_name);
          

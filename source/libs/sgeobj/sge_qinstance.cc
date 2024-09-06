@@ -1062,7 +1062,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
    // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
    const lListElem *cr_config;
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
-      lListElem *cr, *dcep;
+      lListElem *cr = nullptr, *dcep;
       const char *name = lGetString(cr_config, CE_name);
 
       // search complex definition (with default request)
