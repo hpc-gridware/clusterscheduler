@@ -4166,11 +4166,9 @@ void job_set_hard_queue_list(lListElem *job, lList *queue_list) {
    job_set_hard_queue_list(job, queue_list, JRS_SCOPE_GLOBAL);
 }
 void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope) {
-   if (queue_list != nullptr) {
-      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-      if (jrs != nullptr) {
-         lSetList(jrs, JRS_hard_queue_list, queue_list);
-      }
+   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      lSetList(jrs, JRS_hard_queue_list, queue_list);
    }
 }
 
@@ -4178,32 +4176,30 @@ void job_set_soft_queue_list(lListElem *job, lList *queue_list) {
    job_set_soft_queue_list(job, queue_list, JRS_SCOPE_GLOBAL);
 }
 void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope) {
-   if (queue_list != nullptr) {
-      lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-      if (jrs != nullptr) {
-         lSetList(jrs, JRS_soft_queue_list, queue_list);
-      }
+   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      lSetList(jrs, JRS_soft_queue_list, queue_list);
    }
 }
 
 void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
-   if (queue_list != nullptr) {
-      lListElem *jrs = job_get_or_create_request_setRW(job, JRS_SCOPE_MASTER);
-      if (jrs != nullptr) {
-         lSetList(jrs, JRS_hard_queue_list, queue_list);
-      }
+   lListElem *jrs = job_get_or_create_request_setRW(job, JRS_SCOPE_MASTER);
+   if (jrs != nullptr) {
+      lSetList(jrs, JRS_hard_queue_list, queue_list);
    }
 }
 
 static void
 job_add_str_to_command_line(dstring *dstr, const char *str) {
-   bool do_quote = sge_has_whitespace(str) || sge_is_pattern(str);
-   if (do_quote) {
-      sge_dstring_append_char(dstr, '\'');
-   }
-   sge_dstring_append(dstr, str);
-   if (do_quote) {
-      sge_dstring_append_char(dstr, '\'');
+   if (str != nullptr) {
+      bool do_quote = sge_has_whitespace(str) || sge_is_pattern(str);
+      if (do_quote) {
+         sge_dstring_append_char(dstr, '\'');
+      }
+      sge_dstring_append(dstr, str);
+      if (do_quote) {
+         sge_dstring_append_char(dstr, '\'');
+      }
    }
 }
 
