@@ -185,7 +185,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          if (doubleval < 0.0) { // should not happen, but better be on the safe side
             doubleval = 0.0;
          }
-         lSetUlong(cplx_el, CE_doubleval, doubleval);
+         lSetDouble(cplx_el, CE_doubleval, doubleval);
          DSTRING_STATIC(ds, 20);
          lSetString(cplx_el, CE_stringval, sge_dstring_sprintf(&ds, "%8.3f", doubleval));
       }

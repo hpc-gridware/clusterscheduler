@@ -1011,8 +1011,8 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 *     parallel_rc_slots_by_time
 *******************************************************************************/
 static dispatch_t 
-parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests, 
-                 int *slots, int *slots_qend, lListElem *centry, lListElem *limit, dstring *rue_name, lListElem *qep)
+parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests, int *slots, int *slots_qend, lListElem *centry,
+                             lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master_queue)
 {
    lList *tmp_centry_list = lCreateList("", CE_Type);
    lList *tmp_rue_list = lCreateList("", RUE_Type);
@@ -1060,7 +1060,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
 
    result = parallel_rc_slots_by_time(a, slots,
                                       slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
-                                      false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG,
+                                      false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master_queue,
                                       false, SGE_RQS_NAME, true);
    
    lFreeList(&tmp_centry_list);
@@ -1101,7 +1101,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
 *     
 *******************************************************************************/
 dispatch_t
-parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lListElem *qep)
+parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lListElem *qep, bool need_master_queue)
 {
    dispatch_t result = DISPATCH_OK;
    int tslots = INT_MAX;
@@ -1185,7 +1185,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                      if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
                         int tttslots = INT_MAX;
                         int tttslots_qend = INT_MAX;
-                        result = parallel_limit_slots_by_time(a, job_centry_list, &tttslots, &tttslots_qend, raw_centry, limit, &dstr_rue_string, qep);
+                        result = parallel_limit_slots_by_time(a, job_centry_list, &tttslots, &tttslots_qend, raw_centry,
+                                                              limit, &dstr_rue_string, qep, need_master_queue);
                         ttslots = MIN(ttslots, tttslots);
                         ttslots_qend = MIN(ttslots_qend, tttslots_qend);
                         if (result == DISPATCH_NOT_AT_TIME) {

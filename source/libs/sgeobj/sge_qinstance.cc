@@ -970,8 +970,8 @@ rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, c
 
 static bool
 rc_debit_consumable_explicit_request(const char *name, const char *obj_type, const char *obj_name, int slots,
-                                     double request, const lListElem *capacity_ep, lListElem *booking_ep,
-                                     bool is_exclusive, bool *just_check) {
+                                     double request, double additional_request, const lListElem *capacity_ep,
+                                     lListElem *booking_ep, bool is_exclusive, bool *just_check) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -979,14 +979,15 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
       DPRINTF("debiting %f of %s on %s %s for %d slots\n", request, name, obj_type, obj_name, slots);
       lAddDouble(booking_ep, RUE_utilized_now, slots * request);
    } else {
+      DPRINTF("verifying %f of %s on %s %s for %d slots + %f\n", request, name, obj_type, obj_name, slots, additional_request);
       double actual_value = booking_ep == nullptr ? 0 : lGetDouble(booking_ep, RUE_utilized_now);
       double config_value = lGetDouble(capacity_ep, CE_doubleval);
       /* for exclusive consumables ignore the number of slots */
       if (is_exclusive) {
          slots = 1;
       }
-      if ((config_value - actual_value - slots * request) < 0) {
-         ERROR(MSG_CAPACITYEXCEEDED_FSSSIF, request, name, obj_type, obj_name, slots, config_value - actual_value);
+      if ((config_value - actual_value - slots * request - additional_request) < 0) {
+         ERROR(MSG_CAPACITYEXCEEDED_FFSSSIF, request, additional_request, name, obj_type, obj_name, slots, config_value - actual_value);
          *just_check = false;
          ret = false;
       }
@@ -1102,20 +1103,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
             // the resource was requested
             DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name, dval, debit_slots);
             if (dval != 0.0) {
-               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, cr_config, cr,
+               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, 0.0, cr_config, cr,
                                                          is_exclusive, just_check)) {
                   break;
                }
                mods++;
                did_booking = true;
             }
-#if 0
-            // Even if the request was 0.0, we have handled it and count it as booked.
-            if (!(dval == 0.0 && is_exclusive)) {
-               // a request exclusive=false must lead to handling exclusive below
-               did_booking = true;
-            }
-#endif
          } else if (pe != nullptr) {
             // no global contribution, need to check master and slave
             // we use the original slots value for slave_debit_slots
@@ -1133,7 +1127,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                   if (master_dval != 0.0) {
                      // book it for one slot
                      if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slot_signum(debit_slots),
-                                                               master_dval, cr_config, cr, is_exclusive, just_check)) {
+                                                               master_dval, 0.0, cr_config, cr, is_exclusive, just_check)) {
                         break;
                      }
                      mods++;
@@ -1155,9 +1149,9 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                   slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                   DPRINTF("===> rc_debit_consumable(): %s: we have SLAVE %s request: %f for %d slots\n", obj_name, name, slave_dval, slave_debit_slots);
                   if (slave_dval != 0.0) {
-                     // in case of just_check: need to check, if sum of master dval + slave dval fits on the resource
+                     // in case of just_check: need to pass the master_dval as additional usage on this host/queue
                      if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slave_debit_slots,
-                                                               just_check == nullptr ? slave_dval : master_dval + slave_dval,
+                                                               slave_dval, just_check != nullptr ? master_dval : 0.0,
                                                                cr_config, cr, is_exclusive, just_check)) {
                         break;
                      }

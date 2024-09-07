@@ -488,8 +488,25 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             /* loop over gdil */
             host_name = lGetHost(next_gdil_ep, JG_qhostname);
             while ((gdil_ep = next_gdil_ep) != nullptr) {
-               /* sum up slots */
                u_long32 slots = lGetUlong(gdil_ep, JG_slots);
+
+               // check if booking would work on the queue
+               // this should actually not be necessary, as any change on the queue definition (consumables)
+               // would have increased the queue version which we check above
+               // it would reject jobs which got falsely scheduled, though
+#if 0
+               const char *queue_name = lGetString(gdil_ep, JG_qname);
+               lListElem *queue = nullptr;
+               queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
+               if (queue) {
+                  qinstance_debit_consumable(queue, jep, pe, master_centry_list, slots, is_master, false, &consumables_ok);
+                  if (!consumables_ok) {
+                     break;
+                  }
+               }
+#endif
+
+               /* sum up slots */
                host_slots += slots;
                total_slots += slots;
 

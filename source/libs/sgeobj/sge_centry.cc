@@ -202,10 +202,11 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
 
    name = lGetString(this_elem, CE_name);
    s = lGetString(this_elem, CE_stringval);
+   DPRINTF("   ===> centry_fill_and_check(%s, %s)\n", name, s);
    /* allow infinity for non-consumables only */
    allow_infinity = (lGetUlong(this_elem, CE_consumable) != CONSUMABLE_NO) ? 0 : 1;
 
-   if (!s) {
+   if (s == nullptr) {
       if (allow_empty_boolean && lGetUlong(this_elem, CE_valtype) == TYPE_BOO) {
          lSetString(this_elem, CE_stringval, "TRUE");
          s = lGetString(this_elem, CE_stringval);
@@ -228,6 +229,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
          }
+         DPRINTF("   ===> centry_fill_and_check(%s, %s), dval = %f\n", name, s, dval);
          lSetDouble(this_elem, CE_doubleval, dval);
 
          /* normalize time values, so that the string value is based on seconds */
@@ -744,16 +746,7 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
          /* so we know the type of the requested data */
          lSetUlong(entry, CE_valtype, lGetUlong(cep, CE_valtype));
 
-         /* we also know wether it is a consumable attribute */
-         {
-            /* With 6.2u2 the type for CE_consumable changed from bool to ulong
-               for old objects we change the type to the new one */
-            int pos = lGetPosViaElem(entry, CE_consumable, SGE_NO_ABORT);
-            if (mt_get_type(entry->descr[pos].mt) == lBoolT) {
-               DPRINTF("Upgrading CE_consumable from bool to ulong\n");
-               entry->descr[pos].mt = cep->descr[pos].mt;
-            }
-         }
+         /* we also know whether it is a consumable attribute */
          lSetUlong(entry, CE_consumable, lGetUlong(cep, CE_consumable));
 
          if (centry_fill_and_check(entry, answer_list, allow_empty_boolean, allow_neg_consumable)) {

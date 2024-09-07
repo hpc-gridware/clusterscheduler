@@ -319,7 +319,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    lListElem *jrs;
    for_each_rw(jrs, lGetList(jep, JB_request_set_list)) {
       u_long32 scope = lGetUlong(jrs, JRS_scope);
-      DPRINTF("request set of scope " sge_uu32 "\n", scope);
+      DPRINTF("request set of scope %s\n", job_scope_name(scope));
 
       lList *hard_resource_list = lGetListRW(jrs, JRS_hard_resource_list);
       if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
