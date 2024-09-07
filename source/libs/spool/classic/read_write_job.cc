@@ -622,7 +622,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
        sge_get_file_path(pe_task_spool_file, sizeof(pe_task_spool_file), PE_TASK_SPOOL_FILE,
                          FORMAT_DEFAULT, flags, jobid, ja_taskid, pe_task_id);
       
-       DPRINTF("try to remove " SFN "\n", pe_task_spool_file);
+       DPRINTF("try to remove (1) " SFN "\n", pe_task_spool_file);
        if (sge_is_file(pe_task_spool_file) && !sge_unlink(nullptr, pe_task_spool_file)) {
           ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_PE_TASK_SPOOL_FILE, pe_task_spool_file);
       }
@@ -660,8 +660,8 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
           * This is only an indicator that another task is running which has 
           * been spooled in the directory.
           */  
-         DPRINTF("try to remove " SFN "\n", task_spool_dir);
-         if (sge_rmdir(task_spool_dir, &error_msg)) {
+         DPRINTF("try to remove (2) " SFN "\n", task_spool_dir);
+         if (sge_rmdir(task_spool_dir, &error_msg, false)) {
             ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer);
          } 
 
@@ -703,11 +703,11 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
     * spooled in the same directory.
     */
    if (try_to_remove_sub_dirs) {
-      DPRINTF("try to remove " SFN "\n", spool_dir_third);
+      DPRINTF("try to remove (3) " SFN "\n", spool_dir_third);
 
-      if (!sge_rmdir(spool_dir_third, nullptr)) {
-         DPRINTF("try to remove " SFN "\n", spool_dir_second);
-         sge_rmdir(spool_dir_second, nullptr);
+      if (!sge_rmdir(spool_dir_third, nullptr, false)) {
+         DPRINTF("try to remove (4) " SFN "\n", spool_dir_second);
+         sge_rmdir(spool_dir_second, nullptr, false);
       }
    }
 
@@ -722,7 +722,7 @@ static int job_remove_script_file(u_long32 job_id)
 
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    sge_get_file_path(script_file, sizeof(script_file), JOB_SCRIPT_FILE, FORMAT_DEFAULT, SPOOL_DEFAULT, job_id, 0, nullptr);
-   if (unlink(script_file)) {
+   if (sge_unlink(nullptr, script_file)) {
       if (errno!=ENOENT) {
          ERROR(MSG_CONFIG_FAILEDREMOVINGSCRIPT_SS, strerror(errno), script_file);
          DTRACE;

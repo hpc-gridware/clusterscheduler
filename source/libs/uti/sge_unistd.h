@@ -99,7 +99,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
 
-int sge_rmdir(const char *cp, dstring *err_str);
+int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true);
 
 bool sge_unlink(const char *prefix, const char *suffix);
 

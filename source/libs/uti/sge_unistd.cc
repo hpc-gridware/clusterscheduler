@@ -376,78 +376,72 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
    DRETURN(ret);
 }
 
-/****** uti/unistd/sge_rmdir() ************************************************
-*  NAME
-*     sge_rmdir() -- Recursive rmdir
-*
-*  SYNOPSIS
-*     int sge_rmdir(const char *cp, dstring *error)  
-*
-*  FUNCTION
-*     Remove a directory tree. In case of errors a message may be found
-*     in 'error' afterwards.
-*
-*  INPUTS
-*     const char *cp  - path 
-*     dstring *error  - destination for error message if non-nullptr
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
-int sge_rmdir(const char *cp, dstring *error) {
-   SGE_STRUCT_STAT stat_buffer{};
-   SGE_STRUCT_DIRENT *dent;
-   DIR *dir;
-   char dirent[SGE_PATH_MAX * 2];
-   char fname[SGE_PATH_MAX];
-
+/**
+ * Remove a directory tree. In case of errors a message may be found in
+ * 'error' afterwards.
+ * Unless parameter 'recursive' is set to true, only empty directories can be
+ * deleted. If 'recursive' is set to true, the directory and all files and directories
+ * it contains will be deleted.
+ *
+ * @param[in] cp path to the directory to be deleted
+ * @param[in] error destination for error message if non-nullptr
+ * @param[in] recursive if true (default), delete the directory recursively
+ * @return 0 on success, -1 on error
+ */
+int sge_rmdir(const char *cp, dstring *error, bool recursive) {
    DENTER(TOP_LAYER);
 
-   if (!cp) {
+   if (cp == nullptr) {
       sge_dstring_sprintf(error, MSG_POINTER_NULLPARAMETER);
       DRETURN(-1);
    }
 
-   if (!(dir = opendir(cp))) {
-      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, cp, strerror(errno));
-      DRETURN(-1);
-   }
+   if (recursive) {
+      DIR *dir = opendir(cp);
+      if (dir == nullptr) {
+         sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, cp, strerror(errno));
+         DRETURN(-1);
+      }
 
-   while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
-      if (strcmp(dent->d_name, ".") != 0 && strcmp(dent->d_name, "..") != 0) {
+      SGE_STRUCT_DIRENT *dent;
+      char dirent[SGE_PATH_MAX * 2];
+      while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
+         if (strcmp(dent->d_name, ".") != 0 && strcmp(dent->d_name, "..") != 0) {
 
-         snprintf(fname, sizeof(fname), "%s/%s", cp, dent->d_name);
+            char fname[SGE_PATH_MAX];
+            snprintf(fname, sizeof(fname), "%s/%s", cp, dent->d_name);
 
-         if (SGE_LSTAT(fname, &stat_buffer)) {
-            sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
-            closedir(dir);
-            DRETURN(-1);
-         }
-
-         if (S_ISDIR(stat_buffer.st_mode) && !S_ISLNK(stat_buffer.st_mode)) {
-            if (sge_rmdir(fname, error)) {
-               sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
+            SGE_STRUCT_STAT stat_buffer{};
+            if (SGE_LSTAT(fname, &stat_buffer)) {
+               sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
                closedir(dir);
                DRETURN(-1);
             }
-         } else {
+
+            if (S_ISDIR(stat_buffer.st_mode) && !S_ISLNK(stat_buffer.st_mode)) {
+               if (sge_rmdir(fname, error)) {
+                  sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
+                  closedir(dir);
+                  DRETURN(-1);
+               }
+            } else {
 #ifdef TEST
-            printf("unlink %s\n", fname);
+               printf("unlink %s\n", fname);
 #else
-            if (unlink(fname)) {
-               sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS,
-                                   fname, strerror(errno));
-               closedir(dir);
-               DRETURN(-1);
-            }
+               DPRINTF("sge_rmdir: unlink %s\n", fname);
+               if (unlink(fname)) {
+                  sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS,
+                                      fname, strerror(errno));
+                  closedir(dir);
+                  DRETURN(-1);
+               }
 #endif
+            }
          }
       }
-   }
 
-   closedir(dir);
+      closedir(dir);
+   }
 
 #ifdef TEST
    printf("rmdir %s\n", cp);
