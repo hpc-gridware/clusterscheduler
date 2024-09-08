@@ -36,10 +36,10 @@
 
 #include "gdi/version.h"
 
-const char GDI_VERSION[] = "9.0.0prealpha";
+const char GDI_VERSION[] = "9.0.0 RC1";
 
 // TODO: Add also an entry to the table further down below when you change this
-const gdi_ulong32 GRM_GDI_VERSION = 0x10004000;
+const gdi_ulong32 GRM_GDI_VERSION = 0x10009000;
 
 vdict_t GRM_GDI_VERSION_ARRAY[] = 
 {
@@ -68,7 +68,9 @@ vdict_t GRM_GDI_VERSION_ARRAY[] =
       { 0x100020F7, "6.2u5beta2" },
       { 0x100020F8, "6.2u5beta2" },
       { 0x100020F8, "6.2u5" },
-      { 0x10004000, GDI_VERSION},
+      { 0x10003000, "8.0.x Univa" },
+      { 0x10003001, "8.0.x Some Gridengine" },
+      { GRM_GDI_VERSION, GDI_VERSION },
       { 0, nullptr}
 };
 
