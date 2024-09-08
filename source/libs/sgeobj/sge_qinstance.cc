@@ -987,7 +987,7 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
          slots = 1;
       }
       if ((config_value - actual_value - slots * request - additional_request) < 0) {
-         ERROR(MSG_CAPACITYEXCEEDED_FFSSSIF, request, additional_request, name, obj_type, obj_name, slots, config_value - actual_value);
+         ERROR(MSG_CAPACITYEXCEEDED_FSSSIFF, request, name, obj_type, obj_name, slots, additional_request, config_value - actual_value);
          *just_check = false;
          ret = false;
       }
