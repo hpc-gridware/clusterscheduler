@@ -127,12 +127,13 @@ parameter is the *value* of the corresponding *param_parameter*.
 Multiple *param_commands* will be sent to a JSV instance after the JSV has sent a *started_command*. The sum of all 
 *param_commands* which is sent represents a job specification of that job which should be verified.
 
-*submit_parameters* are for example *b* (similar to the `qsub -b` switch) or *masterq* 
-(similar to `qsub -masterq` switch). Find a complete list of *submit_parameters* in the qsub(1) page. 
+*submit_parameters* are for example *b* (similar to the `qsub -b` switch) or *master_q_hard* 
+(similar to `qsub -scope master -hard -q` switch). Find a complete list of *submit_parameters* in the qsub(1) page. 
 Please note that not in all cases the *param_parameter* name and the corresponding *value* format is equivalent with 
 the `qsub` switch name and its argument format. E.g. the `qsub -pe` parameters will be available as a set of parameters 
-with the name *pe_name*, *pe_min*, *pe_max* or the switch combination `-soft -l` will be passed to JSV scripts as 
-*l_soft* parameter. For details concerning this differences consult also the qsub(1) man page.
+with the name *pe_name*, *pe_min*, *pe_max* or the switch combination `-soft -l` (default `-scope global`) will be 
+passed to JSV scripts as *global_l_soft* parameter. For details concerning this differences consult also the qsub(1) 
+man page.
 
     start_command := 'START' ;  
 
@@ -265,8 +266,8 @@ communication protocol are omitted.
        PARAM CMDNAME /sge_root/examples/jobs/sleeper.sh
        PARAM CMDARGS 1
        PARAM CMDARG0 12 
-       PARAM l_hard a=1,b=5
-       PARAM l_soft q=all.q
+       PARAM global_l_hard a=1,b=5
+       PARAM global_l_soft q=all.q
        PARAM M user@hostname
        PARAM N Sleeper
        PARAM o /dev/null

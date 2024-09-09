@@ -406,7 +406,7 @@ If this option or a corresponding value in `qmon` is specified then this value w
 instances as parameter with the name `dl`. The format for the date_time value is CCYYMMDDhhmm.SS (see `-jsv` 
 option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
--e \[\[hostname\]:\]path,...  
+## -e \[\[hostname\]:\]path,...  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
 
 Defines or redefines the path used for the standard error stream of the job. For `qsh`, `qrsh` and `qlogin` only 
@@ -433,7 +433,7 @@ variables are supported currently:
 * $TASK_ID - array job task index number
 
 Alternatively to $HOME the tilde sign "\~" can be used as common in csh(1) or ksh(1). Note, that the "\~" sign also 
-works in combination with user names, so that "\~\<user>" expands to the home directory of \<user>. Using another 
+works in combination with usernames, so that "\~\<user>" expands to the home directory of \<user>. Using another 
 user ID than that of the job owner requires corresponding permissions, of course.
 
 `qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
@@ -442,77 +442,62 @@ after a restart or migration of the job, however.
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
 *e*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
    
--hard  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+## -hard  
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Signifies that all **-q** and **-l** resource requirements following in
-the command line will be hard requirements and must be satisfied in full
-before a job can be scheduled.  
-As xxQS_NAMExx scans the command line and script file for xxQS_NAMExx
-options and parameters it builds a list of resources required by a job.
-All such resource requests are considered as absolutely essential for
-the job to commence. If the **-soft** option (see below) is encountered
-during the scan then all following resources are designated as "soft
-requirements" for execution, or "nice-to-have, but not essential". If
-the **-hard** flag is encountered at a later stage of the scan, all
-resource requests following it once again become "essential". The
-**-hard** and **-soft** options in effect act as "toggles" during the
-scan.
+Signifies that all `-q` and `-l` resource requirements following in the command line will be hard requirements 
+and must be satisfied in full before a job can be scheduled. As xxQS_NAMExx scans the command line and script file 
+for xxQS_NAMExx options and parameters it builds a list of resources required by a job.
+All such resource requests are considered as absolutely essential for the job to commence. If the `-soft` option 
+(see below) is encountered during the scan then all following resources are designated as "soft
+requirements" for execution, or "nice-to-have, but not essential". If the `-hard` flag is encountered at a 
+later stage of the scan, all resource requests following it once again become "essential". The `-hard` and `-soft` 
+options in effect act as "toggles" during the scan.
 
-If this option or a corresponding value in *qmon* is specified then the
-corresponding **-q** and **-l** resource requirements will be passed to
-defined JSV instances as parameter with the names **q_hard** and
-**l_hard**. Find for information in the sections describing **-q** and
-**-l**. (see **-jsv** option below or find more information concerning
-JSV in xxqs_name_sxx_jsv(1))
+If this option is specified then the corresponding `-q` and `-l` resource requirements will be passed to
+defined JSV instances as parameter with the names *\<scope>_q_hard* and *\<scope>_l_hard*. \<scope> will be 
+replaced by the scope of the resource request (e.g *global*, *master* or *slave*).
 
--h \| -h {u\|s\|o\|n\|U\|O\|S}...  
-Available for *qsub* (only **-h**), *qrsh*, *qalter* and *qresub* (hold
-state is removed when not set explicitly).
+Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more 
+information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -h \| -h {u\|s\|o\|n\|U\|O\|S}...  
+Available for `qsub` (only `-h`), `qrsh`, `qalter` and `qresub` (hold state is removed when not set explicitly).
 
 List of holds to place on a job, a task or some tasks of a job.
 
-    `u'	denotes a user hold.
-    `s'	denotes a system hold.
-    `o'	denotes a operator hold.
-    `n'	denotes no hold (requires manager privileges).
+* *u* denotes a user hold.
+* *s* denotes a system hold.
+* *o* denotes a operator hold.
+* *n* denotes no hold (requires manager privileges).
 
-As long as any hold other than \`n' is assigned to the job the job is
-not eligible for execution. Holds can be released via *qalter* and
-*qrls*(1). In case of *qalter* this is supported by the following
-additional option specifiers for the **-h** switch:
+As long as any hold other than *n* is assigned to the job, the job is not eligible for execution. Holds can 
+be released via `qalter` and `qrls`. In case of *qalter* this is supported by the following additional option 
+specifiers for the `-h` switch:
 
-    `U'	removes a user hold.
-    `S'	removes a system hold.
-    `O'	removes a operator hold.
+* *U* removes a user hold.
+* *S* removes a system hold.
+* *O* removes a operator hold.
 
-xxQS_NAMExx managers can assign and remove all hold types, xxQS_NAMExx
-operators can assign and remove user and operator holds, and users can
-only assign or remove user holds.
+xxQS_NAMExx managers can assign and remove all hold types, xxQS_NAMExx operators can assign and remove user and 
+operator holds, and users can only assign or remove user holds.
 
-In the case of *qsub* only user holds can be placed on a job and thus
-only the first form of the option with the **-h** switch alone is
-allowed. As opposed to this, *qalter* requires the second form described
-above.
+In the case of *qsub* only user holds can be placed on a job and thus only the first form of the option with the 
+`-h` switch alone is allowed. As opposed to this, *qalter* requires the second form described above.
 
-An alternate means to assign hold is provided by the *qhold*(1)
-facility.
+An alternate means to assign hold is provided by the `qhold` facility.
 
-If the job is a array job (see the **-t** option below), all tasks
-specified via **-t** are affected by the **-h** operation
-simultaneously.
+If the job is an array job (see the `-t` option below), all tasks specified via `-t` are affected by the 
+`-h` operation simultaneously.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
+after a restart or migration of the job, however.
 
-If this option is specified with *qsub* or during the submission of a
-job in *qmon* then the parameter **h** with the value **u** will be
-passed to the defined JSV instances indicating that the job will be in
-user hold after the submission finishes. (see **-jsv** option below or
-find more information concerning JSV in xxqs_name_sxx_jsv(1))
+If this option is specified with `qsub` then the parameter *h* with the value *u* will be
+passed to the defined JSV instances indicating that the job will be in user hold after the submission finishes. 
+(see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
--help  
+## -help  
 Prints a listing of all options.
 
 -hold_jid wc_job_list  
@@ -710,37 +695,38 @@ xxqs_name_sxx_jsv(1) and *sge_request*(5).
 
 The syntax of the **jsv_url** is specified in *sge_types(1).*()
 
--l resource=value,...  
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+## -l *resource*=*value*, ...  
+Available for `qsub`, `qsh`, `qrsh`, `qlogin*` and `qalter` only.
 
-Launch the job in a xxQS_NAMExx queue meeting the given resource request
-list. In case of *qalter* the previous definition is replaced by the
-specified one.
+Launch the job in a xxQS_NAMExx queue meeting the given resource request list. In case of `qalter` the previous 
+definition is replaced by the specified one.
 
-*complex*(5) describes how a list of available resources and their
-associated valid value specifiers can be obtained.
+xxqs_name_sxx_complex(5) describes how a list of available resources and their associated valid value specifiers
+can be obtained.
 
-There may be multiple **-l** switches in a single command. You may
-request multiple **-l** options to be soft or hard both in the same
-command line. In case of a serial job multiple **-l** switches refine
-the definition for the sought queue.
+There may be multiple `-l` switches in a single command. You may request multiple `-l` options to be soft or hard 
+both in the same command line. In case of a serial job multiple `-l` switches refine the definition for the sought 
+queue.
 
-With parallel jobs (see **-pe** option above) the **-l** option can be
-applied to the whole job, to the master tasks or to the slave tasks only by
-using the **-scope** option.
+With parallel jobs (see `-pe` option above) the `-l` option can be applied to the whole job, to the master tasks 
+or to the slave tasks only by using the `-scope` option.
 
-*Qalter* allows changing the value of this option even while the job is
-running, but only if the initial list of resources does not contain a
-resource that is marked as consumable. However the modification will
-only be effective after a restart or migration of the job.
+`qalter` allows changing the value of this option even while the job is running, but only if the initial list of 
+resources does not contain a resource that is marked as consumable. However, the modification will only be 
+effective after a restart or migration of the job.
 
-If this option or a corresponding value in *qmon* is specified the these
-hard and soft resource requirements will be passed to defined JSV
-instances as parameter with the names **l_hard** and **l_soft**. If
-regular expressions will be used for resource requests, then these
-expressions will be passed as they are. Also shortcut names will not be
-expanded. (see **-jsv** option above or find more information concerning
-JSV in xxqs_name_sxx_jsv(1))
+If this option is specified then these hard and soft resource requirements will be passed to defined JSV instances 
+as parameter with the names *\<scope>_l_hard* and *\<scope>_l_hard*. \<scope> will be replaced by the scope of 
+the resource request (e.g. *global*, *master* or *slave*). If regular expressions will be used for resource requests, 
+then these expressions will be passed to JSV as they are. Also shortcut names for resources will not be expanded.
+
+For compatibility with older versions and flavours of Grid Engine, the parameters names *l_hard* and *l_soft* 
+can be used instead of *global_l_hard* and *global_l_soft*. Please note that the JSV behaviour is undefined 
+if the use of old and new names is mixed within one JSV script.
+
+Find more information in the sections describing `-hard`, `-soft`, `-q` and `-scope`. (see `-jsv` option below or 
+find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
 
 -m b\|e\|a\|s\|n,...  
 Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
@@ -781,33 +767,32 @@ value will be passed to defined JSV instances as parameter with the name
 **M**. (see **-jsv** option above or find more information concerning
 JSV in xxqs_name_sxx_jsv(1))
 
--masterq wc_queue_list  
-Available for *qsub*, *qrsh*, *qsh*, *qlogin* and *qalter*. Only
-meaningful for parallel jobs, i.e. together with the -pe option.
+## -masterq *wc_queue_list*
 
-This option is deprecated. 
-Use the `-scope master -q we_queue_list` instead,
-see **-scope** option below.
+NOTE: This option is deprecated. Use the `-scope master -q we_queue_list` instead, see `-scope` option below.
 
-Defines or redefines a list of cluster queues, queue domains and queue
-instances which may be used to become the so-called *master queue* of
-a parallel job. A more detailed description of *wc_queue_list* can be
-found in *sge_types*(1). The *master queue* is defined as the queue
-where the parallel job is started. The other queues to which the
-parallel job spawns tasks are called *slave queues*. A parallel job only
+Available for `qsub`, `qrsh`, `qsh`, `qlogin` and `qalter`. Only meaningful for parallel jobs, i.e. together 
+with the `-pe` option.
+
+Defines or redefines a list of cluster queues, queue domains and queue instances which may be used to become the 
+so-called *master queue* of a parallel job. A more detailed description of *wc_queue_list* can be found in 
+xxqs_name_sxx_types(1). The *master queue* is defined as the queue where the parallel job is started. 
+The other queues to which the parallel job spawns tasks are called *slave queues*. A parallel job only
 has one *master queue*.
 
-This parameter has all the properties of a resource request and will be
-merged with requirements derived from the **-l** option described above.
+This parameter has all the properties of a resource request and will be merged with requirements derived from the 
+`-l` option described above.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+`Qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
+after a restart or migration of the job, however.
 
-If this option is specified the 
-hard resource requirement will be passed to defined JSV instances as
-parameter with the name **masterq**. (see **-jsv** option above or find
-more information concerning JSV in xxqs_name_sxx_jsv(1))
+If this option is specified the hard resource requirement will be passed to defined JSV instances as
+parameter with the name *master_q_hard*. (see `-jsv` option above or find more information concerning JSV in 
+xxqs_name_sxx_jsv(1))
+
+For compatibility with older versions and flavours of Grid Engine, the parameters name *masterq* can be used 
+instead of *master_q_hard*. Please note that the JSV behaviour is undefined if the use of the old and new names 
+is mixed within one JSV script
 
 -notify  
 Available for *qsub*, *qrsh* (with command) and *qalter* only.
@@ -996,30 +981,29 @@ This parameter is not available in the JSV context. (see **-jsv option
 above or find more information concerning JSV in** xxqs_name_sxx_jsv(1))
 
 -q wc_queue_list  
-Available for *qsub***, ***qrsh***, ***qsh***, ***qlogin*** and
-***qalter***.**
+Available for `qsub`, `qrsh`, `qsh`, `qlogin` and `qalter`.
 
-Defines or redefines a list of cluster queues, queue domains or queue
-instances which may be used to execute this job. Please find a
-description of *wc_queue_list*** in** *sge_types*(1). This parameter
-has all the properties of a resource request and will be merged with
-requirements derived from the **-l option** described above.
+Defines or redefines a list of cluster queues, queue domains or queue instances which may be used to execute 
+this job. Please find a description of *wc_queue_list* in xxqs_name_sxx_types(1). This parameter
+has all the properties of a resource request and will be merged with requirements derived from the `-l` option
+described above.
 
-With parallel jobs (see **-pe** option above) the **-q** option can be
-applied to the whole job, to the master queue or to the slave queues by
-using the **-scope** option.
+With parallel jobs (see `-pe` option above) the `-q` option can be applied to the whole job, to the master queue 
+or to the slave queues by using the `-scope` option.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
+after a restart or migration of the job, however.
 
-If this option or a corresponding value in *qmon*** is specified ** the
-these hard and soft resource requirements will be passed to defined JSV
-instances as parameters with the names **q_hard and** **q_soft. If
-regular expressions will be used for resource requests,** then these
-expressions will be passed as they are. Also shortcut names will not be
-expanded. (see **-jsv option above or find more information concerning
-JSV in** xxqs_name_sxx_jsv(1))
+If this option is specified then these hard and soft queue requests will be passed to defined JSV instances
+as parameter with the names *\<scope>_q_hard* and *\<scope>_q_soft*. \<scope> will be replaced by the scope of
+the resource request (e.g. *global*, *master* or *slave*).
+
+For compatibility with older versions and flavours of Grid Engine, the parameters names *q_hard*, *q_soft*
+and *masterq* can be used instead of *global_q_hard*, *global_q_soft* and *master_q_hard*. Please note that the
+JSV behaviour is undefined if the use of old and new names is mixed within one JSV script.
+
+Find more information in the sections describing `-hard`, `-soft`, `-l` and `-scope`. (see `-jsv` option below or
+find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -R y\[es\]\|n\[o\]  
 Available for *qsub***, ***qrsh***, ***qsh***, ***qlogin*** and
@@ -1081,48 +1065,50 @@ corresponding values in *qmon*** is passed to defined JSV** instances as
 parameter with the name **ac.** (see **-jsv option above or find more
 information concerning JSV in** xxqs_name_sxx_jsv(1))
 
--scope global\|master\|slave
+## -scope *global* \| *master* \| *slave*
 
-Available for *qsub*, *qsh*, *qrsh*, *qlogin* and *qalter* only.
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Defines the scope of the **-l** and **-q** options when submitting
-parallel jobs (see option **-pe** above).  
-The default scope is the global scope. The global scope applies the
-**-l** and **-q** options to the whole job and all its tasks.  
-The master scope applies the **-l** and **-q** only
-to the master task of the job (usually the job script).  
-The slave scope applies the **-l** and **-q** options only to the slave
-tasks of the job.
+Defines the scope of the `-l` and `-q` options when submitting parallel jobs (see option `-pe` above).  
+The default scope is the *global* scope. The global scope applies the `-l` and `-q` options to the whole job 
+and all its tasks. The master scope applies the `-l` and `-q` only to the master task of the job (usually 
+the job script). The slave scope applies the `-l` and `-q` options only to the slave tasks of the job.
 
 Example:
 ```
 qsub -pe mpi 16 -l h_rt=3600 -scope master -q io.q -l memory=1G \
 -scope slave -q compute.q -l memory=4G,gpu=1 my_mpi_job.sh
 ```
-We submit a 16 times parallel job using the mpi parallel environment.  
-The job runtime is (globally) limited to 1 hour.  
-The master task shall run in the io.q queue with a memory limit of 1G.  
-The slave tasks shall run in the compute.q queue with a memory limit
-of 4G and one GPU.
 
-Using the **-scope** switch has a few constaints:
+We submit a 16 times parallel job using the mpi parallel environment. The job runtime is (globally) limited to 
+1 hour. The master task shall run in the io.q queue with a memory limit of 1G. The slave tasks shall run in 
+the compute.q queue with a memory limit of 4G and one GPU.
 
+Using the `-scope` switch has a few constraints:
 * It cannot be used with sequential jobs.
-* Soft queue (**-q**) or resource requests (**-l**) are only allowed 
-  in the global scope.
-* Resource requests (**-l** option) for a specific variable can be done 
-  either in the global scope, or in master and slave scope.
+* Soft queue (`-q`) or resource requests (`-l`) are only allowed in the *global* scope.
+* Resource requests (`-l` option) for a specific variable can be done either in the *global* scope, 
+  or in *master* and *slave* scope.
 * Per host resource requests on a specific variable can only be done in
-  one scope, either in global, in master or in slave scope.
+  one scope, either in *global*, in *master* or in *slave* scope.
 
-*Qalter* allows changing this option even while the job executes. The
-modified parameter will only be in effect after a restart or migration
-of the job, however.
+`Qalter` allows changing this option even while the job executes. The modified parameter will only be in 
+effect after a restart or migration of the job, however.
 
-The request `-scope master -q wc_queue_list` replaces the deprecated
-`-masterq wc_queue_list` option.
+The request `-scope master -q wc_queue_list` replaces the deprecated `-masterq wc_queue_list` option.
 
-Modifying scope specific requests via JSV is not yet available.
+If this option is specified then these hard and soft resource and queue requests will be passed to defined 
+JSV instances as parameter of the form *\<scope>\_\<l-or-q>\_\<hard-or-soft>*. \<scope> will be replaced by 
+the scope of the specified scope (e.g. *global*, *master* or *slave*).
+
+The arguments of the job submission from the example above will be passed to JSV instances as follows: 
+*global_l_hard* will show the runtime (`-l h_rt=3600`), *master_q_hard* and *master_l_hard* will allow to 
+access the queue and memory request for the master task (`-scope master -q io.q -l memory=1G`) and 
+*slave_q_hard* and *slave_l_hard* will provide the queue and memory request for the slave tasks 
+(`-scope slave -q compute.q -l memory=4G,gpu=1`).
+
+Find more information in the sections describing `-hard`, `-soft`, `-l` and `-q`. (see `-jsv` option below or
+find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -shell y\[es\]\|n\[o\]  
 Available only for *qsub***.**
@@ -1157,30 +1143,23 @@ value will be y also** when then long form **yes was specified during
 submission.** (see **-jsv option above or find more information
 concerning JSV in** xxqs_name_sxx_jsv(1))
 
--soft  
-Available for *qsub***, ***qsh***, ***qrsh***, ***qlogin*** and**
-*qalter*** only.**
+## -soft  
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
 
-Signifies that all resource requirements following in the command line
-will be soft requirements and are to be filled on an "as available"
-basis.  
-As xxQS_NAMExx scans the command line and script file for xxQS_NAMExx
-options and parameters, it builds a list of resources required by the
-job. All such resource requests are considered as absolutely essential
-for the job to commence. If the **-soft option is encountered during the
-scan** then all following resources are designated as "soft
-requirements" for execution, or "nice-to-have, but not essential". If
-the **-hard flag (see above) is encountered at a later** stage of the
-scan, all resource requests following it once again become "essential".
-The **-hard and -soft** options in effect act as "toggles" during the
-scan.
+Signifies that all resource requirements following in the command line will be soft requirements and are to be 
+filled on an "as available" basis.  
+As xxQS_NAMExx scans the command line and script file for xxQS_NAMExx options and parameters, it builds a list 
+of resources required by the job. All such resource requests are considered as absolutely essential for the 
+job to commence. If the `-soft` option is encountered during the scan then all following resources are designated 
+as "soft requirements" for execution, or "nice-to-have, but not essential". If the `-hard` flag (see above) is 
+encountered at a later stage of the scan, all resource requests following it once again become "essential".
+The `-hard` and `-soft` options in effect act as "toggles" during the scan.
 
-If this option or a corresponding value in *qmon*** is specified then**
-the corresponding **-q and -l resource requirements will be** passed to
-defined JSV instances as parameter with the names **q_soft and**
-**l_soft. Find for information in the sections describing -q and -l.**
-(see **-jsv option above or find more information concerning JSV in**
-xxqs_name_sxx_jsv(1))
+If this option is specified then the corresponding `-q` and `-l` resource requirements will be passed to
+defined JSV instances as parameter with the names *global_q_soft* and *global_l_soft*. 
+
+Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more
+information concerning JSV in xxqs_name_sxx_jsv(1))
 
 -sync y\[es\]\|n\[o\]  
 Available for *qsub***.**

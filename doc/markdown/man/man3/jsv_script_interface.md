@@ -88,56 +88,59 @@ in capital letters are pseudo parameters.
 
 Find additional information in qsub(1) man page describing the availability and value format.
 
-| param_name  | command line switch/description    |
-|:------------|:-----------------------------------|
-| a           |                                    |
-| ac          | combination of -ac, -sc, -dc       |
-| ar          |                                    |
-| A           |                                    |
-| b           |                                    |
-| c           |                                    |
-| ckpt        |                                    |
-| cwd         |                                    |
-| display     |                                    |
-| dl          |                                    |
-| e           |                                    |
-| h           |                                    |
-| hold_jid    |                                    |
-| hold_jid_ad |                                    |
-| i           |                                    |
-| l_hard      | -l or -hard followed by -l         |
-| l_soft      | -soft followed by -l               |
-| j           |                                    |
-| js          |                                    |
-| m           |                                    |
-| M           |                                    |
-| masterq     |                                    |
-| N           |                                    |
-| notify      |                                    |
-| now         |                                    |
-| N           |                                    |
-| o           |                                    |
-| ot          |                                    |
-| P           |                                    |
-| pe          |                                    |
-| q_hard      | -q or -hard followed by -q         |
-| q_soft      | -soft followed by -q               |
-| R           |                                    |
-| r           |                                    |
-| shell       |                                    |
-| S           |                                    |
-| t           |                                    |
-| w           |                                    |
-| wd          |                                    |
-| CLIENT      |                                    |
-| CONTEXT     |                                    |
-| GROUP       |                                    |
-| VERSION     |                                    |
-| JOB_ID      |                                    |
-| SCRIPT      |                                    |
-| CMDARGS     |                                    |
-| CMDARG<i>   | where <i> is a non-negative number |
-| USER        |                                    |
+| param_name    | command line switch/description    |
+|:--------------|:-----------------------------------|
+| a             |                                    |
+| ac            | combination of -ac, -sc, -dc       |
+| ar            |                                    |
+| A             |                                    |
+| b             |                                    |
+| c             |                                    |
+| ckpt          |                                    |
+| cwd           |                                    |
+| display       |                                    |
+| dl            |                                    |
+| e             |                                    |
+| h             |                                    |
+| global_l_hard | [-scope global -hard] -l           |
+| global_l_soft | [-scope hard] -soft -l             |
+| global_q_hard | [-scope global -hard] -q           |
+| global_q_soft | [-scope global] -soft -q           |
+| hold_jid      |                                    |
+| hold_jid_ad   |                                    |
+| i             |                                    |
+| j             |                                    |
+| js            |                                    |
+| m             |                                    |
+| M             |                                    |
+| master_l_hard | -scope master [-hard] -l           |
+| master_q_hard | -scope master [-hard] -q           |
+| N             |                                    |
+| notify        |                                    |
+| now           |                                    |
+| N             |                                    |
+| o             |                                    |
+| ot            |                                    |
+| P             |                                    |
+| pe            |                                    |
+| R             |                                    |
+| r             |                                    |
+| slave_l_hard  | [-scope slave -hard] -l            |
+| slave_q_hard  | [-scope slave -hard] -q            |
+| shell         |                                    |
+| S             |                                    |
+| t             |                                    |
+| w             |                                    |
+| wd            |                                    |
+| CLIENT        |                                    |
+| CONTEXT       |                                    |
+| GROUP         |                                    |
+| VERSION       |                                    |
+| JOB_ID        |                                    |
+| SCRIPT        |                                    |
+| CMDARGS       |                                    |
+| CMDARG<i>     | where <i> is a non-negative number |
+| USER          |                                    |
 
 The function returns the string *true* if the parameter (*param_name*) exists in the job currently being verified. 
 If it does not exist *false* will be returned.
@@ -180,16 +183,16 @@ The third column contains a dash ('*-*') if there is no *variable_value* allowed
 `jsv_sub_add_param`() or it indicated that `jsv_sub_get_param`() will return always an empty string. 
 A question mark ('*?*') shows that the value is optional.
 
-| param_name | variable_name                   | variable_value |
-|:-----------|:--------------------------------|:---------------|
-| ac         | job context variable name       | -              |
-| hold_jid   | job identifier                  | -              |
-| l_hard     | complex attribute name          | ?              |
-| l_soft     | complex attribute name          | ?              |
-| M          | mail address                    | -              |
-| masterq    | cluster queue or qinstance name | -              |
-| q_hard     | cluster queue or qinstance name | -              |
-| q_soft     | cluster queue or qinstance_name | -              |
+| param_name    | variable_name                   | variable_value |
+|:--------------|:--------------------------------|:---------------|
+| ac            | job context variable name       | -              |
+| hold_jid      | job identifier                  | -              |
+| global_l_hard | complex attribute name          | ?              |
+| global_l_soft | complex attribute name          | ?              |
+| global_q_hard | cluster queue or qinstance name | -              |
+| global_q_soft | cluster queue or qinstance_name | -              |
+| M             | mail address                    | -              |
+| master_q_hard | cluster queue or qinstance name | -              |
 
 ## jsv_sub_get_param(*param_name*, *variable_name*)
 
@@ -413,14 +416,14 @@ job is submitted:
 
     qsub -l mem=1G,mem2=200M ...
 
-| function call                        | returned value     |
-|:-------------------------------------|:-------------------|
-| `jsv_is_param`(*l_hard*)             | "true"             |
-| `jsv_get_param`(*l_hard*)            | "mem=1G,mem2=200M" |
-| `jsv_sub_is_param`(*l_hard*,*mem*)   | "true"             |
-| `jsv_sub_get_param`(*l_hard*,*mem*)  | "1G"               |
-| `jsv_sub_get_param`(*l_hard*,*mem3*) | "false"            |
-| `jsv_sub_get_param`(*l_hard*,*mem3*) | ""                 |
+| function call                               | returned value     |
+|:--------------------------------------------|:-------------------|
+| `jsv_is_param`(*global_l_hard*)             | "true"             |
+| `jsv_get_param`(*global_l_hard*)            | "mem=1G,mem2=200M" |
+| `jsv_sub_is_param`(*global_l_hard*,*mem*)   | "true"             |
+| `jsv_sub_get_param`(*global_l_hard*,*mem*)  | "1G"               |
+| `jsv_sub_get_param`(*global_l_hard*,*mem3*) | "false"            |
+| `jsv_sub_get_param`(*global_l_hard*,*mem3*) | ""                 |
 
 # SEE ALSO
 
