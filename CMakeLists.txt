@@ -117,6 +117,7 @@ if (PROJECT_FEATURES MATCHES "gcs-extensions")
          ${TIRPC_INCLUDES}
          ${PROJECT_3RDPARTY_DIR}/include
          ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+   add_compile_definitions(ADD_GRIDWARE_COPYRIGHT)
 else()
    set(SGE_INCLUDES
          ${PROJECT_SOURCE_DIR}/source/common
