@@ -491,30 +491,39 @@ bool job_request_set_has_queue_requests(const lListElem *job);
 
 const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name);
 
+const lList *job_get_resource_list(const lListElem *job, u_long32 scope, bool hard);
+const lList *job_get_queue_list(const lListElem *job, u_long32 scope, bool hard);
+
 const lList *job_get_hard_resource_list(const lListElem *job);
 const lList *job_get_hard_resource_list(const lListElem *job, u_long32 scope);
 const lList *job_get_soft_resource_list(const lListElem *job);
 const lList *job_get_soft_resource_list(const lListElem *job, u_long32 scope);
+
 const lList *job_get_hard_queue_list(const lListElem *job);
 const lList *job_get_hard_queue_list(const lListElem *job, u_long32 scope);
 const lList *job_get_soft_queue_list(const lListElem *job);
 const lList *job_get_soft_queue_list(const lListElem *job, u_long32 scope);
 const lList *job_get_master_hard_queue_list(const lListElem *job);
 
+lList *job_get_resource_listRW(lListElem *job, u_long32 scope, bool hard);
 lList *job_get_hard_resource_listRW(lListElem *job);
 lList *job_get_hard_resource_listRW(lListElem *job, u_long32 scope);
 lList *job_get_soft_resource_listRW(lListElem *job);
 lList *job_get_soft_resource_listRW(lListElem *job, u_long32 scope);
+lList *job_get_queue_listRW(lListElem *job, u_long32 scope, bool hard);
 lList *job_get_hard_queue_listRW(lListElem *job);
 lList *job_get_hard_queue_listRW(lListElem *job, u_long32 scope);
 lList *job_get_soft_queue_listRW(lListElem *job);
 lList *job_get_soft_queue_listRW(lListElem *job, u_long32 scope);
 lList *job_get_master_hard_queue_listRW(lListElem *job);
 
+void job_set_resource_list(lListElem *job, lList *resource_list, u_long32 scope, bool hard);
 void job_set_hard_resource_list(lListElem *job, lList *resource_list);
 void job_set_hard_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
 void job_set_soft_resource_list(lListElem *job, lList *resource_list);
 void job_set_soft_resource_list(lListElem *job, lList *resource_list, u_long32 scope);
+
+void job_set_queue_list(lListElem *job, lList *queue_list, u_long32 scope, bool hard);
 void job_set_hard_queue_list(lListElem *job, lList *queue_list);
 void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
 void job_set_soft_queue_list(lListElem *job, lList *queue_list);
