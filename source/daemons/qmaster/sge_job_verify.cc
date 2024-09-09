@@ -209,8 +209,10 @@ static bool job_verify_soft_master_slave_requests(lList **alpp, const lListElem 
    if (jrs_list != nullptr) {
       const lListElem *jrs;
       for_each_ep(jrs, jrs_list) {
-         // we do not allow master soft queue requests
-         if (lGetUlong(jrs, JRS_scope) == JRS_SCOPE_MASTER) {
+         u_long32 scope = lGetUlong(jrs, JRS_scope);
+
+         // we do not allow master and slave soft queue requests
+         if (scope == JRS_SCOPE_MASTER || scope == JRS_SCOPE_SLAVE) {
             if (lGetList(jrs, JRS_soft_queue_list) != nullptr) {
                ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -249,6 +251,61 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep)
          }
       }
    }
+   return ret;
+}
+
+/**
+ * @brief Do all request set related checks
+ *
+ * Calls all the request set verification functions above:
+ * - sge_job_verify_global_master_slave_queues()
+ * - sge_job_verify_global_master_slave_requests()
+ * - sge_job_verify_slave_per_job_requests()
+ * - sge_job_verify_per_host_requests()
+ * - job_verify_soft_master_slave_requests()
+ * - job_verify_non_pe_soft_master_slave_requests()
+ *
+ * @param alpp answer list which is filled in case of errors
+ * @param jep job containing the request set
+ * @param master_centry_list list of centry definitions
+ */
+bool
+job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *master_centry_list) {
+   bool ret = true;
+
+   /* check for non-parallel job that define master or slave requests */
+   if (ret) {
+      ret = job_verify_non_pe_soft_master_slave_requests(alpp, jep);
+   }
+
+   // check for soft master or slave requests - we don't allow them (for now)
+   if (ret) {
+      ret = job_verify_soft_master_slave_requests(alpp, jep);
+   }
+
+   // verify that the there are no requests on the same variable in global scope and one of master or slave
+   if (ret) {
+      if (!sge_job_verify_global_master_slave_requests(alpp, jep, false) ||
+          !sge_job_verify_global_master_slave_requests(alpp, jep, true)) {
+         ret = false;
+      }
+   }
+
+   // check for slave requests of per job consumables (which are only granted to the master task)
+   if (ret) {
+      ret = sge_job_verify_slave_per_job_requests(alpp, jep, master_centry_list);
+   }
+
+   // verify that there are no hard queue requests in the global scope and one of master or slave
+   if (ret) {
+      ret = sge_job_verify_global_master_slave_queues(alpp, jep);
+   }
+
+   // verify that per host requests are not in both master and slave requests
+   if (ret) {
+      ret = sge_job_verify_per_host_requests(alpp, jep, master_centry_list);
+   }
+
    return ret;
 }
 
@@ -365,45 +422,8 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   /* check for non-parallel job that define master or slave requests */
    if (ret == STATUS_OK) {
-      if (!job_verify_non_pe_soft_master_slave_requests(alpp, jep)) {
-         ret = STATUS_EUNKNOWN;
-      }
-   }
-
-   // check for soft master or slave requests - we don't allow them (for now)
-   if (ret == STATUS_OK) {
-      if (!job_verify_soft_master_slave_requests(alpp, jep)) {
-         ret = STATUS_EUNKNOWN;
-      }
-   }
-
-   // verify that the there are no requests on the same variable in global scope and one of master or slave
-   if (ret == STATUS_OK) {
-      if (!sge_job_verify_global_master_slave_requests(alpp, jep, false) ||
-          !sge_job_verify_global_master_slave_requests(alpp, jep, true)) {
-         ret = STATUS_EUNKNOWN;
-      }
-   }
-
-   // check for slave requests of per job consumables (which are only granted to the master task)
-   if (ret == STATUS_OK) {
-      if (!sge_job_verify_slave_per_job_requests(alpp, jep, master_centry_list)) {
-         ret = STATUS_EUNKNOWN;
-      }
-   }
-
-   // verify that there are no hard queue requests in the global scope and one of master or slave
-   if (ret == STATUS_OK) {
-      if (!sge_job_verify_global_master_slave_queues(alpp, jep)) {
-         ret = STATUS_EUNKNOWN;
-      }
-   }
-
-   // verify that per host requests are not in both master and slave requests
-   if (ret == STATUS_OK) {
-      if (!sge_job_verify_per_host_requests(alpp, jep, master_centry_list)) {
+      if (!job_verify_adjust_request_set(alpp, jep, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
       }
    }

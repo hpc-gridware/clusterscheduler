@@ -2156,6 +2156,48 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
+   /* ---- JB_pe - need to do it *before* JB_request_set_list */
+   if ((pos = lGetPosViaElem(jep, JB_pe, SGE_NO_ABORT)) >= 0) {
+      const char *pe_name;
+
+      DPRINTF("got new JB_pe\n");
+      pe_name = lGetString(jep, JB_pe);
+      if (pe_name && !pe_list_find_matching(master_pe_list, pe_name)) {
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PE, pe_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         DRETURN(STATUS_EUNKNOWN);
+      }
+      lSetString(new_job, JB_pe, pe_name);
+      *trigger |= MOD_EVENT;
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_PE, sge_u32c(jobid));
+      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+   }
+
+   /* ---- JB_pe_range */
+   if ((pos = lGetPosViaElem(jep, JB_pe_range, SGE_NO_ABORT)) >= 0 && lGetList(jep, JB_pe_range)) {
+      lList *pe_range;
+      const char *pe_name;
+      DPRINTF("got new JB_pe_range\n");
+
+      /* reject PE ranges change requests for jobs without PE request */
+      if (!(pe_name = lGetString(new_job, JB_pe))) {
+         ERROR(SFNMAX, MSG_JOB_PERANGE_ONLY_FOR_PARALLEL);
+         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         DRETURN(STATUS_EUNKNOWN);
+      }
+
+      pe_range = lCopyList("", lGetList(jep, JB_pe_range));
+      if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
+         lFreeList(&pe_range);
+         DRETURN(STATUS_EUNKNOWN);
+      }
+      lSetList(new_job, JB_pe_range, pe_range);
+
+      *trigger |= MOD_EVENT;
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, sge_u32c(jobid));
+      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+   }
+
    // ---- JB_request_set_list
 
    // need to loop over all JB_request_set_list elements and check the entries
@@ -2179,23 +2221,24 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
             if (!centry_list_is_correct(resource_list, alpp)) {
                DRETURN(STATUS_EUNKNOWN);
             }
+
+            /* to prevent inconsistent consumable management:
+             * - deny resource requests changes on consumables for running jobs (IZ #251)
+             * - a better solution would be to store for each running job the amount of resources
+             *   @todo we have this now in the JAT_granted_resources_list
+             */
+            const lList *old_resource_list = job_get_hard_resource_list(new_job, scope);
+            bool is_changed = is_changes_consumables(alpp, resource_list, old_resource_list);
+            if (is_running && is_changed) {
+               DRETURN(STATUS_EUNKNOWN);
+            }
+
+            job_set_hard_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
+            *trigger |= MOD_EVENT;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDRESOURCELIST, sge_u32c(jobid));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
-         /* to prevent inconsistent consumable management:
-          * - deny resource requests changes on consumables for running jobs (IZ #251)
-          * - a better solution would be to store for each running job the amount of resources
-          *   @todo we have this now in the JAT_granted_resources_list
-          */
-         const lList *old_resource_list = job_get_hard_resource_list(new_job, scope);
-         bool is_changed = is_changes_consumables(alpp, resource_list, old_resource_list);
-         if (is_running && is_changed) {
-            DRETURN(STATUS_EUNKNOWN);
-         }
-
-         job_set_hard_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
-         *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDRESOURCELIST, sge_u32c(jobid));
-         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          // ---- JRS_soft_resource_list
          resource_list = lGetListRW(jrs, JRS_soft_resource_list);
@@ -2213,12 +2256,12 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
             if (!centry_list_is_correct(resource_list, alpp)) {
                DRETURN(STATUS_EUNKNOWN);
             }
+            job_set_soft_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
+            *trigger |= MOD_EVENT;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTRESOURCELIST, sge_u32c(jobid));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
-         job_set_soft_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
-         *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTRESOURCELIST, sge_u32c(jobid));
-         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          // JRS_hard_queue_list
          lList *queue_list = lGetListRW(jrs, JRS_hard_queue_list);
@@ -2227,12 +2270,12 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
             if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
                DRETURN(STATUS_EUNKNOWN);
             }
+            job_set_hard_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
+            *trigger |= MOD_EVENT;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDQLIST, sge_u32c(jobid));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
-         job_set_hard_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
-         *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDQLIST, sge_u32c(jobid));
-         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          // JRS_soft_queue_list
          queue_list = lGetListRW(jrs, JRS_soft_queue_list);
@@ -2241,13 +2284,15 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
             if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
                DRETURN(STATUS_EUNKNOWN);
             }
+            job_set_soft_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
+            *trigger |= MOD_EVENT;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTQLIST, sge_u32c(jobid));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
-
-         job_set_soft_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
-         *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTQLIST, sge_u32c(jobid));
-         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } // foreach scope
+      if (!job_verify_adjust_request_set(alpp, new_job, master_centry_list)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
    } // JB_request_set_list
 
    /* ---- JB_mail_options */
@@ -2516,48 +2561,6 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_PROJECT, sge_u32c(jobid));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
-   }
-
-   /* ---- JB_pe */
-   if ((pos = lGetPosViaElem(jep, JB_pe, SGE_NO_ABORT)) >= 0) {
-      const char *pe_name;
-
-      DPRINTF("got new JB_pe\n");
-      pe_name = lGetString(jep, JB_pe);
-      if (pe_name && !pe_list_find_matching(master_pe_list, pe_name)) {
-         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PE, pe_name);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      lSetString(new_job, JB_pe, pe_name);
-      *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_PE, sge_u32c(jobid));
-      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   }
-
-   /* ---- JB_pe_range */
-   if ((pos = lGetPosViaElem(jep, JB_pe_range, SGE_NO_ABORT)) >= 0 && lGetList(jep, JB_pe_range)) {
-      lList *pe_range;
-      const char *pe_name;
-      DPRINTF("got new JB_pe_range\n");
-
-      /* reject PE ranges change requests for jobs without PE request */
-      if (!(pe_name = lGetString(new_job, JB_pe))) {
-         ERROR(SFNMAX, MSG_JOB_PERANGE_ONLY_FOR_PARALLEL);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_EUNKNOWN);
-      }
-
-      pe_range = lCopyList("", lGetList(jep, JB_pe_range));
-      if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
-         lFreeList(&pe_range);
-         DRETURN(STATUS_EUNKNOWN);
-      }
-      lSetList(new_job, JB_pe_range, pe_range);
-
-      *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, sge_u32c(jobid));
-      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
    /* ---- JB_binding */

@@ -597,7 +597,9 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       /* not needed in job struct - they are still used at this point */
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-soft"))) 
          lRemoveElem(cmdline, &ep);
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hard"))) 
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hard")))
+         lRemoveElem(cmdline, &ep);
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-scope")))
          lRemoveElem(cmdline, &ep);
 
       parse_list_simple(cmdline, "-S", job, JB_shell_list, 0, 0, FLG_LIST_APPEND);
