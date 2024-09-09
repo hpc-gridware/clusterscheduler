@@ -39,4 +39,4 @@ bool
 jsv_do_communication(lListElem *jsv, lList **answer_list);
 
 bool
-jsv_is_modify_rejected(lList **answer_list, lListElem *job);
+jsv_is_modify_rejected(lList **answer_list, const lListElem *job);
