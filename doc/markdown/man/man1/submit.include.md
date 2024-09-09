@@ -1106,6 +1106,7 @@ The slave tasks shall run in the compute.q queue with a memory limit
 of 4G and one GPU.
 
 Using the **-scope** switch has a few constaints:
+
 * It cannot be used with sequential jobs.
 * Soft queue (**-q**) or resource requests (**-l**) are only allowed 
   in the global scope.
