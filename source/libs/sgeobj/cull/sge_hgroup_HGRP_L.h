@@ -101,24 +101,32 @@
 *    Temporary list of cluster queues referencing a host group
 *    while processing creation or modification requests for host groups.
 *
+*    SGE_LIST(HGRP_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
    HGRP_name = HGRP_LOWERBOUND,
    HGRP_host_list,
-   HGRP_cqueue_list
+   HGRP_cqueue_list,
+   HGRP_joker
 };
 
 LISTDEF(HGRP_Type)
    SGE_HOST(HGRP_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
    SGE_LIST(HGRP_host_list, HR_Type, CULL_SPOOL)
    SGE_LIST(HGRP_cqueue_list, CQ_Type, CULL_DEFAULT)
+   SGE_LIST(HGRP_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(HGRPN)
    NAME("HGRP_name")
    NAME("HGRP_host_list")
    NAME("HGRP_cqueue_list")
+   NAME("HGRP_joker")
 NAMEEND
 
 #define HGRP_SIZE sizeof(HGRPN)/sizeof(char *)

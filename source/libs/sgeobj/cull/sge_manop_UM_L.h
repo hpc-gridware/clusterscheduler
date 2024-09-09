@@ -38,18 +38,26 @@
 *    to create or delete queues.
 *    The necessary user rights per operation are listed in the corresponding man pages, e.g. qconf.1
 *
+*    SGE_LIST(UM_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
-   UM_name = UM_LOWERBOUND
+   UM_name = UM_LOWERBOUND,
+   UM_joker
 };
 
 LISTDEF(UM_Type)
    SGE_STRING(UM_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_LIST(UM_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(UMN)
    NAME("UM_name")
+   NAME("UM_joker")
 NAMEEND
 
 #define UM_SIZE sizeof(UMN)/sizeof(char *)

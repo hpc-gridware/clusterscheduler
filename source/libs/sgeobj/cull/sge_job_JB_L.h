@@ -370,6 +370,14 @@
 *    Arguments which contain whitespace or wildcards are enclosed in single quotes,
 *    so it should be possible to copy/paste the command line into a shell.
 *
+*    SGE_LIST(JB_grp_list) - Supplementary Group List
+*    list of supplementary groups and corresponding ID's
+*
+*    SGE_LIST(JB_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -455,7 +463,8 @@ enum {
    JB_ja_task_concurrency,
    JB_binding,
    JB_submission_command_line,
-   JB_grp_list
+   JB_grp_list,
+   JB_joker
 };
 
 LISTDEF(JB_Type)
@@ -542,6 +551,7 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_binding, BN_Type, CULL_SPOOL)
    SGE_STRING(JB_submission_command_line, CULL_SPOOL)
    SGE_LIST(JB_grp_list, ST_Type, CULL_SPOOL)
+   SGE_LIST(JB_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(JBN)
@@ -628,6 +638,7 @@ NAMEDEF(JBN)
    NAME("JB_binding")
    NAME("JB_submission_command_line")
    NAME("JB_grp_list")
+   NAME("JB_joker")
 NAMEEND
 
 #define JB_SIZE sizeof(JBN)/sizeof(char *)

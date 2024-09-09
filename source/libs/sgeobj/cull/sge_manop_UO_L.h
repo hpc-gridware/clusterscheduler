@@ -37,18 +37,26 @@
 *    SGE_STRING(UO_name) - Operator Name
 *    User name of the operator
 *
+*    SGE_LIST(UO_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
-   UO_name = UO_LOWERBOUND
+   UO_name = UO_LOWERBOUND,
+   UO_joker
 };
 
 LISTDEF(UO_Type)
    SGE_STRING(UO_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_LIST(UO_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(UON)
    NAME("UO_name")
+   NAME("UO_joker")
 NAMEEND
 
 #define UO_SIZE sizeof(UON)/sizeof(char *)

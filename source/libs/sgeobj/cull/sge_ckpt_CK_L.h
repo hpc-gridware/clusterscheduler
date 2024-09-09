@@ -74,6 +74,11 @@
 *    SGE_STRING(CK_clean_command) - Clean Command
 *    Commandline to be executed after checkpointing to clean up.
 *
+*    SGE_LIST(CK_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -86,7 +91,8 @@ enum {
    CK_when,
    CK_signal,
    CK_job_pid,
-   CK_clean_command
+   CK_clean_command,
+   CK_joker
 };
 
 LISTDEF(CK_Type)
@@ -100,6 +106,7 @@ LISTDEF(CK_Type)
    SGE_STRING(CK_signal, CULL_SPOOL)
    SGE_ULONG(CK_job_pid, CULL_DEFAULT)
    SGE_STRING(CK_clean_command, CULL_SPOOL)
+   SGE_LIST(CK_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(CKN)
@@ -113,6 +120,7 @@ NAMEDEF(CKN)
    NAME("CK_signal")
    NAME("CK_job_pid")
    NAME("CK_clean_command")
+   NAME("CK_joker")
 NAMEEND
 
 #define CK_SIZE sizeof(CKN)/sizeof(char *)

@@ -136,6 +136,11 @@
 *    Set/increased in qmaster when sharetree changes.
 *    Skip scheduling decisions based on an older version of the sharetree.
 *
+*    SGE_LIST(STN_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -168,7 +173,8 @@ enum {
    STN_jobid,
    STN_taskid,
    STN_usage_list,
-   STN_version
+   STN_version,
+   STN_joker
 };
 
 LISTDEF(STN_Type)
@@ -202,6 +208,7 @@ LISTDEF(STN_Type)
    SGE_ULONG(STN_taskid, CULL_DEFAULT)
    SGE_LIST(STN_usage_list, UA_Type, CULL_DEFAULT)
    SGE_ULONG(STN_version, CULL_DEFAULT)
+   SGE_LIST(STN_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(STNN)
@@ -235,6 +242,7 @@ NAMEDEF(STNN)
    NAME("STN_taskid")
    NAME("STN_usage_list")
    NAME("STN_version")
+   NAME("STN_joker")
 NAMEEND
 
 #define STN_SIZE sizeof(STNN)/sizeof(char *)

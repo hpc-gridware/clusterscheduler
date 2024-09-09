@@ -56,6 +56,11 @@
 *    SGE_BOOL(US_consider_with_categories) - @todo add summary
 *    @todo add description
 *
+*    SGE_LIST(US_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -66,7 +71,8 @@ enum {
    US_job_cnt,
    US_pending_job_cnt,
    US_entries,
-   US_consider_with_categories
+   US_consider_with_categories,
+   US_joker
 };
 
 LISTDEF(US_Type)
@@ -78,6 +84,7 @@ LISTDEF(US_Type)
    SGE_ULONG(US_pending_job_cnt, CULL_DEFAULT)
    SGE_LIST(US_entries, UE_Type, CULL_SPOOL)
    SGE_BOOL(US_consider_with_categories, CULL_DEFAULT)
+   SGE_LIST(US_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(USN)
@@ -89,6 +96,7 @@ NAMEDEF(USN)
    NAME("US_pending_job_cnt")
    NAME("US_entries")
    NAME("US_consider_with_categories")
+   NAME("US_joker")
 NAMEEND
 
 #define US_SIZE sizeof(USN)/sizeof(char *)

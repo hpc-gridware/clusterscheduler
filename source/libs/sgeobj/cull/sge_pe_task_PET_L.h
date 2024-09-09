@@ -89,6 +89,11 @@
 *    Used in limit enforcement to remember whether to contact the host where a task is running.
 *    Is set to false when the host is down/unknown.
 *
+*    SGE_LIST(PET_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -108,7 +113,8 @@ enum {
    PET_cwd,
    PET_path_aliases,
    PET_environment,
-   PET_do_contact
+   PET_do_contact,
+   PET_joker
 };
 
 LISTDEF(PET_Type)
@@ -129,6 +135,7 @@ LISTDEF(PET_Type)
    SGE_LIST(PET_path_aliases, PA_Type, CULL_DEFAULT)
    SGE_LIST(PET_environment, VA_Type, CULL_DEFAULT)
    SGE_BOOL(PET_do_contact, CULL_SUBLIST)
+   SGE_LIST(PET_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(PETN)
@@ -149,6 +156,7 @@ NAMEDEF(PETN)
    NAME("PET_path_aliases")
    NAME("PET_environment")
    NAME("PET_do_contact")
+   NAME("PET_joker")
 NAMEEND
 
 #define PET_SIZE sizeof(PETN)/sizeof(char *)

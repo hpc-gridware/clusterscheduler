@@ -26,5 +26,17 @@
 				}, {
 					"name":	"SPOOL"
 				}]
+		}, {
+			"name":	"joker",
+			"summary":	"Joker",
+			"description":	[{
+				"line":	"Placeholder which can be used for arbitrary data."
+			}, { "line":	"Its purpose is to be able to add new attributes without changing the spooling format."
+			}, { "line":	"It is a list of arbitrary type and it is spooled."
+			}],
+			"type":	"lListT",
+			"subClassName": "Variable",
+			"subCullPrefix": "VA",
+			"flags":	[{ "name":  "SPOOL" }]
 		}]
 }

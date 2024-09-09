@@ -243,6 +243,11 @@
 *    SGE_LIST(QU_state_changes) - New State Variables
 *    new state variables, these are needed for the scheduler, to dispach jobs into suitable queues
 *
+*    SGE_LIST(QU_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -314,7 +319,8 @@ enum {
    QU_resource_utilization,
    QU_message_list,
    QU_gdi_do_later,
-   QU_state_changes
+   QU_state_changes,
+   QU_joker
 };
 
 LISTDEF(QU_Type)
@@ -387,6 +393,7 @@ LISTDEF(QU_Type)
    SGE_LIST(QU_message_list, QIM_Type, CULL_SPOOL)
    SGE_ULONG(QU_gdi_do_later, CULL_DEFAULT)
    SGE_LIST(QU_state_changes, CCT_Type, CULL_DEFAULT)
+   SGE_LIST(QU_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(QUN)
@@ -459,6 +466,7 @@ NAMEDEF(QUN)
    NAME("QU_message_list")
    NAME("QU_gdi_do_later")
    NAME("QU_state_changes")
+   NAME("QU_joker")
 NAMEEND
 
 #define QU_SIZE sizeof(QUN)/sizeof(char *)

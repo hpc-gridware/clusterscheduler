@@ -81,6 +81,11 @@
 *    SGE_BOOL(UU_consider_with_categories) - Consider With Categories
 *    True, if user plays role with categories.
 *
+*    SGE_LIST(UU_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -98,7 +103,8 @@ enum {
    UU_debited_job_usage,
    UU_default_project,
    UU_version,
-   UU_consider_with_categories
+   UU_consider_with_categories,
+   UU_joker
 };
 
 LISTDEF(UU_Type)
@@ -117,6 +123,7 @@ LISTDEF(UU_Type)
    SGE_STRING(UU_default_project, CULL_SPOOL)
    SGE_ULONG(UU_version, CULL_DEFAULT)
    SGE_BOOL(UU_consider_with_categories, CULL_DEFAULT)
+   SGE_LIST(UU_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(UUN)
@@ -135,6 +142,7 @@ NAMEDEF(UUN)
    NAME("UU_default_project")
    NAME("UU_version")
    NAME("UU_consider_with_categories")
+   NAME("UU_joker")
 NAMEEND
 
 #define UU_SIZE sizeof(UUN)/sizeof(char *)

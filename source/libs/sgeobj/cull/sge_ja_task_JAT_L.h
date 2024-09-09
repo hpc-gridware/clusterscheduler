@@ -187,6 +187,11 @@
 *    Task specific messages.
 *    Currently only used for storing the reason why a job is in error state.
 *
+*    SGE_LIST(JAT_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -225,7 +230,8 @@ enum {
    JAT_prio,
    JAT_ntix,
    JAT_wallclock_limit,
-   JAT_message_list
+   JAT_message_list,
+   JAT_joker
 };
 
 LISTDEF(JAT_Type)
@@ -265,6 +271,7 @@ LISTDEF(JAT_Type)
    SGE_DOUBLE(JAT_ntix, CULL_DEFAULT)
    SGE_ULONG64(JAT_wallclock_limit, CULL_SPOOL)
    SGE_LIST(JAT_message_list, QIM_Type, CULL_SPOOL)
+   SGE_LIST(JAT_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(JATN)
@@ -304,6 +311,7 @@ NAMEDEF(JATN)
    NAME("JAT_ntix")
    NAME("JAT_wallclock_limit")
    NAME("JAT_message_list")
+   NAME("JAT_joker")
 NAMEEND
 
 #define JAT_SIZE sizeof(JATN)/sizeof(char *)

@@ -188,6 +188,11 @@
 *    SGE_ULONG(CQ_tag) - Tag
 *    @todo add description
 *
+*    SGE_LIST(CQ_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -242,7 +247,8 @@ enum {
    CQ_consumable_config_list,
    CQ_subordinate_list,
    CQ_qtype,
-   CQ_tag
+   CQ_tag,
+   CQ_joker
 };
 
 LISTDEF(CQ_Type)
@@ -298,6 +304,7 @@ LISTDEF(CQ_Type)
    SGE_LIST(CQ_subordinate_list, CULL_ANY_SUBTYPE, CULL_SPOOL)
    SGE_LIST(CQ_qtype, CULL_ANY_SUBTYPE, CULL_SPOOL)
    SGE_ULONG(CQ_tag, CULL_DEFAULT)
+   SGE_LIST(CQ_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(CQN)
@@ -353,6 +360,7 @@ NAMEDEF(CQN)
    NAME("CQ_subordinate_list")
    NAME("CQ_qtype")
    NAME("CQ_tag")
+   NAME("CQ_joker")
 NAMEEND
 
 #define CQ_SIZE sizeof(CQN)/sizeof(char *)

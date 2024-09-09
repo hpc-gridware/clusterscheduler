@@ -35,18 +35,26 @@
 *    SGE_HOST(AH_name) - host name
 *    name of the admin host. The host name must be resolvable.
 *
+*    SGE_LIST(AH_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
-   AH_name = AH_LOWERBOUND
+   AH_name = AH_LOWERBOUND,
+   AH_joker
 };
 
 LISTDEF(AH_Type)
    SGE_HOST(AH_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_LIST(AH_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(AHN)
    NAME("AH_name")
+   NAME("AH_joker")
 NAMEEND
 
 #define AH_SIZE sizeof(AHN)/sizeof(char *)

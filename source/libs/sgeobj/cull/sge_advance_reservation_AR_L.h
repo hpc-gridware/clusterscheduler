@@ -116,6 +116,11 @@
 *    SGE_ULONG(AR_qi_errors) - @todo add summary
 *    @todo add description
 *
+*    SGE_LIST(AR_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -146,7 +151,8 @@ enum {
    AR_acl_list,
    AR_xacl_list,
    AR_type,
-   AR_qi_errors
+   AR_qi_errors,
+   AR_joker
 };
 
 LISTDEF(AR_Type)
@@ -178,6 +184,7 @@ LISTDEF(AR_Type)
    SGE_LIST(AR_xacl_list, ARA_Type, CULL_SPOOL)
    SGE_ULONG(AR_type, CULL_SPOOL)
    SGE_ULONG(AR_qi_errors, CULL_DEFAULT)
+   SGE_LIST(AR_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(ARN)
@@ -209,6 +216,7 @@ NAMEDEF(ARN)
    NAME("AR_xacl_list")
    NAME("AR_type")
    NAME("AR_qi_errors")
+   NAME("AR_joker")
 NAMEEND
 
 #define AR_SIZE sizeof(ARN)/sizeof(char *)

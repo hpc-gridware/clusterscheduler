@@ -118,6 +118,12 @@ object_get_subtype(int nm)
       case JB_binding:
          ret = BN_Type;
          break;
+      case JB_grp_list:
+         ret = ST_Type;
+         break;
+      case JB_joker:
+         ret = VA_Type;
+         break;
       case JRS_hard_resource_list:
          ret = CE_Type;
          break;
@@ -172,6 +178,9 @@ object_get_subtype(int nm)
       case QU_state_changes:
          ret = CCT_Type;
          break;
+      case QU_joker:
+         ret = VA_Type;
+         break;
       case EH_scaling_list:
          ret = HS_Type;
          break;
@@ -217,6 +226,15 @@ object_get_subtype(int nm)
       case EH_merged_report_variables:
          ret = STU_Type;
          break;
+      case EH_joker:
+         ret = VA_Type;
+         break;
+      case AH_joker:
+         ret = VA_Type;
+         break;
+      case SH_joker:
+         ret = VA_Type;
+         break;
       case EV_subscribed:
          ret = EVS_Type;
          break;
@@ -235,6 +253,15 @@ object_get_subtype(int nm)
       case US_entries:
          ret = UE_Type;
          break;
+      case US_joker:
+         ret = VA_Type;
+         break;
+      case UM_joker:
+         ret = VA_Type;
+         break;
+      case UO_joker:
+         ret = VA_Type;
+         break;
       case PE_user_list:
          ret = US_Type;
          break;
@@ -243,6 +270,9 @@ object_get_subtype(int nm)
          break;
       case PE_resource_utilization:
          ret = RUE_Type;
+         break;
+      case PE_joker:
+         ret = VA_Type;
          break;
       case CONF_entries:
          ret = CF_Type;
@@ -268,6 +298,9 @@ object_get_subtype(int nm)
       case PR_debited_job_usage:
          ret = UPU_Type;
          break;
+      case PR_joker:
+         ret = VA_Type;
+         break;
       case UU_usage:
          ret = UA_Type;
          break;
@@ -280,6 +313,9 @@ object_get_subtype(int nm)
       case UU_debited_job_usage:
          ret = UPU_Type;
          break;
+      case UU_joker:
+         ret = VA_Type;
+         break;
       case GRU_resource_map_list:
          ret = RESL_Type;
          break;
@@ -288,6 +324,9 @@ object_get_subtype(int nm)
          break;
       case STN_usage_list:
          ret = UA_Type;
+         break;
+      case STN_joker:
+         ret = VA_Type;
          break;
       case SC_job_load_adjustments:
          ret = CE_Type;
@@ -316,6 +355,9 @@ object_get_subtype(int nm)
       case PET_environment:
          ret = VA_Type;
          break;
+      case PET_joker:
+         ret = VA_Type;
+         break;
       case PETR_path_aliases:
          ret = PA_Type;
          break;
@@ -337,6 +379,9 @@ object_get_subtype(int nm)
       case UPU_old_usage_list:
          ret = UA_Type;
          break;
+      case CK_joker:
+         ret = VA_Type;
+         break;
       case KRB_tgt_list:
          ret = KTGT_Type;
          break;
@@ -354,6 +399,9 @@ object_get_subtype(int nm)
          break;
       case CAL_parsed_week_calendar:
          ret = CA_Type;
+         break;
+      case CAL_joker:
+         ret = VA_Type;
          break;
       case CA_yday_range_list:
          ret = TMR_Type;
@@ -412,6 +460,9 @@ object_get_subtype(int nm)
       case JAT_message_list:
          ret = QIM_Type;
          break;
+      case JAT_joker:
+         ret = VA_Type;
+         break;
       case CT_cache:
          ret = CCT_Type;
          break;
@@ -420,6 +471,9 @@ object_get_subtype(int nm)
          break;
       case HGRP_cqueue_list:
          ret = CQ_Type;
+         break;
+      case HGRP_joker:
+         ret = VA_Type;
          break;
       case LS_incomplete:
          ret = LR_Type;
@@ -472,6 +526,9 @@ object_get_subtype(int nm)
       case CQ_qinstances:
          ret = QU_Type;
          break;
+      case CQ_joker:
+         ret = VA_Type;
+         break;
       case XMLH_Stylesheet:
          ret = XMLS_Type;
          break;
@@ -513,6 +570,9 @@ object_get_subtype(int nm)
          break;
       case RQS_rule:
          ret = RQR_Type;
+         break;
+      case RQS_joker:
+         ret = VA_Type;
          break;
       case RQR_limit:
          ret = RQRL_Type;
@@ -556,6 +616,9 @@ object_get_subtype(int nm)
       case AR_xacl_list:
          ret = ARA_Type;
          break;
+      case AR_joker:
+         ret = VA_Type;
+         break;
       case EVR_event_list:
          ret = ET_Type;
          break;
@@ -564,6 +627,9 @@ object_get_subtype(int nm)
          break;
       case PRO_groups:
          ret = GR_Type;
+         break;
+      case BN_joker:
+         ret = VA_Type;
          break;
    }
    return ret;

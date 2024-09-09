@@ -146,6 +146,11 @@
 *    SGE_LIST(EH_merged_report_variables) - merged variables for reporting
 *    list of variables written to the report file, merged from global host and actual host
 *
+*    SGE_LIST(EH_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -182,7 +187,8 @@ enum {
    EH_reschedule_unknown_list,
    EH_report_seqno,
    EH_report_variables,
-   EH_merged_report_variables
+   EH_merged_report_variables,
+   EH_joker
 };
 
 LISTDEF(EH_Type)
@@ -220,6 +226,7 @@ LISTDEF(EH_Type)
    SGE_ULONG(EH_report_seqno, CULL_DEFAULT)
    SGE_LIST(EH_report_variables, STU_Type, CULL_SPOOL)
    SGE_LIST(EH_merged_report_variables, STU_Type, CULL_DEFAULT)
+   SGE_LIST(EH_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(EHN)
@@ -257,6 +264,7 @@ NAMEDEF(EHN)
    NAME("EH_report_seqno")
    NAME("EH_report_variables")
    NAME("EH_merged_report_variables")
+   NAME("EH_joker")
 NAMEEND
 
 #define EH_SIZE sizeof(EHN)/sizeof(char *)

@@ -77,6 +77,11 @@
 *    SGE_BOOL(PR_consider_with_categories) - Consider With Categories
 *    True, if project plays role with categories.
 *
+*    SGE_LIST(PR_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -94,7 +99,8 @@ enum {
    PR_xacl,
    PR_debited_job_usage,
    PR_version,
-   PR_consider_with_categories
+   PR_consider_with_categories,
+   PR_joker
 };
 
 LISTDEF(PR_Type)
@@ -113,6 +119,7 @@ LISTDEF(PR_Type)
    SGE_LIST(PR_debited_job_usage, UPU_Type, CULL_SPOOL)
    SGE_ULONG(PR_version, CULL_DEFAULT)
    SGE_BOOL(PR_consider_with_categories, CULL_DEFAULT)
+   SGE_LIST(PR_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(PRN)
@@ -131,6 +138,7 @@ NAMEDEF(PRN)
    NAME("PR_debited_job_usage")
    NAME("PR_version")
    NAME("PR_consider_with_categories")
+   NAME("PR_joker")
 NAMEEND
 
 #define PR_SIZE sizeof(PRN)/sizeof(char *)

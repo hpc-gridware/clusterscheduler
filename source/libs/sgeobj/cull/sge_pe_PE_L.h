@@ -90,6 +90,11 @@
 *    Specifies if a single accounting record is written for the whole job,
 *    or if every task (master task and slave tasks) gets an individual accounting record.
 *
+*    SGE_LIST(PE_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -104,7 +109,8 @@ enum {
    PE_job_is_first_task,
    PE_resource_utilization,
    PE_urgency_slots,
-   PE_accounting_summary
+   PE_accounting_summary,
+   PE_joker
 };
 
 LISTDEF(PE_Type)
@@ -120,6 +126,7 @@ LISTDEF(PE_Type)
    SGE_LIST(PE_resource_utilization, RUE_Type, CULL_DEFAULT)
    SGE_STRING(PE_urgency_slots, CULL_SPOOL)
    SGE_BOOL(PE_accounting_summary, CULL_SPOOL)
+   SGE_LIST(PE_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(PEN)
@@ -135,6 +142,7 @@ NAMEDEF(PEN)
    NAME("PE_resource_utilization")
    NAME("PE_urgency_slots")
    NAME("PE_accounting_summary")
+   NAME("PE_joker")
 NAMEEND
 
 #define PE_SIZE sizeof(PEN)/sizeof(char *)

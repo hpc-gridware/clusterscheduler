@@ -44,13 +44,19 @@
 *    SGE_LIST(RQS_rule) - @todo add summary
 *    @todo add description
 *
+*    SGE_LIST(RQS_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
    RQS_name = RQS_LOWERBOUND,
    RQS_description,
    RQS_enabled,
-   RQS_rule
+   RQS_rule,
+   RQS_joker
 };
 
 LISTDEF(RQS_Type)
@@ -58,6 +64,7 @@ LISTDEF(RQS_Type)
    SGE_STRING(RQS_description, CULL_SPOOL)
    SGE_BOOL(RQS_enabled, CULL_SPOOL)
    SGE_LIST(RQS_rule, RQR_Type, CULL_SPOOL)
+   SGE_LIST(RQS_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(RQSN)
@@ -65,6 +72,7 @@ NAMEDEF(RQSN)
    NAME("RQS_description")
    NAME("RQS_enabled")
    NAME("RQS_rule")
+   NAME("RQS_joker")
 NAMEEND
 
 #define RQS_SIZE sizeof(RQSN)/sizeof(char *)

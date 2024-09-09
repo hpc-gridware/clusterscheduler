@@ -48,6 +48,11 @@
 *    SGE_LIST(CAL_parsed_week_calendar) - Parsed Week Calendar
 *    The week calendar parsed to internal data structures.
 *
+*    SGE_LIST(CAL_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -55,7 +60,8 @@ enum {
    CAL_year_calendar,
    CAL_week_calendar,
    CAL_parsed_year_calendar,
-   CAL_parsed_week_calendar
+   CAL_parsed_week_calendar,
+   CAL_joker
 };
 
 LISTDEF(CAL_Type)
@@ -64,6 +70,7 @@ LISTDEF(CAL_Type)
    SGE_STRING(CAL_week_calendar, CULL_SPOOL)
    SGE_LIST(CAL_parsed_year_calendar, CA_Type, CULL_DEFAULT)
    SGE_LIST(CAL_parsed_week_calendar, CA_Type, CULL_DEFAULT)
+   SGE_LIST(CAL_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(CALN)
@@ -72,6 +79,7 @@ NAMEDEF(CALN)
    NAME("CAL_week_calendar")
    NAME("CAL_parsed_year_calendar")
    NAME("CAL_parsed_week_calendar")
+   NAME("CAL_joker")
 NAMEEND
 
 #define CAL_SIZE sizeof(CALN)/sizeof(char *)

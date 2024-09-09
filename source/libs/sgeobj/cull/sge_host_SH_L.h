@@ -35,18 +35,26 @@
 *    SGE_HOST(SH_name) - host name
 *    Name of the submission host. It must be resolveable.
 *
+*    SGE_LIST(SH_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
-   SH_name = SH_LOWERBOUND
+   SH_name = SH_LOWERBOUND,
+   SH_joker
 };
 
 LISTDEF(SH_Type)
    SGE_HOST(SH_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_LIST(SH_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(SHN)
    NAME("SH_name")
+   NAME("SH_joker")
 NAMEEND
 
 #define SH_SIZE sizeof(SHN)/sizeof(char *)

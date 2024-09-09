@@ -36,6 +36,9 @@
 *    This field holds the string contents.
 *    @todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that.
 *
+*    SGE_ULONG(ST_id) - String ID
+*    allows to attach a ID to each string
+*
 */
 
 enum {
@@ -45,7 +48,7 @@ enum {
 
 LISTDEF(ST_Type)
    SGE_STRING(ST_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_SUBLIST)
-   SGE_ULONG(ST_id, CULL_DEFAULT)
+   SGE_ULONG(ST_id, CULL_HASH)
 LISTEND
 
 NAMEDEF(STN)

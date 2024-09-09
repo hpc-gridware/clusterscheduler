@@ -53,6 +53,11 @@
 *    SGE_STRING(BN_parameter_explicit) - @todo add summary
 *    @todo add description
 *
+*    SGE_LIST(BN_joker) - Joker
+*    Placeholder which can be used for arbitrary data.
+*    Its purpose is to be able to add new attributes without changing the spooling format.
+*    It is a list of arbitrary type and it is spooled.
+*
 */
 
 enum {
@@ -62,7 +67,8 @@ enum {
    BN_parameter_socket_offset,
    BN_parameter_core_offset,
    BN_parameter_striding_step_size,
-   BN_parameter_explicit
+   BN_parameter_explicit,
+   BN_joker
 };
 
 LISTDEF(BN_Type)
@@ -73,6 +79,7 @@ LISTDEF(BN_Type)
    SGE_ULONG(BN_parameter_core_offset, CULL_SUBLIST)
    SGE_ULONG(BN_parameter_striding_step_size, CULL_SUBLIST)
    SGE_STRING(BN_parameter_explicit, CULL_SUBLIST)
+   SGE_LIST(BN_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(BNN)
@@ -83,6 +90,7 @@ NAMEDEF(BNN)
    NAME("BN_parameter_core_offset")
    NAME("BN_parameter_striding_step_size")
    NAME("BN_parameter_explicit")
+   NAME("BN_joker")
 NAMEEND
 
 #define BN_SIZE sizeof(BNN)/sizeof(char *)
