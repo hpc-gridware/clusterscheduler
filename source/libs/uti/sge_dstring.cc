@@ -787,7 +787,7 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
 void sge_dstring_strip_white_space_at_eol(dstring *string) {
    DENTER(DSTRING_LAYER);
    if (string != nullptr) {
-      char *s = (string != nullptr) ? string->s : nullptr;
+      char *s = string->s;
 
       if (s != nullptr) {
          sge_strip_white_space_at_eol(s);

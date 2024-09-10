@@ -2817,19 +2817,17 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
       if (lGetBool(elem, US_consider_with_categories) &&
           sge_contained_in_access_list(owner, group, grp_list, elem)) {
          if (first) {      
-            if (sge_dstring_strlen(category_str) > 0) {
-               sge_dstring_append_char(category_str, ' ');
-            }
             sge_dstring_append(category_str, option);
             sge_dstring_append_char(category_str, ' ');
-            sge_dstring_append(category_str, lGetString(elem, US_name));
             first = false;
-         }
-         else {
+         } else {
             sge_dstring_append_char(category_str, ',');
-            sge_dstring_append(category_str, lGetString(elem, US_name));
          }
+         sge_dstring_append(category_str, lGetString(elem, US_name));
       }
+   }
+   if (!first) {
+      sge_dstring_append_char(category_str, ' ');
    }
 
    DRETURN(true);
@@ -2871,18 +2869,15 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, co
       const lListElem *sub_elem;
       for_each_ep(sub_elem, queue_list) {
          if (first) {      
-            if (sge_dstring_strlen(category_str) > 0) {
-               sge_dstring_append_char(category_str, ' ');
-            }
             sge_dstring_append(category_str, option);
             sge_dstring_append_char(category_str, ' ');
-            sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
             first = false;
          } else {
             sge_dstring_append_char(category_str, ',');
-            sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
          }
+         sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
       }
+      sge_dstring_append_char(category_str, ' ');
    }
 
    DRETURN(true);
@@ -2923,23 +2918,17 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
        const lListElem *sub_elem;
        for_each_ep(sub_elem, resource_list) {
          if (first) {
-            if (sge_dstring_strlen(category_str) > 0) {
-               sge_dstring_append(category_str, " ");
-            }
-         
             sge_dstring_append(category_str, option);
             sge_dstring_append(category_str, " ");
-            sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
-            sge_dstring_append(category_str, "=");
-            sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
             first = false;
          } else {
             sge_dstring_append(category_str, ",");
-            sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
-            sge_dstring_append(category_str, "=");
-            sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
          }
+         sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
+         sge_dstring_append(category_str, "=");
+         sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
       }
+      sge_dstring_append(category_str, " ");
    }
    
    DRETURN(true);
@@ -2981,19 +2970,16 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
       if ((range_list = lGetPosList(job_elem, range_pos)) == nullptr) {
          DPRINTF("Job has parallel environment with no ranges\n");
          DRETURN(false);
-      }
-      else {
+      } else {
          dstring range_string = DSTRING_INIT;
 
          range_list_print_to_string(range_list, &range_string, true, false, false);
-         if (sge_dstring_strlen(category_str) > 0) {
-            sge_dstring_append(category_str, " ");
-         }
          sge_dstring_append(category_str, option);
-         sge_dstring_append(category_str, " ");
+         sge_dstring_append_char(category_str, ' ');
          sge_dstring_append(category_str, lGetString(job_elem, JB_pe));
-         sge_dstring_append(category_str, " ");
+         sge_dstring_append_char(category_str, ' ');
          sge_dstring_append_dstring(category_str, &range_string);
+         sge_dstring_append_char(category_str, ' ');
 
          sge_dstring_free(&range_string);
       }
@@ -3029,20 +3015,13 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 *  SEE ALSO
 *     sge_job/sge_unparse_ulong_option_dstring()
 *******************************************************************************/
-bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, const char *option)
-{
-   const char *string = nullptr;
-
+bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, int nm, const char *option) {
    DENTER(TOP_LAYER);
-   
-   if ((string = lGetPosString(job_elem, nm)) != nullptr) {
-      if (sge_dstring_strlen(category_str) > 0) {
-         sge_dstring_append(category_str, " ");
-      }
+   if (const char *string = lGetPosString(job_elem, nm); string != nullptr) {
       sge_dstring_append(category_str, option);
-      sge_dstring_append(category_str, " ");
+      sge_dstring_append_char(category_str, ' ');
       sge_dstring_append(category_str, string);
+      sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
 }
@@ -3076,20 +3055,15 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
 *  SEE ALSO
 *     sge_job/sge_unparse_string_option_dstring()
 *******************************************************************************/
-bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, 
-                               int nm, const char *option)
-{
-   u_long32 ul = 0;
-
+bool
+sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, int nm, const char *option) {
    DENTER(TOP_LAYER);
    
-   if ((ul = lGetPosUlong(job_elem, nm)) != 0) {            
-      if (sge_dstring_strlen(category_str) > 0) {
-         sge_dstring_append(category_str, " ");
-      }
+   if (const u_long32 ul = lGetPosUlong(job_elem, nm); ul != 0) {
       sge_dstring_append(category_str, option);
-      sge_dstring_append(category_str, " ");
+      sge_dstring_append_char(category_str, ' ');
       sge_dstring_sprintf_append(category_str, sge_U32CFormat, ul);
+      sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
 }

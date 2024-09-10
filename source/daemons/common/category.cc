@@ -115,16 +115,8 @@ static sge_category_t Category_Control = {PTHREAD_MUTEX_INITIALIZER, {-1, -1, -1
 *     MT-NOTE: sge_build_job_category_dstring() is MT safe as long as the caller is
 *
 *******************************************************************************/
-void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, bool *did_project, const lList *rqs_list) 
-{
-
-   const char *owner = nullptr;
-   const char *group = nullptr;
-   const lList *grp_list = nullptr;
-
+void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, bool *did_project, const lList *rqs_list) {
    DENTER(TOP_LAYER);
-
-   DTRACE;
 
 #if 0
    sge_mutex_lock("cull_order_mutex", __func__, __LINE__, &Category_Control.cull_order_mutex);
@@ -145,116 +137,88 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
    sge_mutex_unlock("cull_order_mutex", __func__, __LINE__, &Category_Control.cull_order_mutex);
 #endif
 
-   DTRACE;
-
-   /*
-   ** owner -> acl
-   */
-   owner = lGetString(job, JB_owner);
-   group = lGetString(job, JB_group);
-   grp_list = lGetList(job, JB_grp_list);
-
+   // owner (user, UNIX group, and ACLs)
+   const char *owner = lGetString(job, JB_owner);
+   const char *group = lGetString(job, JB_group);
+   const lList *grp_list = lGetList(job, JB_grp_list);
    sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
-   DTRACE;
- 
-   /* 
-   ** -u if referenced in resource quota sets
-   */
-
-   /* RD TODO: A possible performance enhancement is to split user and group inside category.
-      Some users are only referenced by the unix group. Their jobs could be grouped
-      together by referencing only the group in the category string
-   */
-   if (sge_user_is_referenced_in_rqs(rqs_list, lGetString(job, JB_owner), lGetString(job, JB_group), lGetList(job, JB_grp_list), acl_list)) {
-      if (sge_dstring_strlen(category_str) > 0) {
-         sge_dstring_append(category_str, " ");
-      }
+   // -u if referenced in resource quota sets
+   //
+   // TODO: A possible performance enhancement is to split user and group inside category.
+   // Some users are only referenced by the unix group. Their jobs could be grouped
+   // together by referencing only the group in the category string
+   if (sge_user_is_referenced_in_rqs(rqs_list, owner, group, grp_list, acl_list)) {
       sge_dstring_append(category_str, "-u ");
-      sge_dstring_append(category_str, lGetString(job, JB_owner));
+      sge_dstring_append(category_str, owner);
+      sge_dstring_append_char(category_str, ' ');
    }
 
-   DTRACE;
+   // -scope global -hard -q <queue_list>
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, true), "-scope global -hard -q");
 
-   /*
-   ** -hard -q qlist
-   */
-   sge_unparse_queue_list_dstring(category_str, job_get_hard_queue_listRW(job), "-q");
+   // -scope master -hard -q <queue_list>
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_MASTER, true), "-scope master -hard -q");
 
-   DTRACE;
+   // -scope slave -hard -q <queue_list>
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -q");
 
-   /*
-   ** -masterq qlist
-   */
-   sge_unparse_queue_list_dstring(category_str, job_get_master_hard_queue_listRW(job), "-masterq");
 
-   DTRACE;
+   // -scope global -hard -l <resource_list>
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, true), "-scope global -hard -l");
 
-   /*
-   ** -l rlist (hard resource list)
-   */
-   sge_unparse_resource_list_dstring(category_str, job_get_hard_resource_listRW(job), "-l");
+   // -scope master -hard -l <resource_list>
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_MASTER, true), "-scope master -hard -l");
 
-   DTRACE;
-   
-   /*
-   ** -soft -l rlist
-   */
-   sge_unparse_resource_list_dstring(category_str, job_get_soft_resource_listRW(job), "-soft -l");
+   // -scope slave -hard -l <resource_list>
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -l");
 
-   DTRACE;
+   // TODO: evaluate if soft requests should be part of the category string
+#if 1
+   // -scope global -soft -q <resource_list>
+   sge_unparse_resource_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -q");
 
-   /*
-   ** -pe pe_name pe_range
-   */
-   sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT), 
-                          lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");
+   // -scope global -soft -l <resource_list>
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -l");
+#endif
 
-   DTRACE;
+   // -pe pe_name pe_range
+   sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT), lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");
 
-   /*
-   ** -ckpt ckpt_name 
-   */
+   // -ckpt ckpt_name
    sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT), "-ckpt");
 
-   DTRACE;
-
-   /*
-   ** interactive jobs
-   */
+   // interactive job type
    if (JOB_TYPE_IS_IMMEDIATE(lGetPosUlong(job, lGetPosViaElem(job, JB_type, SGE_NO_ABORT)))) {
-      if (sge_dstring_strlen(category_str) > 0) {
-         sge_dstring_append(category_str, " -I y");
-      }
-      else {
-         sge_dstring_append(category_str, "-I y");
-      }
+      sge_dstring_append(category_str, "-I y ");
    }
 
-   DTRACE;
-      
-   /*
-   ** project
-   */
+   // -P project
    {
-      const char *project = lGetPosString(job, lGetPosViaElem(job, JB_project, SGE_NO_ABORT));
+      int project_nm = lGetPosViaElem(job, JB_project, SGE_NO_ABORT);
+      const char *project = lGetPosString(job, project_nm);
 
-      const lListElem *prj;
-      if (project && (prj=lGetElemStr(prj_list, PR_name, project)) && lGetBool(prj, PR_consider_with_categories)) {
-         if (did_project)
-            *did_project = true;
-         sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_project, SGE_NO_ABORT), "-P");
-      } else
-         if (did_project)
-            *did_project = false;
+      if (project != nullptr) {
+         const lListElem *prj = lGetElemStr(prj_list, PR_name, project);
+
+         if (prj != nullptr && lGetBool(prj, PR_consider_with_categories)) {
+            if (did_project) {
+               *did_project = true;
+            }
+            sge_unparse_string_option_dstring(category_str, job, project_nm, "-P");
+         } else {
+            if (did_project) {
+               *did_project = false;
+            }
+         }
+      }
    }
 
-   DTRACE;
+   // -ar ar_id
+   sge_unparse_ulong_option_dstring(category_str, job, lGetPosViaElem(job, JB_ar, SGE_NO_ABORT), "-ar");
 
-   /*
-   ** -ar ar_id
-   */
-   sge_unparse_ulong_option_dstring(category_str, job, lGetPosViaElem(job, JB_ar, SGE_NO_ABORT), "-ar");  
+   // remove the last white space that the last unparse function has written
+   sge_dstring_strip_white_space_at_eol(category_str);
 
    DRETURN_VOID;
 }
