@@ -88,7 +88,7 @@ static const char *AccessList[] = {
  *
  **/
 static data_entry_t tests[] = {
-   {1, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, 0},
+   {1, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr, 0},
    {2, 128, "my_pr", "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr, nullptr, 0},
    {3, 128, nullptr, "user", nullptr, nullptr, "my_check", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
    {4, 128, "my_pr", "user", nullptr, nullptr, "my_check", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
@@ -161,11 +161,9 @@ static lList *test_create_access()
    access_list = lCreateList("access", US_Type);
    
    if (access_list != nullptr) {
-      int i;
-
-      for (i = 0; AccessList[i] != nullptr; i++) {
+      for (int i = 0; AccessList[i] != nullptr; i++) {
          char *access_cp = nullptr;
-         char *access_str = nullptr;
+         const char *access_str = nullptr;
          char *iter_dash = nullptr;
 
          access_cp = strdup(AccessList[i]);
@@ -214,48 +212,33 @@ static lList *test_create_access()
 *     MT-NOTE: test_create_project() is not MT safe 
 *
 *******************************************************************************/
-static lList *test_create_project(const char *project)
-{
+static lList *test_create_project(const char *project) {
    lList *project_list = nullptr;
-   lListElem *prj;
-   prj = lAddElemStr(&project_list, PR_name, project, PR_Type);
+   lListElem *prj = lAddElemStr(&project_list, PR_name, project, PR_Type);
    lSetBool(prj, PR_consider_with_categories, true);
    return project_list;
 }
 
-static lList *test_create_rqs()
-{
+static lList *test_create_rqs() {
    lList* rqs_list = lCreateList("my_rqs", RQS_Type);
-   lListElem* rqs;
-   lList* rule_list;
-   lListElem* rule;
-   lListElem* filter;
-   lListElem* limit;
-   lList * limit_list;
-   
-   rqs = lCreateElem(RQS_Type);
+   lListElem* rqs = lCreateElem(RQS_Type);
    lSetString(rqs, RQS_name, "Test_Name1");
    lSetBool(rqs, RQS_enabled, true);
-   rule_list = lCreateList("Rule_List", RQR_Type);
-
-   rule = lCreateElem(RQR_Type);
-      filter = lCreateElem(RQRF_Type);
-      lSetBool(filter, RQRF_expand, true);
-      lAddSubStr(filter, ST_name, "rqs_user", RQRF_scope, ST_Type);
-
-      lSetObject(rule, RQR_filter_users, filter);
-
-      limit_list = lCreateList("limit_list", RQRL_Type);
-      limit = lCreateElem(RQRL_Type);
-      lSetString(limit, RQRL_name, "slots");
-      lSetString(limit, RQRL_value, "2*$num_proc");
-      lAppendElem(limit_list, limit);
-      lSetList(rule, RQR_limit, limit_list);
+   lList* rule_list = lCreateList("Rule_List", RQR_Type);
+   lListElem* rule = lCreateElem(RQR_Type);
+   lListElem* filter = lCreateElem(RQRF_Type);
+   lSetBool(filter, RQRF_expand, true);
+   lAddSubStr(filter, ST_name, "rqs_user", RQRF_scope, ST_Type);
+   lSetObject(rule, RQR_filter_users, filter);
+   lList * limit_list = lCreateList("limit_list", RQRL_Type);
+   lListElem* limit = lCreateElem(RQRL_Type);
+   lSetString(limit, RQRL_name, "slots");
+   lSetString(limit, RQRL_value, "2*$num_proc");
+   lAppendElem(limit_list, limit);
+   lSetList(rule, RQR_limit, limit_list);
    lAppendElem(rule_list, rule);
    lSetList(rqs, RQS_rule, rule_list);
    lAppendElem(rqs_list, rqs);
-
-
    return rqs_list;
 }
 
@@ -278,36 +261,25 @@ static lList *test_create_rqs()
 *     MT-NOTE: test_create_request() is MT safe 
 *
 *******************************************************************************/
-static lList *test_create_request(const char *requestStr, int count) 
+static lList *test_create_request(const char *requestStr, const int count)
 {
-   lList *requests = nullptr;
    char *request_cp = nullptr;
-   char *iter_dash = nullptr;
-
-   requests = lCreateList("requests", CE_Type);
-
+   lList *requests = lCreateList("requests", CE_Type);
    if (requests != nullptr) {
-       int i;
-       for (i = 0; i < count; i++) {
-          char *request_str;
-
-          request_cp = strdup(requestStr);
-          
-          for (request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(nullptr, " ", &iter_dash)) {
-            lListElem *request = nullptr;
-            
-            request = lCreateElem(CE_Type);
-            
+      for (int i = 0; i < count; i++) {
+         request_cp = strdup(requestStr);
+         char *iter_dash = nullptr;
+         for (const char *request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(nullptr, " ", &iter_dash)) {
+            lListElem *request = lCreateElem(CE_Type);
             if (request != nullptr) {
                lSetString(request, CE_name, request_str);
                lSetString(request, CE_stringval, strtok_r(nullptr, " ", &iter_dash));
-            }
-            else {
+            } else {
                lFreeList(&requests);
                goto end;
             }
-            lAppendElem(requests, request); 
-          }
+            lAppendElem(requests, request);
+         }
          if (request_cp != nullptr) {
             sge_free(&request_cp);
          }
@@ -339,28 +311,23 @@ end:
 *     MT-NOTE: test_create_queue() is MT safe 
 *
 *******************************************************************************/
-static lList *test_create_queue(const char *queueStr, int count) 
+static lList *test_create_queue(const char *queueStr, const int count)
 {
-   lList *queues = nullptr;
    char *queue_cp = nullptr;
-   char *iter_dash = nullptr;
 
-   queues = lCreateList("queues", QR_Type);
-
+   lList *queues = lCreateList("queues", QR_Type);
    if (queues != nullptr) {
-       int i;
-       for (i = 0; i < count; i++) {
-          char *queues_str;
+       for (int i = 0; i < count; i++) {
           queue_cp = strdup(queueStr);
-          for (queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(nullptr, " ", &iter_dash)) {
+          char *iter_dash = nullptr;
+          for (const char *queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(nullptr, " ", &iter_dash)) {
             lListElem *queue = nullptr;
             
             queue = lCreateElem(QR_Type);
             
             if (queue != nullptr) {
                lSetString(queue, QR_name, queues_str);
-            }
-            else {
+            } else {
                lFreeList(&queues);
                goto end;
             }
@@ -393,41 +360,34 @@ end:
 *     MT-NOTE: test_create_pe() is MT safe 
 *
 *******************************************************************************/
-static void test_create_pe(const char *peStr, lListElem *job_elem) 
-{
-   lList *range= nullptr;
+static void test_create_pe(const char *peStr, lListElem *job_elem) {
    char *pe_cp = strdup(peStr);
    char *iter_dash = nullptr;
-   char *pe_str;
 
-    for (pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(nullptr, " ", &iter_dash)) {
-
+   for (const char *pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(nullptr, " ", &iter_dash)) {
       lSetString(job_elem, JB_pe, pe_str);
       
       pe_str= strtok_r(nullptr, " ", &iter_dash);
+      lList *range= nullptr;
       range_list_parse_from_string(&range, nullptr, pe_str, false, false, INF_ALLOWED);
       if (range != nullptr) {
          lSetList(job_elem, JB_pe_range, range);             
-      }
-      else {
+      } else {
          lSetString(job_elem, JB_pe, nullptr);
          printf("error generating pe object: %s\n", peStr);
 
       }
 
-    }
+   }
    if (pe_cp != nullptr) {
       sge_free(&pe_cp); 
    }
 }
 
-static void test_create_groups(const char *peStr, lListElem *job_elem)
-{
+static void test_create_groups(const char *peStr, lListElem *job_elem) {
    char *pe_cp = strdup(peStr);
    char *iter_dash = nullptr;
-   char *pe_str;
-
-   for (pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(nullptr, " ", &iter_dash)) {
+   for (const char *pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(nullptr, " ", &iter_dash)) {
       lAddSubStr(job_elem, ST_name, pe_str, JB_grp_list, ST_Type);
    }
    sge_free(&pe_cp);
@@ -454,8 +414,7 @@ static void test_create_groups(const char *peStr, lListElem *job_elem)
 *     MT-NOTE: test_create_job() is MT safe 
 *
 *******************************************************************************/
-static lListElem *test_create_job(data_entry_t *test, int count) 
-{
+static lListElem *test_create_job(const data_entry_t *test, const int count) {
    lListElem *job = nullptr;
 
    job = lCreateElem(JB_Type);
@@ -476,8 +435,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          lSetString(job, JB_checkpoint_name, test->ckpt);
       }
       if (test->g_h_r != nullptr) {
-         lList *requests = test_create_request(test->g_h_r, count);
-         if (requests != nullptr) {
+         if (lList *requests = test_create_request(test->g_h_r, count); requests != nullptr) {
             job_set_hard_resource_list(job, requests);
          } else {
             lFreeElem(&job);
@@ -485,8 +443,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->g_s_r != nullptr) {
-         lList *requests = test_create_request(test->g_s_r, count);
-         if (requests != nullptr) {
+         if (lList *requests = test_create_request(test->g_s_r, count); requests != nullptr) {
             job_set_soft_resource_list(job, requests);
          } else {
             lFreeElem(&job);
@@ -494,8 +451,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->m_h_r != nullptr) {
-         lList *requests = test_create_request(test->m_h_r, count);
-         if (requests != nullptr) {
+         if (lList *requests = test_create_request(test->m_h_r, count); requests != nullptr) {
             job_set_resource_list(job, requests, JRS_SCOPE_MASTER, true);
          } else {
             lFreeElem(&job);
@@ -503,8 +459,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->s_h_r != nullptr) {
-         lList *requests = test_create_request(test->s_h_r, count);
-         if (requests != nullptr) {
+         if (lList *requests = test_create_request(test->s_h_r, count); requests != nullptr) {
             job_set_resource_list(job, requests, JRS_SCOPE_SLAVE, true);
          } else {
             lFreeElem(&job);
@@ -512,8 +467,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->g_h_q != nullptr) {
-         lList *queues = test_create_queue(test->g_h_q, count);
-         if (queues != nullptr) {
+         if (lList *queues = test_create_queue(test->g_h_q, count); queues != nullptr) {
             job_set_hard_queue_list(job, queues);
          } else {
             lFreeElem(&job);
@@ -521,8 +475,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->m_h_q != nullptr) {
-         lList *queues = test_create_queue(test->m_h_q, count);
-         if (queues != nullptr) {
+         if (lList *queues = test_create_queue(test->m_h_q, count); queues != nullptr) {
             job_set_master_hard_queue_list(job, queues);
          } else {
             lFreeElem(&job);
@@ -530,8 +483,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
          }
       }
       if (test->s_h_q != nullptr) {
-         lList *queues = test_create_queue(test->s_h_q, count);
-         if (queues != nullptr) {
+         if (lList *queues = test_create_queue(test->s_h_q, count); queues != nullptr) {
             job_set_queue_list(job, queues, JRS_SCOPE_SLAVE, true);
          } else {
             lFreeElem(&job);
@@ -568,24 +520,22 @@ end:
 *     MT-NOTE: test_performance() is MT safe 
 *
 *******************************************************************************/
-static double test_performance(lListElem *job_elem, int max, lList* access_list, const lList *project_list, const lList *rqs_list) 
-{
-   int i;
+static double test_performance(lListElem *job_elem, const int max, const lList* access_list, const lList *rqs_list) {
    dstring category_str = DSTRING_INIT;
-   struct timeval before;
-   struct timeval after;
-   double time_new;
-   
+   struct timeval before = {0};
+
    gettimeofday(&before, nullptr);
-   for (i = 0; i < max; i++) {
-      sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, nullptr, rqs_list);
+   for (int i = 0; i < max; i++) {
+      sge_build_job_category_dstring(&category_str, job_elem, access_list, nullptr, nullptr, rqs_list);
       sge_dstring_clear(&category_str);
    }
+
+   struct timeval after = {0};
    gettimeofday(&after, nullptr);
    sge_dstring_free(&category_str);
 
-   time_new = after.tv_usec - before.tv_usec;
-   time_new = after.tv_sec - before.tv_sec + (time_new/1000000);
+   auto time_new = static_cast<double>(after.tv_usec - before.tv_usec);
+   time_new = static_cast<double>(after.tv_sec - before.tv_sec) + (time_new/1000000);
 
    printf("tested %d category creations: new: %.2fs\n", max, time_new);
 
@@ -611,7 +561,7 @@ static double test_performance(lListElem *job_elem, int max, lList* access_list,
 *     MT-NOTE: test() is MT safe 
 *
 *******************************************************************************/
-static int test(data_entry_t *test, const char *result, int count) {
+static int test(const data_entry_t *test, const char *result, const int count) {
    int ret = 0;
    lListElem *job_elem = nullptr;
    lList *access_list = nullptr;
@@ -640,28 +590,26 @@ static int test(data_entry_t *test, const char *result, int count) {
       printf("got     : <%s>\n", sge_dstring_get_string(&category_str)!=nullptr?sge_dstring_get_string(&category_str):"<nullptr>");
 
       if (result != nullptr && sge_dstring_get_string(&category_str) != nullptr) {
-         if (strcmp(result, sge_dstring_get_string(&category_str)) == 0) {
-         } else {
+         if (strcmp(result, sge_dstring_get_string(&category_str)) != 0) {
             ret = 1;
-            printf("expected: <%s>\n", result!=nullptr? result:"<nullptr>");
+            printf("expected: <%s>\n", result);
          }
       } else if (result == nullptr &&  sge_dstring_get_string(&category_str) == nullptr) {
+         ;
       } else {
          ret = 1;
          printf("expected: <%s>\n", result!=nullptr? result:"<nullptr>");
       }
 
       if (ret == 0) {
-         int i;
          int max = 10000;
          printf(" => category outputs match\n");
          lFreeElem(&job_elem);
-         for (i = 1; i <= 500; i*=6) {
+         for (int i = 1; i <= 500; i*=6) {
             printf("test with %dx :", i);
             job_elem = test_create_job(test, i);
             if (job_elem != nullptr) {
-               double time = test_performance(job_elem, max, access_list, nullptr, rqs_list);
-               if (time > 1) {
+               if (const double time = test_performance(job_elem, max, access_list, rqs_list); time > 1) {
                   max /= 10;
                }
                lFreeElem(&job_elem);
