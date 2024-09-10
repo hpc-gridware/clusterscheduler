@@ -514,11 +514,11 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
 
    DENTER(TOP_LAYER);
 
-   if (!hostname) {
+   if (hostname == nullptr) {
       DRETURN(true);
    }
 
-   if (!qref_list) {
+   if (qref_list == nullptr) {
       DRETURN(false);
    }
 

@@ -1547,14 +1547,19 @@ static void clear_resource_tags(lListElem *job, u_long32 max_tag) {
 }
 
 static void
-get_hard_queue_lists(const lListElem *job, const lList *&hard_queue_list, const lList *&master_hard_queue_list) {
-   master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
-   if (master_hard_queue_list != nullptr) {
-      // if we have master queue requests, then work on the soft slave queue requests
-      hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
+get_hard_queue_lists(const lListElem *job, const lList *&global_hard_queue_list, const lList *&master_hard_queue_list,
+                     const lList *&slave_hard_queue_list) {
+   /* we can either have
+    * - a global queue request list (can not be combined with master or slave queue request list)
+    * - in case of parallel job: a master queue request list and/or a slave queue request list
+    */
+   global_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+   if (/* it is a pe job && */ global_hard_queue_list == nullptr) {
+      master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
+      slave_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
    } else {
-      // if we have no master queue requests (or it is a sequential job), then work on the global soft queue requests
-      hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+      master_hard_queue_list = nullptr;
+      slave_hard_queue_list = nullptr;
    }
 }
 
@@ -1605,7 +1610,6 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    const lList *projects;
    lListElem *ar_ep;
    const char *qinstance_name = lGetString(queue, QU_full_name);
-   bool could_be_master = false;
 
    DENTER(TOP_LAYER);
 
@@ -1664,10 +1668,12 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       }
    }
 
+   const lList *global_hard_queue_list;
    const lList *master_hard_queue_list;
-   const lList *hard_queue_list;
-   get_hard_queue_lists(a->job, hard_queue_list, master_hard_queue_list);
-   if (hard_queue_list != nullptr || master_hard_queue_list != nullptr) {
+   const lList *slave_hard_queue_list;
+   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   // if we have any queue request lists then check if queues may be requested at all
+   if (global_hard_queue_list != nullptr || master_hard_queue_list != nullptr || slave_hard_queue_list != nullptr) {
       if (!centry_list_are_queues_requestable(a->centry_list)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_QUEUENOTREQUESTABLE_S, qinstance_name);
@@ -1675,30 +1681,49 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       }
    }
 
-   /*
-    * is this queue a candidate for being the master queue?
-    */
-   if (master_hard_queue_list != nullptr) {
-      if (qref_list_cq_rejected(master_hard_queue_list, lGetString(queue, QU_qname),
-                     lGetHost(queue, QU_qhostname), a->hgrp_list)) {
-         DPRINTF("Queue \"%s\" is not contained in the master hard "
-                 "queue list (-masterq) that was requested by job %d\n",
-                 qinstance_name, (int) a->job_id);
-         lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
-      } else {
-         could_be_master = true;
+   // is queue rejected by a global queue list?
+   if (global_hard_queue_list != nullptr) {
+      if (qref_list_cq_rejected(global_hard_queue_list, lGetString(queue, QU_qname),
+                                lGetHost(queue, QU_qhostname), a->hgrp_list)) {
+         DPRINTF("Queue " SFQ " is not contained in the global hard queue list (-q) "
+                              "that was requested by job " sge_u32 "\n",
+                              qinstance_name, a->job_id);
+         schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                        SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
+         DRETURN(DISPATCH_NEVER_CAT);
       }
-   }
+   } else {
+      // if there is no global queue list, we might have master and/or slave queue requests
+      bool can_be_master_queue = true;
+      bool can_be_slave_queue = true;
 
-   /*
-    * is queue contained in hard queue list ?
-    */
-   if (hard_queue_list != nullptr) {
-      if (!could_be_master && qref_list_cq_rejected(hard_queue_list, lGetString(queue, QU_qname),
-                     lGetHost(queue, QU_qhostname), a->hgrp_list)) {
-         DPRINTF("Queue \"%s\" is not contained in the hard "
-                 "queue list (-q) that was requested by job %d\n",
-                 qinstance_name, (int) a->job_id);
+      // is this queue a candidate for being the master queue?
+      if (master_hard_queue_list != nullptr) {
+         if (qref_list_cq_rejected(master_hard_queue_list, lGetString(queue, QU_qname),
+                                   lGetHost(queue, QU_qhostname), a->hgrp_list)) {
+            DPRINTF("Queue " SFQ " is not contained in the master hard "
+                                 "queue list that was requested by job " sge_u32 "\n",
+                    qinstance_name, a->job_id);
+            can_be_master_queue = false;
+            lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
+         }
+      }
+
+      // is this queue a candidate for being a slave queue?
+      if (slave_hard_queue_list != nullptr) {
+         if (qref_list_cq_rejected(slave_hard_queue_list, lGetString(queue, QU_qname),
+                                   lGetHost(queue, QU_qhostname), a->hgrp_list)) {
+            DPRINTF("Queue " SFQ " is not contained in the slave hard "
+                                 "queue list (-q) that was requested by job " sge_u32 "\n",
+                    qinstance_name, (int) a->job_id);
+            can_be_slave_queue = false;
+            // @todo slave tags not yet used
+            // lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_SLAVE | TAG4SCHED_SLAVE_LATER);
+         }
+      }
+
+      // if it can be neither master nor slave queue, then it is not a candidate at all
+      if (!can_be_master_queue && !can_be_slave_queue) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -3085,6 +3110,7 @@ bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char 
 
    DRETURN(rejected);
 }
+
 /****** sge_select_queue/cqueue_match_static() *********************************
 *  NAME
 *     cqueue_match_static() -- Does cluster queue match the job?
@@ -3107,23 +3133,31 @@ bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char 
 *  NOTES
 *     MT-NOTE: cqueue_match_static() is MT safe
 *******************************************************************************/
-dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
-{
+dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   const lList *master_hard_queue_list, *global_or_slave_queue_list;
-   get_hard_queue_lists(a->job, global_or_slave_queue_list, master_hard_queue_list);
+   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
+   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
 
-   // @todo here we could already tag the queue instances (QU_tagged4schedule)
-   bool global_or_slave_cqueue_rejected = qref_list_cq_rejected(global_or_slave_queue_list, cqname, nullptr, nullptr);
-   bool master_queue_rejected = qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr);
+   bool rejected = false;
+   if (global_hard_queue_list != nullptr) {
+      if (qref_list_cq_rejected(global_hard_queue_list, cqname, nullptr, nullptr)) {
+         DPRINTF("Cluster Queue " SFQ " is not contained in global hard queue requests of job " sge_u32 "\n",
+                 cqname, a->job_id);
+         rejected = true;
+      }
+   } else {
+      if (a->pe_name != nullptr &&
+          master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr &&
+          qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr) &&
+          qref_list_cq_rejected(slave_hard_queue_list, cqname, nullptr, nullptr)) {
+         DPRINTF("Cluster Queue " SFQ " is not contained in hard master and slave queue requests of job " sge_u32 "\n",
+                 cqname, a->job_id);
+         rejected = true;
+      }
+   }
 
-   // sequential job and global requests rejected
-   // or parallel job and both slave and master requests rejected
-   bool is_pe_job = a->pe_name != nullptr;
-   if (global_or_slave_cqueue_rejected && (!is_pe_job || master_queue_rejected)) {
-      DPRINTF("Cluster Queue " SFQ " is not contained in hard " SFN " queue requests of job " sge_u32 "\n",
-              cqname, master_queue_rejected ? "slave and master" : "global", a->job_id);
+   if (rejected) {
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                      SCHEDD_INFO_NOTINHARDQUEUELST_S, cqname);
       DRETURN(DISPATCH_NEVER_CAT);
@@ -3813,10 +3847,9 @@ static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
    lListElem *job = a->job;
-   const lList *hard_queue_list, *master_hard_queue_list;
-   get_hard_queue_lists(job, hard_queue_list, master_hard_queue_list);
-   bool have_masterq_request = master_hard_queue_list != nullptr;
-   bool have_hard_queue_request = hard_queue_list != nullptr;
+   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
+   get_hard_queue_lists(job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   bool have_master_and_slave_queue_request = master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr;
 #if 0
    bool have_master_requests = job_get_hard_resource_list(job, JRS_SCOPE_MASTER) != nullptr;
    bool have_slave_requests = job_get_hard_resource_list(job, JRS_SCOPE_SLAVE) != nullptr;
@@ -3888,6 +3921,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             DPRINTF("cqueue %s is not rejected\n", cqname);
             lAddElemStr(&unclear_cqueue_list, CTI_name, cqname, CTI_Type);
          }
+         // the queue can potentially be used - it is not rejected by static cqueue matching
          lSetUlong(qep, QU_tag, 1);
       } // end first queue filtering step
 
@@ -3903,7 +3937,14 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             DPRINTF("EVALUATE: %s soft violations %d\n", lGetString(qep, QU_full_name), lGetUlong(qep, QU_soft_violation));
          }
          if (sconf_get_queue_sort_method() == QSM_LOAD) {
-            // @todo (CS-455) why sort by QU_tag - it should be 0 in all qinstances
+            /* we sort by
+             * 1. QU_tag DESCENDING (QU_tag is 0 for queues that are not suitable according to cqueue_match_static()),
+             *    1 for queues which are potentially suitable
+             * 2. QU_soft_violation ASCENDING
+             * 3. depending on the queue sort method:
+             *    - QSM_LOAD: QU_host_seq_no (from load_formula) ASCENDING, QU_seq_no (from config) ASCENDING
+             *    - QSM_SEQNUM: QU_seq_no (from config) ASCENDING, QU_host_seq_no (from load_formula) ASCENDING
+             */
             lPSortList(a->queue_list, "%I- %I+ %I+ %I+", QU_tag, QU_soft_violation, QU_host_seq_no, QU_seq_no);
          } else {
             lPSortList(a->queue_list, "%I- %I+ %I+ %I+", QU_tag, QU_soft_violation, QU_seq_no, QU_host_seq_no);
@@ -4068,12 +4109,12 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            }
                         } else {
                            // this qinstance is suited as master queue
-                           if (have_masterq_request && have_hard_queue_request) {
+                           if (have_master_and_slave_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
                                * we need to allocate only one slot for the master task
                                */
 #if 1
-                              if (qref_list_cq_rejected(hard_queue_list,
+                              if (qref_list_cq_rejected(slave_hard_queue_list,
                                   lGetString(qep, QU_qname), eh_name, a->hgrp_list)) {
                                  slots = MIN(slots, 1);
                               }
@@ -4209,11 +4250,11 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            }
                         } else {
                            /* care for master tasks assignments of -masterq jobs */
-                           if (have_masterq_request && have_hard_queue_request) {
+                           if (have_master_and_slave_queue_request) {
                               /* if the masterq request is not contained in the hard queue request
                                  we need to allocate only one slot for the master task */
 #if 1
-                              if (qref_list_cq_rejected(hard_queue_list,
+                              if (qref_list_cq_rejected(slave_hard_queue_list,
                                   lGetString(qep, QU_qname), lGetHost(qep, QU_qhostname), a->hgrp_list)) {
                                  slots_qend = MIN(slots_qend, 1);
                               }
@@ -4435,12 +4476,18 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend, lListElem 
 
    SCHED_PROF_INC(a->pi, par_hstat);
 
-   const lList *hard_queue_list, *master_hard_queue_list;
-   get_hard_queue_lists(a->job, hard_queue_list, master_hard_queue_list);
-   bool rejected_as_slave , rejected_as_master;
-   rejected_as_master = rejected_as_slave = qref_list_eh_rejected(hard_queue_list, eh_name, a->hgrp_list);
-   if (master_hard_queue_list != nullptr) {
-      rejected_as_master = qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list);
+   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
+   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   bool rejected_as_slave = false, rejected_as_master = false;
+   if (global_hard_queue_list != nullptr) {
+      rejected_as_master = rejected_as_slave = qref_list_eh_rejected(global_hard_queue_list, eh_name, a->hgrp_list);
+   } else {
+      if (master_hard_queue_list != nullptr) {
+         rejected_as_master = qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list);
+      }
+      if (slave_hard_queue_list != nullptr) {
+         rejected_as_slave = qref_list_eh_rejected(slave_hard_queue_list, eh_name, a->hgrp_list);
+      }
    }
    // @todo remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
    if (!(rejected_as_master && rejected_as_slave) &&
