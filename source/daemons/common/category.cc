@@ -176,7 +176,7 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
    // TODO: evaluate if soft requests should be part of the category string
 #if 1
    // -scope global -soft -q <resource_list>
-   sge_unparse_resource_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -q");
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -q");
 
    // -scope global -soft -l <resource_list>
    sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -l");
