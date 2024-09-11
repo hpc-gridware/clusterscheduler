@@ -148,8 +148,11 @@ int main(int argc, const char **argv) {
       sge_exit(0);
    }
    
-   alp = qalter_parse_job_parameter(me_who, cmdline, &request_list, &all_jobs, 
-                                    &all_users);
+   alp = qalter_parse_job_parameter(me_who, cmdline, &request_list, &all_jobs, &all_users);
+
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
+      lWriteListTo(request_list, stdout);
+   }
 
    DPRINTF("all_jobs = %d, all_user = %d\n", all_jobs, all_users);
 

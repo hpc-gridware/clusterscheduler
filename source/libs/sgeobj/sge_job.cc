@@ -4164,7 +4164,7 @@ void job_set_soft_resource_list(lListElem *job, lList *resource_list) {
 }
 
 void job_set_soft_resource_list(lListElem *job, lList *resource_list, u_long32 scope) {
-   job_set_resource_list(job, resource_list, JRS_SCOPE_GLOBAL, false);
+   job_set_resource_list(job, resource_list, scope, false);
 }
 
 void job_set_queue_list(lListElem *job, lList *queue_list, u_long32 scope, bool hard) {
