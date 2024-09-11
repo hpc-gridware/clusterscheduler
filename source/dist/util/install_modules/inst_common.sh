@@ -3847,8 +3847,8 @@ LicenseAgreement()
       return
    fi
 
-   if [ -f $PWD/doc/LICENSE.txt ]; then
-      $MORE_CMD $PWD/doc/LICENSE.txt
+   if [ -f $PWD/doc/legal/End-User-License-Agreement-English.txt ]; then
+      $MORE_CMD $PWD/doc/legal/End-User-License-Agreement-English.txt
 
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n "Do you agree with that license? (y/n) [n] >> "
 
