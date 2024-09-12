@@ -55,6 +55,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
@@ -514,7 +515,17 @@ bool spool_default_validate_func(lList **answer_list,
       case SGE_TYPE_PROJECT:
       case SGE_TYPE_SHARETREE:
       case SGE_TYPE_SCHEDD_CONF:
+         break;
       case SGE_TYPE_JOB:
+         // fill in non spooled fields, see also code for SGE_TYPE_EXECHOST
+         lListElem *jrs;
+         for_each_rw (jrs, lGetList(object, JB_request_set_list)) {
+            centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), nullptr, master_centry_list, true,
+                                     false, true);
+            centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), nullptr, master_centry_list, true,
+                                     false, true);
+         }
+         break;
       default:
          break;
    }
