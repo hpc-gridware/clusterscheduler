@@ -75,6 +75,3 @@ sge_reset_job_category();
 
 int
 sge_category_count();
-
-int
-sge_cs_category_count();

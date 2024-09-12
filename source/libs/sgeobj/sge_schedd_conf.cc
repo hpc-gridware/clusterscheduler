@@ -304,7 +304,6 @@ typedef struct{
 }config_pos_type;
 
 static bool schedd_profiling = false;
-static bool is_category_job_filtering = false;
 static bool current_serf_do_monitoring = false;
 static schedd_pe_algorithm  pe_algorithm = SCHEDD_PE_AUTO;
 
@@ -329,10 +328,7 @@ sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* par
 static bool 
 sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param);
 
-static bool 
-sconf_eval_set_job_category_filtering(lList *param_list, lList **answer_list, 
-                                      const char* param);
-static bool 
+static bool
 sconf_eval_set_duration_offset(lList *param_list, lList **answer_list, const char* param);                                      
 
 static bool 
@@ -366,11 +362,10 @@ static config_pos_type pos = {PTHREAD_MUTEX_INITIALIZER, true,
 const parameters_t params[] = {
    {"PROFILE",         sconf_eval_set_profiling},
    {"MONITOR",         sconf_eval_set_monitoring},
-   {"JC_FILTER",       sconf_eval_set_job_category_filtering},
    {"DURATION_OFFSET", sconf_eval_set_duration_offset},
    {"PE_RANGE_ALG",    sconf_eval_set_pe_range_alg},
    {"NONE",            nullptr},
-   {nullptr,              nullptr}
+   {nullptr,           nullptr}
 };
 
 const char *const policy_hierarchy_chars = "OFS";
@@ -2220,34 +2215,6 @@ bool sconf_get_report_pjob_tickets()
    return is_report;
 }
 
-/****** sge_schedd_conf/sconf_is_job_category_filtering() **********************
-*  NAME
-*     sconf_is_job_category_filtering() -- true, if the job_category_filtering is on
-*
-*  SYNOPSIS
-*     bool sconf_is_job_category_filtering() 
-*
-*  FUNCTION
-*     returns the status of the job category filtering 
-*
-*  RESULT
-*     bool - true, the job category filtering is on
-*
-*  NOTES
-*     MT-NOTE: is MT save, uses LOCK_SCHED_CONF(read) 
-*
-*******************************************************************************/
-bool sconf_is_job_category_filtering(){
-   bool filtering = false;
-
-   sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   
-   filtering = is_category_job_filtering;   
-
-   sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return filtering;
-}
-
 /****** sge_schedd_conf/sconf_get_flush_submit_sec() ***************************
 *  NAME
 *     sconf_get_flush_submit_sec() -- ??? 
@@ -2841,7 +2808,6 @@ bool sconf_validate_config_(lList **answer_list)
          changed, but it should be turned off. This means we have to turn everything off,
          before we work on the params */
       schedd_profiling = false;
-      is_category_job_filtering = false;
       current_serf_do_monitoring = false;
       pos.s_duration_offset = DEFAULT_DURATION_OFFSET; 
       pe_algorithm = SCHEDD_PE_AUTO;
@@ -3457,64 +3423,6 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
 
    DRETURN(ret);
 }
-
-/****** sge_schedd_conf/sconf_eval_set_job_category_filtering() ****************
-*  NAME
-*     sconf_eval_set_job_category_filtering() -- enable jc filtering or not.
-*
-*  SYNOPSIS
-*     static bool sconf_eval_set_job_category_filtering(lList *param_list, 
-*     lList **answer_list, const char* param) 
-*
-*  FUNCTION
-*     A parsing function for the prama settings in the scheduler configuration.
-*     It is looking for JC_FILTER to be set to true, or false and updates the
-*     settings accordingly.
-*
-*  INPUTS
-*     lList *param_list   - the param list
-*     lList **answer_list - the answer list, in case of an error
-*     const char* param   - the param string
-*
-*  RESULT
-*     static bool - true, if everything went fine
-*
-*     MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
-static bool sconf_eval_set_job_category_filtering(lList *param_list, lList **answer_list, const char* param){
-   bool ret = true;
-   lListElem *elem = nullptr;
-   
-   DENTER(TOP_LAYER);
-
-   is_category_job_filtering= false;
-
-   if (!strncasecmp(param, "JC_FILTER=1", sizeof("JC_FILTER=1")-1) || 
-       !strncasecmp(param, "JC_FILTER=TRUE", sizeof("JC_FILTER=TRUE")-1) ) {
-      is_category_job_filtering= true;
-      elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "jc_filter");
-      lSetString(elem, PARA_value, "true");
-   }      
-   else if (!strncasecmp(param, "JC_FILTER=0", sizeof("JC_FILTER=1")-1) ||
-            !strncasecmp(param, "JC_FILTER=FALSE", sizeof("JC_FILTER=FALSE")-1) ) {
-      elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "jc_filter");
-      lSetString(elem, PARA_value, "false");
-   }
-   else {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      ret = false;
-   }
-   if (elem){
-      lAppendElem(param_list, elem);
-   }
-
-   DRETURN(ret);
-}
-
 
 /****** sge_schedd_conf/sconf_eval_set_monitoring() ****************************
 *  NAME

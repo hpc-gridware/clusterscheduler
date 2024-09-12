@@ -729,11 +729,7 @@ sge_scheduler_main(void *arg) {
             }
          }
 
-         if (sconf_is_job_category_filtering()) {
-            copy.job_list = sge_category_job_copy(copy.queue_list, &orders, evc->monitor_next_run);
-         } else {
-            copy.job_list = lCopyList(nullptr, master_job_list);
-         }
+         copy.job_list = lCopyList(nullptr, master_job_list);
 
          /* no need to copy these lists, they are read only used */
          copy.centry_list = master_centry_list;
@@ -860,8 +856,7 @@ sge_scheduler_main(void *arg) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
                                   "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
                     prof_total, prof_init, prof_copy, prof_run, prof_free,
-                    lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(),
-                    sge_cs_category_count());
+                    lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(), 0);
          }
          if (getenv("SGE_ND") != nullptr) {
             printf("--------------STOP-SCHEDULER-RUN-------------\n");

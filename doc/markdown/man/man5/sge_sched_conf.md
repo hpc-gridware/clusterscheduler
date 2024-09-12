@@ -297,25 +297,6 @@ If the offset is too low, resource reservations (see
 **max_reservation**) can be delayed repeatedly due to an overly
 optimistic job circulation time.
 
-JC_FILTER  
-**Note:** Deprecated, may be removed in future release.  
-If set to true, the scheduler limits the number of jobs it looks at
-during a scheduling run. At the beginning of the scheduling run it
-assigns each job a specific category, which is based on the job's
-requests, priority settings, and the job owner. All scheduling policies
-will assign the same importance to each job in one category. Therefore
-the number of jobs per category have a FIFO order and can be limited to
-the number of free slots in the system.
-
-A exception are jobs, which request a resource reservation. They are
-included regardless of the number of jobs in a category.
-
-This setting is turned off per default, because in very rare cases, the
-scheduler can make a wrong decision. It is also advised to turn
-report_pjob_tickets off. Otherwise qstat -ext can report outdated ticket
-amounts. The information shown with a qstat -j for a job, that was
-excluded in a scheduling run, is very limited.
-
 PROFILE  
 If set equal to 1, the scheduler logs profiling information summarizing
 each scheduling run.

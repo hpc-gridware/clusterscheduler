@@ -464,10 +464,6 @@ sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
                                     sge_event_action action, lListElem *event, void *clientdata) {
    sconf_print_config();
 
-   if (sconf_is_job_category_filtering()) {
-      set_rebuild_categories(true);
-   }
-
    return SGE_EMA_OK;
 }
 
