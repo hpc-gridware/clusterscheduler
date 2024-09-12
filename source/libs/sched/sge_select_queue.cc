@@ -3969,7 +3969,19 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       }
       u_long32 host_seq_no = 0;
       for_each_rw (qep, a->queue_list) {
-         DPRINTF("AFTER SORT: %s soft violations %d\n", lGetString(qep, QU_full_name), lGetUlong(qep, QU_soft_violation));
+         /* @todo verify: if all.q is disabled or job requests queue != all.q, is it still on top of the list?
+          * looks incorrect to me, the unavailable queues should be at the end!
+          * AFTER SORT: all.q@ubuntu-22-amd64-1: available: 0, soft violations 0
+          * AFTER SORT: all.q@ubuntu-20-amd64-1: available: 0, soft violations 0
+          * AFTER SORT: all.q@solaris-11-1: available: 0, soft violations 0
+          * AFTER SORT: all.q@centos-7-amd64-1: available: 0, soft violations 0
+          * AFTER SORT: all.q@rocky-8-amd64-1: available: 0, soft violations 0
+          * AFTER SORT: all.q@ubuntu-24-amd64-1: available: 0, soft violations 0
+          * AFTER SORT: test.q@solaris-11-1: available: 1, soft violations 0
+          * AFTER SORT: test.q@centos-7-amd64-1: available: 1, soft violations 0
+          */
+         DPRINTF("AFTER SORT: %s: available: " sge_uu32 ", soft violations %d\n", lGetString(qep, QU_full_name),
+                 lGetUlong(qep, QU_tag), lGetUlong(qep, QU_soft_violation));
          if (lGetUlong(qep, QU_tag) == 0) {
             continue;
          }
@@ -4445,7 +4457,19 @@ static void host_clear_qinstance_tags(lList *queue_list, const char *host_name, 
    for (next_queue = lGetElemHostFirstRW(queue_list, QU_qhostname, host_name, &queue_iterator);
         (qep = next_queue);
         next_queue = lGetElemHostNextRW(queue_list, QU_qhostname, host_name, &queue_iterator)) {
-      lClearUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER);
+      lClearUlongBitMask(qep, QU_tagged4schedule, bitmask);
+      print_tagged4schedule(qep);
+   }
+}
+
+static void
+host_or_queue_clear_tags(const char *object_name, lListElem *queue, lList *queue_list, u_long32 bitmask) {
+   if (queue != nullptr) {
+      lClearUlongBitMask(queue, QU_tagged4schedule, bitmask);
+      print_tagged4schedule(queue);
+   } else {
+      // we are coming from host matching, clear tags in all queues on this host
+      host_clear_qinstance_tags(queue_list, object_name, bitmask);
    }
 }
 
@@ -5311,7 +5335,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          ar_queue_config_attr = lGetList(ar_queue, QU_consumable_config_list);
          ar_queue_actual_attr = lGetList(ar_queue, QU_resource_utilization);
 
-         DPRINTF("verifing AR queue\n");
+         DPRINTF("verifying AR queue\n");
          lSetUlong(ar_queue, QU_tagged4schedule, lGetUlong(qep, QU_tagged4schedule));
 
          result = parallel_rc_slots_by_time(a, &qslots, &qslots_qend,
@@ -5323,7 +5347,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          if (a->is_advance_reservation
             || (((a->pi)?a->pi->par_rqs++:0), result = parallel_rqs_slots_by_time(a, &lslots, &lslots_qend, qep,
                                                                                   need_master, is_master_queue)) == DISPATCH_OK) {
-            DPRINTF("verifing normal queue\n");
+            DPRINTF("verifying normal queue\n");
 
             SCHED_PROF_INC(a->pi, par_qdyn);
 
@@ -6425,23 +6449,46 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
    lListElem *jrs;
    for_each_rw (jrs, lGetListRW(a->job, JB_request_set_list)) {
       u_long32 scope = lGetUlong(jrs, JRS_scope);
-      if (!need_master && scope == JRS_SCOPE_MASTER) {
-         DPRINTF("%s: parallel_rc_slots_by_time() no need to handle master requests\n", object_name);
-         if (is_master_host) {
-            // we already have the master host, need to respect the master usage when looking at slave requests
-            // in a second round for allocation rule round_robin
-            DPRINTF("%s: parallel_rc_slots_by_time() we already have the master task, considering master usage in slave matching\n", object_name);
-            master_usage = lGetListRW(jrs, JRS_hard_resource_list);
-            // @todo only if we actually have master_usage? We might have a master JRS with just queues
-            // @todo is this really correct even if master_usage has different entries than the slave requests?
-            //       need to do it per request? Or only if there is some overlap between the master and slave requests?
-            //       We have such scenarios in the scope_basic test (-scope master -l int=1 -scope slave -l dbl=2,
-            //       and they work fine.
-            master_slot = 1; // already have the master task, need to add it to the possible slave tasks
-            // @todo anything to do about master_slot_qend?
+      if (scope == JRS_SCOPE_MASTER) {
+         if (!need_master) {
+            DPRINTF("%s: parallel_rc_slots_by_time() no need to handle master requests\n", object_name);
+            if (is_master_host) {
+               // we already have the master host, need to respect the master usage when looking at slave requests
+               // in a second round for allocation rule round_robin
+               DPRINTF("%s: parallel_rc_slots_by_time() we already have the master task, considering master usage in slave matching\n", object_name);
+               master_usage = lGetListRW(jrs, JRS_hard_resource_list);
+               // @todo only if we actually have master_usage? We might have a master JRS with just queues
+               // @todo is this really correct even if master_usage has different entries than the slave requests?
+               //       need to do it per request? Or only if there is some overlap between the master and slave requests?
+               //       We have such scenarios in the scope_basic test (-scope master -l int=1 -scope slave -l dbl=2,
+               //       and they work fine.
+               master_slot = 1; // already have the master task, need to add it to the possible slave tasks
+               // @todo anything to do about master_slot_qend?
+            }
+            continue;
+         } else {
+            if (queue != nullptr) {
+               DPRINTF("=====> we are processing master requests and have a queue\n");
+               print_tagged4schedule(queue);
+               if (!lMatchUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER)) {
+                  // we still need the master task, but the queue is already tagged not to match (from exechost matching)
+                  DPRINTF("%s: parallel_rc_slots_by_time() master queue already tagged not to match, skipping\n", object_name);
+                  continue;
+               }
+            }
          }
-         continue;
       }
+      if (scope == JRS_SCOPE_SLAVE && queue != nullptr) {
+         DPRINTF("=====> we are processing slave requests and have a queue\n");
+         print_tagged4schedule(queue);
+         if (!lMatchUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_SLAVE | TAG4SCHED_SLAVE_LATER)) {
+            // we still need slave tasks, but the queue is already tagged not to match (from exechost matching)
+            DPRINTF("%s: parallel_rc_slots_by_time() slave queue already tagged not to match, skipping\n", object_name);
+            continue;
+         }
+      }
+      // @todo do the same check as above also for the global requests
+
       DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests\n", object_name, job_scope_name(scope));
 
       lList *requests = lGetListRW(jrs, JRS_hard_resource_list);
@@ -6457,7 +6504,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             if (scope == JRS_SCOPE_GLOBAL && lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
                DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use %s %s as slave queue\n",
                        name, queue == nullptr ? "host" : "qinstance", object_name);
-               lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
+               host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
                /* misuse of the DISPATCH_MISSING_ATTR
                 * add a new DISPATCH result, e.g. DISPATCH_HANDLE_CONSUMABLE_JOB
                 */
@@ -6474,7 +6521,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             if (scope == JRS_SCOPE_GLOBAL && lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
                DPRINTF("===> CONSUMABLE_JOB %s does not match now - can still use %s %s as slave queue (and master later)\n",
                        name, queue == nullptr ? "host" : "qinstance", object_name);
-               lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER);
+               host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
             } else {
                DSTRING_STATIC(dstr, 1024);
                const char *req_str = centry_list_append_to_dstring(requests, &dstr);
@@ -6500,7 +6547,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                   break;
                case DISPATCH_NOT_AT_TIME:
                   // not suitable now, but later
-                  lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER);
+                  host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   master_usage = requests; // for slave matching need to consider what the master task would consume
                   if (lGetBool (a->pe, PE_job_is_first_task)) {
                      master_slot = 0;
@@ -6509,9 +6556,10 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                   break;
                case DISPATCH_NEVER_CAT:
                case DISPATCH_NEVER_JOB:
-                  lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
+                  DPRINTF("    --> we matched the master requests, -> never_cat or never_job, clearing master tags\n");
+                  host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
                   master_slot = master_slot_qend = 0; // no master slot
-                  // continue with slave tasks, they might match and we can use the queue as slave only queue
+                  // continue with slave tasks, they might match, and we can use the queue as slave only queue
                   continue;
                default:
                   master_slot = master_slot_qend = 0; // no master slot
@@ -6571,7 +6619,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                      max_slots_qend = MIN(max_slots_qend, avail_qend);
                      // only suitable for slave tasks
                      // @todo we did this already above, why repeat it? Can it get overwritten in between?
-                     lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
+                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER | TAG4SCHED_MASTER_LATER);
                   } else {
                      DPRINTF("%s: parallel_rc_slots_by_time(%s) <never found>\n", object_name, name);
                      *slots = *slots_qend = 0;
