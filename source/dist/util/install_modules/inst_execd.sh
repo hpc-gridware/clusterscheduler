@@ -54,7 +54,7 @@ WelcomeTheUserExecHost()
    $INFOTEXT "\nIf you haven't installed the Cluster Scheduler qmaster host yet, you must execute\n" \
              "this step (with >install_qmaster<) prior the execution host installation.\n\n" \
              "For a successful installation you need a running Cluster Scheduler qmaster. It is\n" \
-             "also neccesary that this host is an administrative host.\n\n" \
+             "also necessary that this host is an administrative host.\n\n" \
              "You can verify your current list of administrative hosts with\n" \
              "the command:\n\n" \
              "   # qconf -sh\n\n" \
@@ -358,7 +358,7 @@ CheckHostNameResolving()
            
             $INFOTEXT "Please check and correct your >/etc/hosts< file and >/etc/nsswitch.conf<\n" \
                       "file on this host and on the qmaster machine.\n\n" \
-                      "You can now add this host as an administrative host in a seperate\n" \
+                      "You can now add this host as an administrative host in a separate\n" \
                       "terminal window and then continue with the $mode procedure.\n" 
                          
             $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Check again (y/n) ('n' will abort) [y] >> "
@@ -504,9 +504,9 @@ AddQueue()
 
    $INFOTEXT -u "\nAdding a queue for this host"
    $INFOTEXT "\nWe can now add a queue instance for this host:\n\n" \
-             "   - it is added to the >allhosts< hostgroup\n" \
+             "   - it is added to the >allhosts< host group\n" \
              "   - the queue provides %s slot(s) for jobs in all queues\n" \
-             "     referencing the >allhosts< hostgroup\n\n" \
+             "     referencing the >allhosts< host group\n\n" \
              "You do not need to add this host now, but before running jobs on this host\n" \
              "it must be added to at least one queue.\n" $slots
 
@@ -515,7 +515,7 @@ AddQueue()
 
    if [ $? = 0 ]; then
       $SGE_BIN/qconf -aattr hostgroup hostlist $exechost @allhosts
-      $SGE_BIN/qconf -aattr queue slots "[$exechost=$slots]" all.q
+      $SGE_BIN/qconf -aattr queue slots "$slots" "all.q@$exechost"
       $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
       $CLEAR
    fi

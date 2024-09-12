@@ -704,7 +704,7 @@ CheckRSHConnection()
 
 
 #--------------------------------------------------------------------------
-# Log result of hostname resolvings into log file
+# Log result of hostname resolving into log file
 LogResolvedHostLists()
 {
    if [ "$AUTO" = "true" ]; then
@@ -2595,7 +2595,7 @@ BackupConfig()
    $INFOTEXT  -auto $AUTO -ask "y" "n" -def "y" -n "\nIf you are using different tar versions (gnu tar/ solaris tar), this option\n" \
                                                      "can make some trouble. In some cases the tar packages may be corrupt.\n" \
                                                      "Using the same tar binary for packing and unpacking works without problems!\n\n" \
-                                                     "Shall the backup function create a compressed tarpackage with your files? (y/n) [y] >>"
+                                                     "Shall the backup function create a compressed tar package with your files? (y/n) [y] >>"
 
    if [ $? = 0 -a $AUTO != "true" ]; then
       TAR=true
@@ -3286,7 +3286,7 @@ CreateTarArchive()
 {
    if [ $TAR = "true" ]; then
       if [ $AUTO != "true" ]; then
-         $INFOTEXT -n "\nPlease enter a filename for your backupfile. Default: [backup.tar] >>"
+         $INFOTEXT -n "\nPlease enter a filename for your backup file. Default: [backup.tar] >>"
          bup_file=`Enter backup.tar`
       else
          bup_file=$BACKUP_FILE
@@ -3409,7 +3409,7 @@ ExtractBackup()
          fi
       done
       mkdir /tmp/bup_tmp_$DATE # don't call here Makedir because $ADMINUSER is not set
-      $INFOTEXT -n "\nCopying backupfile to /tmp/bup_tmp_%s\n" $DATE
+      $INFOTEXT -n "\nCopying backup file to /tmp/bup_tmp_%s\n" $DATE
       cp $bup_file /tmp/bup_tmp_$DATE
       cd /tmp/bup_tmp_$DATE/
      
@@ -3468,7 +3468,7 @@ RestoreCheckBootStrapFile()
       ret=$?
 
       while [ $ret = 0 ]; do 
-         $INFOTEXT -n "\nFound a running qmaster on your masterhost: %s\nPlease, check this and " \
+         $INFOTEXT -n "\nFound a running qmaster on your master host: %s\nPlease, check this and " \
                       "make sure, that the daemon is down during the restore!\n\n" $ACT_QMASTER
          $INFOTEXT -n -wait "Shutdown qmaster and hit, <ENTER> to continue, or <CTRL-C> to stop\n" \
                             "the restore procedure!\n"
