@@ -598,6 +598,9 @@ object_get_subtype(int nm)
       case AR_granted_slots:
          ret = JG_Type;
          break;
+      case AR_reserved_hosts:
+         ret = EH_Type;
+         break;
       case AR_reserved_queues:
          ret = QU_Type;
          break;
@@ -615,6 +618,9 @@ object_get_subtype(int nm)
          break;
       case AR_xacl_list:
          ret = ARA_Type;
+         break;
+      case AR_request_set_list:
+         ret = JRS_Type;
          break;
       case AR_joker:
          ret = VA_Type;
