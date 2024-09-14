@@ -261,6 +261,7 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
       } else if (id == PE_TASK_SPOOL_FILE) {
          snprintf(buffer, buffer_size, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, string_val1);
       }
+      sge_dstring_free(&dstr_job_dir);
    } else if (id == JOB_SCRIPT_DIR) {
       snprintf(buffer, buffer_size, "%s", EXEC_DIR);
    } else if (id == JOB_SCRIPT_FILE) {
