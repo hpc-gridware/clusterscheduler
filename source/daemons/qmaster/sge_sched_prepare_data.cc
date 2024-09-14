@@ -404,6 +404,30 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
    DRETURN_VOID;
 }
 
+void
+free_what_and_where(sge_where_what_t *where_what) {
+   lFreeWhere(&(where_what->where_queue));
+   lFreeWhere(&(where_what->where_queue2));
+   lFreeWhere(&(where_what->where_all_queue));
+   lFreeWhere(&(where_what->where_cqueue));
+   lFreeWhere(&(where_what->where_job));
+   lFreeWhere(&(where_what->where_host));
+   lFreeWhere(&(where_what->where_dept));
+   lFreeWhere(&(where_what->where_acl));
+   lFreeWhere(&(where_what->where_jat));
+
+   lFreeWhat(&(where_what->what_queue));
+   lFreeWhat(&(where_what->what_queue2));
+   lFreeWhat(&(where_what->what_cqueue));
+   lFreeWhat(&(where_what->what_job));
+   lFreeWhat(&(where_what->what_host));
+   lFreeWhat(&(where_what->what_acldept));
+   lFreeWhat(&(where_what->what_jat));
+   lFreeWhat(&(where_what->what_pet));
+   lFreeWhat(&(where_what->what_pe));
+}
+
+
 sge_callback_result
 sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                                      sge_event_action action, lListElem *event, void *clientdata) {

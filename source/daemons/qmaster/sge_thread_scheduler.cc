@@ -157,6 +157,15 @@ sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
    auto *evc = static_cast<sge_evc_class_t *>(arg);
    sge_mirror_shutdown(evc);
+   sge_free(&evc);
+   DRETURN_VOID;
+}
+
+static void
+sge_scheduler_cleanup_where_what(void *where_what) {
+   DENTER(TOP_LAYER);
+   auto *where_what_p = static_cast<sge_where_what_t *>(where_what);
+   free_what_and_where(where_what_p);
    DRETURN_VOID;
 }
 
@@ -884,7 +893,9 @@ sge_scheduler_main(void *arg) {
       pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
       pthread_cleanup_push(sge_scheduler_cleanup_monitor, static_cast<void *>(&monitor));
       pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(evc));
+      pthread_cleanup_push(sge_scheduler_cleanup_where_what, static_cast<void *>(&where_what));
       cl_thread_func_testcancel(thread_config);
+      pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);

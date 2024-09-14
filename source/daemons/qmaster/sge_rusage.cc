@@ -768,6 +768,9 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       writer->EndObject();
    }
 
+   sge_free(&qname);
+   sge_free(&hostname);
+
    DRETURN(true);
 }
 

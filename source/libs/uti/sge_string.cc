@@ -637,10 +637,11 @@ void sge_strip_white_space_at_eol(char *str) {
 
    if (str != nullptr) {
       size_t length = strlen(str);
-
-      while (str[length - 1] == ' ' || str[length - 1] == '\t') {
-         str[length - 1] = '\0';
-         length--;
+      if (length > 0) {
+         while (str[length - 1] == ' ' || str[length - 1] == '\t') {
+            str[length - 1] = '\0';
+            length--;
+         }
       }
    }
    DRETURN_VOID;
