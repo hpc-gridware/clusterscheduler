@@ -18,8 +18,10 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# test
+# test/misc
 
-add_subdirectory(daemons)
-add_subdirectory(libs)
-add_subdirectory(misc)
+add_executable(test_valgrind test_valgrind.cc)
+
+if (INSTALL_SGE_TEST)
+   install(TARGETS test_valgrind DESTINATION testbin/${SGE_ARCH})
+endif ()
