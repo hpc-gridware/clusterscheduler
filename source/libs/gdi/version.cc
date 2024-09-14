@@ -36,10 +36,10 @@
 
 #include "gdi/version.h"
 
-const char GDI_VERSION[] = "9.0.0 RC1";
+const char GDI_VERSION[] = "9.0.0 RC2";
 
 // TODO: Add also an entry to the table further down below when you change this
-//       And change VERSION in dist/inst_sge
+//       And change SGE_VERSION in dist/inst_sge
 const gdi_ulong32 GRM_GDI_VERSION = 0x10009000;
 
 vdict_t GRM_GDI_VERSION_ARRAY[] = 
