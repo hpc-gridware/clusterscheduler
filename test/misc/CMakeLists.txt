@@ -21,6 +21,7 @@
 # test/misc
 
 add_executable(test_valgrind test_valgrind.cc)
+add_compile_options(test_valgrind PRIVATE "-no-pedantic -Wno-error")
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_valgrind DESTINATION testbin/${SGE_ARCH})

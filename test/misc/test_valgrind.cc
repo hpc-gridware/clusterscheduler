@@ -19,14 +19,38 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <iostream>
+#include <cstring>
 
-void leak_scope(void) {
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+void free_errors() {
+   std::cout << "accessing freed memory and freeing it twice" << std::endl;
+   const char *str = "hello";
+   const char *dup = strdup(str);
+   std::cout << dup << std::endl;
+   free((void *)dup);
+   std::cout << dup << std::endl;
+   free((void *)dup);
+}
+
+void memory_access_error() {
+   std::cout << "invalid access before and after allocated memory" << std::endl;
+   int array[10]{};
+   // @todo valgrind doesn't catch these errors
+   array[10] = 42;
+   array[-1] = 3;
+   std::cout << array[0] << std::endl;
+}
+
+void leak_scope() {
    std::cout << "allocating memory which will leak" << std::endl;
    int *leak = new int[10];
    leak[0] = 42;
+   std::cout << leak[0] << std::endl;
 }
 
 int main() {
    leak_scope();
+   memory_access_error();
+   free_errors();
    return 0;
 }
