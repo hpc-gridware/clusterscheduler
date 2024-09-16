@@ -21,6 +21,8 @@
 #include <iostream>
 #include <cstring>
 
+#if 0
+// some compilers don't like the following pragma - disabling for now
 #pragma GCC diagnostic ignored "-Wuse-after-free"
 void free_errors() {
    std::cout << "accessing freed memory and freeing it twice" << std::endl;
@@ -31,6 +33,7 @@ void free_errors() {
    std::cout << dup << std::endl;
    free((void *)dup);
 }
+#endif
 
 void memory_access_error() {
    std::cout << "invalid access before and after allocated memory" << std::endl;
@@ -51,6 +54,8 @@ void leak_scope() {
 int main() {
    leak_scope();
    memory_access_error();
+#if 0
    free_errors();
+#endif
    return 0;
 }
