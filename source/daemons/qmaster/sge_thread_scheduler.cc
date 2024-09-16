@@ -72,6 +72,8 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+#include <ocs_gperf.h>
+
 #define SCHEDULER_TIMEOUT_S 10
 #define SCHEDULER_TIMEOUT_N 0
 
@@ -484,6 +486,9 @@ sge_scheduler_main(void *arg) {
    sge_evc_class_t *evc = nullptr;
    lList *alp = nullptr;
    sge_where_what_t where_what;
+#ifdef WITH_GPERF
+   sge_gperf_per_thread_t gperf_data;
+#endif
 
    DENTER(TOP_LAYER);
    memset(&where_what, 0, sizeof(where_what));
@@ -509,6 +514,10 @@ sge_scheduler_main(void *arg) {
 
    /* initialize schedd_runlog logging */
    schedd_set_schedd_log_file();
+
+#ifdef WITH_GPERF
+   sge_gperf_per_thread_init(gperf_data);
+#endif
 
    /* set profiling parameters */
    prof_set_level_name(SGE_PROF_EVENTMASTER, nullptr, nullptr);
@@ -806,7 +815,28 @@ sge_scheduler_main(void *arg) {
          double prof_copy = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
+#ifdef WITH_GPERF
+         {
+            std::string gperf_name = mconf_get_gperf_name();
+            std::string gperf_threads = mconf_get_gperf_threads();
+            std::string gperf_thread_name = thread_name;
+
+            // do profile only when scheduler is triggered via qconf -tsm
+            if (evc->monitor_next_run) {
+               g_scheduler_use_gperftools = sge_gperf_start_profiling(gperf_data, gperf_thread_name, gperf_threads, gperf_name);
+            }
+         }
+#endif
+
          scheduler_method(evc, &answer_list, &copy, &orders);
+
+#ifdef WITH_GPERF
+         if (evc->monitor_next_run) {
+            std::string gperf_thread_name = thread_name;
+            g_scheduler_use_gperftools = sge_gperf_stop_profiling(gperf_data, gperf_thread_name);
+         }
+#endif
+
          answer_list_output(&answer_list);
 
          PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);

@@ -108,6 +108,7 @@ target_link_libraries(
       PRIVATE
       ${SGE_LIBS}
       ${SPOOLING_LIBS}
+      ${GPERFTOOLS_PROFILER}
 )
 
 if (INSTALL_SGE_BIN)

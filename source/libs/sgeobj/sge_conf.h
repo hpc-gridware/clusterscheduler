@@ -115,6 +115,8 @@ void mconf_set_new_config(bool new_config);
 bool mconf_is_new_config();
 bool mconf_get_old_reschedule_behavior();
 bool mconf_get_old_reschedule_behavior_array_job();
+std::string mconf_get_gperf_name();
+std::string mconf_get_gperf_threads();
 
 /* params */
 bool mconf_is_monitor_message();

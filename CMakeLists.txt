@@ -62,6 +62,7 @@ option(WITH_OPENSSL "Enable use of the openssl library for CSP mode" OFF)
 option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON)
 option(WITH_QMAKE "Enable build of qmake" ON)
 option(WITH_JNI "Add JNI code for libraries like libdrmaa" ON)
+option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -143,6 +144,21 @@ if (NOT WITH_SPOOL_BERKELEYDB AND NOT WITH_SPOOL_DYNAMIC)
 else ()
    set(SPOOLING_LIBS spoolloader spoold spool)
 endif ()
+
+if (WITH_GPERF)
+   # gperftools can be installed on centos with: yum install google-perftools-devel
+   set (Gperftools_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake/")
+   set (Gperftools_ROOT_DIR "/usr")
+   find_package(Gperftools)
+   if (Gperftools_FOUND)
+      message("Found and enabled build with gperftools")
+      add_compile_definitions(WITH_GPERF)
+   else()
+      # ignore if gperftools are not found so that build with TS does not fail if a build host is missing gperftools
+      set(GPERFTOOLS_PROFILER "") # set to empty string to avoid linking against gperftools
+      message("Cannot find gperftools although WITH_GPERF is set")
+   endif()
+endif()
 
 if (WITH_HWLOC)
    if (SGE_ARCH MATCHES "darwin-arm64")

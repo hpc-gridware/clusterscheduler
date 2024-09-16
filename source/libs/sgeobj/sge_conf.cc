@@ -253,6 +253,9 @@ static bool inherit_env = true;
 static bool enable_submit_lib_path = false;
 static bool enable_submit_ld_preload = false;
 
+std::string gperf_name = "gperf";
+std::string gperf_threads = "*";
+
 /*
  * notify_kill_default and notify_susp_default
  *       0  -> use the signal type stored in notify_kill and notify_susp
@@ -818,6 +821,12 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_SUBMIT_LD_PRELOAD", &enable_submit_ld_preload)) {
+            continue;
+         }
+         if (parse_string_param(s, "GPERF_NAME", gperf_name)) {
+            continue;
+         }
+         if (parse_string_param(s, "GPERF_THREADS", gperf_threads)) {
             continue;
          }
       }
@@ -2115,6 +2124,22 @@ bool mconf_get_old_reschedule_behavior() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = old_reschedule_behavior;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::string mconf_get_gperf_name() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = gperf_name;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::string mconf_get_gperf_threads() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = gperf_threads;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

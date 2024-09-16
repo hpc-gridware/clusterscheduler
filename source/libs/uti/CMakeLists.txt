@@ -38,6 +38,7 @@ set(LIBRARY_SOURCES
       sge_error_class.cc
       sge_fgl.cc
       sge_getloadavg.cc
+      ocs_gperf.cc
       sge_hostname.cc
       sge_htable.cc
       sge_io.cc
@@ -66,7 +67,7 @@ set(LIBRARY_SOURCES
       sge_thread_ctrl.cc
       sge_time.cc
       sge_tmpnam.cc
-        ocs_topology.cc
+      ocs_topology.cc
       sge_tq.cc
       sge_uidgid.cc
       sge_unistd.cc)
