@@ -405,6 +405,7 @@ int japi_init_mt(dstring *diag)
       lFreeList(&alp);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
    }
+   lFreeList(&alp);
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }

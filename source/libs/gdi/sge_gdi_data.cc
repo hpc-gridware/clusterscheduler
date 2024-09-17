@@ -124,6 +124,14 @@ static void
 gdi_data_ts_destroy() {
    DENTER(TOP_LAYER);
    pthread_mutex_destroy(&ts.mutex);
+
+   /* @todo CS-591 don't we have to free all the other attributes as well?
+    * char *master_host;
+    * u_long64 timestamp_qmaster_file;
+    * char *ssl_private_key;
+    * char *ssl_certificate;
+    * sge_csp_path_class_t *csp_path_obj;
+    */
    DRETURN_VOID;
 }
 

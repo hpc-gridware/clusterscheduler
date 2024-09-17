@@ -92,5 +92,3 @@ sge_csp_path_class_t *
 sge_csp_path_class_create(sge_error_class_t *eh);
 
 void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);
-
-void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);
