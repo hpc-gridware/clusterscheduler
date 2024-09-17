@@ -135,9 +135,10 @@ namespace ocs {
     * - makes all configured writers read their configuration from the reporting_params
     */
    void ReportingFileWriter::update_config_all() {
-      std::string current_reporting_params = mconf_get_reporting_params();
+      const char * current_reporting_params = mconf_get_reporting_params();
       if (current_reporting_params != reporting_params) {
          reporting_params = current_reporting_params;
+         sge_free(&current_reporting_params);
 
          // if we switched accounting type, update the writers
          if (mconf_get_old_accounting()) {
