@@ -123,6 +123,7 @@ gdi_data_ts_init() {
 static void
 gdi_data_ts_destroy() {
    DENTER(TOP_LAYER);
+   sge_csp_path_class_destroy(&ts.csp_path_obj);
    pthread_mutex_destroy(&ts.mutex);
 
    /* @todo CS-591 don't we have to free all the other attributes as well?
