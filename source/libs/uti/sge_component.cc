@@ -427,6 +427,7 @@ void component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array)
       if (!lret) {
          ERROR("%s", err_str);
       }
+      tl->supplementary_grp_initialized = true;
    }
 
    // Pass values to caller
