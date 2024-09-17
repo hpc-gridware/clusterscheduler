@@ -243,11 +243,15 @@ int main(int argc, char *argv[])
    }
 #endif /* SGE_LOADCPU */
 
+   if ((pos && !strcmp("with_extensions", argv[pos])) || !pos) {
+      printf("with_extensions %d\n",
 #if defined(OGE_WITH_EXTENSIONS)
-   printf("with_extensions %d\n", 1);
+         1
 #else
-   printf("with_extensions %d\n", 0);
+         0
 #endif
+      );
+   }
 
 #if defined(OGE_HWLOC)
    sge_dstring_free(&mcore);
