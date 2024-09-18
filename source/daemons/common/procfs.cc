@@ -390,7 +390,8 @@ time_t last_time
    char procnam[1024];
    int fd = -1;
 #if defined(LINUX)
-   char buffer[BIGLINE];
+   char buffer[BIGLINE]{};
+
    lListElem *pr = nullptr;
    SGE_STRUCT_STAT fst;
    unsigned long utime = 0, stime = 0, vsize = 0, pid = 0;
