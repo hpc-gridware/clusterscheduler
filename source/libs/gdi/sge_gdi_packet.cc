@@ -646,7 +646,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
          ret = false;
       }
       sge_free(&(*packet)->auth_info);
-      sge_free(&(*packet)->grp_array);
+      //sge_free(&(*packet)->grp_array);
       sge_free(packet);
    }
    DRETURN(ret);
