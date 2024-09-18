@@ -1874,7 +1874,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    alp = sge_gdi(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
 
-   if (!isXML){
+   if (!isXML) {
       for_each_ep(aep, alp) {
          if (lGetUlong(aep, AN_status) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));

@@ -396,7 +396,8 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;
    lList *attribute_list = nullptr;
-   
+   static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
+
    DENTER(TOP_LAYER);
 
    ctx->job_elem = lCreateElem(XMLE_Type);
@@ -441,18 +442,22 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    xml_append_Attr_S(attribute_list, "state", summary->state);
 
    if (sge_time) {
+      u_long64 timestamp;
+      const char *attrib;
       if (summary->is_running) {
-         xml_append_Attr_S(attribute_list, "JAT_start_time", sge_ctime64_xml(summary->start_time, &ds));
-      }   
-      else {
-         xml_append_Attr_S(attribute_list, "JB_submission_time", sge_ctime64_xml(summary->submit_time, &ds));
+         attrib = "JAT_start_time";
+         timestamp = summary->start_time;
+      } else {
+         attrib = "JAT_submission_time";
+         timestamp = summary->submit_time;
       }
+      xml_append_Attr_S(attribute_list, attrib, sge_ctime64(timestamp, &ds, true, compat ? false : true));
    }
 
    /* deadline time */
    if (sge_urg) {
       if (summary->deadline) {
-         xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64_xml(summary->deadline, &ds));
+         xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64(summary->deadline, &ds, true, compat ? false : true));
       }
    }
 

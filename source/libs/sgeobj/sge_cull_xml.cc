@@ -41,6 +41,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_list.h"
@@ -48,7 +49,7 @@
 
 #include "sgeobj/sge_cull_xml.h"
 
-static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name); 
+static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name);
 static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ignore_cull_name); 
 static bool lAttributesToString_(const lList *attr_list, dstring *attr);
 static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name);
@@ -383,11 +384,34 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
                   }
                   break;
             case lUlong64T:
-               if (!fp) {
-                  DPRINTF( sge_u64, lGetPosUlong64(ep, i));
+            {
+               u_long64 value = lGetPosUlong64(ep, i);
+
+               // hack: assume it is a timestamp when the attribute name contains "time"
+               if (strstr(attr_name, "time") != nullptr) {
+                  static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
+                  if (compat) {
+                     if (!fp) {
+                        DPRINTF(sge_u64, value / 1000000);
+                     } else {
+                        fprintf(fp, sge_u64, value / 1000000);
+                     }
+                  } else {
+                     DSTRING_STATIC(dstr, 128);
+                     if (!fp) {
+                        DPRINTF("%s", sge_ctime64_xml(value, &dstr));
+                     } else {
+                        fprintf(fp, "%s", sge_ctime64_xml(value, &dstr));
+                     }
+                  }
                } else {
-                  fprintf(fp, sge_u64, lGetPosUlong64(ep, i));
+                  if (!fp) {
+                     DPRINTF(sge_u64, value);
+                  } else {
+                     fprintf(fp, sge_u64, value);
+                  }
                }
+            }
                break;
             case lStringT:
                {
