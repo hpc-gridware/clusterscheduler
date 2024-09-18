@@ -1,6 +1,32 @@
 # Full List of Fixes
 
-## Improvement
+## 9.0.0 RC2
+
+### Improvement
+
+[CS-586](https://hpc-gridware.atlassian.net/browse/CS-586) testsuite: add an option to switch between random and deterministic test host selection
+
+### Bug
+
+[CS-569](https://hpc-gridware.atlassian.net/browse/CS-569) Category strings are not correct
+
+[CS-571](https://hpc-gridware.atlassian.net/browse/CS-571) Translate EULA and add it to GCS packages
+
+[CS-574](https://hpc-gridware.atlassian.net/browse/CS-574) information about job requests gets lost when restarting sge\_qmaster
+
+## 9.0.0 RC1
+
+### Improvement
+
+[CS-46](https://hpc-gridware.atlassian.net/browse/CS-46) create user guide
+
+### Sub-task
+
+[CS-568](https://hpc-gridware.atlassian.net/browse/CS-568) make sure that qalter works correctly with the -scope switch
+
+## 9.0.0alpha1
+
+### Improvement
 
 [CS-10](https://hpc-gridware.atlassian.net/browse/CS-10) Allow to build on darwin-arm64
 
@@ -24,8 +50,6 @@
 
 [CS-26](https://hpc-gridware.atlassian.net/browse/CS-26) allow to compile on arm64 \(Linux and macOS\)
 
-[CS-35](https://hpc-gridware.atlassian.net/browse/CS-35) cmake build from testsuite
-
 [CS-36](https://hpc-gridware.atlassian.net/browse/CS-36) accept kernel 6.x \(e.g. Ubuntu 22.04\)
 
 [CS-37](https://hpc-gridware.atlassian.net/browse/CS-37) cache localised messages
@@ -42,17 +66,9 @@
 
 [CS-69](https://hpc-gridware.atlassian.net/browse/CS-69) allow to adjust complex entries individually with qconf
 
-[CS-70](https://hpc-gridware.atlassian.net/browse/CS-70) Add information about architecture support and complexes to the man pages
-
 [CS-76](https://hpc-gridware.atlassian.net/browse/CS-76) add doc build to testsuite
 
 [CS-81](https://hpc-gridware.atlassian.net/browse/CS-81) make mk\_dist generatate a doc package
-
-[CS-89](https://hpc-gridware.atlassian.net/browse/CS-89) strip binaries and provide additional debug symbols
-
-[CS-90](https://hpc-gridware.atlassian.net/browse/CS-90) sign packaged binaries
-
-[CS-91](https://hpc-gridware.atlassian.net/browse/CS-91) qconf send modification requests even if the configuration of an object is not changed
 
 [CS-93](https://hpc-gridware.atlassian.net/browse/CS-93) port to FreeBSD
 
@@ -69,8 +85,6 @@
 [CS-134](https://hpc-gridware.atlassian.net/browse/CS-134) re-implement code which is only available as stubs
 
 [CS-136](https://hpc-gridware.atlassian.net/browse/CS-136) remove the init\_level function from tests
-
-[CS-142](https://hpc-gridware.atlassian.net/browse/CS-142) add details about distinst and mk\_dist to devel-guide
 
 [CS-144](https://hpc-gridware.atlassian.net/browse/CS-144) add menu item 1t to testsuite which compiles the source and replaces the binaries without the need to re-install
 
@@ -102,9 +116,9 @@
 
 [CS-203](https://hpc-gridware.atlassian.net/browse/CS-203) Specification for request limit
 
-[CS-269](https://hpc-gridware.atlassian.net/browse/CS-269) Allow listener threads to handle permission requests independent from worker threads
+[CS-239](https://hpc-gridware.atlassian.net/browse/CS-239) allow TS to build with extensions
 
-[CS-291](https://hpc-gridware.atlassian.net/browse/CS-291) gen\_types does not print the details in case of parsing erros
+[CS-269](https://hpc-gridware.atlassian.net/browse/CS-269) Allow listener threads to handle permission requests independent from worker threads
 
 [CS-293](https://hpc-gridware.atlassian.net/browse/CS-293) module test should be executable within CLion
 
@@ -119,6 +133,8 @@
 [CS-300](https://hpc-gridware.atlassian.net/browse/CS-300) Default installation parameters should be set for improving usability 
 
 [CS-303](https://hpc-gridware.atlassian.net/browse/CS-303) add per test configuration variable\(s\) defining for which OGE versions the test shall be run
+
+[CS-309](https://hpc-gridware.atlassian.net/browse/CS-309) add the submission command line to qstat -j <job\_id> and to accounting/reporting
 
 [CS-313](https://hpc-gridware.atlassian.net/browse/CS-313) unifiy delimiters in configuration objects
 
@@ -144,33 +160,37 @@
 
 [CS-377](https://hpc-gridware.atlassian.net/browse/CS-377) improve build performance on sol-amd64
 
-[CS-394](https://hpc-gridware.atlassian.net/browse/CS-394) need per HOST consumables
+[CS-383](https://hpc-gridware.atlassian.net/browse/CS-383) TS should allow to dump groovy files required to generate CI/CD jobs for a pipeline
 
-## New Feature
+[CS-384](https://hpc-gridware.atlassian.net/browse/CS-384) add global resources and per job consumables to testsuite test
+
+[CS-410](https://hpc-gridware.atlassian.net/browse/CS-410) testsuite option compile\_clean shall not trigger a 3rdparty build
+
+[CS-422](https://hpc-gridware.atlassian.net/browse/CS-422) add basic documentation for SIMULATE\_EXECDS to the developer documentation
+
+[CS-444](https://hpc-gridware.atlassian.net/browse/CS-444) transfer supplementary group ids with job submission and consider them in matching ACLs
+
+[CS-445](https://hpc-gridware.atlassian.net/browse/CS-445) cleanup: remove SGE\_PQS\_API
+
+[CS-548](https://hpc-gridware.atlassian.net/browse/CS-548) Add product name replacement in supported packages
+
+### New Feature
 
 [CS-30](https://hpc-gridware.atlassian.net/browse/CS-30) Allow more than one data store within qmaster
 
 [CS-308](https://hpc-gridware.atlassian.net/browse/CS-308) test\_uti\_profiling causes segmentation fault
 
-## Epic
+### Epic
 
 [CS-8](https://hpc-gridware.atlassian.net/browse/CS-8) Simplify development for the future
 
 [CS-17](https://hpc-gridware.atlassian.net/browse/CS-17) replace aimk by a cmake based build
 
-[CS-21](https://hpc-gridware.atlassian.net/browse/CS-21) make testsuite run smoothly
-
-[CS-31](https://hpc-gridware.atlassian.net/browse/CS-31) Create product manuals
-
-[CS-33](https://hpc-gridware.atlassian.net/browse/CS-33) Important Bug Fixes
-
-[CS-41](https://hpc-gridware.atlassian.net/browse/CS-41) Provide man pages 
-
 [CS-48](https://hpc-gridware.atlassian.net/browse/CS-48) re-enable Java DRMAA
 
 [CS-177](https://hpc-gridware.atlassian.net/browse/CS-177) Need higher resolution in time stamps
 
-## Sub-task
+### Sub-task
 
 [CS-73](https://hpc-gridware.atlassian.net/browse/CS-73) remove old version of qmake
 
@@ -218,7 +238,25 @@
 
 [CS-322](https://hpc-gridware.atlassian.net/browse/CS-322) Permission requests for AR and other future requests need access to user lists
 
-## Task
+[CS-370](https://hpc-gridware.atlassian.net/browse/CS-370) enable JNI code in libdrmaa
+
+[CS-371](https://hpc-gridware.atlassian.net/browse/CS-371) move Java code to a separate repository and build it as Maven project
+
+[CS-372](https://hpc-gridware.atlassian.net/browse/CS-372) make sure Java DRMAA is tested in testsuite
+
+[CS-380](https://hpc-gridware.atlassian.net/browse/CS-380) Test build and checktree\_jdrmaa in the Lab
+
+[CS-395](https://hpc-gridware.atlassian.net/browse/CS-395) add HOST consumables to the complex definition
+
+[CS-396](https://hpc-gridware.atlassian.net/browse/CS-396) respect HOST consumables in scheduling and resource booking
+
+[CS-428](https://hpc-gridware.atlassian.net/browse/CS-428) make HOST consumables work with ARs
+
+[CS-454](https://hpc-gridware.atlassian.net/browse/CS-454) make one line macros for gathering scheduling statistics
+
+[CS-543](https://hpc-gridware.atlassian.net/browse/CS-543) Add new test that checks KEEP\_ACTIVE=ERROR behavior
+
+### Task
 
 [CS-1](https://hpc-gridware.atlassian.net/browse/CS-1) Import all repositories from the Univa gridengine project into opengridengine
 
@@ -245,8 +283,6 @@
 [CS-38](https://hpc-gridware.atlassian.net/browse/CS-38) allow the use of newer compilers
 
 [CS-39](https://hpc-gridware.atlassian.net/browse/CS-39) build all sgeobj related code as C\+\+ code
-
-[CS-40](https://hpc-gridware.atlassian.net/browse/CS-40) add documentation comments from old CULL files to the JSON files
 
 [CS-43](https://hpc-gridware.atlassian.net/browse/CS-43) create templates and build mechanism for documentation
 
@@ -279,8 +315,6 @@
 [CS-82](https://hpc-gridware.atlassian.net/browse/CS-82) Adapt qmake, qhost, qmod 
 
 [CS-84](https://hpc-gridware.atlassian.net/browse/CS-84) Adapt qping, qquota, qrdel markdown files
-
-[CS-87](https://hpc-gridware.atlassian.net/browse/CS-87) add comment to generated CULL header files
 
 [CS-92](https://hpc-gridware.atlassian.net/browse/CS-92) create template for release notes
 
@@ -320,8 +354,6 @@
 
 [CS-306](https://hpc-gridware.atlassian.net/browse/CS-306) verify if usage values written to the shepherd usage are passed on by sge\_execd to sge\_qmaster
 
-[CS-317](https://hpc-gridware.atlassian.net/browse/CS-317) updated xml schema files
-
 [CS-318](https://hpc-gridware.atlassian.net/browse/CS-318) cleanup: use boolean logic on boolean data
 
 [CS-324](https://hpc-gridware.atlassian.net/browse/CS-324) As a developer I need a Dockerfile with all dependencies in order to build Open Cluster Scheduler on Ubuntu 22.04
@@ -330,11 +362,21 @@
 
 [CS-326](https://hpc-gridware.atlassian.net/browse/CS-326) As a developer I need a Dockerfile with all dependencies in order to build Open Cluster Scheduler on Leap 15.4
 
-## Bug
+[CS-420](https://hpc-gridware.atlassian.net/browse/CS-420) extend the testsuite framework with utility functions around exec host simulation
+
+[CS-421](https://hpc-gridware.atlassian.net/browse/CS-421) create a testsuite test for basic functionality of exec host simulation
+
+[CS-489](https://hpc-gridware.atlassian.net/browse/CS-489) Support ENABLE\_SUBMIT\_LD\_PRELOAD=true in qmaster\_params
+
+[CS-490](https://hpc-gridware.atlassian.net/browse/CS-490) Support OLD\_RESCHEDULE\_BEHAVIOR=1 in qmaster\_params
+
+[CS-491](https://hpc-gridware.atlassian.net/browse/CS-491) Support KEEP\_ACTIVE=ERROR in execd\_params
+
+[CS-538](https://hpc-gridware.atlassian.net/browse/CS-538) Add dummy name/value lists to all major objects
+
+### Bug
 
 [CS-3](https://hpc-gridware.atlassian.net/browse/CS-3) Manual and auto installation broken
-
-[CS-32](https://hpc-gridware.atlassian.net/browse/CS-32) fix tests which are not working with the current OGE version
 
 [CS-53](https://hpc-gridware.atlassian.net/browse/CS-53) installation with classic spooling fails due to spoolinit failing
 
@@ -353,8 +395,6 @@
 [CS-135](https://hpc-gridware.atlassian.net/browse/CS-135) testsuite complains about a lot of message macros not being used
 
 [CS-137](https://hpc-gridware.atlassian.net/browse/CS-137) do not use true and false in TCL code
-
-[CS-145](https://hpc-gridware.atlassian.net/browse/CS-145) qping monitoring output is broken
 
 [CS-146](https://hpc-gridware.atlassian.net/browse/CS-146) terminate method receives PID of job for $job\_pid argument, also for qrsh jobs.
 
@@ -376,8 +416,6 @@
 
 [CS-247](https://hpc-gridware.atlassian.net/browse/CS-247) default event handler for CONF\_Type object causes critical master error
 
-[CS-282](https://hpc-gridware.atlassian.net/browse/CS-282) qmaster returns with error reason for completely different cause of error
-
 [CS-284](https://hpc-gridware.atlassian.net/browse/CS-284) in case of GDI version mismatch error message does not show hex version number
 
 [CS-285](https://hpc-gridware.atlassian.net/browse/CS-285) listener threads do not reject requests with incompatible GDI version
@@ -389,8 +427,6 @@
 [CS-288](https://hpc-gridware.atlassian.net/browse/CS-288) in CSP mode all errors of sge\_security\_verify\_unique\_identifier\(\) do not cause request rejection in listener thread.
 
 [CS-289](https://hpc-gridware.atlassian.net/browse/CS-289) license string in the binaries needs to be replaced
-
-[CS-290](https://hpc-gridware.atlassian.net/browse/CS-290) add a build step that allows to generate CULL header from JSON files
 
 [CS-302](https://hpc-gridware.atlassian.net/browse/CS-302) RSMAP does not work for Job Array tasks which are scheduled in the same scheduling interval
 
@@ -412,10 +448,37 @@
 
 [CS-362](https://hpc-gridware.atlassian.net/browse/CS-362) libdrmaa.so has unresolved symbols hwloc\_\*
 
+[CS-379](https://hpc-gridware.atlassian.net/browse/CS-379) packages installation does not work with TS if cluster does not contain hosts for all architectures
+
+[CS-391](https://hpc-gridware.atlassian.net/browse/CS-391) cetrain test scenarios fail if they are executed individually
+
+[CS-392](https://hpc-gridware.atlassian.net/browse/CS-392) testsuite does not return with an error if a test fails and reinit of the cluster is enabled
+
+[CS-398](https://hpc-gridware.atlassian.net/browse/CS-398) cull packing test does not verify the result of unpacking
+
+[CS-402](https://hpc-gridware.atlassian.net/browse/CS-402) Enable Jenkins CI/CD piplinte to test GCS
+
+[CS-405](https://hpc-gridware.atlassian.net/browse/CS-405) qhost test fails sometimes.
+
+[CS-407](https://hpc-gridware.atlassian.net/browse/CS-407) test\_drmaa sometimes dumped core
+
+[CS-408](https://hpc-gridware.atlassian.net/browse/CS-408) some qstat test scenarios fail because queue instance names are truncated
+
 [CS-409](https://hpc-gridware.atlassian.net/browse/CS-409) ncores is incorrectly reported as the number of threads
 
 [CS-412](https://hpc-gridware.atlassian.net/browse/CS-412) New jsonl accounting file should not have comments at the beginning
 
 [CS-418](https://hpc-gridware.atlassian.net/browse/CS-418) deleting jobs in a simulated cluster gets into "an endless loop"
 
+[CS-419](https://hpc-gridware.atlassian.net/browse/CS-419) accounting of simulated jobs is missing basic information
+
+[CS-426](https://hpc-gridware.atlassian.net/browse/CS-426) qstat -F should print the remaining capacity of RSMAPs as integer, not as double
+
+[CS-431](https://hpc-gridware.atlassian.net/browse/CS-431) mirror 2 does not shutdown when qmaster is running in the foreground
+
+[CS-465](https://hpc-gridware.atlassian.net/browse/CS-465) qstat returns negative values as microseconds
+
+[CS-560](https://hpc-gridware.atlassian.net/browse/CS-560) Core of qstat -j <jid>
+
+[CS-561](https://hpc-gridware.atlassian.net/browse/CS-561) Resource requests cannot be reset to NONE via JSV
 
