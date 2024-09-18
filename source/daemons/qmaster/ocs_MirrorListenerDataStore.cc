@@ -64,6 +64,7 @@ namespace ocs {
       // We need just the name to see if a host is an execution host
       lEnumeration *eh_what = lWhat("%T(%I)", EH_Type, EH_name);
       sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST, nullptr, nullptr, nullptr, nullptr, eh_what);
+      lFreeWhat(&eh_what);
       evc->ec_set_flush(evc, sgeE_EXECHOST_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_EXECHOST_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_EXECHOST_MOD, true, 0);
@@ -72,6 +73,7 @@ namespace ocs {
       // We need the usernames of ACL lists and the ACL name itself to check if certain operations are allowed
       lEnumeration *us_what = lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name);
       sge_mirror_subscribe(evc, SGE_TYPE_USERSET, nullptr, nullptr, nullptr, nullptr, us_what);
+      lFreeWhat(&us_what);
       evc->ec_set_flush(evc, sgeE_USERSET_LIST, true, 0);
       evc->ec_set_flush(evc, sgeE_USERSET_ADD, true, 0);
       evc->ec_set_flush(evc, sgeE_USERSET_MOD, true, 0);

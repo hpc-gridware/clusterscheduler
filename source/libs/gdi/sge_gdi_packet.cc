@@ -376,6 +376,7 @@ sge_gdi_packet_create_base(lList **answer_list) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_SGETEXT_NOMEM);
       DRETURN(nullptr);
    }
+   memset(ret, 0, sizeof(sge_gdi_packet_class_t));
 
    int local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
    int local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
@@ -385,19 +386,10 @@ sge_gdi_packet_create_base(lList **answer_list) {
       DRETURN(nullptr);
    }
 
-   ret->is_intern_request = false;
    ret->request_type = PACKET_GDI_REQUEST;
-   ret->is_handled = false;
-   ret->id = 0;
-   ret->commproc_id = 0;
    ret->version = GRM_GDI_VERSION;
-   ret->first_task = nullptr;
-   ret->last_task = nullptr;
-   ret->auth_info = nullptr;
-   ret->amount = 0;
-   ret->grp_array = nullptr;
-   ret->next = nullptr;
    memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
+
    DRETURN(ret);
 }
 
