@@ -1,5 +1,49 @@
 # Full List of Fixes
 
+## 9.0.0 RC3
+
+### Improvement
+
+[CS-592](https://hpc-gridware.atlassian.net/browse/CS-592) Zombie jobs show a different time stamp as normal jobs
+
+### Epic
+
+[CS-33](https://hpc-gridware.atlassian.net/browse/CS-33) Important Bug Fixes
+
+### Bug
+
+[CS-32](https://hpc-gridware.atlassian.net/browse/CS-32) fix tests which are not working with the current Cluster Scheduler version
+
+[CS-282](https://hpc-gridware.atlassian.net/browse/CS-282) qmaster returns with error reason for completely different cause of error
+
+[CS-348](https://hpc-gridware.atlassian.net/browse/CS-348) incorrect timestamp from qstat -j jobid -xml
+
+[CS-575](https://hpc-gridware.atlassian.net/browse/CS-575) execution daemon installer fails when slots amount of  all.q should be changed
+
+[CS-593](https://hpc-gridware.atlassian.net/browse/CS-593) memory leak during unpacking of incoming requests
+
+[CS-594](https://hpc-gridware.atlassian.net/browse/CS-594) memory leak during thread init
+
+[CS-595](https://hpc-gridware.atlassian.net/browse/CS-595) memory leak during initialize of reporting module
+
+[CS-596](https://hpc-gridware.atlassian.net/browse/CS-596) loadcheck -loadval broken
+
+[CS-597](https://hpc-gridware.atlassian.net/browse/CS-597) memory leak during subscription of events in mirror threads
+
+[CS-598](https://hpc-gridware.atlassian.net/browse/CS-598) uninitialized attributes in packet data structure
+
+[CS-603](https://hpc-gridware.atlassian.net/browse/CS-603) memory leak if xuser\_list causes rejection of incoming request
+
+[CS-604](https://hpc-gridware.atlassian.net/browse/CS-604) memory leak during shutdown of event clients
+
+[CS-605](https://hpc-gridware.atlassian.net/browse/CS-605) memory leak in profiling module during shutdown of qmaster
+
+[CS-606](https://hpc-gridware.atlassian.net/browse/CS-606) multiple memory leaks during shutdown of qmaster in combination with classic spooling
+
+[CS-607](https://hpc-gridware.atlassian.net/browse/CS-607) double free of memory required to handle incoming requests
+
+[CS-610](https://hpc-gridware.atlassian.net/browse/CS-610) leak within pthread call during shutdown of scheduler
+
 ## 9.0.0 RC2
 
 ### Improvement
