@@ -1256,6 +1256,10 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle) {
                                  sep, packet_handle->grp_array[i].id, sep, packet_handle->grp_array[i].name);
    }
 
+   // supplementary group date is not required anymore (no need to free because this was borrowed from the component above)
+   packet_handle->amount = 0;
+   packet_handle->grp_array = nullptr;
+
    // encrypt and store the information
    size_t size = sge_dstring_strlen(&buffer_unencrypted) * 3;
    char *obuffer = sge_malloc(size);
