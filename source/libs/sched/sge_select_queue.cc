@@ -1717,7 +1717,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
                                  "queue list (-q) that was requested by job " sge_u32 "\n",
                     qinstance_name, (int) a->job_id);
             can_be_slave_queue = false;
-            // @todo slave tags not yet used
+            // @todo CS-601 slave tags not yet used
             // lClearUlongBitMask(queue, QU_tagged4schedule, TAG4SCHED_SLAVE | TAG4SCHED_SLAVE_LATER);
          }
       }
@@ -2100,7 +2100,7 @@ bool is_requested(const lList *req, const char *attr)
 }
 
 
-static bool is_requested(const lListElem *job, const char *attr)
+bool is_requested(const lListElem *job, const char *attr)
 {
    bool ret = false;
 
@@ -3209,7 +3209,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
    if (cqueue_match_static_resource_list_rejected(a, cqname, cq, master_hard_resource_list, "master") &&
        cqueue_match_static_resource_list_rejected(a, cqname, cq, slave_hard_resource_list, "slave")) {
       // if both master and slave requests do not match, we cannot run any tasks in this cluster queue
-      // @todo here we could already tag queue instances
+      // @todo CS-601 here we could already tag queue instances
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -3969,8 +3969,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       }
       u_long32 host_seq_no = 0;
       for_each_rw (qep, a->queue_list) {
-         /* @todo verify: if all.q is disabled or job requests queue != all.q, is it still on top of the list?
-          * looks incorrect to me, the unavailable queues should be at the end!
+         /* @todo CS-602 verify: if all.q is disabled or job requests queue != all.q, why is it still on top of the list?
           * AFTER SORT: all.q@ubuntu-22-amd64-1: available: 0, soft violations 0
           * AFTER SORT: all.q@ubuntu-20-amd64-1: available: 0, soft violations 0
           * AFTER SORT: all.q@solaris-11-1: available: 0, soft violations 0
@@ -4048,14 +4047,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             // @todo when we are in an additional round of the do ... while loop, couldn't we skip parallel_tag_hosts_queues()?
             //       the number of available slots should already be in QU_tag / QU_tag_qend?
             //       hslots = sum(QU_tag), and hslots_qend = sum(QU_tag_qend)?
-            // @todo once we have the master queue/host, can we skip checking the master requests in parallel_tag_hosts_queues()?
-            // @todo once we found the master queue/host, we should repeat parallel_tag_hosts_queues on this host
-            //       and consider the resources held by the master task
-            //       or consider suited_as_master_host within parallel_tag_hosts_queues() when matching slave requests
-            //       also we could return the information, if master and slave requests are disjoint on host layer (and queue layer?)
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
-               // @todo: with round_robin, when we are in the second round, we might have to consider the resources
-               //        already allocated for the master task (if we are on the master host) in the first round
                bool need_master = !have_master_host;
                bool is_master_host = (hep == master_host);
                DPRINTF("===> HOST: %s %p <=== need_master: %d is_master_host: %d (%p)\n", eh_name, (void *)hep, need_master,
@@ -4083,8 +4075,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      maxslots = 1;
                   }
 
-                  // @todo CS-400: if we know here that we still need the master host/queue and master and slave requests
-                  //               are disjoint, set maxslots to 1?
+                  // @todo if we know here that we still need the master host/queue and master and slave requests
+                  //       are disjoint, set maxslots to 1?
 
                   /* debit on RQS limits */
                   const void *iter = nullptr;
@@ -4136,7 +4128,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                               }
 #endif
                            }
-                           // @todo CS-400 also resource requests might have disjoint master/slave requests
+                           // @todo also resource requests might have disjoint master/slave requests
                            //       shouldn't we see this from queue tagging?
                            //          -> QU_tagged4schedule not containing *SLAVE*
                            //          -> QU_tag being 0 or 1?
@@ -4276,7 +4268,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                               }
 #endif
                            }
-                           // @todo CS-400 also resource requests might have disjoint master/slave requests
+                           // @todo also resource requests might have disjoint master/slave requests
                            //       shouldn't we see this from queue tagging?
                            //          -> QU_tagged4schedule not containing *SLAVE*
                            //          -> QU_tag being 0 or 1?
@@ -4513,7 +4505,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend, lListElem 
          rejected_as_slave = qref_list_eh_rejected(slave_hard_queue_list, eh_name, a->hgrp_list);
       }
    }
-   // @todo remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
+   // @todo CS-601 remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
    if (!(rejected_as_master && rejected_as_slave) &&
        sge_host_match_static(a, hep) == DISPATCH_OK) {
       // this host is suited at least for slave tasks, possibly also for the master task
@@ -4542,7 +4534,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend, lListElem 
                                          eh_name, false);
 
       if (result == DISPATCH_NOT_AT_TIME) {
-         host_clear_qinstance_tags(a->queue_list, eh_name, TAG4SCHED_MASTER); // @todo CS-400 also TAG4SCHED_SLAVE?
+         host_clear_qinstance_tags(a->queue_list, eh_name, TAG4SCHED_MASTER); // @todo CS-601 also TAG4SCHED_SLAVE?
          result = DISPATCH_OK;
       }
 
@@ -4678,7 +4670,6 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
             }
             sge_dstring_clear(&reason);
             cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments,
-                                    nullptr,
                                     nullptr,
                                     DOMINANT_LAYER_HOST, 0, &reason, false, DISPATCH_TIME_NOW, 0);
             if (cplx_el != nullptr) {
@@ -5319,7 +5310,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
                }
                sge_dstring_clear(&reason);
                cplx_el = get_attribute(attrname, ar_queue_config_attr, ar_queue_actual_attr, nullptr, a->centry_list,
-                                       a->load_adjustments, nullptr, nullptr,
+                                       a->load_adjustments, nullptr,
                                        DOMINANT_LAYER_QUEUE, 0, &reason, false, DISPATCH_TIME_NOW, 0);
                if (cplx_el != nullptr) {
                   if (match_static_resource(1, rep, cplx_el, &reason, false) == DISPATCH_OK) {
@@ -5905,7 +5896,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
     */
 
    if (!(cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments,
-                                 nullptr,
                                  queue, layer,
                                  lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
       DRETURN(DISPATCH_MISSING_ATTR);
@@ -6137,10 +6127,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
 
    if (!no_centry) {
       lListElem *cplx_el;
-      // @todo: do we need to pass additional_usage to get_attribute at all? We do the slots calculation anyway
-      //        only later and *not* based on cplx_el
-      if (!(cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, a->load_adjustments,
-                                    nullptr, queue, layer, lc_factor, reason, schedule_based,
+      if (!(cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, a->load_adjustments, queue,
+                                    layer, lc_factor, reason, schedule_based,
                                     DISPATCH_TIME_NOW, 0))) {
          DRETURN(DISPATCH_MISSING_ATTR); /* does not exist */
       }
@@ -6321,7 +6309,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
 */
 
 
-// @todo CS-400 we should also clear the SLAVE tags in QU_tagged4schedule - we might need this for detecting disjoint
+// @todo CS-601 we should also clear the SLAVE tags in QU_tagged4schedule - we might need this for detecting disjoint
 //              master/slave requests
 //              also where we filter and sort the queue list
 //              have a tag TAG4SCHED_DISJOINT? Here we would have the necessary information. Or a bool &disjoint.
@@ -6378,7 +6366,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                            SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, "slots=1",
                            object_name, sge_dstring_get_string(&reason));
          }
-         // @todo CS-400 remove all tags. This could come from a host (but we don't have the object!)
+         // @todo CS-601 remove all tags. This could come from a host (but we don't have the object!)
          //              or a queue - we have it
          DRETURN(result);
       }
@@ -6422,7 +6410,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                                     SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, req_str,
                                     object_name, sge_dstring_get_string(&reason));
                   }
-                  // @todo CS-400 remove all tags. This could come from a host (but we don't have the object!)
+                  // @todo CS-601 remove all tags. This could come from a host (but we don't have the object!)
                   //              or a queue - we have it
                   DRETURN(DISPATCH_NEVER_CAT);
                }
@@ -6516,7 +6504,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                               SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, req_str, object_name,
                               sge_dstring_get_string(&reason));
             }
-            // @todo do we want to untag in other situations, e.g. global requests do not match: untag all?
+            // @todo CS-601 do we want to untag in other situations, e.g. global requests do not match: untag all?
          } else if (result == DISPATCH_NOT_AT_TIME) {
             if (scope == JRS_SCOPE_GLOBAL && lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
                DPRINTF("===> CONSUMABLE_JOB %s does not match now - can still use %s %s as slave queue (and master later)\n",
@@ -6529,14 +6517,14 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                               SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, req_str, object_name,
                               sge_dstring_get_string(&reason));
             }
-            // @todo do we want to untag in other situations, e.g. global requests do not match: untag all now?
+            // @todo CS-601 do we want to untag in other situations, e.g. global requests do not match: untag all now?
             //       problem: it can be a host (which we don't have) or a queue (which we have)
          }
 
          // in case of master requests we do not update max_slots and/or return in case of error
          // the queue might still be used as slave queue
          // we just update QU_tagged4schedule
-         // @todo CS-400 untag in all cases, make function get_tags4sched(scope, also_later)
+         // @todo CS-601 untag in all cases, make function get_tags4sched(scope, also_later)
          if (scope == JRS_SCOPE_MASTER) {
             switch (result) {
                case DISPATCH_OK:

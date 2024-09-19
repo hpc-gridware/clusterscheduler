@@ -189,6 +189,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 /* -------------------------------------------------------------------------------- */
 
 bool is_requested(const lList *req, const char *attr);
+bool is_requested(const lListElem *job, const char *attr);
 
 dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue);
 

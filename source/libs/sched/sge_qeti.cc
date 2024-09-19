@@ -146,10 +146,9 @@ static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp,
 }
 
 static int 
-sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list, 
-      const lList* total_list, const lList* centry_list, const lList* requests, bool force_slots) 
+sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
+                                const lList* total_list, const lList* centry_list, const lListElem *job, bool force_slots)
 {
-   const lListElem *req;
    const lListElem *actual;
    const lListElem *tep;
    const char *name;
@@ -173,7 +172,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
       name = lGetString(actual, RUE_name);
       centry_config = lGetElemStr(centry_list, CE_name, name);
 
-      if (lGetUlong(centry_config, CE_consumable) != CONSUMABLE_NO && !is_requested(requests, name)) {
+      if (lGetUlong(centry_config, CE_consumable) != CONSUMABLE_NO && !is_requested(job, name)) {
          if (!(tep = lGetElemStr(total_list, CE_name, name)) ||
             sge_qeti_list_add(qeti_to_add, name, rue_list, lGetDouble(tep, CE_doubleval), true)) {
             DRETURN(-1);
@@ -182,14 +181,18 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
    }
 
    /* explicit requests */
-   for_each_ep(req, requests) {
-      name = lGetString(req, CE_name);
-      centry_config = lGetElemStr(centry_list, CE_name, name);
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
+      const lListElem *req;
+      for_each_ep(req, lGetList(jrs, JRS_hard_resource_list)) {
+         name = lGetString(req, CE_name);
+         centry_config = lGetElemStr(centry_list, CE_name, name);
 
-      if ((centry_config && lGetUlong(centry_config, CE_consumable) != CONSUMABLE_NO) && 
-            (tep = lGetElemStr(total_list, CE_name, name))) {
-         if (sge_qeti_list_add(qeti_to_add, name, rue_list, lGetDouble(tep, CE_doubleval), false)) {
-            DRETURN(-1);
+         if ((centry_config && lGetUlong(centry_config, CE_consumable) != CONSUMABLE_NO) &&
+             (tep = lGetElemStr(total_list, CE_name, name))) {
+            if (sge_qeti_list_add(qeti_to_add, name, rue_list, lGetDouble(tep, CE_doubleval), false)) {
+               DRETURN(-1);
+            }
          }
       }
    }
@@ -197,6 +200,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
    DRETURN(0);
 }
 
+// used only in module test
 sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 {
    sge_qeti_t *iter;
@@ -215,7 +219,6 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    sge_qeti_t *iter = nullptr;
    lListElem *next_queue, *qep;
    const lListElem *hep;
-   const lList *requests = job_get_hard_resource_list(a->job); // @todo CS-400 other request lists as well?
 
    DENTER(TOP_LAYER);
 
@@ -233,10 +236,11 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 
       /* add references to global resource utilization entries 
          that might affect jobs queue end time */
+      // @todo CS-599 we have a->gep
       if ((hep = host_list_locate(a->host_list, SGE_GLOBAL_NAME))) {
          if (sge_add_qeti_resource_container(&iter->cr_refs_global, 
                   lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
-                  a->centry_list, requests, false)!=0) {
+                  a->centry_list, a->job, false)!=0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
          }
@@ -250,6 +254,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
       int is_relevant;
       const void *queue_iterator = nullptr;
 
+      // @todo CS-599 compare against a->gep
       if (!strcmp((eh_name=lGetHost(hep, EH_name)), SGE_GLOBAL_NAME)) {
          continue;
       }   
@@ -278,7 +283,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          if (ar_id == 0) {
             if (sge_add_qeti_resource_container(&iter->cr_refs_queue, 
                      lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list), 
-                           a->centry_list, requests, false)!=0) {
+                           a->centry_list, a->job, false)!=0) {
                sge_qeti_release(&iter);
                DRETURN(nullptr);
             }
@@ -287,7 +292,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
             const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
             const lListElem *ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
             if (sge_add_qeti_resource_container(&iter->cr_refs_queue, lGetList(ar_queue, QU_resource_utilization),
-                                  lGetList(ar_queue, QU_consumable_config_list), a->centry_list, requests, false)!=0) {
+                                  lGetList(ar_queue, QU_consumable_config_list), a->centry_list, a->job, false)!=0) {
                sge_qeti_release(&iter);
                DRETURN(nullptr);
             }
@@ -296,14 +301,15 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
       }
       if (is_relevant) {
          if (sge_add_qeti_resource_container(&iter->cr_refs_host, lGetList(hep, EH_resource_utilization),
-                                             lGetList(hep, EH_consumable_config_list), a->centry_list, requests, false)!=0) {
+                                             lGetList(hep, EH_consumable_config_list), a->centry_list, a->job, false)!=0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
          }
       }
    }
 
-   DPRINTF("QETI: P %d G %d H %d Q %d\n", lGetNumberOfElem(iter->cr_refs_pe), lGetNumberOfElem(iter->cr_refs_global), lGetNumberOfElem(iter->cr_refs_host), lGetNumberOfElem(iter->cr_refs_queue));
+   DPRINTF("QETI: P %d G %d H %d Q %d\n", lGetNumberOfElem(iter->cr_refs_pe), lGetNumberOfElem(iter->cr_refs_global),
+           lGetNumberOfElem(iter->cr_refs_host), lGetNumberOfElem(iter->cr_refs_queue));
 
    DRETURN(iter);
 }
