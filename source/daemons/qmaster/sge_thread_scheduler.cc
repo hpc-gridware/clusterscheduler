@@ -159,7 +159,6 @@ sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
    auto *evc = static_cast<sge_evc_class_t *>(arg);
    sge_mirror_shutdown(evc);
-   sge_free(&evc);
    DRETURN_VOID;
 }
 
