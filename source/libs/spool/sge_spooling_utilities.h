@@ -127,7 +127,9 @@ typedef struct spooling_field {
    int nm;
    int width;
    const char *name;
+   bool free_name;
    struct spooling_field *sub_fields;
+   bool free_sub_fields;
    const void *clientdata;
    int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);
    int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);

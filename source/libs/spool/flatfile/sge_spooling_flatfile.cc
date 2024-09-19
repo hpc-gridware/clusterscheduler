@@ -152,6 +152,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
          for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
             switch (i) {
                /* pseudo types without spooling action */
+               // @see spool_classic_default_shutdown_func
                case SGE_TYPE_GLOBAL_CONFIG:
                case SGE_TYPE_JOB_SCHEDD_INFO:
                case SGE_TYPE_SCHEDD_MONITOR:
@@ -258,7 +259,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
                                           spool_dir,
                                           nullptr,
                                           spool_classic_default_startup_func,
-                                          nullptr,
+                                          spool_classic_default_shutdown_func,
                                           nullptr,
                                           nullptr,
                                           nullptr,
@@ -382,6 +383,49 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, AR_DIR, 0755, true);
       }
    }
+
+   DRETURN(ret);
+}
+
+bool
+spool_classic_default_shutdown_func(lList **answer_list,
+                                    const lListElem *rule)
+{
+   bool ret = true;
+
+   DENTER(TOP_LAYER);
+
+   auto field_info = static_cast<flatfile_info *>(lGetRef(rule, SPR_clientdata));
+   for (auto i = static_cast<int>(SGE_TYPE_ADMINHOST); i < static_cast<int>(SGE_TYPE_ALL); i++) {
+      // for most type we use static fields but for some we need to free the dynamic fields
+      // @see spool_classic_create_context
+      switch (i) {
+         case SGE_TYPE_QINSTANCE:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_SCHEDD_CONF:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_EXECHOST:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_CONFIG:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_PROJECT:
+            field_info[i].fields= spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_USER:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         case SGE_TYPE_SHARETREE:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
+         default:
+            break;
+      }
+   }
+   sge_free(&field_info);
 
    DRETURN(ret);
 }

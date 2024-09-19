@@ -208,7 +208,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
       fields[i].nm = NoName;
       fields[i].width = 0;
       fields[i].name = nullptr;
+      fields[i].free_name = false;
       fields[i].sub_fields = nullptr;
+      fields[i].free_sub_fields = false;
       fields[i].clientdata = nullptr;
       fields[i].read_func = nullptr;
       fields[i].write_func = nullptr;
@@ -243,6 +245,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                DRETURN(nullptr);
             }
             fields[j].name = strdup(name + strip);
+            fields[j].free_name = true;
          }
 
          if (mt_get_type(descr[i].mt) == lListT) {
@@ -277,6 +280,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
             }
          }
 
+         fields[j].free_sub_fields = true;
          fields[j++].sub_fields = sub_fields;
       }
    }
@@ -311,11 +315,11 @@ spool_free_spooling_fields(spooling_field *fields) {
    if (fields != nullptr) {
       int i;
       for (i = 0; fields[i].nm >= 0; i++) {
-         if (fields[i].sub_fields != nullptr && fields[i].sub_fields != fields) {
+         if (fields[i].sub_fields != nullptr && fields[i].sub_fields != fields && fields[i].free_sub_fields) {
             fields[i].sub_fields = spool_free_spooling_fields(fields[i].sub_fields);
          }
 
-         if (fields[i].name != nullptr) {
+         if (fields[i].name != nullptr && fields[i].free_name) {
             sge_free(&(fields[i].name));
          }
       }
