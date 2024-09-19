@@ -437,6 +437,8 @@ sge_scheduler_terminate(lList **answer_list) {
 
       sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
+      pthread_join(thread_id, nullptr);
+
       INFO(MSG_THREAD_XTERMINATED_S, threadnames[SCHEDD_THREAD]);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
    } else {
