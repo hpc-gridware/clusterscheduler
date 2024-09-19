@@ -615,6 +615,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
          lFreeList(&xuser_lists);
+         lFreeList(&grp_list);
          DRETURN(STATUS_EUNKNOWN);
       }
       lFreeList(&user_lists);
