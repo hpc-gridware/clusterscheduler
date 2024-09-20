@@ -90,6 +90,21 @@
 *    Specifies if a single accounting record is written for the whole job,
 *    or if every task (master task and slave tasks) gets an individual accounting record.
 *
+*    SGE_BOOL(PE_master_forks_slaves) - Master Forks Slaves
+*    For tightly integrated parallel jobs.
+*    Specifies if slave tasks on the master host are started via qrsh -inherit or if they are started
+*    by the master task process itself (via fork/exec or as threads).
+*
+*    SGE_BOOL(PE_daemon_forks_slaves) - Daemon Forks Slaves
+*    For tightly integrated parallel jobs.
+*    Specifies if slave tasks on slave host are started individually via qrsh -inherit or if a single
+*    process is started via qrsh -inherit which then starts the slave tasks (via fork/exec or as threads).
+*
+*    SGE_BOOL(PE_ignore_slave_requests_on_master_host) - Daemon Forks Slaves
+*    For tightly integrated parallel jobs.
+*    When slave tasks are started on the master host, this flag specifies if slave specific requests
+*    shall be applied to these slave tasks or not.
+*
 *    SGE_LIST(PE_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
 *    Its purpose is to be able to add new attributes without changing the spooling format.
@@ -110,6 +125,9 @@ enum {
    PE_resource_utilization,
    PE_urgency_slots,
    PE_accounting_summary,
+   PE_master_forks_slaves,
+   PE_daemon_forks_slaves,
+   PE_ignore_slave_requests_on_master_host,
    PE_joker
 };
 
@@ -126,6 +144,9 @@ LISTDEF(PE_Type)
    SGE_LIST(PE_resource_utilization, RUE_Type, CULL_DEFAULT)
    SGE_STRING(PE_urgency_slots, CULL_SPOOL)
    SGE_BOOL(PE_accounting_summary, CULL_SPOOL)
+   SGE_BOOL(PE_master_forks_slaves, CULL_SPOOL)
+   SGE_BOOL(PE_daemon_forks_slaves, CULL_SPOOL)
+   SGE_BOOL(PE_ignore_slave_requests_on_master_host, CULL_SPOOL)
    SGE_LIST(PE_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
@@ -142,6 +163,9 @@ NAMEDEF(PEN)
    NAME("PE_resource_utilization")
    NAME("PE_urgency_slots")
    NAME("PE_accounting_summary")
+   NAME("PE_master_forks_slaves")
+   NAME("PE_daemon_forks_slaves")
+   NAME("PE_ignore_slave_requests_on_master_host")
    NAME("PE_joker")
 NAMEEND
 

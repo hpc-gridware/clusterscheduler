@@ -1,197 +1,392 @@
 {
-	"className":	"ParallelEnvironment",
-	"summary":	"Parallel Environment",
-	"description":	[{
-			"line":	"Defines the runtime environment for running shared memory or distributed memory parallelized applications"
-		}],
-	"cullPrefix":	"PE",
-	"attributes":	[{
-			"name":	"name",
-			"summary":	"Name",
-			"description":	[{
-					"line":	"Name of the pe."
-				}],
-			"type":	"lStringT",
-			"flags":	[{
-					"name":	"PRIMARY_KEY"
-				}, {
-					"name":	"UNIQUE"
-				}, {
-					"name":	"HASH"
-				}, {
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"slots",
-			"summary":	"Total Slots",
-			"description":	[{
-					"line":	"Total number of slots which can be occupied by jobs running in the PE."
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"user_list",
-			"summary":	"User List",
-			"description":	[{
-					"line":	"US_type; list of allowed users."
-				}],
-			"type":	"lListT",
-			"subClassName":	"US",
-			"subCullPrefix":	"US",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"xuser_list",
-			"summary":	"XUser List",
-			"description":	[{
-					"line":	"US_Type; list of not allowed users."
-				}],
-			"type":	"lListT",
-			"subClassName":	"US",
-			"subCullPrefix":	"US",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"start_proc_args",
-			"summary":	"Start Procedure",
-			"description":	[{
-					"line":	"Cmd line sequence for starting the pe."
-				}],
-			"type":	"lStringT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"stop_proc_args",
-			"summary":	"Stop Procedure",
-			"description":	[{
-					"line":	"Cmd line sequence for stopping the pe."
-				}],
-			"type":	"lStringT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"allocation_rule",
-			"summary":	"Allocation Rule",
-			"description":	[{
-					"line":	"Defines how a job is distributed over multiple host."
-					}, { "line":	"This can be a fixed number of processors (slots) per machine"
-					}, { "line":	"or one of the following special allocation rules:"
-					}, { "line":	"$pe_slots: Allocate only slots on a single host."
-					}, { "line":	"$fill_up: Fill up slots on one host, then switch to the next host, ..."
-					}, { "line":	"$round_robin. Occupy one slot of a host, then switch to the next one, ..."
-				}],
-			"type":	"lStringT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"control_slaves",
-			"summary":	"Control Slaves",
-			"description":	[{
-					"line":	"Defines whether (false) the job is executed in so called loose integration"
-					}, { "line":	"(slave execution daemons do not know about the job, no job control, no accounting)"
-					}, { "line":	"or (true) if it is executed in the tight integration, where execution daemons know about slave tasks"
-					}, { "line":	"and slave tasks are started under OGE control (vial qrsh -inherit)."
-					}, { "line":	"Tight integration provides full job control and we get accounting information for the whole job"
-					}, { "line":	"including slave tasks on remote hosts."
-				}],
-			"type":	"lBoolT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"job_is_first_task",
-			"summary":	"Job Is First Task",
-			"description":	[{
-					"line":	""
-					}, { "line":	"When set to true then the job script also counts as task (a 4 times parallel job can then"
-					}, { "line":	"comprise of the master task plus 3 slave tasks."
-					}, { "line":	"When set to true then the master task does not consume a slot. This is used to take into"
-					}, { "line":	"account that the master task in many cases consumes very little resources, e.g."
-					}, { "line":	"it just does an mpirun call spawning slave tasks and then waits for the slave tasks to finish."
-					}, { "line":	"A 4 times parallel job can then comprise of the master task plus 4 slave tasks."
-				}],
-			"type":	"lBoolT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"resource_utilization",
-			"summary":	"Resource Utilization",
-			"description":	[{
-					"line":	"Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs."
-				}],
-			"type":	"lListT",
-			"subClassName":	"RUE",
-			"subCullPrefix":	"RUE",
-			"flags":	[{
-					"name":	"JGDI_HIDDEN"
-				}]
-		}, {
-			"name":	"urgency_slots",
-			"summary":	"Urgency Slots",
-			"description":	[{
-					"line":	"Specifies what slot amount shall be used when computing jobs"
-					}, { "line":	"static urgency in case of jobs with slot range PE requests."
-					}, { "line":	"The actual problem is that when determining the urgency number"
-					}, { "line":	"the number of slots finally assigned is not yet known. The following"
-					}, { "line":	"settings are supported: min/max/avg/<fixed integer>"
-				}],
-			"type":	"lStringT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"accounting_summary",
-			"summary":	"Accounting Summary",
-			"description":	[{
-					"line":	"For tightly integrated parallel jobs."
-					}, { "line":	"Specifies if a single accounting record is written for the whole job,"
-					}, { "line":	"or if every task (master task and slave tasks) gets an individual accounting record."
-				}],
-			"type":	"lBoolT",
-			"flags":	[{
-					"name":	"JGDI_CONF"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
-			"name":	"joker",
-			"summary":	"Joker",
-			"description":	[{
-				"line":	"Placeholder which can be used for arbitrary data."
-			}, { "line":	"Its purpose is to be able to add new attributes without changing the spooling format."
-			}, { "line":	"It is a list of arbitrary type and it is spooled."
-			}],
-			"type":	"lListT",
-			"subClassName": "Variable",
-			"subCullPrefix": "VA",
-			"flags":	[{ "name":  "SPOOL" }]
-		}]
+  "className": "ParallelEnvironment",
+  "summary": "Parallel Environment",
+  "description": [
+    {
+      "line": "Defines the runtime environment for running shared memory or distributed memory parallelized applications"
+    }
+  ],
+  "cullPrefix": "PE",
+  "attributes": [
+    {
+      "name": "name",
+      "summary": "Name",
+      "description": [
+        {
+          "line": "Name of the pe."
+        }
+      ],
+      "type": "lStringT",
+      "flags": [
+        {
+          "name": "PRIMARY_KEY"
+        },
+        {
+          "name": "UNIQUE"
+        },
+        {
+          "name": "HASH"
+        },
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "slots",
+      "summary": "Total Slots",
+      "description": [
+        {
+          "line": "Total number of slots which can be occupied by jobs running in the PE."
+        }
+      ],
+      "type": "lUlongT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "user_list",
+      "summary": "User List",
+      "description": [
+        {
+          "line": "US_type; list of allowed users."
+        }
+      ],
+      "type": "lListT",
+      "subClassName": "US",
+      "subCullPrefix": "US",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "xuser_list",
+      "summary": "XUser List",
+      "description": [
+        {
+          "line": "US_Type; list of not allowed users."
+        }
+      ],
+      "type": "lListT",
+      "subClassName": "US",
+      "subCullPrefix": "US",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "start_proc_args",
+      "summary": "Start Procedure",
+      "description": [
+        {
+          "line": "Cmd line sequence for starting the pe."
+        }
+      ],
+      "type": "lStringT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "stop_proc_args",
+      "summary": "Stop Procedure",
+      "description": [
+        {
+          "line": "Cmd line sequence for stopping the pe."
+        }
+      ],
+      "type": "lStringT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "allocation_rule",
+      "summary": "Allocation Rule",
+      "description": [
+        {
+          "line": "Defines how a job is distributed over multiple host."
+        },
+        {
+          "line": "This can be a fixed number of processors (slots) per machine"
+        },
+        {
+          "line": "or one of the following special allocation rules:"
+        },
+        {
+          "line": "$pe_slots: Allocate only slots on a single host."
+        },
+        {
+          "line": "$fill_up: Fill up slots on one host, then switch to the next host, ..."
+        },
+        {
+          "line": "$round_robin. Occupy one slot of a host, then switch to the next one, ..."
+        }
+      ],
+      "type": "lStringT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "control_slaves",
+      "summary": "Control Slaves",
+      "description": [
+        {
+          "line": "Defines whether (false) the job is executed in so called loose integration"
+        },
+        {
+          "line": "(slave execution daemons do not know about the job, no job control, no accounting)"
+        },
+        {
+          "line": "or (true) if it is executed in the tight integration, where execution daemons know about slave tasks"
+        },
+        {
+          "line": "and slave tasks are started under OGE control (vial qrsh -inherit)."
+        },
+        {
+          "line": "Tight integration provides full job control and we get accounting information for the whole job"
+        },
+        {
+          "line": "including slave tasks on remote hosts."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "job_is_first_task",
+      "summary": "Job Is First Task",
+      "description": [
+        {
+          "line": ""
+        },
+        {
+          "line": "When set to true then the job script also counts as task (a 4 times parallel job can then"
+        },
+        {
+          "line": "comprise of the master task plus 3 slave tasks."
+        },
+        {
+          "line": "When set to true then the master task does not consume a slot. This is used to take into"
+        },
+        {
+          "line": "account that the master task in many cases consumes very little resources, e.g."
+        },
+        {
+          "line": "it just does an mpirun call spawning slave tasks and then waits for the slave tasks to finish."
+        },
+        {
+          "line": "A 4 times parallel job can then comprise of the master task plus 4 slave tasks."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "resource_utilization",
+      "summary": "Resource Utilization",
+      "description": [
+        {
+          "line": "Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs."
+        }
+      ],
+      "type": "lListT",
+      "subClassName": "RUE",
+      "subCullPrefix": "RUE",
+      "flags": [
+        {
+          "name": "JGDI_HIDDEN"
+        }
+      ]
+    },
+    {
+      "name": "urgency_slots",
+      "summary": "Urgency Slots",
+      "description": [
+        {
+          "line": "Specifies what slot amount shall be used when computing jobs"
+        },
+        {
+          "line": "static urgency in case of jobs with slot range PE requests."
+        },
+        {
+          "line": "The actual problem is that when determining the urgency number"
+        },
+        {
+          "line": "the number of slots finally assigned is not yet known. The following"
+        },
+        {
+          "line": "settings are supported: min/max/avg/<fixed integer>"
+        }
+      ],
+      "type": "lStringT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "accounting_summary",
+      "summary": "Accounting Summary",
+      "description": [
+        {
+          "line": "For tightly integrated parallel jobs."
+        },
+        {
+          "line": "Specifies if a single accounting record is written for the whole job,"
+        },
+        {
+          "line": "or if every task (master task and slave tasks) gets an individual accounting record."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "JGDI_CONF"
+        },
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "master_forks_slaves",
+      "summary": "Master Forks Slaves",
+      "description": [
+        {
+          "line": "For tightly integrated parallel jobs."
+        },
+        {
+          "line": "Specifies if slave tasks on the master host are started via qrsh -inherit or if they are started"
+        },
+        {
+          "line": "by the master task process itself (via fork/exec or as threads)."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "daemon_forks_slaves",
+      "summary": "Daemon Forks Slaves",
+      "description": [
+        {
+          "line": "For tightly integrated parallel jobs."
+        },
+        {
+          "line": "Specifies if slave tasks on slave host are started individually via qrsh -inherit or if a single"
+        },
+        {
+          "line": "process is started via qrsh -inherit which then starts the slave tasks (via fork/exec or as threads)."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "ignore_slave_requests_on_master_host",
+      "summary": "Daemon Forks Slaves",
+      "description": [
+        {
+          "line": "For tightly integrated parallel jobs."
+        },
+        {
+          "line": "When slave tasks are started on the master host, this flag specifies if slave specific requests"
+        },
+        {
+          "line": "shall be applied to these slave tasks or not."
+        }
+      ],
+      "type": "lBoolT",
+      "flags": [
+        {
+          "name": "SPOOL"
+        }
+      ]
+    },
+    {
+      "name": "joker",
+      "summary": "Joker",
+      "description": [
+        {
+          "line": "Placeholder which can be used for arbitrary data."
+        },
+        {
+          "line": "Its purpose is to be able to add new attributes without changing the spooling format."
+        },
+        {
+          "line": "It is a list of arbitrary type and it is spooled."
+        }
+      ],
+      "type": "lListT",
+      "subClassName": "Variable",
+      "subCullPrefix": "VA",
+      "flags": [
+        {
+          "name": "SPOOL"
+        }
+      ]
+    }
+  ]
 }
