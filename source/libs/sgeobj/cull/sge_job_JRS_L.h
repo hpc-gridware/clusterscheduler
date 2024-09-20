@@ -52,6 +52,12 @@
 *    SGE_LIST(JRS_soft_queue_list) - Soft Queue List
 *    List of soft queue requests, from qsub -soft -q dest_identifier request.
 *
+*    SGE_STRING(JRS_allocation_rule) - Allocation Rule
+*    Overwrites the allocation rule of the parallel environment for this scope.
+*
+*    SGE_BOOL(JRS_ignore_slave_requests_on_master_host) - Ignore Slave Requests on Master Host
+*    Overwrites the ignore_slave_requests_on_master_host option of the parallel environment for this scope.
+*
 */
 
 enum {
@@ -59,7 +65,9 @@ enum {
    JRS_hard_resource_list,
    JRS_soft_resource_list,
    JRS_hard_queue_list,
-   JRS_soft_queue_list
+   JRS_soft_queue_list,
+   JRS_allocation_rule,
+   JRS_ignore_slave_requests_on_master_host
 };
 
 LISTDEF(JRS_Type)
@@ -68,6 +76,8 @@ LISTDEF(JRS_Type)
    SGE_LIST(JRS_soft_resource_list, CE_Type, CULL_SPOOL)
    SGE_LIST(JRS_hard_queue_list, QR_Type, CULL_SPOOL)
    SGE_LIST(JRS_soft_queue_list, QR_Type, CULL_SPOOL)
+   SGE_STRING(JRS_allocation_rule, CULL_SPOOL)
+   SGE_BOOL(JRS_ignore_slave_requests_on_master_host, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(JRSN)
@@ -76,6 +86,8 @@ NAMEDEF(JRSN)
    NAME("JRS_soft_resource_list")
    NAME("JRS_hard_queue_list")
    NAME("JRS_soft_queue_list")
+   NAME("JRS_allocation_rule")
+   NAME("JRS_ignore_slave_requests_on_master_host")
 NAMEEND
 
 #define JRS_SIZE sizeof(JRSN)/sizeof(char *)
