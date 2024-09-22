@@ -12,82 +12,78 @@ xxqs_name_sxx_access_list - xxQS_NAMExx access list file format
 
 # DESCRIPTION
 
-Access lists are used in xxQS_NAMExx to define access permissions of
-users to queues (see *xxqs_name_sxx_queue_conf*(5)) or parallel environments (see
-*xxqs_name_sxx_pe*(5)). A list of currently configured access lists can
-be displayed via the *qconf*(1) **-sul** option. The contents of each
-enlisted access list can shown via the **-su** switch. The output
-follows the *access_list* format description. New access lists can be
-created and existing can be modified via the **-au** and **-du** options
-to *qconf*(1).
+Access lists are used in xxQS_NAMExx to define access permissions of users to
 
-Departments are a special form of access list that additionally allow
-assignment of functional shares and override tickets.
+* the cluster (see (x)user_lists in xxqs_name_sxx_conf(5))
+* hosts (see (x)user_lists in xxqs_name_sxx_host_conf(5))
+* queues (see (x)user_lists in xxqs_name_sxx_queue_conf(5))
+* parallel environments (see (x)user_lists in xxqs_name_sxx_pe(5))
+* cluster resources limited by resource quotas (see xxqs_name_sxx_resource_quote(5))
 
-Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline
-(\\newline) characters. The backslash and the newline are replaced with
-a space (" ") character before any interpretation.
+A list of currently configured access lists can be displayed via the `qconf -sul` option. The contents of each
+enlisted access list can be shown via the `-su` switch. The output follows the xxqs_name_sxx_access_list(5) format
+description. New access lists can be created and existing can be modified via the `-au` and `-du` options
+to `qconf`.
+
+Departments are a special form of access list that additionally allow assignment of 
+functional shares and override tickets.
+
+Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline (\\newline) characters. The backslash and the 
+newline are replaced with a space (" ") character before any interpretation.
 
 Following predefined access lists gain access to specific functionalities of the xxQS_NAMExx system:
 
 ## arusers
+
 Allows to submit, control and delete advance reservations (see qsub(1)).
 
 ## deadlineusers
+
 Allows to specify a deadline for jobs (see qsub(1) -dl).
 
 # FORMAT
 
-The following list of *access_list* parameters specifies the
-*access_list* content:
+The following list of access list parameters specifies the access list content:
 
-## **name**
+## *name*
 
-The name of the access list as defined for *userset_name* in
-*sge_types*(1).
+The name of the access list as defined for *userset_name* in xxqs_name_sxx_types(1).
 
-## **type**
+## *type*
 
-The type of the access list, currently one of *ACL,* or *DEPT* or a
-combination of both in a comma separated list. Depending on this
-parameter the access list can be used as access list only or as a
-department.
+The type of the access list, currently one of *ACL,* or *DEPT* or a combination of both in a comma separated list. 
+Depending on this parameter the access list can be used as access list only or as a department.
 
-## **oticket**
+## *oticket*
 
 The amount of override tickets currently assigned to the department.
 
-## **fshare**
+## *fshare*
 
 The current functional share of the department.
 
-## **entries**
+## *entries*
 
-The entries parameter contains the comma separated list of those UNIX users (see *user_name* 
-in *sge_types*(1)) or those UNIX groups that are assigned to the access list or the department. 
+The entries parameter contains the comma separated list of those UNIX users (see *user_name* in 
+xxqs_name_sxx_types(1)) or those UNIX groups that are assigned to the access list or the department. 
 
-By default, only a user's primary UNIX group is considered to gain/reject access. 
-Supplementary groups are only considered if the parameter ENABLE_SUP_GRP_EVAL=1 is defined as 
-qmaster_param in the configuration. 
+By default, only a user's primary UNIX group is considered to gain/reject access. Supplementary groups are only 
+considered if the parameter `ENABLE_SUP_GRP_EVAL=1` is defined as *qmaster_param* in the configuration. 
 
-Symbolic names are allowed. A group is differentiated from a username by
-prefixing the group name with a '@' sign. For UNIX groups that have no symbolic name it is allowed
-to specify the '@' character followed by the UNIX group ID.
+Symbolic names are allowed. A group is differentiated from a username by prefixing the group name with a '@' sign. 
+For UNIX groups that have no symbolic name it is allowed to specify the '@' character followed by the UNIX group ID.
 
 Pure access lists allow enlisting any user or group in any access list.
 
-When using departments, each user or group enlisted may only be enlisted in one department, in 
-order to ensure a unique assignment of jobs to departments. To jobs whose users do not match 
-with any of the users or groups enlisted under entries the *defaultdepartment* is assigned, if
-existing. Please note that even if ENABLE_SUP_GRP_EVAL=1 is defined, only the primary group
-is used to assign a department to users jobs.
+When using departments, each user or group enlisted may only be enlisted in one department, in order to ensure a 
+unique assignment of jobs to departments. To jobs whose users do not match with any of the users or groups enlisted 
+under entries the *defaultdepartment* is assigned, if existing. Please note that even if `ENABLE_SUP_GRP_EVAL=1` is 
+defined, only the primary group is used to assign a department to users jobs.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro*(1), *sge_types*(1), *qconf*(1),
-*xxqs_name_sxx_pe*(5), *xxqs_name_sxx_queue_conf*(5).
+xxqs_name_sxx_intro(1), xxqs_name_sxx_types(1), qconf(1), xxqs_name_sxx_pe(5), xxqs_name_sxx_queue_conf(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro*(1) for a full statement of rights and
-permissions.
+See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.
