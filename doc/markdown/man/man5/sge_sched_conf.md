@@ -114,7 +114,7 @@ The default for this parameter is *load*.
 When executing under a share based policy, the scheduler "ages" (i.e. decreases) usage to implement a sliding 
 window for achieving the share entitlements as defined by the share tree. The *halftime* defines the
 time interval in which accumulated usage will have been decayed to half its original value. Valid values are 
-specified in hours or according to the time format as specified in queue_conf(5). If the value is set to 0, 
+specified in hours or according to the time format as specified in xxqs_name_sxx_queue_conf(5). If the value is set to 0, 
 the usage is not decayed.
 
 ## usage_weight_list
@@ -153,37 +153,37 @@ The relative importance of the job shares in the functional policy. Values are o
 ## weight_tickets_functional
 
 The maximum number of functional tickets available for distribution by xxQS_NAMExx. Determines the relative 
-importance of the functional policy. See under sge_priority(5) for an overview on job priorities.
+importance of the functional policy. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_tickets_share
 
 The maximum number of share based tickets available for distribution by xxQS_NAMExx. Determines the relative 
-importance of the share tree policy. See under sge_priority(5) for an overview on job priorities.
+importance of the share tree policy. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_deadline
 
 The weight applied on the remaining time until a jobs latest start time. Determines the relative importance of 
-the deadline. See under sge_priority(5) for an overview on job priorities.
+the deadline. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_waiting_time
 
 The weight applied on the jobs waiting time since submission. Determines the relative importance of the waiting time. 
-See under sge_priority(5) for an overview on job priorities.
+See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_urgency
 
 The weight applied on jobs normalized urgency when determining priority finally used. Determines the relative 
-importance of urgency. See under sge_priority(5) for an overview on job priorities.
+importance of urgency. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_priority
 
 The weight applied on jobs normalized POSIX priority when determining priority finally used. Determines the 
-relative importance of POSIX priority. See under sge_priority(5) for an overview on job priorities.
+relative importance of POSIX priority. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## weight_ticket
 
 The weight applied on normalized ticket amount when determining priority finally used. Determines the relative 
-importance of the ticket policies. See under sge_priority(5) for an overview on job priorities.
+importance of the ticket policies. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 ## flush_finish_sec
 
@@ -222,11 +222,11 @@ planning resource utilization as the delta between net job runtimes and total ti
 available again. Net job runtime as specified with `-l h_rt=...` or `-l s_rt=...` or *default_duration* always 
 differs from total job runtime due to delays before and after actual job start and finish. Among the
 delays before job start is the time until the end of a *schedule_interval*, the time it takes to deliver a job to
-*sge_execd*(8) and the delays caused by *prolog* in queue_conf(5), *start_proc_args* in sge_pe(5) and 
-*starter_method* in queue_conf(5)
+*sge_execd*(8) and the delays caused by *prolog* in xxqs_name_sxx_queue_conf(5), *start_proc_args* in xxqs_name_sxx_pe(5) and 
+*starter_method* in xxqs_name_sxx_queue_conf(5)
 
 (*notify*, *terminate_method* or *checkpointing*), procedures run after actual job finish, such as 
-*stop_proc_args* in sge_pe(5) or *epilog* in queue_conf(5) , and the delay until a new *schedule_interval*.  
+*stop_proc_args* in xxqs_name_sxx_pe(5) or *epilog* in xxqs_name_sxx_queue_conf(5) , and the delay until a new *schedule_interval*.  
 If the offset is too low, resource reservations (see *max_reservation*) can be delayed repeatedly due to an overly
 optimistic job circulation time.
 
@@ -327,9 +327,9 @@ overhead. The default value is 50.
 The maximum number of reservations scheduled within a schedule interval. When a runnable job can not be started due 
 to a shortage of resources a reservation can be scheduled instead. A reservation can cover consumable resources 
 with the global host, any execution host and any queue. For parallel jobs reservations are done also for slots 
-resource as specified in sge_pe(5). As job runtime the maximum of the time specified with `-l h_rt=...` or 
+resource as specified in xxqs_name_sxx_pe(5). As job runtime the maximum of the time specified with `-l h_rt=...` or 
 `-l s_rt=...` is assumed. For jobs that have neither of them the default_duration is assumed. Reservations prevent 
-jobs of lower priority as specified in sge_priority(5) from utilizing the reserved resource quota during the time 
+jobs of lower priority as specified in xxqs_name_sxx_priority(5) from utilizing the reserved resource quota during the time 
 of reservation. Jobs of lower priority are allowed to utilize those reserved resources only if their prospective job 
 end is before the start of the reservation (backfilling). Reservation is done only for non-immediate jobs (-now no)
 that request reservation (-R y). If max_reservation is set to "0" no job reservation is done.
@@ -341,7 +341,7 @@ max_reservation parameter this technique can be used to narrow down performance 
 
 ## default_duration
 
-When job reservation is enabled through max_reservation sched_conf(5) parameter the default duration is assumed 
+When job reservation is enabled through max_reservation xxqs_name_sxx_sched_conf(5) parameter the default duration is assumed 
 as runtime for jobs that have neither `-l h_rt=...` nor `-l s_rt=...` specified. In contrast to a
 *h_rt*/*s_rt* time limit the default_duration is not enforced.
 

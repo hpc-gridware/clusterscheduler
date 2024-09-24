@@ -68,7 +68,7 @@ Display help information for the `qacct` command.
 The name, an expression for matching names, or ID of the job during execution for which accounting information is 
 printed. If neither a name nor an ID is given all jobs are enlisted. This option changes the output format of 
 `qacct`. If activated, CPU times are no longer accumulated but the "raw" accounting information is printed in a 
-formatted form instead. See accounting(5) for an explanation of the displayed information.
+formatted form instead. Seexxqs_name_sxx_accounting(5) for an explanation of the displayed information.
 
 ## -l *attr=val,...*  
 A resource requirement specification which must be met by the queues in which the jobs being accounted were 

@@ -476,9 +476,9 @@ configuration.
 
 ## enforce_user
 
-If set to *true*, a user(5) must exist to allow for job submission. Jobs are rejected if no corresponding user exists.
+If set to *true*, a xxqs_name_sxx_user(5) must exist to allow for job submission. Jobs are rejected if no corresponding user exists.
 
-If set to *auto*, a user(5) object for the submitting user will automatically be created during job submission, if 
+If set to *auto*, a xxqs_name_sxx_user(5) object for the submitting user will automatically be created during job submission, if 
 one does not already exist. The *auto_user_oticket*, *auto_user_fshare*, *auto_user_default_project*, and 
 *auto_user_delete_time* configuration parameters will be used as default attributes of the new xxqs_name_sxx_user(5)
 object.

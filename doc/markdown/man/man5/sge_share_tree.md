@@ -40,13 +40,13 @@ The format of a share tree file is defined as follows:
 
 -   The parameter *shares* defines the share of the node among the nodes with the same parent node.
 
--   A user leaf node named 'default' can be defined as a descendant of a project(5)) node in the share tree. The 
+-   A user leaf node named 'default' can be defined as a descendant of a xxqs_name_sxx_project(5)) node in the share tree. The 
     default node defines the number of shares for users who are running in the project, but who do not have a user 
     node defined under the project. The default user node is a convenient way of specifying a single node for all users
     which should receive an equal share of the project resources. The default node may be specified by itself or 
-    with other user(5)) nodes at the same level below a project. All users, whether explicitly specified as a 
-    user node or those which map to the 'default' user node must have a corresponding user(5)) object defined in 
-    order to get shares. Do not configure a user(5) object named 'default'.
+    with other xxqs_name_sxx_user(5)) nodes at the same level below a project. All users, whether explicitly specified as a 
+    user node or those which map to the 'default' user node must have a corresponding xxqs_name_sxx_user(5)) object defined in 
+    order to get shares. Do not configure a xxqs_name_sxx_user(5) object named 'default'.
 
 # EXAMPLES
 

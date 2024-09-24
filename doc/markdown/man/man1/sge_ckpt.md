@@ -21,7 +21,7 @@ system kernel.
 
 Checkpointing jobs need to be identified to the xxQS_NAMExx system by using the `-ckpt` option of the qsub(1) command. 
 The argument to this flag refers to a so called checkpointing environment, which defines the attributes of the 
-checkpointing method to be used (see checkpoint(5) for details). Checkpointing environments are setup by the qconf(1)
+checkpointing method to be used (see xxqs_name_sxx_checkpoint(5) for details). Checkpointing environments are setup by the qconf(1)
 options `-ackpt`, `-dckpt`, `-mckpt` and `-sckpt`. The qsub(1) option `-c` can be used to overwrite the *when* 
 attribute for the referenced checkpointing environment.
 
@@ -31,9 +31,9 @@ checkpointing jobs are aborted under conditions, for which batch or interactive 
 unaffected. These conditions are:
 
 -   Explicit suspension of the queue or job via qmod(1) by the cluster administration or a queue owner if the *x* 
-    occasion specifier (see qsub(1) `-c` and checkpoint(5)) was assigned to the job.
+    occasion specifier (see qsub(1) `-c` and xxqs_name_sxx_checkpoint(5)) was assigned to the job.
 
--   A load average value exceeding the suspend threshold as configured for the corresponding queues (see queue_conf(5)).
+-   A load average value exceeding the suspend threshold as configured for the corresponding queues (see xxqs_name_sxx_queue_conf(5)).
 
 -   Shutdown of the xxQS_NAMExx execution daemon xxqs_name_sxx_execd8(8) being responsible for the checkpointing job.
 
@@ -59,7 +59,7 @@ amount of free disk space, such jobs may suffer long turnaround times.
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), qconf(1), qmod(1), qsub(1), checkpoint(5) 
+xxqs_name_sxx_intro(1), qconf(1), qmod(1), qsub(1), xxqs_name_sxx_checkpoint(5) 
 
 # COPYRIGHT
 

@@ -161,7 +161,7 @@ could be transferred into
 
 ## pe_list
 
-The list of administrator-defined parallel environment (see sge_pe(5)) names to be associated with the queue. 
+The list of administrator-defined parallel environment (see xxqs_name_sxx_pe(5)) names to be associated with the queue. 
 The default is *NONE*.
 
 ## ckpt_list

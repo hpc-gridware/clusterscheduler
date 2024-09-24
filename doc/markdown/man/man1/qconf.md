@@ -83,7 +83,7 @@ xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
 ## -Acal *fname*
 Adds a new calendar definition to the xxQS_NAMExx environment. Calendars are used in xxQS_NAMExx for defining
 availability and unavailability schedules of queues. The format of a calendar definition is described in
-calendar_conf(5). The calendar definition is taken from the file *fname*. Requires root/manager privileges.
+xxqs_name_sxx_calendar_conf(5). The calendar definition is taken from the file *fname*. Requires root/manager privileges.
 
 ## -ace *ce_name*
 Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define

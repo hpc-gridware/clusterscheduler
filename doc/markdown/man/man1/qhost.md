@@ -93,10 +93,10 @@ consisting of,
   or combinations thereof.
 
 If the state is a(alarm) at least one of the load thresholds defined in the *load_thresholds* list of the queue 
-configuration (see queue_conf(5)) is currently exceeded, which prevents from scheduling further jobs to that queue.
+configuration (see xxqs_name_sxx_queue_conf(5)) is currently exceeded, which prevents from scheduling further jobs to that queue.
 
 As opposed to this, the state A(larm) indicates that at least one of the suspend thresholds of the queue 
-(see queue_conf(5)) is currently exceeded. This will result in jobs running in that queue being successively 
+(see xxqs_name_sxx_queue_conf(5)) is currently exceeded. This will result in jobs running in that queue being successively 
 suspended until no threshold is violated.
 
 The states s(uspended) and d(isabled) can be assigned to queues and released via the qmod(1) command. 

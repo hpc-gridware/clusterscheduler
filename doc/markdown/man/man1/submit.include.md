@@ -65,7 +65,7 @@ the *rsh_daemon* and *rlogin_daemon* parameters in the global and local configur
 An xxQS_NAMExx `rshd` or `rlogind` is used if the parameters are not set. If the parameters are set, they should be 
 set to something like `/usr/sbin/in.rshd` or `/usr/sbin/in.rlogind`. On the client-side, the *rsh_command* and
 *rlogin_command* parameters can be set in the global and local configuration settings of xxqs_name_sxx_conf(5). If 
-they are not set, special xxQS_NAMExx rsh*(1) and rlogin(1) binaries delivered with xxQS_NAMExx are used. Use the 
+they are not set, special xxQS_NAMExx rsh(1) and rlogin(1) binaries delivered with xxQS_NAMExx are used. Use the 
 cluster configuration parameters to integrate mechanisms like `ssh` or the rsh(1) and rlogin(1) facilities supplied 
 with the operating system.
 
@@ -1253,7 +1253,7 @@ too volatile. To cause -w e verification to be passed at submission time, it is 
 Available for `qsub`, `qsh`, `qrsh` and `qalter` only.
 
 Execute the job from the directory specified in working_dir. This switch will activate xxQS_NAMExx's path aliasing 
-facility, if the corresponding configuration files are present (see *xxqs_name_sxx_aliases*(5)).
+facility, if the corresponding configuration files are present (see xxqs_name_sxx_aliases(5)).
 
 `qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
 after a restart or migration of the job, however. 

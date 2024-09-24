@@ -96,7 +96,7 @@ For a complete list of common environment variables used by all xxQS_NAMExx comm
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), host_aliases(5),
+xxqs_name_sxx_intro(1),xxqs_name_sxx_host_aliases(5),
 
 # COPYRIGHT
 
