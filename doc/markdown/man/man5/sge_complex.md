@@ -72,7 +72,7 @@ It allows maintaining the corresponding resources on a host level and at the sam
 virtual free memory (h_vmem) can be managed for a host, for example, and a subset of the total amount can be associated 
 with a queue on that host.
 
-## List of default host/queue resource
+## List of default host/queue resources
 
 ### qname
 
