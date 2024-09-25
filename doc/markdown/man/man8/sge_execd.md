@@ -71,11 +71,6 @@ submitted by that same user are handled correctly by the system.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-**sgepasswd contains a list of user names and their** corresponding
-encrypted passwords. If available, the password file will be used by
-**sge_execd. To change the contents ** of this file please use the
-**sgepasswd command. It is not advised to change ** that file manually.
-
 ## <xxqs_name_sxx_root>/<cell>/common/configuration
 xxQS_NAMExx global configuration
 

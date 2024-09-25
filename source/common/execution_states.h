@@ -88,11 +88,11 @@
 #define SSTATE_NO_CWD              28
 #define SSTATE_AFS_PROBLEM         29
 #define SSTATE_APPERROR            30
-#define SSTATE_PASSWD_FILE_ERROR   31
-#define SSTATE_PASSWD_MISSING      32
-#define SSTATE_PASSWD_WRONG        33
-#define SSTATE_HELPER_SERVICE_ERROR 34
-#define SSTATE_HELPER_SERVICE_BEFORE_JOB 35
+#define SSTATE_UNUSED1             31
+#define SSTATE_UNUSED2             32
+#define SSTATE_UNUSED3             33
+#define SSTATE_UNUSED4             34
+#define SSTATE_UNUSED5             35
 #define SSTATE_CHECK_DAEMON_CONFIG 36
 #define SSTATE_QMASTER_ENFORCED_LIMIT 37
 #define SSTATE_ADD_GRP_SET_ERROR   38

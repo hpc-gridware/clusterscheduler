@@ -68,11 +68,6 @@ The following exit values are returned:
 
 # FILES
 
-**sgepasswd contains a list of user names and their** corresponding
-encrypted passwords. If available, the password file will be used by
-**sge_shepherd. To change the contents ** of this file please use the
-**sgepasswd command. It is not advised to change ** that file manually.
-
 ## <execd_spool>/job_dir/<job_id>	
 job specific directory
 

@@ -87,11 +87,11 @@ get_sstate_description(int sstate) {
            {"searching requested shell",                         SSTATE_NO_SHELL},
            {"changing into working directory",                   SSTATE_NO_CWD},
            {"rescheduling on application error",                 SSTATE_APPERROR},
-           {"accessing sgepasswd file",                          SSTATE_PASSWD_FILE_ERROR},
-           {"entry is missing in password file",                 SSTATE_PASSWD_MISSING},
-           {"wrong password",                                    SSTATE_PASSWD_WRONG},
-           {"communicating with Cluster Scheduler Helper Service", SSTATE_HELPER_SERVICE_ERROR},
-           {"before job in Cluster Scheduler Helper Service",      SSTATE_HELPER_SERVICE_BEFORE_JOB},
+           {"unused1",                                           SSTATE_UNUSED1},
+           {"unused2",                                           SSTATE_UNUSED2},
+           {"unused3",                                           SSTATE_UNUSED3},
+           {"unused4",                                           SSTATE_UNUSED4},
+           {"unused5",                                           SSTATE_UNUSED5},
            {"checking configured daemons",                       SSTATE_CHECK_DAEMON_CONFIG},
            {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT}
    };

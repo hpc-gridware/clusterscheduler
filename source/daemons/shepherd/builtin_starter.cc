@@ -363,18 +363,11 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       shepherd_trace(err_str);
       shepherd_trace("try running further with uid=%d", (int)getuid());
    } else if (ret > 0) {
-      if(ret == 2) {
-         shepherd_state = SSTATE_PASSWD_FILE_ERROR;
-      } else if (ret == 3) {
-         shepherd_state = SSTATE_PASSWD_MISSING;
-      } else if (ret == 4) {
-         shepherd_state = SSTATE_PASSWD_WRONG;
-      } else if (ret == 5) {
+      if (ret == 5) {
          shepherd_state = SSTATE_ADD_GRP_SET_ERROR;
       }
-      /*
-      ** violation of min_gid or min_uid
-      */
+
+      // violation of min_gid or min_uid
       shepherd_error(1, err_str);
    }
 
@@ -769,13 +762,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          shepherd_trace(err_str);
          shepherd_trace("try running further with uid=%d", (int)getuid());
       } else if (ret > 0) {
-         if(ret == 2) {
-            shepherd_state = SSTATE_PASSWD_FILE_ERROR;
-         } else if (ret == 3) {
-            shepherd_state = SSTATE_PASSWD_MISSING;
-         } else if (ret == 4) {
-            shepherd_state = SSTATE_PASSWD_WRONG;
-         }
          shepherd_error(1, err_str);
       }
    }

@@ -86,11 +86,11 @@ int admail_states[MAX_SSTATE + 1] = {
 /* 28 SSTATE_NO_CWD              */   0,
 /* 29 SSTATE_AFS_PROBLEM         */   0,
 /* 30 SSTATE_APPERROR            */   0,
-/* 31 SSTATE_PASSWD_FILE_ERROR   */   0,
-/* 32 SSTATE_PASSWD_MISSING      */   0,
-/* 33 SSTATE_PASSWD_WRONG        */   0,
-/* 34 SSTATE_HELPER_SERVICE_ERROR */  0,
-/* 35 SSTATE_HELPER_SERVICE_BEFORE_JOB */ 0,
+/* 31 SSTATE_UNUSED1             */   0,
+/* 32 SSTATE_UNUSED2             */   0,
+/* 33 SSTATE_UNUSED3             */   0,
+/* 34 SSTATE_UNUSED4             */   0,
+/* 35 SSTATE_UNUSED5             */   0,
 /* 36 SSTATE_CHECK_DAEMON_CONFIG */   0 };
 
 u_long64 admail_times[MAX_SSTATE + 1];
