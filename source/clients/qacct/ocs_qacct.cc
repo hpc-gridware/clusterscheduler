@@ -2139,11 +2139,14 @@ read_json(const rapidjson::Value &json, const char *name, const char *default_va
    return default_value;
 }
 
+static rapidjson::Document document;
+
 static int
 sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *options) {
    DENTER(TOP_LAYER);
 
-   rapidjson::Document document;
+   document.SetNull();
+   document.GetAllocator().Clear();
    document.Parse(line);
 
    if (document.IsObject()) {
