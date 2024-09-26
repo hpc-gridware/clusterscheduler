@@ -364,7 +364,7 @@ specification is hh:mm:ss. If the special value 00:00:00 is set, then jobs will 
 Rescheduling is only initiated for jobs which have activated the rerun flag (see the `-r y` option of qsub(1) and 
 the *rerun* option of xxqs_name_sxx_queue_conf(5)). Parallel jobs are only rescheduled if the host on which their 
 master task executes is in unknown state. The behavior of *reschedule_unknown* for parallel jobs and for jobs 
-without the rerun flag be set can be adjusted using the *qmaster_params settings* *ENABLE_RESCHEDULE_KILL* and 
+without the rerun flag be set can be adjusted using the *qmaster_params* settings *ENABLE_RESCHEDULE_KILL* and 
 *ENABLE_RESCHEDULE_SLAVE*.
 
 Checkpointing jobs will only be rescheduled when the *when* option of the corresponding checkpointing environment 
@@ -613,7 +613,7 @@ The global configuration entry for this value may be overwritten by the executio
 
 A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The following values are recognized:
 
-### ENABLE_ENFORCE_MASTER_LIMIT  
+***ENABLE_ENFORCE_MASTER_LIMIT***
 
 If this parameter is set then the *s_rt*, *h_rt* limit of a running job are tested and executed by the 
 xxqs_name_sxx_qmaster(8) when the xxqs_name_sxx_execd(8) where the job is in unknown state.
@@ -630,12 +630,12 @@ After the restart of xxqs_name_sxx_qmaster(8) the limit enforcement will at firs
 of the biggest *load_report_interval interval* defined in sge_conf(5) has been elapsed. This will give the execution 
 daemons enough time to reregister at master daemon.
 
-### ENABLE_FORCED_QDEL_IF_UNKNOWN
+***ENABLE_FORCED_QDEL_IF_UNKNOWN***
 
 If this parameter is set then a deletion request for a job is automatically interpreted as a forced deletion request 
 (see `-f` of qdel(1)) if the host, where the job is running is in unknown state.
 
-### ENABLE_FORCED_QDEL  
+***ENABLE_FORCED_QDEL***
 
 If this parameter is set, non-administrative users can force deletion of their own jobs via the `-f` option of 
 qdel(1). Without this parameter, forced deletion of jobs is only allowed by the xxQS_NAMExx manager or operator.
@@ -645,13 +645,13 @@ or not. In case of administrative users, the jobs are removed from the internal 
 For regular users, the equivalent of a normal qdel(1) is executed first, and deletion is forced only if the normal
 cancellation was unsuccessful.
 
-### FORBID_RESCHEDULE  
+***FORBID_RESCHEDULE***
 
 If this parameter is set, re-queuing of jobs cannot be initiated by the job script which is under control of the user. 
 Without this parameter jobs returning the value 99 are rescheduled. This can be used to cause the job to be restarted 
 at a different machine, for instance if there are not enough resources on the current one.
 
-### FORBID_APPERROR  
+***FORBID_APPERROR***
 
 If this parameter is set, the application cannot set itself to error state. Without this parameter jobs returning 
 the value 100 are set to error state (and therefore can be manually rescheduled by clearing the error state). This 
@@ -659,30 +659,30 @@ can be used to set the job to error state when a starting condition of the appli
 application itself has been started, or when a cleanup procedure (e.g. in the epilog) decides that it is necessary 
 to run the job again, by returning 100 in the prolog, pe_start, job script, pe_stop or epilog script.
 
-### DISABLE_AUTO_RESCHEDULING  
+***DISABLE_AUTO_RESCHEDULING***
 
 Note: Deprecated, may be removed in future release.  
 If set to "true" or "1", the *reschedule_unknown* parameter is not taken into account.
 
-### ENABLE_RESCHEDULE_KILL 
+***ENABLE_RESCHEDULE_KILL***
 
 If set to "true" or "1", the *reschedule_unknown* parameter affects also jobs which have the rerun flag not 
 activated (see the `-r y` option of qsub(1) and the *rerun* option of xxqs_name_sxx_queue_conf(5)), but
 they are just finished as they can't be rescheduled.
 
-### ENABLE_RESCHEDULE_SLAVE  
+***ENABLE_RESCHEDULE_SLAVE***
 
 If set to "true" or "1" xxQS_NAMExx triggers job rescheduling also when the host where the slave tasks of a 
 parallel job executes is in unknown state, if the *reschedule_unknown* parameter is activated.
 
-### MAX_DYN_EC  
+***MAX_DYN_EC***
 
 Sets the max number of dynamic event clients (as used by qsub -sync y and by xxQS_NAMExx DRMAA API library 
 sessions). The default is set to 1000. The number of dynamic event clients should not be bigger than
 half of the number of file descriptors the system has. The number of file descriptors are shared among the 
 connections to all exec hosts, all event clients, and file handles that the qmaster needs.
 
-### MONITOR_TIME  
+***MONITOR_TIME*** 
 
 Specifies the time interval when the monitoring information should be printed. The monitoring is disabled by 
 default and can be enabled by specifying an interval. The monitoring is per thread and is written to
@@ -691,32 +691,32 @@ prints the monitoring information approximately every 10 seconds. The specified 
 a fixed interval. The interval that is actually used is printed. In this example, the interval could be anything 
 between 9 seconds and 20 seconds.
 
-### LOG_MONITOR_MESSAGE  
+***LOG_MONITOR_MESSAGE*** 
 
 Monitoring information is logged into the messages files by default. This information can be accessed via by 
 qping(1). If monitoring is always enabled, the messages files can become quite large. This switch disables logging 
 into the messages files, making `qping -f` the only source of monitoring data.
 
-### PROF_SIGNAL  
+***PROF_SIGNAL***
 
 Profiling provides the user with the possibility to get system measurements. This can be useful for debugging or 
 optimization of the system. The profiling output will be done within the messages file.
 
 Enables the profiling for qmaster signal thread. (e.g. PROF_SIGNAL=true)
 
-### PROF_WORKER  
+***PROF_WORKER***
 
 Enables the profiling for qmaster worker threads. (e.g. PROF_WORKER=true)
 
-### PROF_LISTENER  
+***PROF_LISTENER*** 
 
 Enables the profiling for qmaster listener threads. (e.g. PROF_LISTENER=true)
 
-### PROF_DELIVER  
+***PROF_DELIVER***
 
 Enables the profiling for qmaster event deliver thread. (e.g. PROF_DELIVER=true)
 
-### PROF_TEVENT 
+***PROF_TEVENT***
 
 Enables the profiling for qmaster timed event thread. (e.g. PROF_TEVENT=true)
 
@@ -724,60 +724,62 @@ Please note, that the cpu utime and stime values contained in the profiling outp
 These cpu usage statistics are per process statistics. So the printed profiling values for cpu mean "cpu time 
 consumed by sge_qmaster (all threads) while the reported profiling level was active".
 
-### STREE_SPOOL_INTERVAL  
+***STREE_SPOOL_INTERVAL*** 
 
 Sets the time interval for spooling the sharetree usage. The default is set to 00:04:00. The setting accepts 
 colon-separated string or seconds. There is no setting to turn the sharetree spooling off. (e.g. 
 STREE_SPOOL_INTERVAL=00:02:00)
 
-### MAX_JOB_DELETION_TIME  
+***MAX_JOB_DELETION_TIME***
 
 Sets the value of how long the qmaster will spend deleting jobs. After this time, the qmaster will continue with 
 other tasks and schedule the deletion of remaining jobs at a later time. The default value is 3 seconds, and will be 
 used if no value is entered. The range of valid values is \> 0 and \<= 5. (e.g. MAX_JOB_DELETION_TIME=1)
 
-### gdi_timeout  
+***gdi_timeout***
 
 Sets how long the communication will wait for gdi send/receive operations. The default value is set to 60 seconds. 
 After this time, the communication library will retry, if "gdi_retries" is configured, receiving the gdi request. 
 In case of not configured "gdi_retries" the communication will return with a "gdi receive failure" (e.g.
 gdi_timeout=120 will set the timeout time to 120 sec) Configuring no gdi_timeout value, the value defaults to 60 sec.
 
-### gdi_retries  
+***gdi_retries***
 
 Sets how often the gdi receive call will be repeated until the gdi receive error appears. The default is set to 0. 
 In this case the call will be done 1 time with no retry. Setting the value to -1 the call will be done permanently. 
 In combination with gdi_timeout parameter it is possible to configure a system with eg. slow NFS, to make sure that 
 all jobs will be submitted. (e.g. gdi_retries=4)
 
-### cl_ping  
+***cl_ping***
 
 Turns on/off a communication library ping. This parameter will create additional debug output. This output shows 
 information about the error messages which are returned by communication and it will give information about the 
 application status of the qmaster. eg, if it's unclear what's the reason for gdi timeouts, this may show you some
 useful messages. The default value is false (off) (e.g cl_ping=false)
 
-### SCHEDULER_TIMEOUT  
+***SCHEDULER_TIMEOUT***
 
 Setting this parameter allows the scheduler GDI event acknowledge timeout to be manually configured to a specific 
 value. Currently the default value is 10 minutes with the default scheduler configuration and limited between 600 
 and 1200 seconds. Value is limited only in case of default value. The default value depends on the current scheduler
 configuration. The *SCHEDULER_TIMEOUT* value is specified in seconds.
 
-### jsv_timeout  
+***jsv_timeout***
 
 This parameter measures the response time of the server JSV. In the event that the response time of the JSV is 
 longer than the timeout value specified, this will cause the JSV to be re-started. The default value for the timeout 
 is 10 seconds and if modified, must be greater than 0. If the timeout has been reach, the JSV will only try to 
 re-start once, if the timeout is reached again an error will occur.
 
-### jsv_threshold  
+***jsv_threshold***
+
 The threshold of a JSV is measured as the time it takes to perform a server job verification. If this value is 
 greater than the user defined value, it will cause logging to appear in the qmaster messages file at the INFO level. 
 By setting this value to 0, all jobs will be logged in the qmaster messages file. This value is specified in 
 milliseconds and has a default value of 5000.
 
-### OLD_RESCHEDULE_BEHAVIOR  
+***OLD_RESCHEDULE_BEHAVIOR***
+
 Beginning with version 8.0.0 of Univa Grid Engine the scheduling behavior changed for jobs that are rescheduled by 
 users. Rescheduled jobs will not be put at the beginning of the pending job list anymore. The submit time of those 
 jobs is set to the end time of the previous run. Due to that those rescheduled jobs will be appended at the end of
@@ -785,14 +787,14 @@ the pending job list as if a new job would have been submitted. To achive the ol
 *OLD_RESCHEDULE_BEHAVIOR* has to be set. Please note that this parameter is declared as deprecated. So it
 might be removed with next minor release.
 
-### OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB  
+***OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB***
 Beginning with version 8.0.0 of Univa Grid Engine the scheduling behavior changed for array job tasks that are 
 rescheduled by users. As soon as a array job task gets scheduled all remaining pending tasks of that job will be 
 put at the end of the pending job list. To achive the old scheduling behavior the paramter 
 *OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB* has to be set. Please note that this parameter is declared as
 deprecated. So it might be removed with next minor release.
 
-### ENABLE_SUBMIT_LIB_PATH  
+***ENABLE_SUBMIT_LIB_PATH***
 
 Beginning with version 8.0.1p3 of Univa Grid Engine environment variables like LD_PRELOAD, LD_LIBRARY_PATH and 
 similar variables by default may no longer be set via submit option -v or -V.
@@ -812,7 +814,7 @@ take effect only for new connections. The default for *qmaster_params* is *NONE*
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
 
-### ENABLE_SUBMIT_LD_PRELOAD  
+***ENABLE_SUBMIT_LD_PRELOAD***
 
 Beginning with version 8.0.1p3 of Univa Grid Engine the environment variable *LD_PRELOAD* by default may no longer be 
 set via submit option `-v` or `-V`.
@@ -839,12 +841,12 @@ This value is a global configuration parameter only. It cannot be overwritten by
 
 This is used for passing additional parameters to the xxQS_NAMExx execution daemon. The following values are recognized:
 
-### ACCT_RESERVED_USAGE  
+***ACCT_RESERVED_USAGE*** 
 
 If this parameter is set to true, the usage of reserved resources is used for the accounting entries *cpu*, *mem* 
 and *io* instead of the measured usage.
 
-### IGNORE_NGROUPS_MAX_LIMIT  
+***IGNORE_NGROUPS_MAX_LIMIT***
 
 If a user is assigned to *NGROUPS_MAX-1* supplementary groups so that xxQS_NAMExx is not able to add an addition one 
 for job tracking then the job will go into error state when it is started. Administrators that want prevent the 
@@ -853,7 +855,7 @@ system doing so can set this parameter. In this case the NGROUPS_MAX limit is ig
 *ENABLE_ADDGRP_KILL* will have no effect. Please note that it is not recommended to use this parameters. Instead, the 
 group membership of the submit user should be reduced.
 
-### KEEP_ACTIVE  
+***KEEP_ACTIVE***
 
 During normal operation, the spool directory for a job on the execution host is removed after a job terminates. This
 has the consequence that also low level information about the job execution is removed. To change this behavior, the
@@ -868,7 +870,7 @@ hosts. To get rid of all kept spool directories, the administrator can set the p
 the deletion of all previously kept spool directories within the first minute after an execution daemon has received 
 the new setting.
 
-### PTF_MIN_PRIORITY, PTF_MAX_PRIORITY  
+***PTF_MIN_PRIORITY, PTF_MAX_PRIORITY***
 
 The maximum/minimum priority which xxQS_NAMExx will assign to a job. Typically, this is a negative/positive value in 
 the range of -20 (maximum) to 19 (minimum) for systems which allow setting of priorities with the nice(2) system 
@@ -877,24 +879,25 @@ The default priority range (varies from system to system) is installed either by
 setting a value of -999. See the "messages" file of the execution daemon for the predefined default value on your 
 hosts. The values are logged during the startup of the execution daemon.
 
-### PROF_EXECD  
+***PROF_EXECD***
 
 Enables the profiling for the execution daemon. (e.g. PROF_EXECD=true)
 
-### NOTIFY_KILL  
+***NOTIFY_KILL***  
 
 The parameter allows you to change the notification signal for the signal SIGKILL (see `-notify` option of qsub(1)). 
 The parameter either accepts signal names (use the `-l` option of kill(1)) or the special value *NONE*. If set to 
 *NONE*, no notification signal will be sent. If it is set to *TERM*, for instance, or another signal name then
 this signal will be sent as notification signal.
 
-### NOTIFY_SUSP  
+***NOTIFY_SUSP***
+
 With this parameter it is possible to modify the notification signal for the signal SIGSTOP (see `-notify` parameter 
 of qsub(1)). The parameter either accepts signal names (use the `-l` option of kill(1)) or the special value *NONE*. 
 If set to *NONE*, no notification signal will be sent. If it is set to *TSTP*, for instance, or another signal name 
 then this signal will be sent as notification signal.
 
-### SHARETREE_RESERVED_USAGE  
+***SHARETREE_RESERVED_USAGE*** 
 
 Note: Deprecated, may be removed in future release. If this parameter is set to true, the usage of reserved resources is
 taken for the xxQS_NAMExx share tree consumption instead of measured usage.  
@@ -904,7 +907,8 @@ enabled in the parallel environment, reserved usage will only be reported by the
 No per parallel task usage records will be sent from execd to qmaster, which can significantly reduce load on 
 qmaster when running large tightly integrated parallel jobs.
 
-### USE_QSUB_GID  
+***USE_QSUB_GID***
+
 If this parameter is set to true, the primary group ID active when a job was submitted will be used as the primary 
 group ID for job execution. If the parameter is not set (default), the primary group ID defined for the job owner is used. 
 The information will be taken from the configured directory service on the execution node. If no such service is
@@ -914,7 +918,7 @@ This feature is only available for jobs submitted via `qsub`, `qrsh`, and `qmake
 `qmake` jobs if the underlying transport mechanism is either `builtin` (default) or if provided `rsh` and `rshd` 
 components provided with xxQS_NAMExx are used.
 
-### S_DESCRIPTORS, H_DESCRIPTORS, S_MAXPROC, H_MAXPROC, S_MEMORYLOCKED, H_MEMORYLOCKED, S_LOCKS, H_LOCKS  
+***S_DESCRIPTORS, H_DESCRIPTORS, S_MAXPROC, H_MAXPROC, S_MEMORYLOCKED, H_MEMORYLOCKED, S_LOCKS, H_LOCKS***
 
 Specifies soft and hard resource limits as implemented by the setrlimit(2) system call. See this manual page on 
 your system for more information. These parameters complete the list of limits set by the RESOURCE LIMITS parameter 
@@ -930,7 +934,7 @@ number of bytes of virtual memory that may be locked into RAM.
 All of these values can be specified using the multiplier letters k, K, m, M, g and G, see xxsq_name_sxx_types(1) 
 for details.
 
-### INHERIT_ENV  
+***INHERIT_ENV***
 
 This parameter indicates whether the shepherd should allow the environment inherited by the execution daemon from 
 the shell that started it to be inherited by the job it's starting. When true, any environment variable that is set 
@@ -939,7 +943,7 @@ environment of any jobs run by that execution daemon, unless the environment var
 as PATH or LOGNAME. If set to false, each job starts with only the environment variables that are explicitly passed 
 on by the execution daemon, such as PATH and LOGNAME. The default value is true.
 
-### SET_LIB_PATH  
+***SET_LIB_PATH***
 
 This parameter tells the execution daemon whether to add the xxQS_NAMExx shared library directory to the library 
 path of executed jobs. If set to true, and INHERIT_ENV is also set to true, the xxQS_NAMExx shared library 
@@ -950,13 +954,13 @@ inherited from the shell which started the execution daemon. If INHERIT_ENV is a
 path will be empty. After the execution daemon has set the library path, it may be further altered by the 
 shell in which the job is executed, or by the job script itself. The default value for SET_LIB_PATH is false.
 
-### ENABLE_ADDGRP_KILL  
+***ENABLE_ADDGRP_KILL*** 
 
 If this parameter is set then xxQS_NAMExx uses the supplementary group ids (see *gid_range*) to identify all 
 processes which are to be terminated when a job is deleted, or when xxqs_name_sxx_shepherd(8) cleans up after 
 job termination.
 
-### PDC_INTERVAL  
+***PDC_INTERVAL***  
 
 This parameter defines the interval how often the PDC (Portable Data Collector) is executed by the execution 
 daemon. The PDC is responsible for enforcing the resource limits s_cpu, h_cpu, s_vmem and h_vmem (see
@@ -969,14 +973,15 @@ often or never the online usage can be incomplete or totally missing (for exampl
 jobs might be missing) and the resource limit enforcement is less accurate or would not happen if PDC is turned of 
 completely.
 
-### ENABLE_BINDING  
+***ENABLE_BINDING***
 
 If this parameter is set then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
 binding parameters that are specified during submission time of a job. This parameter is not set per default and 
 therefore all binding related information will be ignored. Find more information for job to core binding in the 
 section `-binding` of qsub(1).
 
-### SCRIPT_TIMEOUT  
+***SCRIPT_TIMEOUT***
+
 This parameter allows to configure the allowed runtime of execution side scripts like prolog, epilog, and the PE 
 start and stop procedure. SCRIPT_TIMEOUT is a time value (see xxqs_name_sxx_queue_conf(5) for a
 definition of the syntax of time values). The default value is 120 seconds.
@@ -991,12 +996,12 @@ The global configuration entry for this value may be overwritten by the executio
 Used to define the behavior of reporting modules in the xxQS_NAMExx qmaster. Changes to the *reporting_params* 
 takes immediate effect. The following values are recognized:
 
-### accounting  
+***accounting***
 
 If this parameter is set to true, the accounting file is written. The accounting file is prerequisite for using 
 the *qacct* command.
 
-### reporting  
+***reporting***  
 
 If this parameter is set to true, the reporting file is written. The reporting file contains data that can be used 
 for monitoring and analysis, like job accounting, job log, host load and consumables, queue status and consumables 
@@ -1005,14 +1010,14 @@ file can become quite large. Only activate the reporting file if you have a proc
 reporting file! See  xxsq_name_sxx_reporting(5) for further information about format and contents of the
 reporting file.
 
-### flush_time  
+***flush_time***  
 
 Contents of the reporting file are buffered in the xxQS_NAMExx qmaster and flushed at a fixed interval. This 
 interval can be configured with the *flush_time* parameter. It is specified as a time value in the format HH:MM:SS. 
 Sensible values range from a few seconds to one minute. Setting it too low may slow down the qmaster. Setting it 
 too high will make the qmaster consume large amounts of memory for buffering data.
 
-### accounting_flush_time  
+***accounting_flush_time***  
 
 Contents of the accounting file are buffered in the xxQS_NAMExx qmaster and flushed at a fixed interval. This 
 interval can be configured with the *accounting_flush_time* parameter. It is specified as a time value
@@ -1022,12 +1027,12 @@ data. Setting it to 00:00:00 will disable accounting data buffering; as soon as 
 written to the accounting file. If this parameter is not set, the accounting data flush interval will
 default to the value of the *flush_time* parameter.
 
-### joblog  
+***joblog***  
 
 If this parameter is set to true, the reporting file will contain job logging information. See  
 xxsq_name_sxx_reporting(5) for more information about job logging.
 
-### sharelog  
+***sharelog***  
 
 The xxQS_NAMExx qmaster can dump information about sharetree configuration and use to the reporting file. The 
 parameter *sharelog* sets an interval in which sharetree information will be dumped. It is set in the format 
@@ -1035,7 +1040,7 @@ HH:MM:SS. A value of 00:00:00 configures qmaster not to dump sharetree informati
 up to hours are sensible values for this parameter. See xxsq_name_sxx__reporting(5) for further information 
 about sharelog.
 
-### log_consumables  
+***log_consumables***  
 
 This parameter controls writing of consumable resources to the reporting file. When set to *log_consumables=true* 
 information about all consumable resources (their current usage and their capacity) will be written to the 
@@ -1045,7 +1050,7 @@ variables will be written to the reporting file, that are configured in the *rep
 configuration and whose definition or value actually changed. This parameter is deprecated and will get removed 
 in the next major release. See  xxsq_name_sxx_host_conf(5) for further information about *report_variables*.
 
-### old_accounting  
+***old_accounting*** 
 
 This parameter controls the output format of the accounting file. If not specified or set to default (*false*) 
 then the new one line JSON file format is used formatting each accounting record as JSON structure
@@ -1054,7 +1059,7 @@ with attributes separated by colon. The old file format is kept for compatibilit
 extensions to the accounting attributes are only made in the new format and that the old format is considered 
 deprecated and will eventually be removed in a future version.
 
-### old_reporting  
+***old_reporting***
 
 This parameter controls the output format of the reporting file. If not specified or set to default (*false*) then 
 the new one line JSON file format is used formatting each reporting record as JSON structure in one line. If it is 
@@ -1063,7 +1068,7 @@ The old file format is kept for compatibility reasons. Please note that extensio
 attributes are only made in the new format and that the old format is considered deprecated and will eventually be 
 removed in a future version.
 
-### usage_patterns  
+***usage_patterns***
 
 This parameter allows to add arbitrary usage values to the accounting file and to accounting
 records in the reporting file.  The format is:

@@ -215,7 +215,7 @@ Changing *params* will take immediate effect. The default for *params* is none.
 
 The following values are recognized:
 
-### DURATION_OFFSET  
+***DURATION_OFFSET***
 
 If set, overrides the default of value 60 seconds. This parameter is used by the xxQS_NAMExx scheduler when 
 planning resource utilization as the delta between net job runtimes and total time until resources become
@@ -230,16 +230,16 @@ delays before job start is the time until the end of a *schedule_interval*, the 
 If the offset is too low, resource reservations (see *max_reservation*) can be delayed repeatedly due to an overly
 optimistic job circulation time.
 
-### PROFILE 
+***PROFILE*** 
 
 If set equal to 1, the scheduler logs profiling information summarizing each scheduling run.
 
-### MONITOR 
+***MONITOR*** 
 
 If set equal to 1, the scheduler records information for each scheduling run allowing to reproduce job 
 resources utilization in the file *\<xxqs_name_sxx_root>/\<cell>/common/schedule*.
 
-### PE_RANGE_ALG 
+***PE_RANGE_ALG***
 
 This parameter sets the algorithm for the pe range computation. The default is automatic, which means that the 
 scheduler will select the best one, and it should not be necessary to change it to a different setting in normal 
