@@ -1,5 +1,55 @@
 # Full List of Fixes
 
+# 9.0.0 RC4
+
+### Improvement
+
+[CS-70](https://hpc-gridware.atlassian.net/browse/CS-70) Add information about architecture support and complexes to the man pages
+
+[CS-71](https://hpc-gridware.atlassian.net/browse/CS-71) create a how-to area where such documents can be stored
+
+[CS-258](https://hpc-gridware.atlassian.net/browse/CS-258) reformat qsub, sge\_ckpt, sge\_hostnameutils
+
+[CS-260](https://hpc-gridware.atlassian.net/browse/CS-260) reformat submit.include man pages
+
+[CS-262](https://hpc-gridware.atlassian.net/browse/CS-262) reformat sge\_bootstrap, sge\_calendar\_conf, sge\_checkpoint man pages
+
+[CS-263](https://hpc-gridware.atlassian.net/browse/CS-263) reformat sge\_complex, sge\_conf, sge\_host\_aliases man page
+
+[CS-264](https://hpc-gridware.atlassian.net/browse/CS-264) reformat sge\_host\_conf, sge\_hostgroup, sge\_pe man page
+
+[CS-265](https://hpc-gridware.atlassian.net/browse/CS-265) reformat sge\_priority, sge\_project, sge\_qstat man pages
+
+[CS-266](https://hpc-gridware.atlassian.net/browse/CS-266) reformat sge\_qtask, sge\_queue\_conf, sge\_reporting man page
+
+[CS-267](https://hpc-gridware.atlassian.net/browse/CS-267) reformat sge\_request, sge\_resource\_quota, sge\_sched\_conf man page
+
+[CS-268](https://hpc-gridware.atlassian.net/browse/CS-268) reformat sge\_share\_tree, sge\_user man page
+
+[CS-608](https://hpc-gridware.atlassian.net/browse/CS-608) add options to the parallel environment for multithreaded or multiprocess applications
+
+[CS-611](https://hpc-gridware.atlassian.net/browse/CS-611) add option to the parallel environment to ignore slave requests for slave tasks on the master host
+
+[CS-617](https://hpc-gridware.atlassian.net/browse/CS-617) reformat sge\_execd, sge\_qmaster, sge\_shadowd, sge\_shepherd
+
+### Epic
+
+[CS-41](https://hpc-gridware.atlassian.net/browse/CS-41) Provide man pages 
+
+### Bug
+
+[CS-614](https://hpc-gridware.atlassian.net/browse/CS-614) testsuite shows tcl\_files directory as part of the checktree
+
+[CS-615](https://hpc-gridware.atlassian.net/browse/CS-615) qacct working on one line JSON accesses already freed memory
+
+[CS-616](https://hpc-gridware.atlassian.net/browse/CS-616) Remove references to sgepasswd which is not required anymore
+
+[CS-621](https://hpc-gridware.atlassian.net/browse/CS-621) final job cleanup broken on execd when keep\_active is reset from 'error' to default
+
+[CS-622](https://hpc-gridware.atlassian.net/browse/CS-622) TS: create\_shell\_script\(\) does reuse old script file although arguments changed 
+
+[CS-623](https://hpc-gridware.atlassian.net/browse/CS-623) TS: -scope tests fail in environments where primary hostname is fully qualified
+
 ## 9.0.0 RC3
 
 ### Improvement
