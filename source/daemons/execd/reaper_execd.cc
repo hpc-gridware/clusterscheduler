@@ -1310,7 +1310,9 @@ clean_up_old_jobs(bool startup) {
    //    - when KEEP_ACTIVE has been changed
    // - simulate_jobs is set
    // - there are no jobs in the job list
-   if (!enforce_cleanup_old_jobs || mconf_get_simulate_jobs() ||
+   if (enforce_cleanup_old_jobs) {
+      enforce_cleanup_old_jobs = false;
+   } else if (mconf_get_simulate_jobs() ||
        lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
       // Do early exit:
       // - if cleanup was already done
