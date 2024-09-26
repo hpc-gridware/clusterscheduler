@@ -37,6 +37,7 @@
 #include <cstring>
 
 #include "uti/sge_dstring.h"
+#include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -1143,7 +1144,16 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
             // now do booking for the (remaining) slave tasks, if any
             if (slave_debit_slots != 0) {
                double slave_dval = 0.0;
-               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
+               // if we are on the master host, and we shall ignore slave requests to booking only for slots
+               if (is_master_task && lGetBool(pe, PE_ignore_slave_requests_on_master_host)) {
+                  tmp_ret = true;
+                  if (sge_strnullcmp(name, SGE_ATTR_SLOTS) == 0) {
+                     slave_dval = 1.0;
+                  }
+               } else {
+                  // we consider the slave requests
+                  tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
+               }
                if (tmp_ret && slave_dval != 0.0) {
                   // we have a slave request
                   slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);

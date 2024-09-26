@@ -257,6 +257,83 @@ usage records will be sent from execd to qmaster, which can
 significantly reduce load on qmaster when running large tightly
 integrated parallel jobs.
 
+## **ign_sreq_on_mhost**
+
+This parameter can be used to define the scheduling behavior for parallel jobs
+which are submitted with the **-scope** submit option, see *qsub*(1).
+
+By default, **ign_sreq_on_mhost** is set to FALSE. This means that slave tasks
+which are running besides the master task on the master host must fulfill the
+resource requirements specified in the slave scope request. For consumable slave
+requests enough capacity needs to be available and the slave tasks consume the
+requested amount from consumable resources.
+
+There are situations where the master task requires multiple slots and its
+resource requirements are well known and either no slave tasks are started
+on the master host or they are started as part of the master task,
+as sub processes or as threads.
+In this case **ign_sreq_on_mhost** can be set to TRUE. This means that
+on the master host only global and master requests need to be fulfilled,
+slave requests are ignored.
+Slave tasks on the master host will not consume any consumable resources except
+for slots.
+
+In order for queue limits to be correctly applied to the master task
+**ign_sreq_on_mhost** set to TRUE
+should be combined with **master_forks_slaves** set to TRUE.
+
+## **master_forks_slaves**
+
+This parameter is only checked if **control_slaves** (see above) is set
+to TRUE and thus xxQS_NAMExx is the creator of the slave tasks of a
+parallel application via *xxqs_name_sxx_execd*(8) and
+*xxqs_name_sxx_shepherd*(8).
+
+Slave tasks of tightly integrated parallel jobs are usually started by calling
+`qrsh -inherit <slave_host> <command>` on the master host.
+
+Usually applications either start every slave task individually with a separate
+`qrsh -inherit` call  
+or the master task starts slave tasks on the master host per fork/exec or as threads
+of the master process.
+
+If slave tasks on the master host are started individually then keep the setting of
+**master_forks_slaves** as FALSE (default).  
+If slave tasks on the master host are started via fork/exec or as threads
+then set **master_forks_slaves** to TRUE.
+
+The setting of **master_forks_slaves** influences the behavior of the *xxqs_name_sxx_execd*(8):
+If **master_forks_slaves** is set to TRUE, no slave tasks can be started with `qrsh -inherit`
+on the master host  
+and limits set for the master task (the job script) will be multiplied by the
+number of slots allocated for the job on the master host.
+
+## **daemon_forks_slaves**
+
+This parameter is only checked if **control_slaves** (see above) is set
+to TRUE and thus xxQS_NAMExx is the creator of the slave tasks of a
+parallel application via *xxqs_name_sxx_execd*(8) and
+*xxqs_name_sxx_shepherd*(8).
+
+Slave tasks of tightly integrated parallel jobs are usually started by calling
+`qrsh -inherit <slave_host> <command>` on the master host.
+
+Depending on the application, either slave tasks are started individually on the slave hosts
+with a separate `qrsh -inherit` call per task.  
+Or a single process is started per slave host which then forks/execs the slave tasks 
+or starts them as threads.
+
+Default setting of **daemon_forks_slaves** is FALSE. Use this setting if slave tasks are started
+individually on the slave hosts.  
+If a single process is started per slave host which then forks/execs the slave tasks or starts them as threads
+then set **daemon_forks_slaves** to TRUE.
+
+The setting of **daemon_forks_slaves** influences the behavior of the *xxqs_name_sxx_execd*(8):
+If **daemon_forks_slaves** is set to TRUE, only a single task (the daemon)
+can be started with `qrsh -inherit`  
+and limits set for the one task (the daemon) will be multiplied by the number of slots allocated for
+the job on the slave host.
+
 # RESTRICTIONS
 
 **Note**, that the functionality of the start-up, shutdown and signaling

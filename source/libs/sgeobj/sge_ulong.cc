@@ -232,6 +232,17 @@ bool double_print_to_dstring(double value, dstring *string)
    DRETURN(ret);
 }
 
+bool double_print_to_dstring(double value, dstring *string, u_long32 type) {
+   switch (type) {
+      case TYPE_TIM:
+         return double_print_time_to_dstring(value, string);
+      case TYPE_MEM:
+         return double_print_memory_to_dstring(value, string);
+      default:
+         return double_print_to_dstring(value, string);
+   }
+}
+
 /****** sge_ulong/ulong_parse_date_time_from_string() **************************
 *  NAME
 *     ulong_parse_date_time_from_string() -- Parse string into date/time ulong

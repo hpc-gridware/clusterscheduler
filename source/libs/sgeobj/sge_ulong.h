@@ -49,8 +49,11 @@ double_print_memory_to_dstring(double value, dstring *string);
 bool 
 double_print_int_to_dstring(double value, dstring *string);
 
-bool 
+bool
 double_print_to_dstring(double value, dstring *string);
+
+bool
+double_print_to_dstring(double value, dstring *string, u_long32 type);
 
 bool
 ulong_parse_date_time_from_string(u_long32 *this_ulong,

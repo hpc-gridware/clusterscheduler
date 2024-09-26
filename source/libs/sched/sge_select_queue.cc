@@ -6434,6 +6434,12 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
    // when calculating the max_slots after matching the slave requests we need to add the one slot we might
    // have got for the master task
    int master_slot = 0, master_slot_qend = 0;
+   // we might not have global or master requests at all
+   // so lets assume that a master task can run,
+   // if global or master request matching fails then revert master_slot / master_slot_qend to 0
+   if ((need_master || is_master_host) && lGetBool (a->pe, PE_job_is_first_task)) {
+      master_slot = master_slot_qend = 1; // we have a master slot now and later
+   }
    lListElem *jrs;
    for_each_rw (jrs, lGetListRW(a->job, JB_request_set_list)) {
       u_long32 scope = lGetUlong(jrs, JRS_scope);
@@ -6450,8 +6456,6 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                //       need to do it per request? Or only if there is some overlap between the master and slave requests?
                //       We have such scenarios in the scope_basic test (-scope master -l int=1 -scope slave -l dbl=2,
                //       and they work fine.
-               master_slot = 1; // already have the master task, need to add it to the possible slave tasks
-               // @todo anything to do about master_slot_qend?
             }
             continue;
          } else {
@@ -6475,9 +6479,25 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             continue;
          }
       }
-      // @todo do the same check as above also for the global requests
+      // @todo do the same check as above also for the global request
 
-      DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests\n", object_name, job_scope_name(scope));
+      // consider PE setting ign_sreq_on_mhost if we are on the (potential) master host
+      if (scope == JRS_SCOPE_SLAVE &&
+          (need_master || is_master_host) &&
+          lGetBool(a->pe, PE_ignore_slave_requests_on_master_host)) {
+         if (master_slot != 0) {
+            // we can run the master task here, ignore slave requests
+            DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE\n", object_name);
+            continue;
+         } else {
+            // we cannot run the master task here, try to use the host/the queue for slave tasks
+            DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE but no master task, potential slave host\n",
+                    object_name);
+         }
+      }
+
+      DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests, master_slot = %d\n", object_name,
+              job_scope_name(scope), master_slot);
 
       lList *requests = lGetListRW(jrs, JRS_hard_resource_list);
       for_each_rw (req, requests) {
@@ -6486,6 +6506,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
          result = ri_slots_by_time(a, &avail, &avail_qend,
                                    rue_list, req, load_attr, total_list, master_usage, queue, layer, lc_factor,
                                    &reason, allow_non_requestable, false, object_name);
+         DPRINTF("  -> ri_slots_by_time returned %d\n", result);
          if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
             // if we are checking global requests, and it is a CONSUMABLE_JOB:
             // special handling: the queue can still be used as slave queue
@@ -6529,19 +6550,27 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             switch (result) {
                case DISPATCH_OK:
                   master_usage = requests;            // for slave matching need to consider what the master task would consume
-                  if (lGetBool (a->pe, PE_job_is_first_task)) {
-                     master_slot = master_slot_qend = 1; // we have a master slot now and later
+                  // @todo sometimes ri_slots_by_time() seems to return 0 (DISPATCH_OK) instead of DISPATCH_NOT_AT_TIME
+                  if (avail == 0) {
+                     master_slot = 0;
+                     master_usage = nullptr;
+                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   }
                   break;
                case DISPATCH_NOT_AT_TIME:
                   // not suitable now, but later
                   host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   master_usage = requests; // for slave matching need to consider what the master task would consume
-                  if (lGetBool (a->pe, PE_job_is_first_task)) {
-                     master_slot = 0;
-                     master_slot_qend = 1;    // for later we have a master slot
-                  }
+                  DPRINTF("    --> we matched the master requests, -> not at time, clearing master tags and master_slot\n");
+                  master_slot = 0;
                   break;
+               case DISPATCH_MISSING_ATTR:
+                  // we are e.g. on queue level, e.g. a memory consumable does not exist here
+                  // but has already been matched on higher levels - fine, we can use the queue as master queue
+                  if (tag < lGetUlong(req, CE_tagged)) {
+                     DPRINTF("   --> we matched the master requests, -> missing attr, but already satisfied\n");
+                  }
+               break;
                case DISPATCH_NEVER_CAT:
                case DISPATCH_NEVER_JOB:
                   DPRINTF("    --> we matched the master requests, -> never_cat or never_job, clearing master tags\n");
@@ -6573,12 +6602,15 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
                if (lGetUlong(req, CE_tagged) < tag && tag != RQS_TAG)
                   lSetUlong(req, CE_tagged, tag);
 
+               // slave requests matched we might have to add one slot for the master task
                if (scope != JRS_SCOPE_MASTER) {
-                  if (avail < INT_MAX) {
-                     avail += master_slot;
-                  }
-                  if (avail_qend < INT_MAX) {
-                     avail_qend += master_slot_qend;
+                  if (scope == JRS_SCOPE_SLAVE) {
+                     if (avail < INT_MAX) {
+                        avail += master_slot;
+                     }
+                     if (avail_qend < INT_MAX) {
+                        avail_qend += master_slot_qend;
+                     }
                   }
                   max_slots = MIN(max_slots, avail);
                   max_slots_qend = MIN(max_slots_qend, avail_qend);
@@ -6630,26 +6662,30 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             // if we still search for a master host/queue, then need to remember that this host/queue is suitable
             switch (result) {
                case DISPATCH_OK:
-                  // if the global requests have matched (and there might not be any master specific requests)
-                  // the host / the queue might be suited for the master task - need to consider its slot
-                  if (need_master && lGetBool (a->pe, PE_job_is_first_task)) {
-                     master_slot = master_slot_qend = 1; // we have a master slot now and later
-                  }
                   break;
                case DISPATCH_NOT_AT_TIME:
                   // if the global requests have matched (and there might not be any master specific requests)
                   // the host / the queue might be suited for the master task - need to consider its slot
                   if (need_master && lGetBool (a->pe, PE_job_is_first_task)) {
                      master_slot = 0;
-                     master_slot_qend = 1; // we have a master slot later
+                  }
+                  break;
+               case DISPATCH_MISSING_ATTR:
+                  // we are e.g. on queue level, e.g. a memory consumable does not exist here
+                  // but has already been matched on higher levels - fine, we can use the queue as master queue
+                  if (tag < lGetUlong(req, CE_tagged)) {
+                     DPRINTF("   --> we matched the global requests, -> missing attr, but already satisfied\n");
                   }
                   break;
                default:
-                  // just fall through to result handling below
+                  // cannot be master host - actually cannot run anything at all, see below
+                  master_slot = master_slot_qend = 0;
                   break;
             }
          }
+         // @todo if one request of a scope has not matched, we can break out of the request loop (?)
       } // end for each request per scope
+      // @todo if global requests have not matched, no need to check other scopes
    } // end for each scope
 
    *slots = max_slots;

@@ -184,6 +184,12 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
 
    /* ---- PE_accounting_summary */
    attr_mod_bool(pe, new_pe, PE_accounting_summary, "accounting_summary");
+   /* ---- PE_ignore_slave_requests_on_master_host */
+   attr_mod_bool(pe, new_pe, PE_ignore_slave_requests_on_master_host, "ign_sreq_on_mhost");
+   /* ---- PE_master_forks_slaves */
+   attr_mod_bool(pe, new_pe, PE_master_forks_slaves, "master_forks_slaves");
+   /* ---- PE_daemon_forks_slaves */
+   attr_mod_bool(pe, new_pe, PE_daemon_forks_slaves, "daemon_forks_slaves");
 
    /* -------- PE_resource_utilization */
    if (add) {

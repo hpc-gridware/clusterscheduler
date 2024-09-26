@@ -1,15 +1,18 @@
-# Version: 6.2
+# Version: 9.0.0
 # 
 # DO NOT MODIFY THIS FILE MANUALLY!
 #
-pe_name            make
-slots              999
-user_lists         NONE
-xuser_lists        NONE
-start_proc_args    NONE
-stop_proc_args     NONE
-allocation_rule    $round_robin
-control_slaves     TRUE
-job_is_first_task  FALSE
-urgency_slots      min
-accounting_summary TRUE
+pe_name              make
+slots                999
+user_lists           NONE
+xuser_lists          NONE
+start_proc_args      NONE
+stop_proc_args       NONE
+allocation_rule      $round_robin
+control_slaves       TRUE
+job_is_first_task    FALSE
+urgency_slots        min
+accounting_summary   TRUE
+ign_sreq_on_mhosts   FALSE
+master_forks_slaves  FALSE
+daemon_forks_slaves  FALSE

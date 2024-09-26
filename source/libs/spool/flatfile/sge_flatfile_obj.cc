@@ -538,18 +538,21 @@ spooling_field AR_fields[] = {
 };
 
 spooling_field PE_fields[] = {
-   {  PE_name,            18,   "pe_name",           false, nullptr, false, nullptr, nullptr},
-   {  PE_slots,           18,   "slots",             false, nullptr, false, nullptr, nullptr},
-   {  PE_user_list,       18,   "user_lists",        false, US_sub_fields, false, nullptr, nullptr},
-   {  PE_xuser_list,      18,   "xuser_lists",       false, US_sub_fields, false, nullptr, nullptr},
-   {  PE_start_proc_args, 18,   "start_proc_args",   false, nullptr, false, nullptr, nullptr},
-   {  PE_stop_proc_args,  18,   "stop_proc_args",    false, nullptr, false, nullptr, nullptr},
-   {  PE_allocation_rule, 18,   "allocation_rule",   false, nullptr, false, nullptr, nullptr},
-   {  PE_control_slaves,  18,   "control_slaves",    false, nullptr, false, nullptr, nullptr},
-   {  PE_job_is_first_task, 18,   "job_is_first_task",false,  nullptr, false, nullptr, nullptr},
-   {  PE_urgency_slots,   18,   "urgency_slots",     false, nullptr, false, nullptr, nullptr},
-   {  PE_accounting_summary, 18,   "accounting_summary", false, nullptr, false, nullptr, nullptr},
-   {  NoName,             18,   nullptr,                false, nullptr, false, nullptr, nullptr}
+   {  PE_name,                                 20,   "pe_name",              false, nullptr, false, nullptr, nullptr},
+   {  PE_slots,                                20,   "slots",                false, nullptr, false, nullptr, nullptr},
+   {  PE_user_list,                            20,   "user_lists",           false, US_sub_fields, false, nullptr, nullptr},
+   {  PE_xuser_list,                           20,   "xuser_lists",          false, US_sub_fields, false, nullptr, nullptr},
+   {  PE_start_proc_args,                      20,   "start_proc_args",      false, nullptr, false, nullptr, nullptr},
+   {  PE_stop_proc_args,                       20,   "stop_proc_args",       false, nullptr, false, nullptr, nullptr},
+   {  PE_allocation_rule,                      20,   "allocation_rule",      false, nullptr, false, nullptr, nullptr},
+   {  PE_control_slaves,                       20,   "control_slaves",       false, nullptr, false, nullptr, nullptr},
+   {  PE_job_is_first_task,                    20,   "job_is_first_task",    false,  nullptr, false, nullptr, nullptr},
+   {  PE_urgency_slots,                        20,   "urgency_slots",        false, nullptr, false, nullptr, nullptr},
+   {  PE_accounting_summary,                   20,   "accounting_summary",   false, nullptr, false, nullptr, nullptr},
+   {  PE_ignore_slave_requests_on_master_host, 20,   "ign_sreq_on_mhost",    false, nullptr, false, nullptr, nullptr},
+   {  PE_master_forks_slaves,                  20,   "master_forks_slaves",  false, nullptr, false, nullptr, nullptr},
+   {  PE_daemon_forks_slaves,                  20,   "daemon_forks_slaves",  false, nullptr, false, nullptr, nullptr},
+   {  NoName,                                  20,   nullptr,                false, nullptr, false, nullptr, nullptr}
 };
 
 spooling_field RQS_fields[] = {

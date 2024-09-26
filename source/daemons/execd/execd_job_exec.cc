@@ -34,6 +34,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cerrno>
+#include <climits>
 #include <pwd.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -550,37 +551,78 @@ static lList *
 job_get_queue_for_task(lListElem *jatep, lListElem *petep, 
                        const char *qualified_hostname, const char *queuename) 
 {
-   const lListElem *this_q, *gdil_ep;
-
    DENTER(TOP_LAYER);
 
-   for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-      /* if a certain queuename is requested, check only this queue */
-      if (queuename != nullptr &&
-          strcmp(queuename, lGetString(gdil_ep, JG_qname)) != 0) {
-         DTRACE;
+   bool on_master_host = lGetUlong(jatep, JAT_status) == JSLAVE ? false : true;
+   const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+   if (pe == nullptr) {
+      // can not really happen, we start a task for a tightly integrated parallel job
+      DRETURN(nullptr);
+   }
+
+   // if we are on the master host and master_forks_slaves is set, not a single qrsh -inherit is allowed
+   if (on_master_host && lGetBool(pe, PE_master_forks_slaves)) {
+      DRETURN(nullptr);
+   }
+
+   const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+
+   // in case of daemon_forks_slaves we have to check if we may start more tasks
+   if (lGetBool(pe, PE_daemon_forks_slaves)) {
+      int max_slots = INT_MAX;
+      if (on_master_host) {
+         // on the master host we can have the job script itself + one daemon starting slave tasks
+         max_slots = 2;
+      } else {
+         // on a slave host we can only have the daemon starting slave task
+         max_slots = 1;
+      }
+
+      // we can have multiple queue instances on the host
+      // count how many slots are used in total
+      // and check if we may still start more
+      int total_slots_used = 0;
+      const void *iterator = nullptr;
+      const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+      const lListElem *gdil_ep;
+      while ((gdil_ep = next_gdil_ep) != nullptr) {
+         next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
+
+         const lListElem *queue = lGetObject(gdil_ep, JG_queue);
+         if (queue != nullptr) {
+            total_slots_used += qinstance_slots_used(queue);
+            if (total_slots_used >= max_slots) {
+               // all possible tasks are already running
+               DRETURN(nullptr);
+            }
+         }
+      }
+   }
+
+   // if we get here we may still start tasks
+   // select a queue
+   const void *iterator = nullptr;
+   const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+   const lListElem *gdil_ep;
+   while ((gdil_ep = next_gdil_ep) != nullptr) {
+      next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
+
+      // if a specific queue is requested, skip non matching queues
+      if (queuename != nullptr && sge_strnullcmp(queuename, lGetString(gdil_ep, JG_qname)) != 0) {
          continue;
       } 
 
-      this_q = lGetObject(gdil_ep, JG_queue);
-
-      DTRACE;
-
-      /* Queue must exist and be on this host */
-      if (this_q != nullptr &&
-                     sge_hostcmp(lGetHost(gdil_ep, JG_qhostname), 
-                                 qualified_hostname) == 0) {
-
-         DTRACE;
-
+      const lListElem *queue = lGetObject(gdil_ep, JG_queue);
+      if (queue != nullptr) {
          /* Queue must have free slots */
-         if (qinstance_slots_used(this_q) < (int)lGetUlong(this_q, QU_job_slots)) {
-            lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname),
-                                                          petep);
+         if (qinstance_slots_used(queue) < (int)lGetUlong(queue, QU_job_slots)) {
+            lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname), petep);
             DRETURN(jat_gdil); 
          } 
       }
    }
+
+   // if we get here we didn't find a queue instance with free slots
    DRETURN(nullptr);
 }
 

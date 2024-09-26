@@ -83,6 +83,7 @@
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_path_alias.h"
+#include "sgeobj/sge_ulong.h"
 
 #include "comm/commlib.h"
 
@@ -260,6 +261,68 @@ static int addgrpid_already_in_use(long add_grp_id) {
 
 #endif
 #endif
+
+static const char *
+sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_long32 type,
+                       const lListElem *master_q, const lListElem *jatep, const lListElem *petep,
+                       const char *qualified_hostname) {
+   DENTER(TOP_LAYER);
+
+   const char *ret = lGetString(master_q, limit_nm);
+   // can not really happen but just to be sure
+   if (ret == nullptr) {
+      ret = "INFINITY";
+   }
+
+   DPRINTF("sge_exec_job_get_limit: limit_name=%s, limit=%s\n", limit_name, ret);
+
+   // for sequential jobs we are done, for tightly integrated parallel jobs we need to check the pe settings
+   // if the limit in the master queue is infinity there is no need to do calculations
+   // if it is not infinity we need to check pe setting master_forks_slave and daemon_forks_slave
+   // and sum up the limits of the (possibly multiple) queues
+   const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+   if (pe != nullptr && lGetBool(pe, PE_control_slaves) &&
+       strcasecmp(ret, "INFINITY") != 0) {
+      DPRINTF("sge_exec_job_get_limit: we have a tightly integrated parallel job and limit is not infinity\n");
+      if ((petep == nullptr && lGetBool(pe, PE_master_forks_slaves)) || // master task forks slaves
+                               lGetBool(pe, PE_daemon_forks_slaves)) {  // one slave task forks slaves
+         DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
+         double limit = 0;
+         const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+         const void *iterator = nullptr;
+         const lListElem *gdil_ep;
+         const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+         while ((gdil_ep = next_gdil_ep) != nullptr) {
+            next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
+
+            const lListElem *queue = lGetObject(gdil_ep, JG_queue);
+            if (queue != nullptr) {
+               const char *limit_str = lGetString(queue, limit_nm);
+               if (limit_str != NULL) {
+                  // if one of the queue instances has a limit of infinity the sum is infinity
+                  if (strcasecmp(limit_str, "INFINITY") == 0) {
+                     DPRINTF("sge_exec_job_get_limit: qinstance %s has infinity\n", lGetString(gdil_ep, JG_qname));
+                     ret = "INFINITY";
+                     break;
+                  } else {
+                     u_long32 slots = lGetUlong(gdil_ep, JG_slots);
+                     double dbl;
+                     parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
+                     limit += dbl * slots;
+                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_u32 ", sum %f\n",
+                             lGetString(gdil_ep, JG_qname), limit_str, slots, dbl * slots);
+                  }
+               }
+            }
+         } // end: loop over all gdil elements on this host
+         double_print_to_dstring(limit, dstr, type);
+         ret = sge_dstring_get_string(dstr);
+         DPRINTF("sge_exec_job_get_limit: sum of limits %s\n", ret);
+      } // end: we need to sum up the limits
+   } // end: we have a tightly integrated pe job
+
+   DRETURN(ret);
+}
 
 /************************************************************************
  part of execd. Setup job environment then start shepherd.
@@ -1223,35 +1286,42 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    } else {
       fprintf(fp, "ckpt_job=0\n");
    }
+
    /*
     * Shorthand for this code sequence:
     *   - obtain resource A from master queue and write out to shepherd config file
     *   - check if resource is job consumable and indicate to shepherd
     */
-#define WRITE_COMPLEX_AND_CONSUMABLE_ATTR(A) \
-   fprintf(fp, #A"=%s\n", lGetString(master_q, QU_##A)); \
-   job_is_requesting_consumable(jep, #A) ? fprintf(fp, #A"_is_consumable_job=1\n") : fprintf(fp, #A"_is_consumable_job=0\n");
+#define WRITE_COMPLEX_AND_CONSUMABLE_ATTR(A, T) \
+   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jatep, petep, qualified_hostname)); \
+   job_is_requesting_consumable(jep, #A) ? fprintf(fp, #A"_is_consumable_job=1\n") : fprintf(fp, #A"_is_consumable_job=0\n")
+#define WRITE_COMPLEX_ATTR(A, T) \
+   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jatep, petep, qualified_hostname))
+                                 \
+   {
+      DSTRING_STATIC(dstr_limit, 64);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_vmem, TYPE_MEM);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_vmem, TYPE_MEM);
 
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_vmem);
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_vmem);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_cpu, TYPE_TIM);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_cpu, TYPE_TIM);
 
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_cpu);
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_cpu);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_stack, TYPE_MEM);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_stack, TYPE_MEM);
 
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_stack);
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_stack);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_data, TYPE_MEM);
+      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_data, TYPE_MEM);
 
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_data);
-   WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_data);
+      // @todo why not use WRITE_COMPLEX_AND_CONSUMABLE_ATTR? Can't they be made consumable?
+      WRITE_COMPLEX_ATTR(h_core, TYPE_MEM);
+      WRITE_COMPLEX_ATTR(s_core, TYPE_MEM);
 
-   fprintf(fp, "h_core=%s\n", lGetString(master_q, QU_h_core));
-   fprintf(fp, "s_core=%s\n", lGetString(master_q, QU_s_core));
+      WRITE_COMPLEX_ATTR(h_rss, TYPE_MEM);
+      WRITE_COMPLEX_ATTR(s_rss, TYPE_MEM);
 
-   fprintf(fp, "h_rss=%s\n", lGetString(master_q, QU_h_rss));
-   fprintf(fp, "s_rss=%s\n", lGetString(master_q, QU_s_rss));
-
-   fprintf(fp, "h_fsize=%s\n", lGetString(master_q, QU_h_fsize));
-   fprintf(fp, "s_fsize=%s\n", lGetString(master_q, QU_s_fsize));
+      WRITE_COMPLEX_ATTR(h_fsize, TYPE_MEM);
+      WRITE_COMPLEX_ATTR(s_fsize, TYPE_MEM);
+   }
 
    {
       char *s;

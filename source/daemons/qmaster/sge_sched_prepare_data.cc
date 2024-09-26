@@ -262,6 +262,7 @@ static const int pe_nm[] = {
         PE_job_is_first_task,
         PE_resource_utilization,
         PE_urgency_slots,
+        PE_ignore_slave_requests_on_master_host,
         NoName
 };
 

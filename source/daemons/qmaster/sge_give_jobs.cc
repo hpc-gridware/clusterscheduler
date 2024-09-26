@@ -186,7 +186,7 @@ static int queue_field[] = {QU_qhostname,
 /************************************************************************
  Master function to give job to the execd.
 
- We make asynchron sends and implement a retry mechanism.
+ We make asynchronous sends and implement a retry mechanism.
  Do everything to make sure the execd is prepared for receiving the job.
  ************************************************************************/
 /* pe = is nullptr for serial jobs*/
