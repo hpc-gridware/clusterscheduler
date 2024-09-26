@@ -6550,7 +6550,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             switch (result) {
                case DISPATCH_OK:
                   master_usage = requests;            // for slave matching need to consider what the master task would consume
-                  // @todo sometimes ri_slots_by_time() seems to return 0 (DISPATCH_OK) instead of DISPATCH_NOT_AT_TIME
+                  // @todo CS-620 sometimes ri_slots_by_time() seems to return 0 (DISPATCH_OK) instead of DISPATCH_NOT_AT_TIME
                   if (avail == 0) {
                      master_slot = 0;
                      master_usage = nullptr;
