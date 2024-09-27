@@ -18,15 +18,37 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "ocs_BaseAccountingFileWriter.h"
 
 namespace ocs {
    void BaseAccountingFileWriter::update_config() {
+      DENTER(TOP_LAYER);
+
       ReportingFileWriter::update_config();
       // if the flush_time changed, need to re-calculate the next_flush_time
-      auto new_config_flush_time = sge_gmt32_to_gmt64(mconf_get_accounting_flush_time());
-      update_config_flush_time(new_config_flush_time);
+      int accounting_flush_time = mconf_get_accounting_flush_time();
+      // a value of 0 means immediate flush after each accounting record
+      if (accounting_flush_time == 0) {
+         DPRINTF("Enabled immediate flush for accounting records\n");
+         accounting_immediate_flush = true;
+      } else {
+         DPRINTF("Disabled immediate flush for accounting records\n");
+         accounting_immediate_flush = false;
+      }
+
+      // if the accounting_flush_time parameter is not set, or if it is 0 (immediate flush),
+      // we use the reporting_flush_time for the regular flushing
+      u_long64 new_flush_time;
+      if (accounting_flush_time > 0) {
+         new_flush_time = sge_gmt32_to_gmt64(accounting_flush_time);
+      } else {
+         new_flush_time = sge_gmt32_to_gmt64(mconf_get_reporting_flush_time());
+      }
+      update_config_flush_time(new_flush_time);
+
+      DRETURN_VOID;
    }
 }

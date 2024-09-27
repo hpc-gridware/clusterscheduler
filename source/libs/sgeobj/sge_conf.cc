@@ -2421,15 +2421,7 @@ int mconf_get_accounting_flush_time() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   if (accounting_flush_time >= 0) {
-      ret = accounting_flush_time;
-   }
-      /* If the accounting_flush_time is not set, use the reporting_flush_time
-       * instead. */
-   else {
-      DPRINTF("accounting_flush_time unset; using flush_time\n");
-      ret = reporting_flush_time;
-   }
+   ret = accounting_flush_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

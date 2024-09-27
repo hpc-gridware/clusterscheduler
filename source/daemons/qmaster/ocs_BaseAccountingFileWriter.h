@@ -25,10 +25,12 @@
 
 namespace ocs {
    class BaseAccountingFileWriter : public ReportingFileWriter {
-   private:
+   protected:
+      bool accounting_immediate_flush;
    public:
       explicit BaseAccountingFileWriter(std::string filename, bool write_comment_header)
-      : ReportingFileWriter(std::move(filename), write_comment_header) {
+      : ReportingFileWriter(std::move(filename), write_comment_header),
+         accounting_immediate_flush(false) {
       }
 
       void update_config() override;

@@ -60,8 +60,8 @@ namespace ocs {
             buffer += json_buffer.GetString();
             sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
 
-            // If the flush internal is set to 0, flush the accounting buffer after every write
-            if (config_flush_time == 0) {
+            // If immediate flushing is enabled, flush the buffer now
+            if (accounting_immediate_flush) {
                ret = flush();
             }
          }
