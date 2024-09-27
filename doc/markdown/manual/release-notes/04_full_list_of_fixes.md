@@ -50,6 +50,8 @@
 
 [CS-623](https://hpc-gridware.atlassian.net/browse/CS-623) TS: -scope tests fail in environments where primary hostname is fully qualified
 
+[CS-627](https://hpc-gridware.atlassian.net/browse/CS-627) error during start of prolog/epilog/pe_start/pe_stop is interpreted as job error and not as queue error
+
 ## 9.0.0 RC3
 
 ### Improvement

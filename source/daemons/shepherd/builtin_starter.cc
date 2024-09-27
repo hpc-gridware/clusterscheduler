@@ -1425,9 +1425,19 @@ int use_starter_method /* If this flag is set the shellpath contains the
             char failed_str[2048+128];
             snprintf(failed_str, sizeof(failed_str), "%s failed: %s", err_str, strerror(errno));
 
-            /* most of the problems here are related to the shell
-               i.e. -S /etc/passwd */
-            shepherd_state = SSTATE_NO_SHELL;
+            if (strcmp(childname, "prolog") == 0) {
+               shepherd_state = SSTATE_PROLOG_FAILED;
+            } else if (strcmp(childname, "epilog") == 0) {
+               shepherd_state = SSTATE_EPILOG_FAILED;
+            } else if (strcmp(childname, "pe_start") == 0) {
+               shepherd_state = SSTATE_PESTART_FAILED;
+            } else if (strcmp(childname, "pe_stop") == 0) {
+               shepherd_state = SSTATE_PESTOP_FAILED;
+            } else {
+               /* most of the problems here are related to the shell i.e. -S /etc/passwd */
+               shepherd_state = SSTATE_NO_SHELL;
+            }
+
             /* EXIT HERE IN CASE IF FAILURE */
             shepherd_error(1, failed_str);
          }
