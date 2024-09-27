@@ -135,7 +135,7 @@ namespace ocs {
     * - makes all configured writers read their configuration from the reporting_params
     */
    void ReportingFileWriter::update_config_all() {
-      const char *rp_str =  mconf_get_reporting_params();
+      const char *rp_str = mconf_get_reporting_params();
       std::string current_reporting_params = rp_str ? rp_str : "";
       sge_free(&rp_str);
       if (current_reporting_params != reporting_params) {
@@ -584,7 +584,7 @@ namespace ocs {
 
    void ReportingFileWriter::update_config() {
       // if the flush_time changed, need to re-calculate the next_flush_time
-      auto new_config_flush_time = mconf_get_reporting_flush_time();
+      auto new_config_flush_time = sge_gmt32_to_gmt64(mconf_get_reporting_flush_time());
       update_config_flush_time(new_config_flush_time);
    }
 
