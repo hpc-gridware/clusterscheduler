@@ -374,6 +374,7 @@ sge_event_master_destroy_transaction_store(void *transaction_store)
 {
    event_master_transaction_t *t_store = (event_master_transaction_t *)transaction_store;
    lFreeList(&(t_store->transaction_requests));
+   sge_free(&t_store);
 }
 
 static void
