@@ -645,7 +645,6 @@ int main(int argc, char *argv[])
    int failed = 0;
    int i; 
    char diag[DRMAA_ERROR_STRING_BUFFER];
-   lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qsub");
 
@@ -676,12 +675,14 @@ int main(int argc, char *argv[])
    ** since drmaa doesn't give an explicit handle to the context and sge_gdi 
    ** is used below, we provide our own context here
    */
+   lList *alp = nullptr;
    int gdi_errno = gdi_client_setup_and_enroll(JAPI, MAIN_THREAD, &alp);
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       DPRINTF("gdi_errno = %d", gdi_errno);
       answer_list_output(&alp);
       sge_exit(1);
    }
+   lFreeList(&alp);
 
    while (argc > 1) {
       /* map test name to test number */
