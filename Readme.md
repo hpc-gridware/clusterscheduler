@@ -78,6 +78,19 @@ Use it for testing purposes but not in a productive environment.
 - [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
 - [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
 
+## Other Documents
+
+- [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
+- [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
+
+## Cluster Scheduler Related Blog-Posts of HPC-Gridware
+
+- [Running Nextflow Pipelines on Gridware Cluster Scheduler: An RNA Sequencing Example using Apptainer](https://www.hpc-gridware.com/running-nextflow-pipelines-on-gridware-cluster-scheduler-an-rna-sequencing-example-using-apptainer/)
+- [Efficiently Managing GPUs with Open Cluster Scheduler’s RSMAP Resource Type](https://www.hpc-gridware.com/efficiently-managing-gpus-with-open-cluster-schedulers-rsmap-resource-type/)
+- [Open Cluster Scheduler: The Future of Open Source Workload Management](https://www.hpc-gridware.com/announcing-open-cluster-scheduler-next-generation-open-source-workload-management/)
+- [Preparations for the first version of Cluster Scheduler](https://www.hpc-gridware.com/preparations-for-the-first-version-of-cluster-scheduler/)
+- [One product, three people and a handful of companies](https://www.hpc-gridware.com/one-product-three-people-and-a-handful-of-companies/)
+
 ## License
 
 The original files contributed by Sun Microsystems are licensed under
