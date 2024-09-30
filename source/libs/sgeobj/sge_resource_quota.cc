@@ -1007,17 +1007,24 @@ rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstri
             // now do booking for the (remaining) slave tasks, if any
             if (slave_debit_slots != 0) {
                dval = 0.0;
-               tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE);
-               if (tmp_ret) {
-                  DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
-                          obj_name, sge_dstring_get_string(rue_name), slave_debit_slots);
-                  if (dval != 0.0) {
-                     // book it for the remaining slave tasks
-                     slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
-                     lAddDouble(rue_elem, RUE_utilized_now, slave_debit_slots * dval);
-                     mods++;
-                     did_booking = true;
+               // if we are on the master host, and we shall ignore slave requests to booking only for slots
+               if (is_master_task && lGetBool(pe, PE_ignore_slave_requests_on_master_host)) {
+                  tmp_ret = true;
+                  if (sge_strnullcmp(centry_name, SGE_ATTR_SLOTS) == 0) {
+                     dval = 1.0;
                   }
+               } else {
+                  tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, raw_centry,
+                                                          JRS_SCOPE_SLAVE);
+               }
+               if (tmp_ret && dval != 0.0) {
+                  DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
+                           obj_name, sge_dstring_get_string(rue_name), slave_debit_slots);
+                  // book it for the remaining slave tasks
+                  slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
+                  lAddDouble(rue_elem, RUE_utilized_now, slave_debit_slots * dval);
+                  mods++;
+                  did_booking = true;
                }
             }
          }
