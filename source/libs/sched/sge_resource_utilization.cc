@@ -879,17 +879,26 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
 
          // now do booking for the (remaining) slave tasks, if any
          if (slave_debit_slots != 0) {
+            bool tmp_ret;
             dval = 0.0;
-            if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_SLAVE)) {
-               if (dval != 0.0) {
-                  /* update RUE_utilized resource diagram to reflect jobs utilization */
-                  // book it for the remaining slave tasks
-                  slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
-                  utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
-                                  obj_name, type, for_job_scheduling, false);
-                  mods++;
-                  did_booking = true;
+            // if we are on the master host, and we shall ignore slave requests to booking only for slots
+            if (is_master_task && lGetBool(pe, PE_ignore_slave_requests_on_master_host)) {
+               tmp_ret = true;
+               if (sge_strnullcmp(name, SGE_ATTR_SLOTS) == 0) {
+                  dval = 1.0;
                }
+            } else {
+               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_SLAVE);
+            }
+
+            if (tmp_ret && dval != 0.0) {
+               /* update RUE_utilized resource diagram to reflect jobs utilization */
+               // book it for the remaining slave tasks
+               slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
+               utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
+                               obj_name, type, for_job_scheduling, false);
+               mods++;
+               did_booking = true;
             }
          }
       }
@@ -1022,9 +1031,17 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
 
             // now do booking for the (remaining) slave tasks, if any
             if (slave_debit_slots != 0) {
+               bool tmp_ret;
                dval = 0.0;
-               if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE)) {
-                  if (dval != 0.0) {
+               // if we are on the master host, and we shall ignore slave requests to booking only for slots
+               if (is_master_task && lGetBool(pe, PE_ignore_slave_requests_on_master_host)) {
+                  tmp_ret = true;
+                  if (sge_strnullcmp(centry_name, SGE_ATTR_SLOTS) == 0) {
+                     dval = 1.0;
+                  }
+               } else {
+                  tmp_ret = job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE);
+                  if (tmp_ret && dval != 0.0) {
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for the remaining slave tasks
                      slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
