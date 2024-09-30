@@ -495,7 +495,6 @@ void centry_redebit_consumables(const lList *centries) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each_ep(cqueue, master_cqueue_list) {
@@ -526,11 +525,7 @@ void centry_redebit_consumables(const lList *centries) {
          lListElem *qep = nullptr;
          int slots = 0;
          const char *last_hostname = nullptr;
-         const char *pe_name = lGetString(jatep, JAT_granted_pe);
-         const lListElem *pe = nullptr;
-         if (pe_name != nullptr) {
-            pe = pe_list_locate(master_pe_list, pe_name);
-         }
+         const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int qslots;

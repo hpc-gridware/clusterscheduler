@@ -1518,11 +1518,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
                int slots;
                bool is_master_task = false;
                const void *iterator = nullptr;
-               const char *pe_name = lGetString(jatep, JAT_granted_pe);
-               const lListElem *pe = nullptr;
-               if (pe_name != nullptr) {
-                  pe = pe_list_locate(master_pe_list, pe_name);
-               }
+               const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
                if (global_host || (lFirst(gdil) == lGetElemHostFirst(gdil, JG_qhostname, host, &iterator))) {
                   is_master_task = true;

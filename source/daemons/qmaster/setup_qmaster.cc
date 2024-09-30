@@ -1262,11 +1262,7 @@ static void debit_all_jobs_from_qs() {
          bool master_task = true;
          next_jatep = lNextRW(jatep);
 
-         const char *pe_name = lGetString(jatep, JAT_granted_pe);
-         const lListElem *pe = nullptr;
-         if (pe_name != nullptr) {
-            pe = pe_list_locate(master_pe_list, pe_name);
-         }
+         const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
          /* don't look at states - we only trust in "granted destin. ident. list" */
          const char *last_hostname = nullptr;

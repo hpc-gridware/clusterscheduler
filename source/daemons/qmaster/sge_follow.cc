@@ -555,14 +555,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          /* fill in master_queue */
          lSetString(jatp, JAT_master_queue, lGetString(master_qep, QU_full_name));
          lSetList(jatp, JAT_granted_destin_identifier_list, gdil);
+         // store the pe - we need it for unbooking when the job terminates
+         if (pe != nullptr) {
+            lSetObject(jatp, JAT_pe_object, lCopyElem(pe));
+         }
 
-         if (sge_give_job(jep, jatp, master_qep, pe, master_host, monitor)) {
-
+         if (sge_give_job(jep, jatp, master_qep, master_host, monitor)) {
             /* setting of queues in state unheard is done by sge_give_job() */
             sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DELIVERY_FAILED, COMMIT_DEFAULT, monitor);
             /* This was sge_commit_job(jep, COMMIT_ST_RESCHEDULED). It raised problems if a job
                could not be delivered. The jobslotsfree had been increased even if
-               they where not decreased bevore. */
+               they were not decreased before. */
 
             ERROR(MSG_JOB_JOBDELIVER_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatp, JAT_task_number)));
             DRETURN(-3);
@@ -591,7 +594,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             trigger_job_resend(sge_get_gmt64(), master_host, job_number, task_number, 5);
          }
 
-         if (pe) {
+         if (pe != nullptr) {
             pe_debit_slots(pe, pe_slots, job_number);
             /* this info is not spooled */
             sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(jatp, JAT_granted_pe), nullptr, nullptr, pe);

@@ -119,14 +119,14 @@ static void
 release_successor_tasks_ad(lListElem *jep, u_long32 task_id);
 
 static int
-send_slave_jobs(lListElem *jep, lListElem *jatep, const lListElem *pe, monitoring_t *monitor);
+send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor);
 
 
 static int
 send_slave_jobs_wc(lListElem *tmpjep, monitoring_t *monitor);
 
 static int
-send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *pe, lListElem *hep, int master);
+send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master);
 
 static int
 sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events);
@@ -191,8 +191,7 @@ static int queue_field[] = {QU_qhostname,
  ************************************************************************/
 /* pe = is nullptr for serial jobs*/
 int
-sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
-             const lListElem *pe, lListElem *hep, monitoring_t *monitor) {
+sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor) {
    const char *rhost;
    int ret = 0;
    int sent_slaves = 0;
@@ -202,7 +201,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
    rhost = lGetHost(master_qep, QU_qhostname);
    DPRINTF("execd host: %s\n", rhost);
 
-   switch (send_slave_jobs(jep, jatep, pe, monitor)) {
+   switch (send_slave_jobs(jep, jatep, monitor)) {
       case -1 :
          ret = -1;
       case 0 :
@@ -219,7 +218,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
    if (!sent_slaves) {
       /* wait till all slaves are acked */
       lSetUlong(jatep, JAT_next_pe_task_id, 1);
-      ret = send_job(rhost, jep, jatep, pe, hep, 1);
+      ret = send_job(rhost, jep, jatep, hep, 1);
       MONITOR_MESSAGES_OUT(monitor);
    }
 
@@ -232,8 +231,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
 *     send_slave_jobs() -- send out slave tasks of a pe job
 *
 *  SYNOPSIS
-*     static int send_slave_jobs(lListElem *jep, lListElem 
-*     *jatep, lListElem *pe) 
+*     static int send_slave_jobs(lListElem *jep, lListElem *jatep) 
 *
 *  FUNCTION
 *     It prepares the data for the sending out the pe slaves. Once that data
@@ -242,7 +240,6 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
 *  INPUTS
 *     lListElem *jep     - job structure
 *     lListElem *jatep   - ja-taks (template, not the actual one)
-*     lListElem *pe      - target pe
 *
 *  RESULT
 *     static int -  1 : no pe job
@@ -256,7 +253,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
 *     ???/???
 *******************************************************************************/
 static int
-send_slave_jobs(lListElem *jep, lListElem *jatep, const lListElem *pe, monitoring_t *monitor) {
+send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
    lListElem *tmpjep, *qep, *tmpjatep;
    lListElem *gdil_ep;
    int ret = 0;
@@ -344,10 +341,6 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, const lListElem *pe, monitorin
 
    lFreeWhat(&what);
    sge_free(&rdp);
-
-   if (pe) {
-      lSetObject(tmpjatep, JAT_pe_object, lCopyElem(pe));
-   }
 
    ret = send_slave_jobs_wc(tmpjep, monitor);
 
@@ -483,7 +476,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
 }
 
 static int
-send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *pe, lListElem *hep, int master) {
+send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master) {
    int failed;
    sge_pack_buffer pb;
    lListElem *tmpjep, *qep, *tmpjatep = nullptr;
@@ -590,10 +583,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, const lListElem *p
 
    lFreeWhat(&what);
    sge_free(&rdp);
-
-   if (pe) {
-      lSetObject(tmpjatep, JAT_pe_object, lCopyElem(pe));
-   }
 
    /*
    ** get credential for job
@@ -713,7 +702,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *jep, *jatep;
    const lListElem *ep;
    lListElem *hep = nullptr;
-   lListElem *pe;
    const lListElem *mqep;
    lList *jatasks;
    const char *qnm, *hnm;
@@ -722,7 +710,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER);
 
@@ -799,23 +786,12 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
          DRETURN_VOID; /* try later again */
       }
 
-      if (lGetString(jatep, JAT_granted_pe)) {
-         if (!(pe = pe_list_locate(master_pe_list, lGetString(jatep, JAT_granted_pe)))) {
-            ERROR(MSG_JOB_NOPE4TJ_SUU, lGetString(jep, JB_pe), sge_u32c(jobid), sge_u32c(jataskid));
-            lDelElemUlong(master_job_list, JB_job_number, jobid);
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-            DRETURN_VOID;
-         }
-      } else {
-         pe = nullptr;
-      }
-
       if (lGetUlong64(jatep, JAT_start_time) > 0) {
          WARNING(MSG_JOB_DELIVER2Q_UUS, sge_u32c(jobid), sge_u32c(jataskid), lGetString(jatep, JAT_master_queue));
       }
 
       /* send job to execd */
-      sge_give_job(jep, jatep, mqep, pe, hep, monitor);
+      sge_give_job(jep, jatep, mqep, hep, monitor);
 
       /* reset timer */
       lSetUlong64(jatep, JAT_start_time, now);
@@ -949,7 +925,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
@@ -969,9 +944,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    const lListElem *pe = nullptr;
    if (jatep != nullptr) {
       pe_name = lGetString(jatep, JAT_granted_pe);
-      if (pe_name != nullptr) {
-         pe = pe_list_locate(master_pe_list, pe_name);
-      }
+      pe = lGetObject(jatep, JAT_pe_object);
    }
 
    switch (mode) {
@@ -1566,13 +1539,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
    const char *pe_name = lGetString(ja_task, JAT_granted_pe);
-   lListElem *pe = nullptr;
-   if (pe_name != nullptr) {
-      pe = pe_list_locate(master_pe_list, pe_name);
-      if (pe == nullptr) {
-         ERROR(MSG_OBJ_UNABLE2FINDPE_S, pe_name);
-      }
-   }
+   lListElem *pe = lGetObject(ja_task, JAT_pe_object);
 
    /* free granted resources of the queue */
    const char *last_hostname = nullptr;
@@ -1651,13 +1618,19 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    }
 
    /* free granted resources of the parallel environment */
-   if (pe != nullptr) {
-      if (incslots) {
-         pe_debit_slots(pe, -pe_slots, job_id);
-         /* this info is not spooled */
-         sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(ja_task, JAT_granted_pe), nullptr, nullptr, pe);
+   if (pe_name != nullptr) {
+      lListElem *master_pe = pe_list_locate(master_pe_list, pe_name);
+      if (master_pe == nullptr) {
+         ERROR(MSG_OBJ_UNABLE2FINDPE_S, pe_name);
+      } else {
+         if (incslots) {
+            pe_debit_slots(master_pe, -pe_slots, job_id);
+            /* this info is not spooled */
+            sge_add_event(0, sgeE_PE_MOD, 0, 0, pe_name, nullptr, nullptr, master_pe);
+         }
       }
       lSetString(ja_task, JAT_granted_pe, nullptr);
+      lSetObject(ja_task, JAT_pe_object, nullptr);
    }
 
    /* forget about old tasks */

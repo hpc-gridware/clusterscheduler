@@ -60,8 +60,7 @@ typedef enum {
    COMMIT_ST_USER_RESCHEDULED = 9    /* job get rescheduled due to exit 99 or qmod -rj executed by job user */
 } sge_commit_mode_t;
 
-int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep,
-                 const lListElem *pep, lListElem *hep, monitoring_t *monitor);
+int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor);
 
 void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                     int commit_flags, monitoring_t *monitor);

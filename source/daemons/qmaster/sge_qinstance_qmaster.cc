@@ -1123,12 +1123,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
          for_each_ep(ja_task, ja_task_list) {
             const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
             const lListElem *gdil_ep = lGetElemStr(gdil, JG_qname, name);
-
-            const char *pe_name = lGetString(ja_task, JAT_granted_pe);
-            const lListElem *pe = nullptr;
-            if (pe_name != nullptr) {
-               pe = pe_list_locate(master_pe_list, pe_name);
-            }
+            const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
 
             if (gdil_ep != nullptr) {
                int slots = lGetUlong(gdil_ep, JG_slots);

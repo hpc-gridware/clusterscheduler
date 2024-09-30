@@ -408,7 +408,9 @@
 			"type":	"lObjectT",
 			"subClassName":	"ANY",
 			"subCullPrefix":	"ANY",
-			"flags":	[]
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
 		}, {
 			"name":	"next_pe_task_id",
 			"summary":	"Next PE Task Id",
