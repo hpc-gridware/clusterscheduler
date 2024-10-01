@@ -290,14 +290,14 @@ int cl_parameter_list_get_param_string(cl_raw_list_t *list_p, char **param_strin
       if (next_elem == nullptr) {
          /* this is last elem! */
          /* we need no ":" at the end, because it's the last element*/
-         sge_strlcat(*param_string, elem->parameter, strlen(elem->parameter));
-         sge_strlcat(*param_string, "=", 1);
-         sge_strlcat(*param_string, elem->value, strlen(elem->value));
+         sge_strlcat(*param_string, elem->parameter, malloc_size);
+         sge_strlcat(*param_string, "=", malloc_size);
+         sge_strlcat(*param_string, elem->value, malloc_size);
       } else {
-         sge_strlcat(*param_string, elem->parameter, strlen(elem->parameter));
-         sge_strlcat(*param_string, "=", 1);
-         sge_strlcat(*param_string, elem->value, strlen(elem->value));
-         sge_strlcat(*param_string, ":", 1);
+         sge_strlcat(*param_string, elem->parameter, malloc_size);
+         sge_strlcat(*param_string, "=", malloc_size);
+         sge_strlcat(*param_string, elem->value, malloc_size);
+         sge_strlcat(*param_string, ":", malloc_size);
       }
       elem = next_elem;
    }

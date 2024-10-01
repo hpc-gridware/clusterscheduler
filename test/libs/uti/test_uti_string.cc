@@ -96,7 +96,6 @@ int main(int argc, char *argv[]) {
    bool ret = true;
 
    char buffer[10];
-   size_t len;
 
    sge_strlcpy(buffer, "12345678901234567890", sizeof(buffer));
    printf("%2d %s\n", (int) strlen(buffer), buffer);
@@ -106,23 +105,23 @@ int main(int argc, char *argv[]) {
    }
 
    sge_strlcpy(buffer, "1234", sizeof(buffer));
-   len = sge_strlcat(buffer, "1234", sizeof(buffer));
-   printf("%2zu %s\n", len, buffer);
-   if (len != 9 || strcmp(buffer, "12341234") != 0) {
+   sge_strlcat(buffer, "1234", sizeof(buffer));
+   printf("%s\n", buffer);
+   if (strcmp(buffer, "12341234") != 0) {
       fprintf(stderr, "sge_strlcat(1) failed\n");
       ret = false;
    }
 
-   len = sge_strlcat(buffer, "1234", sizeof(buffer));
-   printf("%2zu %s\n", len, buffer);
-   if (len != 13 || strcmp(buffer, "123412341") != 0) {
+   sge_strlcat(buffer, "1234", sizeof(buffer));
+   printf("%s\n", buffer);
+   if (strcmp(buffer, "123412341") != 0) {
       fprintf(stderr, "sge_strlcat(1) failed\n");
       ret = false;
    }
 
-   len = sge_strlcat(buffer, "1234", sizeof(buffer));
-   printf("%2zu %s\n", len, buffer);
-   if (len != 14 || strcmp(buffer, "123412341") != 0) {
+   sge_strlcat(buffer, "1234", sizeof(buffer));
+   printf("%s\n", buffer);
+   if (strcmp(buffer, "123412341") != 0) {
       fprintf(stderr, "sge_strlcat(1) failed\n");
       ret = false;
    }

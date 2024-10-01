@@ -302,63 +302,34 @@ char *sge_strtok(const char *str, const char *delimitor) {
    DRETURN(nullptr);
 }
 
-/****** uti/string/sge_strlcat() ***********************************************
-*  NAME
-*     sge_strlcat() -- sge strlcat implementation
-*
-*  SYNOPSIS
-*     size_t sge_strlcat(char *dst, const char *src, size_t dstsize)
-*
-*  FUNCTION
-*     appends characters from from "src" to "dst" and terminates
-*     the dst string with '\0'
-*     Returns the size required for successfully completing the operation.
-*
-*  INPUTS
-*     char *dst       - destination
-*     const char *src - source string (must be '\0' terminated)
-*     size_t dstsize  - size of source string
-*
-*  RESULT
-*     size_t - min{dstsize,strlen(dst)}+strlen(src)
-*              this is the size required for successfully completing the strcat.
-*
-*  NOTES
-*     MT-NOTE: sge_strlcat() is MT safe
-*******************************************************************************/
-size_t sge_strlcat(char *dst, const char *src, size_t dstsize) {
-   size_t dst_idx = 0, src_idx = 0;
-
-   /* no destination - do nothing */
-   if (dst == nullptr) {
-      return 0;
+/** @brief Appends characters from src to dst.
+ *
+ * Also terminates the dst string with '\0'.
+ * Returns the size required for successfully completing the operation.
+ *
+ * @param dst destination
+ * @param src source string (must be '\0' terminated)
+ * @param dstsize size of source string
+ */
+void
+sge_strlcat(char *dst, const char *src, size_t dstsize) {
+   // early exit if input parameters are incorrect
+   if (dst == NULL || src == NULL || src[0] == '\0' || dstsize == 0) {
+      return;
    }
 
-   /* no source or source empty - do nothing */
-   if (src == nullptr || src[0] == '\0') {
-      return 0;
+   // find end of dst
+   size_t dst_idx = 0;
+   for (dst_idx = 0; (dst[dst_idx] != '\0') && (dst_idx < dstsize - 1); dst_idx++) {
+      ;
    }
 
-   /* find end of dst */
-   for (dst_idx = 0; (dst[dst_idx] != '\0') && (dst_idx < dstsize - 1); dst_idx++) { ;
-   }
-
-   /* copy until source ends or destination is full */
-   for (src_idx = 0; (src[src_idx] != '\0') && (dst_idx < dstsize - 1); src_idx++, dst_idx++) {
-      dst[dst_idx] = src[src_idx];
+   // copy until no space left or source ends
+   char cur;
+   for (size_t src_idx = 0; ((cur=src[src_idx]) != '\0') && (dst_idx < dstsize - 1); src_idx++, dst_idx++) {
+      dst[dst_idx] = cur;
    }
    dst[dst_idx] = '\0';
-
-   /* compute the space
-    * actually consumed (if we could finish the strcat)
-    * or would be needed to fully append all characters in src
-    */
-   while (src[src_idx++] != '\0') {
-      dst_idx++;
-   }
-   dst_idx++; /* we need space for the trailing 0 byte */
-
-   return dst_idx;
 }
 
 /****** uti/string/sge_strlcpy() ***********************************************

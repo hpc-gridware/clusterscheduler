@@ -546,6 +546,18 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 
       /*running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request*/
       do {
+
+         // If GDI parameter (like gdi_timeout) changed then we will update the handle within this loop
+         cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+         if (handle != nullptr) {
+            char *gdi_timeout_str = nullptr;
+            cl_com_get_parameter_list_value("gdi_timeout", &gdi_timeout_str);
+            if (gdi_timeout_str != nullptr) {
+               int gdi_timeout = atoi(gdi_timeout_str);
+               cl_com_set_synchron_receive_timeout(handle, gdi_timeout);
+            }
+         }
+
          gdi_error = sge_gdi_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag, true, message_id, nullptr);
 
          bool do_ping = get_cl_ping_value();
