@@ -207,6 +207,7 @@ static const int jat_nm[] = {
         JAT_fshare,
         JAT_status,
         JAT_granted_pe,
+        JAT_pe_object,
         JAT_scaled_usage_list,
         JAT_task_list,
         JAT_start_time,
