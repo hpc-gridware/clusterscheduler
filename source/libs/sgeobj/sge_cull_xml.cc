@@ -397,11 +397,19 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
                         fprintf(fp, sge_u64, value / 1000000);
                      }
                   } else {
-                     DSTRING_STATIC(dstr, 128);
-                     if (!fp) {
-                        DPRINTF("%s", sge_ctime64_xml(value, &dstr));
+                     if (value == 0) {
+                        if (!fp) {
+                           DPRINTF("0");
+                        } else {
+                           fprintf(fp, "0");
+                        }
                      } else {
-                        fprintf(fp, "%s", sge_ctime64_xml(value, &dstr));
+                        DSTRING_STATIC(dstr, 128);
+                        if (!fp) {
+                           DPRINTF("%s", sge_ctime64_xml(value, &dstr));
+                        } else {
+                           fprintf(fp, "%s", sge_ctime64_xml(value, &dstr));
+                        }
                      }
                   }
                } else {
