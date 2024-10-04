@@ -453,10 +453,9 @@ static int do_epilog(int timeout, int ckpt_type)
                      prolog_epilog_variables);
       exit_status = start_child("epilog", command, nullptr, timeout, ckpt_type);
       if (n_exit_status<(i=count_exit_status())) {
-         shepherd_trace("exit states increased from %d to %d", 
-                                n_exit_status, i);
+         shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
-         ** in this case the child didnt get to the exec call or it failed
+         ** in this case the child didn't get to the exec call, or it failed
          ** the status that waitpid and finally start_child returns is
          ** reserved for the exit status of the job
          */
@@ -465,7 +464,7 @@ static int do_epilog(int timeout, int ckpt_type)
       }
 
       if (exit_status) {
-         switch( exit_status ) {
+         switch(exit_status) {
             case RESCHEDULE_EXIT_STATUS:
                shepherd_state = SSTATE_AGAIN;
                break;
@@ -478,10 +477,10 @@ static int do_epilog(int timeout, int ckpt_type)
          shepherd_error(0, "exit_status of epilog = %d", exit_status);
          return SSTATE_EPILOG_FAILED;
       }
-   }
-   else
+   } else {
       shepherd_trace("no epilog script to start");
-   
+   }
+
    return 0;
 }
 
@@ -1348,7 +1347,7 @@ int ckpt_type
    */
    if (!SGE_STAT("exit_status", &buf) && buf.st_size) {
       /*
-      ** in this case the child didnt get to the exec call or it failed
+      ** in this case the child didn't get to the exec call, or it failed
       ** the status that waitpid and finally start_child returns is
       ** reserved for the exit status of the job
       */

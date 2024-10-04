@@ -1420,7 +1420,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
             execvp(filename, args);
          }
 
-         /* Aaaah - execvp() failed */
+         // execvp() failed
          {
             char failed_str[2048+128];
             snprintf(failed_str, sizeof(failed_str), "%s failed: %s", err_str, strerror(errno));
