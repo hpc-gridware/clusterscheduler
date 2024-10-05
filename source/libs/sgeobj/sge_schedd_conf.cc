@@ -1211,7 +1211,7 @@ void sconf_disable_schedd_job_info()
 *
 *  FUNCTION
 *     It checks for the alg. to use. If the user did not set a custom one, it
-*     will evaluate the weights and return the most sucessful one.
+*     will evaluate the weights and return the most successful one.
 *
 *  RESULT
 *     schedd_pe_algorithm - pe-range alg.

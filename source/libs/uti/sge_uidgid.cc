@@ -857,7 +857,7 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
 *
 *  FUNCTION
 *     Add a gid to the list of additional group ids. If 'add_grp_id' 
-*     is 0 don't add value to group id list (but return sucessfully).
+*     is 0 don't add value to group id list (but return successfully).
 *     If an error occurs, a descriptive string will be written to 
 *     err_str.
 *

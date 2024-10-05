@@ -65,7 +65,7 @@ static int do_wait(pid_t);
  *       -1 if fork() or exec() failed or child died through signal
  *       -2 if executable is not stat()able
  *       >0 the exit status of the child 
- *       exit status 8 is reserved for unsuccesfull exec() 
+ *       exit status 8 is reserved for unsuccessful exec()
  *-----------------------------------------------------------------------*/
 int startprog(int out, int err, 
               char *argv0, char *path, char *name, ...) 
