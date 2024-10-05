@@ -225,8 +225,8 @@ static void force_job_rlimit(const char* qualified_hostname)
          lFreeList(&usage_list);
          cpu_ep = vmem_ep = nullptr;
 
+         bool first_gdil_ep = true;
          for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            int nslots=0;
             double lim;
             char err_str[128];
             size_t err_size = sizeof(err_str) - 1;
@@ -236,7 +236,25 @@ static void force_job_rlimit(const char* qualified_hostname)
                continue;
             }
 
-            nslots = lGetUlong(gdil_ep, JG_slots);
+            int nslots = lGetUlong(gdil_ep, JG_slots);
+
+            // in case of a parallel job
+            // if job_is_first_task is false, we have no slot for the master task,
+            // but it still can consume vmem and cpu
+            // Problem: @todo CS-547 we cannot differentiate between
+            //          - only the master task is running on this host (nslots = 1)
+            //          - the master task + one slave task is running on this host (nslots = 1)
+            //          only in the second case we have to increase nslots,
+            //          but better always increase it and not kill the job erroneously
+            if (first_gdil_ep) {
+               first_gdil_ep = false;
+               const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+               if (pe != nullptr) {
+                  if (!lGetBool(pe, PE_job_is_first_task)) {
+                     nslots++;
+                  }
+               }
+            }
 
             parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_cpu), err_str, err_size);
             if (lim == DBL_MAX) {
@@ -252,14 +270,14 @@ static void force_job_rlimit(const char* qualified_hostname)
                h_cpu += lim * nslots; 
             }
 
-            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_vmem), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_MEM, lGetString(q, QU_s_vmem), err_str, err_size);
             if (lim == DBL_MAX) {
                s_vmem = DBL_MAX;
             } else {
                s_vmem += lim * nslots; 
             }
 
-            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_vmem), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_MEM, lGetString(q, QU_h_vmem), err_str, err_size);
             if (lim == DBL_MAX) {
                h_vmem = DBL_MAX;
             } else {

@@ -685,6 +685,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
 static void ptf_get_usage_from_data_collector()
 {
 #ifdef USE_DC
+   DENTER(TOP_LAYER);
 
    lListElem *job, *osjob;
    lList *pidlist, *oldpidlist;
@@ -694,8 +695,6 @@ static void ptf_get_usage_from_data_collector()
    int proccount;
    const char *tid;
    int i, j;
-
-   DENTER(TOP_LAYER);
 
    ojobs = jobs = psGetAllJobs();
    if (jobs) {

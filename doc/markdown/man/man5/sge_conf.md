@@ -907,6 +907,9 @@ enabled in the parallel environment, reserved usage will only be reported by the
 No per parallel task usage records will be sent from execd to qmaster, which can significantly reduce load on 
 qmaster when running large tightly integrated parallel jobs.
 
+Note: The setting only affects the usage reporting. It does not affect the monitoring of limits which is still based
+on the real usage of the job.
+
 ***USE_QSUB_GID***
 
 If this parameter is set to true, the primary group ID active when a job was submitted will be used as the primary 

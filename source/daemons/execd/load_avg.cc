@@ -1018,7 +1018,7 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
 
    /* We only build new reserved online usage,
     * when the final (acct) usage has not yet been generated.
-    * Otherwise online usage might get higher than final usage!
+    * Otherwise, online usage might get higher than final usage!
     */
    jr = get_job_report(job_id, ja_task_id, pe_task_id);
    if (lGetSubStr(jr, UA_name, USAGE_ATTR_CPU_ACCT, JR_usage) == nullptr) {
@@ -1161,7 +1161,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
           */
          pe = lGetObject(ja_task, JAT_pe_object);
 
-         /* If we have a pid for the ja_task: it's either a non parallel job
+         /* If we have a pid for the ja_task: it's either a non-parallel job
           * or the master task of a parallel job.
           * Produce a usage record for it.
           */
@@ -1320,6 +1320,7 @@ void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lL
             for_each_ep(gdil_ep, gdil) {
                slots = lGetUlong(gdil_ep, JG_slots);
                /* respect job_is_first_task, only once (for the master task gdil) */
+               // @todo CS-547 we cannot differentiate master task only and master task + 1 slave task
                if (pe != nullptr && gdil_ep == master_gdil_ep && !lGetBool(pe, PE_job_is_first_task)) {
                   slots++;
                }
