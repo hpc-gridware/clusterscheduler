@@ -83,6 +83,12 @@ Use it for testing purposes but not in a productive environment.
 - [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
 - [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
 
+## Other Repositories
+
+- [Open Cluster Scheduler Testsuite](https://github.com/hpc-gridware/testsuite)
+- [DRMAA Java Binding for Open Cluster Scheduler](https://github.com/hpc-gridware/drmaa-java)
+- [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
+
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
 
 - [Running Nextflow Pipelines on Gridware Cluster Scheduler: An RNA Sequencing Example using Apptainer](https://www.hpc-gridware.com/running-nextflow-pipelines-on-gridware-cluster-scheduler-an-rna-sequencing-example-using-apptainer/)
