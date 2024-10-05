@@ -62,7 +62,8 @@
 
 #define CLIENT_WAIT_TIME_S 1
 
-sge_tq_queue_t *Master_Task_Queue = nullptr;
+sge_tq_queue_t *GlobalRequestQueue = nullptr;
+sge_tq_queue_t *ReaderRequestQueue = nullptr;
 
 /****** gdi/request_internal/sge_gdi_packet_create_multi_answer() ***********
 *  NAME
@@ -751,7 +752,7 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
    /* 
     * append the packet to the packet list of the worker threads
     */
-   sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+   sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
    DRETURN(ret);
 }
 

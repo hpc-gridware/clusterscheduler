@@ -97,6 +97,7 @@ const char *threadnames[] = {
         "signal",        /* 6 */
         "scheduler",     /* 7 */
         "mirror",        /* 8 */
+        "reader",        /* 9 */
         nullptr
 };
 

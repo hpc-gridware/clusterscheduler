@@ -69,6 +69,7 @@ typedef enum cl_thread_type_def {
    CL_TT_COMMLIB,        /* commlib thread (do not use for threads created outside commlib) */
    CL_TT_LISTENER,       /* qmaster */
    CL_TT_WORKER,         /* qmaster */
+   CL_TT_READER,         /* qmaster */
    CL_TT_EVENT_MASTER,   /* qmaster */
    CL_TT_EVENT_MIRROR,   /* qmaster */
    CL_TT_SCHEDULER,      /* qmaster */

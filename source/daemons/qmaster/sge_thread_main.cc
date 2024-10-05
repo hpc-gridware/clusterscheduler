@@ -51,6 +51,7 @@ main_control_t Main_Control = {
         nullptr,
         nullptr,
         nullptr,
+        nullptr,
         {},
 };
 

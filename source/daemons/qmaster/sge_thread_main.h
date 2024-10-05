@@ -46,8 +46,11 @@ typedef struct {
    /* exit state: 100 = another master took over */
    int exit_state;
 
-   /* Worker threads: handling incoming "intern GDI requests" */
+   /* Worker threads: handling incoming GDI requests (RW and RO) */
    cl_raw_list_t *worker_thread_pool;
+
+   /* Reader threads: handling incoming GDI requests (RO) */
+   cl_raw_list_t *reader_thread_pool;
 
    /* Message threads: accepting and answering certain commlib requests */
    cl_raw_list_t *listener_thread_pool;

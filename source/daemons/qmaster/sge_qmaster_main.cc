@@ -63,6 +63,7 @@
 #include "sge_thread_scheduler.h"
 #include "sge_thread_timer.h"
 #include "sge_thread_worker.h"
+#include "sge_thread_reader.h"
 #include "sge_thread_event_master.h"
 #include "setup_qmaster.h"
 #include "sge_host_qmaster.h"
@@ -270,6 +271,7 @@ int main(int argc, char *argv[]) {
 #endif
    sge_timer_initialize(&monitor);
    sge_worker_initialize();
+   sge_reader_initialize();
    sge_listener_initialize();
    sge_scheduler_initialize(nullptr);
 
@@ -286,6 +288,7 @@ int main(int argc, char *argv[]) {
     */
    sge_scheduler_terminate(nullptr);
    sge_listener_terminate();
+   sge_reader_terminate();
    sge_worker_terminate();
    sge_timer_terminate();
 #if defined (OGE_ENABLE_MIRROR_THREADS)

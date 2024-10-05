@@ -76,6 +76,7 @@ enum thread_type_t {
    SIGNAL_THREAD, // 6
    SCHEDD_THREAD, // 7
    EVENT_MIRROR_THREAD, // 8
+   READER_THREAD, // 9
 };
 
 extern const char *prognames[];

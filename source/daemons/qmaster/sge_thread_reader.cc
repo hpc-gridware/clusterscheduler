@@ -1,36 +1,22 @@
-/*___INFO__MARK_BEGIN__*/
-/*************************************************************************
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
  *
- *  The Contents of this file are made available subject to the terms of
- *  the Sun Industry Standards Source License Version 1.2
+ *  Copyright 2024 HPC-Gridware GmbH
  *
- *  Sun Microsystems Inc., March, 2001
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Sun Industry Standards Source License Version 1.2
- *  =================================================
- *  The contents of this file are subject to the Sun Industry Standards
- *  Source License Version 1.2 (the "License"); You may not use this file
- *  except in compliance with the License. You may obtain a copy of the
- *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  *
- *  Software provided under this License is provided on an "AS IS" basis,
- *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
- *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
- *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
- *  See the License for the specific provisions governing your rights and
- *  obligations concerning the Software.
- *
- *  The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- *
- *  Copyright: 2003 by Sun Microsystems, Inc.
- *
- *  All Rights Reserved.
- *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
- *
- ************************************************************************/
-/*___INFO__MARK_END__*/
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
 
 #include <pthread.h>
 #include <cstring>
@@ -66,12 +52,12 @@
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_c_report.h"
 #include "sge_thread_main.h"
-#include "sge_thread_worker.h"
+#include "sge_thread_reader.h"
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
 
 static void
-sge_worker_cleanup_monitor(void *arg) {
+sge_reader_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
    auto *monitor = static_cast<monitoring_t *>(arg);
    sge_monitor_free(monitor);
@@ -79,8 +65,8 @@ sge_worker_cleanup_monitor(void *arg) {
 }
 
 void
-sge_worker_initialize() {
-   const int max_initial_worker_threads = bootstrap_get_worker_thread_count();
+sge_reader_initialize() {
+   const int max_initial_reader_threads = bootstrap_get_worker_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);
@@ -88,28 +74,19 @@ sge_worker_initialize() {
    /*
     * TODO: EB: corresponding destroy function is missing during shutdown
     */
-   sge_tq_create(&GlobalRequestQueue);
+   sge_tq_create(&ReaderRequestQueue);
 
-   sge_init_job_number();
-   sge_init_ar_id();
-   DPRINTF("job/ar counter have been initialized\n");
-
-   reporting_initialize();
-   DPRINTF("accounting and reporting module has been initialized\n");
-
-   INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]);
-   cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
-   for (int i = 0; i < max_initial_worker_threads; i++) {
-      cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   threadnames[WORKER_THREAD], i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
+   INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_reader_threads), threadnames[READER_THREAD]);
+   cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
+   for (int i = 0; i < max_initial_reader_threads; i++) {
+      cl_thread_list_create_thread(Main_Control.reader_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
+                                   threadnames[READER_THREAD], i, sge_reader_main, nullptr, nullptr, CL_TT_READER);
    }
    DRETURN_VOID;
 }
 
 void
-sge_worker_terminate() {
-   bool do_final_spooling;
-
+sge_reader_terminate() {
    DENTER(TOP_LAYER);
 
    /*
@@ -119,7 +96,7 @@ sge_worker_terminate() {
    {
       cl_thread_list_elem_t *thr;
 
-      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.worker_thread_pool);
+      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.reader_thread_pool);
       while ((thr = thr_nxt) != nullptr) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
@@ -127,54 +104,27 @@ sge_worker_terminate() {
       }
    }
 
-   sge_tq_wakeup_waiting(GlobalRequestQueue);
+   sge_tq_wakeup_waiting(ReaderRequestQueue);
 
    /*
     * Shutdown/delete the threads and wait for termination
     */
    {
-      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
+      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
       while (thread != nullptr) {
          DPRINTF("gets canceled\n");
-         cl_thread_list_delete_thread(Main_Control.worker_thread_pool, thread);
+         cl_thread_list_delete_thread(Main_Control.reader_thread_pool, thread);
 
-         thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
+         thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
       }
-      DPRINTF("all " SFN " threads terminated\n", threadnames[WORKER_THREAD]);
+      DPRINTF("all " SFN " threads terminated\n", threadnames[READER_THREAD]);
    }
-
-   do_final_spooling = sge_qmaster_do_final_spooling();
-
-   /* shutdown and remove JSV instances */
-   jsv_list_remove_all();
-
-   reporting_shutdown(nullptr, do_final_spooling);
-   DPRINTF("accounting and reporting module has been shutdown\n");
-
-   /*
-    * final spooling is only done if the shutdown of the current instance
-    * of this master process is not triggered due to the fact that
-    * shadowd started another instance which is currently running ...
-    *
-    * ... in that case we would overwrite data which might have already
-    * changed in the second instance of the master
-    */
-   if (do_final_spooling) {
-      sge_store_job_number(nullptr, nullptr);
-      sge_store_ar_id(nullptr, nullptr);
-      DPRINTF("job/ar counter were made persistent\n");
-      sge_userprj_spool(); /* spool the latest usage */
-      DPRINTF("final job and user/project spooling has been triggered\n");
-   }
-
-   sge_shutdown_persistence(nullptr);
-   DPRINTF("persistence module has been shutdown\n");
 
    DRETURN_VOID;
 }
 
 [[noreturn]] void *
-sge_worker_main(void *arg) {
+sge_reader_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
@@ -194,11 +144,11 @@ sge_worker_main(void *arg) {
    // init monitoring
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
-   sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);
+   sge_qmaster_thread_init(QMASTER, READER_THREAD, true);
 
    /* register at profiling module */
-   set_thread_name(pthread_self(), "Worker Thread");
-   conf_update_thread_profiling("Worker Thread");
+   set_thread_name(pthread_self(), "Reader Thread");
+   conf_update_thread_profiling("Reader Thread");
 
    while (true) {
       sge_gdi_packet_class_t *packet = nullptr;
@@ -207,12 +157,12 @@ sge_worker_main(void *arg) {
        * Wait for packets. As long as packets are available cancellation
        * of this thread is ignored. The shutdown procedure in the main 
        * thread takes care that packet producers will be terminated 
-       * before all worker threads so that this won't be a problem.
+       * before all reader threads so that this won't be a problem.
        */
-      MONITOR_IDLE_TIME(sge_tq_wait_for_task(GlobalRequestQueue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),
+      MONITOR_IDLE_TIME(sge_tq_wait_for_task(ReaderRequestQueue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),
                         p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
-      MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
+      MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(ReaderRequestQueue));
 
       if (packet != nullptr) {
          sge_gdi_task_class_t *task;
@@ -322,9 +272,9 @@ sge_worker_main(void *arg) {
                 *
                 * Following if-block will only be executed in testsuite if the qmaster
                 * parameter __TEST_SLEEP_AFTER_REQUEST is defined. This will block the
-                * worker thread if it handled a request. Only this makes sure that
-                * other worker threads can handle incoming requests. Otherwise,
-                * it might be possible that one worker threads handles all requests
+                * reader thread if it handled a request. Only this makes sure that
+                * other reader threads can handle incoming requests. Otherwise,
+                * it might be possible that one reader threads handles all requests
                 * on fast qmaster hosts if testsuite is not fast enough to generate
                 * gdi requests.
                 */
@@ -343,14 +293,14 @@ sge_worker_main(void *arg) {
             sge_gdi_packet_free(&packet);
          }
 
-         thread_output_profiling("worker thread profiling summary:\n", &next_prof_output);
+         thread_output_profiling("reader thread profiling summary:\n", &next_prof_output);
 
          sge_monitor_output(p_monitor);
       } else {
          int execute = 0;
 
          // pthread cancellation point
-         pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
+         pthread_cleanup_push(sge_reader_cleanup_monitor, static_cast<void *>(p_monitor));
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute); // cleanup monitor
       }

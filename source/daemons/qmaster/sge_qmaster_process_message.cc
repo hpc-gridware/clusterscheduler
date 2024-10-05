@@ -68,6 +68,8 @@
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
+#include <sge_manop.h>
+
 static void
 do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor);
 
@@ -111,7 +113,7 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    sge_gdi_packet_append_task(packet, nullptr, 0, 0, &data_list, nullptr, nullptr, nullptr, false);
 
    // Put the packet into the task queue so that workers can handle it
-   sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+   sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
 }
 
 /**
@@ -253,37 +255,79 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
-static thread_type_t
-get_gdi_executor_thread_type(sge_gdi_packet_class_t *packet) {
+ocs::DataStore::Id
+get_most_restrictive_datastore(ocs::DataStore::Id type1, ocs::DataStore::Id type2) {
+   if (type1 == type2) {
+      return type1;
+   } else if ((type1 == ocs::DataStore::LISTENER && type2 == ocs::DataStore::READER) || (type1 == ocs::DataStore::READER && type2 == ocs::DataStore::LISTENER)) {
+      return ocs::DataStore::READER;
+   } else {
+      return ocs::DataStore::GLOBAL;
+   }
+}
+
+static ocs::DataStore::Id
+get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
-   // check each task of a multi request
+   // check the packet itself
+   if (packet->is_intern_request) {
+      // Internal GDI requests will always be executed with access to the GLOBAL data store
+      DRETURN(ocs::DataStore::GLOBAL);
+   } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 || strcmp(packet->commproc, prognames[DRMAA]) == 0) {
+      // execd and DRMAA requests will always be executed with access to the GLOBAL data store
+      DRETURN(ocs::DataStore::GLOBAL);
+   }
+
+   // check the tasks
+   //
+   // Assume that the Listener DS is sufficient for the request. Iterate over all tasks and check if
+   // the assumption is correct. If READER or GLOBAL DS is required for at least one subtask, then
+   // corresponding DS should be used for all sub-tasks.
+   ocs::DataStore::Id type = ocs::DataStore::LISTENER;
    sge_gdi_task_class_t *task = packet->first_task;
    while (task) {
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 target = task->target;
 
       if (operation == SGE_GDI_PERMCHECK) {
-         // GDI permission requests to check client user and host permissions
-         ;
-      } else if (operation == SGE_GDI_TRIGGER && (target == SGE_MASTER_EVENT || target == SGE_SC_LIST ||
-                                                  target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
-         // shutdown request of qmaster (SGE_MASTER_EVENT)
-         // trigger scheduling (SGE_SC_LIST)
-         // termination of event client (SGE_EV_LIST)
-         // start stop of thread (SGE_DUMMY_LIST)
-         ;
+         // GDI permission requests to check client user and host permissions can be processed with Listener DS
+         type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
+      } else if (operation == SGE_GDI_TRIGGER && (target == SGE_MASTER_EVENT || target == SGE_SC_LIST || target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+         // Also following requests can be processed with Listener DS:
+         //    - shutdown request of qmaster (SGE_MASTER_EVENT)
+         //    - trigger scheduling (SGE_SC_LIST)
+         //    - termination of event client (SGE_EV_LIST)
+         //    - start stop of thread (SGE_DUMMY_LIST)
+         type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
       } else if (operation == SGE_GDI_GET && target == SGE_EV_LIST) {
-         // show event client list (SGE_EV_LIST); data comes from event master therefor no global lock required
-         ;
+         // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
+         type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
+      } else if (operation == SGE_GDI_GET) {
+         bool is_qconf = (strcmp(packet->commproc, prognames[QCONF]) == 0);
+         const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+         bool is_manager = manop_is_manager(packet, master_manager_list);
+
+         if (is_qconf && is_manager) {
+            // get requests from qconf triggered by managers (e.g. GET request for qconf -mq) require GLOBAL DS to avoid outdated data
+            type = get_most_restrictive_datastore(type, ocs::DataStore::GLOBAL);
+         } else {
+            // other GET requests can be processed with READER DS
+            type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
+         }
       } else {
-         // singe GDI requests or multi GDI requests that have a task that cannot be executed in a listener
-         // will cause the full request to be executed by a worker
-         DRETURN(WORKER_THREAD);
+         // not handled so far -> use GLOBAL DS
+         type = get_most_restrictive_datastore(type, ocs::DataStore::GLOBAL);
+      }
+
+      // no need to continue. it cannot get worse than requiring the GLOBAL DS
+      if (type == ocs::DataStore::GLOBAL) {
+         DRETURN(type);
       }
       task = task->next;
    }
-   DRETURN(LISTENER_THREAD);
+
+   DRETURN(type);
 }
 
 static void
@@ -370,8 +414,8 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    }
 
    // execute request in listener or store it in a queue for the workers
-   thread_type_t type = get_gdi_executor_thread_type(packet);
-   if (type == LISTENER_THREAD) {
+   ocs::DataStore::Id ds_type = get_gdi_executor_ds(packet);
+   if (ds_type == ocs::DataStore::LISTENER) {
       DTRACE;
       // prepare packbuffer for the clients answer
       init_packbuffer(&(packet->pb), 0, 0);
@@ -393,10 +437,14 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
                                &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
       clear_packbuffer(&(packet->pb));
       sge_gdi_packet_free(&packet);
+   } else if (ds_type == ocs::DataStore::READER) {
+      packet->ds_type = ds_type;
+      sge_tq_store_notify(ReaderRequestQueue, SGE_TQ_GDI_PACKET, packet);
    } else {
       DTRACE;
       // add to the worker request queue
-      sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
+      packet->ds_type = ds_type;
+      sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
    }
 
    DRETURN_VOID;
