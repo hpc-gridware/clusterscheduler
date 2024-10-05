@@ -68,7 +68,7 @@ commercial support, then get in touch! We can't wait to hear from you!
 A daily build of the master branch of the Open Cluster Scheduler is provided by HPC-Gridware. Packages can be downloaded here:
 
 - [Prebuild packages (for lx-amd64, lx-arm64, lx-riscv64, darwin-arm64, fbsd-amd64 ...)
-](https://www.hpc-gridware.com/downloads/)
+](https://www.hpc-gridware.com/download-main/)
 
 Please be aware that this build is done from the main development branch. It is not a stable and QAed release.
 Use it for testing purposes but not in a productive environment.
