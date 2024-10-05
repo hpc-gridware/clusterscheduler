@@ -1,6 +1,34 @@
 # Full List of Fixes
 
-# 9.0.0 RC4
+## 9.0.0
+
+### Improvement
+
+[CS-629](https://hpc-gridware.atlassian.net/browse/CS-629) testsuite: enhance inefficiant deletion of local tmp files
+
+### Bug
+
+[CS-636](https://hpc-gridware.atlassian.net/browse/CS-636) CULL function lSetObject\(\) can not be used for clearing sub object \(setting nullptr\)
+
+[CS-637](https://hpc-gridware.atlassian.net/browse/CS-637) PE attribute ign\_sreq\_on\_mhost is not considered in booking to the resource diagram
+
+[CS-638](https://hpc-gridware.atlassian.net/browse/CS-638) PE attribute ign\_sreq\_on\_mhost is not considered in  resource quota booking
+
+[CS-639](https://hpc-gridware.atlassian.net/browse/CS-639) testsuite function qstat\_F\_plain\_parse truncates long queue/host names
+
+[CS-644](https://hpc-gridware.atlassian.net/browse/CS-644) gdi\_timeout, gdi\_retries and cl\_ping settings are ignored by client commands when defaults are overwritten
+
+[CS-648](https://hpc-gridware.atlassian.net/browse/CS-648) qstat -j jobid -xml outputs the current time for JB\_execution\_time and JB\_deadline\_time instead of 0 when no execution time or deadline is set
+
+[CS-649](https://hpc-gridware.atlassian.net/browse/CS-649) an invalid epilog does not set a queue error state
+
+[CS-651](https://hpc-gridware.atlassian.net/browse/CS-651) testsuite does not build on architectures which are only required for configured non cluster hosts
+
+[CS-652](https://hpc-gridware.atlassian.net/browse/CS-652) testsuite usage test fails from time to time with error message "job terminated abnormally \(1\), master host ..."
+
+[CS-653](https://hpc-gridware.atlassian.net/browse/CS-653) a tightly integrated parallel job running in a pe with job\_is\_first\_task = FALSE and with limits set might get killed erroneously
+
+## 9.0.0 RC4
 
 ### Improvement
 
