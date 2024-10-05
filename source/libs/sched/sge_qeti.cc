@@ -51,8 +51,8 @@
 #include "uti/sge.h"
 
 /* At that point in time we only keep references to in the iterator that
- * allow for efficiently iterating trough relevant queue end times in 
- * that affect resouce utilization of a particular job. 
+ * allow for efficiently iterating through relevant queue end times in
+ * that affect resource utilization of a particular job.
  * 
  * Further improvements with sge_qeti_t might allow to notably reduce
  * the time for the actual resource selection: It might be useful for 
@@ -71,7 +71,7 @@ struct sge_qeti_s {
  *  when we seek for reservation the changes with the resource utilization 
  *  diagrams relevant for this job are marked with a '+'
  *
- *  After intializing the time iterator using sge_qeti_allocate() the 
+ *  After initializing the time iterator using sge_qeti_allocate() the
  *  iterator keeps references to all resource instances (QETI_resource_instance) 
  *  shown in the diagram below and all queue end next (QETI_queue_end_next) 
  *  references refer to the very end of those resource diagrams.

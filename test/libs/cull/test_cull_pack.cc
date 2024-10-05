@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 
    /* test just count */
    if ((pack_ret = init_packbuffer(&pb, 100, 1)) != PACK_SUCCESS) {
-      printf("intializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
+      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
 
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
 
    /* test packing */
    if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
-      printf("intializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
+      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
 
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
 
    /* test partial packing */
    if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
-      printf("intializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
+      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
 

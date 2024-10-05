@@ -74,11 +74,11 @@ static int fd_pipe[2];
 *     sge_daemonize_finalize().
 *     The parent process will exit with one of the following exit states:
 *
-*     typedef enum uti_deamonize_state_type {
+*     typedef enum uti_daemonize_state_type {
 *        SGE_DEAMONIZE_OK           = 0,  ok 
 *        SGE_DAEMONIZE_DEAD_CHILD   = 1,  child exited before sending state 
 *        SGE_DAEMONIZE_TIMEOUT      = 2   timeout whild waiting for state 
-*     } uti_deamonize_state_t;
+*     } uti_daemonize_state_t;
 *
 *     Daemonize the current application. Throws ourself into the
 *     background and dissassociates from any controlling ttys.

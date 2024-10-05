@@ -3660,7 +3660,7 @@ int japi_wifsignaled(int *signaled, int stat, dstring *diag)
 *     int stat      - 'stat' value returned by japi_wait()
 *
 *  OUTPUTS
-*     dstring *sig  - Returns signal the job died trough in string form 
+*     dstring *sig  - Returns signal the job died through in string form
 *                     (e.g. "SIGKILL")
 *     dstring *diag - Returns diagnosis information - on error.
 *
