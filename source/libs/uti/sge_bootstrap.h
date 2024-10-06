@@ -84,4 +84,7 @@ int
 bootstrap_get_worker_thread_count();
 
 int
+bootstrap_get_reader_thread_count();
+
+int
 bootstrap_get_scheduler_thread_count();

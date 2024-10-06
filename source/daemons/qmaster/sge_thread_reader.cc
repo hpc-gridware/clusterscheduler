@@ -66,7 +66,7 @@ sge_reader_cleanup_monitor(void *arg) {
 
 void
 sge_reader_initialize() {
-   const int max_initial_reader_threads = bootstrap_get_worker_thread_count();
+   const int max_initial_reader_threads = bootstrap_get_reader_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);

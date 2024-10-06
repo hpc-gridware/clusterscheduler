@@ -119,6 +119,7 @@ typedef struct {
    char *security_mode;
    int listener_thread_count;
    int worker_thread_count;
+   int reader_thread_count;
    int scheduler_thread_count;
    bool job_spooling;
    bool ignore_fqdn;
@@ -137,6 +138,7 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         nullptr, // security_mode
         0, // listener_thread_count
         0, // worker_thread_count
+        0, // reader_thread_count
         0, // scheduler_thread_count
         false, // job_spooling
         false, // ignore_fqdn
@@ -190,9 +192,9 @@ set_security_mode(const char *security_mode) {
 static void
 set_listener_thread_count(int thread_count) {
    if (thread_count <= 0) {
-      thread_count = 2;
-   } else if (thread_count > 16) {
-      thread_count = 16;
+      thread_count = 4;
+   } else if (thread_count > 32) {
+      thread_count = 32;
    }
    sge_bootstrap_tl1.listener_thread_count = thread_count;
 }
@@ -200,12 +202,23 @@ set_listener_thread_count(int thread_count) {
 static void
 set_worker_thread_count(int thread_count) {
    if (thread_count <= 0) {
-      thread_count = 2;
-   } else if (thread_count > 16) {
-      thread_count = 16;
+      thread_count = 4;
+   } else if (thread_count > 32) {
+      thread_count = 32;
    }
    sge_bootstrap_tl1.worker_thread_count = thread_count;
 }
+
+static void
+set_reader_thread_count(int thread_count) {
+   if (thread_count <= 0) {
+      thread_count = 4;
+   } else if (thread_count > 32) {
+      thread_count = 32;
+   }
+   sge_bootstrap_tl1.reader_thread_count = thread_count;
+}
+
 
 static void
 set_scheduler_thread_count(int thread_count) {
@@ -239,6 +252,7 @@ bootstrap_log_ts1_parameter() {
    DPRINTF("   job_spooling         >%s<\n", sge_bootstrap_tl1.job_spooling ? "true" : "false");
    DPRINTF("   listener_threads     >%d<\n", sge_bootstrap_tl1.listener_thread_count);
    DPRINTF("   worker_threads       >%d<\n", sge_bootstrap_tl1.worker_thread_count);
+   DPRINTF("   reader_threads       >%d<\n", sge_bootstrap_tl1.reader_thread_count);
    DPRINTF("   scheduler_threads    >%d<\n", sge_bootstrap_tl1.scheduler_thread_count);
 
    DRETURN_VOID;
@@ -261,6 +275,7 @@ bootstrap_init_from_file() {
            {"job_spooling",      false},
            {"listener_threads",  false},
            {"worker_threads",    false},
+           {"reader_threads",    false},
            {"scheduler_threads", false},
    };
    char value[NUM_BOOTSTRAP][1025];
@@ -308,6 +323,8 @@ bootstrap_init_from_file() {
       set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
       set_worker_thread_count((int) val);
+      parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
+      set_reader_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[12], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
@@ -464,6 +481,17 @@ bootstrap_get_worker_thread_count() {
    int worker_thread_count = sge_bootstrap_tl1.worker_thread_count;
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return worker_thread_count;
+}
+
+int
+bootstrap_get_reader_thread_count() {
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   int reader_thread_count = sge_bootstrap_tl1.reader_thread_count;
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+   return reader_thread_count;
 }
 
 int bootstrap_get_scheduler_thread_count() {

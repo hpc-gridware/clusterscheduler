@@ -174,8 +174,9 @@ dbwriter.conf"
    cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep "threads" >/dev/null 2>&1
    do_bootstrap_upgrade=$?
    if [ $do_bootstrap_upgrade -eq 1 ]; then
-      $ECHO "listener_threads        2" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
-      $ECHO "worker_threads          2" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
+      $ECHO "listener_threads        4" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
+      $ECHO "worker_threads          4" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
+      $ECHO "reader_threads          4" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
       $ECHO "scheduler_threads       1" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
    fi
    
