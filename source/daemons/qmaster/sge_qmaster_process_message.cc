@@ -413,10 +413,11 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   // execute request in listener or store it in a queue for the workers
+   // execute request based on the preferred data store type
+   // but do this only is secondary DS are not disabled
    ocs::DataStore::Id ds_type = get_gdi_executor_ds(packet);
-   if (ds_type == ocs::DataStore::LISTENER) {
-      DTRACE;
+   bool ds_enabled = !mconf_get_disable_secondary_ds();
+   if (ds_enabled && ds_type == ocs::DataStore::LISTENER) {
       // prepare packbuffer for the clients answer
       init_packbuffer(&(packet->pb), 0, 0);
 
@@ -437,7 +438,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
                                &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
       clear_packbuffer(&(packet->pb));
       sge_gdi_packet_free(&packet);
-   } else if (ds_type == ocs::DataStore::READER) {
+   } else if (ds_enabled && ds_type == ocs::DataStore::READER) {
       packet->ds_type = ds_type;
       sge_tq_store_notify(ReaderRequestQueue, SGE_TQ_GDI_PACKET, packet);
    } else {

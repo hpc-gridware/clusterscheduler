@@ -148,6 +148,7 @@ static bool do_authentication = true;
 static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
+static bool disable_secondary_ds = false;
 static bool prof_listener_thrd = false;
 static bool prof_worker_thrd = false;
 static bool prof_signal_thrd = false;
@@ -667,6 +668,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       spool_time = STREESPOOLTIMEDEF;
       use_qidle = false;
       disable_reschedule = false;   
+      disable_secondary_ds = false;
       simulate_execds = false;
       simulate_jobs = false;
       prof_listener_thrd = false;
@@ -760,6 +762,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          } 
          if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &disable_reschedule)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS", &disable_secondary_ds)) {
             continue;
          }
          if (parse_bool_param(s, "LOG_MONITOR_MESSAGE", &is_monitor_message)) {
@@ -2277,6 +2282,17 @@ bool mconf_get_disable_reschedule() {
    DRETURN(ret);
 }
 
+bool mconf_get_disable_secondary_ds() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_secondary_ds;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
 
 int mconf_get_scheduler_timeout() {
    int timeout;

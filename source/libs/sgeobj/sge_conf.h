@@ -139,6 +139,7 @@ char* mconf_get_notify_susp();
 int mconf_get_notify_kill_type();
 char* mconf_get_notify_kill();
 bool mconf_get_disable_reschedule();
+bool mconf_get_disable_secondary_ds();
 int mconf_get_scheduler_timeout();
 int mconf_get_max_dynamic_event_clients();
 void mconf_set_max_dynamic_event_clients(int value);
