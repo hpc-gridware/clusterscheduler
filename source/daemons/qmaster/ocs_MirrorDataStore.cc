@@ -108,6 +108,26 @@ namespace ocs {
       DRETURN_VOID;
    }
 
+   /** @brief Block executing thread till initial events are handled.
+    * Recheck every 100ms.
+    */
+   void
+   MirrorDataStore::block_till_initial_events_handled() {
+      DENTER(TOP_LAYER);
+      volatile bool wait = true;
+
+      do {
+         if (wait) {
+            sge_usleep(100000);
+         }
+         DPRINTF("still waiting for initial events to be handled\n");
+         sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+         wait = !did_handle_initial_events;
+         sge_mutex_unlock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+      } while (wait);
+      DRETURN_VOID;
+   }
+
    /**
     * Block till event master has new events to get processed.
     * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
@@ -183,7 +203,8 @@ namespace ocs {
            triggered(false),
            new_events(nullptr),
            data_store_id(data_store_id),
-           lock_type(lock_type) {
+           lock_type(lock_type),
+           did_handle_initial_events(false) {
       // derived classes have to specify the lock to be used, and it must be different from LOCK_GLOBAL
       SGE_ASSERT(lock_type != LOCK_GLOBAL);
    }
@@ -250,7 +271,8 @@ namespace ocs {
       // prepare as an event client/mirror
       std::string mirror_name{thread_name};
       mirror_name += '-' + std::to_string(data_store_id);
-      bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, mirror_name.c_str());
+      ev_registration_id reg_id = DataStore::get_ev_id_for_data_store(data_store_id);
+      bool local_ret = sge_gdi2_evc_setup(&evc, reg_id, &alp, mirror_name.c_str());
       DPRINTF("prepared event client/mirror mechanism\n");
 
       // register as event mirror and subscribe events
@@ -331,6 +353,7 @@ namespace ocs {
                   lFreeList(&event_list);
 
                   if (mirror_ret == SGE_EM_OK) {
+                     did_handle_initial_events = true;
                      did_handle_events = true;
                   } else {
                      DPRINTF("error during event processing\n");

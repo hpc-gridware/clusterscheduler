@@ -21,6 +21,8 @@
 
 #include "sge_object.h"
 
+#include "sge_event.h"
+
 namespace ocs {
    class DataStore {
    private:
@@ -56,5 +58,16 @@ namespace ocs {
 
       static void
       free_all_master_lists();
+
+      static ev_registration_id
+      get_ev_id_for_data_store(ocs::DataStore::Id data_store_id) {
+         if (data_store_id == DataStore::LISTENER) {
+            return EV_ID_EVENT_MIRROR_LISTENER;
+         } else if (data_store_id == DataStore::READER) {
+            return EV_ID_EVENT_MIRROR_READER;
+         } else {
+            return EV_ID_ANY;
+         }
+      }
    };
 }

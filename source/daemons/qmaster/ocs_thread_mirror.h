@@ -25,4 +25,7 @@ namespace ocs {
 
    void
    event_mirror_terminate();
+
+   void
+   event_mirror_block_till_initial_events_handled();
 }
