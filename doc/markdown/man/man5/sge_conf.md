@@ -626,6 +626,17 @@ Enabling this parameter in a running system will cause qmaster to complete the p
 using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data 
 stores but for new requests, they will utilize the primary datastore only.
 
+***DISABLE_SECONDARY_DS_EXECD***
+
+Do not use this parameter. It is for internal use only.
+
+If this parameter is set, the use of all secondary data stores is disabled for requests coming from execution hosts.
+(see also *DISABLE_SECONDARY_DS* to disable data stores for all incoming requests).
+
+Enabling this parameter in a running system will cause qmaster to complete the processing of pending requests
+using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data
+stores but for new requests, they will utilize the primary datastore only.
+
 ***ENABLE_ENFORCE_MASTER_LIMIT***
 
 If this parameter is set then the *s_rt*, *h_rt* limit of a running job are tested and executed by the 

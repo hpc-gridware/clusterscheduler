@@ -274,8 +274,12 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    if (packet->is_intern_request) {
       // Internal GDI requests will always be executed with access to the GLOBAL data store
       DRETURN(ocs::DataStore::GLOBAL);
-   } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 || strcmp(packet->commproc, prognames[DRMAA]) == 0) {
-      // execd and DRMAA requests will always be executed with access to the GLOBAL data store
+   } else if (strcmp(packet->commproc, prognames[DRMAA]) == 0) {
+      // DRMAA requests will always be executed with access to the GLOBAL data store
+      // (@todo EB: as long as we do not have automatic GDI sessions)
+      DRETURN(ocs::DataStore::GLOBAL);
+   } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 && mconf_get_disable_secondary_ds_execd()) {
+      // request coming from execd should be handled with GLOBAL DS if secondary DS are disabled for execd
       DRETURN(ocs::DataStore::GLOBAL);
    }
 
