@@ -189,12 +189,15 @@ set_security_mode(const char *security_mode) {
    sge_bootstrap_tl1.security_mode = sge_strdup(sge_bootstrap_tl1.security_mode, security_mode);
 }
 
+// FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 64 threads
+#define MAX_THREADS_PER_POOL (64)
+
 static void
 set_listener_thread_count(int thread_count) {
    if (thread_count <= 0) {
       thread_count = 4;
-   } else if (thread_count > 32) {
-      thread_count = 32;
+   } else if (thread_count > MAX_THREADS_PER_POOL) {
+      thread_count = MAX_THREADS_PER_POOL;
    }
    sge_bootstrap_tl1.listener_thread_count = thread_count;
 }
@@ -203,8 +206,8 @@ static void
 set_worker_thread_count(int thread_count) {
    if (thread_count <= 0) {
       thread_count = 4;
-   } else if (thread_count > 32) {
-      thread_count = 32;
+   } else if (thread_count > MAX_THREADS_PER_POOL) {
+      thread_count = MAX_THREADS_PER_POOL;
    }
    sge_bootstrap_tl1.worker_thread_count = thread_count;
 }
@@ -213,8 +216,8 @@ static void
 set_reader_thread_count(int thread_count) {
    if (thread_count <= 0) {
       thread_count = 4;
-   } else if (thread_count > 32) {
-      thread_count = 32;
+   } else if (thread_count > MAX_THREADS_PER_POOL) {
+      thread_count = MAX_THREADS_PER_POOL;
    }
    sge_bootstrap_tl1.reader_thread_count = thread_count;
 }
