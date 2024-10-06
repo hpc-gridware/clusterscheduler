@@ -147,6 +147,7 @@ void mconf_set_max_dynamic_event_clients(int value);
 bool mconf_get_set_lib_path();
 bool mconf_get_inherit_env();
 int mconf_get_spool_time();
+int mconf_get_max_ds_deviation();
 u_long32 mconf_get_monitor_time();
 bool mconf_get_do_accounting();
 bool mconf_get_do_reporting();

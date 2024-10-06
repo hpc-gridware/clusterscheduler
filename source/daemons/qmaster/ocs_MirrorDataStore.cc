@@ -332,7 +332,7 @@ namespace ocs {
          // handle events (if shutdown is not pending)
          if (!do_shutdown) {
             const long wait_time = 200;
-            const long max_wait_time = 1000;
+            const long max_wait_time = mconf_get_max_ds_deviation();
             long remaining_wait_time = max_wait_time;
             bool did_handle_events = false;
             bool got_lock = false;

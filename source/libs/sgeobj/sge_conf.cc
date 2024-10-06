@@ -226,6 +226,10 @@ static int scheduler_timeout = 0;
  */
 static int spool_time = STREESPOOLTIMEDEF;
 
+// Maximum time in milliseconds to wait before update of secondary DS is enforced
+#define DEFAULT_DS_DEVIATION (1000)
+static int max_ds_deviation = DEFAULT_DS_DEVIATION;
+
 /* 
  * Reserved usage flags
  *
@@ -667,6 +671,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       do_authentication = true;
       is_monitor_message = true;
       spool_time = STREESPOOLTIMEDEF;
+      max_ds_deviation = DEFAULT_DS_DEVIATION;
       use_qidle = false;
       disable_reschedule = false;   
       disable_secondary_ds = false;
@@ -770,6 +775,14 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "DISABLE_SECONDARY_DS_EXECD", &disable_secondary_ds_execd)) {
+            continue;
+         }
+         if (parse_int_param(s, "MAX_DS_DEVIATION", &max_ds_deviation, TYPE_TIM)) {
+            if (max_ds_deviation < 0 || max_ds_deviation > 3000) {
+               max_ds_deviation = DEFAULT_DS_DEVIATION;
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
+            }
             continue;
          }
          if (parse_bool_param(s, "LOG_MONITOR_MESSAGE", &is_monitor_message)) {
@@ -2378,6 +2391,18 @@ int mconf_get_spool_time() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = spool_time;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_max_ds_deviation() {
+   int ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = max_ds_deviation;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
