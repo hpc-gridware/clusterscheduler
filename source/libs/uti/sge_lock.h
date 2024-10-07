@@ -61,8 +61,8 @@ typedef u_long64 sge_locker_t;
 typedef enum {
    LOCK_GLOBAL = 0,     // master lock for the main DS
    LOCK_SCHEDULER,      // lock for the scheduler data store
-   LOCK_READER,         // lock for the full read only snapshot providing a full copy (ro-requests)
    LOCK_LISTENER,       // lock for read only snapshot containing only auth data (listener-requests)
+   LOCK_READER,         // lock for the full read only snapshot providing a full copy (ro-requests)
    LOCK_MASTER_CONF,    // TODO: we should get rid of this.
 
    NUM_OF_LOCK_TYPES    // Total number of locks

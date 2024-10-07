@@ -196,7 +196,7 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 #else
 
 bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
-   int res = -1;
+   bool res = false;
 
 #ifdef SGE_DEBUG_LOCK_TIME
    struct timeval before;
@@ -214,15 +214,15 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 
    if (aMode == LOCK_READ) {
 #ifdef SGE_USE_LOCK_FIFO
-      res = sge_fifo_try_lock(SGE_RW_Locks[aType], true) ? 0 : 1;
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], true);
 #else
-      res = pthread_rwlock_tryrdlock(SGE_RW_Locks[aType]);
+      res = (pthread_rwlock_tryrdlock(SGE_RW_Locks[aType]) == 0);
 #endif
    } else if (aMode == LOCK_WRITE) {
 #ifdef SGE_USE_LOCK_FIFO
-      res = sge_fifo_try_lock(SGE_RW_Locks[aType], false) ? 0 : 1;
+      res = sge_fifo_try_lock(SGE_RW_Locks[aType], false);
 #else
-      res = pthread_rwlock_trywrlock(SGE_RW_Locks[aType]);
+      res = (pthread_rwlock_trywrlock(SGE_RW_Locks[aType]) == 0);
 #endif
    } else {
       DPRINTF("wrong try lock type for global lock\n");

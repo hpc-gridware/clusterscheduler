@@ -36,6 +36,7 @@
 
 #include "uti/sge_lock_fifo.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_log.h"
 
 static const int FIFO_LOCK_QUEUE_LENGTH = 512;
 
@@ -291,27 +292,20 @@ sge_fifo_try_lock(sge_fifo_rw_lock_t *lock, bool is_reader) {
 
    int lret = pthread_mutex_lock(&(lock->mutex));
    if (lret == 0) {
-      bool is_someone_waiting = ((lock->reader_waiting + lock->writer_waiting) > 0) ? true : false;
-      // is there a queue slot available?
-      bool can_get_queue_slot = ((lock->reader_waiting + lock->writer_waiting) < FIFO_LOCK_QUEUE_LENGTH) ? true : false;
-      // can get read lock because now other writer locked before us?
-      bool can_get_read_lock = (lock->writer_active + lock->writer_waiting == 0) ? true : false;
-      // can get the write lock because noone else wants a lock now?
-      bool can_get_write_lock = ((lock->writer_active + lock->reader_active + lock->signaled == 0)) ? true : false;
+      bool queue_already_full = ((lock->reader_waiting + lock->writer_waiting) == FIFO_LOCK_QUEUE_LENGTH);
 
-      bool do_lock_now;
-      if ((is_reader && can_get_queue_slot && can_get_read_lock)) {
-         // Read lock can be acquired immediately if there is a place in the queue and if there are only waiting reader
-         do_lock_now = true;
-      } else if (!is_reader && !is_someone_waiting && can_get_write_lock) {
-         // Write lock can only be acquired immediately if nonone is waiting and noone holds a lock
-         do_lock_now = true;
+      bool someone_blocks_us = false;
+      if (is_reader) {
+         someone_blocks_us = (lock->writer_active + lock->writer_waiting > 0);
       } else {
-         // Otherwise an attempt to lock would result in blocking this thread
-         do_lock_now = false;
+         someone_blocks_us = (lock->writer_active + lock->reader_active + lock->signaled > 0);
       }
 
-      if (do_lock_now) {
+      if (queue_already_full || someone_blocks_us) {
+         // we can't get the lock immediately
+         ret = false;
+      } else {
+         // we can be sure that we can get the lock
          ret = sge_fifo_lock_internal(lock, is_reader, false);
       }
       pthread_mutex_unlock(&(lock->mutex));
@@ -361,3 +355,28 @@ sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader) {
    }
    return ret;
 }
+
+/** @brief Returns the number of threads currently waiting for a lock.
+ *
+ * @param lock FIFO lock object
+ * @param reader_active number of threads currently holding a read lock
+ * @param reader_waiting number of threads currently waiting for a read lock
+ * @param writer_active number of threads currently holding a write lock (max 1)
+ * @param writer_waiting number of threads currently waiting for a write lock
+ * @param waiting number of threads currently waiting for a lock (outside the queue)
+ * @param signaled number of threads currently waiting for a lock and which have been signaled
+ */
+void
+sge_fifo_get_details(sge_fifo_rw_lock_t *lock, int *reader_active, int *reader_waiting, int *writer_active, int *writer_waiting, int *waiting, int *signaled) {
+   int lret = pthread_mutex_lock(&lock->mutex);
+   if (lret == 0) {
+      *reader_active = lock->reader_active;
+      *reader_waiting = lock->reader_waiting;
+      *writer_active = lock->writer_active;
+      *writer_waiting = lock->writer_waiting;
+      *waiting = lock->waiting;
+      *signaled = lock->signaled;
+      pthread_mutex_unlock(&lock->mutex);
+   }
+}
+
