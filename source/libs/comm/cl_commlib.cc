@@ -764,7 +764,7 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
                ret_val = cl_thread_list_create_thread(cl_com_thread_list,
                                                       &thread_p,
                                                       cl_com_log_list,
-                                                      "trigger_thread", 1, cl_com_trigger_thread, nullptr, nullptr,
+                                                      "com-trigger", 1, cl_com_trigger_thread, nullptr, nullptr,
                                                       CL_TT_COMMLIB);
                pthread_sigmask(SIG_SETMASK, &old_sigmask, nullptr);
             }
@@ -976,7 +976,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    int usec_rest = 0;
    int full_usec_seconds = 0;
    int sec_param = 0;
-   char help_buffer[80];
    char *local_hostname = nullptr;
    struct in_addr local_addr;
    cl_handle_list_elem_t *elem = nullptr;
@@ -1525,7 +1524,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
 
          CL_LOG(CL_LOG_INFO, "starting handle service thread ...");
-         snprintf(help_buffer, 80, "%s_service", new_handle->local->comp_name);
          {
             sigset_t old_sigmask;
             sge_thread_block_all_signals(&old_sigmask);
@@ -1533,7 +1531,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             return_value = cl_thread_list_create_thread(cl_com_thread_list,
                                                         &(new_handle->service_thread),
                                                         cl_com_log_list,
-                                                        help_buffer, 2, cl_com_handle_service_thread, nullptr,
+                                                        "com-service", 2, cl_com_handle_service_thread, nullptr,
                                                         (void *) new_handle, CL_TT_COMMLIB);
 
             pthread_sigmask(SIG_SETMASK, &old_sigmask, nullptr);
@@ -1546,7 +1544,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          }
 
          CL_LOG(CL_LOG_INFO, "starting handle read thread ...");
-         snprintf(help_buffer, 80, "%s_read", new_handle->local->comp_name);
 
          {
             sigset_t old_sigmask;
@@ -1573,7 +1570,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                return_value = cl_thread_list_create_thread(cl_com_thread_list,
                                                            &(new_handle->read_thread),
                                                            cl_com_log_list,
-                                                           help_buffer, 3, cl_com_handle_read_thread,
+                                                           "com-read", 3, cl_com_handle_read_thread,
                                                            cl_thread_read_write_thread_cleanup_function,
                                                            (void *) thread_data, CL_TT_COMMLIB);
                pthread_sigmask(SIG_SETMASK, &old_sigmask, nullptr);
@@ -1587,7 +1584,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          }
 
          CL_LOG(CL_LOG_INFO, "starting handle write thread ...");
-         snprintf(help_buffer, 80, "%s_write", new_handle->local->comp_name);
 
          {
             sigset_t old_sigmask;
@@ -1614,7 +1610,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                return_value = cl_thread_list_create_thread(cl_com_thread_list,
                                                            &(new_handle->write_thread),
                                                            cl_com_log_list,
-                                                           help_buffer, 2, cl_com_handle_write_thread,
+                                                           "com-write", 2, cl_com_handle_write_thread,
                                                            cl_thread_read_write_thread_cleanup_function,
                                                            (void *) thread_data, CL_TT_COMMLIB);
                pthread_sigmask(SIG_SETMASK, &old_sigmask, nullptr);
@@ -7764,4 +7760,13 @@ unsigned long cl_com_messages_in_send_queue(cl_com_handle_t *handle) {
    }
    return elems;
 }
+
+cl_raw_list_t *
+cl_com_get_thread_list() {
+   pthread_mutex_lock(&cl_com_thread_list_mutex);
+   cl_raw_list_t* thread_list = cl_com_thread_list;
+   pthread_mutex_unlock(&cl_com_thread_list_mutex);
+   return thread_list;
+}
+
 

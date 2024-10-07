@@ -293,7 +293,9 @@ enum {
    Mce_OPT, /* mod ce object */
    dce_OPT, /* del ce object */
    sce_OPT, /* show ce object */
-   scel_OPT /* show ce object list */
+   scel_OPT,/* show ce object list */
+
+   stl_OPT /* show thread list */
 };
 
 /* macros used in parsing */

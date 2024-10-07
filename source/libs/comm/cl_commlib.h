@@ -264,3 +264,5 @@ cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolve
 #endif
 
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases);
+
+cl_raw_list_t * cl_com_get_thread_list();

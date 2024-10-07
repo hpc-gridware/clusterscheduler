@@ -304,8 +304,9 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
          //    - termination of event client (SGE_EV_LIST)
          //    - start stop of thread (SGE_DUMMY_LIST)
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET && target == SGE_EV_LIST) {
+      } else if (operation == SGE_GDI_GET && (target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
          // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
+         // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
       } else if (operation == SGE_GDI_GET) {
          bool is_qconf = (strcmp(packet->commproc, prognames[QCONF]) == 0);

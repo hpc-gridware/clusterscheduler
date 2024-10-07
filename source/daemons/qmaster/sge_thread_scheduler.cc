@@ -937,3 +937,8 @@ sge_scheduler_main(void *arg) {
    // pthread_cleanup_push()/pthread_cleanup_pop() before the call of cl_thread_func_testcancel()
 }
 
+bool
+sge_scheduler_is_running() {
+   return Master_Scheduler.is_running;
+}
+

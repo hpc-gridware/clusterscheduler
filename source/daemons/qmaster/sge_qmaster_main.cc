@@ -65,12 +65,14 @@
 #include "sge_thread_worker.h"
 #include "sge_thread_reader.h"
 #include "sge_thread_event_master.h"
+#include "sge_thread_utility.h"
 #include "setup_qmaster.h"
 #include "sge_host_qmaster.h"
 #include "qmaster_heartbeat.h"
 #include "shutdown.h"
 #include "sge_qmaster_threads.h"
 #include "msg_qmaster.h"
+
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -284,6 +286,10 @@ int main(int argc, char *argv[]) {
    sge_scheduler_initialize(nullptr);
 
    INFO("qmaster startup took %f seconds", sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time));
+
+   lList *active_thread_list = get_active_thread_list();
+   lWriteListTo(active_thread_list, stderr);
+   lFreeList(&active_thread_list);
 
    /*
     * Block till signal from signal thread arrives us

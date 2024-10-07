@@ -80,6 +80,7 @@
 #include "sge_ckpt_qmaster.h"
 #include "sge_hgroup_qmaster.h"
 #include "sge_sharetree_qmaster.h"
+#include "sge_thread_utility.h"
 #include "sge_qmod_qmaster.h"
 #include "sge_qmaster_threads.h"
 #include "msg_common.h"
@@ -499,6 +500,12 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
    switch (task->target) {
       case SGE_EV_LIST:
          task->data_list = sge_select_event_clients("", task->condition, task->enumeration);
+         task->do_select_pack_simultaneous = false;
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);
+         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_END);
+         DRETURN_VOID;
+      case SGE_DUMMY_LIST:
+         task->data_list = get_active_thread_list();
          task->do_select_pack_simultaneous = false;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_END);
@@ -1546,6 +1553,7 @@ sge_task_check_get_perm_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
       case SGE_SME_LIST:
       case SGE_RQS_LIST:
       case SGE_AR_LIST:
+      case SGE_DUMMY_LIST:
          /* host must be admin or submit host */
          if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
              !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {

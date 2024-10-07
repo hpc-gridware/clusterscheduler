@@ -98,6 +98,7 @@ static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
 static bool show_object_list(u_long32, lDescr *, int, const char *);
+static int show_thread_list();
 static int show_processors(bool has_binding_param);
 static int show_eventclients();
 
@@ -4239,6 +4240,15 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 /*----------------------------------------------------------------------------*/
+      /* "-srqsl " */
+      if (strcmp("-srqsl", *spp) == 0) {
+         if (!show_object_list(SGE_RQS_LIST, RQS_Type, RQS_name, "resource quota set list")) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+/*----------------------------------------------------------------------------*/
       /* "-srqs [rqs_name,...]" */
       if (strcmp("-srqs", *spp) == 0) {
          const char *name = nullptr;
@@ -4259,10 +4269,10 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-srqsl " */
-      if (strcmp("-srqsl", *spp) == 0) {
-         if (!show_object_list(SGE_RQS_LIST, RQS_Type, RQS_name, "resource quota set list")) {
-            sge_parse_return = 1; 
+      /* "-stl " */
+      if (strcmp("-stl", *spp) == 0) {
+         if (!show_thread_list()) {
+            sge_parse_return = 1;
          }
          spp++;
          continue;
@@ -5930,6 +5940,37 @@ static bool show_object_list(u_long32 target, lDescr *type, int keynm, const cha
    lFreeList(&lp);
    
    DRETURN(ret);
+}
+
+static int
+show_thread_list() {
+   DENTER(TOP_LAYER);
+
+   // send the request
+   lList *lp = nullptr;
+   lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_GET, &lp, nullptr, nullptr);
+
+   // check the answer
+   const lListElem *ep = lFirstRW(alp);
+   answer_exit_if_not_recoverable(ep);
+   if (answer_get_status(ep) != STATUS_OK) {
+      fprintf(stderr, "%s\n", lGetString(ep, AN_text));
+      fprintf(stderr, "\n");
+      DRETURN(-1);
+   }
+
+   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+      printf("%-15s %s\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
+      printf("--------------------\n");
+      for_each_ep(ep, lp) {
+         printf("%-15s " sge_U32CFormat "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
+      }
+   }
+   lFreeList(&alp);
+   lFreeList(&lp);
+
+
+   DRETURN(0);
 }
 
 static int show_eventclients()
