@@ -118,7 +118,7 @@ namespace ocs {
 
       do {
          if (wait) {
-            sge_usleep(100000);
+            sge_usleep(25000);
          }
          DPRINTF("still waiting for initial events to be handled\n");
          sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
@@ -331,12 +331,12 @@ namespace ocs {
 
          // handle events (if shutdown is not pending)
          if (!do_shutdown) {
-            const long wait_time = 200;
-            const long max_wait_time = mconf_get_max_ds_deviation();
+            const long wait_time = 20000;
+            const long max_wait_time = mconf_get_max_ds_deviation() * 1000;
             long remaining_wait_time = max_wait_time;
             bool did_handle_events = false;
             bool got_lock = false;
-            bool do_try_lock = true;
+            bool do_try_lock = (max_wait_time > wait_time);
 
             while (!got_lock) {
                // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
@@ -364,6 +364,7 @@ namespace ocs {
                } else {
                   // we did not get the lock. wait a short time before retry. if the max wait time is consumed
                   // then continue with a hard lock instead of a try lock
+                  INFO("waiting for lock in event mirror thread. remaining_wait_time=%ld", remaining_wait_time);
                   sge_usleep(wait_time);
                   remaining_wait_time -= wait_time;
                   if (remaining_wait_time <= 0) {
@@ -397,7 +398,7 @@ namespace ocs {
             pthread_cleanup_pop(execute); // monitor
 
             if (do_qmaster_shutdown) {
-               usleep(500);
+               sge_usleep(50000);
             }
          } while (do_qmaster_shutdown);
          DPRINTF("passed cancellation point\n");

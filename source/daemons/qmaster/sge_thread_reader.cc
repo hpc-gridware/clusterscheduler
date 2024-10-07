@@ -204,9 +204,9 @@ sge_reader_main(void *arg) {
           * acquire the correct lock
           */
          if (is_only_read_request) {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), p_monitor);
+            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_READER, LOCK_READ), p_monitor);
          } else {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), p_monitor);
+            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_READER, LOCK_WRITE), p_monitor);
          }
 
 #ifdef OBSERVE
@@ -216,6 +216,8 @@ sge_reader_main(void *arg) {
 
          // handle the request (GDI/Report/Ack ...
          if (packet->request_type == PACKET_GDI_REQUEST) {
+            // sge_usleep(3000000);
+
             task = packet->first_task;
             while (task != nullptr) {
                sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
@@ -252,9 +254,9 @@ sge_reader_main(void *arg) {
           * do unlock
           */
          if (is_only_read_request) {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
+            SGE_UNLOCK(LOCK_READER, LOCK_READ);
          } else {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+            SGE_UNLOCK(LOCK_READER, LOCK_WRITE);
          }
 
          if (packet->request_type == PACKET_GDI_REQUEST) {

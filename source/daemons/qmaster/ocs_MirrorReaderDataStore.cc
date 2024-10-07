@@ -29,5 +29,6 @@ namespace ocs {
 
    void MirrorReaderDataStore::subscribe_events() {
       sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
+      evc->ec_set_edtime(evc, 1);
    }
 }

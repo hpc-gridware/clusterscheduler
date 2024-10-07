@@ -699,6 +699,21 @@ they are just finished as they can't be rescheduled.
 If set to "true" or "1" xxQS_NAMExx triggers job rescheduling also when the host where the slave tasks of a 
 parallel job executes is in unknown state, if the *reschedule_unknown* parameter is activated.
 
+***MAX_DS_DEVIATION***
+
+Defines the maximum deviation in milliseconds between the main and secondary data stores. If the maximum deviation
+is reached, the system forces the secondary data stores to be updated. Valid values are in the range from 0 to 5000. 
+The default value is 1000.
+
+0 means that the secondary data stores are updated immediately whenever there is an offset between the main and secondary
+data stores. 5000 means that the secondary data stores are updated only when the offset is 5 seconds. In reality,
+the offset can be even larger because threads that use the secondary data stores must finish their work
+ before the update can be performed.
+
+Low values prevent parallelism in `sge_qmaster`, while high values either cause client commands such as `qstat` or `qhost`
+to display outdated information or cause the system to delay the response of commands that access secondary data stores
+till the update is performed. 
+
 ***MAX_DYN_EC***
 
 Sets the max number of dynamic event clients (as used by qsub -sync y and by xxQS_NAMExx DRMAA API library 

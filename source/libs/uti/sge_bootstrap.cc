@@ -190,7 +190,7 @@ set_security_mode(const char *security_mode) {
 }
 
 // FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 64 threads
-#define MAX_THREADS_PER_POOL (64)
+#define MAX_THREADS_PER_POOL (128)
 
 static void
 set_listener_thread_count(int thread_count) {
@@ -271,11 +271,13 @@ bootstrap_init_from_file() {
            {"ignore_fqdn",       true},
            {"spooling_method",   true},
            {"spooling_lib",      true},
+
            {"spooling_params",   true},
            {"binary_path",       true},
            {"qmaster_spool_dir", true},
            {"security_mode",     true},
            {"job_spooling",      false},
+
            {"listener_threads",  false},
            {"worker_threads",    false},
            {"reader_threads",    false},
@@ -312,6 +314,7 @@ bootstrap_init_from_file() {
       set_ignore_fqdn(val != 0);
       set_spooling_method(value[3]);
       set_spooling_lib(value[4]);
+
       set_spooling_params(value[5]);
       set_binary_path(value[6]);
       set_qmaster_spool_dir(value[7]);
@@ -322,13 +325,14 @@ bootstrap_init_from_file() {
       } else {
          set_job_spooling(true);
       }
+
       parse_ulong_val(nullptr, &val, TYPE_INT, value[10], nullptr, 0);
       set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
       set_worker_thread_count((int) val);
-      parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
-      set_reader_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[12], nullptr, 0);
+      set_reader_thread_count((int) val);
+      parse_ulong_val(nullptr, &val, TYPE_INT, value[13], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
 

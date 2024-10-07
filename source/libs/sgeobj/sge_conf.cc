@@ -778,7 +778,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_int_param(s, "MAX_DS_DEVIATION", &max_ds_deviation, TYPE_TIM)) {
-            if (max_ds_deviation < 0 || max_ds_deviation > 3000) {
+            if (max_ds_deviation < 0 || max_ds_deviation > 5000) {
                max_ds_deviation = DEFAULT_DS_DEVIATION;
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
