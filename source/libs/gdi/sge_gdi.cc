@@ -627,7 +627,7 @@ sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffe
 
    cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
 
-   /* TODO: do trigger or not? depends on syncrhron
+   /* TODO: do trigger or not? depends on synchron
     * TODO: Remove synchron flag from this function, it is only used for get_event_list call in event client.
             event client code should be re-written, not to use this synchron flag set to false
     */
