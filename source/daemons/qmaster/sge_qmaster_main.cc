@@ -287,10 +287,6 @@ int main(int argc, char *argv[]) {
 
    INFO("qmaster startup took %f seconds", sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time));
 
-   lList *active_thread_list = get_active_thread_list();
-   lWriteListTo(active_thread_list, stderr);
-   lFreeList(&active_thread_list);
-
    /*
     * Block till signal from signal thread arrives us
     */
