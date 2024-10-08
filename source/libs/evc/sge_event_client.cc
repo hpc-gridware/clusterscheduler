@@ -2817,7 +2817,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
             DPRINTF("SGE_EM_TIMEOUT in " sge_u64 " microseconds\n", last_fetch_ok_time + timeout - now);
          }
 
-         /* check for communicaton error */
+         /* check for communication error */
          if (commlib_error != CL_RETVAL_OK) { 
             switch (commlib_error) {
                case CL_RETVAL_NO_MESSAGE:
@@ -3030,12 +3030,13 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
    int tag = TAG_REPORT_REQUEST;
    u_short id = 1;
 
+   u_long64 now = sge_get_gmt64();
    DPRINTF("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id );
    if ( (help=sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
-         DEBUG("commlib returns %s\n", cl_get_error_text(help));
+         DEBUG("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));
       } else {
-         WARNING("commlib returns %s\n", cl_get_error_text(help));
+         WARNING("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));
       }
       ret = false;
    } else {
