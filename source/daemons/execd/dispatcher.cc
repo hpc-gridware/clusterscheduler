@@ -235,10 +235,11 @@ int sge_execd_process_messages()
                   sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true);
 
                  /* this is to record whether we recovered from a qmaster
-                   * failover or our own comm failure.
+                   * fail over or our own comm failure.
                    * We reset this back after the completion of the
                    * DELAYED_FINISHED_JOB_REPORTING_INTERVAL i.e
                    * now - qmaster_reconnect_time >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL
+                   * @todo CS-662 isn't the delayed reporting only necessary if there are running qsub -sync jobs?
                    */ 
                   sge_set_qmrestart_time(now);
                   sge_set_delay_job_reports_flag(true);
