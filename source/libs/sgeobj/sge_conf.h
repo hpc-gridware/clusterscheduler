@@ -140,6 +140,7 @@ int mconf_get_notify_kill_type();
 char* mconf_get_notify_kill();
 bool mconf_get_disable_reschedule();
 bool mconf_get_disable_secondary_ds();
+bool mconf_get_disable_secondary_ds_reader();
 bool mconf_get_disable_secondary_ds_execd();
 int mconf_get_scheduler_timeout();
 int mconf_get_max_dynamic_event_clients();

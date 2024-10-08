@@ -75,7 +75,7 @@ struct confel {                       /* cluster configuration parameters */
     char        *execd_spool_dir;     /* sge_spool directory base path */
     char        *mailer;              /* path to e-mail delivery agent */
     char        *xterm;               /* xterm path for interactive jobs */
-    char        *load_sensor;         /* path to a load sensor executable */    
+    char        *load_sensor;         /* path to a load sensor executable */
     char        *prolog;              /* start before jobscript may be none */
     char        *epilog;              /* start after jobscript may be none */
     char        *shell_start_mode;    /* script_from_stdin/posix_compliant/unix_behavior */
@@ -149,6 +149,8 @@ static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
 static bool disable_secondary_ds = false;
+#define DEFAULT_DISABLE_SECONDARY_DS_READER (true)
+static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
 static bool disable_secondary_ds_execd = false;
 static bool prof_listener_thrd = false;
 static bool prof_worker_thrd = false;
@@ -675,6 +677,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       use_qidle = false;
       disable_reschedule = false;   
       disable_secondary_ds = false;
+      disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
       disable_secondary_ds_execd = false;
       simulate_execds = false;
       simulate_jobs = false;
@@ -772,6 +775,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "DISABLE_SECONDARY_DS", &disable_secondary_ds)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_READER", &disable_secondary_ds_reader)) {
             continue;
          }
          if (parse_bool_param(s, "DISABLE_SECONDARY_DS_EXECD", &disable_secondary_ds_execd)) {
@@ -2307,6 +2313,18 @@ bool mconf_get_disable_secondary_ds() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_secondary_ds;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_disable_secondary_ds_reader() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_secondary_ds_reader;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

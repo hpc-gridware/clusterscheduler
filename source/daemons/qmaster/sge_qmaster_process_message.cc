@@ -444,8 +444,14 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       clear_packbuffer(&(packet->pb));
       sge_gdi_packet_free(&packet);
    } else if (ds_enabled && ds_type == ocs::DataStore::READER) {
+
+      // default is the reader request queue unless readers are disabled
+      sge_tq_queue_t *queue = ReaderRequestQueue;
+      if (mconf_get_disable_secondary_ds_reader()) {
+         queue = GlobalRequestQueue;
+      }
       packet->ds_type = ds_type;
-      sge_tq_store_notify(ReaderRequestQueue, SGE_TQ_GDI_PACKET, packet);
+      sge_tq_store_notify(queue, SGE_TQ_GDI_PACKET, packet);
    } else {
       DTRACE;
       // add to the worker request queue

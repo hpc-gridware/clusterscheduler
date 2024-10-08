@@ -615,7 +615,7 @@ A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The fo
 
 ***DISABLE_SECONDARY_DS***
 
-Do not use this parameter. It is for internal use only.
+Do not use this parameter. It is for internal use only. Default is *false*.
 
 If this parameter is set, the use of all secondary data stores is disabled. This means that all requests will be 
 processed using data from the primary datastore only. The mode in which the system operates is similar to Sun/Some 
@@ -628,7 +628,7 @@ stores but for new requests, they will utilize the primary datastore only.
 
 ***DISABLE_SECONDARY_DS_EXECD***
 
-Do not use this parameter. It is for internal use only.
+Do not use this parameter. It is for internal use only. Default is *false*
 
 If this parameter is set, the use of all secondary data stores is disabled for requests coming from execution hosts.
 (see also *DISABLE_SECONDARY_DS* to disable data stores for all incoming requests).
@@ -636,6 +636,15 @@ If this parameter is set, the use of all secondary data stores is disabled for r
 Enabling this parameter in a running system will cause qmaster to complete the processing of pending requests
 using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data
 stores but for new requests, they will utilize the primary datastore only.
+
+***DISABLE_SECONDARY_DS_READER***
+
+Do not use this parameter. It is for internal use only. Default depends on the product version. In product versions
+without automatic GDI sessions (e.g. OCS) the default is *true*, in product versions with automatic GDI sessions
+(newer GCS versions) the default is *false*.
+
+If this parameter is set to *true* then the use of those secondary data stores is disabled that could be utilized by
+read-only threads. This means that all requests will be processed using data from the primary datastore only.
 
 ***ENABLE_ENFORCE_MASTER_LIMIT***
 
