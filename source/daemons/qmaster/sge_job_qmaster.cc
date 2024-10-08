@@ -201,7 +201,7 @@ sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lList **alpp,
 static const char JOB_NAME_DEL = ':';
 
 /*-------------------------------------------------------------------------*/
-/* jepp is set to nullptr, if the job was sucessfully added                   */
+/* jepp is set to nullptr, if the job was successfully added                   */
 /*                                                                         */
 /* MT-Note: it is thread safe. It is using the global lock to secure the   */
 /*          none safe functions                                            */

@@ -67,8 +67,7 @@ commercial support, then get in touch! We can't wait to hear from you!
 
 A daily build of the master branch of the Open Cluster Scheduler is provided by HPC-Gridware. Packages can be downloaded here:
 
-- [Prebuild packages (for lx-amd64, lx-arm64, lx-riscv64, darwin-arm64, fbsd-amd64 ...)
-](https://www.hpc-gridware.com/downloads/)
+- [Prebuild packages (for lx-amd64, lx-arm64, lx-riscv64, fbsd-amd64 ...)](https://www.hpc-gridware.com/download-main/)
 
 Please be aware that this build is done from the main development branch. It is not a stable and QAed release.
 Use it for testing purposes but not in a productive environment.
@@ -78,10 +77,11 @@ Use it for testing purposes but not in a productive environment.
 - [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
 - [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
 
-## Other Documents
+## Other Repositories
 
-- [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
-- [Installation Guide](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/installation-guide/01_planning_the_installation.md)
+- [Open Cluster Scheduler Testsuite](https://github.com/hpc-gridware/testsuite)
+- [DRMAA Java Binding for Open Cluster Scheduler](https://github.com/hpc-gridware/drmaa-java)
+- [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
 

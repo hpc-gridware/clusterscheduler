@@ -119,7 +119,7 @@ pid_t wait3(int *, int, struct rusage *);
 #define NO_CKPT          0x000
 #define CKPT             0x001     /* set for all ckpt jobs                  */
 #define CKPT_KERNEL      0x002     /* set for kernel level ckpt jobs         */
-#define CKPT_USER        0x004     /* set for userdefined ckpt job           */
+#define CKPT_USER        0x004     /* set for user-defined ckpt job           */
 #define CKPT_TRANS       0x008     /* set for transparent ckpt jobs          */
 #define CKPT_HIBER       0x010     /* set for hibernator ckpt jobs           */
 #define CKPT_CPR         0x020     /* set for cpr ckpt jobs                  */
@@ -136,7 +136,7 @@ bool g_new_interactive_job_support = false;
 int  g_noshell = 0;
 
 char shepherd_job_dir[2048];
-int  received_signal=0;  /* set by signalhandler, when a signal arrives */
+int  received_signal=0;  /* set by signal handler, when a signal arrives */
 
 
 /* module variables */
@@ -403,7 +403,7 @@ static int do_prolog(int timeout, int ckpt_type)
 
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
-         /* in this case the child didnt get to the exec call or it failed */
+         /* in this case the child didn't get to the exec call, or it failed */
          shepherd_trace("failed starting prolog");
          return SSTATE_BEFORE_PROLOG;
       }
@@ -510,7 +510,7 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
-         ** in this case the child didnt get to the exec call or it failed
+         ** in this case the child didn't get to the exec call, or it failed
          ** the status that waitpid and finally start_child returns is
          ** reserved for the exit status of the job
          */
@@ -574,7 +574,7 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
-         ** in this case the child didnt get to the exec call or it failed
+         ** in this case the child didn't get to the exec call, or it failed
          ** the status that waitpid and finally start_child returns is
          ** reserved for the exit status of the job
          */
@@ -623,19 +623,19 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
 
  Strategy: Do all communication with the execd per filesystem. This gives
            us a chance to see what's happening from outside. This decouples
-           shepherdd from the execd. In filesystems we trust, in communication
+           shepherd from the execd. In filesystems we trust, in communication
            we do not.
 
- Each shepherdd has its own directory. The caller has to cd to this directory
- before starting shepherdd.
+ Each shepherd has its own directory. The caller has to cd to this directory
+ before starting shepherd.
 
- Input to the shepherdd:
+ Input to the shepherd:
     "config"-file   holds configuration data (config_file.c)
     "signal"-file   when execd wants a signal to be delivered
 
- Output from shepherdd:
-    "trace"-file    reports activities of shepherdd (err_trace.c)
-    "pid"-file      contains pid of shepherdd
+ Output from shepherd:
+    "trace"-file    reports activities of shepherd (err_trace.c)
+    "pid"-file      contains pid of shepherd
     "error"-file    contains error strings. This can be used by execd for
                     problem reports. (err_trace.c):w
 
@@ -732,7 +732,7 @@ int main(int argc, char **argv)
    if ((ret=read_config("config"))) {
 
       /* if we can't read the config file, try to switch to admin user
-       * that our error/trace message can be succesfully logged
+       * that our error/trace message can be successfully logged
        * this is done in case where our getuid() is root and our
        * geteuid() is a normal user id
        */
@@ -812,7 +812,7 @@ int main(int argc, char **argv)
    shepherd_trace_chown(get_conf_val("job_owner"));
    /*
     * Close trace file to force a new open() with super user credentials for
-    * NFS writes. Otherwise we will see EACCESS for all writes from now on
+    * NFS writes. Otherwise, we will see EACCESS for all writes from now on
     * until start bracketing file operations with seteuid(0), seteuid(admin_user).
     * The next shepherd_trace() will open the trace file automatically.
     */
@@ -870,7 +870,7 @@ int main(int argc, char **argv)
 
    /*
     * this blocks sge_shepherd until the first time the token is
-    * sucessfully set, then we start the sge_coshepherd in background
+    * successfully set, then we start the sge_coshepherd in background
     */
    if ((cp = search_conf_val("use_afs")) && atoi(cp) > 0) {
       char *coshepherd = search_conf_val("coshepherd");
@@ -896,7 +896,7 @@ int main(int argc, char **argv)
       }
        
       shepherd_trace(err_str);
-      shepherd_trace("sucessfully set AFS token");
+      shepherd_trace("successfully set AFS token");
          
       memset(tokenbuf, 0, strlen(tokenbuf));
       sge_free(&tokenbuf);
@@ -1550,8 +1550,8 @@ dstring       *dstr_error       /* OUT: error message - if any */
    int     remote_port  = 0;
    int     exit_status  = -1;
 
-   /* close childs end of the pipe */
-   shepherd_trace("parent: closing childs end of the pipe");
+   /* close child's end of the pipe */
+   shepherd_trace("parent: closing child's end of the pipe");
 
    /* read destination host and port from config */
    ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, dstr_error);
@@ -2289,7 +2289,7 @@ static void handle_signals_and_methods(
             *inArena = 1;
          }                     
       }
-      /* A migration request occured and we just did a regular checkpoint */
+      /* A migration request occurred, and we just did a regular checkpoint */
       if (*kill_job_after_checkpoint) {
           shepherd_trace("killing job after regular checkpoint due to migration request");
           shepherd_signal_job(-pid, SIGKILL);   
@@ -2302,7 +2302,7 @@ static void handle_signals_and_methods(
       /*
        * If the migrate command exited but the job did 
        * not stop (due to error in the migrate script) we have
-       * to reset internat state. As result further migrate
+       * to reset internal state. As result further migrate
        * commands will be executed (qmod -f -s).
        */
       *inCkpt = 0;
@@ -2636,7 +2636,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
 
 /*-------------------------------------------------------------------------
  * set_ckpt_params
- * may not called befor "job_pid" is known and set in the configuration
+ * may not be called before "job_pid" is known and set in the configuration
  * don't do anything for non ckpt jobs except setting ckpt_interval = 0
  *-------------------------------------------------------------------------*/
 static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
@@ -2887,7 +2887,7 @@ shepherd_signal_job(pid_t pid, int sig) {
     * if child is a qrsh job (config rsh_daemon exists), get pid of started command
     * and pass signal to that one
     * if the signal is the kill signal, we first kill the pid of the started command.
-    * subsequent kills are passed to the shepherds child.
+    * subsequent kills are passed to the shepherd's child.
     */
    {
       static int first_kill = 1;
@@ -2913,7 +2913,7 @@ shepherd_signal_job(pid_t pid, int sig) {
       }
 
      /*
-      * It is possible that one signal requests from qmaster contains severeal
+      * It is possible that one signal requests from qmaster contains several
       * kills for the same process. If this process is a tight integrated job
       * the master task can be killed twice. For the slave tasks this means the
       * qrsh -d is killed in the same time as the qrsh_starter child and so no

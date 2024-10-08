@@ -46,7 +46,7 @@ typedef struct {
    char			hostname[256];		/* client/server host */
    int			initialized;		/* initialized flag */
    krb5_context		context;		/* kerberos context */
-   int			daemon;			/* am I a SGE deamon? */
+   int			daemon;			/* am I a SGE daemon? */
    int			qmaster;		/* am I the qmaster? */
    char			service[256];		/* requested service name */
    struct in_addr	hostaddr;		/* local host address */

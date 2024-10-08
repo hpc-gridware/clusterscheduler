@@ -1759,7 +1759,7 @@ int main(int argc, const char **argv)
    }
 
    /* 
-   ** if environment QRSH_WRAPPER is set, pass it trough environment
+   ** if environment QRSH_WRAPPER is set, pass it through environment
    */
    {
       char  *wrapper = getenv("QRSH_WRAPPER");

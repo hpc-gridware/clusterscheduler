@@ -390,7 +390,7 @@ namespace ocs {
    *    - when the first usage record for a job is received after midnight.
    *    - the job hasn't just started some seconds before midnight.
    *      This is an optimization to limit the number of intermediate
-   *      accounting records in troughput clusters with short job runtimes.
+   *      accounting records in throughput clusters with short job runtimes.
    *      The minimum runtime required for an intermediate record to be written
    *      is defined in INTERMEDIATE_MIN_RUNTIME.
    *

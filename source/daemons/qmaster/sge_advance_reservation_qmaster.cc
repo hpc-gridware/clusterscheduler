@@ -380,7 +380,7 @@ int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *     After an object was modified/added and spooled successfully 
 *     it is possibly necessary to perform additional tasks.
 *     For example it is necessary to send some events to
-*     other deamon.
+*     other daemon.
 *
 *  INPUTS
 *     sge_gdi_ctx_class_t *ctx - GDI context

@@ -335,7 +335,7 @@ FCLOSE_ERROR:
 
 #if defined(LINUX)
             /* if UID, GID, EUID and EGID == 0
-             *  don't kill the process!!! - it could be the rpc.nfs-deamon
+             *  don't kill the process!!! - it could be the rpc.nfs-daemon
              */
             if (!(uids[0] == 0 && gids[0] == 0 &&
                   uids[1] == 0 && gids[1] == 0)) {
