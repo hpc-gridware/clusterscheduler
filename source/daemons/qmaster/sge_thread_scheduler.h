@@ -50,3 +50,6 @@ sge_scheduler_terminate(lList **answer_list);
 
 [[noreturn]] void *
 sge_scheduler_main(void *arg);
+
+bool
+sge_scheduler_is_running();

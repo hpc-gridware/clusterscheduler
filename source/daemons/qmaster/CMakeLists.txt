@@ -80,6 +80,8 @@ add_executable(
       sge_thread_signaler.cc
       sge_thread_timer.cc
       sge_thread_worker.cc
+      sge_thread_utility.cc
+      sge_thread_reader.cc
       sge_userprj_qmaster.cc
       sge_userset_qmaster.cc
       sge_utility_qmaster.cc

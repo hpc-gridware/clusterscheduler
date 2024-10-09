@@ -1307,7 +1307,6 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                ret = false;
             }
-            DPRINTF("uid: \n" uid_t_fmt, uid);
             break;
          case 1:
             if (gid != nullptr && sscanf(token, gid_t_fmt, gid) != 1) {
@@ -1315,19 +1314,16 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                ret = false;
             }
-            DPRINTF("gid: \n" gid_t_fmt, gid);
             break;
          case 2:
             if (user != nullptr) {
                sge_strlcpy(user, token, user_len);
             }
-            DPRINTF("user: %s\n", user);
             break;
          case 3:
             if (group) {
                sge_strlcpy(group, token, group_len);
             }
-            DPRINTF("group: %s\n", group);
             break;
          case 4:
             if (amount != nullptr && grp_array != nullptr) {
@@ -1345,7 +1341,6 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                      break;
                   }
                }
-               DPRINTF("#supplementray groups: %d\n", *amount);
             }
             break;
          default:
@@ -1362,10 +1357,8 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
-                  DPRINTF("supplementray grp id %d: " gid_t_fmt "\n", idx, (*grp_array)[idx].id);
                } else {
                   sge_strlcpy((*grp_array)[idx].name, token, sizeof((*grp_array)[idx].name));
-                  DPRINTF("supplementray grp name %d: %s\n", idx, (*grp_array)[idx].name);
                }
             } else {
                ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (to many IDs)");

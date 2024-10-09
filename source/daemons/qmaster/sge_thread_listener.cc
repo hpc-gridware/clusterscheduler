@@ -53,6 +53,7 @@
 #include "setup_qmaster.h"
 #include "sge_thread_main.h"
 #include "sge_thread_listener.h"
+#include "sge_thread_utility.h"
 
 static void
 sge_listener_cleanup_monitor(monitoring_t *monitor) {

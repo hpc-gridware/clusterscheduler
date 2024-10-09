@@ -189,6 +189,9 @@ struct _sge_gdi_packet_class_t {
     */
    sge_pack_buffer pb;
 
+   // DS hint
+   u_long32 ds_type;
+
    /* 
     * if this packet is part of a packet queue then this
     * pointer might point to the next packet in the queue

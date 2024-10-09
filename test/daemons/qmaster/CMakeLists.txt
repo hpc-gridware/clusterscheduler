@@ -78,6 +78,7 @@ add_executable(test_qmaster_calendar
       ../../../source/daemons/qmaster/setup_qmaster.cc
       ../../../source/daemons/qmaster/sge_manop_qmaster.cc
       ../../../source/daemons/qmaster/sge_thread_signaler.cc
+      ../../../source/daemons/qmaster/sge_thread_utility.cc
       ../../../source/common/execution_states.cc
       ../../../source/common/sge_options.cc
       ../../../source/common/sig_handlers.cc

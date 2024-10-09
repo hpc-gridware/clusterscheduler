@@ -75,7 +75,7 @@ struct confel {                       /* cluster configuration parameters */
     char        *execd_spool_dir;     /* sge_spool directory base path */
     char        *mailer;              /* path to e-mail delivery agent */
     char        *xterm;               /* xterm path for interactive jobs */
-    char        *load_sensor;         /* path to a load sensor executable */    
+    char        *load_sensor;         /* path to a load sensor executable */
     char        *prolog;              /* start before jobscript may be none */
     char        *epilog;              /* start after jobscript may be none */
     char        *shell_start_mode;    /* script_from_stdin/posix_compliant/unix_behavior */
@@ -148,6 +148,10 @@ static bool do_authentication = true;
 static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
+static bool disable_secondary_ds = false;
+#define DEFAULT_DISABLE_SECONDARY_DS_READER (true)
+static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
+static bool disable_secondary_ds_execd = false;
 static bool prof_listener_thrd = false;
 static bool prof_worker_thrd = false;
 static bool prof_signal_thrd = false;
@@ -223,6 +227,10 @@ static int scheduler_timeout = 0;
  * projects are spooled, when the qmaster goes down.
  */
 static int spool_time = STREESPOOLTIMEDEF;
+
+// Maximum time in milliseconds to wait before update of secondary DS is enforced
+#define DEFAULT_DS_DEVIATION (1000)
+static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 
 /* 
  * Reserved usage flags
@@ -665,8 +673,12 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       do_authentication = true;
       is_monitor_message = true;
       spool_time = STREESPOOLTIMEDEF;
+      max_ds_deviation = DEFAULT_DS_DEVIATION;
       use_qidle = false;
       disable_reschedule = false;   
+      disable_secondary_ds = false;
+      disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
+      disable_secondary_ds_execd = false;
       simulate_execds = false;
       simulate_jobs = false;
       prof_listener_thrd = false;
@@ -760,6 +772,23 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          } 
          if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &disable_reschedule)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS", &disable_secondary_ds)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_READER", &disable_secondary_ds_reader)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_EXECD", &disable_secondary_ds_execd)) {
+            continue;
+         }
+         if (parse_int_param(s, "MAX_DS_DEVIATION", &max_ds_deviation, TYPE_TIM)) {
+            if (max_ds_deviation < 0 || max_ds_deviation > 5000) {
+               max_ds_deviation = DEFAULT_DS_DEVIATION;
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
+            }
             continue;
          }
          if (parse_bool_param(s, "LOG_MONITOR_MESSAGE", &is_monitor_message)) {
@@ -2277,6 +2306,41 @@ bool mconf_get_disable_reschedule() {
    DRETURN(ret);
 }
 
+bool mconf_get_disable_secondary_ds() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_secondary_ds;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_disable_secondary_ds_reader() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_secondary_ds_reader;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_disable_secondary_ds_execd() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_secondary_ds_execd;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
 
 int mconf_get_scheduler_timeout() {
    int timeout;
@@ -2345,6 +2409,18 @@ int mconf_get_spool_time() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = spool_time;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_max_ds_deviation() {
+   int ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = max_ds_deviation;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

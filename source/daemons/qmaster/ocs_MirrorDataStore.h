@@ -34,14 +34,15 @@
 namespace ocs {
    class MirrorDataStore {
    private:
-      pthread_mutex_t mutex;              ///< used to secure other attributes within this object
-      pthread_cond_t cond_var;            ///< used to wait for new events and to wakeup this thread
-      const std::string mutex_name;       ///< unique mutex name
-      volatile bool triggered;            ///< true if new events are pending that need to get processed
-      lList *new_events;                  ///< new events that neet to get processed
-      ocs::DataStore::Id data_store_id;   ///< data store that is managed by this thread
-      pthread_t thread{};                 ///< pthread that handles the mirroring
-      sge_locktype_t lock_type;           ///< lock type used to secure the DS
+      pthread_mutex_t mutex;                       ///< used to secure other attributes within this object
+      pthread_cond_t cond_var;                     ///< used to wait for new events and to wakeup this thread
+      const std::string mutex_name;                ///< unique mutex name
+      volatile bool triggered;                     ///< true if new events are pending that need to get processed
+      lList *new_events;                           ///< new events that neet to get processed
+      ocs::DataStore::Id data_store_id;            ///< data store that is managed by this thread
+      pthread_t thread{};                          ///< pthread that handles the mirroring
+      sge_locktype_t lock_type;                    ///< lock type used to secure the DS
+      volatile bool did_handle_initial_events;     ///< true if the initial events have been handled and other threads can access the DS
 
       static void thread_cleanup_monitor(void *arg);
       static void thread_cleanup_event_client(void *arg);
@@ -56,6 +57,7 @@ namespace ocs {
 
       virtual void wait_for_event(lList **event_list);
       virtual void wakeup();
+      virtual void block_till_initial_events_handled();
 
       [[noreturn]] virtual void *main([[maybe_unused]] void *arg);
       virtual void subscribe_events() = 0;

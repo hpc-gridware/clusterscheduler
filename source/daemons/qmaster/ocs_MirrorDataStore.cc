@@ -108,6 +108,26 @@ namespace ocs {
       DRETURN_VOID;
    }
 
+   /** @brief Block executing thread till initial events are handled.
+    * Recheck every 100ms.
+    */
+   void
+   MirrorDataStore::block_till_initial_events_handled() {
+      DENTER(TOP_LAYER);
+      volatile bool wait = true;
+
+      do {
+         if (wait) {
+            sge_usleep(25000);
+         }
+         DPRINTF("still waiting for initial events to be handled\n");
+         sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+         wait = !did_handle_initial_events;
+         sge_mutex_unlock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+      } while (wait);
+      DRETURN_VOID;
+   }
+
    /**
     * Block till event master has new events to get processed.
     * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
@@ -183,7 +203,8 @@ namespace ocs {
            triggered(false),
            new_events(nullptr),
            data_store_id(data_store_id),
-           lock_type(lock_type) {
+           lock_type(lock_type),
+           did_handle_initial_events(false) {
       // derived classes have to specify the lock to be used, and it must be different from LOCK_GLOBAL
       SGE_ASSERT(lock_type != LOCK_GLOBAL);
    }
@@ -250,7 +271,8 @@ namespace ocs {
       // prepare as an event client/mirror
       std::string mirror_name{thread_name};
       mirror_name += '-' + std::to_string(data_store_id);
-      bool local_ret = sge_gdi2_evc_setup(&evc, EV_ID_EVENT_MIRROR, &alp, mirror_name.c_str());
+      ev_registration_id reg_id = DataStore::get_ev_id_for_data_store(data_store_id);
+      bool local_ret = sge_gdi2_evc_setup(&evc, reg_id, &alp, mirror_name.c_str());
       DPRINTF("prepared event client/mirror mechanism\n");
 
       // register as event mirror and subscribe events
@@ -309,12 +331,12 @@ namespace ocs {
 
          // handle events (if shutdown is not pending)
          if (!do_shutdown) {
-            const long wait_time = 200;
-            const long max_wait_time = 1000;
+            const long wait_time = 20000;
+            const long max_wait_time = mconf_get_max_ds_deviation() * 1000;
             long remaining_wait_time = max_wait_time;
             bool did_handle_events = false;
             bool got_lock = false;
-            bool do_try_lock = true;
+            bool do_try_lock = (max_wait_time > wait_time);
 
             while (!got_lock) {
                // acquire lock. first try to get the lock. Only if we have to wait to long we will enforce to get the lock
@@ -331,6 +353,7 @@ namespace ocs {
                   lFreeList(&event_list);
 
                   if (mirror_ret == SGE_EM_OK) {
+                     did_handle_initial_events = true;
                      did_handle_events = true;
                   } else {
                      DPRINTF("error during event processing\n");
@@ -341,6 +364,7 @@ namespace ocs {
                } else {
                   // we did not get the lock. wait a short time before retry. if the max wait time is consumed
                   // then continue with a hard lock instead of a try lock
+                  INFO("waiting for lock in event mirror thread. remaining_wait_time=%ld", remaining_wait_time);
                   sge_usleep(wait_time);
                   remaining_wait_time -= wait_time;
                   if (remaining_wait_time <= 0) {
@@ -374,7 +398,7 @@ namespace ocs {
             pthread_cleanup_pop(execute); // monitor
 
             if (do_qmaster_shutdown) {
-               usleep(500);
+               sge_usleep(50000);
             }
          } while (do_qmaster_shutdown);
          DPRINTF("passed cancellation point\n");

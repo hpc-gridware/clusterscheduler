@@ -47,6 +47,8 @@
 #define MSG_TABLE_SUM_F                            "SUM"
 #define MSG_TABLE_EV_ID                            "ID"
 #define MSG_TABLE_EV_NAME                          "NAME"
+#define MSG_TABLE_EV_POOL                          "POOL"
+#define MSG_TABLE_SIZE                             "SIZE"
 
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING       "account_string          account_name"
 #define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_EXP "exp                     explicit:<socket>,<core>[:...]"
@@ -917,6 +919,9 @@
 
 #define MSG_GDI_USAGE_scope_OPT                          "[-scope scope_name]"
 #define MSG_GDI_UTEXT_scope_OPT                          _MESSAGE(23517, _("switch the request scope"))
+
+#define MSG_GDI_USAGE_stl_OPT                            "[-stl]"
+#define MSG_GDI_UTEXT_stl_OPT                            _MESSAGE(23518, _("show thread pool list"))
 
 
 #define MSG_UNKNOWNREASON                 _MESSAGE(60000, _("<unknown reason>"))

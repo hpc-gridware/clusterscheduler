@@ -613,6 +613,39 @@ The global configuration entry for this value may be overwritten by the executio
 
 A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The following values are recognized:
 
+***DISABLE_SECONDARY_DS***
+
+Do not use this parameter. It is for internal use only. Default is *false*.
+
+If this parameter is set, the use of all secondary data stores is disabled. This means that all requests will be 
+processed using data from the primary datastore only. The mode in which the system operates is similar to Sun/Some 
+Grid Engine, Univa Grid Engine or Altair Grid Engine, where there are no threads within qmaster or multiple 
+additional datastore's that could be used.
+
+Enabling this parameter in a running system will cause qmaster to complete the processing of pending requests 
+using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data 
+stores but for new requests, they will utilize the primary datastore only.
+
+***DISABLE_SECONDARY_DS_EXECD***
+
+Do not use this parameter. It is for internal use only. Default is *false*
+
+If this parameter is set, the use of all secondary data stores is disabled for requests coming from execution hosts.
+(see also *DISABLE_SECONDARY_DS* to disable data stores for all incoming requests).
+
+Enabling this parameter in a running system will cause qmaster to complete the processing of pending requests
+using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data
+stores but for new requests, they will utilize the primary datastore only.
+
+***DISABLE_SECONDARY_DS_READER***
+
+Do not use this parameter. It is for internal use only. Default depends on the product version. In product versions
+without automatic GDI sessions (e.g. OCS) the default is *true*, in product versions with automatic GDI sessions
+(newer GCS versions) the default is *false*.
+
+If this parameter is set to *true* then the use of those secondary data stores is disabled that could be utilized by
+read-only threads. This means that all requests will be processed using data from the primary datastore only.
+
 ***ENABLE_ENFORCE_MASTER_LIMIT***
 
 If this parameter is set then the *s_rt*, *h_rt* limit of a running job are tested and executed by the 
@@ -674,6 +707,21 @@ they are just finished as they can't be rescheduled.
 
 If set to "true" or "1" xxQS_NAMExx triggers job rescheduling also when the host where the slave tasks of a 
 parallel job executes is in unknown state, if the *reschedule_unknown* parameter is activated.
+
+***MAX_DS_DEVIATION***
+
+Defines the maximum deviation in milliseconds between the main and secondary data stores. If the maximum deviation
+is reached, the system forces the secondary data stores to be updated. Valid values are in the range from 0 to 5000. 
+The default value is 1000.
+
+0 means that the secondary data stores are updated immediately whenever there is an offset between the main and secondary
+data stores. 5000 means that the secondary data stores are updated only when the offset is 5 seconds. In reality,
+the offset can be even larger because threads that use the secondary data stores must finish their work
+ before the update can be performed.
+
+Low values prevent parallelism in `sge_qmaster`, while high values either cause client commands such as `qstat` or `qhost`
+to display outdated information or cause the system to delay the response of commands that access secondary data stores
+till the update is performed. 
 
 ***MAX_DYN_EC***
 

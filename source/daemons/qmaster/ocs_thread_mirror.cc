@@ -36,23 +36,29 @@ namespace ocs {
    void
    event_mirror_initialize() {
       DENTER(TOP_LAYER);
-      ocs::MirrorDataStore *mirror_thread;
 
-#if 0
       // create reader mirror
-      mirror_thread = new ocs::MirrorReaderDataStore();
-      Main_Control.mirror_thread_pool.push_back(mirror_thread);
-      pthread_create(&mirror_thread->thread, nullptr, event_mirror_main, mirror_thread);
-      DPRINTF("added event mirror thread for data store %d\n", mirror_thread->data_store_id);
-#endif
+      auto reader_mirror_thread = new ocs::MirrorReaderDataStore();
+      Main_Control.mirror_thread_pool.push_back(reader_mirror_thread);
+      pthread_create(&reader_mirror_thread->thread, nullptr, event_mirror_main, reader_mirror_thread);
+      DPRINTF("added event mirror thread for data store %d\n", reader_mirror_thread->data_store_id);
 
       // create listener mirror
-      mirror_thread = new ocs::MirrorListenerDataStore();
-      Main_Control.mirror_thread_pool.push_back(mirror_thread);
-      pthread_create(&mirror_thread->thread, nullptr, event_mirror_main, mirror_thread);
-      DPRINTF("added event mirror thread for data store %d\n", mirror_thread->data_store_id);
+      auto listener_mirror_thread = new ocs::MirrorListenerDataStore();
+      Main_Control.mirror_thread_pool.push_back(listener_mirror_thread);
+      pthread_create(&listener_mirror_thread->thread, nullptr, event_mirror_main, listener_mirror_thread);
+      DPRINTF("added event mirror thread for data store %d\n", listener_mirror_thread->data_store_id);
 
       DRETURN_VOID;
+   }
+
+   /** @brief Block until all initial events have been handled by the mirror threads
+    */
+   void
+   event_mirror_block_till_initial_events_handled() {
+      for (auto mirror_thread: Main_Control.mirror_thread_pool) {
+         mirror_thread->block_till_initial_events_handled();
+      }
    }
 
    void
