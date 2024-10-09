@@ -49,8 +49,10 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap);
 
 void lFreeSortOrder(lSortOrder **so);
 
+#if 0
 /* for debugging purposes */
 void lWriteSortOrder(const lSortOrder *sp);
+#endif
 
 
 lSortOrder *lCreateSortOrder(int n);

@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <pthread.h>
+
 extern void sge_mutex_lock(const char *, const char *, int, pthread_mutex_t *);
 
 extern void sge_mutex_unlock(const char *, const char *, int, pthread_mutex_t *);

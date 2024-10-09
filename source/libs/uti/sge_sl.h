@@ -35,6 +35,8 @@
 
 #include <pthread.h>
 
+#include "basis_types.h"
+
 /****** uti/sl/--SimpleList() **********************************************
 *
 *  NAME

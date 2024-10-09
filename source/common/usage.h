@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cstdlib>
+
+#include "basis_types.h"
+
 /* 
    for use in mark_argument_syntax() calls:
 

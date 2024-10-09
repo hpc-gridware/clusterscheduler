@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cstdlib>
+
 const char *sge_get_arch();
 
 const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_error_log);

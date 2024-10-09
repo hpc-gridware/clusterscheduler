@@ -36,6 +36,8 @@
 #include <cerrno>
 #include <cstring>
 
+#include "cull/cull.h"
+
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_io.h"
@@ -47,7 +49,6 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_job.h"

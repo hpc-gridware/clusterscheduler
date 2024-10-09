@@ -31,7 +31,9 @@
  *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/       
+/*___INFO__MARK_END__*/
+
+#include "cull/cull.h"
 
 /* create spooling context dynamically or from compiled in default */
 lListElem *

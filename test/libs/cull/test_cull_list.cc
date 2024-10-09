@@ -88,8 +88,8 @@ NAMEEND
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)
 
 lNameSpace nmv[] = {
-        {1, TEST_Size, TEST_Name},
-        {0, 0, nullptr}
+        {1, TEST_Size, TEST_Name, TEST_Type},
+        {0, 0, nullptr, nullptr}
 };
 
 int main(int argc, char *argv[]) {

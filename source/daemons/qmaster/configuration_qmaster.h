@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
+#include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
 
 int

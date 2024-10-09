@@ -83,9 +83,10 @@ int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
 int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
    lDechainElem(lp, ep);
    lInsertSorted(so, ep, lp);
-   DRETURN(0);
+   return 0;
 }
 
+#if 0
 /* ------------------------------------------------------------ 
 
    writes a sort order (for debugging purposes)
@@ -110,6 +111,7 @@ void lWriteSortOrder(
 
    DRETURN_VOID;
 }
+#endif
 
 /* ----------------------------------------
 

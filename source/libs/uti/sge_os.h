@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "sge_getloadavg.h"
 #include "sge_loadmem.h"

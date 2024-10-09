@@ -90,8 +90,8 @@ int NM_STRING = TEST_string;
 lDescr *DESCR = TEST_Type;
 
 lNameSpace my_nmv[] = {
-        {1, TEST_Size, TEST_Name},
-        {0, 0, nullptr}
+        {1, TEST_Size, TEST_Name, TEST_Type},
+        {0, 0, nullptr, nullptr}
 };
 #endif
 

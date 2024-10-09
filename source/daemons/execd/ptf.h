@@ -35,6 +35,8 @@
 
 #include <sys/types.h>
 
+#include "cull/cull.h"
+
 #define PTF_COMPENSATION_FACTOR 2.0
 
 typedef pid_t osjobid_t;

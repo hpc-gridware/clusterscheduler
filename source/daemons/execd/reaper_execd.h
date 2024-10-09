@@ -35,6 +35,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
+
 #include "sgeobj/sge_daemonize.h"
 
 int sge_reap_children_execd(int max_count, bool is_qmaster_down);

@@ -879,6 +879,4 @@ void cull_hash_recreate_after_sort(lList *lp) {
          }
       }
    }
-
-   DRETURN_VOID;
 }

@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
+#include <cstdio>
 #include <cctype>
 
 #include "uti/sge_bootstrap.h"

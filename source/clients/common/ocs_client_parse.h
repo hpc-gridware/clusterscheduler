@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "basis_types.h"
+
+#include "cull/cull.h"
+
 #define SGE_COMMON_DEF_REQ_FILE "common/sge_request"
 #define SGE_HOME_DEF_REQ_FILE ".sge_request"
 #define SGE_COMMON_DEF_QSTAT_FILE "common/sge_qstat"

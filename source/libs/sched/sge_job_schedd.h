@@ -33,6 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "basis_types.h"
+#include "cull/cull.h"
+
 bool job_get_duration(u_long64 *duration, const lListElem *jep);
 bool task_get_duration(u_long64 *duration, const lListElem *ja_task);
 

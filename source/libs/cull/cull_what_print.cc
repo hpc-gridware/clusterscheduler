@@ -114,8 +114,6 @@ void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
    _lWriteWhatTo(ep, &buffer, 0);
    if (fp) {
       fprintf(fp, "%s", sge_dstring_get_string(&buffer));
-   } else {
-      DPRINTF("%s", sge_dstring_get_string(&buffer));
    }
    sge_dstring_free(&buffer);
 }

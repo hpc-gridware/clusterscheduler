@@ -144,9 +144,9 @@ NAMEEND
 #define TEST1_Size sizeof(TEST1_Name) / sizeof(char *)
 
 lNameSpace nmv[] = {
-        {1,  TEST_Size,  TEST_Name},
-        {51, TEST1_Size, TEST1_Name},
-        {0, 0, nullptr}
+        {1,  TEST_Size,  TEST_Name, TEST_Type},
+        {51, TEST1_Size, TEST1_Name, TEST1_Type},
+        {0, 0, nullptr, nullptr}
 };
 
 bool test_lWhat_ALL() {
