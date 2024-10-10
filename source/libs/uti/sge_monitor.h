@@ -98,24 +98,28 @@
 /**
  * qping thread warning times in seconds
  */
-const int NO_WARNING = 0;
-const int EVENT_MASTER_THREAD_WARNING = 10;
-const int TET_WARNING = 30;
-const int MT_WARNING = 10;
-const int ST_WARNING = 0;  /* no timeout for this thread */
-const int EXECD_WARNING = 10;
-const int SCT_WARNING = 20;
+const long NO_WARNING = 0;
+const long EVENT_MASTER_THREAD_WARNING = 5;
+const long TET_WARNING = 10;
+const long MT_WARNING = 0;
+const long WT_WARNING = 60;
+const long RT_WARNING = 60;
+const long ST_WARNING = 0;  /* no timeout for this thread */
+const long EXECD_WARNING = 10;
+const long SCT_WARNING = 20;
 
 /**
  * qping thread error times in seconds
  **/
-const int NO_ERROR = 0;
-const int EVENT_MASTER_THREAD_ERROR = 600;
-const int TET_ERROR = 600;
-const int MT_ERROR = 600;
-const int ST_ERROR = 0;   /* no timeout for this thread */
-const int EXECD_ERROR = 600;
-const int SCT_ERROR = 600;
+const long NO_ERROR = 0;
+const long EVENT_MASTER_THREAD_ERROR = 60;
+const long TET_ERROR = 60;
+const long MT_ERROR = 0;
+const long WT_ERROR = 600;
+const long RT_ERROR = 60*60*24*365;
+const long ST_ERROR = 0;   /* no timeout for this thread */
+const long EXECD_ERROR = 600;
+const long SCT_ERROR = 600;
 
 /**
  * This function definition is the prototyp for the output function of a data
@@ -167,7 +171,7 @@ typedef struct {
 } monitoring_t;
 
 void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                      int warning_timeout, int error_timeout);
+                      long warning_timeout, long error_timeout);
 
 void sge_monitor_free(monitoring_t *monitor);
 

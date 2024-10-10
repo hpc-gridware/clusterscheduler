@@ -62,27 +62,16 @@
 typedef struct {
    const char *name;           /* thread name */
    struct timeval last_wait_time;  /* last wait time, last time when one thread loop finished */
-   int warning_timeout; /* how long can the thread be blocked before a warning is shown */
-   int error_timeout;   /* how long can the thread be blocked before an error is shown */
+   long warning_timeout; /* how long can the thread be blocked before a warning is shown */
+   long error_timeout;   /* how long can the thread be blocked before an error is shown */
    time_t update_time;     /* last update time */
    dstring *output;          /* thread specific info line */
    pthread_mutex_t Output_Mutex;    /* gards one line */
 } Output_t;
 
-#define MAX_OUTPUT_LINES 10           /* number of threads to monitor, currently 10 threads at max
-                                         at the same time*/
-static Output_t Output[MAX_OUTPUT_LINES] = {
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
-};
+#define MAX_OUTPUT_LINES 512           /* max number of threads to monitor at the same time */
+static bool Output_initialized = false;
+static Output_t Output[MAX_OUTPUT_LINES];
 
 /* global mutex used for mallinfo initialisation and also used to access the Info_Line string */
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -203,8 +192,18 @@ void sge_monitor_free(monitoring_t *monitor) {
 *******************************************************************************/
 void
 sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                 int warning_timeout, int error_timeout) {
+                 long warning_timeout, long error_timeout) {
    DENTER(GDI_LAYER);
+
+   sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
+   if (!Output_initialized) {
+      Output_initialized = true;
+      for (int i = 0; i < MAX_OUTPUT_LINES; i++) {
+         memset(&Output[i], 0, sizeof(Output_t));
+         Output[i].Output_Mutex = PTHREAD_MUTEX_INITIALIZER;
+      }
+   }
+   sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &global_mutex);
 
    /*
     * initialize the mallinfo function pointer if it is available
@@ -405,41 +404,38 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
    {/* this is the qping info section, it checks if each thread is still alive */
       int i;
       int error_count = 0;
+      int warning_count = 0;
       struct timeval now{};
-      double time;
-      char state = 'R';
       gettimeofday(&now, nullptr);
 
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
+
          sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
          if (Output[i].name != nullptr) {
-            time = now.tv_usec - Output[i].last_wait_time.tv_usec;
+            char state = 'R';
+            double time = now.tv_usec - Output[i].last_wait_time.tv_usec;
+
             time = now.tv_sec - Output[i].last_wait_time.tv_sec + (time / 1000000);
-
-
-            if (Output[i].warning_timeout != NO_WARNING) {
-               if (Output[i].warning_timeout < time) {
-                  if (Output[i].error_timeout < time) {
-                     state = 'E';
-                  } else {
-                     state = 'W';
-                  }
-                  error_count++;
-               }
+            if (Output[i].error_timeout != NO_ERROR && Output[i].error_timeout < time) {
+               state = 'E';
+               error_count++;
+            } else if (Output[i].warning_timeout != NO_WARNING && Output[i].warning_timeout < time) {
+               state = 'W';
+               warning_count++;
             }
             sge_dstring_sprintf_append(&Info_Line, MSG_UTI_MONITOR_INFO_SCF, Output[i].name, state, time);
          }
          sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
       }
 
-      if (error_count == 0) {
-         sge_dstring_append(&Info_Line, MSG_UTI_MONITOR_OK);
-      } else if (error_count == 1) {
-         ret = 1;
-         sge_dstring_append(&Info_Line, MSG_UTI_MONITOR_WARNING);
-      } else {
-         ret = 2;
+      if (error_count > 0) {
          sge_dstring_append(&Info_Line, MSG_UTI_MONITOR_ERROR);
+         ret = 2;
+      } else if (warning_count > 0) {
+         sge_dstring_append(&Info_Line, MSG_UTI_MONITOR_WARNING);
+         ret = 1;
+      } else {
+         sge_dstring_append(&Info_Line, MSG_UTI_MONITOR_OK);
       }
       sge_dstring_append(&Info_Line, "\n");
    }
