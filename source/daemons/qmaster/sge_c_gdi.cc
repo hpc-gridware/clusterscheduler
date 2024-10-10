@@ -149,7 +149,7 @@ static bool
 sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_long32 target);
 
 static int
-schedd_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+schedd_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 /*
@@ -654,7 +654,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
       while ((ep = next) != nullptr) {
          next = lNextRW(ep);
 
-         sge_mod_sched_configuration(ep, &(task->answer_list), packet->user, packet->host);
+         sge_mod_sched_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
       }
    } else {
       bool is_scheduler_resync = false;
@@ -674,7 +674,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
 
             case SGE_ORDER_LIST:
                switch (sge_follow_order(ep, packet->user, packet->host,
-                                        reprioritize_tickets ? &ticket_orders : nullptr, monitor)) {
+                                        reprioritize_tickets ? &ticket_orders : nullptr, monitor, packet->gdi_session)) {
                   case STATUS_OK :
                   case 0 : /* everything went fine */
                      break;
@@ -694,11 +694,11 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                break;
             case SGE_UM_LIST:
             case SGE_UO_LIST:
-               sge_add_manop(ep, &(task->answer_list), packet->user, packet->host, task->target);
+               sge_add_manop(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target);
                break;
 
             case SGE_STN_LIST:
-               sge_add_sharetree(ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+               sge_add_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                                  packet->user, packet->host);
                break;
 
@@ -716,10 +716,10 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                      is_restart = true;
                   }
 
-                  sge_execd_startedup(ep, &(task->answer_list), packet->user,
+                  sge_execd_startedup(packet, task, ep, &(task->answer_list), packet->user,
                                       packet->host, task->target, monitor, is_restart);
                } else {
-                  sge_gdi_add_mod_generic(&(task->answer_list), ep, 1, ao, packet->user, packet->host,
+                  sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
                                           sub_command, &tmp_list, monitor);
                }
                break;
@@ -727,13 +727,13 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
       } /* while loop */
 
       if (task->target == SGE_ORDER_LIST) {
-         sge_commit();
+         sge_commit(packet->gdi_session);
          sge_set_next_spooling_time();
          answer_list_add(&(task->answer_list), "OK\n", STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
       if (is_scheduler_resync) {
-         sge_resync_schedd(monitor); /* ask for a total update */
+         sge_resync_schedd(monitor, packet->gdi_session); /* ask for a total update */
       }
 
       /*
@@ -774,7 +774,7 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
 
       switch (task->target) {
          case SGE_STN_LIST:
-            sge_del_sharetree(ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+            sge_del_sharetree(packet, task, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                               packet->user, packet->host);
             break;
          default:
@@ -791,67 +791,67 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
             case SGE_AH_LIST:
             case SGE_SH_LIST:
             case SGE_EH_LIST:
-               sge_del_host(ep, &(task->answer_list), packet->user, packet->host, task->target,
+               sge_del_host(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target,
                             *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
                break;
 
             case SGE_CQ_LIST:
-               cqueue_del(ep, &(task->answer_list), packet->user, packet->host);
+               cqueue_del(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
             case SGE_JB_LIST:
-               sge_gdi_del_job(packet, ep, &(task->answer_list), sub_command, monitor);
+               sge_gdi_del_job(packet, task, ep, &(task->answer_list), sub_command, monitor);
                break;
 
             case SGE_CE_LIST:
-               sge_del_centry(ep, &(task->answer_list), packet->user, packet->host);
+               sge_del_centry(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
             case SGE_PE_LIST:
-               sge_del_pe(ep, &(task->answer_list), packet->user, packet->host);
+               sge_del_pe(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
             case SGE_UM_LIST:
             case SGE_UO_LIST:
-               sge_del_manop(ep, &(task->answer_list), packet->user, packet->host, task->target);
+               sge_del_manop(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target);
                break;
 
             case SGE_CONF_LIST:
-               sge_del_configuration(ep, &(task->answer_list), packet->user, packet->host);
+               sge_del_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
             case SGE_UU_LIST:
-               sge_del_userprj(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
+               sge_del_userprj(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
                                packet->user, packet->host, 1);
                break;
 
             case SGE_US_LIST:
-               sge_del_userset(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
+               sge_del_userset(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
                                packet->user, packet->host);
                break;
 
             case SGE_PR_LIST:
-               sge_del_userprj(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
+               sge_del_userprj(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
                                packet->user, packet->host, 0);
                break;
 
             case SGE_RQS_LIST:
-               rqs_del(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
+               rqs_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
                        packet->host);
                break;
 
             case SGE_CK_LIST:
-               sge_del_ckpt(ep, &(task->answer_list), packet->user, packet->host);
+               sge_del_ckpt(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
             case SGE_CAL_LIST:
-               sge_del_calendar(ep, &(task->answer_list), packet->user, packet->host);
+               sge_del_calendar(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
             case SGE_HGRP_LIST:
-               hgroup_del(ep, &(task->answer_list), packet->user, packet->host);
+               hgroup_del(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
             case SGE_AR_LIST:
-               ar_del(packet, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
+               ar_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
                break;
             default:
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
@@ -861,7 +861,7 @@ sge_c_gdi_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int su
 
       } /* for_each element */
 
-      sge_commit();
+      sge_commit(packet->gdi_session);
    }
 
    DRETURN_VOID;
@@ -966,13 +966,13 @@ void sge_c_gdi_replace(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi
          /* delete all currently defined rule sets */
          ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
          while (ep != nullptr) {
-            rqs_del(ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
+            rqs_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
                     packet->host);
             ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
          }
 
          for_each_rw (ep, task->data_list) {
-            sge_gdi_add_mod_generic(&(task->answer_list), ep, 1, ao, packet->user, packet->host, SGE_GDI_SET_ALL,
+            sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host, SGE_GDI_SET_ALL,
                                     &tmp_list, monitor);
          }
          lFreeList(&tmp_list);
@@ -1042,7 +1042,7 @@ sge_c_gdi_trigger_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
          // state changes of queues and jobs
          sge_set_commit_required();
          sge_gdi_qmod(packet, task, monitor);
-         sge_commit();
+         sge_commit(packet->gdi_session);
          DRETURN_VOID;
       default:
          // unknown operation for a worker thread
@@ -1250,7 +1250,7 @@ trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_WARNING);
       DRETURN_VOID;
    }
-   if (!sge_add_event_for_client(EV_ID_SCHEDD, 0, sgeE_SCHEDDMONITOR, 0, 0, nullptr, nullptr, nullptr, nullptr)) {
+   if (!sge_add_event_for_client(EV_ID_SCHEDD, 0, sgeE_SCHEDDMONITOR, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session)) {
       WARNING(SFNMAX, MSG_COM_NOSCHEDDREGMASTER);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
       DRETURN_VOID;
@@ -1275,7 +1275,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
 
    for_each_rw(ep, task->data_list) {
       if (task->target == SGE_CONF_LIST) {
-         sge_mod_configuration(ep, &(task->answer_list), packet->user, packet->host);
+         sge_mod_configuration(ep, &(task->answer_list), packet->user, packet->host, packet->gdi_session);
       } else if (task->target == SGE_EV_LIST) {
          /* fill address infos from request into event client that must be added */
          lSetHost(ep, EV_host, packet->host);
@@ -1290,7 +1290,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
             sge_mod_event_client(ep, &(task->answer_list), packet->user, packet->host);
          }
       } else if (task->target == SGE_SC_LIST) {
-         sge_mod_sched_configuration(ep, &(task->answer_list), packet->user, packet->host);
+         sge_mod_sched_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
       } else {
          if (!is_locked) {
             sge_set_commit_required();
@@ -1299,11 +1299,11 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
 
          switch (task->target) {
             case SGE_JB_LIST:
-               sge_gdi_mod_job(packet, ep, &(task->answer_list), sub_command);
+               sge_gdi_mod_job(packet, task, ep, &(task->answer_list), sub_command);
                break;
 
             case SGE_STN_LIST:
-               sge_mod_sharetree(ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+               sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                                  &(task->answer_list), packet->user, packet->host);
                break;
             default:
@@ -1312,7 +1312,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
                   answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
                   break;
                }
-               sge_gdi_add_mod_generic(&(task->answer_list), ep, 0, ao, packet->user, packet->host, sub_command,
+               sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 0, ao, packet->user, packet->host, sub_command,
                                        &tmp_list, monitor);
                break;
          }
@@ -1320,7 +1320,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
    } /* for_each */
 
    if (is_locked) {
-      sge_commit();
+      sge_commit(packet->gdi_session);
    }
 
    /* postprocessing for the list of requests */
@@ -1328,7 +1328,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_
       switch (task->target) {
          case SGE_CE_LIST:
          DPRINTF("rebuilding consumable debitation\n");
-            centry_redebit_consumables(tmp_list);
+            centry_redebit_consumables(tmp_list, packet->gdi_session);
             break;
       }
    }
@@ -1596,7 +1596,7 @@ sge_task_check_get_perm_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
    replace old object by new queue
 */
 int
-sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
+sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
                         const char *rhost, int sub_command, lList **tmp_list, monitoring_t *monitor) {
    int pos;
    int dataType;
@@ -1681,7 +1681,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
    }
 
    /* modify the new object base on information in the request */
-   if (object->modifier(&tmp_alp, new_obj, instructions, add, ruser, rhost, object, sub_command, monitor) != 0) {
+   if (object->modifier(packet, task, &tmp_alp, new_obj, instructions, add, ruser, rhost, object, sub_command, monitor) != 0) {
 
       if (alpp) {
          /* ON ERROR: DISPOSE NEW OBJECT */
@@ -1710,7 +1710,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
 
 
    /* write on file */
-   if (object->writer(alpp, new_obj, object)) {
+   if (object->writer(packet, task, alpp, new_obj, object)) {
       lFreeElem(&new_obj);
       lFreeList(&tmp_alp);
       DRETURN(STATUS_EUNKNOWN);
@@ -1745,7 +1745,7 @@ sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_obje
 
    /* once we successfully added/modified the object, do final steps (on_success callback) */
    if (object->on_success) {
-      object->on_success(new_obj, old_obj, object, tmp_list, monitor);
+      object->on_success(packet, task, new_obj, old_obj, object, tmp_list, monitor);
    }
 
    lFreeElem(&old_obj);
@@ -1776,7 +1776,7 @@ gdi_object_t *get_gdi_object(u_long32 target) {
    DRETURN(nullptr);
 }
 
-static int schedd_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+static int schedd_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
                       const char *rhost, gdi_object_t *object, int sub_command,
                       monitoring_t *monitor) {
    int ret;

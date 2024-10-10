@@ -79,7 +79,7 @@ typedef struct {
 
    bool is;
 
-   bool (*set_state)(lListElem *this_elem, bool set);
+   bool (*set_state)(lListElem *this_elem, bool set, u_long64 gdi_session);
 
    bool set;
    const char *success_msg;
@@ -87,7 +87,7 @@ typedef struct {
 
 static bool
 qinstance_change_state_on_calender_(lListElem *qi_elem, u_long32 cal_order,
-                                    lList **state_change_list, monitoring_t *monitor);
+                                    lList **state_change_list, monitoring_t *monitor, u_long64 gdi_session);
 
 bool
 qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lListElem *cqueue,
@@ -95,7 +95,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                            int subsub_key, const char **matching_host_or_group, const char **matching_group,
                            bool *is_ambiguous, bool *has_changed_conf_attr, bool *has_changed_state_attr,
                            const bool initial_modify, bool *need_reinitialize, monitoring_t *monitor,
-                           const lList *master_hgroup_list, lList *master_cqueue_list) {
+                           const lList *master_hgroup_list, lList *master_cqueue_list, u_long64 gdi_session) {
 #if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
 #define QINSTANCE_MODIFY_DEBUG
 #endif
@@ -146,10 +146,10 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                }
 
                if (calendar != nullptr) {
-                  qinstance_change_state_on_calendar(this_elem, calendar, monitor);
+                  qinstance_change_state_on_calendar(this_elem, calendar, monitor, gdi_session);
                } else {
-                  sge_qmaster_qinstance_state_set_cal_disabled(this_elem, false);
-                  sge_qmaster_qinstance_state_set_cal_suspended(this_elem, false);
+                  sge_qmaster_qinstance_state_set_cal_disabled(this_elem, false, gdi_session);
+                  sge_qmaster_qinstance_state_set_cal_suspended(this_elem, false,gdi_session);
                   lSetList(this_elem, QU_state_changes, nullptr);
                }
                lSetString(this_elem, attribute_name, new_value);
@@ -554,8 +554,8 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   /*
                    * (Un)suspend subordinated queue instances
                    */
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so, monitor);
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so, monitor);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so, monitor, gdi_session);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so, monitor, gdi_session);
                }
 
                /*
@@ -647,7 +647,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 bool
 qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                                   u_long32 transition, bool force_transition, const char *user, const char *host,
-                                  bool is_operator, bool is_owner, monitoring_t *monitor) {
+                                  bool is_operator, bool is_owner, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    dstring buffer = DSTRING_INIT;
    const char *qinstance_name = qinstance_get_name(this_elem, &buffer);
@@ -730,7 +730,7 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
           * Change state
           */
          if (did_something) {
-            transitions[i].set_state(this_elem, transitions[i].set);
+            transitions[i].set_state(this_elem, transitions[i].set, gdi_session);
          }
 
          /*
@@ -739,7 +739,7 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
          if (did_something) {
             qinstance_increase_qversion(this_elem);
             ret &= sge_event_spool(answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(this_elem, QU_qname),
-                                   lGetHost(this_elem, QU_qhostname), nullptr, this_elem, nullptr, nullptr, true, true);
+                                   lGetHost(this_elem, QU_qhostname), nullptr, this_elem, nullptr, nullptr, true, true, gdi_session);
 
             if (ret) {
                if (force_transition) {
@@ -756,7 +756,7 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                 * Rollback
                 */
                if (!force_transition) {
-                  transitions[i].set_state(this_elem, transitions[i].set ? false : true);
+                  transitions[i].set_state(this_elem, transitions[i].set ? false : true, gdi_session);
                }
             }
          }
@@ -796,7 +796,7 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
 *
 *******************************************************************************/
 bool
-qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor) {
+qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -808,7 +808,7 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
 
       state = calender_state_changes(calendar, &state_changes_list, &when, nullptr);
 
-      ret = qinstance_change_state_on_calender_(this_elem, state, &state_changes_list, monitor);
+      ret = qinstance_change_state_on_calender_(this_elem, state, &state_changes_list, monitor, gdi_session);
 
    }
    DRETURN(ret);
@@ -840,7 +840,7 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
 *******************************************************************************/
 bool
 qinstance_change_state_on_calendar_all(const char *cal_name, u_long32 cal_order,
-                                       const lList *state_change_list, monitoring_t *monitor) {
+                                       const lList *state_change_list, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    const lListElem *cqueue;
 
@@ -855,7 +855,7 @@ qinstance_change_state_on_calendar_all(const char *cal_name, u_long32 cal_order,
 
          if (queue_calendar != nullptr && !strcmp(queue_calendar, cal_name)) {
             lList *copy_state_change_list = lCopyList("state list", state_change_list);
-            ret = qinstance_change_state_on_calender_(qinstance, cal_order, &copy_state_change_list, monitor);
+            ret = qinstance_change_state_on_calender_(qinstance, cal_order, &copy_state_change_list, monitor, gdi_session);
          }
       }
    }
@@ -887,7 +887,7 @@ qinstance_change_state_on_calendar_all(const char *cal_name, u_long32 cal_order,
 *
 *******************************************************************************/
 static bool qinstance_change_state_on_calender_(lListElem *this_elem, u_long32 cal_order,
-                                                lList **state_change_list, monitoring_t *monitor) {
+                                                lList **state_change_list, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    bool old_cal_disabled = qinstance_state_is_cal_disabled(this_elem);
    bool old_cal_suspended = qinstance_state_is_cal_suspended(this_elem);
@@ -900,13 +900,13 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, u_long32 c
    *state_change_list = nullptr;
 
    if (old_cal_disabled != new_cal_disabled) {
-      sge_qmaster_qinstance_state_set_cal_disabled(this_elem, new_cal_disabled);
+      sge_qmaster_qinstance_state_set_cal_disabled(this_elem, new_cal_disabled, gdi_session);
    }
 
    if (old_cal_suspended != new_cal_suspended) {
       const char *name = lGetString(this_elem, QU_full_name);
 
-      sge_qmaster_qinstance_state_set_cal_suspended(this_elem, new_cal_suspended);
+      sge_qmaster_qinstance_state_set_cal_suspended(this_elem, new_cal_suspended, gdi_session);
       if (new_cal_suspended) {
          if (qinstance_state_is_susp_on_sub(this_elem)) {
             INFO(MSG_QINSTANCE_NOUSSOS_S, name);
@@ -926,33 +926,32 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, u_long32 c
       }
    }
 
-   qinstance_add_event(this_elem, sgeE_QINSTANCE_MOD);
+   qinstance_add_event(this_elem, sgeE_QINSTANCE_MOD, gdi_session);
 
    DRETURN(ret);
 }
 
 bool
-sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state, u_long64 gdi_session) {
    bool changed;
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), QI_DISABLED, set_state);
+                                  lGetString(this_elem, QU_full_name), QI_DISABLED, set_state, gdi_session);
    }
-
 
    return changed;
 }
 
 bool
-sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state, u_long64 gdi_session) {
    bool changed;
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), QI_SUSPENDED, set_state);
+                                  lGetString(this_elem, QU_full_name), QI_SUSPENDED, set_state, gdi_session);
    }
 
 
@@ -960,17 +959,17 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
 }
 
 bool
-sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state, u_long64 gdi_session) {
    bool changed;
    changed = qinstance_state_set_unknown(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       if (mconf_get_simulate_execds()) {
          sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                     lGetString(this_elem, QU_full_name), QI_UNKNOWN, false);
+                                     lGetString(this_elem, QU_full_name), QI_UNKNOWN, false, gdi_session);
       } else {
          sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                     lGetString(this_elem, QU_full_name), QI_UNKNOWN, set_state);
+                                     lGetString(this_elem, QU_full_name), QI_UNKNOWN, set_state, gdi_session);
       }
    }
 
@@ -979,13 +978,13 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
 }
 
 bool
-sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state, u_long64 gdi_session) {
    bool changed;
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), QI_ERROR, set_state);
+                                  lGetString(this_elem, QU_full_name), QI_ERROR, set_state, gdi_session);
    }
 
 
@@ -993,7 +992,7 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state) {
 }
 
 bool
-sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state, u_long64 gid_session) {
    bool changed;
    changed = qinstance_state_set_susp_on_sub(this_elem, set_state);
    if (changed) {
@@ -1004,7 +1003,7 @@ sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state
 }
 
 bool
-sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state, u_long64 gid_session) {
    bool changed;
    changed = qinstance_state_set_cal_disabled(this_elem, set_state);
    if (changed) {
@@ -1015,7 +1014,7 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
 }
 
 bool
-sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state, u_long64 gid_session) {
    bool changed;
    changed = qinstance_state_set_cal_suspended(this_elem, set_state);
    if (changed) {
@@ -1026,7 +1025,7 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
 }
 
 bool
-sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, u_long64 gid_session) {
    bool changed;
    changed = qinstance_state_set_orphaned(this_elem, set_state);
    if (changed) {
@@ -1037,13 +1036,13 @@ sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
 }
 
 bool
-sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) {
+sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, u_long64 gid_session) {
    bool changed;
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), QI_AMBIGUOUS, set_state);
+                                  lGetString(this_elem, QU_full_name), QI_AMBIGUOUS, set_state, gid_session);
    }
 
 
@@ -1052,7 +1051,7 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) 
 
 /* ret: did the state change */
 bool
-sge_qmaster_qinstance_set_initial_state(lListElem *this_elem) {
+sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, u_long64 gdi_session) {
    bool ret = false;
    const char *state_string = lGetString(this_elem, QU_initial_state);
 
@@ -1067,7 +1066,7 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem) {
 
       if (do_disable != qinstance_state_is_manual_disabled(this_elem)) {
          ret = true;
-         sge_qmaster_qinstance_state_set_manual_disabled(this_elem, do_disable);
+         sge_qmaster_qinstance_state_set_manual_disabled(this_elem, do_disable, gdi_session);
       }
    }
    DRETURN(ret);

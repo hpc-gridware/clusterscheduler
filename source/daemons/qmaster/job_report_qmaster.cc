@@ -164,7 +164,7 @@ status2str(u_long32 status) {
 *     MT-NOTE: process_job_report() is MT safe 
 *******************************************************************************/
 void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
-                        sge_pack_buffer *pb, monitoring_t *monitor) {
+                        sge_pack_buffer *pb, monitoring_t *monitor, u_long64 gdi_session) {
    lList *jrl = lGetListRW(report, REP_list); /* JR_Type */
    lListElem *jep, *jr, *ep, *jatep = nullptr;
 
@@ -251,7 +251,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                   lSetUlong(jatep, JAT_state, state);
                   sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD,
                                   jobid, jataskid, nullptr, nullptr, nullptr,
-                                  jep, jatep, nullptr, true, true);
+                                  jep, jatep, nullptr, true, true, gdi_session);
                }
             }
          }
@@ -303,7 +303,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         if (status == JTRANSFERING) { /* got async ack for this job */
                            DPRINTF("--- transfering job " SFN " is running\n", job_id_string);
                            sge_commit_job(jep, jatep, jr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT,
-                                          monitor); /* implicitly sending usage to schedd */
+                                          monitor, gdi_session); /* implicitly sending usage to schedd */
                            cancel_job_resend(jobid, jataskid);
                         } else {
                            /* need to generate a job event for new usage
@@ -311,7 +311,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                             */
                            /* jatask usage is not spooled (?) */
                            sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, nullptr, nullptr,
-                                              lGetString(jep, JB_session), lGetListRW(jatep, JAT_scaled_usage_list));
+                                              lGetString(jep, JB_session), lGetListRW(jatep, JAT_scaled_usage_list), gdi_session);
                         }
                      } else {
                         /* register running task qmaster will log accounting for all registered tasks */
@@ -355,11 +355,11 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                               jobid, jataskid, pe_task_id_str, nullptr,
                                               lGetString(jep, JB_session),
-                                              jep, jatep, petask, true, true);
+                                              jep, jatep, petask, true, true, gdi_session);
                            } else {
                               sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, pe_task_id_str,
                                                  nullptr, lGetString(jep, JB_session),
-                                                 lGetListRW(petask, PET_scaled_usage));
+                                                 lGetListRW(petask, PET_scaled_usage), gdi_session);
                            }
                            answer_list_output(&answer_list);
                         } else if (lGetUlong(jatep, JAT_status) != JFINISHED) {
@@ -400,12 +400,12 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                            jobid, jataskid, pe_task_id_str, nullptr,
                                            lGetString(jep, JB_session),
-                                           jep, jatep, petask, false, true);
+                                           jep, jatep, petask, false, true, gdi_session);
                         } else {
                            sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD,
                                            jobid, jataskid, nullptr, nullptr,
                                            lGetString(jep, JB_session),
-                                           jep, jatep, nullptr, false, true);
+                                           jep, jatep, nullptr, false, true, gdi_session);
                         }
                         answer_list_output(&answer_list);
                      }
@@ -577,7 +577,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            DPRINTF("--- running job " SFN " is exiting, previous status: " SFN "\n",
                                    job_id_string, (status == JTRANSFERING) ? "transfering" : "running");
 
-                           sge_job_exit(jr, jep, jatep, monitor);
+                           sge_job_exit(jr, jep, jatep, monitor, gdi_session);
                         } else {
                            u_long32 failed = lGetUlong(jr, JR_failed);
 
@@ -653,7 +653,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                  sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                                  jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                  lGetString(jep, JB_session),
-                                                 jep, jatep, container, true, true);
+                                                 jep, jatep, container, true, true, gdi_session);
                                  answer_list_output(&answer_list);
                               } else {
                                  lList *answer_list = nullptr;
@@ -663,7 +663,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                  sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid,
                                                     PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                     lGetString(jep, JB_session),
-                                                    lGetListRW(container, PET_scaled_usage));
+                                                    lGetListRW(container, PET_scaled_usage), gdi_session);
                                  /* usage container will be spooled */
                                  /* JG: TODO: it is not really a sgeE_PETASK_ADD,
                                   * but a sgeE_PETASK_MOD. We don't have this event
@@ -672,7 +672,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                  sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                                  jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                  lGetString(jep, JB_session),
-                                                 jep, jatep, container, false, true);
+                                                 jep, jatep, container, false, true, gdi_session);
                                  answer_list_output(&answer_list);
                               }
                            }
@@ -683,7 +683,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               sge_event_spool(&answer_list, 0, sgeE_PETASK_DEL,
                                               jobid, jataskid, pe_task_id_str,
                                               nullptr, nullptr, nullptr, nullptr, nullptr,
-                                              true, true);
+                                              true, true, gdi_session);
                               answer_list_output(&answer_list);
                            }
                            lRemoveElem(lGetListRW(jatep, JAT_task_list), &petask);

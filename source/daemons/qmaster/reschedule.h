@@ -51,21 +51,21 @@ skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, 
 
 int
 reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
-                bool is_manual);
+                bool is_manual, u_long64 gdi_session);
 
 int
 reschedule_job(lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force,
-               lList **answer, monitoring_t *monitor, bool is_manual);
+               lList **answer, monitoring_t *monitor, bool is_manual, u_long64 gdi_session);
 
 lListElem *
 add_to_reschedule_unknown_list(lListElem *hostr, u_long32 job_number, u_long32 task_number,
-                               u_long32 state);
+                               u_long32 state, u_long64 gdi_session);
 
 void
-delete_from_reschedule_unknown_list(lListElem *host);
+delete_from_reschedule_unknown_list(lListElem *host, u_long64 gdi_session);
 
 void
-update_reschedule_unknown_list(lListElem *host);
+update_reschedule_unknown_list(lListElem *host, u_long64 gdi_session);
 
 void
 update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_long32 task_number);
@@ -80,7 +80,7 @@ void
 reschedule_add_additional_time(u_long64 time);
 
 void
-remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number);
+remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number, u_long64 gdi_session);
 
 void
-remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number);
+remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number, u_long64 gdi_session);

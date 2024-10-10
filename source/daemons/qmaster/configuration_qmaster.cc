@@ -87,7 +87,7 @@ static int
 check_config(lList **alpp, lListElem *conf);
 
 static int
-do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer);
+do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session);
 
 static lListElem *
 is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries);
@@ -97,13 +97,13 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
 
 static int
 exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf,
-                      lList **anAnswer);
+                      lList **anAnswer, u_long64 gdi_session);
 
 static bool
 has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries);
 
 static int
-do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer);
+do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, u_long64 gdi_session);
 
 static int
 remove_conf_by_name(char *aConfName);
@@ -216,7 +216,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
  * necessary to introduce something like 'protected' configuration entries.
  */
 int
-sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
+sge_del_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
@@ -268,7 +268,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
       DRETURN(STATUS_EEXIST);
    }
 
-   sge_event_spool(anAnswer, 0, sgeE_CONFIG_DEL, 0, 0, unique_name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true);
+   sge_event_spool(anAnswer, 0, sgeE_CONFIG_DEL, 0, 0, unique_name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
    remove_conf_by_name(unique_name);
 
@@ -312,7 +312,7 @@ sge_del_configuration(lListElem *aConf, lList **anAnswer, char *aUser, char *aHo
 *
 *******************************************************************************/
 int
-sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost) {
+sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, u_long64 gdi_session) {
    lListElem *old_conf;
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTLEN];
@@ -349,7 +349,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    if ((old_conf = sge_get_configuration_for_host(unique_name)) != nullptr) {
       int ret = -1;
 
-      ret = do_mod_config(unique_name, old_conf, aConf, anAnswer);
+      ret = do_mod_config(unique_name, old_conf, aConf, anAnswer, gdi_session);
 
       lFreeElem(&old_conf);
 
@@ -360,14 +360,14 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
          DRETURN(STATUS_EUNKNOWN);
       }
    } else {
-      do_add_config(unique_name, aConf, anAnswer);
+      do_add_config(unique_name, aConf, anAnswer, gdi_session);
 
       INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
    if (strcmp(SGE_GLOBAL_NAME, unique_name) == 0) {
-      sge_add_event(0, sgeE_GLOBAL_CONFIG, 0, 0, nullptr, nullptr, nullptr, nullptr);
+      sge_add_event(0, sgeE_GLOBAL_CONFIG, 0, 0, nullptr, nullptr, nullptr, nullptr, gdi_session);
    }
 
    /*
@@ -835,7 +835,7 @@ sge_set_conf_reprioritize(lListElem *aConf, bool aFlag) {
  * Empty configurations do not contain any 'CONF_entries'.
  */
 static int
-do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer) {
+do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session) {
    const lList *old_entries = nullptr;
    lList *new_entries = nullptr;
    lListElem *reprio = nullptr;
@@ -853,7 +853,7 @@ do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList 
       DRETURN(-1);
    }
 
-   exchange_conf_by_name(aConfName, anOldConf, aNewConf, anAnswer);
+   exchange_conf_by_name(aConfName, anOldConf, aNewConf, anAnswer, gdi_session);
 
    if (has_reschedule_unknown_change(old_entries, new_entries)) {
       update_reschedule_unknown_timout_values(aConfName);
@@ -930,7 +930,7 @@ is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfE
  * NOTE: 'anOldConf' is a *COPY* of the old configuration entry.
  */
 static int
-exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer) {
+exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session) {
    lListElem *elem = nullptr;
    u_long32 old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
@@ -959,7 +959,7 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   sge_event_spool(anAnswer, 0, sgeE_CONFIG_MOD, 0, 0, old_conf_name, nullptr, nullptr, elem, nullptr, nullptr, true, true);
+   sge_event_spool(anAnswer, 0, sgeE_CONFIG_MOD, 0, 0, old_conf_name, nullptr, nullptr, elem, nullptr, nullptr, true, true, gdi_session);
 
    DRETURN(0);
 }
@@ -994,7 +994,7 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
 }
 
 static int
-do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer) {
+do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, u_long64 gdi_session) {
    lListElem *elem = nullptr;
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
@@ -1008,7 +1008,7 @@ do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer) {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   sge_event_spool(anAnswer, 0, sgeE_CONFIG_ADD, 0, 0, aConfName, nullptr, nullptr, elem, nullptr, nullptr, true, true);
+   sge_event_spool(anAnswer, 0, sgeE_CONFIG_ADD, 0, 0, aConfName, nullptr, nullptr, elem, nullptr, nullptr, true, true, gdi_session);
 
    DRETURN(0);
 }

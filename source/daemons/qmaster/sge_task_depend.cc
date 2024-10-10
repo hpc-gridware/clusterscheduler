@@ -222,7 +222,7 @@ task_depend_is_finished(const lListElem *job, u_long32 task_id) {
 *
 ******************************************************************************/
 bool
-sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
+sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id, u_long64 gdi_request) {
    const lListElem *pre = nullptr;  /* JRE_Type */
    u_long32 hold_state, new_state;
    int Depend = 0;
@@ -293,7 +293,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
          /* all task mod events will need to be added individually */
          lListElem *ja_task = job_search_task(jep, nullptr, task_id);
          if (ja_task != nullptr)
-            sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task);
+            sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task, gdi_request);
          DRETURN(false);
       }
       DRETURN(true);
@@ -333,7 +333,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
 *
 ******************************************************************************/
 bool
-sge_task_depend_init(lListElem *jep, lList **alpp) {
+sge_task_depend_init(lListElem *jep, lList **alpp, u_long64 gdi_session) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -346,13 +346,13 @@ sge_task_depend_init(lListElem *jep, lList **alpp) {
    if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_request_list)) > 0) {
       if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_predecessor_list)) == 0) {
          /* fast case where all predecessors are "gone" */
-         if (sge_task_depend_flush(jep, alpp))
+         if (sge_task_depend_flush(jep, alpp, gdi_session))
             ret = true;
       } else {
          u_long32 taskid, b0, b1, sb;
          job_get_submit_task_ids(jep, &b0, &b1, &sb);
          for (taskid = b0; taskid <= b1; taskid += sb) {
-            if (sge_task_depend_update(jep, alpp, taskid))
+            if (sge_task_depend_update(jep, alpp, taskid, gdi_session))
                ret = true;
          }
       }
@@ -396,7 +396,7 @@ sge_task_depend_init(lListElem *jep, lList **alpp) {
 *
 ******************************************************************************/
 bool
-sge_task_depend_flush(lListElem *jep, lList **alpp) {
+sge_task_depend_flush(lListElem *jep, lList **alpp, u_long64 gdi_session) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -440,7 +440,7 @@ sge_task_depend_flush(lListElem *jep, lList **alpp) {
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {
             hold_state &= ~MINUS_H_TGT_JA_AD;
             job_set_hold_state(jep, alpp, task_id, hold_state);
-            sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task);
+            sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task, gdi_session);
          }
       }
    }

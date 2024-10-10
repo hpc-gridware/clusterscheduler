@@ -114,7 +114,8 @@ bool sge_add_event(u_long64 timestamp,
                    const char *strkey,
                    const char *strkey2, 
                    const char *session,
-                   lListElem *element);
+                   lListElem *element,
+                   u_long64 gdi_session);
                           
 bool sge_add_event_for_client(u_long32 event_client_id,
                               u_long64 timestamp,
@@ -124,7 +125,8 @@ bool sge_add_event_for_client(u_long32 event_client_id,
                               const char *strkey,
                               const char *strkey2,
                               const char *session,
-                              lListElem *element);
+                              lListElem *element,
+                              u_long64 gdi_session);
                                     
 bool sge_add_list_event(u_long64 timestamp,
                         ev_event type, 
@@ -133,17 +135,18 @@ bool sge_add_list_event(u_long64 timestamp,
                         const char *strkey, 
                         const char *strkey2,
                         const char *session,
-                        lList *list);
+                        lList *list,
+                        u_long64 gdi_session);
 
 bool sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number);
 void sge_deliver_events_immediately(u_long32 aClientID);
 
-int sge_resync_schedd(monitoring_t *monitor);
+int sge_resync_schedd(monitoring_t *monitor, u_long64 gdi_session);
 
 u_long32 sge_set_max_dynamic_event_clients(u_long32 max);
 u_long32 sge_get_max_dynamic_event_clients();
 
 void sge_event_master_shutdown();
 void sge_event_master_init();
-bool sge_commit();
+bool sge_commit(u_long64 gdi_session);
 void sge_set_commit_required();

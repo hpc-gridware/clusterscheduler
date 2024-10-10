@@ -56,4 +56,4 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event type,
                 u_long32 intkey1, u_long32 intkey2, const char *strkey, 
                 const char *strkey2, const char *session, lListElem *object, 
                 lListElem *sub_object1, lListElem *sub_object2, 
-                bool send_event, bool spool);
+                bool send_event, bool spool, u_long64 gdi_session);

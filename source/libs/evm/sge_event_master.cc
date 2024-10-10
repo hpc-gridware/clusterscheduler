@@ -327,7 +327,8 @@ const int block_events[total_update_eventsMAX][9] = {
  *
  ******************************************************************
  */
-static bool SEND_EVENTS[sgeE_EVENTSIZE]; 
+
+static bool SEND_EVENTS[sgeE_EVENTSIZE];
 
 event_master_control_t Event_Master_Control = {
    PTHREAD_MUTEX_INITIALIZER,       /* mutex */
@@ -345,7 +346,7 @@ event_master_control_t Event_Master_Control = {
 
 static void       init_send_events(); 
 static void       flush_events(lListElem*, int);
-static void       total_update(lListElem*);
+static void       total_update(lListElem*, u_long64 gdi_session);
 static void       build_subscription(lListElem*);
 static void       remove_event_client(lListElem **client, int event_client_id, bool lock_event_master);
 static void       check_send_new_subscribed_list(const subscription_t*, 
@@ -355,9 +356,9 @@ static int        eventclient_subscribed(const lListElem *, ev_event, const char
 static int        purge_event_list(lList* aList, u_long32 event_number); 
 
 static lListElem* sge_create_event(u_long32, u_long64, ev_event, u_long32, u_long32, const char*, const char*, lList*);
-static bool       add_list_event_for_client(u_long32, u_long64, ev_event, u_long32, u_long32, const char*, const char*, const char*, lList*);
+static bool       add_list_event_for_client(u_long32, u_long64, ev_event, u_long32, u_long32, const char*, const char*, const char*, lList*, u_long64);
 static void       add_list_event_direct(lListElem *event_client, lListElem *event, bool copy_event);
-static void       total_update_event(lListElem *event_client, ev_event type, bool new_subscription);
+static void       total_update_event(lListElem *event_client, ev_event type, bool new_subscription, u_long64 gdi_session);
 static bool       list_select(subscription_t*, int, lList**, lList*, const lCondition*, const lEnumeration*, const lDescr*, bool);
 static lListElem* elem_select(subscription_t*, lListElem*, const int[], const lCondition*, const lEnumeration*, const lDescr*, int);    
 static lListElem* eventclient_list_locate_by_adress(const char*, const char*, u_long32);
@@ -570,7 +571,7 @@ int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, 
    build_subscription(ep);
 
    /* build events for total update */
-   total_update(ep);
+   total_update(ep, packet->gdi_session);
 
    /* flush initial list events */
    flush_events(ep, 0);
@@ -1131,7 +1132,7 @@ sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_c
          DRETURN(EPERM);
       }
 
-      add_list_event_for_client(event_client_id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
+      add_list_event_for_client(event_client_id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session);
       /* Print out a message about the event. */
       if (event_client_id == EV_ID_SCHEDD) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
@@ -1203,7 +1204,7 @@ int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lLi
          continue;
       }
 
-      sge_add_event_for_client(id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
+      sge_add_event_for_client(id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session);
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
                sge_u32c(id), lGetHost(client, EV_host));
@@ -1221,18 +1222,18 @@ int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lLi
 *  SYNOPSIS
 *     #include "evm/sge_event_master.h"
 *
-*     void 
+*     void
 *     sge_add_event(u_long64 timestamp, ev_event type,
 *                   u_long32 intkey, u_long32 intkey2,
 *                   const char *strkey, const char *strkey2,
-*                   const char *session, lListElem *element) 
+*                   const char *session, lListElem *element)
 *
 *  FUNCTION
-*     Adds an object to the list of events to deliver. Called, if an event 
-*     occurs to that object, e.g. it was added to Cluster Scheduler, modified or 
+*     Adds an object to the list of events to deliver. Called, if an event
+*     occurs to that object, e.g. it was added to Cluster Scheduler, modified or
 *     deleted.
-*  
-*     Internally, a list with that single object is created and passed to 
+*
+*     Internally, a list with that single object is created and passed to
 *     sge_add_list_event().
 *
 *  INPUTS
@@ -1249,13 +1250,11 @@ int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lLi
 *     MT-NOTE: sge_add_event() is NOT MT safe.
 *
 *******************************************************************************/
-bool 
-sge_add_event(u_long64 timestamp, ev_event type,
-              u_long32 intkey, u_long32 intkey2,
-              const char *strkey, const char *strkey2, 
-              const char *session, lListElem *element) 
+bool
+sge_add_event(u_long64 timestamp, ev_event type, u_long32 intkey, u_long32 intkey2, const char *strkey,
+              const char *strkey2, const char *session, lListElem *element, u_long64 gdi_session)
 {
-   return sge_add_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session, element);
+   return sge_add_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session, element, gdi_session);
 }
 /****** sge_event_master/sge_add_event_for_client() ****************************
 *  NAME
@@ -1288,8 +1287,8 @@ sge_add_event(u_long64 timestamp, ev_event type,
 *******************************************************************************/
 bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_event type,
                               u_long32 intkey, u_long32 intkey2,
-                              const char *strkey, const char *strkey2, 
-                              const char *session, lListElem *element)
+                              const char *strkey, const char *strkey2,
+                              const char *session, lListElem *element, u_long64 gdi_session)
 {
    lList *lp = nullptr;
    bool ret = false;
@@ -1301,7 +1300,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_e
       int sub_list_elem = 0;
 
       /* ignore the sublist in case of the following events. We have
-       * extra events to handle the sub-lists 
+       * extra events to handle the sub-lists
        */
       if (type == sgeE_JOB_MOD) {
          sub_list_elem = JB_ja_tasks;
@@ -1324,7 +1323,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_e
    }
 
    ret = add_list_event_for_client(event_client_id, timestamp, type, intkey, intkey2,
-                                   strkey, strkey2, session, lp);
+                                   strkey, strkey2, session, lp, gdi_session);
 
    DRETURN(ret);
 }
@@ -1336,14 +1335,14 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_e
 *  SYNOPSIS
 *     #include "evm/sge_event_master.h"
 *
-*     void 
+*     void
 *     sge_add_list_event(u_long64 timestamp, ev_event type,
 *                        u_long32 intkey, u_long32 intkey2,
 *                        const char *strkey, const char *strkey2,
-*                        const char *session, lList *list) 
+*                        const char *session, lList *list)
 *
 *  FUNCTION
-*     Adds a list of objects to the list of events to deliver, e.g. the 
+*     Adds a list of objects to the list of events to deliver, e.g. the
 *     sgeE*_LIST events.
 *
 *  INPUTS
@@ -1363,7 +1362,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_e
 bool sge_add_list_event(u_long64 timestamp, ev_event type,
                         u_long32 intkey, u_long32 intkey2,
                         const char *strkey, const char *strkey2,
-                        const char *session, lList *list)
+                        const char *session, lList *list, u_long64 gdi_session)
 {
    bool ret;
    lList *lp = nullptr;
@@ -1403,7 +1402,7 @@ bool sge_add_list_event(u_long64 timestamp, ev_event type,
    }
 
    ret = add_list_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2,
-                                   strkey, strkey2, session, lp);
+                                   strkey, strkey2, session, lp, gdi_session);
    return ret;
 }
 
@@ -1458,7 +1457,6 @@ sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 in
    }
 
    etp = lCreateElem(ET_Type);
-   lSetUlong64(etp, ET_unique_id, oge_get_next_unique_event_id());
    lSetUlong(etp, ET_number, number);
    lSetUlong(etp, ET_type, type);
    lSetUlong64(etp, ET_timestamp, timestamp);
@@ -1468,7 +1466,56 @@ sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 in
    lSetString(etp, ET_strkey2, strkey2);
    lSetList(etp, ET_new_version, list);
 
+   // A unique ID is needed later, when we are sure that the event will be delivered.
+   // Here we do not know that because the event might be part of a action or transaction
+   // that is not commited later on.
+   u_long64 unique_id = 0;
+   lSetUlong64(etp, ET_unique_id, unique_id);
+
    DRETURN(etp);
+}
+
+static void
+add_unique_id_to_evr(lListElem *evr, u_long64 unique_id) {
+   lListElem *ev;
+   for_each_rw(ev, lGetList(evr, EVR_event_list)) {
+      lSetUlong64(ev, ET_unique_id, unique_id);
+   }
+}
+
+static void
+add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
+
+   // Either we get a single evr or a list but not both
+   bool single_evr = (evr != nullptr);
+
+   // Add a unique ID to the events part of the commited evr (list)
+   u_long64 unique_id = oge_get_next_unique_event_id();
+
+   if (single_evr) {
+      add_unique_id_to_evr(evr, unique_id);
+   } else {
+      lListElem *evr;
+
+      for_each_rw(evr, evr_list) {
+         add_unique_id_to_evr(evr, unique_id);
+      }
+   }
+
+   // @todo Store the unique ID for the active session
+   // gdi_session_set_unique_id(gdi_session, unique_id);
+
+   // Add the request to the event master request list
+   sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
+   if (single_evr) {
+      lAppendElem(Event_Master_Control.requests, evr);
+   } else {
+      lAppendList(Event_Master_Control.requests, evr_list);
+   }
+   sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
+   set_flush();
+   DRETURN_VOID;
 }
 
 /****** Eventclient/Server/add_list_event_for_client() *************************
@@ -1478,14 +1525,14 @@ sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 in
 *  SYNOPSIS
 *     #include "evm/sge_event_master.h"
 *
-*     void 
+*     void
 *     add_list_event_for_client(u_long32 event_client_id, u_long64 timestamp,
 *                               ev_event type, u_long32 intkey,
 *                               u_long32 intkey2, const char *strkey,
-*                               const char *session, lList *list) 
+*                               const char *session, lList *list)
 *
 *  FUNCTION
-*     Adds a list of objects to the list of events to deliver, e.g. the 
+*     Adds a list of objects to the list of events to deliver, e.g. the
 *     sgeE*_LIST events, to a specific client.  No checking is done to make
 *     sure that the client id is valid.  That is the responsibility of the
 *     calling function.
@@ -1508,22 +1555,16 @@ sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 in
 *     MT-NOTE: add_list_event_for_client() is MT safe.
 *
 *******************************************************************************/
-static bool add_list_event_for_client(u_long32    event_client_id,
-                                      u_long64    timestamp,
-                                      ev_event    type,
-                                      u_long32    intkey,
-                                      u_long32    intkey2,
-                                      const char *strkey,
-                                      const char *strkey2,
-                                      const char *session,
-                                      lList      *list)
-{
+static bool
+add_list_event_for_client(u_long32 event_client_id, u_long64 timestamp, ev_event type, u_long32 intkey,
+                          u_long32 intkey2, const char *strkey, const char *strkey2, const char *session,
+                          lList *list, u_long64 gdi_session) {
    lListElem *evr = nullptr;        /* event request object */
    lList *etlp = nullptr;           /* event list */
    lListElem *etp = nullptr;        /* event object */
 
    DENTER(TOP_LAYER);
- 
+
    /* an event needs a timestamp */
    if (timestamp == 0) {
       timestamp = sge_get_gmt64();
@@ -1538,7 +1579,7 @@ static bool add_list_event_for_client(u_long32    event_client_id,
    etlp = lCreateListHash("Event_List", ET_Type, false);
    lSetList(evr, EVR_event_list, etlp);
 
-   /* 
+   /*
     * Create a new event elem (The event number is added when
     * qmaster adds the event to the event client data structure)
     */
@@ -1546,8 +1587,8 @@ static bool add_list_event_for_client(u_long32    event_client_id,
    lAppendElem(etlp, etp);
 
 
-   /* 
-    * if we have a transaction open, add to the transaction 
+   /*
+    * if we have a transaction open, add to the transaction
     * otherwise into the event master request list
     * need a new C block, as the GET_SPECIFIC macro declares new variables
     */
@@ -1556,11 +1597,7 @@ static bool add_list_event_for_client(u_long32    event_client_id,
       if (t_store->is_transaction) {
          lAppendElem(t_store->transaction_requests, evr);
       } else {
-         sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-         lAppendElem(Event_Master_Control.requests, evr);
-         sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-
-         set_flush();
+         add_list_event_for_client_after_commit(evr, nullptr, gdi_session);
       }
    }
 
@@ -1655,15 +1692,15 @@ sge_event_master_process_send(const lListElem *request, monitoring_t *monitor) {
 *  SYNOPSIS
 *     #include "evm/sge_event_master.h"
 *
-*     void 
-*     sge_handle_event_ack(u_long32 event_client_id, ev_event event_number) 
+*     void
+*     sge_handle_event_ack(u_long32 event_client_id, ev_event event_number)
 *
 *  FUNCTION
 *     After the server sent events to an event client, it has to acknowledge
-*     their receipt. 
-*     Acknowledged events are deleted from the list of events to deliver, 
+*     their receipt.
+*     Acknowledged events are deleted from the list of events to deliver,
 *     otherwise they will be resent after the next event delivery interval.
-*     If the handling of a busy state of the event client is enabled and set to 
+*     If the handling of a busy state of the event client is enabled and set to
 *     EV_BUSY_UNTIL_ACK, the event client will be set to "not busy".
 *
 *  INPUTS
@@ -1712,7 +1749,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    client = get_event_client(event_client_id);
-   
+
    if (client == nullptr) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "process acknowledgements");
    } else {
@@ -1743,23 +1780,23 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
 
 /****** evm/sge_event_master/sge_deliver_events_immediately() ******************
 *  NAME
-*     sge_deliver_events_immediately() -- deliver events immediately 
+*     sge_deliver_events_immediately() -- deliver events immediately
 *
 *  SYNOPSIS
-*     void sge_deliver_events_immediately(u_long32 event_client_id) 
+*     void sge_deliver_events_immediately(u_long32 event_client_id)
 *
 *  FUNCTION
 *     Deliver all events for the event client denoted by 'event_client_id'
 *     immediately.
 *
 *  INPUTS
-*     u_long32 event_client_id - event client id 
+*     u_long32 event_client_id - event client id
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_deliver_events_immediately() is NOT MT safe. 
+*     MT-NOTE: sge_deliver_events_immediately() is NOT MT safe.
 *
 *******************************************************************************/
 void
@@ -1788,28 +1825,28 @@ sge_deliver_events_immediately(u_long32 event_client_id)
 
 /****** evm/sge_event_master/sge_resync_schedd() *******************************
 *  NAME
-*     sge_resync_schedd() -- resync schedd 
+*     sge_resync_schedd() -- resync schedd
 *
 *  SYNOPSIS
-*     int sge_resync_schedd() 
+*     int sge_resync_schedd()
 *
 *  FUNCTION
 *     Does a total update (send all lists) to schedd and outputs an error
 *     message.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
 *     0 - resync successful
 *    -1 - otherwise
 *
 *  NOTES
-*     MT-NOTE: sge_resync_schedd() in NOT MT safe. 
+*     MT-NOTE: sge_resync_schedd() in NOT MT safe.
 *
 *******************************************************************************/
 int
-sge_resync_schedd(monitoring_t *monitor)
+sge_resync_schedd(monitoring_t *monitor, u_long64 gdi_session)
 {
    lListElem *client;
    int ret = -1;
@@ -1820,14 +1857,14 @@ sge_resync_schedd(monitoring_t *monitor)
    if ((client = get_event_client(EV_ID_SCHEDD)) != nullptr) {
       ERROR(MSG_EVE_REINITEVENTCLIENT_S, lGetString(client, EV_name));
 
-      total_update(client);
+      total_update(client, gdi_session);
 
       ret = 0;
    } else {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(EV_ID_SCHEDD), "resynchronize");
       ret = -1;
    }
- 
+
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    DRETURN(ret);
 } /* sge_resync_schedd() */
@@ -1837,20 +1874,20 @@ sge_resync_schedd(monitoring_t *monitor)
 *     sge_event_master_init() -- event master initialization
 *
 *  SYNOPSIS
-*     static void sge_event_master_init() 
+*     static void sge_event_master_init()
 *
 *  FUNCTION
 *     Initialize the event master control structure. Initialize permanent
-*     event array. 
+*     event array.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_event_master_init() is not MT safe 
+*     MT-NOTE: sge_event_master_init() is not MT safe
 *
 *******************************************************************************/
 void
@@ -1860,7 +1897,7 @@ sge_event_master_init() {
    Event_Master_Control.clients = lCreateListHash("EV_Clients", EV_Type, true);
    Event_Master_Control.requests = lCreateListHash("Event Master Requests", EVR_Type, false);
    pthread_key_create(&(Event_Master_Control.transaction_key), sge_event_master_destroy_transaction_store);
-   
+
    init_send_events();
 
    /* Initialize the range list for event client ids */
@@ -1875,16 +1912,16 @@ sge_event_master_init() {
 
 /****** evm/sge_event_master/init_send_events() ********************************
 *  NAME
-*     init_send_events() -- sets the events, that should allways be delivered 
+*     init_send_events() -- sets the events, that should allways be delivered
 *
 *  SYNOPSIS
-*     void init_send_events() 
+*     void init_send_events()
 *
 *  FUNCTION
-*     sets the events, that should allways be delivered 
+*     sets the events, that should allways be delivered
 *
 *  NOTES
-*     MT-NOTE: init_send_events() is not MT safe 
+*     MT-NOTE: init_send_events() is not MT safe
 *
 *******************************************************************************/
 static void
@@ -1924,7 +1961,7 @@ init_send_events() {
 *     sge_event_master_wait_next() -- waits for a weakup
 *
 *  SYNOPSIS
-*     void sge_event_master_wait_next() 
+*     void sge_event_master_wait_next()
 *
 *  FUNCTION
 *     waits for a weakup
@@ -1961,8 +1998,8 @@ sge_event_master_wait_next()
 *     remove_event_client() -- removes an event client
 *
 *  SYNOPSIS
-*     static void 
-*     remove_event_client(lListElem **client, int event_client_id, bool lock_event_master) 
+*     static void
+*     remove_event_client(lListElem **client, int event_client_id, bool lock_event_master)
 *
 *  FUNCTION
 *     removes an event client, marks the index as dirty and frees the memory
@@ -2024,29 +2061,29 @@ remove_event_client(lListElem **client, int event_client_id, bool lock_event_mas
 
 /****** evm/sge_event_master/sge_event_master_send_events() ******************
 *  NAME
-*     sge_event_master_send_events() -- send events to event clients 
+*     sge_event_master_send_events() -- send events to event clients
 *
 *  SYNOPSIS
-*     static void send_events() 
+*     static void send_events()
 *
 *  FUNCTION
 *     Loop over all event clients and send events due. If an event client did
 *     time out, it will be removed from the list of registered event clients.
 *
-*     Events will be delivered only, if the so called 'busy handling' of a 
+*     Events will be delivered only, if the so called 'busy handling' of a
 *     client does allow it. Events will be delivered as a report (REP_Type)
-*     with a report list of type ET_Type. 
+*     with a report list of type ET_Type.
 *
 *  INPUTS
 *     lListElem *report  - a report, has to be part of the report list. All
-*                          fields have to be init, except for REP_list element.   
+*                          fields have to be init, except for REP_list element.
 *     lList *report_list - a pre-init report list
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
-*     MT-NOTE: send_events() is MT safe 
+*     MT-NOTE: send_events() is MT safe
 *     MT-NOTE:
 *     MT-NOTE: After all events for all clients have been sent. This function
 *     MT-NOTE: will wait on the condition variable 'Event_Master_Control.cond_var'
@@ -2060,7 +2097,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
    u_long32 scheduler_timeout = mconf_get_scheduler_timeout();
    lListElem *event_client, *next_event_client;
    int ret;
-   int commid; 
+   int commid;
    int deliver_interval;
    u_long32 ec_id = 0;
    event_client_update_func_t update_func = nullptr;
@@ -2088,7 +2125,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
          event_client = next_event_client;
          continue;
       }
-     
+
       /* extract address of event client      */
       /* Important:                           */
       /*   host and commproc have to be freed */
@@ -2113,14 +2150,14 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
       } else if (lGetUlong64(event_client, EV_last_send_time) > now) {
          lSetUlong64(event_client, EV_last_send_time, now);
       }
-  
+
       /* if set, use qmaster_params SCHEDULER_TIMEOUT */
       if (ec_id == EV_ID_SCHEDD && scheduler_timeout > 0) {
          timeout = scheduler_timeout;
       } else {
          /* is the ack timeout expired ? */
          timeout = 10 * deliver_interval;
-         
+
          if (timeout < EVENT_ACK_MIN_TIMEOUT) {
             timeout = EVENT_ACK_MIN_TIMEOUT;
          } else if (timeout > EVENT_ACK_MAX_TIMEOUT) {
@@ -2128,10 +2165,10 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
          }
       }
 
-      /* 
-       * Remove timed-out clients after flushing events for the targeted client. 
+      /*
+       * Remove timed-out clients after flushing events for the targeted client.
        * Flush event sgeE_ACK_TIMEOUT for out-timed clients. Clients might re-connect
-       * when getting sgeE_ACK_TIMEOUT event. 
+       * when getting sgeE_ACK_TIMEOUT event.
        */
       if (now > (lGetUlong64(event_client, EV_last_heard_from) + sge_gmt32_to_gmt64(timeout))) {
          lListElem *new_event = nullptr;
@@ -2230,11 +2267,11 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
 
       event_client = next_event_client;
    } /* while */
-   
+
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    DRETURN_VOID;
 } /* send_events() */
- 
+
 static void
 flush_events(lListElem *event_client, int interval) {
    u_long64 next_send = 0;
@@ -2271,8 +2308,8 @@ flush_events(lListElem *event_client, int interval) {
 *     total_update() -- send all data to eventclient
 *
 *  SYNOPSIS
-*     static void 
-*     total_update(lListElem *event_client) 
+*     static void
+*     total_update(lListElem *event_client)
 *
 *  FUNCTION
 *     Sends all complete lists it subscribed to an eventclient.
@@ -2296,7 +2333,7 @@ flush_events(lListElem *event_client, int interval) {
 *
 *******************************************************************************/
 static void
-total_update(lListElem *event_client)
+total_update(lListElem *event_client, u_long64 gdi_session)
 {
    DENTER(TOP_LAYER);
 
@@ -2304,29 +2341,29 @@ total_update(lListElem *event_client)
 
    sge_set_commit_required();
 
-   total_update_event(event_client, sgeE_ADMINHOST_LIST, false);
-   total_update_event(event_client, sgeE_CALENDAR_LIST, false);
-   total_update_event(event_client, sgeE_CKPT_LIST, false);
-   total_update_event(event_client, sgeE_CENTRY_LIST, false);
-   total_update_event(event_client, sgeE_CONFIG_LIST, false);
-   total_update_event(event_client, sgeE_EXECHOST_LIST, false);
-   total_update_event(event_client, sgeE_JOB_LIST, false);
-   total_update_event(event_client, sgeE_JOB_SCHEDD_INFO_LIST, false);
-   total_update_event(event_client, sgeE_MANAGER_LIST, false);
-   total_update_event(event_client, sgeE_OPERATOR_LIST, false);
-   total_update_event(event_client, sgeE_PE_LIST, false);
-   total_update_event(event_client, sgeE_CQUEUE_LIST, false);
-   total_update_event(event_client, sgeE_SCHED_CONF, false);
-   total_update_event(event_client, sgeE_SUBMITHOST_LIST, false);
-   total_update_event(event_client, sgeE_USERSET_LIST, false);
-   total_update_event(event_client, sgeE_NEW_SHARETREE, false);
-   total_update_event(event_client, sgeE_PROJECT_LIST, false);
-   total_update_event(event_client, sgeE_USER_LIST, false);
-   total_update_event(event_client, sgeE_HGROUP_LIST, false);
-   total_update_event(event_client, sgeE_RQS_LIST, false);
-   total_update_event(event_client, sgeE_AR_LIST, false);
+   total_update_event(event_client, sgeE_ADMINHOST_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CALENDAR_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CKPT_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CENTRY_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CONFIG_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_EXECHOST_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_JOB_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_JOB_SCHEDD_INFO_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_MANAGER_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_OPERATOR_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_PE_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CQUEUE_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_SCHED_CONF, false, gdi_session);
+   total_update_event(event_client, sgeE_SUBMITHOST_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_USERSET_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_NEW_SHARETREE, false, gdi_session);
+   total_update_event(event_client, sgeE_PROJECT_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_USER_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_HGROUP_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_RQS_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_AR_LIST, false, gdi_session);
 
-   sge_commit();
+   sge_commit(gdi_session);
 
    DRETURN_VOID;
 } /* total_update() */
@@ -2338,17 +2375,17 @@ total_update(lListElem *event_client)
 *                                 structure
 *
 *  SYNOPSIS
-*     static void build_subscription(lListElem *event_el) 
+*     static void build_subscription(lListElem *event_el)
 *
 *  FUNCTION
 *      generates an array out of the cull registration
-*      structure. The array contains all event elements and each of them 
+*      structure. The array contains all event elements and each of them
 *      has an identifier, if it is subscribed or not. Before that is done, it is
 *      tested, the EV_changed flag is set. If not, the function simply returns.
 *
 *
 *  INPUTS
-*     lListElem *event_el - the event element, which event structure will be transformed 
+*     lListElem *event_el - the event element, which event structure will be transformed
 *
 *******************************************************************************/
 static void build_subscription(lListElem *event_el)
@@ -2369,7 +2406,7 @@ static void build_subscription(lListElem *event_el)
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
    SGE_ASSERT(sub_array != nullptr);
-   memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE); 
+   memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE);
 
    for (i = 0; i < sgeE_EVENTSIZE; i++) {
       sub_array[i].subscription = EV_NOT_SUBSCRIBED;
@@ -2379,7 +2416,7 @@ static void build_subscription(lListElem *event_el)
    for_each_ep(sub_el, subscription) {
       const lListElem *temp = nullptr;
       u_long32 event = lGetUlong(sub_el, EVS_id);
- 
+
       sub_array[event].subscription = EV_SUBSCRIBED;
       sub_array[event].flush = lGetBool(sub_el, EVS_flush) ? true : false;
       sub_array[event].flush_time = lGetUlong(sub_el, EVS_interval);
@@ -2418,11 +2455,11 @@ static void build_subscription(lListElem *event_el)
 *     check_send_new_subscribed_list() -- check suscription for new list events
 *
 *  SYNOPSIS
-*     static void 
-*     check_send_new_subscribed_list(const subscription_t *old_subscription, 
-*                                    const subscription_t *new_subscription, 
-*                                    lListElem *event_client, 
-*                                    ev_event event) 
+*     static void
+*     check_send_new_subscribed_list(const subscription_t *old_subscription,
+*                                    const subscription_t *new_subscription,
+*                                    lListElem *event_client,
+*                                    ev_event event)
 *
 *  FUNCTION
 *     Checks, if sgeE*_LIST events have been added to the subscription of a
@@ -2438,14 +2475,14 @@ static void build_subscription(lListElem *event_el)
 *     Eventclient/Server/total_update_event()
 *
 *******************************************************************************/
-static void 
+static void
 check_send_new_subscribed_list(const subscription_t *old_subscription,
                                const subscription_t *new_subscription,
                                lListElem *event_client, ev_event event)
 {
    if ((new_subscription[event].subscription == EV_SUBSCRIBED) &&
       (old_subscription[event].subscription == EV_NOT_SUBSCRIBED)) {
-      total_update_event(event_client, event, true);
+      total_update_event(event_client, event, true, GDI_SESSION_NONE);
    }
 }
 
@@ -2456,8 +2493,8 @@ check_send_new_subscribed_list(const subscription_t *old_subscription,
 *  SYNOPSIS
 *     #include "evm/sge_event_master.h"
 *
-*     int 
-*     eventclient_subscribed(const lListElem *event_client, ev_event event) 
+*     int
+*     eventclient_subscribed(const lListElem *event_client, ev_event event)
 *
 *  FUNCTION
 *     Checks if the given event client has a certain event subscribed.
@@ -2529,7 +2566,7 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
 *     purge_event_list() -- purge event list
 *
 *  SYNOPSIS
-*     static int purge_event_list(lList* aList, ev_event event_number) 
+*     static int purge_event_list(lList* aList, ev_event event_number)
 *
 *  FUNCTION
 *     Remove all events from 'aList' which do have an event id less than or
@@ -2543,8 +2580,8 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
 *     int - number of events purged.
 *
 *  NOTES
-*     MT-NOTE: purge_event_list() is NOT MT safe. 
-*     MT-NOTE: 
+*     MT-NOTE: purge_event_list() is NOT MT safe.
+*     MT-NOTE:
 *     MT-NOTE: Do not call this function without having 'aList' locked!
 *
 *  BUGS
@@ -2598,7 +2635,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    const lDescr *descr = nullptr;
    bool internal_client = false;
 
-   DENTER(TOP_LAYER); 
+   DENTER(TOP_LAYER);
 
    SGE_ASSERT(event_client != nullptr);
 
@@ -2641,7 +2678,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
          descr = getDescriptorL(subscription, lp, type);
 
          DPRINTF("Reducing event data\n");
-         
+
          if (!list_select(subscription, type, &clp, lp, selection, fields,
                           descr, internal_client)) {
             clp = lSelectDPack("updating list", lp, selection, descr,
@@ -2724,7 +2761,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 
    /* check if event clients wants flushing */
    subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
- 
+
    if (type == sgeE_QMASTER_GOES_DOWN) {
       Event_Master_Control.is_prepare_shutdown = true;
       lSetUlong(event_client, EV_busy, 0); /* can't be too busy for shutdown */
@@ -2733,7 +2770,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
       flush_events(event_client, 0);
       /* the event client should be shutdown, so we do not add any events to it, after
          the shutdown event */
-      lSetUlong(event_client, EV_state, EV_closing); 
+      lSetUlong(event_client, EV_state, EV_closing);
    } else if (subscription[type].flush) {
       DPRINTF("flushing event client\n");
       flush_events(event_client, subscription[type].flush_time);
@@ -2747,8 +2784,8 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 *     total_update_event() -- create a total update event
 *
 *  SYNOPSIS
-*     static void 
-*     total_update_event(lListElem *event_client, ev_event type) 
+*     static void
+*     total_update_event(lListElem *event_client, ev_event type)
 *
 *  FUNCTION
 *     Creates an event delivering a certain list of objects for an event client.
@@ -2760,8 +2797,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 *     ev_event type                    - event describing the list to update
 *
 *******************************************************************************/
-static void total_update_event(lListElem *event_client, ev_event type, 
-                               bool new_subscription) 
+static void total_update_event(lListElem *event_client, ev_event type, bool new_subscription, u_long64 gdi_session)
 {
    const lList *lp = nullptr; /* lp should be set, if we have to make a copy */
    lList *copy_lp = nullptr; /* copy_lp should be used for a copy of the org. list */
@@ -2857,7 +2893,7 @@ static void total_update_event(lListElem *event_client, ev_event type,
       }
 
       /* 'send_events()' will free the copy of 'lp' */
-      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, copy_lp);
+      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, copy_lp, GDI_SESSION_NONE);
    } /* if */
 
    DRETURN_VOID;
@@ -2866,12 +2902,12 @@ static void total_update_event(lListElem *event_client, ev_event type,
 
 /****** evm/sge_event_master/list_select() *************************************
 *  NAME
-*     list_select() -- makes a reduced job list duplication 
+*     list_select() -- makes a reduced job list duplication
 *
 *  SYNOPSIS
-*     static bool list_select(subscription_t *subscription, int type, lList 
-*     **reduced_lp, lList *lp, const lCondition *selection, const lEnumeration 
-*     *fields, const lDescr *descr, bool do_hash) 
+*     static bool list_select(subscription_t *subscription, int type, lList
+*     **reduced_lp, lList *lp, const lCondition *selection, const lEnumeration
+*     *fields, const lDescr *descr, bool do_hash)
 *
 *  FUNCTION
 *     Only works on job events. All others are ignored. The job events
@@ -2881,17 +2917,17 @@ static void total_update_event(lListElem *event_client, ev_event type,
 *     filters the JAT_Type lists in the JB_Type lists.
 *
 *  INPUTS
-*     subscription_t *subscription - subscription array 
-*     int type                     - event type 
-*     lList **reduced_lp           - target list (has to be an empty list) 
-*     lList *lp                    - source list (will be modified) 
-*     const lCondition *selection  - where filter 
-*     const lEnumeration *fields   - what filter 
-*     const lDescr *descr          - reduced descriptor 
+*     subscription_t *subscription - subscription array
+*     int type                     - event type
+*     lList **reduced_lp           - target list (has to be an empty list)
+*     lList *lp                    - source list (will be modified)
+*     const lCondition *selection  - where filter
+*     const lEnumeration *fields   - what filter
+*     const lDescr *descr          - reduced descriptor
 *     bool do_hash                 - create hash tables in the target list
 *
 *  RESULT
-*     static bool - true, if it was a job event 
+*     static bool - true, if it was a job event
 *******************************************************************************/
 static bool list_select(subscription_t *subscription, int type,
                         lList **reduced_lp, lList *lp,
@@ -2903,7 +2939,7 @@ static bool list_select(subscription_t *subscription, int type,
    int event_counter;
 
    DENTER(TOP_LAYER);
-   
+
    for (entry_counter = 0; entry_counter < LIST_MAX; entry_counter++) {
       event_counter = -1;
       while (EVENT_LIST[entry_counter][++event_counter] != -1) {
@@ -2917,7 +2953,7 @@ static bool list_select(subscription_t *subscription, int type,
                   break;
                }
             }
-  
+
             if (sub_type != -1) {
                lListElem *element = nullptr;
                lListElem *reduced_el = nullptr;
@@ -2949,8 +2985,8 @@ end:
 *                      as well
 *
 *  SYNOPSIS
-*     static lListElem *elem_select(subscription_t *subscription, lListElem *element, 
-*                              const int ids[], const lCondition *selection, 
+*     static lListElem *elem_select(subscription_t *subscription, lListElem *element,
+*                              const int ids[], const lCondition *selection,
 *                              const lEnumeration *fields, const lDescr *dp, int sub_type)
 *
 *  FUNCTION
@@ -2961,12 +2997,12 @@ end:
 *     still contains their attributes.
 *
 *  INPUTS
-*     subscription_t *subscription - subscription array 
+*     subscription_t *subscription - subscription array
 *     lListElem *element           - the element to reduce
 *     const int ids[]              - attribute with sublists to be reduced as well
-*     const lCondition *selection  - where filter 
-*     const lEnumeration *fields   - what filter 
-*     const lDescr *descr          - reduced descriptor 
+*     const lCondition *selection  - where filter
+*     const lEnumeration *fields   - what filter
+*     const lDescr *descr          - reduced descriptor
 *     int sub_type                 - list type of the sublists.
 *
 *  RESULT
@@ -2986,13 +3022,13 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
    lList **sub_list;
    lListElem *el = nullptr;
    int counter;
- 
+
    DENTER(TOP_LAYER);
- 
+
    if (element == nullptr) {
       DRETURN(nullptr);
    }
- 
+
    if (sub_type <= sgeE_ALL_EVENTS || sub_type >= sgeE_EVENTSIZE) {
       /* TODO: SG: add error message */
       DPRINTF("wrong event sub type\n");
@@ -3075,8 +3111,8 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
 *     #include "evm/sge_event_master.h"
 *
 *     lListElem *
-*     eventclient_list_locate_by_adress(const char *host, 
-*                     const char *commproc, u_long32 id) 
+*     eventclient_list_locate_by_adress(const char *host,
+*                     const char *commproc, u_long32 id)
 *
 *  FUNCTION
 *     Searches the event client list for an event client with the
@@ -3116,19 +3152,19 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc,
 
 /****** sge_event_master/getDescriptorL() **************************************
 *  NAME
-*     getDescriptorL() -- returns a reduced desciptor 
+*     getDescriptorL() -- returns a reduced desciptor
 *
 *  SYNOPSIS
-*     static const lDescr* getDescriptorL(subscription_t *subscription, const 
-*     lList* list, int type) 
+*     static const lDescr* getDescriptorL(subscription_t *subscription, const
+*     lList* list, int type)
 *
 *  FUNCTION
-*     ??? 
+*     ???
 *
 *  INPUTS
-*     subscription_t *subscription - subscription array 
-*     const lList* list            - source list 
-*     int type                     - event type 
+*     subscription_t *subscription - subscription array
+*     const lList* list            - source list
+*     int type                     - event type
 *
 *  RESULT
 *     static const lDescr* - reduced descriptor or nullptr, if no what exists
@@ -3249,29 +3285,21 @@ free_dynamic_id(lList **answer_list, u_long32 id)
 *  NOTE
 *     MT-NOTE: sge_commit is thread safe.
 *******************************************************************************/
-bool sge_commit()
-{
+bool
+sge_commit(u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
-   DENTER(TOP_LAYER);
+   GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
+   if (t_store->is_transaction) {
+      t_store->is_transaction = false;
 
-   /* need a new C block, as the GET_SPECIFIC macro declares new variables */
-   {
-      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
-      if (t_store->is_transaction) {
-         t_store->is_transaction = false;
-
-         if (lGetNumberOfElem(t_store->transaction_requests) > 0) {
-            sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-            lAppendList(Event_Master_Control.requests, t_store->transaction_requests);
-            sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-
-            set_flush();
-         }
-      } else {
-         WARNING("attempting to commit an event master transaction, but no transaction is open");
-         ret = false;
+      if (lGetNumberOfElem(t_store->transaction_requests) > 0) {
+         add_list_event_for_client_after_commit(nullptr, t_store->transaction_requests, gdi_session);
       }
+   } else {
+      WARNING("attempting to commit an event master transaction, but no transaction is open");
+      ret = false;
    }
 
    DRETURN(ret);
@@ -3282,12 +3310,12 @@ bool sge_commit()
 *     blockEvents() -- blocks or unblocks events
 *
 *  SYNOPSIS
-*     void blockEvents(lListElem *event_client, int ev_type, bool isBlock) 
+*     void blockEvents(lListElem *event_client, int ev_type, bool isBlock)
 *
 *  FUNCTION
 *     In case that global update events have to be send, this function
 *     blocks all events for that list, or unblocks it.
-*     
+*
 *  INPUT
 *    lListElem *event_client : event client to modify
 *    ev_event ev_type : the event_lists to unblock or -1
@@ -3296,7 +3324,7 @@ bool sge_commit()
 *  NOTE
 *     MT-NOTE: sge_commit is thread safe.
 *******************************************************************************/
-static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock) { 
+static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock) {
    subscription_t *sub_array = (subscription_t *)lGetRef(event_client, EV_sub_array);
 
    if (sub_array != nullptr) {
@@ -3347,7 +3375,7 @@ static void set_flush()
       pthread_cond_signal(&Event_Master_Control.cond_var);
    }
    sge_mutex_unlock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
- 
+
    DRETURN_VOID;
 }
 
@@ -3363,7 +3391,7 @@ static void set_flush()
 *  events, while multiple objects are modified and events are issued and to submit them as
 *  one event package. There can only be one event session open at a time. The transaction_mutex
 *  will block multiple calles to this method.
-*  The method cannot be called recursivly, and sge_commit has to be called to close the transaction. 
+*  The method cannot be called recursivly, and sge_commit has to be called to close the transaction.
 *
 *
 *  NOTE

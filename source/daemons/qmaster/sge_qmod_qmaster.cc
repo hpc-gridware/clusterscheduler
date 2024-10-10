@@ -96,15 +96,15 @@ static void
 signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
 
 static int
-sge_change_queue_state(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 action,
+sge_change_queue_state(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *qep, u_long32 action,
                        u_long32 force, lList **answer, monitoring_t *monitor);
 
 static int
-sge_change_job_state(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep,
+sge_change_job_state(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep,
                      u_long32 task_id, u_long32 action, u_long32 force, lList **answer, monitoring_t *monitor);
 
 static int
-qmod_queue_weakclean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_weakclean(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *qep, u_long32 force, lList **answer,
                      int isoperator, int isowner, monitoring_t *monitor);
 
 static int
@@ -112,15 +112,15 @@ qmod_queue_clean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 
                  int isoperator, int isowner, monitoring_t *monitor);
 
 static void
-qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_suspend(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                  lList **answer, monitoring_t *monitor);
 
 static void
-qmod_job_unsuspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_unsuspend(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                    lList **answer, monitoring_t *monitor);
 
 static void
-qmod_job_reschedule(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_reschedule(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                     lList **answer, monitoring_t *monitor);
 
 /*-------------------------------------------------------------------------*/
@@ -185,7 +185,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                qinstance_list = lGetList(cqueue, CQ_qinstances);
                qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
 
-               sge_change_queue_state(packet, qinstance, id_action, lGetUlong(dep, ID_force), &alp, monitor);
+               sge_change_queue_state(packet, task, qinstance, id_action, lGetUlong(dep, ID_force), &alp, monitor);
                found = true;
             }
          }
@@ -249,7 +249,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
 
                      /* this specifies no queue, so lets probe for a job */
                      /* change state of job: */
-                     sge_change_job_state(packet, job, tmp_task, 0, action, lGetUlong(dep, ID_force), &alp, monitor);
+                     sge_change_job_state(packet, task, job, tmp_task, 0, action, lGetUlong(dep, ID_force), &alp, monitor);
                      found = true;
                   }
                }
@@ -260,7 +260,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                   per task */
                if (alltasks && job_is_array(job)) {
                   if (!found) {
-                     sge_change_job_state(packet, job, nullptr, 0, action, lGetUlong(dep, ID_force), &alp, monitor);
+                     sge_change_job_state(packet, task, job, nullptr, 0, action, lGetUlong(dep, ID_force), &alp, monitor);
                      found = true;
                   }
                } else {
@@ -275,7 +275,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32"." sge_u32"\n", jobid, taskid);
-                           sge_change_job_state(packet, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
                            found = true;
                         }
                      }
@@ -288,7 +288,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32"." sge_u32"\n", jobid, taskid);
-                           sge_change_job_state(packet, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
                            found = true;
                         }
                      }
@@ -304,7 +304,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32"." sge_u32"\n", jobid, taskid);
-                           sge_change_job_state(packet, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
                            found = true;
                         }
                      }
@@ -321,7 +321,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32"." sge_u32"\n", jobid, taskid);
-                           sge_change_job_state(packet, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, lGetUlong(dep, ID_force), &alp, monitor);
                            found = true;
                         }
                      }
@@ -390,7 +390,7 @@ sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitor
 }
 
 static int
-sge_change_queue_state(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 action,
+sge_change_queue_state(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *qep, u_long32 action,
                        u_long32 force, lList **answer, monitoring_t *monitor) {
    bool isoperator;
    bool isowner;
@@ -432,14 +432,14 @@ sge_change_queue_state(const sge_gdi_packet_class_t *packet, lListElem *qep, u_l
          case QI_DO_CLEARAMBIGUOUS:
 #endif
          result = qinstance_change_state_on_command(qep, answer, action, force ? true : false, packet->user, packet->host,
-                                                    isoperator, isowner, monitor) ? 0 : -1;
+                                                    isoperator, isowner, monitor, packet->gdi_session) ? 0 : -1;
          break;
       case QI_DO_CLEAN:
          result = qmod_queue_clean(packet, qep, force, answer, isoperator, isowner, monitor);
          break;
 
       case QI_DO_RESCHEDULE:
-         result = qmod_queue_weakclean(packet, qep, force, answer, isoperator, isowner, monitor);
+         result = qmod_queue_weakclean(packet, task, qep, force, answer, isoperator, isowner, monitor);
          break;
       default:
          INFO(MSG_LOG_QUNKNOWNQMODCMD_U, sge_u32c(action));
@@ -464,7 +464,7 @@ sge_change_queue_state(const sge_gdi_packet_class_t *packet, lListElem *qep, u_l
          break;
       case QI_DO_CLEAN:
       case QI_DO_RESCHEDULE:
-         cqueue_list_del_all_orphaned(master_cqueue_list, answer, lGetString(qep, QU_qname), ehname);
+         cqueue_list_del_all_orphaned(master_cqueue_list, answer, lGetString(qep, QU_qname), ehname, packet->gdi_session);
          break;
       default:
          break;
@@ -474,7 +474,7 @@ sge_change_queue_state(const sge_gdi_packet_class_t *packet, lListElem *qep, u_l
 }
 
 static int
-sge_change_job_state(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep,
+sge_change_job_state(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep,
                      u_long32 task_id, u_long32 action, u_long32 force, lList **answer, monitoring_t *monitor) {
    lListElem *queueep;
    u_long32 job_id;
@@ -514,18 +514,18 @@ sge_change_job_state(const sge_gdi_packet_class_t *packet, lListElem *jep, lList
 
    switch (action) {
       case QI_DO_RESCHEDULE:
-         qmod_job_reschedule(jep, jatep, queueep, force, answer, monitor);
+         qmod_job_reschedule(packet, task, jep, jatep, queueep, force, answer, monitor);
          break;
 
       case JSUSPENDED:
-         qmod_job_suspend(packet, jep, jatep, queueep, force, answer, monitor);
+         qmod_job_suspend(packet, task, jep, jatep, queueep, force, answer, monitor);
          if (queueep != nullptr) {
             do_slotwise_x_on_subordinate_check(queueep, false, false, monitor);
          }
          break;
 
       case JRUNNING:
-         qmod_job_unsuspend(packet, jep, jatep, queueep, force, answer, monitor);
+         qmod_job_unsuspend(packet, task, jep, jatep, queueep, force, answer, monitor);
          if (queueep != nullptr) {
             do_slotwise_x_on_subordinate_check(queueep, true, false, monitor);
          }
@@ -538,7 +538,7 @@ sge_change_job_state(const sge_gdi_packet_class_t *packet, lListElem *jep, lList
 /* lWriteElemTo(jatep, stderr); */
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             job_id, task_id, nullptr, nullptr, nullptr,
-                            jep, jatep, nullptr, true, true);
+                            jep, jatep, nullptr, true, true, packet->gdi_session);
             if (job_is_array(jep)) {
                INFO(MSG_JOB_CLEARERRORTASK_SSUU, packet->user, packet->host, sge_u32c(job_id), sge_u32c(task_id));
             } else {
@@ -567,7 +567,7 @@ sge_change_job_state(const sge_gdi_packet_class_t *packet, lListElem *jep, lList
  **** qmod_queue_weakclean (static)
  ****/
 static int
-qmod_queue_weakclean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_weakclean(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *qep, u_long32 force, lList **answer,
                      int isoperator, int isowner, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -577,7 +577,7 @@ qmod_queue_weakclean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_lon
       DRETURN(-1);
    }
 
-   reschedule_jobs(qep, force, answer, monitor, true);
+   reschedule_jobs(qep, force, answer, monitor, true, packet->gdi_session);
 
    DRETURN(0);
 }
@@ -622,7 +622,7 @@ qmod_queue_clean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 
          if (lGetSubStr(jatep, JG_qname, qname, JAT_granted_destin_identifier_list) != nullptr) {
             /* 3: JOB_FINISH reports aborted */
             sge_commit_job(jep, jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN,
-                           monitor);
+                           monitor, packet->gdi_session);
          }
       }
    }
@@ -636,11 +636,11 @@ qmod_queue_clean(const sge_gdi_packet_class_t *packet, lListElem *qep, u_long32 
  **** qmod_job_reschedule (static)
  ****/
 static void
-qmod_job_reschedule(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_reschedule(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,  lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                     lList **answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   reschedule_job(jep, jatep, queueep, force, answer, monitor, true);
+   reschedule_job(jep, jatep, queueep, force, answer, monitor, true, packet->gdi_session);
 
    DRETURN_VOID;
 }
@@ -649,7 +649,7 @@ qmod_job_reschedule(lListElem *jep, lListElem *jatep, lListElem *queueep, u_long
  **** qmod_job_suspend (static)
  ****/
 static void
-qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_suspend(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                  lList **answer, monitoring_t *monitor) {
    int i;
    u_long32 state = 0;
@@ -711,7 +711,7 @@ qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem
 
       sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                       jobid, jataskid, nullptr, nullptr, nullptr,
-                      jep, jatep, nullptr, true, true);
+                      jep, jatep, nullptr, true, true, packet->gdi_session);
    } else {   /* job wasn't suspended yet */
       if (queueep) {
          if ((i = sge_signal_queue(SGE_SIGSTOP, queueep, jep, jatep, monitor))) {
@@ -745,7 +745,7 @@ qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem
          }
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
-                         jep, jatep, nullptr, true, true);
+                         jep, jatep, nullptr, true, true, packet->gdi_session);
       } else {
          if (!i) {
             if (job_is_array(jep)) {
@@ -764,7 +764,7 @@ qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem
             }
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             jobid, jataskid, nullptr, nullptr, nullptr,
-                            jep, jatep, nullptr, true, true);
+                            jep, jatep, nullptr, true, true, packet->gdi_session);
          }
       }
       ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_SUSPENDED, packet->user, packet->host, nullptr, jep, jatep, nullptr, nullptr);
@@ -776,7 +776,7 @@ qmod_job_suspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem
  **** qmod_job_unsuspend (static)
  ****/
 static void
-qmod_job_unsuspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_unsuspend(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                    lList **answer, monitoring_t *monitor) {
    int i;
    u_long32 state = 0;
@@ -804,7 +804,7 @@ qmod_job_unsuspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListEl
          lSetUlong(jatep, JAT_state, state);
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
-                         jep, jatep, nullptr, true, true);
+                         jep, jatep, nullptr, true, true, packet->gdi_session);
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_UNSUSPENDED, packet->user, packet->host, nullptr, jep, jatep, nullptr, nullptr);
          DRETURN_VOID;
       } else {
@@ -883,7 +883,7 @@ qmod_job_unsuspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListEl
          lSetUlong(jatep, JAT_state, state);
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
-                         jep, jatep, nullptr, true, true);
+                         jep, jatep, nullptr, true, true, packet->gdi_session);
       } else {
          /* set job state only if communication works */
          if (!i) {
@@ -900,7 +900,7 @@ qmod_job_unsuspend(const sge_gdi_packet_class_t *packet, lListElem *jep, lListEl
             lSetUlong(jatep, JAT_state, state);
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             jobid, jataskid, nullptr, nullptr, nullptr,
-                            jep, jatep, nullptr, true, true);
+                            jep, jatep, nullptr, true, true, packet->gdi_session);
          }
       }
    }

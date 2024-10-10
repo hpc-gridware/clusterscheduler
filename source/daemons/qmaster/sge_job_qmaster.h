@@ -81,13 +81,13 @@ sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
                  sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
 
 int
-sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, lListElem *jep, lList **alpp, int sub_command);
+sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command);
 
 int
-sge_gdi_del_job(const sge_gdi_packet_class_t *packet, lListElem *jep, lList **alpp, int sub_command, monitoring_t *monitor);
+sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command, monitoring_t *monitor);
 
 void
-sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatep);
+sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatep, u_long64 gdi_request);
 
 bool
 is_pe_master_task_send(lListElem *jatep);
@@ -102,7 +102,7 @@ void
 ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task, u_long32 type);
 
 void
-sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask);
+sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask, u_long64 gdi_request);
 
 void
 job_suc_pre(lListElem *jep);
@@ -122,7 +122,7 @@ job_ja_task_send_abort_mail(const lListElem *job, const lListElem *ja_task, cons
 
 void
 get_rid_of_job_due_to_qdel(lListElem *j, lListElem *t, lList **answer_list, const char *ruser,
-                           int force, monitoring_t *monitor);
+                           int force, monitoring_t *monitor, u_long64 gdi_session);
 
 void
 job_mark_job_as_deleted(lListElem *j, lListElem *t);
@@ -152,4 +152,4 @@ int
 verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_modify);
 
 int
-job_verify_predecessors_ad(lListElem *job, lList **alpp);
+job_verify_predecessors_ad(lListElem *job, lList **alpp, u_long64 gdi_session);

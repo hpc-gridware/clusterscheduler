@@ -479,7 +479,7 @@ static lListElem *createCalObject(cal_entry_t *calendar)
 
    destCal = lCreateElem(CAL_Type);
    
-   if (0 != calendar_mod(&answerList, destCal, sourceCal, 1, "", "", nullptr, 0, &monitor)) {
+   if (0 != calendar_mod(nullptr, nullptr, &answerList, destCal, sourceCal, 1, "", "", nullptr, 0, &monitor)) {
       lWriteListTo(answerList, stdout);
       lFreeElem(&destCal);
       lFreeList(&answerList);

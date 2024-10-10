@@ -104,7 +104,7 @@ typedef struct {
 ar_id_t ar_id_control = {0, false, PTHREAD_MUTEX_INITIALIZER};
 
 static bool
-ar_reserve_queues(lList **alpp, lListElem *ar);
+ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session);
 
 static u_long32
 sge_get_ar_id(monitoring_t *monitor);
@@ -116,7 +116,7 @@ static void
 sge_ar_send_mail(lListElem *ar, int type);
 
 void
-ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
+ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_session) {
    lListElem *ar, *next_ar;
    u_long64 now = sge_get_gmt64();
 
@@ -153,9 +153,9 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 
          sge_ar_state_set_running(ar);
 
-         sge_ar_remove_all_jobs(ar_id, 1, monitor);
+         sge_ar_remove_all_jobs(ar_id, 1, monitor, gdi_session);
 
-         ar_do_reservation(ar, false);
+         ar_do_reservation(ar, false, gdi_session);
 
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                         "end time of AR reached",
@@ -216,7 +216,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor) {
 *  NOTES
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
-int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+int ar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
@@ -304,7 +304,7 @@ int ar_mod(lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *
    attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
 
    /* try to reserve the queues */
-   if (!ar_reserve_queues(alpp, new_ar)) {
+   if (!ar_reserve_queues(alpp, new_ar, packet->gdi_session)) {
       goto ERROR;
    }
 
@@ -346,7 +346,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 
 *******************************************************************************/
-int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
 
@@ -398,7 +398,7 @@ int ar_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *     MT-NOTE: ar_success() is not MT safe 
 *******************************************************************************/
 int
-ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
@@ -429,7 +429,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
    */
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
    sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
-                 sge_dstring_get_string(&buffer), nullptr, nullptr, ep);
+                 sge_dstring_get_string(&buffer), nullptr, nullptr, ep, packet->gdi_session);
    sge_dstring_free(&buffer);
 
    /*
@@ -472,7 +472,7 @@ ar_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLis
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
 int
-ar_del(const sge_gdi_packet_class_t *packet, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
+ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
@@ -608,18 +608,18 @@ ar_del(const sge_gdi_packet_class_t *packet, lListElem *ep, lList **alpp, lList 
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all jobs refering to the AR */
-      if (sge_ar_remove_all_jobs(ar_id, lGetUlong(ep, ID_force), monitor)) {
+      if (sge_ar_remove_all_jobs(ar_id, lGetUlong(ep, ID_force), monitor, packet->gdi_session)) {
          /* either all jobs were successfull removed or we had no jobs */
 
          /* unblock reserved queues */
-         ar_do_reservation(ar, false);
+         ar_do_reservation(ar, false, packet->gdi_session);
 
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED,
                                         "AR deleted",
                                         now);
          ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
-         gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp);
+         gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp, packet->gdi_session);
 
          lRemoveElem(*master_ar_list, &ar);
 
@@ -628,13 +628,13 @@ ar_del(const sge_gdi_packet_class_t *packet, lListElem *ep, lList **alpp, lList 
 
          sge_event_spool(alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true);
+                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
       } else {
          INFO(MSG_JOB_REGDELX_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          sge_event_spool(alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
-                         ar, nullptr, nullptr, true, true);
+                         ar, nullptr, nullptr, true, true, packet->gdi_session);
       }
 
    }
@@ -930,10 +930,10 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_ar_state_set_exited(ar);
 
       /* remove all jobs running in this AR */
-      sge_ar_remove_all_jobs(ar_id, 1, monitor);
+      sge_ar_remove_all_jobs(ar_id, 1, monitor, GDI_SESSION_NONE);
 
       /* unblock reserved queues */
-      ar_do_reservation(ar, false);
+      ar_do_reservation(ar, false, GDI_SESSION_NONE);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                      "end time of AR reached",
@@ -943,14 +943,14 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all orphaned queue intances, which are empty. */
-      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr);
+      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, GDI_SESSION_NONE);
 
       /* remove the AR itself */
       DPRINTF("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer));
       lRemoveElem(master_ar_list, &ar);
       sge_event_spool(nullptr, timestamp, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
-                      nullptr, nullptr, nullptr, true, true);
+                      nullptr, nullptr, nullptr, true, true, GDI_SESSION_NONE);
 
    } else {
       /* AR_RUNNING */
@@ -964,7 +964,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       /* this info is not spooled */
       sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
-                    sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
+                    sge_dstring_get_string(&buffer), nullptr, nullptr, ar, GDI_SESSION_NONE);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
@@ -1003,7 +1003,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 *     MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
 *******************************************************************************/
 static bool
-ar_reserve_queues(lList **alpp, lListElem *ar) {
+ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    lList **splitted_job_lists[SPLIT_LAST];
    lList *suspended_list = nullptr;                   /* JB_Type */
    lList *running_list = nullptr;                     /* JB_Type */
@@ -1222,7 +1222,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
          ar_initialize_reserved_queue_list(ar);
          a.gdil = nullptr;
 
-         ar_do_reservation(ar, true);
+         ar_do_reservation(ar, true, gdi_session);
       }
    }
 
@@ -1264,7 +1264,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar) {
 *     sge_resource_utilization/rqs_add_job_utilization()
 *******************************************************************************/
 int
-ar_do_reservation(lListElem *ar, bool incslots) {
+ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
    lListElem *dummy_job = lCreateElem(JB_Type);
    int pe_slots = 0;
    int tmp_slots;
@@ -1323,7 +1323,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
                                  false, is_master_task, do_per_host_booking) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                       SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep);
+                       SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
       }
 
       /* reserve exec host */
@@ -1334,7 +1334,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
                                  duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                       queue_hostname, nullptr, nullptr, host_ep);
+                       queue_hostname, nullptr, nullptr, host_ep, gdi_session);
       }
 
       /* reserve queue instance */
@@ -1345,7 +1345,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
 
       qinstance_increase_qversion(queue);
       /* this info is not spooled */
-      qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
+      qinstance_add_event(queue, sgeE_QINSTANCE_MOD, gdi_session);
       is_master_task = false;
    }
 
@@ -1353,7 +1353,7 @@ ar_do_reservation(lListElem *ar, bool incslots) {
       utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
                       duration, pe_slots, 0, 0, PE_TAG, granted_pe,
                       SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
-      sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe);
+      sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
    }
 
    lFreeElem(&dummy_job);
@@ -1773,7 +1773,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
 *     MT-NOTE: sge_ar_remove_all_jobs() is not MT safe 
 *******************************************************************************/
 bool
-sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
+sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor, u_long64 gdi_session) {
    lListElem *nextjep, *jep;
    lListElem *tmp_task;
    bool ret = true;
@@ -1815,7 +1815,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
 
                if (forced) {
                   sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
-                                 COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+                                 COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
                } else {
                   if (!ISSET(lGetUlong(tmp_task, JAT_state), JDELETED)) {
                      job_mark_job_as_deleted(jep, tmp_task);
@@ -1829,7 +1829,7 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor) {
 
                sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                               COMMIT_NO_SPOOLING | COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN,
-                              monitor);
+                              monitor, gdi_session);
             }
          }
       }
@@ -2058,7 +2058,7 @@ sge_ar_state_set_exited(lListElem *ar) {
 *     MT-NOTE: sge_ar_list_set_error_state() is MT safe 
 *******************************************************************************/
 void
-sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_type, bool set_error) {
+sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_type, bool set_error, u_long64 gdi_session) {
    lListElem *ar;
    dstring buffer = DSTRING_INIT;
 
@@ -2093,7 +2093,7 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_ty
             /* this info is not spooled */
             sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ar, AR_id));
             sge_add_event(0, sgeE_AR_MOD, 0, 0,
-                          sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
+                          sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
          }
       }
    }

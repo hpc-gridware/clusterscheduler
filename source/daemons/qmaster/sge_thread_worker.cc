@@ -163,7 +163,7 @@ sge_worker_terminate() {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
       DPRINTF("job/ar counter were made persistent\n");
-      sge_userprj_spool(); /* spool the latest usage */
+      sge_userprj_spool(GDI_SESSION_NONE); /* spool the latest usage */
       DPRINTF("final job and user/project spooling has been triggered\n");
    }
 
@@ -274,7 +274,7 @@ sge_worker_main(void *arg) {
             }
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
             task = packet->first_task;
-            sge_c_report(packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+            sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
             task = packet->first_task;
             sge_c_ack(packet, task, p_monitor);

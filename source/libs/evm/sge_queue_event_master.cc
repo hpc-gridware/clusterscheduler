@@ -42,21 +42,17 @@
 #include "evm/sge_queue_event_master.h"
 
 void
-qinstance_add_event(lListElem *this_elem, ev_event type)
+qinstance_add_event(lListElem *this_elem, ev_event type, u_long64 gdi_session)
 {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0,
-                 lGetString(this_elem, QU_qname),
-                 lGetHost(this_elem, QU_qhostname), nullptr, this_elem);
+   sge_add_event(0, type, 0, 0, lGetString(this_elem, QU_qname), lGetHost(this_elem, QU_qhostname), nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }
 
 void
-cqueue_add_event(lListElem *this_elem, ev_event type)
+cqueue_add_event(lListElem *this_elem, ev_event type, u_long64 gdi_session)
 {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0,
-                 lGetString(this_elem, CQ_name), nullptr,
-                 nullptr, this_elem);
+   sge_add_event(0, type, 0, 0, lGetString(this_elem, CQ_name), nullptr, nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }

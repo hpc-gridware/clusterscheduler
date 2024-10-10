@@ -897,20 +897,29 @@ setup_qmaster() {
 
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
-      if (sge_add_host_of_type(SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
+      sge_gdi_packet_class_t packet;
+      sge_gdi_task_class_t task;
+      packet.gdi_session = GDI_SESSION_NONE;
+      if (sge_add_host_of_type(&packet, &task, SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST);
    }
 
    /* add host "global" to master exechost list as an exec host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
-      if (sge_add_host_of_type(SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
+      sge_gdi_packet_class_t packet;
+      sge_gdi_task_class_t task;
+      packet.gdi_session = GDI_SESSION_NONE;
+      if (sge_add_host_of_type(&packet, &task, SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
 
    /* add qmaster host to master admin host list as an administrative host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
-      if (sge_add_host_of_type(qualified_hostname, SGE_AH_LIST, &monitor)) {
+      sge_gdi_packet_class_t packet;
+      sge_gdi_task_class_t task;
+      packet.gdi_session = GDI_SESSION_NONE;
+      if (sge_add_host_of_type(&packet, &task, qualified_hostname, SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
    }
@@ -971,7 +980,7 @@ setup_qmaster() {
    DPRINTF("cluster_queue_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true);
+   cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true, GDI_SESSION_NONE);
 
    /*
     * Initialize cached values for each qinstance:
@@ -1035,7 +1044,7 @@ setup_qmaster() {
       lListElem *qinstance;
       for_each_rw(qinstance, qinstance_list) {
          qinstance_set_full_name(qinstance);
-         sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false);
+         sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false, GDI_SESSION_NONE);
       }
    }
 
@@ -1090,7 +1099,7 @@ setup_qmaster() {
 
          /* array successor jobs need to have their cache rebuilt. this will
             do nothing spectacular if the AD reqest list for this job is empty. */
-         sge_task_depend_init(jep, &answer_list);
+         sge_task_depend_init(jep, &answer_list, GDI_SESSION_NONE);
 
          centry_list_fill_request(job_get_hard_resource_listRW(jep),
                                   nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY), false, true, false);
@@ -1122,7 +1131,10 @@ setup_qmaster() {
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    for_each_rw(tmpqep, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      cqueue_mod_qinstances(tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
+      sge_gdi_packet_class_t packet;
+      sge_gdi_task_class_t task;
+      packet.gdi_session = GDI_SESSION_NONE;
+      cqueue_mod_qinstances(&packet, &task, tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
    }
 
    /* rebuild signal resend events */
@@ -1143,7 +1155,7 @@ setup_qmaster() {
 
    DPRINTF("scheduler config -----------------------------------\n");
 
-   sge_read_sched_configuration(spooling_context, &answer_list);
+   sge_read_sched_configuration(spooling_context, &answer_list, GDI_SESSION_NONE);
    answer_list_output(&answer_list);
 
    DPRINTF("share tree list-----------------------------------\n");

@@ -173,7 +173,7 @@ lList **topp,   ticket orders ptr ptr
 
  **********************************************************************/
 int
-sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitoring_t *monitor) {
+sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitoring_t *monitor, u_long64 gdi_session) {
    u_long32 job_number, task_number;
    const char *or_pe, *q_name = nullptr;
    u_long32 or_type;
@@ -253,7 +253,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                 * (delete the ja_task *and* rollback the range information).
                 */
                sge_add_event(0, sgeE_JATASK_ADD, job_number, task_number,
-                             nullptr, nullptr, lGetString(jep, JB_session), jatp);
+                             nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
             } else {
                INFO(MSG_JOB_IGNORE_DELETED_TASK_UU, sge_u32c(job_number), sge_u32c(task_number));
                DRETURN(0);
@@ -341,7 +341,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                WARNING(MSG_ORD_QVERSION_SUU, q_name, sge_u32c(q_version), sge_u32c( lGetUlong(qep, QU_version)));
 
                /* try to repair schedd data */
-               qinstance_add_event(qep, sgeE_QINSTANCE_MOD);
+               qinstance_add_event(qep, sgeE_QINSTANCE_MOD, gdi_session);
 
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
@@ -560,9 +560,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             lSetObject(jatp, JAT_pe_object, lCopyElem(pe));
          }
 
-         if (sge_give_job(jep, jatp, master_qep, master_host, monitor)) {
+         if (sge_give_job(jep, jatp, master_qep, master_host, monitor, gdi_session)) {
             /* setting of queues in state unheard is done by sge_give_job() */
-            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DELIVERY_FAILED, COMMIT_DEFAULT, monitor);
+            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DELIVERY_FAILED, COMMIT_DEFAULT, monitor, gdi_session);
             /* This was sge_commit_job(jep, COMMIT_ST_RESCHEDULED). It raised problems if a job
                could not be delivered. The jobslotsfree had been increased even if
                they were not decreased before. */
@@ -573,7 +573,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
          /* job is now sent and goes into transfering state */
          /* mode == COMMIT_ST_SENT -> really accept when execd acks */
-         sge_commit_job(jep, jatp, nullptr, COMMIT_ST_SENT, COMMIT_DEFAULT, monitor);
+         sge_commit_job(jep, jatp, nullptr, COMMIT_ST_SENT, COMMIT_DEFAULT, monitor, gdi_session);
 
          /* now send events and spool the job */
          {
@@ -583,7 +583,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             /* spool job and ja_task in one transaction, send job mod event */
             sge_event_spool(&answer_list, 0, sgeE_JOB_MOD,
                             job_number, task_number, nullptr, nullptr, session,
-                            jep, jatp, nullptr, true, true);
+                            jep, jatp, nullptr, true, true, gdi_session);
             answer_list_output(&answer_list);
          }
 
@@ -597,7 +597,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          if (pe != nullptr) {
             pe_debit_slots(pe, pe_slots, job_number);
             /* this info is not spooled */
-            sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(jatp, JAT_granted_pe), nullptr, nullptr, pe);
+            sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(jatp, JAT_granted_pe), nullptr, nullptr, pe, gdi_session);
          }
 
          DPRINTF("successfully handed off job \"" sge_u32 "\" to queue \"%s\"\n",
@@ -606,7 +606,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          /* now after successfully (we hope) sent the job to execd
           * suspend all subordinated queues that need suspension
           */
-         cqueue_list_x_on_subordinate_gdil(master_cqueue_list, true, gdil, monitor);
+         cqueue_list_x_on_subordinate_gdil(master_cqueue_list, true, gdil, monitor, gdi_session);
       }
          break;
 
@@ -752,7 +752,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                if (jatp == nullptr) {
                   ERROR(MSG_JOB_FINDJOBTASK_UU, sge_u32c(task_number), sge_u32c(job_number));
                   sge_add_event(0, sgeE_JATASK_DEL, job_number, task_number,
-                                nullptr, nullptr, lGetString(jep, JB_session), nullptr);
+                                nullptr, nullptr, lGetString(jep, JB_session), nullptr, gdi_session);
                   DRETURN(-2);
                }
             }
@@ -859,7 +859,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             jatp = job_search_task(jep, nullptr, task_number);
             if (jatp == nullptr) {
                ERROR(MSG_JOB_FINDJOBTASK_UU, sge_u32c(task_number), sge_u32c(job_number));
-               sge_add_event(0, sgeE_JATASK_DEL, job_number, task_number, nullptr, nullptr, lGetString(jep, JB_session), nullptr);
+               sge_add_event(0, sgeE_JATASK_DEL, job_number, task_number, nullptr, nullptr, lGetString(jep, JB_session), nullptr, gdi_session);
                DRETURN(-2);
             }
 
@@ -1046,7 +1046,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             if (or_type == ORT_remove_job) {
                ERROR(MSG_JOB_FINDJOB_U, sge_u32c(job_number));
                /* try to repair schedd data - session is unknown here */
-               sge_add_event(0, sgeE_JOB_DEL, job_number, task_number, nullptr, nullptr, nullptr, nullptr);
+               sge_add_event(0, sgeE_JOB_DEL, job_number, task_number, nullptr, nullptr, nullptr, nullptr, gdi_session);
                DRETURN(-1);
             } else {
                /* in case of an immediate parallel job the job could be missing */
@@ -1075,7 +1075,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             sge_event_spool(&answer_list, 0, sgeE_JATASK_ADD,
                             job_number, task_number, nullptr, nullptr,
                             lGetString(jep, JB_session),
-                            jep, jatp, nullptr, true, true);
+                            jep, jatp, nullptr, true, true, gdi_session);
             answer_list_output(&answer_list);
          }
 
@@ -1086,7 +1086,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             /* remove it */
-            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor);
+            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
          } else {
             if (!JOB_TYPE_IS_IMMEDIATE(lGetUlong(jep, JB_type))) {
                if (lGetString(jep, JB_script_file)) {
@@ -1103,7 +1103,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             INFO(MSG_JOB_NOFREERESOURCEIA_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatp, JAT_task_number)), lGetString(jep, JB_owner));
 
             /* remove it */
-            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_NO_RESOURCES, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_NO_RESOURCES, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
          }
          break;
       }
@@ -1237,7 +1237,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                {
                   lList *answer_list = nullptr;
                   sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, up_name, nullptr, nullptr,
-                                  up, nullptr, nullptr, true, is_spool);
+                                  up, nullptr, nullptr, true, is_spool, gdi_session);
                   answer_list_output(&answer_list);
                }
             }
@@ -1375,7 +1375,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                {
                   lList *answer_list = nullptr;
                   sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, up_name, nullptr, nullptr,
-                                  up, nullptr, nullptr, true, is_spool);
+                                  up, nullptr, nullptr, true, is_spool, gdi_session);
                   answer_list_output(&answer_list);
                }
             }
@@ -1458,13 +1458,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lList *answer_list = nullptr;
                const char *session = lGetString(jep, JB_session);
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
-                               jep, jatp, nullptr, true, true);
+                               jep, jatp, nullptr, true, true, gdi_session);
                answer_list_output(&answer_list);
             }
 
             /* update queues time stamp in schedd */
             lSetUlong64(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
-            qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
+            qinstance_add_event(queueep, sgeE_QINSTANCE_MOD, gdi_session);
          }
       }
          break;
@@ -1508,12 +1508,12 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lList *answer_list = nullptr;
                const char *session = lGetString(jep, JB_session);
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
-                               jep, jatp, nullptr, true, true);
+                               jep, jatp, nullptr, true, true, gdi_session);
                answer_list_output(&answer_list);
             }
             /* update queues time stamp in schedd */
             lSetUlong(queueep, QU_last_suspend_threshold_ckeck, sge_get_gmt64());
-            qinstance_add_event(queueep, sgeE_QINSTANCE_MOD);
+            qinstance_add_event(queueep, sgeE_QINSTANCE_MOD, gdi_session);
          }
       }
          break;
@@ -1542,7 +1542,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lAppendElem(*master_job_schedd_info_list, sme);
 
                /* this information is not spooled (but might be usefull in a db) */
-               sge_add_event(0, sgeE_JOB_SCHEDD_INFO_MOD, 0, 0, nullptr, nullptr, nullptr, sme);
+               sge_add_event(0, sgeE_JOB_SCHEDD_INFO_MOD, 0, 0, nullptr, nullptr, nullptr, sme, gdi_session);
             }
          }
       }

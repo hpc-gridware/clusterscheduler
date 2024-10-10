@@ -67,7 +67,7 @@ static bool
 rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list);
 
 static void
-rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs);
+rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, u_long64 gdi_session);
 
 static bool
 filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
@@ -123,7 +123,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *     MT-NOTE: rqs_mod() is MT safe 
 *******************************************************************************/
 int
-rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+rqs_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
    bool rules_changed = false;
@@ -222,7 +222,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     MT-NOTE: rqs_spool() is MT safe 
 *******************************************************************************/
 int
-rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
+rqs_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -273,11 +273,11 @@ rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *     MT-NOTE: rqs() is MT safe 
 *******************************************************************************/
 int
-rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+rqs_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const char *rqs_name = lGetString(ep, RQS_name);
-   rqs_update_categories(ep, old_ep);
-   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep);
+   rqs_update_categories(ep, old_ep, packet->gdi_session);
+   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep, packet->gdi_session);
    DRETURN(0);
 }
 
@@ -309,7 +309,7 @@ rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppLi
 *     MT-NOTE: rqs_del() is MT safe 
 *******************************************************************************/
 int
-rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+rqs_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
    int pos;
    lListElem *found;
@@ -345,11 +345,10 @@ rqs_del(lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost)
 
    found = lDechainElem(*rqs_list, found);
 
-   rqs_update_categories(nullptr, found);
+   rqs_update_categories(nullptr, found, packet->gdi_session);
 
-   sge_event_spool(alpp, 0, sgeE_RQS_DEL,
-                   0, 0, rqs_name, nullptr, nullptr,
-                   nullptr, nullptr, nullptr, true, true);
+   sge_event_spool(alpp, 0, sgeE_RQS_DEL, 0, 0, rqs_name, nullptr, nullptr,
+                   nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, rqs_name, MSG_OBJ_RQS);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -737,7 +736,7 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 *
 *******************************************************************************/
 static void
-rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs) {
+rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, u_long64 gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
@@ -745,12 +744,12 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs) {
    DENTER(TOP_LAYER);
 
    rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
-   project_update_categories(new_lp, old_lp);
+   project_update_categories(new_lp, old_lp, gdi_session);
    lFreeList(&old_lp);
    lFreeList(&new_lp);
 
    rqs_diff_usersets(new_rqs, old_rqs, &new_lp, &old_lp, master_userset_list);
-   userset_update_categories(new_lp, old_lp);
+   userset_update_categories(new_lp, old_lp, gdi_session);
    lFreeList(&old_lp);
    lFreeList(&new_lp);
 

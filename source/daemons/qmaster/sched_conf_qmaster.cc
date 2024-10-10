@@ -50,11 +50,11 @@
 #include "msg_common.h"
 
 static void
-check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost);
+check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost, u_long64 gdi_session);
 
 
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
+sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u_long64 gdi_session) {
    lList *sched_conf = nullptr;
 
    DENTER(TOP_LAYER);
@@ -77,7 +77,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
       DRETURN(-1);
    }
 
-   check_reprioritize_interval(anAnswer, "local", "local");
+   check_reprioritize_interval(anAnswer, "local", "local", gdi_session);
 
    DRETURN(0);
 }
@@ -90,7 +90,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer) {
   Master_Sched_Config_List. So we replace it with the new one.
  ************************************************************/
 int
-sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sched_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
    lList *temp_conf_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -114,14 +114,13 @@ sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *r
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (!sge_event_spool(alpp, 0, sgeE_SCHED_CONF,
-                        0, 0, "schedd_conf", nullptr, nullptr,
-                        confp, nullptr, nullptr, true, true)) {
+   if (!sge_event_spool(alpp, 0, sgeE_SCHED_CONF, 0, 0, "schedd_conf", nullptr, nullptr,
+                        confp, nullptr, nullptr, true, true, packet->gdi_session)) {
       answer_list_add(alpp, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
 
-   check_reprioritize_interval(alpp, ruser, rhost);
+   check_reprioritize_interval(alpp, ruser, rhost, packet->gdi_session);
 
    INFO(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration");
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -131,7 +130,7 @@ sge_mod_sched_configuration(lListElem *confp, lList **alpp, char *ruser, char *r
 
 
 static void
-check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost) {
+check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost, u_long64 gdi_session) {
    DENTER(TOP_LAYER);
 
    if (((sconf_get_reprioritize_interval() == 0) && (mconf_get_reprioritize())) ||
@@ -141,7 +140,7 @@ check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost) 
 
       sge_set_conf_reprioritize(conf, flag);
 
-      sge_mod_configuration(conf, alpp, ruser, rhost);
+      sge_mod_configuration(conf, alpp, ruser, rhost, gdi_session);
 
       lFreeElem(&conf);
    }

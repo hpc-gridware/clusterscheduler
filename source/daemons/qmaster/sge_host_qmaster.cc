@@ -96,7 +96,7 @@
 #include "sge_job_enforce_limit.h"
 
 static void
-exec_host_change_queue_version(const char *exechost_name);
+exec_host_change_queue_version(const char *exechost_name, u_long64 gdi_session);
 
 static void
 master_kill_execds(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
@@ -112,7 +112,7 @@ static int
 verify_scaling_list(lList **alpp, lListElem *host);
 
 static void
-host_update_categories(const lListElem *new_hep, const lListElem *old_hep);
+host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_long64 gdi_session);
 
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
@@ -187,7 +187,7 @@ host_trash_nonstatic_load_values(lListElem *host) {
 
  */
 int
-sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monitor) {
+sge_add_host_of_type(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *hostname, u_long32 target, monitoring_t *monitor) {
    int ret;
    int dataType;
    int pos;
@@ -219,7 +219,7 @@ sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monito
       default:
       DPRINTF("sge_add_host_of_type: unexpected datatype\n");
    }
-   ret = sge_gdi_add_mod_generic(nullptr, ep, 1, object, username,
+   ret = sge_gdi_add_mod_generic(packet, task, nullptr, ep, 1, object, username,
                                  qualified_hostname, 0, &ppList, monitor);
    lFreeElem(&ep);
    lFreeList(&ppList);
@@ -228,7 +228,7 @@ sge_add_host_of_type(const char *hostname, u_long32 target, monitoring_t *monito
 }
 
 bool
-host_list_add_missing_href(const lList *this_list, lList **answer_list,
+host_list_add_missing_href(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor) {
    bool ret = true;
    const lListElem *href = nullptr;
@@ -239,7 +239,7 @@ host_list_add_missing_href(const lList *this_list, lList **answer_list,
       lListElem *host = host_list_locate(this_list, hostname);
 
       if (host == nullptr) {
-         ret &= (sge_add_host_of_type(hostname, SGE_EH_LIST, monitor) == 0);
+         ret &= (sge_add_host_of_type(packet, task, hostname, SGE_EH_LIST, monitor) == 0);
       }
    }
    DRETURN(ret);
@@ -253,7 +253,7 @@ host_list_add_missing_href(const lList *this_list, lList **answer_list,
    spooled to disk
 
 */
-int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
+int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
                  const lList *master_hgroup_list) {
    int pos;
    lListElem *ep;
@@ -365,7 +365,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_ADMINHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true);
+                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
          answer_list_output(&answer_list);
       }
          break;
@@ -373,17 +373,17 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true);
+                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
          answer_list_output(&answer_list);
       }
-         host_update_categories(nullptr, ep);
+         host_update_categories(nullptr, ep, packet->gdi_session);
 
          break;
       case SGE_SH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_SUBMITHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true);
+                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
          answer_list_output(&answer_list);
       }
          break;
@@ -400,7 +400,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
 /* ------------------------------------------------------------ */
 
 int
-host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
+host_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
          monitoring_t *monitor) {
    const char *host;
@@ -567,7 +567,7 @@ host_mod(lList **alpp, lListElem *new_host, lListElem *ep, int add,
    }
 
    if (update_qversion) {
-      exec_host_change_queue_version(host);
+      exec_host_change_queue_version(host, packet->gdi_session);
    }
 
    DRETURN(0);
@@ -576,7 +576,7 @@ DRETURN(STATUS_EUNKNOWN);
 }
 
 int
-host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
+host_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    int pos;
    int dataType;
    const char *key;
@@ -620,7 +620,7 @@ host_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 }
 
 int
-host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+host_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
@@ -636,19 +636,19 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
             host_merge(ep, global_ep);
          }
 
-         host_update_categories(ep, old_ep);
-         sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, nullptr, nullptr, ep);
+         host_update_categories(ep, old_ep, packet->gdi_session);
+         sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, nullptr, nullptr, ep, packet->gdi_session);
       }
          break;
 
       case AH_name:
          sge_add_event(0, old_ep ? sgeE_ADMINHOST_MOD : sgeE_ADMINHOST_ADD,
-                       0, 0, lGetHost(ep, AH_name), nullptr, nullptr, ep);
+                       0, 0, lGetHost(ep, AH_name), nullptr, nullptr, ep, packet->gdi_session);
          break;
 
       case SH_name:
          sge_add_event(0, old_ep ? sgeE_SUBMITHOST_MOD : sgeE_SUBMITHOST_ADD,
-                       0, 0, lGetHost(ep, SH_name), nullptr, nullptr, ep);
+                       0, 0, lGetHost(ep, SH_name), nullptr, nullptr, ep, packet->gdi_session);
          break;
    }
 
@@ -658,7 +658,7 @@ host_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 /* ------------------------------------------------------------ */
 
 void
-sge_mark_unheard(lListElem *hep) {
+sge_mark_unheard(lListElem *hep, u_long64 gdi_session) {
    const char *host;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
@@ -672,7 +672,7 @@ sge_mark_unheard(lListElem *hep) {
 
    if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
       host_trash_nonstatic_load_values(hep);
-      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true);
+      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true, gdi_session);
 
       lSetUlong64(hep, EH_lt_heard_from, 0);
 
@@ -680,7 +680,7 @@ sge_mark_unheard(lListElem *hep) {
       sge_host_add_enforce_limit_trigger(host);
 
       /* hedeby depends on this event */
-      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep);
+      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep, gdi_session);
    }
 
    DRETURN_VOID;
@@ -692,7 +692,7 @@ sge_mark_unheard(lListElem *hep) {
    using the load report list lp
 */
 void
-sge_update_load_values(const char *rhost, lList *lp) {
+sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
    lListElem *ep, **hepp = nullptr;
    lListElem *lep;
    lListElem *global_ep = nullptr;
@@ -719,7 +719,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
     * if rhost is unknown set him to known
     */
    if (lGetUlong64(host_ep, EH_lt_heard_from) == 0) {
-      cqueue_list_set_unknown_state(master_cqueue_list, rhost, true, false);
+      cqueue_list_set_unknown_state(master_cqueue_list, rhost, true, false, gdi_session);
 
       /* remove a trigger to enforce limits when they are exceeded */
       sge_host_remove_enforce_limit_trigger(rhost);
@@ -755,7 +755,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
             /* we have a host change, send events for the previous one */
             sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                             0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
-                            host_ep, nullptr, nullptr, true, statics_changed);
+                            host_ep, nullptr, nullptr, true, statics_changed, gdi_session);
             ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
             statics_changed = false;
          }
@@ -805,7 +805,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
    if (hepp != nullptr && *hepp != nullptr) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
-                      *hepp, nullptr, nullptr, true, statics_changed);
+                      *hepp, nullptr, nullptr, true, statics_changed, gdi_session);
 
       ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
    }
@@ -813,7 +813,7 @@ sge_update_load_values(const char *rhost, lList *lp) {
    if (global_ep) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, SGE_GLOBAL_NAME, nullptr, nullptr,
-                      global_ep, nullptr, nullptr, true, false);
+                      global_ep, nullptr, nullptr, true, false, gdi_session);
       ocs::ReportingFileWriter::create_host_records(&answer_list, global_ep, now);
    }
    answer_list_output(&answer_list);
@@ -889,13 +889,13 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       host_trash_nonstatic_load_values(hep);
 
       /* set all queues residing at this host in unknown state */
-      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true);
+      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true, GDI_SESSION_NONE);
 
       /* add a trigger to enforce limits when they are exceeded */
       sge_host_add_enforce_limit_trigger(host);
 
       /* hedeby depends on this event */
-      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep);
+      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep, GDI_SESSION_NONE);
 
       /* initiate timer for this host because they turn into 'unknown' state */
       reschedule_unknown_trigger(hep);
@@ -940,7 +940,7 @@ load_report_interval(lListElem *hep) {
 }
 
 static void
-exec_host_change_queue_version(const char *exechost_name) {
+exec_host_change_queue_version(const char *exechost_name, u_long64 gdi_session) {
    const lListElem *cqueue = nullptr;
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -974,7 +974,7 @@ exec_host_change_queue_version(const char *exechost_name) {
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
                          0, 0, lGetString(qinstance, QU_qname),
                          lGetHost(qinstance, QU_qhostname), nullptr,
-                         qinstance, nullptr, nullptr, true, false);
+                         qinstance, nullptr, nullptr, true, false, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -1179,7 +1179,7 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
       }
    }
 
-   sge_mark_unheard(lel);
+   sge_mark_unheard(lel, packet->gdi_session);
 
    DRETURN_VOID;
 }
@@ -1191,7 +1191,7 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
  **** gdi call for old request starting_up.
  ****/
 int
-sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
+sge_execd_startedup(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
                     monitoring_t *monitor, bool is_restart) {
    lListElem *hep, *cqueue;
    dstring ds;
@@ -1211,7 +1211,7 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
 
    hep = host_list_locate(master_ehost_list, rhost);
    if (!hep) {
-      if (sge_add_host_of_type(rhost, SGE_EH_LIST, monitor) < 0) {
+      if (sge_add_host_of_type(packet, task, rhost, SGE_EH_LIST, monitor) < 0) {
          ERROR(MSG_OBJ_INVALIDHOST_S, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
@@ -1237,12 +1237,12 @@ sge_execd_startedup(lListElem *host, lList **alpp, char *ruser, char *rhost, u_l
          lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, rhost);
 
          if (qinstance != nullptr) {
-            if (sge_qmaster_qinstance_set_initial_state(qinstance)) {
+            if (sge_qmaster_qinstance_set_initial_state(qinstance, packet->gdi_session)) {
                lList *answer_list = nullptr;
 
                qinstance_increase_qversion(qinstance);
                sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
-                               rhost, nullptr, qinstance, nullptr, nullptr, true, true);
+                               rhost, nullptr, qinstance, nullptr, nullptr, true, true, packet->gdi_session);
                answer_list_output(&answer_list);
             }
          }
@@ -1419,16 +1419,16 @@ host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList *
 *     MT-NOTE: host_update_categories() is not MT safe
 *******************************************************************************/
 static void
-host_update_categories(const lListElem *new_hep, const lListElem *old_hep) {
+host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_long64 gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
 
    host_diff_projects(new_hep, old_hep, &new_lp, &old_lp);
-   project_update_categories(new_lp, old_lp);
+   project_update_categories(new_lp, old_lp, gdi_session);
    lFreeList(&old_lp);
    lFreeList(&new_lp);
 
    host_diff_usersets(new_hep, old_hep, &new_lp, &old_lp);
-   userset_update_categories(new_lp, old_lp);
+   userset_update_categories(new_lp, old_lp, gdi_session);
    lFreeList(&old_lp);
    lFreeList(&new_lp);
 }

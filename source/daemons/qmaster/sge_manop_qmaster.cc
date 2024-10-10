@@ -63,7 +63,7 @@
    target may be SGE_UM_LIST or SGE_UO_LIST
 */
 int
-sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    const char *manop_name;
    const char *object_name;
    lList **lpp = nullptr;
@@ -127,7 +127,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    /* update on file */
    if (!sge_event_spool(alpp, 0, eve,
                         0, 0, manop_name, nullptr, nullptr,
-                        added, nullptr, nullptr, true, true)) {
+                        added, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
@@ -169,7 +169,7 @@ sge_add_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
 *     MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
 *******************************************************************************/
 int
-sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_del_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    lListElem *found;
    int pos;
    const char *manop_name;
@@ -244,7 +244,7 @@ sge_del_manop(lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 ta
    /* update on file */
    if (!sge_event_spool(alpp, 0, eve,
                         0, 0, manop_name, nullptr, nullptr,
-                        nullptr, nullptr, nullptr, true, true)) {
+                        nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 

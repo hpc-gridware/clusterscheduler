@@ -37,4 +37,4 @@
 #include "sgeobj/sge_daemonize.h"
 
 void
-sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
+sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long64 gdi_session);
