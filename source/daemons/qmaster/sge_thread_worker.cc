@@ -41,8 +41,11 @@
 #include "uti/sge_os.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
+
+#include "sge_thread_ctrl.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -193,7 +196,7 @@ sge_worker_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, WT_WARNING, WT_ERROR);
    sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);
 
    /* register at profiling module */
@@ -214,6 +217,7 @@ sge_worker_main(void *arg) {
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
 
+      // handle the packet only if it is not nullptr and the shutdown has not started
       if (packet != nullptr) {
          sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
@@ -346,14 +350,13 @@ sge_worker_main(void *arg) {
          thread_output_profiling("worker thread profiling summary:\n", &next_prof_output);
 
          sge_monitor_output(p_monitor);
-      } else {
-         int execute = 0;
-
-         // pthread cancellation point
-         pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute); // cleanup monitor
       }
+
+      // pthread cancellation point
+      int execute = 0;
+      pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
+      cl_thread_func_testcancel(thread_config);
+      pthread_cleanup_pop(execute); // cleanup monitor
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

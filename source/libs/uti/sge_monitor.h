@@ -98,24 +98,28 @@
 /**
  * qping thread warning times in seconds
  */
-const int NO_WARNING = 0;
-const int EVENT_MASTER_THREAD_WARNING = 10;
-const int TET_WARNING = 30;
-const int MT_WARNING = 10;
-const int ST_WARNING = 0;  /* no timeout for this thread */
-const int EXECD_WARNING = 10;
-const int SCT_WARNING = 20;
+const long NO_WARNING = 0;
+const long EVENT_MASTER_THREAD_WARNING = 5;
+const long TET_WARNING = 10;
+const long MT_WARNING = 0;
+const long WT_WARNING = 60;
+const long RT_WARNING = 60;
+const long ST_WARNING = 0;  /* no timeout for this thread */
+const long EXECD_WARNING = 10;
+const long SCT_WARNING = 20;
 
 /**
  * qping thread error times in seconds
  **/
-const int NO_ERROR = 0;
-const int EVENT_MASTER_THREAD_ERROR = 600;
-const int TET_ERROR = 600;
-const int MT_ERROR = 600;
-const int ST_ERROR = 0;   /* no timeout for this thread */
-const int EXECD_ERROR = 600;
-const int SCT_ERROR = 600;
+const long NO_ERROR = 0;
+const long EVENT_MASTER_THREAD_ERROR = 60;
+const long TET_ERROR = 60;
+const long MT_ERROR = 0;
+const long WT_ERROR = 600;
+const long RT_ERROR = 60*60*24*365;
+const long ST_ERROR = 0;   /* no timeout for this thread */
+const long EXECD_ERROR = 600;
+const long SCT_ERROR = 600;
 
 /**
  * This function definition is the prototyp for the output function of a data
@@ -167,7 +171,7 @@ typedef struct {
 } monitoring_t;
 
 void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                      int warning_timeout, int error_timeout);
+                      long warning_timeout, long error_timeout);
 
 void sge_monitor_free(monitoring_t *monitor);
 
@@ -312,12 +316,20 @@ typedef struct {
    u_long32 inc_ack; /* ack requests */
    u_long32 inc_ece; /* event client exits */
    u_long32 inc_rep; /* report request */
+
+   u_long32 gdi_get_count;    /* counts the gdi get requests */
+   u_long32 gdi_trig_count;   /* counts the gdi trig requests */
+   u_long32 gdi_perm_count;   /* counts the gdi perm requests */
 } m_lis_t;
 
 #define MONITOR_INC_GDI(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_gdi++
 #define MONITOR_INC_ACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ack++
 #define MONITOR_INC_ECE(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ece++
 #define MONITOR_INC_REP(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_rep++
+
+#define MONITOR_LIS_GDI_GET(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_get_count++
+#define MONITOR_LIS_GDI_TRIG(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_trig_count++
+#define MONITOR_LIS_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_perm_count++
 
 /* event master thread extension */
 

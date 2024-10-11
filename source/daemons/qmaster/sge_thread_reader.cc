@@ -27,8 +27,11 @@
 #include "uti/sge_os.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
+
+#include "sge_thread_ctrl.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -143,7 +146,7 @@ sge_reader_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, RT_WARNING, RT_ERROR);
    sge_qmaster_thread_init(QMASTER, READER_THREAD, true);
 
    /* register at profiling module */
@@ -164,7 +167,8 @@ sge_reader_main(void *arg) {
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(ReaderRequestQueue));
 
-      if (packet != nullptr) {
+      // handle the packet only if it is not nullptr and the shutdown has not started
+      if (packet != nullptr && !sge_thread_has_shutdown_started()) {
          sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
 
@@ -216,7 +220,7 @@ sge_reader_main(void *arg) {
 
          // handle the request (GDI/Report/Ack ...
          if (packet->request_type == PACKET_GDI_REQUEST) {
-            // sge_usleep(3000000);
+            //sge_usleep(1000000);
 
             task = packet->first_task;
             while (task != nullptr) {
@@ -229,6 +233,7 @@ sge_reader_main(void *arg) {
             sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
             task = packet->first_task;
+            // @TODO: This could be done by listener already?
             sge_c_ack(packet, task, p_monitor);
          } else {
             DPRINTF("unknown request type %d\n", packet->request_type);
@@ -298,14 +303,25 @@ sge_reader_main(void *arg) {
          thread_output_profiling("reader thread profiling summary:\n", &next_prof_output);
 
          sge_monitor_output(p_monitor);
-      } else {
-         int execute = 0;
+      }
 
+      // pass the cancellation point at least once or stay here if shutdown was triggered
+      bool shutdown_started = false;
+      do {
          // pthread cancellation point
+         int execute = 0;
          pthread_cleanup_push(sge_reader_cleanup_monitor, static_cast<void *>(p_monitor));
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute); // cleanup monitor
-      }
+
+         // shutdown in process?
+         shutdown_started = sge_thread_has_shutdown_started();
+
+         // if we will wait here than do not eat up all cpu time
+         if (shutdown_started) {
+            sge_usleep(25000);
+         }
+      } while (shutdown_started);
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

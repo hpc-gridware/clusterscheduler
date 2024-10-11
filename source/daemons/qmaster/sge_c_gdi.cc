@@ -269,23 +269,17 @@ sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class
    sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
       case SGE_GDI_TRIGGER:
-#if 0
-         MONITOR_GDI_TRIG(monitor);
-#endif
+         MONITOR_LIS_GDI_TRIG(monitor);
          sge_c_gdi_trigger_in_listener(packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          DRETURN(true);
       case SGE_GDI_PERMCHECK:
-#if 0
-         MONITOR_GDI_PERM(monitor);
-#endif
+         MONITOR_LIS_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          DRETURN(true);
       case SGE_GDI_GET:
-#if 0
-         MONITOR_GDI_GET(monitor);
-#endif
+         MONITOR_LIS_GDI_GET(monitor);
          sge_c_gdi_get_in_listener(ao, packet, task, monitor);
          sge_gdi_packet_pack_task(packet, task, answer_list, pb);
          DRETURN(true);
