@@ -1,6 +1,79 @@
 # Major Enhancements 
 
-## qconf support to add/modify/delete/show complex entries individually
+## v9.0.1beta
+
+### Utilization of additional data stores and activation of new thread pools
+
+Beginning with patch v9.0.1 the new internal architecture of `sge_qmaster` is activated so that the component can
+utilize additional data stores by starting new thread pools.
+
+* Listener thread pool: The listener thread pool was already activated in v9.0.0. It is used to handle incoming 
+  requests from clients and to distribute them to the corresponding processing components. Additionally, this pool
+  of threads utilizes a new data store to answer authentication requests. Beginning with v9.0.1 this data store
+  is used for even more requests to relieve other internal components within `sge_qmaster`.
+
+* Reader thread pool: The reader thread pool is activated and can now utilize a corresponding thread pool.
+  This will boost the performance of clusters in large environments where also users tend to request the status of the
+  system very often, by using client commands like `qstat`, `qhost` or other commands that send read-only requests 
+  to `sge_qmaster`. The additional data store needs to be enabled manually by setting following qmaster parameter in the 
+  *qmaster_params* of the cluster configuration:
+
+  ```
+  > qconf -mconf
+  ...
+  qmaster_params ...,DISABLE_SECONDARY_DS_READER=false
+  ...
+  ```
+  
+  Please note that requests answered by the reader thread pool might deliver slightly outdated data compared to the 
+  requests answered with data from the main data store because both data stores can be slightly out of sync. The 
+  maximum deviation can be configured by setting the `MAX_DS_DEVIATION` in milliseconds within in the `qmaster_params`.
+
+  ```
+  > qconf -mconf
+  ...
+  qmaster_params ...,MAX_DS_DEVIATION=1000 
+  ...
+  ```
+  
+  The default value is 1000 milliseconds. The value should be chosen carefully to balance the performance gain with
+  the accuracy of the data.
+ 
+  With one of the upcoming patches we will introduce an addition concept of automatic-sessions that will allow to
+  synchronize the data stores more efficiently and so that client commands can be enforced to get the most recent data.
+
+* Enhanced monitoring: The monitoring of `sge_qmaster` has been enhanced to provide more detailed information about
+  the utilization of the different thread pools. As also in the past the monitoring is enabled by setting the monitor 
+  time:
+
+  ```
+  > qconf -mconf
+  ...
+  qmaster_params ...,MONITOR_TIME=10
+  ...
+  ```
+  
+  `qping` will then show statistics about the handled requests per thread.
+
+  ``` 
+  qping -i 1 -f  <master_host> $SGE_QMASTER_PORT qmaster 1
+  ...
+  10/11/2024 12:54:53 | reader: runs: 261.04r/s (GDI (a:0.00,g:2871.45,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
+                                                 OTHER (ql:0)) 
+                                                 out: 261.04m/s APT: 0.0007s/m idle: 80.88% wait: 0.01% time: 9.99s
+  10/11/2024 12:54:53 | reader: runs: 279.50r/s (GDI (a:0.00,g:3074.50,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
+                                                 OTHER (ql:0)) 
+                                                 out: 279.50m/s APT: 0.0007s/m idle: 79.08% wait: 0.01% time: 10.00s
+  10/11/2024 12:54:53 | listener: runs: 268.65r/s (in (g:268.34 a:0.00 e:0.00 r:0.30)/s 
+                                                   GDI (g:0.00,t:0.00,p:0.00)/s) 
+                                                   out: 0.00m/s APT: 0.0001s/m idle: 98.42% wait: 0.00% time: 9.99s
+  10/11/2024 12:54:53 | listener: runs: 255.37r/s (in (g:255.37 a:0.00 e:0.00 r:0.00)/s GDI (g:0.00,t:0.00,p:0.00)/s) 
+                                                   out: 0.00m/s APT: 0.0001s/m idle: 98.54% wait: 0.00% time: 10.00s
+  ```
+
+## v9.0.0
+
+### qconf support to add/modify/delete/show complex entries individually
 
 `Qconf` also allows you to add, modify, delete and display complexes individually using the new `-ace`, `-Ace`, 
 `-mce`, `-Mce`, `-sce` and `-scel` switches. Previously this was only possible as a group command for the whole 
@@ -8,7 +81,7 @@ complex set with `-mq`. More information can be found in the qconf(1) man page o
 
 (Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
 
-## Added support to supplementary group IDs in user, operator and manager lists. 
+### Added support to supplementary group IDs in user, operator and manager lists. 
 
 Additionally, to user and primary group names, it is now possible to specify supplementary group IDs in user, operator,
 and manager lists. User lists can be specified in host, queue, configuration, and parallel environment objects to allow
@@ -30,7 +103,7 @@ in a production environment. Enabling caching services like `nscd` can help redu
 
 (Available in Gridware Cluster Scheduler only)
 
-## New internal architecture to support multiple Data Stores
+### New internal architecture to support multiple Data Stores
 
 The internal data architecture of `sge_qmaster` has been changed to support multiple data stores. This change 
 does not have a major impact currently and is not visible to the user. However, it is a prerequisite for future 
@@ -40,7 +113,7 @@ enhancing the performance of the cluster in large environments.
 
 (Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
 
-## New RSMAP (Resource Map) complex type
+### New RSMAP (Resource Map) complex type
 
 Resource Maps are a new complex type that allows administrators to define a list of special resources which
 are available on a host, e.g. GPU devices, networking devices, lists of network ports, or other special resources.
@@ -111,7 +184,7 @@ qrsh -l port_numbers=8 env | grep SGE_HGR
 SGE_HGR_port_number=65000 65001 65002 65003 65004 65005 65006 65007
 ```
 
-## Per HOST complex variables
+### Per HOST complex variables
 
 The definition of complex variables contains the attribute `consumable` which could so far have the following values:
 
@@ -125,7 +198,7 @@ of parallel jobs multiple tasks are running on the same host, the requested amou
 once. E.g. multiple tasks of a parallel job can share the same GPU.
 
 
-## One-line JSON format for accounting and reporting files
+### One-line JSON format for accounting and reporting files
 
 The accounting and reporting files contain one line per record.
 The format of the records used to be a column-based format with a fixed number of columns,
@@ -202,7 +275,7 @@ as extensions to the accounting and reporting records (e.g. more exact timestamp
 additional usage values like maxrss) are only done in the new format.
 
 
-## Resource and queue requests per scope (global, master, slave) for parallel jobs
+### Resource and queue requests per scope (global, master, slave) for parallel jobs
 
 In former product versions resource requests for parallel jobs were only possible on the global level.
 Resource requests for parallel jobs were applied to all tasks of the job, both master task (the job script)
