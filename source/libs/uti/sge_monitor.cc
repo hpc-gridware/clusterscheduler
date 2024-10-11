@@ -718,13 +718,17 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
 *     MT-NOTE: ext_lis_output() is MT safe 
 *******************************************************************************/
 static void ext_lis_output(dstring *message, void *monitoring_extension, double time) {
-   auto *gdi_ext = (m_lis_t *) monitoring_extension;
+   auto *lis_ext = (m_lis_t *) monitoring_extension;
 
-   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_LISEXT_FFFF,
-                              gdi_ext->inc_gdi / time,
-                              gdi_ext->inc_ack / time,
-                              gdi_ext->inc_ece / time,
-                              gdi_ext->inc_rep / time);
+   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_LISEXT_FFFFFFF,
+                              lis_ext->inc_gdi / time,
+                              lis_ext->inc_ack / time,
+                              lis_ext->inc_ece / time,
+                              lis_ext->inc_rep / time,
+                              lis_ext->gdi_get_count / time,
+                              lis_ext->gdi_trig_count / time,
+                              lis_ext->gdi_perm_count / time
+                              );
 }
 
 

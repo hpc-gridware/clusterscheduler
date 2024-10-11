@@ -316,12 +316,20 @@ typedef struct {
    u_long32 inc_ack; /* ack requests */
    u_long32 inc_ece; /* event client exits */
    u_long32 inc_rep; /* report request */
+
+   u_long32 gdi_get_count;    /* counts the gdi get requests */
+   u_long32 gdi_trig_count;   /* counts the gdi trig requests */
+   u_long32 gdi_perm_count;   /* counts the gdi perm requests */
 } m_lis_t;
 
 #define MONITOR_INC_GDI(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_gdi++
 #define MONITOR_INC_ACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ack++
 #define MONITOR_INC_ECE(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ece++
 #define MONITOR_INC_REP(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_rep++
+
+#define MONITOR_LIS_GDI_GET(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_get_count++
+#define MONITOR_LIS_GDI_TRIG(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_trig_count++
+#define MONITOR_LIS_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_perm_count++
 
 /* event master thread extension */
 
