@@ -218,7 +218,7 @@ sge_worker_main(void *arg) {
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
 
       // handle the packet only if it is not nullptr and the shutdown has not started
-      if (packet != nullptr && !sge_thread_has_shutdown_started()) {
+      if (packet != nullptr) {
          sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
 
@@ -352,23 +352,11 @@ sge_worker_main(void *arg) {
          sge_monitor_output(p_monitor);
       }
 
-      // pass the cancellation point at least once or stay here if shutdown was triggered
-      bool shutdown_started = false;
-      do {
-         // pthread cancellation point
-         int execute = 0;
-         pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute); // cleanup monitor
-
-         // shutdown in process?
-         shutdown_started = sge_thread_has_shutdown_started();
-
-         // if we will wait here than do not eat up all cpu time
-         if (shutdown_started) {
-            sge_usleep(25000);
-         }
-      } while (shutdown_started);
+      // pthread cancellation point
+      int execute = 0;
+      pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
+      cl_thread_func_testcancel(thread_config);
+      pthread_cleanup_pop(execute); // cleanup monitor
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
