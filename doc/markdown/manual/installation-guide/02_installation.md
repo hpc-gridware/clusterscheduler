@@ -617,4 +617,5 @@ Here are the steps required to complete the installation.
 
 ## Troubleshooting
 
+[//]: # (Eeach file has to end with two emty lines)
 

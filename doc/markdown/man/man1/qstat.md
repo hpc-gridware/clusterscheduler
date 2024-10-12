@@ -160,8 +160,8 @@ Display information only on those jobs and queues being associated with the user
 status information is displayed if the `-f` or `-F` options are specified additionally and if the user runs jobs in 
 those queues.
 
-The string *$user* is a placeholder for the current username. An asterisk "\*" can be used as username wildcard to 
-request any user's jobs be displayed. The default value for this switch is `-u` *$user*.
+The string *$user* is a placeholder for the current username. An asterisk * can be used as username wildcard to 
+request any user's jobs be displayed. The default value for this switch is `-u $user`.
 
 ## -urg  
 Displays additional information for each job related to the job urgency policy scheme (see *OUTPUT FORMATS* below).

@@ -4,18 +4,19 @@
 
 ### Utilization of additional data stores and activation of new thread pools
 
-Beginning with patch v9.0.1 the new internal architecture of `sge_qmaster` is activated so that the component can
-utilize additional data stores by starting new thread pools.
+Starting with patch 9.0.1, the new internal architecture of `sge_qmaster` is enabled, allowing the component to use 
+additional data stores that can be utilized by pools of threads.
 
-* Listener thread pool: The listener thread pool was already activated in v9.0.0. It is used to handle incoming 
-  requests from clients and to distribute them to the corresponding processing components. Additionally, this pool
-  of threads utilizes a new data store to answer authentication requests. Beginning with v9.0.1 this data store
-  is used for even more requests to relieve other internal components within `sge_qmaster`.
+* Listener threads: The listener thread pool was already available in earlier versions of Grid Engine. Starting with 
+  version 9.0.0 of Cluster Scheduler, this pool received a dedicated datastore to forward incoming requests faster to 
+  the component that ultimately has to process the request. New in version 9.0.1 is that this datastore includes more 
+  information so that the listener threads themselves can directly answer certain requests without having to forward 
+  them. This reduces internal friction and makes the cluster more responsive even in high load situations.
 
-* Reader thread pool: The reader thread pool is activated and can now utilize a corresponding thread pool.
+* Reader thread pool: The reader thread pool is activated and can now utilize a corresponding data store.
   This will boost the performance of clusters in large environments where also users tend to request the status of the
   system very often, by using client commands like `qstat`, `qhost` or other commands that send read-only requests 
-  to `sge_qmaster`. The additional data store needs to be enabled manually by setting following qmaster parameter in the 
+  to `sge_qmaster`. The additional data store needs to be enabled manually by setting following parameter in the 
   *qmaster_params* of the cluster configuration:
 
   ```
@@ -40,7 +41,7 @@ utilize additional data stores by starting new thread pools.
   the accuracy of the data.
  
   With one of the upcoming patches we will introduce an addition concept of automatic-sessions that will allow to
-  synchronize the data stores more efficiently and so that client commands can be enforced to get the most recent data.
+  synchronize the data stores more efficiently so that client commands can be enforced to get the most recent data.
 
 * Enhanced monitoring: The monitoring of `sge_qmaster` has been enhanced to provide more detailed information about
   the utilization of the different thread pools. As also in the past the monitoring is enabled by setting the monitor 
@@ -58,17 +59,22 @@ utilize additional data stores by starting new thread pools.
   ``` 
   qping -i 1 -f  <master_host> $SGE_QMASTER_PORT qmaster 1
   ...
-  10/11/2024 12:54:53 | reader: runs: 261.04r/s (GDI (a:0.00,g:2871.45,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
-                                                 OTHER (ql:0)) 
-                                                 out: 261.04m/s APT: 0.0007s/m idle: 80.88% wait: 0.01% time: 9.99s
-  10/11/2024 12:54:53 | reader: runs: 279.50r/s (GDI (a:0.00,g:3074.50,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
-                                                 OTHER (ql:0)) 
-                                                 out: 279.50m/s APT: 0.0007s/m idle: 79.08% wait: 0.01% time: 10.00s
-  10/11/2024 12:54:53 | listener: runs: 268.65r/s (in (g:268.34 a:0.00 e:0.00 r:0.30)/s 
-                                                   GDI (g:0.00,t:0.00,p:0.00)/s) 
-                                                   out: 0.00m/s APT: 0.0001s/m idle: 98.42% wait: 0.00% time: 9.99s
-  10/11/2024 12:54:53 | listener: runs: 255.37r/s (in (g:255.37 a:0.00 e:0.00 r:0.00)/s GDI (g:0.00,t:0.00,p:0.00)/s) 
-                                                   out: 0.00m/s APT: 0.0001s/m idle: 98.54% wait: 0.00% time: 10.00s
+  10/11/2024 12:54:53 | reader: runs: 261.04r/s (
+     GDI (a:0.00,g:2871.45,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
+     OTHER (ql:0)) 
+     out: 261.04m/s APT: 0.0007s/m idle: 80.88% wait: 0.01% time: 9.99s
+  10/11/2024 12:54:53 | reader: runs: 279.50r/s (
+     GDI (a:0.00,g:3074.50,m:0.00,d:0.00,c:0.00,t:0.00,p:0.00)/s 
+     OTHER (ql:0)) 
+     out: 279.50m/s APT: 0.0007s/m idle: 79.08% wait: 0.01% time: 10.00s
+  10/11/2024 12:54:53 | listener: runs: 268.65r/s (
+     in (g:268.34 a:0.00 e:0.00 r:0.30)/s 
+     GDI (g:0.00,t:0.00,p:0.00)/s) 
+     out: 0.00m/s APT: 0.0001s/m idle: 98.42% wait: 0.00% time: 9.99s
+  10/11/2024 12:54:53 | listener: runs: 255.37r/s (
+     in (g:255.37 a:0.00 e:0.00 r:0.00)/s 
+     GDI (g:0.00,t:0.00,p:0.00)/s) 
+     out: 0.00m/s APT: 0.0001s/m idle: 98.54% wait: 0.00% time: 10.00s
   ```
 
 ## v9.0.0
@@ -313,3 +319,6 @@ The `-scope master -q qname` replaces the old `-masterq qname` option. The `-mas
 for backward compatibility, but it is recommended to use the new `-scope master` option.
 
 Resource requests per scope can also be modified by `qalter` and via JSV scripts.
+
+[//]: # (Eeach file has to end with two emty lines)
+

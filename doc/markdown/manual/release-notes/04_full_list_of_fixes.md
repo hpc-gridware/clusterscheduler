@@ -1,6 +1,46 @@
 # Full List of Fixes
 
-## 9.0.0
+# v9.0.1beta
+
+### Improvement
+
+[CS-270](https://hpc-gridware.atlassian.net/browse/CS-270) Allow threads to handle RO-request in parallel
+
+### Task
+
+[CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
+
+### Sub-task
+
+[CS-655](https://hpc-gridware.atlassian.net/browse/CS-655) Block requests for secondary DS until initialization is complete
+
+[CS-656](https://hpc-gridware.atlassian.net/browse/CS-656) Allow to enforce that execd requests will be handled with data from primary DS
+
+[CS-657](https://hpc-gridware.atlassian.net/browse/CS-657) Allow to configure the max reader delay
+
+[CS-658](https://hpc-gridware.atlassian.net/browse/CS-658) Allow to disable use of secondary DS
+
+[CS-659](https://hpc-gridware.atlassian.net/browse/CS-659) Increase the max  number of allowed listener/reader/worker threads
+
+[CS-667](https://hpc-gridware.atlassian.net/browse/CS-667) Disable the use of the reader DS unless automatic sessions are available
+
+[CS-675](https://hpc-gridware.atlassian.net/browse/CS-675) Enhance monitoring so that it can observe more than 256 threads
+
+### Bug
+
+[CS-145](https://hpc-gridware.atlassian.net/browse/CS-145) qping monitoring output is broken
+
+[CS-630](https://hpc-gridware.atlassian.net/browse/CS-630) several testsuite tests fail in environments where primary hostname is fully qualified
+
+[CS-663](https://hpc-gridware.atlassian.net/browse/CS-663) In a default installation on Google Cloud the hostname length is too long for commands
+
+[CS-665](https://hpc-gridware.atlassian.net/browse/CS-665) Potential core of qmaster \(in listener thread\) due to concurrent access to data
+
+[CS-674](https://hpc-gridware.atlassian.net/browse/CS-674) Monitoring show threads in W or E state, although they are working properly
+
+[CS-676](https://hpc-gridware.atlassian.net/browse/CS-676) Improve qmaster shutdown performance for scenarios where the master has more than 128 threads
+
+## v9.0.0
 
 ### Improvement
 
@@ -28,7 +68,7 @@
 
 [CS-653](https://hpc-gridware.atlassian.net/browse/CS-653) a tightly integrated parallel job running in a pe with job\_is\_first\_task = FALSE and with limits set might get killed erroneously
 
-## 9.0.0 RC4
+## v9.0.0 RC4
 
 ### Improvement
 
@@ -80,7 +120,7 @@
 
 [CS-627](https://hpc-gridware.atlassian.net/browse/CS-627) error during start of prolog/epilog/pe_start/pe_stop is interpreted as job error and not as queue error
 
-## 9.0.0 RC3
+## v9.0.0 RC3
 
 ### Improvement
 
@@ -124,7 +164,7 @@
 
 [CS-610](https://hpc-gridware.atlassian.net/browse/CS-610) leak within pthread call during shutdown of scheduler
 
-## 9.0.0 RC2
+## v9.0.0 RC2
 
 ### Improvement
 
@@ -138,7 +178,7 @@
 
 [CS-574](https://hpc-gridware.atlassian.net/browse/CS-574) information about job requests gets lost when restarting sge\_qmaster
 
-## 9.0.0 RC1
+## v9.0.0 RC1
 
 ### Improvement
 
@@ -148,7 +188,7 @@
 
 [CS-568](https://hpc-gridware.atlassian.net/browse/CS-568) make sure that qalter works correctly with the -scope switch
 
-## 9.0.0alpha1
+## v9.0.0alpha1
 
 ### Improvement
 
@@ -605,4 +645,6 @@
 [CS-560](https://hpc-gridware.atlassian.net/browse/CS-560) Core of qstat -j <jid>
 
 [CS-561](https://hpc-gridware.atlassian.net/browse/CS-561) Resource requests cannot be reset to NONE via JSV
+
+[//]: # (Eeach file has to end with two emty lines)
 
