@@ -40,6 +40,7 @@ const char GDI_VERSION[] = "9.0.1beta";
 
 // TODO: Add also an entry to the table further down below when you change this
 //       And change SGE_VERSION in dist/inst_sge
+//       And change the VERSION in the main CMakeLists.txt
 const gdi_ulong32 GRM_GDI_VERSION = 0x10009000;
 
 vdict_t GRM_GDI_VERSION_ARRAY[] = 
