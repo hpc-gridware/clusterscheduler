@@ -38,4 +38,4 @@
 
 void
 process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
-                   sge_pack_buffer *pb, monitoring_t *monitor);
+                   sge_pack_buffer *pb, monitoring_t *monitor, u_long64 gdi_session);

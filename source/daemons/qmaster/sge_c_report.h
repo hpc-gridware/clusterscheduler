@@ -38,4 +38,6 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
-void sge_c_report(char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);
+#include <sge_gdi_packet_type.h>
+
+void sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);

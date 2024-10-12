@@ -37,11 +37,11 @@
 #include "sgeobj/sge_daemonize.h"
 
 bool
-cqueue_list_x_on_subordinate_gdil(const lList *this_list, bool suspend, const lList *gdil, monitoring_t *monitor);
+cqueue_list_x_on_subordinate_gdil(const lList *this_list, bool suspend, const lList *gdil, monitoring_t *monitor, u_long64 gdi_session);
 
 bool
 cqueue_list_x_on_subordinate_so(lList *this_list, lList **answer_list, bool suspend, const lList *resolved_so_list,
-                                monitoring_t *monitor);
+                                monitoring_t *monitor, u_long64 gdi_session);
 
 void
 qinstance_find_suspended_subordinates(const lListElem *this_elem,
@@ -49,7 +49,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem,
                                       lList **resolved_so_list, const lList *master_cqueue_list);
 
 bool
-qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list);
+qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list, u_long64 gdi_session);
 
 bool
 do_slotwise_x_on_subordinate_check(lListElem *queue_instance, bool suspend, bool check_subtree_only, monitoring_t *monitor);

@@ -102,7 +102,7 @@
 *     STATUS_EUNKNOWN - an error occured
 ******************************************************************************/
 int
-ckpt_mod(lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
+ckpt_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
          const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const char *ckpt_name;
 
@@ -213,7 +213,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     0 - success
 *     STATUS_EEXIST - an error occured
 ******************************************************************************/
-int ckpt_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ckpt_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -259,7 +259,7 @@ int ckpt_spool(lList **alpp, lListElem *ep, gdi_object_t *object) {
 *     0 - success
 ******************************************************************************/
 int
-ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ckpt_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -267,7 +267,7 @@ ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
    ckpt_name = lGetString(ep, CK_name);
 
    sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
-                 ckpt_name, nullptr, nullptr, ep);
+                 ckpt_name, nullptr, nullptr, ep, packet->gdi_session);
 
    DRETURN(0);
 }
@@ -298,7 +298,7 @@ ckpt_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppL
 *     STATUS_EUNKNOWN - an error occured
 ******************************************************************************/
 int
-sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_ckpt(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;
    int pos;
    const char *ckpt_name;
@@ -353,7 +353,7 @@ sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost) {
 
    /* remove ckpt file 1st */
    if (!sge_event_spool(alpp, 0, sgeE_CKPT_DEL, 0, 0, ckpt_name, nullptr, nullptr,
-                        nullptr, nullptr, nullptr, true, true)) {
+                        nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, MSG_OBJ_CKPT, ckpt_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EDISK);

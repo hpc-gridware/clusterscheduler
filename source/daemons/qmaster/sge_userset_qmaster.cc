@@ -65,7 +65,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-static void sge_change_queue_version_acl(const char *acl_name);
+static void sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *acl_name);
 
 static lList *do_depts_conflict(lListElem *new_dep, lListElem *old);
 
@@ -81,7 +81,7 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
    deletes an userset list from the global userset_list
  ******************************************************************/
 int
-sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
+sge_del_userset(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
    lListElem *found;
    int pos, ret;
    const char *userset_name;
@@ -125,7 +125,7 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
    lRemoveElem(*userset_list, &found);
 
    sge_event_spool(alpp, 0, sgeE_USERSET_DEL, 0, 0, userset_name, nullptr, nullptr,
-                   nullptr, nullptr, nullptr, true, true);
+                   nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, userset_name, MSG_OBJ_USERSET);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -141,7 +141,7 @@ sge_del_userset(lListElem *ep, lList **alpp, lList **userset_list, char *ruser, 
    of all queues containing this complex;
  **********************************************************************/
 static void
-sge_change_queue_version_acl(const char *acl_name) {
+sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *acl_name) {
    const lListElem *cqueue;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
@@ -165,7 +165,7 @@ sge_change_queue_version_acl(const char *acl_name) {
                     " changed\n", lGetString(qinstance, QU_full_name), acl_name);
             qinstance_increase_qversion(qinstance);
             sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
-                            lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, false);
+                            lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, false, packet->gdi_session);
             answer_list_output(&answer_list);
          }
       }
@@ -598,7 +598,7 @@ static bool userset_still_used(const char *u) {
 *  NOTES
 *     MT-NOTE: userset_update_categories() is not MT safe
 *******************************************************************************/
-void userset_update_categories(const lList *added, const lList *removed) {
+void userset_update_categories(const lList *added, const lList *removed, u_long64 gdi_session) {
    const lListElem *ep;
    const char *u;
    lListElem *acl;
@@ -612,7 +612,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
       acl = lGetElemStrRW(master_userset_list, US_name, u);
       if (acl && !lGetBool(acl, US_consider_with_categories)) {
          lSetBool(acl, US_consider_with_categories, true);
-         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl);
+         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
    }
 
@@ -623,7 +623,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
 
       if (acl && !userset_still_used(u)) {
          lSetBool(acl, US_consider_with_categories, false);
-         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl);
+         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
    }
 
@@ -664,7 +664,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
 *  NOTES
 *     MT-NOTE: userset_mod() is not MT safe, needs global lock 
 *******************************************************************************/
-int userset_mod(lList **alpp, lListElem *new_userset,
+int userset_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_userset,
                 lListElem *userset, int add, const char *ruser,
                 const char *rhost, gdi_object_t *object, int sub_command,
                 monitoring_t *monitor) {
@@ -809,7 +809,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  NOTES
 *     MT-NOTE: userset_spool() is not MT safe 
 *******************************************************************************/
-int userset_spool(lList **alpp, lListElem *userset, gdi_object_t *object) {
+int userset_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -854,7 +854,7 @@ int userset_spool(lList **alpp, lListElem *userset, gdi_object_t *object) {
 *  NOTES
 *     MT-NOTE: userset_success() is not MT safe 
 *******************************************************************************/
-int userset_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int userset_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                     monitoring_t *monitor) {
    const char *userset_name;
    dstring ds = DSTRING_INIT;
@@ -876,11 +876,11 @@ int userset_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lLis
 
    if (old_ep != nullptr) {
       /* change queue versions if userset was modified */
-      sge_change_queue_version_acl(userset_name);
+      sge_change_queue_version_acl(packet, task, userset_name);
    }
 
    sge_add_event(0, old_ep ? sgeE_USERSET_MOD : sgeE_USERSET_ADD, 0, 0,
-                 userset_name, nullptr, nullptr, ep);
+                 userset_name, nullptr, nullptr, ep, packet->gdi_session);
 
    sge_dstring_free(&ds);
    DRETURN(0);

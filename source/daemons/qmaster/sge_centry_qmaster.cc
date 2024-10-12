@@ -61,6 +61,7 @@
 #include "ocs_ReportingFileWriter.h"
 #include "sge_c_gdi.h"
 #include "sge_persistence_qmaster.h"
+#include "sge_centry_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
@@ -68,7 +69,7 @@
 /* ------------------------------------------------------------ */
 
 int
-centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
+centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
@@ -242,7 +243,7 @@ centry_mod(lList **answer_list, lListElem *centry, lListElem *reduced_elem, int 
 /* ------------------------------------------------------------ */
 
 int
-centry_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
+centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -317,14 +318,14 @@ centry_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
 *
 *******************************************************************************/
 int
-centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    bool rebuild_consumables = false;
 
    DENTER(TOP_LAYER);
 
    sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
-                 lGetString(ep, CE_name), nullptr, nullptr, ep);
+                 lGetString(ep, CE_name), nullptr, nullptr, ep, packet->gdi_session);
 
    if (old_ep != nullptr) {
       /* 
@@ -354,7 +355,7 @@ centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **p
 }
 
 int
-sge_del_centry(lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
+sge_del_centry(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -384,7 +385,7 @@ sge_del_centry(lListElem *centry, lList **answer_list, char *remote_user, char *
                                          master_rqs_list)) {
                   if (sge_event_spool(answer_list, 0, sgeE_CENTRY_DEL,
                                       0, 0, name, nullptr, nullptr,
-                                      nullptr, nullptr, nullptr, true, true)) {
+                                      nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
 
                      lRemoveElem(master_centry_list, &tmp_centry);
                      INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, MSG_OBJ_CPLX);
@@ -428,7 +429,7 @@ sge_del_centry(lListElem *centry, lList **answer_list, char *remote_user, char *
 }
 
 static void
-sge_change_queue_version_centry() {
+sge_change_queue_version_centry(u_long64 gdi_version) {
    lListElem *ep;
    const lListElem *cqueue;
    lList *answer_list = nullptr;
@@ -447,13 +448,13 @@ sge_change_queue_version_centry() {
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
                          0, 0, lGetString(qinstance, QU_qname),
                          lGetHost(qinstance, QU_qhostname), nullptr,
-                         qinstance, nullptr, nullptr, true, false);
+                         qinstance, nullptr, nullptr, true, false, gdi_version);
       }
    }
    for_each_rw(ep, master_ehost_list) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, lGetHost(ep, EH_name), nullptr, nullptr,
-                      ep, nullptr, nullptr, true, false);
+                      ep, nullptr, nullptr, true, false, gdi_version);
    }
    answer_list_output(&answer_list);
 
@@ -487,7 +488,7 @@ sge_change_queue_version_centry() {
 *     affected queues instead of all), but also reduce the number of scheduling 
 *     decisions trashed due to a changed queue version number.
 *******************************************************************************/
-void centry_redebit_consumables(const lList *centries) {
+void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
    const lListElem *cqueue = nullptr;
    lListElem *hep = nullptr;
    lListElem *jep = nullptr;
@@ -553,7 +554,7 @@ void centry_redebit_consumables(const lList *centries) {
       }
    }
 
-   sge_change_queue_version_centry();
+   sge_change_queue_version_centry(gdi_version);
 
    /* changing complex attributes can change consumables.
     * dump queue and host consumables to reporting file.

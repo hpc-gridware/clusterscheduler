@@ -179,7 +179,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * unknown state and append the jobids/taskids into
     * a sublist of the exechost object
     */
-   reschedule_jobs(hep, 0, &answer_list, monitor, false);
+   reschedule_jobs(hep, 0, &answer_list, monitor, false, GDI_SESSION_NONE);
    lFreeList(&answer_list);
 
    Error:
@@ -214,7 +214,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
 *******************************************************************************/
 int
 reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
-                bool is_manual) {
+                bool is_manual, u_long64 gdi_session) {
    lListElem *jep;               /* JB_Type */
    int ret = 1;
 
@@ -231,7 +231,7 @@ reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *mon
        * append the jobids/taskids into a sublist of the exechost object
        */
       for_each_rw(jep, *(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
-         reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual);
+         reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual, gdi_session);
       }
       ret = 0;
    }
@@ -280,7 +280,7 @@ reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *mon
 *     int - 0 on success
 *******************************************************************************/
 int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
-                   u_long32 force, lList **answer, monitoring_t *monitor, bool is_manual) {
+                   u_long32 force, lList **answer, monitoring_t *monitor, bool is_manual, u_long64 gdi_session) {
    lListElem *qep;               /* QU_Type */
    lListElem *hep;               /* EH_Type */
    lListElem *this_jatep;        /* JAT_Type */
@@ -405,7 +405,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          if (mconf_get_enable_reschedule_kill()) {
             INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
-                           COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+                           COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
             continue;
          } else {
             INFO(MSG_RU_NOT_RESTARTABLE_SS, mail_type, mail_ids);
@@ -480,7 +480,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             if (mconf_get_enable_reschedule_kill()) {
                INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
                sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
-                              COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+                              COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
                continue;
 
             } else {
@@ -509,7 +509,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       }
 
       if (!found) {
-         add_to_reschedule_unknown_list(host, job_number, task_number, 0);
+         add_to_reschedule_unknown_list(host, job_number, task_number, 0, gdi_session);
          ret = 0;
       }
 
@@ -570,7 +570,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          lSetUlong(pseudo_jr, JR_failed, SSTATE_AGAIN);
          lSetString(pseudo_jr, JR_err_str, (char *) MSG_RU_JR_ERRSTR);
          lSetString(pseudo_jr, JR_queue_name, lGetString(first_granted_queue, JG_qname));
-         sge_job_exit(pseudo_jr, jep, this_jatep, monitor);
+         sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
          lFreeElem(&pseudo_jr);
       }
    }
@@ -608,7 +608,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 *                  (RU_Type)
 *******************************************************************************/
 lListElem *
-add_to_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number, u_long32 state) {
+add_to_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number, u_long32 state, u_long64 gdi_session) {
    lListElem *ruep = nullptr;
    DENTER(TOP_LAYER);
 
@@ -623,7 +623,7 @@ add_to_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 ta
       {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                         0, 0, lGetHost(host, EH_name), nullptr, nullptr, host, nullptr, nullptr, true, true);
+                         0, 0, lGetHost(host, EH_name), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -682,7 +682,7 @@ get_from_reschedule_unknown_list(const lListElem *host, u_long32 job_number, u_l
 *     lListElem *host - host (EH_Type) 
 *******************************************************************************/
 void
-delete_from_reschedule_unknown_list(lListElem *host) {
+delete_from_reschedule_unknown_list(lListElem *host, u_long64 gdi_session) {
    lList *rulp;
    bool changed = false;
    DENTER(TOP_LAYER);
@@ -711,7 +711,7 @@ delete_from_reschedule_unknown_list(lListElem *host) {
 
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                          0, 0, lGetHost(host, EH_name), nullptr, nullptr,
-                         host, nullptr, nullptr, true, true);
+                         host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -735,7 +735,7 @@ delete_from_reschedule_unknown_list(lListElem *host) {
 *     lListElem *host - host (EH_Type)
 *******************************************************************************/
 void
-update_reschedule_unknown_list(lListElem *host) {
+update_reschedule_unknown_list(lListElem *host, u_long64 gdi_session) {
    lListElem *ruep;
 
    DENTER(TOP_LAYER);
@@ -756,7 +756,7 @@ update_reschedule_unknown_list(lListElem *host) {
       if (changed) {
          lList *answer_list = nullptr;
          sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(host, EH_name), nullptr, nullptr,
-                         host, nullptr, nullptr, true, true);
+                         host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -1085,7 +1085,7 @@ reschedule_add_additional_time(u_long64 time) {
 }
 
 void
-remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number) {
+remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 task_number, u_long64 gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
       lList *unknown_list = lGetListRW(host, EH_reschedule_unknown_list);
@@ -1102,7 +1102,7 @@ remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long
          lRemoveElem(unknown_list, &elem);
          sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD,
                          0, 0, lGetHost(host, EH_name), nullptr, nullptr,
-                         host, nullptr, nullptr, true, true);
+                         host, nullptr, nullptr, true, true, gdi_session);
       }
    }
 
@@ -1110,13 +1110,13 @@ remove_from_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long
 }
 
 void
-remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number) {
+remove_from_reschedule_unknown_lists(u_long32 job_number, u_long32 task_number, u_long64 gdi_session) {
    lListElem *host;
 
    DENTER(TOP_LAYER);
 
    for_each_rw(host, *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)) {
-      remove_from_reschedule_unknown_list(host, job_number, task_number);
+      remove_from_reschedule_unknown_list(host, job_number, task_number, gdi_session);
    }
 
    DRETURN_VOID;

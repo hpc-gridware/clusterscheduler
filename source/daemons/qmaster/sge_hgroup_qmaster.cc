@@ -66,7 +66,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                     lList **rem_hosts, lList **occupant_groups);
 
 static void
-hgroup_commit(lListElem *hgroup);
+hgroup_commit(lListElem *hgroup, u_long64 gdi_session);
 
 static void
 hgroup_rollback(lListElem *this_elem);
@@ -185,7 +185,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 }
 
 static void
-hgroup_commit(lListElem *hgroup) {
+hgroup_commit(lListElem *hgroup, u_long64 gdi_session) {
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *cqueue_list = lGetListRW(hgroup, HGRP_cqueue_list);
    lListElem *next_cqueue = nullptr;
@@ -198,7 +198,7 @@ hgroup_commit(lListElem *hgroup) {
       lListElem *org_queue = lGetElemStrRW(master_cqueue_list, CQ_name, name);
 
       next_cqueue = lNextRW(cqueue);
-      cqueue_commit(cqueue);
+      cqueue_commit(cqueue, gdi_session);
       lDechainElem(cqueue_list, cqueue);
       lRemoveElem(master_cqueue_list, &org_queue);
       lAppendElem(master_cqueue_list, cqueue);
@@ -215,7 +215,7 @@ hgroup_rollback(lListElem *this_elem) {
 }
 
 int
-hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
+hgroup_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
@@ -356,12 +356,9 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
                   if (ret) {
                      bool refresh_all_values = ((add_hosts != nullptr) || (rem_hosts != nullptr)) ? true : false;
 
-                     ret &= cqueue_handle_qinstances(new_cqueue, answer_list,
-                                                     reduced_elem,
-                                                     real_add_hosts,
-                                                     real_rem_hosts,
-                                                     refresh_all_values, monitor, master_hgroup_list,
-                                                     master_cqueue_list);
+                     ret &= cqueue_handle_qinstances(packet, task, new_cqueue, answer_list, reduced_elem,
+                                                     real_add_hosts, real_rem_hosts, refresh_all_values, monitor,
+                                                     master_hgroup_list, master_cqueue_list);
                   }
 
                   /*
@@ -399,7 +396,7 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
           * to create all not existing EH_Type elements.
           */
          if (ret) {
-            ret &= host_list_add_missing_href(master_ehost_list, answer_list, add_hosts, monitor);
+            ret &= host_list_add_missing_href(packet, task, master_ehost_list, answer_list, add_hosts, monitor);
          }
 
          lFreeList(&add_hosts);
@@ -416,7 +413,7 @@ hgroup_mod(lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int 
 }
 
 int
-hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+hgroup_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    int ret = true;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -475,7 +472,7 @@ hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
              */
             if (ret) {
                if (sge_event_spool(answer_list, 0, sgeE_HGROUP_DEL,
-                                   0, 0, name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true)) {
+                                   0, 0, name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
                   /*
                    * Let's remove the object => Success!
                    */
@@ -514,7 +511,7 @@ hgroup_del(lListElem *this_elem, lList **answer_list, char *remote_user, char *r
 }
 
 int
-hgroup_success(lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+hgroup_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *name = lGetHost(hgroup, HGRP_name);
    lList *cqueue_list = nullptr;
 
@@ -525,22 +522,21 @@ hgroup_success(lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, l
    /*
     * HGRP modify or add event
     */
-   sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0,
-                 name, nullptr, nullptr, hgroup);
+   sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup, packet->gdi_session);
 
    lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
 
    /*
     * QI add or delete events. Finalize operation.
     */
-   hgroup_commit(hgroup);
+   hgroup_commit(hgroup, packet->gdi_session);
 
    DRETURN(0);
 }
 
 
 int
-hgroup_spool(lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
+hgroup_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    bool tmp_ret = true;
    bool dbret;
    const char *name = lGetHost(this_elem, HGRP_name);

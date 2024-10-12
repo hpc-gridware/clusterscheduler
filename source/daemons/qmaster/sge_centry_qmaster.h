@@ -38,18 +38,18 @@
 #include "sgeobj/sge_daemonize.h"
 
 int 
-sge_del_centry(lListElem *cxp, lList **alpp, char *ruser, char *rhost);
+sge_del_centry(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
 
 int 
-centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 int 
-centry_spool(lList **alpp, lListElem *cep, gdi_object_t *object);
+centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object);
 
 int 
-centry_mod(lList **alpp, lListElem *new_complex, lListElem *ep, int add,
+centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_complex, lListElem *ep, int add,
            const char *ruser, const char *rhost, gdi_object_t *object, 
            int sub_command, monitoring_t *monitor);
 
 void
-centry_redebit_consumables(const lList *centries);
+centry_redebit_consumables(const lList *centries, u_long64 gdi_version);

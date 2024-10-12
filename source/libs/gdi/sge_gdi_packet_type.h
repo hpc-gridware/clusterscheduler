@@ -132,6 +132,7 @@ struct _sge_gdi_packet_class_t {
    char commproc[CL_MAXHOSTNAMELEN_LENGTH];
    u_short commproc_id;
    u_long32 response_id;
+   u_long64 gdi_session;
 
    /*
     * GDI version of this structure

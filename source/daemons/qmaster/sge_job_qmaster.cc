@@ -274,7 +274,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
 
    if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
-                        *jep, nullptr, nullptr, true, true)) {
+                        *jep, nullptr, nullptr, true, true, packet->gdi_session)) {
       spool_transaction(alpp, spool_get_default_context(), STC_rollback);
       ERROR(MSG_JOB_NOWRITE_U, sge_u32c(lGetUlong(*jep, JB_job_number)));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
@@ -356,7 +356,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
  * @param[in] monitor for monitoring qmaster threads
  */
 int
-sge_gdi_del_job(const sge_gdi_packet_class_t *packet, lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
+sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,  lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
    int all_users_flag;
    int jid_flag;
@@ -524,7 +524,7 @@ sge_gdi_del_job(const sge_gdi_packet_class_t *packet, lListElem *idep, lList **a
 
    if (forced) {
       /* remove all orphaned queue intances, which are empty. */
-      cqueue_list_del_all_orphaned(master_cqueue_list, alpp, nullptr, nullptr);
+      cqueue_list_del_all_orphaned(master_cqueue_list, alpp, nullptr, nullptr, packet->gdi_session);
    }
 
    DRETURN(STATUS_OK);
@@ -994,7 +994,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
                                 lList **answer_list,
                                 const char *ruser,
                                 int force,
-                                monitoring_t *monitor) {
+                                monitoring_t *monitor, u_long64 gdi_session) {
    u_long32 job_number, task_number;
    lListElem *qep = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -1011,7 +1011,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    if (sge_signal_queue(SGE_SIGKILL, qep, j, t, monitor)) {
       if (force) {
          /* 3: JOB_FINISH reports aborted */
-         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
          cancel_job_resend(job_number, task_number);
          j = nullptr;
 
@@ -1041,7 +1041,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, j, t, false);
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
-         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
          cancel_job_resend(job_number, task_number);
          lFreeElem(&dummy_jr);
          j = nullptr;
@@ -1119,7 +1119,7 @@ enum {
 };
 
 int
-sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, lListElem *jep, lList **alpp, int sub_command) {
+sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command) {
    lListElem *nxt, *jobep = nullptr;   /* pointer to old job */
    int job_id_pos;
    int user_list_pos;
@@ -1303,13 +1303,13 @@ sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, lListElem *jep, lList **al
          lAddList(*alpp, &tmp_alp);
 
          if (trigger & MOD_EVENT) {
-            sge_add_job_event(sgeE_JOB_MOD, new_job, nullptr);
+            sge_add_job_event(sgeE_JOB_MOD, new_job, nullptr, packet->gdi_session);
             for_each_rw(jatep, lGetList(new_job, JB_ja_tasks)) {
-               sge_add_jatask_event(sgeE_JATASK_MOD, new_job, jatep);
+               sge_add_jatask_event(sgeE_JATASK_MOD, new_job, jatep, packet->gdi_session);
             }
          }
          if (trigger & PRIO_EVENT) {
-            sge_add_job_event(sgeE_JOB_MOD_SCHED_PRIORITY, new_job, nullptr);
+            sge_add_job_event(sgeE_JOB_MOD_SCHED_PRIORITY, new_job, nullptr, packet->gdi_session);
          }
 
          /* remove all existing trigger links - 
@@ -1388,19 +1388,19 @@ sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, lListElem *jep, lList **al
    DRETURN(STATUS_OK);
 }
 
-void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask) {
+void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask, u_long64 gdi_request) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, lGetUlong(jep, JB_job_number),
                  jatask ? lGetUlong(jatask, JAT_task_number) : 0,
-                 nullptr, nullptr, lGetString(jep, JB_session), jep);
+                 nullptr, nullptr, lGetString(jep, JB_session), jep, gdi_request);
    DRETURN_VOID;
 }
 
-void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask) {
+void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask, u_long64 gdi_request) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, lGetUlong(jep, JB_job_number),
                  lGetUlong(jatask, JAT_task_number),
-                 nullptr, nullptr, lGetString(jep, JB_session), jatask);
+                 nullptr, nullptr, lGetString(jep, JB_session), jatask, gdi_request);
    DRETURN_VOID;
 }
 
@@ -2446,7 +2446,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       lXchgList(new_job, JB_ja_ad_request_list, &req_list);
       lXchgList(new_job, JB_ja_ad_predecessor_list, &pred_list);
 
-      if (job_verify_predecessors_ad(new_job, alpp)) {
+      if (job_verify_predecessors_ad(new_job, alpp, packet->gdi_session)) {
          lXchgList(new_job, JB_ja_ad_request_list, &req_list);
          lXchgList(new_job, JB_ja_ad_predecessor_list, &pred_list);
          lFreeList(&req_list);
@@ -2890,7 +2890,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
 *  RESULT
 *     int - returns != 0 if there is a problem with predecessors
 ******************************************************************************/
-int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
+int job_verify_predecessors_ad(lListElem *job, lList **alpp, u_long64 gdi_session) {
    u_long32 jobid = lGetUlong(job, JB_job_number);
    const lList *predecessors_req = nullptr;
    lList *predecessors_id = nullptr;
@@ -2976,7 +2976,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
       lFreeList(&predecessors_id);
       lSetList(job, JB_ja_ad_predecessor_list, predecessors_id);
       /* flush task dependency state for empty predecessors list */
-      sge_task_depend_flush(job, alpp);
+      sge_task_depend_flush(job, alpp, gdi_session);
       DRETURN(0);
    }
 
@@ -3007,7 +3007,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp) {
    lSetList(job, JB_ja_ad_predecessor_list, predecessors_id);
 
    /* recalculate dependence information for each task of this job */
-   sge_task_depend_init(job, alpp);
+   sge_task_depend_init(job, alpp, gdi_session);
 
    DRETURN(0);
 }
@@ -3711,7 +3711,7 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
          lListElem *tmp_task = job_get_ja_task_template_pending(job, task_number);
 
          sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
-                        COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor);
+                        COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
 
          INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_JOB, sge_u32c(job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3735,7 +3735,7 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
                                      packet->user, packet->host, nullptr, job, tmp_task,
                                      nullptr, MSG_LOG_DELETED);
             sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
-                           COMMIT_NO_SPOOLING | COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor);
+                           COMMIT_NO_SPOOLING | COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
             deleted_unenrolled_tasks = 1;
             showmessage = 1;
             if (!*alltasks && showmessage) {
@@ -3865,10 +3865,10 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);
-                  get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor);
+                  get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor, packet->gdi_session);
                } else {
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
-                                 monitor);
+                                 monitor, packet->gdi_session);
                   showmessage = 1;
                   if (!*alltasks && showmessage) {
                      range_list_insert_id(&range_list, nullptr, task_number);

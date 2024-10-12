@@ -36,7 +36,7 @@
 #include "sgeobj/sge_event.h"
 
 void
-qinstance_add_event(lListElem *this_elem, ev_event type);
+qinstance_add_event(lListElem *this_elem, ev_event type, u_long64 gdi_session);
 
 void
-cqueue_add_event(lListElem *this_elem, ev_event type);
+cqueue_add_event(lListElem *this_elem, ev_event type, u_long64 gdi_session);

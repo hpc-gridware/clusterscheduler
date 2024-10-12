@@ -104,38 +104,38 @@
 
 static void
 sge_clear_granted_resources(lListElem *jep, lListElem *ja_task, int incslots,
-                            monitoring_t *monitor);
+                            monitoring_t *monitor, u_long64 gdi_session);
 
 static void
 reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name);
 
 static void
-release_successor_jobs(const lListElem *jep);
+release_successor_jobs(const lListElem *jep, u_long64 gdi_session);
 
 static void
-release_successor_jobs_ad(const lListElem *jep);
+release_successor_jobs_ad(const lListElem *jep, u_long64 gdi_session);
 
 static void
-release_successor_tasks_ad(lListElem *jep, u_long32 task_id);
+release_successor_tasks_ad(lListElem *jep, u_long32 task_id, u_long64 gdi_session);
 
 static int
-send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor);
+send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long64 gdi_session);
 
 
 static int
-send_slave_jobs_wc(lListElem *tmpjep, monitoring_t *monitor);
+send_slave_jobs_wc(lListElem *tmpjep, monitoring_t *monitor, u_long64 gdi_session);
 
 static int
-send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master);
+send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master, u_long64 gdi_session);
 
 static int
-sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events);
+sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events, u_long64 gdi_session);
 
 static int
 sge_to_zombies(lListElem *jep, lListElem *ja_task);
 
 static void
-sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis);
+sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis, u_long64 gdi_session);
 
 static int
 setCheckpointObj(lListElem *job);
@@ -191,7 +191,7 @@ static int queue_field[] = {QU_qhostname,
  ************************************************************************/
 /* pe = is nullptr for serial jobs*/
 int
-sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor) {
+sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor, u_long64 gdi_session) {
    const char *rhost;
    int ret = 0;
    int sent_slaves = 0;
@@ -201,7 +201,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
    rhost = lGetHost(master_qep, QU_qhostname);
    DPRINTF("execd host: %s\n", rhost);
 
-   switch (send_slave_jobs(jep, jatep, monitor)) {
+   switch (send_slave_jobs(jep, jatep, monitor, gdi_session)) {
       case -1 :
          ret = -1;
       case 0 :
@@ -218,7 +218,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
    if (!sent_slaves) {
       /* wait till all slaves are acked */
       lSetUlong(jatep, JAT_next_pe_task_id, 1);
-      ret = send_job(rhost, jep, jatep, hep, 1);
+      ret = send_job(rhost, jep, jatep, hep, 1, gdi_session);
       MONITOR_MESSAGES_OUT(monitor);
    }
 
@@ -253,7 +253,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
 *     ???/???
 *******************************************************************************/
 static int
-send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
+send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long64 gdi_session) {
    lListElem *tmpjep, *qep, *tmpjatep;
    lListElem *gdil_ep;
    int ret = 0;
@@ -342,7 +342,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
    lFreeWhat(&what);
    sge_free(&rdp);
 
-   ret = send_slave_jobs_wc(tmpjep, monitor);
+   ret = send_slave_jobs_wc(tmpjep, monitor, gdi_session);
 
    lFreeElem(&tmpjep);
 
@@ -375,7 +375,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
 *
 *******************************************************************************/
 static int
-send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
+send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) {
    lList *saved_gdil = nullptr;
    lList *gdil;
    lListElem *gdil_ep = nullptr;
@@ -418,7 +418,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= sge_get_gmt64()) {
 
             ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], hostname, sge_u32c( lGetUlong(jep, JB_job_number)));
-            sge_mark_unheard(hep);
+            sge_mark_unheard(hep, gdi_session);
             ret = -1;
             break;
          }
@@ -462,7 +462,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
          /* we failed sending the job to the execd */
          ERROR(MSG_COM_SENDJOBTOHOST_US, sge_u32c(lGetUlong(jep, JB_job_number)), hostname);
          ERROR("commlib error: %s\n", cl_get_error_text(failed));
-         sge_mark_unheard(hep);
+         sge_mark_unheard(hep, gdi_session);
          ret = -1;
          break;
       } else {
@@ -476,7 +476,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor) {
 }
 
 static int
-send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master) {
+send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master, u_long64 gdi_session) {
    int failed;
    sge_pack_buffer pb;
    lListElem *tmpjep, *qep, *tmpjatep = nullptr;
@@ -498,7 +498,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       u_long64 now = sge_get_gmt64();
       if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= now) {
          ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost, sge_u32c( lGetUlong(jep, JB_job_number)));
-         sge_mark_unheard(hep);
+         sge_mark_unheard(hep, gdi_session);
          DRETURN(-1);
       }
    }
@@ -632,7 +632,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       /* we failed sending the job to the execd */
       ERROR(MSG_COM_SENDJOBTOHOST_US, sge_u32c(lGetUlong(jep, JB_job_number)), rhost);
       ERROR("commlib error: %s\n", cl_get_error_text(failed));
-      sge_mark_unheard(hep);
+      sge_mark_unheard(hep, gdi_session);
       DRETURN(-1);
    } else {
       DPRINTF("successfully sent %sjob " sge_u32 " to host \"%s\"\n", master ? "" : "SLAVE ",
@@ -644,7 +644,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
 
 static void
 sge_job_resend_event_handler_sim_job_end(u_long32 jobid, u_long32 jataskid, lListElem *jep, lListElem *jatep,
-                                         monitoring_t *monitor, u_long64 now, int runtime, bool deleted) {
+                                         monitoring_t *monitor, u_long64 now, int runtime, bool deleted, u_long64 gdi_session) {
    lListElem *ue, *jr = lCreateElem(JR_Type);
    lSetUlong(jr, JR_job_number, jobid);
    lSetUlong(jr, JR_ja_task_number, jataskid);
@@ -679,7 +679,7 @@ sge_job_resend_event_handler_sim_job_end(u_long32 jobid, u_long32 jataskid, lLis
 
       lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_scaled_usage_list));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
-      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
+      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
    lFreeElem(&jr);
 }
@@ -735,15 +735,15 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
          // delete other timers for this job/jatask
          te_delete_one_time_event(TYPE_JOB_RESEND_EVENT, jobid, jataskid, nullptr);
          // create usage
-         sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, true);
+         sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, true, GDI_SESSION_NONE);
       } else {
          if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
             // transition transferring to running state and set a timer for job end
-            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor);
+            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor, GDI_SESSION_NONE);
             trigger_job_resend(now, hep, jobid, jataskid, runtime);
          } else { /* must be JRUNNING */
             // job end, create usage
-            sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, false);
+            sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, false, GDI_SESSION_NONE);
          }
       }
 
@@ -791,7 +791,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       }
 
       /* send job to execd */
-      sge_give_job(jep, jatep, mqep, hep, monitor);
+      sge_give_job(jep, jatep, mqep, hep, monitor, GDI_SESSION_NONE);
 
       /* reset timer */
       lSetUlong64(jatep, JAT_start_time, now);
@@ -907,7 +907,7 @@ sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 *******************************************************************************/
 void
 sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
-               int commit_flags, monitoring_t *monitor) {
+               int commit_flags, monitoring_t *monitor, u_long64 gdi_session) {
    lListElem *petask, *tmp_ja_task;
    lListElem *global_host_ep;
    lUlong jobid, jataskid;
@@ -1011,7 +1011,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                          nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                                "global", nullptr, nullptr, global_host_ep);
+                                "global", nullptr, nullptr, global_host_ep, gdi_session);
                   ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, jep, now);
                   answer_list_output(&answer_list);
                }
@@ -1020,7 +1020,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                          do_per_host_booking, nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
-                                queue_hostname, nullptr, nullptr, host);
+                                queue_hostname, nullptr, nullptr, host, gdi_session);
                   ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, jep, now);
                   answer_list_output(&answer_list);
                }
@@ -1029,7 +1029,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, jep, now);
                answer_list_output(&answer_list);
                /* this info is not spooled */
-               qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
+               qinstance_add_event(queue, sgeE_QINSTANCE_MOD, gdi_session);
 
                if (ar_id == 0) {
                   /* debit resource quota set */
@@ -1037,7 +1037,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                      if (rqs_debit_consumable(rqs, jep, gdil_ep, pe, master_centry_list,
                                               master_userset_list, master_hgroup_list, tmp_slot, master_task, do_per_host_booking) > 0) {
                         /* this info is not spooled */
-                        sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs);
+                        sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs, gdi_session);
                      }
                   }
                } else {
@@ -1048,7 +1048,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                      dstring buffer = DSTRING_INIT;
                      /* this info is not spooled */
                      sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
-                     sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
+                     sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
                      sge_dstring_free(&buffer);
                   }
                }
@@ -1066,7 +1066,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          lSetUlong64(jatep, JAT_start_time, now);
          job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
-                         jep, jatep, nullptr, true, true);
+                         jep, jatep, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
          break;
       }
@@ -1106,7 +1106,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                      if (!is_master) {
                         lListElem *host = host_list_locate(master_exechost_list, lGetHost(granted_queue, JG_qhostname));
 
-                        add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_HANDLE_JR_WAIT);
+                        add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_HANDLE_JR_WAIT, gdi_session);
 
                         DPRINTF("RU: sge_commit_job: granted_queue %s job " sge_u32"." sge_u32"\n",
                                 lGetString(granted_queue, JG_qname), jobid, jataskid,
@@ -1120,7 +1120,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                const lListElem *granted_queue = lFirst(granted_list);
                lListElem *host = host_list_locate(master_exechost_list, lGetHost(granted_queue, JG_qhostname));
 
-               add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_SKIP_JR);
+               add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_SKIP_JR, gdi_session);
             }
          }
 
@@ -1162,7 +1162,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                 (is_array_job && !mconf_get_old_reschedule_behavior_array_job())) {
                lSetUlong64(jep, JB_submission_time, now);
                sge_event_spool(&answer_list, now, sgeE_JOB_MOD, jobid, jataskid,
-                               nullptr, nullptr, session, jep, jatep, nullptr, true, true);
+                               nullptr, nullptr, session, jep, jatep, nullptr, true, true, gdi_session);
             }
          }
 
@@ -1182,10 +1182,10 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                /* the usage container is not spooled */
                if (existing_container == nullptr) {
                   sge_add_event(now, sgeE_PETASK_ADD, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
-                                nullptr, session, container);
+                                nullptr, session, container, gdi_session);
                } else {
                   sge_add_list_event(now, sgeE_JOB_USAGE, jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER,
-                                     nullptr, session, lGetListRW(container, PET_scaled_usage));
+                                     nullptr, session, lGetListRW(container, PET_scaled_usage), gdi_session);
                }
 
                next = lFirstRW(pe_task_list);
@@ -1198,11 +1198,11 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             }
          }
 
-         sge_clear_granted_resources(jep, jatep, 1, monitor);
+         sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          ja_task_clear_finished_pe_tasks(jatep);
          job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
-                         jep, jatep, nullptr, true, true);
+                         jep, jatep, nullptr, true, true, gdi_session);
 
          answer_list_output(&answer_list);
          break;
@@ -1210,49 +1210,49 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
       case COMMIT_ST_FINISHED_FAILED:
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname, jr, jep,
                                   jatep, nullptr, MSG_LOG_EXITED);
-         remove_from_reschedule_unknown_lists(jobid, jataskid);
+         remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
          if (handle_zombies) {
             sge_to_zombies(jep, jatep);
          }
          if (!unenrolled_task) {
-            sge_clear_granted_resources(jep, jatep, 1, monitor);
+            sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          }
-         sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr);
-         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events);
+         sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
+         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
          break;
       case COMMIT_ST_FINISHED_FAILED_EE:
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
                                   jr, jep, jatep, nullptr, MSG_LOG_WAIT4SGEDEL);
-         remove_from_reschedule_unknown_lists(jobid, jataskid);
+         remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
 
          lSetUlong(jatep, JAT_status, JFINISHED);
 
-         sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr);
+         sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
 
          /* possibly release successor tasks if there are any array dependencies on this task */
          if (jataskid) {
-            release_successor_tasks_ad(jep, jataskid);
+            release_successor_tasks_ad(jep, jataskid, gdi_session);
          }
          if (handle_zombies) {
             sge_to_zombies(jep, jatep);
          }
-         sge_clear_granted_resources(jep, jatep, 1, monitor);
+         sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          job_enroll(jep, nullptr, jataskid);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
             sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid,
                                jataskid,
                                lGetString(petask, PET_id),
                                nullptr, session,
-                               lGetListRW(petask, PET_scaled_usage));
+                               lGetListRW(petask, PET_scaled_usage), gdi_session);
          }
 
          sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
-                            nullptr, nullptr, session, lGetListRW(jatep, JAT_scaled_usage_list));
+                            nullptr, nullptr, session, lGetListRW(jatep, JAT_scaled_usage_list), gdi_session);
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
 
          sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr,
-                         session, jep, jatep, nullptr, false, true);
+                         session, jep, jatep, nullptr, false, true, gdi_session);
 
          if (job_get_not_enrolled_ja_tasks(jep)) {
             no_unlink = 1;
@@ -1267,8 +1267,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          }
 
          if (!no_unlink) {
-            release_successor_jobs(jep);
-            release_successor_jobs_ad(jep);
+            release_successor_jobs(jep, gdi_session);
+            release_successor_jobs_ad(jep, gdi_session);
             if ((lGetString(jep, JB_exec_file) != nullptr) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
                spool_delete_script(&answer_list, jobid, jep);
             }
@@ -1283,9 +1283,9 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                   (mode == COMMIT_ST_DEBITED_EE) ? MSG_LOG_DELSGE : MSG_LOG_DELIMMEDIATE);
 
          if (mode == COMMIT_ST_NO_RESOURCES) {
-            sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr);
+            sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
          }
-         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events);
+         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
          break;
 
       case COMMIT_ST_DELIVERY_FAILED:
@@ -1295,10 +1295,10 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                   SGE_EVENT);
          lSetUlong(jatep, JAT_status, JIDLE);
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
-         sge_clear_granted_resources(jep, jatep, 0, monitor);
+         sge_clear_granted_resources(jep, jatep, 0, monitor, gdi_session);
          job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
-                         nullptr, nullptr, session, jep, jatep, nullptr, true, false);
+                         nullptr, nullptr, session, jep, jatep, nullptr, true, false, gdi_session);
          answer_list_output(&answer_list);
          break;
    }
@@ -1323,7 +1323,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
  * char *failed_reason
  */
 static void
-sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis) {
+sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis, u_long64 gdi_session) {
    bool release_jr = false;
 
    DENTER(TOP_LAYER);
@@ -1360,7 +1360,7 @@ sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit
 
    sge_add_event(0, sgeE_JOB_FINISH, lGetUlong(jep, JB_job_number),
                  lGetUlong(jatep, JAT_task_number), nullptr, nullptr,
-                 lGetString(jep, JB_session), jr);
+                 lGetString(jep, JB_session), jr, gdi_session);
 
    if (release_jr) {
       lFreeElem(&jr);
@@ -1372,7 +1372,7 @@ sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit
 }
 
 static void
-release_successor_jobs(const lListElem *jep) {
+release_successor_jobs(const lListElem *jep, u_long64 gdi_session) {
    const lListElem *jid;
    lListElem *suc_jep;
    u_long32 job_ident;
@@ -1398,7 +1398,7 @@ release_successor_jobs(const lListElem *jep) {
                DPRINTF("job " sge_u32"'s job exit triggers start of job " sge_u32"\n",
                        lGetUlong(jep, JB_job_number), lGetUlong(suc_jep, JB_job_number));
             }
-            sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr);
+            sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr, gdi_session);
          }
       }
    }
@@ -1407,7 +1407,7 @@ release_successor_jobs(const lListElem *jep) {
 }
 
 static void
-release_successor_jobs_ad(const lListElem *jep) {
+release_successor_jobs_ad(const lListElem *jep, u_long64 gdi_session) {
    const lListElem *jid;
    lListElem *suc_jep;
    u_long32 job_ident;
@@ -1438,8 +1438,8 @@ release_successor_jobs_ad(const lListElem *jep) {
          /* cascade unlink and flush ops into a single job mod event */
          if (Modified) {
             /* flush task dependency state for empty predecessors list */
-            sge_task_depend_flush(suc_jep, nullptr);
-            sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr);
+            sge_task_depend_flush(suc_jep, nullptr, gdi_session);
+            sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr, gdi_session);
          }
       }
    }
@@ -1451,7 +1451,7 @@ release_successor_jobs_ad(const lListElem *jep) {
  Efficiently release array dependencies based on a completed task of job jep
  *****************************************************************************/
 static void
-release_successor_tasks_ad(lListElem *jep, u_long32 task_id) {
+release_successor_tasks_ad(lListElem *jep, u_long32 task_id, u_long64 gdi_session) {
    const lListElem *jid;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
@@ -1481,13 +1481,13 @@ release_successor_tasks_ad(lListElem *jep, u_long32 task_id) {
       /* recalculate task dependency info for this range of tasks */
       for (; bmin <= bmax; bmin += sb) {
          /* returns true if suc_jep was modified */
-         if (sge_task_depend_update(suc_jep, nullptr, bmin))
+         if (sge_task_depend_update(suc_jep, nullptr, bmin, gdi_session))
             Modified = 1;
       }
 
       /* for immediate scheduler reaction event emitting code is required */
       if (Modified)
-         sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr);
+         sge_add_job_event(sgeE_JOB_MOD, suc_jep, nullptr, gdi_session);
 
       /* cleanup */
       lFreeElem(&suc_range);
@@ -1506,7 +1506,7 @@ release_successor_tasks_ad(lListElem *jep, u_long32 task_id) {
  **** if it is 0, QU_job_slots_used is untouched.
  ****/
 static void
-sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, monitoring_t *monitor) {
+sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, monitoring_t *monitor, u_long64 gdi_session) {
    int pe_slots = 0;
    u_long32 job_id = lGetUlong(job, JB_job_number);
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -1534,7 +1534,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    u_long64 now = sge_get_gmt64();
 
    /* unsuspend queues on subordinate */
-   cqueue_list_x_on_subordinate_gdil(master_cqueue_list, false, gdi_list, monitor);
+   cqueue_list_x_on_subordinate_gdil(master_cqueue_list, false, gdi_list, monitor, gdi_session);
 
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
@@ -1570,7 +1570,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             if (debit_host_consumable(job, ja_task, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
                                       do_per_host_booking, nullptr) > 0) {
                /* this info is not spooled */
-               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep);
+               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, job, now);
                answer_list_output(&answer_list);
             }
@@ -1578,7 +1578,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
             if (debit_host_consumable(job, ja_task, pe, host, master_centry_list, -tmp_slot, master_task,
                                       do_per_host_booking, nullptr) > 0) {
                /* this info is not spooled */
-               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, queue_hostname, nullptr, nullptr, host);
+               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, queue_hostname, nullptr, nullptr, host, gdi_session);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, host, job, now);
                answer_list_output(&answer_list);
             }
@@ -1586,7 +1586,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                                        do_per_host_booking, nullptr);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, queue, job, now);
             /* this info is not spooled */
-            qinstance_add_event(queue, sgeE_QINSTANCE_MOD);
+            qinstance_add_event(queue, sgeE_QINSTANCE_MOD, gdi_session);
 
             if (ar_id == 0) {
                /* undebit resource quota set */
@@ -1597,7 +1597,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                                            -tmp_slot, master_task, do_per_host_booking) > 0) {
                      /* this info is not spooled */
                      sge_add_event(0, sgeE_RQS_MOD, 0, 0,
-                                   lGetString(rqs, RQS_name), nullptr, nullptr, rqs);
+                                   lGetString(rqs, RQS_name), nullptr, nullptr, rqs, gdi_session);
                   }
                }
             } else {
@@ -1608,7 +1608,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                   dstring buffer = DSTRING_INIT;
                   /* this info is not spooled */
                   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
-                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar);
+                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
                   sge_dstring_free(&buffer);
                }
             }
@@ -1626,7 +1626,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
          if (incslots) {
             pe_debit_slots(master_pe, -pe_slots, job_id);
             /* this info is not spooled */
-            sge_add_event(0, sgeE_PE_MOD, 0, 0, pe_name, nullptr, nullptr, master_pe);
+            sge_add_event(0, sgeE_PE_MOD, 0, 0, pe_name, nullptr, nullptr, master_pe, gdi_session);
          }
       }
       lSetString(ja_task, JAT_granted_pe, nullptr);
@@ -1682,7 +1682,7 @@ reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *j
 /* unlink/rename the job specific files on disk, send event to scheduler   */
 /*-------------------------------------------------------------------------*/
 static int
-sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *ja_task, int spool_job, int no_events) {
+sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *ja_task, int spool_job, int no_events, u_long64 gdi_session) {
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    int remove_job = (!ja_task || job_get_ja_tasks(job) == 1);
    const lList *master_suser_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
@@ -1703,10 +1703,10 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
    if (remove_job) {
       /* we might have done this before, but to make sure, that we
          did not miss it, we do it again.... */
-      release_successor_jobs(job);
+      release_successor_jobs(job, gdi_session);
 
       /* and this too, also flushes task dependency cache */
-      release_successor_jobs_ad(job);
+      release_successor_jobs_ad(job, gdi_session);
 
       /*
        * security hook
@@ -1744,7 +1744,7 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
       suser_unregister_job(job, master_suser_list);
       if (!no_events) {
          sge_add_event(0, sgeE_JOB_DEL, job_id, ja_task_id,
-                       nullptr, nullptr, lGetString(job, JB_session), nullptr);
+                       nullptr, nullptr, lGetString(job, JB_session), nullptr, gdi_session);
       }
       lRemoveElem(master_job_list, &job);
    } else {
@@ -1752,7 +1752,7 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
 
       if (!no_events) {
          sge_add_event(0, sgeE_JATASK_DEL, job_id, ja_task_id,
-                       nullptr, nullptr, lGetString(job, JB_session), nullptr);
+                       nullptr, nullptr, lGetString(job, JB_session), nullptr, gdi_session);
       }
 
       /*
@@ -1781,7 +1781,7 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
       /* release the successor tasks. this might have been done before
          but to make sure, we do it again. we need to do this last to
          make sure the task is gone when dependencies are calculated */
-      release_successor_tasks_ad(job, ja_task_id);
+      release_successor_tasks_ad(job, ja_task_id, gdi_session);
    }
 
    DRETURN(True);
@@ -1953,7 +1953,7 @@ setCheckpointObj(lListElem *job) {
 }
 
 bool
-gdil_del_all_orphaned(const lList *gdil_list, lList **alpp) {
+gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, u_long64 gdi_session) {
    bool ret = true;
    const lListElem *gdil_ep;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -1964,7 +1964,7 @@ gdil_del_all_orphaned(const lList *gdil_list, lList **alpp) {
    for_each_ep(gdil_ep, gdil_list) {
       cqueue_name_split(lGetString(gdil_ep, JG_qname), &cqueue_name, &host_name, &has_hostname, &has_domain);
       ret &= cqueue_list_del_all_orphaned(master_cqueue_list, alpp, sge_dstring_get_string(&cqueue_name),
-                                          sge_dstring_get_string(&host_name));
+                                          sge_dstring_get_string(&host_name), gdi_session);
    }
    sge_dstring_free(&cqueue_name);
    sge_dstring_free(&host_name);

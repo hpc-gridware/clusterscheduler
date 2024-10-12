@@ -61,11 +61,11 @@
   Add the sharetree
  ************************************************************/
 int
-sge_add_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_add_sharetree(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
 
    DENTER(TOP_LAYER);
-   ret = sge_mod_sharetree(ep, lpp, alpp, ruser, rhost);
+   ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
    DRETURN(ret);
 }
 
@@ -77,7 +77,7 @@ sge_add_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
   lList **lpp,     list to change 
  ************************************************************/
 int
-sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sharetree(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
    int prev_version;
    int adding;
@@ -128,9 +128,7 @@ sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
    lAppendElem(*lpp, lCopyElem(ep));
 
    /* write sharetree to file */
-   if (!sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE,
-                        0, 0, nullptr, nullptr, nullptr,
-                        ep, nullptr, nullptr, true, true)) {
+   if (!sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, ep, nullptr, nullptr, true, true, packet->gdi_session)) {
 
       /* answer list gets filled in sge_event_spool() */
       DRETURN(ret);
@@ -153,7 +151,7 @@ sge_mod_sharetree(lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *r
   Delete the sharetree
  ************************************************************/
 int
-sge_del_sharetree(lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_del_sharetree(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!*lpp || !lFirst(*lpp)) {
@@ -162,9 +160,8 @@ sge_del_sharetree(lList **lpp, lList **alpp, char *ruser, char *rhost) {
       DRETURN(STATUS_EEXIST);
    }
 
-   sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE,
-                   0, 0, nullptr, nullptr, nullptr,
-                   nullptr, nullptr, nullptr, true, true);
+   sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr,
+                   nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
    lFreeList(lpp);
 

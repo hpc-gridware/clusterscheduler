@@ -89,7 +89,7 @@ sge_listener_terminate() {
     * 'sgeE_QMASTER_GOES_DOWN' event *before* the listener threads 
     * are terminated.
     */
-   sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
+   sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, GDI_SESSION_NONE);
    DPRINTF("triggered shutdown event for event clients to be delivered by event master module\n");
 
    /*

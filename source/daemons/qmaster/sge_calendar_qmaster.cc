@@ -73,7 +73,10 @@ calendar_initalize_timer(monitoring_t *monitor) {
       calendar_parse_week(cep, &answer_list);
       answer_list_output(&answer_list);
 
-      calendar_update_queue_states(cep, nullptr, nullptr, &ppList, monitor);
+      sge_gdi_packet_class_t packet;
+      sge_gdi_task_class_t task;
+      packet.gdi_session = GDI_SESSION_NONE;
+      calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
    }
 
    lFreeList(&answer_list);
@@ -83,7 +86,7 @@ calendar_initalize_timer(monitoring_t *monitor) {
 }
 
 int
-calendar_mod(lList **alpp, lListElem *new_cal, lListElem *cep, int add,
+calendar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
              const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -137,7 +140,7 @@ DRETURN(STATUS_EUNKNOWN);
 }
 
 int
-calendar_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
+calendar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -155,7 +158,7 @@ calendar_spool(lList **alpp, lListElem *cep, gdi_object_t *object) {
 }
 
 int
-sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
+sge_del_calendar(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    const char *cal_name;
    lList **master_calendar_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -201,7 +204,7 @@ sge_del_calendar(lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, cal_name);
 
    sge_event_spool(alpp, 0, sgeE_CALENDAR_DEL, 0, 0, cal_name, nullptr, nullptr,
-                   nullptr, nullptr, nullptr, true, true);
+                   nullptr, nullptr, nullptr, true, true,packet->gdi_session);
    lDelElemStr(master_calendar_list, CAL_name, cal_name);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, cal_name, MSG_OBJ_CALENDAR);
@@ -245,7 +248,10 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   calendar_update_queue_states(cep, nullptr, nullptr, &ppList, monitor);
+   sge_gdi_packet_class_t packet;
+   sge_gdi_task_class_t task;
+   packet.gdi_session = GDI_SESSION_NONE;
+   calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
@@ -255,7 +261,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 
-int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_t *object,
+int calendar_update_queue_states(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;
@@ -263,12 +269,11 @@ int calendar_update_queue_states(lListElem *cep, lListElem *old_cep, gdi_object_
    u_long64 when = 0;
    DENTER(TOP_LAYER);
 
-   sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD,
-                 0, 0, cal_name, nullptr, nullptr, cep);
+   sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 0, 0, cal_name, nullptr, nullptr, cep, packet->gdi_session);
 
    state = calender_state_changes(cep, &state_changes_list, &when, nullptr);
 
-   qinstance_change_state_on_calendar_all(cal_name, state, state_changes_list, monitor);
+   qinstance_change_state_on_calendar_all(cal_name, state, state_changes_list, monitor, packet->gdi_session);
 
    lFreeList(&state_changes_list);
 

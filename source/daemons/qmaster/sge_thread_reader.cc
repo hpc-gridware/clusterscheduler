@@ -230,7 +230,7 @@ sge_reader_main(void *arg) {
             }
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
             task = packet->first_task;
-            sge_c_report(packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+            sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
             task = packet->first_task;
             // @TODO: This could be done by listener already?

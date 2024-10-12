@@ -50,7 +50,10 @@
 
 typedef struct _gdi_object_t gdi_object_t;
 
-typedef int (*modifier_func_t)(lList **alpp,
+typedef int (*modifier_func_t)(
+        sge_gdi_packet_class_t *packet,
+        sge_gdi_task_class_t *task,
+        lList **alpp,
         lListElem *new_cal,   /* destination */
         lListElem *cep,       /* reduced element */
         int add,              /* 1 for add/0 for mod */
@@ -62,6 +65,8 @@ typedef int (*modifier_func_t)(lList **alpp,
 );
 
 typedef int (*writer_func_t)(
+        sge_gdi_packet_class_t *packet,
+        sge_gdi_task_class_t *task,
         lList **alpp,
         lListElem *ep,      /* new modified element */
         gdi_object_t *thiz   /* some kind of "this" */
@@ -71,6 +76,8 @@ typedef int (*writer_func_t)(
 typedef lList **(*getMasterList)();
 
 typedef int (*on_success_func_t)(
+        sge_gdi_packet_class_t *packet,
+        sge_gdi_task_class_t *task,
         lListElem *ep,       /* new modified and already spooled element */
         lListElem *old_ep,   /* old element is nullptr in add case */
         gdi_object_t *thiz,  /* some kind of "this" */
@@ -104,7 +111,7 @@ sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
                             monitoring_t *monitor);
 
 int
-sge_gdi_add_mod_generic(lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
+sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
                         const char *ruser, const char *rhost, int sub_command, lList **ppList, monitoring_t *monitor);
 
 void sge_clean_lists();

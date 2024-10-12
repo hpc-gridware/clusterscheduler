@@ -59,7 +59,7 @@
 
 static bool
 qinstance_x_on_subordinate(lListElem *this_elem, bool suspend,
-                           bool send_event, monitoring_t *monitor);
+                           bool send_event, monitoring_t *monitor, u_long64 gdi_session);
 
 
 /****** sge_subordinate_qmaster/get_slotwise_sos_threshold() *******************
@@ -1292,7 +1292,7 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
 */
 bool
 cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
-                                  const lList *gdil, monitoring_t *monitor) {
+                                  const lList *gdil, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    const lListElem *gdi = nullptr;
 
@@ -1349,7 +1349,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
 
                   if (so_queue != nullptr) {
                      /* Suspend/unsuspend the subordinated queue instance */
-                     ret &= qinstance_x_on_subordinate(so_queue, suspend, true, monitor);
+                     ret &= qinstance_x_on_subordinate(so_queue, suspend, true, monitor, gdi_session);
                      /* This change could also trigger slotwise (un)suspend on
                       * subordinate in related queue instances. If it was a
                       * queuewise suspend, it must be a slotwise unsuspend,
@@ -1374,7 +1374,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
 }
 
 static bool
-qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, monitoring_t *monitor) {
+qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    u_long32 sos_counter;
    bool do_action;
@@ -1431,9 +1431,9 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
          ret = (sge_signal_queue(signal, this_elem, nullptr, nullptr, monitor) == 0) ? true : false;
       }
 
-      sge_qmaster_qinstance_state_set_susp_on_sub(this_elem, suspend);
+      sge_qmaster_qinstance_state_set_susp_on_sub(this_elem, suspend, gdi_session);
       if (send_event) {
-         sge_add_event(0, event, 0, 0, cqueue_name, hostname, nullptr, nullptr);
+         sge_add_event(0, event, 0, 0, cqueue_name, hostname, nullptr, nullptr, gdi_session);
       }
       /*
        * this queue instance was (un)suspended by queue wise suspend on subordinate,
@@ -1446,7 +1446,7 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
 
 bool
 cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, bool suspend,
-                                const lList *resolved_so_list, monitoring_t *monitor) {
+                                const lList *resolved_so_list, monitoring_t *monitor, u_long64 gdi_session) {
    bool ret = true;
    const lListElem *so = nullptr;
 
@@ -1461,7 +1461,7 @@ cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, 
       lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list, full_name);
 
       if (qinstance != nullptr) {
-         ret &= qinstance_x_on_subordinate(qinstance, suspend, true, monitor);
+         ret &= qinstance_x_on_subordinate(qinstance, suspend, true, monitor, gdi_session);
          if (!ret) {
             break;
          }
@@ -1518,7 +1518,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
 }
 
 bool
-qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list) {
+qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list, u_long64 gdi_session) {
    bool ret = true;
    const lListElem *cqueue = nullptr;
    const char *full_name = nullptr;
@@ -1559,7 +1559,7 @@ qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const
                if (!strcmp(full_name, so_full_name)) {
                   /* suspend the queue if neccessary */
                   if (tst_sos(slots_used, slots, so)) {
-                     qinstance_x_on_subordinate(this_elem, true, false, monitor);
+                     qinstance_x_on_subordinate(this_elem, true, false, monitor, gdi_session);
                   }
                }
             }

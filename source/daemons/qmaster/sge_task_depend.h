@@ -43,10 +43,10 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
                           u_long32 task_id);
 
 bool
-sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id);
+sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id, u_long64 gdi_request);
 
 bool
-sge_task_depend_init(lListElem *jep, lList **alpp);
+sge_task_depend_init(lListElem *jep, lList **alpp, u_long64 gdi_session);
 
 bool
-sge_task_depend_flush(lListElem *jep, lList **alpp);
+sge_task_depend_flush(lListElem *jep, lList **alpp, u_long64 gdi_session);

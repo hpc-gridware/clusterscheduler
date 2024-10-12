@@ -733,7 +733,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       char *enforce_user = mconf_get_enforce_user();
 
       if (enforce_user && !strcasecmp(enforce_user, "auto")) {
-         int status = sge_add_auto_user(packet->user, alpp, monitor);
+         int status = sge_add_auto_user(packet, task, packet->user, alpp, monitor);
 
          if (status != STATUS_OK) {
             sge_free(&enforce_user);
@@ -871,7 +871,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    }
 
    /* checks on -hold_jid_ad */
-   if (job_verify_predecessors_ad(jep, alpp)) {
+   if (job_verify_predecessors_ad(jep, alpp, packet->gdi_session)) {
       DRETURN(STATUS_EUNKNOWN);
    }
 

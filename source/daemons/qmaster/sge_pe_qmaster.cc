@@ -64,10 +64,10 @@
 
 static char object_name[] = "parallel environment";
 
-static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe);
+static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, u_long64 gdi_session);
 
 int
-pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
        monitoring_t *monitor) {
    int ret;
@@ -207,7 +207,7 @@ pe_mod(lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
 }
 
 int
-pe_spool(lList **alpp, lListElem *pep, gdi_object_t *object) {
+pe_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -225,7 +225,7 @@ pe_spool(lList **alpp, lListElem *pep, gdi_object_t *object) {
    DRETURN(dbret ? 0 : 1);
 }
 
-int pe_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int pe_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;
 
@@ -233,16 +233,15 @@ int pe_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **p
 
    pe_name = lGetString(ep, PE_name);
 
-   pe_update_categories(ep, old_ep);
+   pe_update_categories(ep, old_ep, packet->gdi_session);
 
-   sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0,
-                 pe_name, nullptr, nullptr, ep);
+   sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0, pe_name, nullptr, nullptr, ep, packet->gdi_session);
 
    DRETURN(0);
 }
 
 int
-sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;
@@ -296,13 +295,13 @@ sge_del_pe(lListElem *pep, lList **alpp, char *ruser, char *rhost) {
 
    /* remove host file */
    if (!sge_event_spool(alpp, 0, sgeE_PE_DEL,
-                        0, 0, pe, nullptr, nullptr, nullptr, nullptr, nullptr, true, true)) {
+                        0, 0, pe, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, object_name, pe);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   pe_update_categories(nullptr, ep);
+   pe_update_categories(nullptr, ep, packet->gdi_session);
 
    /* delete found pe element */
    lRemoveElem(master_pe_list, &ep);
@@ -430,11 +429,11 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
 *     MT-NOTE: pe_update_categories() is not MT safe
 *******************************************************************************/
 static void
-pe_update_categories(const lListElem *new_pe, const lListElem *old_pe) {
+pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, u_long64 gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
 
    pe_diff_usersets(new_pe, old_pe, &new_lp, &old_lp);
-   userset_update_categories(new_lp, old_lp);
+   userset_update_categories(new_lp, old_lp, gdi_session);
    lFreeList(&old_lp);
    lFreeList(&new_lp);
 }

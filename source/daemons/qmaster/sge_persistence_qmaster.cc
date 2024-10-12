@@ -220,7 +220,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 bool
 sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long32 intkey1,
                 u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
-                lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
+                lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool, u_long64 gdi_session) {
    bool ret = true;
    const char *key = nullptr;
    sge_object_type object_type;
@@ -579,9 +579,7 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
    /* send event only, if spooling succeeded */
    if (ret) {
       if (send_event) {
-         sge_add_event(timestamp, event,
-                       intkey1, intkey2, strkey, strkey2,
-                       session, element);
+         sge_add_event(timestamp, event, intkey1, intkey2, strkey, strkey2, session, element, gdi_session);
       }
    }
 

@@ -38,45 +38,45 @@
 #include "sgeobj/sge_daemonize.h"
 
 bool
-cqueue_mod_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list);
 
 bool
-cqueue_handle_qinstances(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list);
 
 void
-cqueue_commit(lListElem *cqueue);
+cqueue_commit(lListElem *cqueue, u_long64 gdi_session);
 
 void
 cqueue_rollback(lListElem *cqueue);
 
 int
-cqueue_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+cqueue_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor);
 
 int
-cqueue_mod(lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-cqueue_spool(lList **alpp, lListElem *this_elem, gdi_object_t *object);
+cqueue_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *this_elem, gdi_object_t *object);
 
 int
-cqueue_del(lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
+cqueue_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
 
 bool
-cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname);
+cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, u_long64 gdi_session);
 
 bool
 cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname,
-                             const char *ehname);
+                             const char *ehname, u_long64 gdi_session);
 
 void
 cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
-                              bool send_events, bool is_unknown);
+                              bool send_events, bool is_unknown, u_long64 gdi_session);
 
 void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj);
 
