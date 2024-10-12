@@ -83,6 +83,7 @@ set(LIBRARY_SOURCES
       sge_utility.cc
       sge_var.cc
       ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_RequestLimits.cc
+      ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_Session.cc
       cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
