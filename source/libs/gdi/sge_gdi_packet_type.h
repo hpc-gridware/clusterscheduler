@@ -128,8 +128,8 @@ struct _sge_gdi_packet_class_t {
     * to the correct external communication partner using the
     * commlib infrastructure
     */
-   char host[CL_MAXHOSTNAMELEN_LENGTH];
-   char commproc[CL_MAXHOSTNAMELEN_LENGTH];
+   char host[CL_MAXHOSTNAMELEN];
+   char commproc[CL_MAXHOSTNAMELEN];
    u_short commproc_id;
    u_long32 response_id;
    u_long64 gdi_session;

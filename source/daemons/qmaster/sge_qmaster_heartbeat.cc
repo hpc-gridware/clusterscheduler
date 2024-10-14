@@ -122,8 +122,8 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
    int retval = 0;
    int heartbeat = 0;
    int check_act_qmaster_file = 0;
-   char act_qmaster_name[CL_MAXHOSTLEN];
-   char act_resolved_qmaster_name[CL_MAXHOSTLEN];
+   char act_qmaster_name[CL_MAXHOSTNAMELEN];
+   char act_resolved_qmaster_name[CL_MAXHOSTNAMELEN];
    char err_str[SGE_PATH_MAX+128];
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
    const char *qualified_hostname = component_get_qualified_hostname();

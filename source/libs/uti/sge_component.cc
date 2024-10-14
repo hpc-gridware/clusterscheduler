@@ -252,10 +252,10 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
 
    // setup short and long hostnames
    char *s = nullptr;
-   stringT tmp_str;
+   char tmp_str[CL_MAXHOSTNAMELEN + 1];
    struct hostent *hent = nullptr;
    /* Fetch hostnames */
-   SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
+   SGE_ASSERT((gethostname(tmp_str, CL_MAXHOSTNAMELEN) == 0));
    SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
    set_qualified_hostname(tl, hent->h_name);
    s = sge_dirname(hent->h_name, '.');

@@ -259,10 +259,6 @@ cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolve
 #define COMMD_NACK_CONFLICT CL_RETVAL_ENDPOINT_NOT_UNIQUE
 #define CL_FIRST_FREE_EC    32
 
-#ifndef CL_MAXHOSTLEN
-#define CL_MAXHOSTLEN CL_MAXHOSTNAMELEN_LENGTH   /* TODO: remove this define */
-#endif
-
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases);
 
 cl_raw_list_t * cl_com_get_thread_list();

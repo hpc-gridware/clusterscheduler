@@ -61,7 +61,7 @@
 int
 get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
    FILE *fp;
-   char buf[CL_MAXHOSTLEN * 3 + 1], *cp, *first;
+   char buf[CL_MAXHOSTNAMELEN * 3 + 1], *cp, *first;
    size_t len;
 
    DENTER(TOP_LAYER);
@@ -84,7 +84,7 @@ get_qm_name(char *master_host, const char *master_file, char *err_str, size_t er
    }
 
    /* read file in one sweep and append O Byte to the end */
-   if (!(len = fread(buf, 1, CL_MAXHOSTLEN * 3, fp))) {
+   if (!(len = fread(buf, 1, CL_MAXHOSTNAMELEN * 3, fp))) {
       if (err_str) {
          snprintf(err_str, err_str_size, MSG_GDI_READMASTERHOSTNAMEFAILED_S, master_file);
       }
@@ -114,9 +114,9 @@ get_qm_name(char *master_host, const char *master_file, char *err_str, size_t er
       DRETURN(-1);
    }
 
-   if (len > CL_MAXHOSTLEN - 1) {
+   if (len > CL_MAXHOSTNAMELEN - 1) {
       if (err_str) {
-         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, (int) CL_MAXHOSTLEN);
+         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, CL_MAXHOSTNAMELEN);
       }
       FCLOSE(fp);
       DRETURN(-1);

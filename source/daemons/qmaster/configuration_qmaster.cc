@@ -218,7 +218,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
 int
 sge_del_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
    const char *tmp_name = nullptr;
-   char unique_name[CL_MAXHOSTLEN];
+   char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
 
    DENTER(TOP_LAYER);
@@ -238,7 +238,7 @@ sge_del_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
    /*
     * Due to CR 6319231 IZ 1760:
     *    try to resolve the hostname
-    *    if it is not resolveable then
+    *    if it is not resolvable then
     *       ignore this and use the hostname stored in the configuration obj
     *       or use the given name if no object can be found
     */
@@ -315,7 +315,7 @@ int
 sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, u_long64 gdi_session) {
    lListElem *old_conf;
    const char *tmp_name = nullptr;
-   char unique_name[CL_MAXHOSTLEN];
+   char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -730,7 +730,7 @@ static u_long32
 sge_get_config_version_for_host(const char *aName) {
    const lListElem *conf = nullptr;
    u_long32 version = 0;
-   char unique_name[CL_MAXHOSTLEN];
+   char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
@@ -743,7 +743,7 @@ sge_get_config_version_for_host(const char *aName) {
       /*
        * Due to CR 6319231 IZ 1760:
        *    Try to resolve the hostname
-       *    if it is not resolveable then
+       *    if it is not resolvable then
        *       ignore this and use the given hostname
        */
       ret = sge_resolve_hostname(aName, unique_name, EH_name);
@@ -772,7 +772,7 @@ sge_get_config_version_for_host(const char *aName) {
 lListElem *
 sge_get_configuration_for_host(const char *aName) {
    lListElem *conf = nullptr;
-   char unique_name[CL_MAXHOSTLEN];
+   char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
@@ -783,7 +783,7 @@ sge_get_configuration_for_host(const char *aName) {
    /*
     * Due to CR 6319231 IZ 1760:
     *    Try to resolve the hostname
-    *    if it is not resolveable then
+    *    if it is not resolvable then
     *       ignore this and use the given hostname
     */
    ret = sge_resolve_hostname(aName, unique_name, EH_name);

@@ -1050,7 +1050,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                         } 
                      }
                   } else {
-                     char resolved_name[CL_MAXHOSTLEN+1];
+                     char resolved_name[CL_MAXHOSTNAMELEN+1];
                      int back = getuniquehostname(hostname, resolved_name, 0);
 
                      if (back == CL_RETVAL_OK) {

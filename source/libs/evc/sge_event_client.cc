@@ -850,14 +850,14 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
       sge_evc->ec = lCreateElem(EV_Type);
 
       if (sge_evc->ec != nullptr) {
-         stringT tmp_string;
+         char tmp_string[CL_MAXHOSTNAMELEN + 1];
 
          /* remember registration id for subsequent registrations */
          sge_evc->ec_reg_id = id;
 
          /* initialize event client object */
          lSetString(sge_evc->ec, EV_name, name);
-         if (gethostname(tmp_string, sizeof(tmp_string)) == 0) {
+         if (gethostname(tmp_string, CL_MAXHOSTNAMELEN) == 0) {
             lSetHost(sge_evc->ec, EV_host, tmp_string); 
          }
          /*
@@ -3020,8 +3020,8 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
    bool ret = true;
    sge_pack_buffer pb;
    int help;
-   char rhost[CL_MAXHOSTLEN+1] = "";
-   char commproc[CL_MAXHOSTLEN+1] = "";
+   char rhost[CL_MAXHOSTNAMELEN+1] = "";
+   char commproc[CL_MAXHOSTNAMELEN+1] = "";
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 

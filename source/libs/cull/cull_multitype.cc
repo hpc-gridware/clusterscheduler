@@ -2151,7 +2151,7 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
 
       /* create entry in hash table */
       if (ep->descr[pos].ht != nullptr) {
-         char host_key[CL_MAXHOSTLEN + 1];
+         char host_key[CL_MAXHOSTNAMELEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
@@ -2344,7 +2344,7 @@ int lSetHost(lListElem *ep, int name, const char *value) {
 
       /* create entry in hash table */
       if (ep->descr[pos].ht != nullptr) {
-         char host_key[CL_MAXHOSTLEN + 1];
+         char host_key[CL_MAXHOSTNAMELEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
@@ -5084,8 +5084,8 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    int data_type;
    lListElem *ep = nullptr;
    const lDescr *listDescriptor = nullptr;
-   char uhost[CL_MAXHOSTLEN + 1];
-   char cmphost[CL_MAXHOSTLEN + 1];
+   char uhost[CL_MAXHOSTNAMELEN + 1];
+   char cmphost[CL_MAXHOSTNAMELEN + 1];
    const char *s = nullptr;
 
    DENTER(TOP_LAYER);
@@ -5111,9 +5111,9 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    *iterator = nullptr;
    if (lp->descr[pos].ht != nullptr) {
       /* we have a hash table */
-      char host_key[CL_MAXHOSTLEN + 1];
+      char host_key[CL_MAXHOSTNAMELEN + 1];
       sge_hostcpy(host_key, str);
-      sge_strtoupper(host_key, CL_MAXHOSTLEN);
+      sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
       ep = cull_hash_first(lp->descr[pos].ht, host_key,
                            mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
@@ -5169,8 +5169,8 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    int pos;
    lListElem *ep = nullptr;
    const lDescr *listDescriptor = nullptr;
-   char uhost[CL_MAXHOSTLEN + 1];
-   char cmphost[CL_MAXHOSTLEN + 1];
+   char uhost[CL_MAXHOSTNAMELEN + 1];
+   char cmphost[CL_MAXHOSTNAMELEN + 1];
    const char *s = nullptr;
 
    DENTER(TOP_LAYER);

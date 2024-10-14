@@ -1598,10 +1598,10 @@ char *cl_com_get_h_error_string(int h_error) {
 int cl_com_gethostname(char **unique_hostname, struct in_addr *copy_addr, struct hostent **he_copy,
                        int *system_error_value) {  /* CR check */
 
-   char localhostname[CL_MAXHOSTNAMELEN_LENGTH + 1];
+   char localhostname[CL_MAXHOSTNAMELEN + 1];
 
    errno = 0;
-   if (gethostname(localhostname, CL_MAXHOSTNAMELEN_LENGTH) != 0) {
+   if (gethostname(localhostname, CL_MAXHOSTNAMELEN) != 0) {
       if (system_error_value != nullptr) {
          *system_error_value = errno;
       }
@@ -2277,7 +2277,7 @@ int cl_com_read_alias_file(cl_raw_list_t *hostlist) {
    char alias_file_buffer[LINE_MAX * 4];
    int max_line = LINE_MAX * 4;
    const char *alias_delemiters = "\n\t ,;";
-   char printbuf[(2 * CL_MAXHOSTLEN) + 100];
+   char printbuf[(2 * CL_MAXHOSTNAMELEN) + 100];
 
    if (hostlist == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2341,7 +2341,7 @@ int cl_com_read_alias_file(cl_raw_list_t *hostlist) {
                return CL_RETVAL_MALLOC;
             }
          } else {
-            CL_LOG_STR(CL_LOG_ERROR, "mainname in alias file is not resolveable:", help);
+            CL_LOG_STR(CL_LOG_ERROR, "mainname in alias file is not resolvable:", help);
             continue;
          }
          while (cl_com_remove_host_alias(main_name) == CL_RETVAL_OK);
@@ -2714,7 +2714,7 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
 
    if (elem_host != nullptr) {
       if (elem_host->resolved_name == nullptr) {
-         CL_LOG(CL_LOG_INFO, "found addr in cache - not resolveable");
+         CL_LOG(CL_LOG_INFO, "found addr in cache - not resolvable");
          cl_raw_list_unlock(hostlist);
          return CL_RETVAL_GETHOSTADDR_ERROR;
       }
