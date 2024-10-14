@@ -533,8 +533,8 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
    if (ret) {
       const char *commproc = prognames[QMASTER];
       const char *host = gdi_get_act_master_host(false);
-      char rcv_host[CL_MAXHOSTLEN+1];
-      char rcv_commproc[CL_MAXHOSTLEN+1];
+      char rcv_host[CL_MAXHOSTNAMELEN+1];
+      char rcv_commproc[CL_MAXHOSTNAMELEN+1];
       int tag = TAG_GDI_REQUEST;
       u_short id = 1;
       int gdi_error = CL_RETVAL_OK;

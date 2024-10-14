@@ -544,7 +544,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
 
    if (this_list != nullptr && hostname_pattern != nullptr) {
       const lListElem *qinstance;
-      char host[CL_MAXHOSTLEN];
+      char host[CL_MAXHOSTNAMELEN];
 
       if ((getuniquehostname(hostname_pattern, host, 0)) == CL_RETVAL_OK) {
          hostname_pattern = host;

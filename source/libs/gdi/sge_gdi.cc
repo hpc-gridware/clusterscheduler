@@ -194,7 +194,7 @@ gdi_get_act_master_host(bool reread) {
 
    if (gdi_data_get_master_host() == nullptr || reread) {
       char err_str[SGE_PATH_MAX + 128];
-      char master_name[CL_MAXHOSTLEN];
+      char master_name[CL_MAXHOSTNAMELEN];
       u_long64 now = sge_get_gmt64();
 
       /* fix system clock moved back situation */

@@ -57,10 +57,10 @@
 #define CL_DEFINE_MAX_MESSAGE_ID                     65535              /* max unsigned short value */
 #endif
 
-#ifdef MAXHOSTNAMELEN
-#define CL_MAXHOSTNAMELEN_LENGTH MAXHOSTNAMELEN
+#if defined(MAXHOSTNAMELEN) && MAXHOSTNAMELEN > 256
+#define CL_MAXHOSTNAMELEN MAXHOSTNAMELEN
 #else
-#define CL_MAXHOSTNAMELEN_LENGTH 256
+#define CL_MAXHOSTNAMELEN 256
 #endif
 
 

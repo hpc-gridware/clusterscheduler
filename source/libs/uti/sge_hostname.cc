@@ -279,10 +279,6 @@ unsigned long gethostbyaddr_calls = 0;
 unsigned long gethostbyaddr_sec = 0;
 
 
-#if 0 /*defined(SOLARIS)*/
-int gethostname(char *name, int namelen);
-#endif
-
 #ifdef GETHOSTBYNAME_M
 /* guards access to the non-MT-safe gethostbyname system call */
 static pthread_mutex_t hostbyname_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -801,14 +797,14 @@ void sge_hostcpy(char *dst, const char *raw) {
    }
    if (is_hgrp) {
       /* hostgroup name: not in FQDN format, copy the entire string*/
-      sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
+      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
       return;
    }
    if (ignore_fqdn) {
       char *s = nullptr;
       /* standard: simply ignore FQDN */
 
-      sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
+      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
       if ((s = strchr(dst, '.'))) {
          *s = '\0';
       }
@@ -819,14 +815,14 @@ void sge_hostcpy(char *dst, const char *raw) {
 
       /* exotic: honor FQDN but use default_domain */
       if (!strchr(raw, '.')) {
-         snprintf(dst, CL_MAXHOSTLEN, "%s.%s", raw, default_domain);
+         snprintf(dst, CL_MAXHOSTNAMELEN, "%s.%s", raw, default_domain);
       } else {
-         sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
+         sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
       }
    } else {
       /* hardcore: honor FQDN, don't use default_domain */
 
-      sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
+      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
    }
 }
 
@@ -859,7 +855,7 @@ void sge_hostcpy(char *dst, const char *raw) {
 ******************************************************************************/
 int sge_hostcmp(const char *h1, const char *h2) {
    int cmp = -1;
-   char h1_cpy[CL_MAXHOSTLEN + 1], h2_cpy[CL_MAXHOSTLEN + 1];
+   char h1_cpy[CL_MAXHOSTNAMELEN + 1], h2_cpy[CL_MAXHOSTNAMELEN + 1];
 
 
    DENTER(BASIS_LAYER);
@@ -905,7 +901,7 @@ int sge_hostcmp(const char *h1, const char *h2) {
 ******************************************************************************/
 int sge_hostmatch(const char *h1, const char *h2) {
    int cmp = -1;
-   char h1_cpy[CL_MAXHOSTLEN + 1], h2_cpy[CL_MAXHOSTLEN + 1];
+   char h1_cpy[CL_MAXHOSTNAMELEN + 1], h2_cpy[CL_MAXHOSTNAMELEN + 1];
 
 
    DENTER(BASIS_LAYER);

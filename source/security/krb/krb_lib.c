@@ -915,7 +915,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    struct in_addr hostaddr;
    u_long32 tmplen=0;
    char tmpcommproc[MAXCOMPONENTLEN];
-   char tmphost[CL_MAXHOSTLEN];
+   char tmphost[CL_MAXHOSTNAMELEN];
    u_short tmpid=0;
    int tmptag=0;
    u_long32 tgt_id=0;

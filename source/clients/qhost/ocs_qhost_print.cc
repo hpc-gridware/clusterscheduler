@@ -285,7 +285,7 @@ static int
 sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show)
 {
    lListElem *lep;
-   char *s, host_print[CL_MAXHOSTLEN+1] = "";
+   char *s, host_print[CL_MAXHOSTNAMELEN+1] = "";
    const char *host;
    char load_avg[20], mem_total[20], mem_used[20], swap_total[20],
         swap_used[20], num_proc[20], socket[20], core[20], arch_string[80], thread[20];
@@ -303,7 +303,7 @@ sge_print_host(lListElem *hep, lList *centry_list, qhost_report_handler_t *repor
    host = lGetHost(hep, EH_name);
 
    /* cut away domain in case of ignore_fqdn */
-   sge_strlcpy(host_print, host, CL_MAXHOSTLEN);
+   sge_strlcpy(host_print, host, CL_MAXHOSTNAMELEN);
    if (ignore_fqdn && (s = strchr(host_print, '.'))) {
       *s = '\0';
    }   

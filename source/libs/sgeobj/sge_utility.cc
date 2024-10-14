@@ -265,9 +265,9 @@ bool verify_host_name(lList **answer_list, const char *host_name)
    }
 
    if (ret) {
-      if (strlen(host_name) > CL_MAXHOSTNAMELEN_LENGTH) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                 MSG_HOSTNAME_NOT_EMPTY);
+      if (strlen(host_name) > CL_MAXHOSTNAMELEN) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN);
       }
    }
 
@@ -285,11 +285,11 @@ int reresolve_qualified_hostname() {
 #if 1
    // lazy initialize of the qualified hostname store in uti_state
    if (qh == nullptr) {
-      stringT tmp_str;
+      char tmp_str[CL_MAXHOSTNAMELEN + 1];
       struct hostent *hent = nullptr;
 
-      SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
-      SGE_ASSERT(((hent = sge_gethostbyname(tmp_str,nullptr)) != nullptr));
+      SGE_ASSERT((gethostname(tmp_str, CL_MAXHOSTNAMELEN) == 0));
+      SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
       component_set_qualified_hostname(hent->h_name);
       sge_free_hostent(&hent);
       qh = component_get_qualified_hostname();

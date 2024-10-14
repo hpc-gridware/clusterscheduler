@@ -366,7 +366,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                   ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
                }
             } else {
-               char act_resolved_qmaster_name[CL_MAXHOSTLEN];
+               char act_resolved_qmaster_name[CL_MAXHOSTNAMELEN];
                cl_com_set_synchron_receive_timeout(handle, 5);
                master = gdi_get_act_master_host(true);
 

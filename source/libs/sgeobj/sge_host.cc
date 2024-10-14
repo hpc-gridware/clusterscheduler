@@ -222,12 +222,12 @@ int sge_resolve_host(lListElem *ep, int nm) {
    int pos;
    int ret = CL_RETVAL_OK;
    int dataType;
-   char unique[CL_MAXHOSTLEN];
+   char unique[CL_MAXHOSTNAMELEN];
    const char *hostname;
 
    DENTER(TOP_LAYER);
 
-   memset(unique, 0, CL_MAXHOSTLEN);
+   memset(unique, 0, CL_MAXHOSTNAMELEN);
 
    if (ep == nullptr) {
       DRETURN(-1);
@@ -313,7 +313,7 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    }
 
    if (ret != CL_RETVAL_OK) {
-      strncpy(unique, hostname, CL_MAXHOSTLEN - 1);
+      strncpy(unique, hostname, CL_MAXHOSTNAMELEN - 1);
    }
 
    DRETURN(ret);

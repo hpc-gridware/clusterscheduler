@@ -42,16 +42,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+#include "comm/cl_communication.h"
 #include "sge_unistd.h"
-
-/* compare hosts with FQDN or not */
-#if !defined(CL_MAXHOSTLEN) && defined(MAXHOSTNAMELEN)
-#define CL_MAXHOSTLEN MAXHOSTNAMELEN
-#endif
-
-#if !defined(CL_MAXHOSTLEN) && !defined(MAXHOSTNAMELEN)
-#define CL_MAXHOSTLEN 256
-#endif
 
 /* char introducing a hostgroup name */
 #define HOSTGROUP_INITIAL_CHAR '@'
@@ -59,7 +51,7 @@
 /* host information based on the hostent structure */
 typedef struct host {
    struct hostent he;      /* copy of what we got from gethostbyname */
-   char mainname[CL_MAXHOSTLEN];  /* This is what the administrator think it is
+   char mainname[CL_MAXHOSTNAMELEN];  /* This is what the administrator think it is
                                    the mainname */
    int deleted;                /* if we can no longer resolve this host */
    struct host *alias;      /* chain aliases */

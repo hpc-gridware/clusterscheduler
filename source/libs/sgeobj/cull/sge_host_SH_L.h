@@ -33,7 +33,7 @@
 * host which has the right to submit jobs
 *
 *    SGE_HOST(SH_name) - host name
-*    Name of the submission host. It must be resolveable.
+*    Name of the submission host. It must be resolvable.
 *
 *    SGE_LIST(SH_joker) - Joker
 *    Placeholder which can be used for arbitrary data.

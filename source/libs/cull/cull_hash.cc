@@ -357,7 +357,7 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
 *     const int pos       - position of the data field 
 *******************************************************************************/
 void cull_hash_remove(const lListElem *ep, const int pos) {
-   char host_key[CL_MAXHOSTLEN + 1];
+   char host_key[CL_MAXHOSTNAMELEN + 1];
    cull_htable ht;
    void *key;
 
@@ -440,7 +440,7 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
 void cull_hash_elem(const lListElem *ep) {
    int i;
    lDescr *descr;
-   char host_key[CL_MAXHOSTLEN];
+   char host_key[CL_MAXHOSTNAMELEN];
 
    if (ep == nullptr) {
       return;
@@ -736,7 +736,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    lDescr *descr;
    const lListElem *ep;
    int pos, size;
-   char host_key[CL_MAXHOSTLEN];
+   char host_key[CL_MAXHOSTNAMELEN];
 
    DENTER(CULL_LAYER);
 
@@ -802,7 +802,7 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
       case lHostT:
          if (ep->cont[pos].host != nullptr && host_key != nullptr) {
             sge_hostcpy(host_key, ep->cont[pos].host);
-            sge_strtoupper(host_key, CL_MAXHOSTLEN);
+            sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
             key = host_key;
          }
          break;
@@ -867,7 +867,7 @@ void cull_hash_recreate_after_sort(lList *lp) {
       }
 
       if (hash_index > 0) {
-         char host_key[CL_MAXHOSTLEN];
+         char host_key[CL_MAXHOSTNAMELEN];
          const lListElem *ep;
 
          /* now insert into the cleared hash list */

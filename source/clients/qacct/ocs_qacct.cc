@@ -290,7 +290,7 @@ int main(int argc, char **argv)
             if (*(argv[ii+1])=='-') {
                options.hostflag = 1;
             } else {
-               char unique[CL_MAXHOSTLEN];
+               char unique[CL_MAXHOSTNAMELEN + 1];
                lList *answer_list = nullptr;
                gdi_client_prepare_enroll(&answer_list);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {

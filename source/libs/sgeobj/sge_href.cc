@@ -711,7 +711,7 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
 *  INPUTS
 *     lList *this_list    - HR_Type list 
 *     lList **answer_list - AN_Type list 
-*     bool ignore_errors  - ignore if a host is not resolveable
+*     bool ignore_errors  - ignore if a host is not resolvable
 *
 *  RESULT
 *     bool - error state
@@ -732,7 +732,7 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
          const char *name = lGetHost(href, HR_name);
 
          if (!is_hgroup_name(name)) {
-            char resolved_name[CL_MAXHOSTLEN+1];
+            char resolved_name[CL_MAXHOSTNAMELEN+1];
             int back = getuniquehostname(name, resolved_name, 0);
 
             if (back == CL_RETVAL_OK) {

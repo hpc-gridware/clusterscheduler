@@ -1078,9 +1078,9 @@ CheckConfigFile()
 
    if [  "$EXECD" = "uninstall" ]; then
       if [ -z "$EXEC_HOST_LIST_RM" ]; then
-         $INFOTEXT -e "Your >EXEC_HOST_LIST_RM< is empty or not resolveable!"
+         $INFOTEXT -e "Your >EXEC_HOST_LIST_RM< is empty or not resolvable!"
          $INFOTEXT -e "For a automatic execd unintallation you have to enter a valid exechost name!"
-         $INFOTEXT -log "Your >EXEC_HOST_LIST_RM< is empty or not resolveable!"
+         $INFOTEXT -log "Your >EXEC_HOST_LIST_RM< is empty or not resolvable!"
          $INFOTEXT -log "For a automatic execd unintallation you have to enter a valid exechost name!"
          is_valid="false"
       fi

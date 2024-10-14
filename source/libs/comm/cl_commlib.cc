@@ -589,7 +589,7 @@ bool cl_com_setup_commlib_complete() {
    return setup_complete;
 }
 
-/* the cl_com_get_(un)resolveable_hosts functions don't need a mutex,
+/* the cl_com_get_(un)resolvable_hosts functions don't need a mutex,
  * because the memory is malloced in cl_com_setup_commlib()
  * and freed in cl_com_cleanup_commlib()
  */
@@ -7637,15 +7637,15 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
    }
    ret_val = cl_com_cached_gethostbyname((char *) hostin, &resolved_host, nullptr, nullptr, nullptr);
    if (resolved_host != nullptr) {
-      if (strlen(resolved_host) >= CL_MAXHOSTLEN) {
+      if (strlen(resolved_host) >= CL_MAXHOSTNAMELEN) {
          char tmp_buffer[1024];
          snprintf(tmp_buffer, 1024, MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU,
-                  resolved_host, sge_u32c(CL_MAXHOSTLEN));
+                  resolved_host, sge_u32c(CL_MAXHOSTNAMELEN));
          cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_HOSTNAME_LENGTH_ERROR, tmp_buffer);
          sge_free(&resolved_host);
          return CL_RETVAL_HOSTNAME_LENGTH_ERROR;
       }
-      snprintf(hostout, CL_MAXHOSTLEN, "%s", resolved_host);
+      snprintf(hostout, CL_MAXHOSTNAMELEN, "%s", resolved_host);
       sge_free(&resolved_host);
    }
    return ret_val;

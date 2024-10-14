@@ -258,7 +258,7 @@ int sge_del_host(lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long3
    int pos;
    lListElem *ep;
    const char *host;
-   char unique[CL_MAXHOSTLEN];
+   char unique[CL_MAXHOSTNAMELEN];
    lList **host_list = nullptr;
    int nm = 0;
    const char *name = nullptr;
@@ -1019,7 +1019,7 @@ master_kill_execds(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    int kill_jobs;
    lListElem *lel;
    const lListElem *rep;
-   char host[CL_MAXHOSTLEN];
+   char host[CL_MAXHOSTNAMELEN];
    const char *hostname;
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 

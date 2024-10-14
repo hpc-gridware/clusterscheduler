@@ -9,7 +9,7 @@
 			"name":	"name",
 			"summary":	"host name",
 			"description":	[{
-					"line":	"Name of the submission host. It must be resolveable."
+					"line":	"Name of the submission host. It must be resolvable."
 				}],
 			"type":	"lHostT",
 			"flags":	[{

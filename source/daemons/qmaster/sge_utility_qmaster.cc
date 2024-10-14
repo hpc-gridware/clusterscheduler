@@ -775,7 +775,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
        */
       for_each_rw(mod_elem, mod_list) {
          const char *name = lGetHost(mod_elem, sublist_host_name);
-         char resolved_name[CL_MAXHOSTLEN + 1];
+         char resolved_name[CL_MAXHOSTNAMELEN + 1];
          lListElem *org_elem = nullptr;
 
          if (name == nullptr) {

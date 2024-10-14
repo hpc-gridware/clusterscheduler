@@ -819,7 +819,7 @@ qref_resolve_hostname(lListElem *this_elem)
       unresolved_name = sge_dstring_get_string(&host_or_hgroup);
       /* Find all CQ names which match 'cq_pattern' */
       if (has_hostname && unresolved_name != nullptr &&!sge_is_expression(unresolved_name)) {
-         char resolved_name[CL_MAXHOSTLEN+1];
+         char resolved_name[CL_MAXHOSTNAMELEN+1];
          int back = getuniquehostname(unresolved_name, resolved_name, 0);
 
          if (back == CL_RETVAL_OK) {
