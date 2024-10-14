@@ -85,6 +85,8 @@ Use it for testing purposes but not in a productive environment.
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
 
+- [Announcing Gridware Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-gridware-cluster-scheduler-9-0-0-release/)
+- [Announcing Open Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-open-cluster-scheduler-9-0-0-release/)
 - [Running Nextflow Pipelines on Gridware Cluster Scheduler: An RNA Sequencing Example using Apptainer](https://www.hpc-gridware.com/running-nextflow-pipelines-on-gridware-cluster-scheduler-an-rna-sequencing-example-using-apptainer/)
 - [Efficiently Managing GPUs with Open Cluster Scheduler’s RSMAP Resource Type](https://www.hpc-gridware.com/efficiently-managing-gpus-with-open-cluster-schedulers-rsmap-resource-type/)
 - [Open Cluster Scheduler: The Future of Open Source Workload Management](https://www.hpc-gridware.com/announcing-open-cluster-scheduler-next-generation-open-source-workload-management/)
