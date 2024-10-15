@@ -172,6 +172,7 @@ int main(int argc, char *argv[]);
 */
 int main(int argc, char **argv)
 {
+   int ret = 0;
    u_long32 days;
    sge_qacct_columns column_sizes;
    int beginflag=0;
@@ -538,7 +539,7 @@ int main(int argc, char **argv)
          acct_file = bootstrap_get_acct_file();
          if (!std::filesystem::exists(acct_file)) {
             printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
-            goto QACCT_EXIT;
+            goto QACCT_EXIT_BUT_NO_ERROR;
          }
       }
    } else {
@@ -690,6 +691,8 @@ int main(int argc, char **argv)
    if (fp == nullptr) {
       ERROR(MSG_HISTORY_ERRORUNABLETOOPENX_S ,acct_file);
       printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
+
+      // file exists but cannot be opened -> error
       goto QACCT_EXIT;
    }
 
@@ -1125,14 +1128,16 @@ int main(int argc, char **argv)
 FCLOSE_ERROR:
    ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, acct_file, strerror(errno));
 QACCT_EXIT:
+   ret = 1;
+QACCT_EXIT_BUT_NO_ERROR:
    sge_prof_cleanup();
    lFreeList(&sorted_list);
    lFreeSortOrder(&sort_order);
    sge_free(&(options.group));
    sge_free(&(options.host));
    free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
-   sge_exit(1);
-   DRETURN(1);
+   sge_exit(ret);
+   DRETURN(ret);
 }
 
 static void print_full_ulong(int full_length, u_long32 value) {
