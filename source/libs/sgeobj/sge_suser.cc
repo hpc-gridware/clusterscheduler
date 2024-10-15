@@ -255,7 +255,7 @@ int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs, lList *master
 *                                int force_registration) 
 *
 *  FUNCTION
-*     This function checks whether a new "job" would exceed the maxium
+*     This function checks whether a new "job" would exceed the maximum
 *     number of allowed jobs per user ("max_u_jobs"). JB_owner of "job" 
 *     is the username which will be used by this function to compare
 *     the current number of registered jobs with "max_u_jobs". If the
@@ -287,10 +287,10 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
 
    DENTER(TOP_LAYER);
 
-   if (!force_registration){
+   if (!force_registration) {
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
    }
-   if (ret == 0){    
+   if (ret == 0) {
       submit_user = lGetString(job, JB_owner);
       suser = suser_list_add(&master_suser_list, nullptr, submit_user);
       suser_increase_job_counter(suser);

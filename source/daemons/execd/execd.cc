@@ -284,7 +284,7 @@ int main(int argc, char **argv)
       cl_com_free_sirm_message(&status);
    }
    
-   /* finalize daeamonize */
+   /* finalize daemonize */
    if (!getenv("SGE_ND")) {
       sge_daemonize_finalize();
    }
@@ -329,7 +329,7 @@ int main(int argc, char **argv)
    }
 
    /*
-    * We write pid file when we are connected to qmaster. Otherwise an old
+    * We write pid file when we are connected to qmaster. Otherwise, an old
     * execd might overwrite our pidfile.
     */
    sge_write_pid(EXECD_PID_FILE);
@@ -381,7 +381,6 @@ int main(int argc, char **argv)
 
    /* Start dispatching */
    execd_exit_state = sge_execd_process_messages();
-
 
    /*
     * This code is only reached when dispatcher terminates and execd goes down.

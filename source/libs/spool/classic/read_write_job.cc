@@ -743,8 +743,6 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
    lListElem *first_direntry;
    DSTRING_STATIC(dstr_path, SGE_PATH_MAX);
    const char *str_path;
-   int handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
-   lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(TOP_LAYER); 
    sge_get_file_path(first_dir, sizeof(first_dir), JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, nullptr);
@@ -868,9 +866,12 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
             lSetList(job, JB_jid_successor_list, nullptr);
             job_list_add_job(job_list, list_name, job, 0);
-            
-            if (!handle_as_zombie) {
+
+            bool handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
+            bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;
+            if (!handle_as_zombie && !in_execd) {
                job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+               lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
                suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
             }
          }
