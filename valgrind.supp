@@ -1,0 +1,123 @@
+#___INFO__MARK_BEGIN_NEW__
+###########################################################################
+#
+#  Copyright 2024 HPC-Gridware GmbH
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+###########################################################################
+#___INFO__MARK_END_NEW__
+
+{
+   Thread Local Storage (TLS) is not cleaned up properly (CSP Path Class)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z25sge_csp_path_class_createP19sge_error_class_str
+   fun:_Z16gdi_client_setupijPP6_lListb
+   ...
+}
+
+{
+   Component is not cleaned up properly (1)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
+   fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
+   fun:_Z35sge_gdi_packet_initialize_auth_infoP23_sge_gdi_packet_class_t
+   fun:_Z21sge_gdi_packet_createPP6_lList
+   fun:_Z13sge_gdi_multiPP6_lListijjS1_P11_lConditionP13_lEnumerationP16_state_gdi_multib
+   ...
+}
+
+{
+   Component is not cleaned up properly (2)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
+   fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
+   fun:_ZL13japi_send_jobPP10_lListElemPjP7dstring
+   fun:_Z12japi_run_jobP7dstringPP10_lListElemS0_
+   fun:drmaa_run_job
+   ...
+}
+
+{
+   @todo CS-631 Packet auth info is not cleaned up properly
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z30sge_gdi_packet_parse_auth_infoP23_sge_gdi_packet_class_tPP6_lListPjPcmS4_S5_mPiPP14ocs_grp_elem_t
+   fun:_ZL13do_gdi_packetP12struct_msg_tP12monitoring_t
+   fun:_Z27sge_qmaster_process_messageP12monitoring_t
+   fun:_Z17sge_listener_mainPv
+   fun:start_thread
+   fun:clone
+}
+
+{
+   @todo CS-632 Event master does not clean up event clients and their data at shutdown
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z16sge_htable_storeP11_htable_recPKvS2_
+   fun:_Z16cull_hash_insertPK10_lListElemPvP12_cull_htableb
+   fun:_Z14cull_hash_elemPK10_lListElem
+   fun:_Z27cull_hash_create_hashtablesP6_lList
+   fun:_Z12lSelectDPackPKcPK6_lListPK11_lConditionPK7_lDescrPK13_lEnumerationbP15sge_pack_bufferPj
+   fun:_ZL21add_list_event_directP10_lListElemS0_b
+   fun:_ZL29sge_event_master_process_sendPK10_lListElemP12monitoring_t
+   fun:_Z33sge_event_master_process_requestsP12monitoring_t
+   fun:_Z21sge_event_master_mainPv
+   ...
+}
+
+{
+   @todo CS-633 (1) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.34
+   fun:_Z15cl_thread_setupP23cl_thread_settings_typeP16cl_raw_list_typePKciPFPvS5_EPFvS0_ES5_18cl_thread_type_def
+   fun:_Z28cl_thread_list_create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_EPFvS2_ES6_18cl_thread_type_def
+   fun:_Z20cl_com_setup_commlib18cl_thread_mode_def11cl_log_typePFiP16cl_raw_list_typeE
+   fun:_Z25gdi_client_prepare_enrollPP6_lList
+   fun:_Z27gdi_client_setup_and_enrollijPP6_lList
+   fun:_Z12japi_init_mtP7dstring
+   fun:_Z9japi_initPKcS0_P7dstringibPFvS0_ES2_
+   fun:drmaa_init
+   fun:main
+}
+
+{
+   @todo CS-633 (2) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z20sge_evc_class_create18ev_registration_idPP6_lListPKc
+   fun:_ZL26japi_implementation_threadPv
+   fun:start_thread
+   fun:clone
+}
