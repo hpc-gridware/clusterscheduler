@@ -555,6 +555,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
             cl_com_get_parameter_list_value("gdi_timeout", &gdi_timeout_str);
             if (gdi_timeout_str != nullptr) {
                int gdi_timeout = atoi(gdi_timeout_str);
+               sge_free(&gdi_timeout_str);
                cl_com_set_synchron_receive_timeout(handle, gdi_timeout);
             }
          }
