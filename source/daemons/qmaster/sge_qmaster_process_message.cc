@@ -203,11 +203,9 @@ do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
 void
 sge_qmaster_process_message(monitoring_t *monitor) {
    int res;
-   struct_msg_t msg;
+   struct_msg_t msg{};
 
    DENTER(TOP_LAYER);
-
-   memset((void *) &msg, 0, sizeof(struct_msg_t));
 
    /*
     * INFO (CR)  
