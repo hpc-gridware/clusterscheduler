@@ -36,6 +36,7 @@
 #include <pthread.h>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
@@ -54,6 +55,7 @@
 #include "sge_qmaster_timed_event.h"
 #include "sge_thread_main.h"
 #include "sge_thread_event_master.h"
+#include "msg_qmaster.h"
 
 static void
 sge_event_master_cleanup_monitor(void *arg) {
@@ -97,6 +99,7 @@ sge_event_master_terminate() {
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    }
    DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MASTER_THREAD]);
+   INFO(MSG_THREAD_XTERMINATED_S, threadnames[EVENT_MASTER_THREAD]);
 
    DRETURN_VOID;
 }

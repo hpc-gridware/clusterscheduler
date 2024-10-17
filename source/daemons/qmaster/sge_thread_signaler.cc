@@ -92,6 +92,7 @@ sge_signaler_terminate() {
       DPRINTF("getting canceled\n");
       cl_thread_list_delete_thread(Main_Control.signal_thread_pool, thread);
    }
+   INFO(MSG_THREAD_XTERMINATED_S, threadnames[SIGNAL_THREAD]);
    DRETURN_VOID;
 }
 

@@ -71,6 +71,8 @@
 #include "sge_job_qmaster.h"
 #include "sge_log.h"
 
+#include "msg_qmaster.h"
+
 static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -232,10 +234,10 @@ sge_timer_terminate() {
       thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    }
    DPRINTF("all " SFN " threads terminated\n", threadnames[TIMER_THREAD]);
-
    te_shutdown();
 
    DPRINTF(SFN " related cleanup has been done\n", threadnames[TIMER_THREAD]);
+   INFO(MSG_THREAD_XTERMINATED_S, threadnames[TIMER_THREAD]);
 
    DRETURN_VOID;
 }

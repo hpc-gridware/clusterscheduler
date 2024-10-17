@@ -40,6 +40,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
+#include "uti/sge_time.h"
 
 #include "comm/cl_commlib.h"
 
@@ -117,6 +118,7 @@ sge_listener_terminate() {
       thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    }
    DPRINTF("all " SFN " threads exited\n", threadnames[LISTENER_THREAD]);
+   INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[LISTENER_THREAD]);
    DRETURN_VOID;
 }
 
@@ -149,8 +151,6 @@ sge_listener_main(void *arg) {
 
    DPRINTF("entering main loop\n");
    while (true) {
-      int execute = 0;
-
       if (!sge_thread_has_shutdown_started()) {
          thread_start_stop_profiling();
 
@@ -163,12 +163,13 @@ sge_listener_main(void *arg) {
 
       /* pthread cancellation point */
       do {
+         int execute = 0;
          pthread_cleanup_push((void (*)(void *)) sge_listener_cleanup_monitor, (void *) &monitor);
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
             DPRINTF("waiting for termination\n");
-            sleep(1);
+            sge_usleep(50000);
          }
       } while (sge_thread_has_shutdown_started());
    }

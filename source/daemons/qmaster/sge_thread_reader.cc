@@ -96,15 +96,13 @@ sge_reader_terminate() {
     * trigger pthread_cancel for each thread so that further 
     * shutdown process will be faster
     */
-   {
-      cl_thread_list_elem_t *thr;
+   cl_thread_list_elem_t *thr;
 
-      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.reader_thread_pool);
-      while ((thr = thr_nxt) != nullptr) {
-         thr_nxt = cl_thread_list_get_next_elem(thr);
+   cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.reader_thread_pool);
+   while ((thr = thr_nxt) != nullptr) {
+      thr_nxt = cl_thread_list_get_next_elem(thr);
 
-         cl_thread_shutdown(thr->thread_config);
-      }
+      cl_thread_shutdown(thr->thread_config);
    }
 
    sge_tq_wakeup_waiting(ReaderRequestQueue);
@@ -112,16 +110,15 @@ sge_reader_terminate() {
    /*
     * Shutdown/delete the threads and wait for termination
     */
-   {
-      cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
-      while (thread != nullptr) {
-         DPRINTF("gets canceled\n");
-         cl_thread_list_delete_thread(Main_Control.reader_thread_pool, thread);
+   cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
+   while (thread != nullptr) {
+      DPRINTF("gets canceled\n");
+      cl_thread_list_delete_thread(Main_Control.reader_thread_pool, thread);
 
-         thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
-      }
-      DPRINTF("all " SFN " threads terminated\n", threadnames[READER_THREAD]);
+      thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
    }
+   DPRINTF("all " SFN " threads terminated\n", threadnames[READER_THREAD]);
+   INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[READER_THREAD]);
 
    DRETURN_VOID;
 }
