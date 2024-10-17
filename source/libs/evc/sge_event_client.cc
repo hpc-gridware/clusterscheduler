@@ -1812,7 +1812,7 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
       lList *subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
-      if (event != sgeE_ALL_EVENTS){
+      if (event != sgeE_ALL_EVENTS) {
          if (subscribed) {
             lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
