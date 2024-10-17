@@ -76,8 +76,8 @@ namespace ocs {
       // wait till each thread returns from its main
       for (auto mirror_thread: Main_Control.mirror_thread_pool) {
          pthread_join(mirror_thread->thread, nullptr);
-         delete mirror_thread;
          DPRINTF("termination of thread for data store %d finished\n", mirror_thread->data_store_id);
+         delete mirror_thread;
       }
 
       // empty the container

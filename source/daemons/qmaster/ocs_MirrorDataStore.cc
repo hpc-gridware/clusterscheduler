@@ -294,6 +294,11 @@ namespace ocs {
       // do not exit even if event client shutdown event is received. We want the thread only to terminate in the cancellation
       // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
       // cleanup (free of data store memory and more) at the cancellation point
+
+      // the thread shall only terminate in pthread_testcancel() to ensure that proper cleanup is done
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
+      pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, nullptr);
+
       bool do_qmaster_shutdown = false;
       while (true) {
          lList *event_list = nullptr;
@@ -389,10 +394,12 @@ namespace ocs {
          // We just wait here for the final termination signal to do the cleanup.
          do {
             int execute = 0;
-            pthread_cleanup_push(thread_cleanup_monitor, &monitor);
+            pthread_cleanup_push(thread_cleanup_monitor, static_cast<void *>(&monitor));
             pthread_cleanup_push(thread_cleanup_data_store, nullptr);
-            pthread_cleanup_push(thread_cleanup_event_client, evc);
+            pthread_cleanup_push(thread_cleanup_event_client, static_cast<void *>(evc));
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
             pthread_testcancel();
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
             pthread_cleanup_pop(execute); // event client registration
             pthread_cleanup_pop(execute); // data store that was filled by this mirror
             pthread_cleanup_pop(execute); // monitor
