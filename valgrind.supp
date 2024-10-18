@@ -143,4 +143,15 @@
    fun:clone
 }
 
+{
+   some issue in libtirpc.so
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:/usr/lib/x86_64-linux-gnu/libtirpc.so.3.0.0
+   obj:/usr/lib/x86_64-linux-gnu/libtirpc.so.3.0.0
+   fun:clnt_tp_create_timed
+   fun:clnt_create_timed
+   ...
+}
 
