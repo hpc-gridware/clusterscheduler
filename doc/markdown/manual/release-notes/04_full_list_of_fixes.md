@@ -1,6 +1,6 @@
 # Full List of Fixes
 
-## v9.0.1beta
+## v9.0.1
 
 ### Improvement
 
@@ -22,15 +22,13 @@
 
 [CS-589](https://hpc-gridware.atlassian.net/browse/CS-589) cleanup memory \(and possibly other resources\) at process end
 
-### Task
-
-[CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
-
 ### Sub-task
 
 [CS-277](https://hpc-gridware.atlassian.net/browse/CS-277) introduce unique event IDs
 
 [CS-281](https://hpc-gridware.atlassian.net/browse/CS-281) add a pool of threads for each request queue
+
+[CS-582](https://hpc-gridware.atlassian.net/browse/CS-582) do basic memory testing of OCS/GCS daemons and clients
 
 [CS-583](https://hpc-gridware.atlassian.net/browse/CS-583) add valgrind testing to the testsuite framework
 
@@ -63,8 +61,6 @@
 ### Bug
 
 [CS-145](https://hpc-gridware.atlassian.net/browse/CS-145) qping monitoring output is broken
-
-[CS-630](https://hpc-gridware.atlassian.net/browse/CS-630) several testsuite tests fail in environments where primary hostname is fully qualified
 
 [CS-663](https://hpc-gridware.atlassian.net/browse/CS-663) In a default installation on Google Cloud the hostname length is too long for commands
 
