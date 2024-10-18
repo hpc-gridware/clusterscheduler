@@ -1,16 +1,38 @@
 # Full List of Fixes
 
-# v9.0.1beta
+## v9.0.1beta
 
 ### Improvement
 
 [CS-270](https://hpc-gridware.atlassian.net/browse/CS-270) Allow threads to handle RO-request in parallel
+
+[CS-546](https://hpc-gridware.atlassian.net/browse/CS-546) Support download of bundles from the WEB-server
+
+[CS-580](https://hpc-gridware.atlassian.net/browse/CS-580) memory checking with valgrind
+
+[CS-650](https://hpc-gridware.atlassian.net/browse/CS-650) testsuite remote connections shall not autologout
+
+[CS-713](https://hpc-gridware.atlassian.net/browse/CS-713) print more information about shutting down the individual qmaster threads / thread pools to the messages file at qmaster shutdown
+
+### New Feature
+
+[CS-578](https://hpc-gridware.atlassian.net/browse/CS-578) Allow to measure thread performance with Google Performance Tools
+
+### Epic
+
+[CS-589](https://hpc-gridware.atlassian.net/browse/CS-589) cleanup memory \(and possibly other resources\) at process end
 
 ### Task
 
 [CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
 
 ### Sub-task
+
+[CS-277](https://hpc-gridware.atlassian.net/browse/CS-277) introduce unique event IDs
+
+[CS-281](https://hpc-gridware.atlassian.net/browse/CS-281) add a pool of threads for each request queue
+
+[CS-583](https://hpc-gridware.atlassian.net/browse/CS-583) add valgrind testing to the testsuite framework
 
 [CS-655](https://hpc-gridware.atlassian.net/browse/CS-655) Block requests for secondary DS until initialization is complete
 
@@ -26,6 +48,18 @@
 
 [CS-675](https://hpc-gridware.atlassian.net/browse/CS-675) Enhance monitoring so that it can observe more than 256 threads
 
+[CS-687](https://hpc-gridware.atlassian.net/browse/CS-687) Jenkins: enable config\_user\_xuser
+
+[CS-689](https://hpc-gridware.atlassian.net/browse/CS-689) Jenkins: enable pe\_user\_xuser
+
+[CS-690](https://hpc-gridware.atlassian.net/browse/CS-690) Jenkins: enable project\_user\_xuser
+
+[CS-691](https://hpc-gridware.atlassian.net/browse/CS-691) Jenkins: enable queue\_user\_xuser
+
+[CS-692](https://hpc-gridware.atlassian.net/browse/CS-692) Jenkins: enable rqs\_user\_xuser
+
+[CS-704](https://hpc-gridware.atlassian.net/browse/CS-704) Jenkins: enable x\_forks\_slaves
+
 ### Bug
 
 [CS-145](https://hpc-gridware.atlassian.net/browse/CS-145) qping monitoring output is broken
@@ -36,9 +70,25 @@
 
 [CS-665](https://hpc-gridware.atlassian.net/browse/CS-665) Potential core of qmaster \(in listener thread\) due to concurrent access to data
 
-[CS-674](https://hpc-gridware.atlassian.net/browse/CS-674) Monitoring show threads in W or E state, although they are working properly
+[CS-674](https://hpc-gridware.atlassian.net/browse/CS-674) Monitoring show threads in W or E state although they are working properly
 
-[CS-676](https://hpc-gridware.atlassian.net/browse/CS-676) Improve qmaster shutdown performance for scenarios where the master has more than 128 threads
+[CS-676](https://hpc-gridware.atlassian.net/browse/CS-676) Improve qmaster shutdown performance for scenarios where the master has more that 128 threads
+
+[CS-677](https://hpc-gridware.atlassian.net/browse/CS-677) Version in documentation is not changed automatically
+
+[CS-678](https://hpc-gridware.atlassian.net/browse/CS-678) Incorrect format in qstat man page and manuals
+
+[CS-679](https://hpc-gridware.atlassian.net/browse/CS-679) test: tight integration test fails if cluster is installed on FS where root is mapped to nobody
+
+[CS-681](https://hpc-gridware.atlassian.net/browse/CS-681) testsuite test jsv\_issues leaves a global sge\_request file with a -jsv option
+
+[CS-682](https://hpc-gridware.atlassian.net/browse/CS-682) qacct returns error state != 0 in common non-error scenario
+
+[CS-683](https://hpc-gridware.atlassian.net/browse/CS-683) a MirrorDataStore is not always properly cleaned up at sge\_qmaster shutdown when the reader thread pool is enabled
+
+[CS-684](https://hpc-gridware.atlassian.net/browse/CS-684) found workaround for: JSV stderr output contains "dpkg: warning: ..."
+
+[CS-714](https://hpc-gridware.atlassian.net/browse/CS-714) shutting down the listener thread pool takes too long
 
 ## v9.0.0
 
