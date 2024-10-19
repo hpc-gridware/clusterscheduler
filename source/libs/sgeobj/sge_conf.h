@@ -47,6 +47,8 @@
 #define GID_RANGE_NOT_ALLOWED_ID 100
 #define RLIMIT_UNDEFINED -9999
 
+#define PDC_DISABLED U_LONG64_MAX
+
 typedef enum {
    KEEP_ACTIVE_TRUE = 0,
    KEEP_ACTIVE_FALSE,
@@ -167,7 +169,7 @@ bool mconf_get_enable_enforce_master_limit();
 bool mconf_get_enable_test_sleep_after_request();
 int mconf_get_max_job_deletion_time();
 bool mconf_get_enable_addgrp_kill();
-u_long32 mconf_get_pdc_interval();
+u_long64 mconf_get_pdc_interval();
 bool mconf_get_enable_reschedule_kill();
 bool mconf_get_enable_reschedule_slave();
 void mconf_get_h_descriptors(char **pret);
