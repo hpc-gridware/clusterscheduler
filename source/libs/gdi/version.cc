@@ -36,7 +36,7 @@
 
 #include "gdi/version.h"
 
-const char GDI_VERSION[] = "9.0.1";
+const char GDI_VERSION[] = "9.0.2alpha";
 
 // TODO: Add also an entry to the table further down below when you change this
 //       And change SGE_VERSION in dist/inst_sge
