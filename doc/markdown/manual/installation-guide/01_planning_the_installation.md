@@ -80,8 +80,8 @@ machine's host resources with other services, it is not recommended. The master 
 one host to avoid interfering with other services. It is crucial to prevent memory paging on the master machine as 
 it can greatly reduce cluster performance.
 
-The master service requires a minimum of *128MB memory, but may need up to 32GB depending on the number of compute 
-tasks in the cluster. The master service requires a minimum of 2 CPU cores, with 4 being recommended. Additional CPU 
+The master service requires a minimum of *128MB* memory, but may need up to *32GB* depending on the number of compute 
+tasks in the cluster. The master service requires a minimum of 2 CPU cores, with 8 being recommended. Additional CPU 
 cores may be utilized if available, depending on the size, workload, and product version. A fast and reliable network 
 connection is essential for the master service to connect to all other components running on hosts within this cluster.
 
@@ -97,7 +97,7 @@ installation's cell directory. This directory contains the details of the cluste
 cluster operation. The shadow service needs full access to the master service's spool directory to ensure that a 
 restarted master service can pick up where it left off. 
 
-The minimum memory requirement for the shadow service is *128MB*. In the event of failover, the shadow host must meet 
+The minimum memory requirement for the shadow service is *128MB*. In the event of fail over, the shadow host must meet 
 the same requirements as a host running the master service.
 
 ### Execution Service
@@ -131,7 +131,7 @@ Users with the manager role can add and remove admin hosts in a cluster.
 Users wishing to submit workloads to a cluster must do so on hosts registered as submit hosts in the 
 xxQS_NAMExx system.
 
-A cluster must have at least one submit host. The master host is automatically mad a submit host during a 
+A cluster must have at least one submit host. The master host is automatically made a submit host during a 
 default installation. There is no need to run a service component for submit hosts in general.
 
 Users with the manager role can add and remove submit hosts in a cluster.
@@ -188,7 +188,7 @@ which requires manager privileges.
 The initial installation of an xxQS_NAMExx cluster can be performed manually or automatically without any 
 intervention.
 
-If you are installing OGE for the first time, it is recommended that you choose manual installation.
+If you are installing xxQS_NAMExx for the first time, it is recommended that you choose manual installation.
 
 Automated installation can be helpful if you need to set up multiple clusters with slightly different parameters.
 For this type of installation, a configuration file is created before the actual installation is performed. 
@@ -202,9 +202,8 @@ installation of xxQS_NAMExx.
 
 ### What operating systems are installed on the cluster hosts?
 
-xxQS_NAMExx supports the following operating systems.
-
-TODO: Table
+xxQS_NAMExx supports various operating systems. For a full list of supported operating systems, versions, and
+architectures, refer to the chapter 2 of the release notes.
 
 Before installation, check if the service you intend to install on a host is supported by the product packages for 
 that platform.
@@ -231,7 +230,7 @@ Services will be executed under the administrator user.
 
 You must specify the username during the installation process.
 
-Additionally, you can specify an email address of a user that should receive admministrator mail from xxQS_NAMExx.
+Additionally, you can specify an email address of a user that should receive administrator mail from xxQS_NAMExx.
 
 ### What is the name of the cell for this installation?
 
@@ -336,8 +335,13 @@ The maximum number of jobs that can be run simultaneously on a single execution 
 available CPU cores. For optimal performance and utilization, it is recommended to specify a GID range that 
 includes at least the same number of GIDs as the number of CPU cores.
 
-For instance, if the execution host has 128 CPU cores, a maximum of 128 jobs should be started simultaneously. 
+For instance, if the execution host has 128 CPU cores, a maximum of 128 jobs should be started simultaneously.
 To assign a unique ID to each job, a range of GIDs, such as *20000-20128*, could be specified.
+
+It is recommended to properly name the groups of the specified GIDs in the directory service or in
+/etc/groups if no central directory service is available. xxQS_NAMExx itself does not require the name of the 
+groups but some of the common Unix tools do. They might respond with an error message if the group name
+is not available if the tool is executed as part of a job.
 
 ### Which scheduling profile should be used?
 
