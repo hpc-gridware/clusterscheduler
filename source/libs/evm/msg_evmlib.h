@@ -41,7 +41,7 @@
 #define MSG_EVE_UNKNOWNEVCLIENT_US    _MESSAGE(66001, _("no event client known with id " sge_U32CFormat " to %s"))
 #define MSG_EVE_CLIENTREREGISTERED_SSSU _MESSAGE(66002, _("event client " SFQ " (%s/%s/" sge_U32CFormat ") reregistered - it will need a total update"))
 #define MSG_EVE_REG_SUU               _MESSAGE(66003, _(SFQ " registers as event client with id " sge_U32CFormat " event delivery interval " sge_U32CFormat))
-#define MSG_EVE_UNREG_SU              _MESSAGE(66004, _("event client " SFQ " with id " sge_U32CFormat " deregistered"))
+#define MSG_EVE_UNREG_SU              _MESSAGE(66004, _("event client " SFQ " with id " sge_uu32 " deregistered"))
 #define MSG_EVE_EVENTCLIENT           _MESSAGE(66005, _("event client"))
 #define MSG_EVE_ILLEGALIDREGISTERED_U _MESSAGE(66007, _("illegal event client id " sge_U32CFormat " for registration"))
 

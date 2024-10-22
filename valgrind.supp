@@ -72,45 +72,6 @@
 }
 
 {
-   @todo CS-632 (1) Event master does not clean up event clients and their data at shutdown
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z16sge_htable_storeP11_htable_recPKvS2_
-   fun:_Z16cull_hash_insertPK10_lListElemPvP12_cull_htableb
-   fun:_Z14cull_hash_elemPK10_lListElem
-   fun:_Z27cull_hash_create_hashtablesP6_lList
-   fun:_Z12lSelectDPackPKcPK6_lListPK11_lConditionPK7_lDescrPK13_lEnumerationbP15sge_pack_bufferPj
-   fun:_ZL21add_list_event_directP10_lListElemS0_b
-   ...
-}
-{
-   @todo CS-632 (2) Event master does not clean up event clients and their data at shutdown
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z17sge_htable_createiPFPKvS0_EPFiS0_EPFiS0_S0_E
-   fun:_Z16cull_hash_createPK7_lDescri
-   fun:_Z27cull_hash_create_hashtablesP6_lList
-   fun:_Z12lSelectDPackPKcPK6_lListPK11_lConditionPK7_lDescrPK13_lEnumerationbP15sge_pack_bufferPj
-   fun:_ZL21add_list_event_directP10_lListElemS0_b
-   ...
-}
-
-{
-   @todo CS-632 (3) Event master does not clean up event clients and their data at shutdown
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z15lCreateListHashPKcPK7_lDescrb
-   fun:_ZL21add_list_event_directP10_lListElemS0_b
-   ...
-}
-
-{
    @todo CS-633 (1) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
    Memcheck:Leak
    match-leak-kinds: possible

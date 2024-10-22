@@ -120,7 +120,6 @@ sge_worker_terminate() {
     * shutdown process will be faster
     */
    cl_thread_list_elem_t *thr;
-
    cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.worker_thread_pool);
    while ((thr = thr_nxt) != nullptr) {
       thr_nxt = cl_thread_list_get_next_elem(thr);
