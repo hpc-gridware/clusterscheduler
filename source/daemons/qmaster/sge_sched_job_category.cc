@@ -155,7 +155,7 @@ sge_delete_job_category(lListElem *job) {
 
    /* First part */
    auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
-   if (CATEGORY_LIST && cat) {
+   if (CATEGORY_LIST != nullptr && cat != nullptr) {
       u_long32 rc = lGetUlong(cat, CT_refcount);
       if (rc > 1) {
          lSetUlong(cat, CT_refcount, --rc);
@@ -175,7 +175,6 @@ sge_delete_job_category(lListElem *job) {
       }
    }
    lSetRef(job, JB_category, nullptr);
-
 
    DRETURN(0);
 }
@@ -281,15 +280,15 @@ sge_category_count() {
 *******************************************************************************/
 int
 sge_reset_job_category() {
-   lListElem *cat;
    DENTER(TOP_LAYER);
 
+   lListElem *cat;
    for_each_rw (cat, CATEGORY_LIST) {
-      const lListElem *cache;
-
-      for_each_ep(cache, lGetList(cat, CT_cache)) {
+      lListElem *cache;
+      for_each_rw(cache, lGetList(cat, CT_cache)) {
          int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
          sge_free(&range);
+         lSetRef(cache, CCT_pe_job_slots, nullptr);
       }
 
       lSetUlong(cat, CT_rejected, 0);
