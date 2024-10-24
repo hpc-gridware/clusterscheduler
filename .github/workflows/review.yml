@@ -1,0 +1,20 @@
+on:
+  pull_request:
+    branches:
+      - master
+      - review
+
+jobs:
+  run_code_review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Code Review GPT
+        uses: mattzcarey/code-review-gpt@v0.1.9
+        with:
+          OPENAI_API_KEY: ${{ secrets.GPTREVIEWKEY }}
+          MODEL: 'gpt-4o'
+          GITHUB_TOKEN: ${{ github.token }}
