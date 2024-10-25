@@ -147,6 +147,7 @@ namespace ocs {
       return topo_get_total_amount_of_type(HWLOC_OBJ_PU);
    }
 
+#if 1
    /**
     * @param[in] object a hwloc object, e.g. a package (socket)
     * @param[in] type the type we are searching for, e.g. core (HWLOC_OBJ_CORE)
@@ -167,6 +168,7 @@ namespace ocs {
 
       return ret;
    }
+#endif
 
    /**
     * @param[in] socket_number
@@ -176,6 +178,8 @@ namespace ocs {
    int topo_get_amount_of_cores_for_socket(int socket_number) {
       int ret = 0;
 
+#if 1
+      // How could we get inhomgenious topology?
       if (topo_has_topology_information()) {
          hwloc_obj_t socket;
          socket = hwloc_get_obj_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_number);
@@ -183,6 +187,11 @@ namespace ocs {
             ret = topo_count_type_in_object(socket, HWLOC_OBJ_CORE);
          }
       }
+#else
+      int socket = ocs::topo_get_total_amount_of_sockets();
+      int cores =  ocs::topo_get_total_amount_of_cores();
+      ret = cores / socket;
+#endif
 
       return ret;
    }
@@ -196,6 +205,7 @@ namespace ocs {
    int topo_get_amount_of_threads_for_core(int socket_number, int core_number) {
       int ret = 0;
 
+#if 1
       if (topo_has_topology_information()) {
          hwloc_obj_t core;
          core = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_number,
@@ -204,6 +214,11 @@ namespace ocs {
             ret = topo_count_type_in_object(core, HWLOC_OBJ_PU);
          }
       }
+#else
+      int cores =  ocs::topo_get_total_amount_of_cores();
+      int threads =  ocs::topo_get_total_amount_of_threads();
+      ret = threads / cores;
+#endif
 
       return ret;
    }
