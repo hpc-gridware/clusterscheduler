@@ -2599,7 +2599,7 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
 /* ---------------------------------------------------------------------------*/
 #if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 
-bool get_linear_automatic_socket_core_list_and_account(const int amount, 
+bool get_linear_automatic_socket_core_list_and_account(const int amount,
       int** list_of_sockets, int* samount, int** list_of_cores, int* camount, 
       char** topo_by_job, int* topo_by_job_length)
 {
@@ -2620,12 +2620,13 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
    int i;
 
    /* get the topology which could be used by the job */
-   tmp_topo_busy = (char *) calloc(logical_used_topology_length, sizeof(char));
-   memcpy(tmp_topo_busy, logical_used_topology, logical_used_topology_length*sizeof(char));
+   tmp_topo_busy = sge_strdup(nullptr, logical_used_topology);
+   if (tmp_topo_busy == nullptr) {
+      return false;
+   }
 
    /* 1. Find all free sockets and try to fit the request on them     */
-   if (get_free_sockets(tmp_topo_busy, logical_used_topology_length, &sockets, 
-         &sockets_size)) {
+   if (get_free_sockets(tmp_topo_busy, logical_used_topology_length, &sockets, &sockets_size)) {
       
       /* there are free sockets: use them */
       for (i = 0; i < sockets_size && used_cores < amount; i++) {
@@ -2975,8 +2976,10 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
    /* temporary accounting string -> account on this and 
       when eventually successful then copy this string back 
       to global topo_busy string */
-   tmp_topo_busy = (char *) calloc(logical_used_topology_length + 1, sizeof(char));
-   memcpy(tmp_topo_busy, logical_used_topology, logical_used_topology_length*sizeof(char));
+   tmp_topo_busy = sge_strdup(nullptr, logical_used_topology);
+   if (tmp_topo_busy == nullptr) {
+      return false;
+   }
 
    DPRINTF("start_at_socket: %d, start_at_core: %d\n", start_at_socket, start_at_core);
 
@@ -3007,7 +3010,7 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
    
    /* check if we found the socket and core we want to start searching */
    if (sc != start_at_socket || cc != start_at_core) {
-      /* could't find the start socket and start core */
+      /* couldn't find the start socket and start core */
       sge_free(&tmp_topo_busy);
       DRETURN(false);
    }
@@ -3080,15 +3083,13 @@ static bool create_topology_used_per_job(char** accounted_topology, int* account
    (*accounted_topology_length) = logical_used_topology_length;
    
    /* copy string of current topology in use */
-   (*accounted_topology) = (char *)calloc(logical_used_topology_length+1, sizeof(char));
-   if ((*accounted_topology) == nullptr) {
+   *accounted_topology = sge_strdup(nullptr, logical_used_topology);
+   if (*accounted_topology == nullptr) {
       /* out of memory */
       return false;
    }
 
-   memcpy((*accounted_topology), logical_used_topology, sizeof(char)*logical_used_topology_length);
-   
-   /* revert all accounting from other jobs */ 
+   /* revert all accounting from other jobs */
    for (i = 0; i < logical_used_topology_length; i++) {
       if ((*accounted_topology)[i] == 'c') {
          (*accounted_topology)[i] = 'C';
