@@ -3083,7 +3083,7 @@ static bool create_topology_used_per_job(char** accounted_topology, int* account
    (*accounted_topology_length) = logical_used_topology_length;
    
    /* copy string of current topology in use */
-   *accounted_topology = strdup(logical_used_topology);
+   *accounted_topology = sge_strdup(nullptr, logical_used_topology);
    if (*accounted_topology == nullptr) {
       /* out of memory */
       return false;
