@@ -440,6 +440,9 @@ const char *event_text(const lListElem *event, dstring *buffer)
       break;
    }
 
+   u_long64 unique_id = lGetUlong64(event, ET_unique_id);
+   sge_dstring_sprintf_append(buffer, " (# " sge_u64 ")", unique_id);
+
    sge_dstring_free(&id_dstring);
 
    return sge_dstring_get_string(buffer);

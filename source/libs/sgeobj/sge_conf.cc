@@ -149,7 +149,7 @@ static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
 static bool disable_secondary_ds = false;
-#define DEFAULT_DISABLE_SECONDARY_DS_READER (true)
+#define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
 static bool disable_secondary_ds_execd = false;
 static bool prof_listener_thrd = false;

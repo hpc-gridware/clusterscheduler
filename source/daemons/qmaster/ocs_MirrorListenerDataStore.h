@@ -27,5 +27,6 @@ namespace ocs {
       MirrorListenerDataStore();
       ~MirrorListenerDataStore() override = default;
       void subscribe_events() override;
+      void update_sessions_and_move_requests(u_long unique_id) override;
    };
 }

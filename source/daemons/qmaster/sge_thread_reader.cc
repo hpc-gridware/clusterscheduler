@@ -78,6 +78,7 @@ sge_reader_initialize() {
     * TODO: EB: corresponding destroy function is missing during shutdown
     */
    sge_tq_create(&ReaderRequestQueue);
+   sge_tq_create(&ReaderWaitingRequestQueue);
 
    INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_reader_threads), threadnames[READER_THREAD]);
    cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
@@ -108,6 +109,7 @@ sge_reader_terminate() {
    }
 
    sge_tq_wakeup_waiting(ReaderRequestQueue);
+   // no need to handle ReaderWaitingRequestQueue because we have no threads waiting there
 
    /*
     * Shutdown/delete the threads and wait for termination
@@ -166,6 +168,7 @@ sge_reader_main(void *arg) {
                         p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(ReaderRequestQueue));
+      MONITOR_SET_WQLEN(p_monitor, sge_tq_get_task_count(ReaderWaitingRequestQueue));
 
       // handle the packet only if it is not nullptr and the shutdown has not started
       if (packet != nullptr && !sge_thread_has_shutdown_started()) {

@@ -136,7 +136,9 @@ namespace ocs {
     */
    void
    MirrorDataStore::wait_for_event(lList **event_list) {
+#if 0
       int pthread_ret = 0;
+#endif
       bool do_ack = false;
 
       DENTER(TOP_LAYER);
@@ -148,25 +150,16 @@ namespace ocs {
          // if we did not receive a signal about new events then we will wait for one
          if (!triggered) {
 #if 0
-            static const time_t timeout_s = 15;
-            static const time_t timeout_n = 0;
-            struct timespec ts{};
-            time_t current_time = time(nullptr);
-            ts.tv_sec = current_time + timeout_s;
-            ts.tv_nsec = timeout_n;
-
-            // wait till we get notified by event master thread that there are new events
-
-            DPRINTF("will wait for events now (with timeout)\n");
-            pthread_ret = pthread_cond_timedwait(&cond_var, &mutex, &ts);
-#else
             DPRINTF("will wait for events now (without timeout)\n");
-            pthread_ret = pthread_cond_wait(&cond_var, &mutex);
+            pthread_ret =
 #endif
+               pthread_cond_wait(&cond_var, &mutex);
          }
 
+#if 0
          DPRINTF("woke up (pthread_ret=%d, triggered=%s, #events=%d)\n",
                  pthread_ret, triggered ? "true" : "false", lGetNumberOfElem(new_events));
+#endif
 
          // fetch the new events
          if (triggered) {
@@ -352,14 +345,28 @@ namespace ocs {
                   got_lock = true;
                }
 
+               // we got the lock and can process the events
                if (got_lock) {
-                  // we got the lock and can process the events
+                  // find the biggest unique ID of the events that we have to process
+                  bool found_last_event = false;
+                  const lListElem *last_event = lLast(event_list);
+                  u_long64 last_unique_id;
+                  if (last_event != nullptr) {
+                     last_unique_id = lGetUlong64(last_event, ET_unique_id);
+                     found_last_event = true;
+                  }
+
+                  // process the events
                   sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
                   lFreeList(&event_list);
-
                   if (mirror_ret == SGE_EM_OK) {
                      did_handle_initial_events = true;
                      did_handle_events = true;
+
+                     // update the sessions about the last event that we processed so that waiting requests can continue
+                     if (found_last_event) {
+                        update_sessions_and_move_requests(last_unique_id);
+                     }
                   } else {
                      DPRINTF("error during event processing\n");
                   }
@@ -408,7 +415,9 @@ namespace ocs {
                sge_usleep(50000);
             }
          } while (do_qmaster_shutdown);
+#if 0
          DPRINTF("passed cancellation point\n");
+#endif
       }
 
       // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

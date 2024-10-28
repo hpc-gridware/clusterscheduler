@@ -64,6 +64,7 @@
 
 sge_tq_queue_t *GlobalRequestQueue = nullptr;
 sge_tq_queue_t *ReaderRequestQueue = nullptr;
+sge_tq_queue_t *ReaderWaitingRequestQueue = nullptr;
 
 /****** gdi/request_internal/sge_gdi_packet_create_multi_answer() ***********
 *  NAME

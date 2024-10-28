@@ -195,6 +195,9 @@ sge_sl_lock(sge_sl_list_t *list);
 void
 sge_sl_unlock(sge_sl_list_t *list);
 
+void
+sge_sl_elem_insert(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_direction_t direction);
+
 bool
 sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction);
 

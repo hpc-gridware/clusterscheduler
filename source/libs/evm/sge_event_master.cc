@@ -83,6 +83,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
@@ -1490,9 +1491,10 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
    // Either we get a single evr or a list but not both
    bool single_evr = (evr != nullptr);
 
-   // Add a unique ID to the events part of the commited evr (list)
+   // Find the next unique ID for the event
    u_long64 unique_id = oge_get_next_unique_event_id();
 
+   // Add a unique ID to to events part of the commited evr or evr_list.
    if (single_evr) {
       add_unique_id_to_evr(evr, unique_id);
    } else {
@@ -1503,8 +1505,8 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
       }
    }
 
-   // @todo Store the unique ID for the active session
-   // gdi_session_set_unique_id(gdi_session, unique_id);
+   // Process the unique ID for the event that was triggered
+   ocs::SessionManager::set_write_unique_id(gdi_session, unique_id);
 
    // Add the request to the event master request list
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
@@ -2669,7 +2671,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
       selection = subscription[type].where;
       fields = subscription[type].what;
 
-#if 1
+#if 0
       DPRINTF("deliver event: %d with where filter=%s and what filter=%s\n",
               type, selection?"true":"false", fields?"true":"false");
 #endif
@@ -2677,7 +2679,9 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
       if (fields) {
          descr = getDescriptorL(subscription, lp, type);
 
+#if 0
          DPRINTF("Reducing event data\n");
+#endif
 
          if (!list_select(subscription, type, &clp, lp, selection, fields,
                           descr, internal_client)) {
@@ -2710,7 +2714,9 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
          }
       } else if (copy_event) {
          /* If there's no what clause, and we want a copy, we copy the list */
+#if 0
          DPRINTF("Copying event data\n");
+#endif
          clp = lCopyListHash(lGetListName(lp), lp, internal_client);
       } else {
          /* If there's no what clause, and we don't want to copy, we just reuse
@@ -2727,7 +2733,9 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    /* If we're making a copy, copy the event and swap the orignial list
     * back into the original event */
    if (copy_event) {
+#if 0
       DPRINTF("Copying event\n");
+#endif
       ep = lCopyElemHash(event, false);
 
       lXchgList(event, ET_new_version, &lp);
@@ -3439,7 +3447,9 @@ void sge_event_master_process_requests(monitoring_t *monitor)
       lListElem *request = nullptr;
 
       while ((request = lFirstRW(requests)) != nullptr) {
+#if 0
          DPRINTF("processing event master request: %d\n", lGetUlong(request, EVR_operation));
+#endif
          switch (lGetUlong(request, EVR_operation)) {
             case EVR_ADD_EVC:
                sge_event_master_process_add_event_client(request, monitor);
