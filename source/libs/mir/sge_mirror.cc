@@ -407,6 +407,7 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
                               sge_mirror_callback callback_before, sge_mirror_callback callback_after,
                               void *client_data, const lCondition *where, const lEnumeration *what)
 {
+   sge_mirror_error ret = SGE_EM_OK;
    lListElem *what_el = lWhatToElem(what);
    lListElem *where_el = lWhereToElem(where);
 
@@ -711,7 +712,8 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
          break;
       case SGE_TYPE_ZOMBIE:
       case SGE_TYPE_SUSER:
-            return SGE_EM_NOT_INITIALIZED;
+         ret = SGE_EM_NOT_INITIALIZED;
+         break;
       case SGE_TYPE_AR:
          evc->ec_subscribe(evc, sgeE_AR_LIST);
          evc->ec_subscribe(evc, sgeE_AR_ADD);
@@ -725,12 +727,14 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
-            return SGE_EM_NOT_INITIALIZED;
+         ret = SGE_EM_NOT_INITIALIZED;
+         break;
       default:
-         return SGE_EM_BAD_ARG;
+         ret = SGE_EM_BAD_ARG;
+         break;
    }
 
-   { /* install callback function */
+   if (ret == SGE_EM_OK) { /* install callback function */
       mirror_description *mirror_base = mir_get_mirror_base();
 
       mirror_base[type].callback_before = callback_before;
@@ -741,7 +745,7 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
    lFreeElem(&where_el);
    lFreeElem(&what_el);
 
-   return SGE_EM_OK;
+   return ret;
 }
 
 /****** Eventmirror/sge_mirror_unsubscribe() ************************************

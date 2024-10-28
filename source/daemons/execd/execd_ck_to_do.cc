@@ -395,7 +395,6 @@ update_wallclock_usage(u_long64 now, const lListElem *job, const lListElem *ja_t
 
 int do_ck_to_do(bool is_qmaster_down) {
    u_long64 now;
-   u_long64 pdc_interval = U_LONG64_MAX;
    static u_long64 next_pdc = 0;
    static u_long64 next_signal = 0;
    static u_long64 next_old_job = 0;
@@ -427,17 +426,24 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
 
 #ifdef COMPILE_DC
-   /*
-    * Collecting usage is only necessary if there are
-    * jobs/tasks on this execution host and if it isn't
-    * disabled by the execd_param PDC_INTERVAL set to NEVER. 
-    */
-   pdc_interval = sge_gmt32_to_gmt64(mconf_get_pdc_interval());
-   if (lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 &&
-       pdc_interval != U_LONG64_MAX &&
-       next_pdc <= now ) {
+   // Find if we need to trigger PDC. It will be triggered
+   // * if the PDC_INTERVAL has been changed from PDC_DISABLED to a valid value
+   // * if the PDC_INTERVAL has been changed to a new value
+   // * or when it was not changed but the time has come to trigger it again
+   u_long64 pdc_interval = mconf_get_pdc_interval();
+   static u_long64 pdc_interval_old = PDC_DISABLED;
+   bool do_pdc = false;
+   if (pdc_interval == PDC_DISABLED) {
+      next_pdc = U_LONG64_MAX;
+      do_pdc = false;
+   } else if (pdc_interval_old != pdc_interval || next_pdc <= now) {
       next_pdc = now + pdc_interval;
+      do_pdc = true;
+   }
+   pdc_interval_old = pdc_interval;
 
+   // PDC trigger can be ignored if there are no jobs to observe
+   if (lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 && do_pdc) {
       notify_ptf();
 
       sge_switch2start_user();
@@ -589,7 +595,7 @@ int do_ck_to_do(bool is_qmaster_down) {
 
          /* if pdc_interval is equals load_report time syncronize both calls to
             make the online usage acurate as possible */
-         if (mconf_get_load_report_time() == mconf_get_pdc_interval()) {
+         if (sge_gmt32_to_gmt64(mconf_get_load_report_time()) == mconf_get_pdc_interval()) {
             next_pdc = next_report;
          }
       }

@@ -1462,13 +1462,13 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
 
 /****** cull/multitype/lGetRef() **********************************************
 *  NAME
-*     lGetRef() -- Returns the character for a field name 
+*     lGetRef() -- Returns the reference for a field name
 *
 *  SYNOPSIS
 *     lRef lGetRef(const lListElem *ep, int name) 
 *
 *  FUNCTION
-*     Returns the character for a field name 
+*     Returns the reference for a field name
 *
 *  INPUTS
 *     const lListElem *ep - element 

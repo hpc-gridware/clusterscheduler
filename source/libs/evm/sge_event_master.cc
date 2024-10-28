@@ -349,7 +349,7 @@ static void       init_send_events();
 static void       flush_events(lListElem*, int);
 static void       total_update(lListElem*, u_long64 gdi_session);
 static void       build_subscription(lListElem*);
-static void       remove_event_client(lListElem **client, int event_client_id, bool lock_event_master);
+static void       remove_event_client(lListElem **client, bool lock_event_master);
 static void       check_send_new_subscribed_list(const subscription_t*, 
                                                  const subscription_t*, lListElem*,
                                                  ev_event event);
@@ -367,7 +367,6 @@ static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
 static lListElem* get_event_client(u_long32 id);
 static u_long32   allocate_new_dynamic_id(lList **answer_list);
 static void       free_dynamic_id(lList **answer_list, u_long32 id);
-static void       set_flush();
 
 static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock);
 
@@ -384,6 +383,30 @@ sge_event_master_init_transaction_store(event_master_transaction_t *t_store)
 {
    t_store->is_transaction = false;
    t_store->transaction_requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+}
+
+void sge_cleanup_event_master_control(void *arg) {
+   // there shouldn't be anybody left accessing the event master control anymore, but just to be sure
+   sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+
+   // remove leftover event clients
+   lListElem *event_client;
+   while ((event_client = lFirstRW(Event_Master_Control.clients)) != nullptr) {
+      DEBUG("event client " sge_u32 " (state: " sge_u32 ") is still registered at event master shutdown",
+            lGetUlong(event_client, EV_id), lGetUlong(event_client, EV_state));
+      remove_event_client(&event_client, false);
+   }
+
+   // free data structures and pthread resources
+   lFreeList(&Event_Master_Control.clients);
+   lFreeList(&Event_Master_Control.client_ids);
+   lFreeList(&Event_Master_Control.requests);
+   pthread_cond_destroy(&Event_Master_Control.cond_var);
+   pthread_mutex_destroy(&Event_Master_Control.cond_mutex);
+   pthread_mutex_destroy(&Event_Master_Control.request_mutex);
+
+   sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   pthread_mutex_destroy(&Event_Master_Control.mutex);
 }
 
 /****** Eventclient/Server/sge_add_event_client() ******************************
@@ -496,7 +519,7 @@ int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, 
          ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
 
          /* delete old event client entry, and we already hold the lock! */
-         remove_event_client(&ep, id, false);
+         remove_event_client(&ep, false);
       }
 
       /* Otherwise, get a new dynamic event client id */
@@ -533,7 +556,7 @@ int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, 
          ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
 
          /* delete old event client entry, and we already have the mutex! */
-         remove_event_client(&ep, id, false);
+         remove_event_client(&ep, false);
       } else {
          INFO(MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time));
       }
@@ -644,7 +667,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
    DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-   set_flush();
+   sge_event_master_flush_requests();
 
    DRETURN(STATUS_OK);
 }
@@ -988,15 +1011,29 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
 *******************************************************************************/
 u_long32
 sge_get_max_dynamic_event_clients() {
-   u_long32 actual_value = 0;
-
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   actual_value = Event_Master_Control.max_event_clients;
+   u_long32 ret = Event_Master_Control.max_event_clients;
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   DRETURN(actual_value);
+   DRETURN(ret);
+}
+
+/**
+* @brief Get the number of event clients
+*
+* @return u_long32 - number of event clients (length of the client list)
+*/
+u_long32
+sge_get_num_event_clients() {
+   DENTER(TOP_LAYER);
+
+   sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   u_long32 ret = lGetNumberOfElem(Event_Master_Control.clients);
+   sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+
+   DRETURN(ret);
 }
 
 /****** Eventclient/Server/sge_has_event_client() ******************************
@@ -1516,7 +1553,8 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
       lAppendList(Event_Master_Control.requests, evr_list);
    }
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   set_flush();
+
+   sge_event_master_flush_requests();
    DRETURN_VOID;
 }
 
@@ -1734,7 +1772,7 @@ sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number)
    lAppendElem(Event_Master_Control.requests, evr);
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
-   set_flush();
+   sge_event_master_flush_requests();
    DRETURN(true);
 }
 
@@ -1814,11 +1852,7 @@ sge_deliver_events_immediately(u_long32 event_client_id)
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "deliver events immediately");
    } else {
       flush_events(client, 0);
-
-      sge_mutex_lock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
-      Event_Master_Control.delivery_signaled = true;
-      pthread_cond_signal(&Event_Master_Control.cond_var);
-      sge_mutex_unlock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
+      sge_event_master_flush_requests(true);
    }
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
@@ -2009,27 +2043,26 @@ sge_event_master_wait_next()
 *  INPUTS
 *     lListElem **client     - event client to remove
 *     int event_client_id    - event client id to remove
-*     bool lock_event_master - shall the function aquire the event_master mutex
+*     bool lock_event_master - shall the function acquire the event_master mutex
 *
 *  NOTES
 *     MT-NOTE: remove_event_client() is not MT safe
 *     - it locks the event master mutex to modify the event client list
-*     - it assums that the event client is locked before this method is called
+*     - it assumes that the event client is locked before this method is called
 *
 *******************************************************************************/
 static void
-remove_event_client(lListElem **client, int event_client_id, bool lock_event_master) {
-   subscription_t *old_sub = nullptr;
-   int i;
-
+remove_event_client(lListElem **client, bool lock_event_master) {
    DENTER(TOP_LAYER);
 
-   INFO(MSG_EVE_UNREG_SU, lGetString(*client, EV_name), sge_u32c(lGetUlong(*client, EV_id)));
+   u_long32 event_client_id = lGetUlong(*client, EV_id);
+   INFO(MSG_EVE_UNREG_SU, lGetString(*client, EV_name), event_client_id);
 
+   subscription_t *old_sub = nullptr;
    old_sub = (subscription_t *)lGetRef(*client, EV_sub_array);
    if (old_sub) {
       /* now free event client subscription data */
-      for (i = 0; i < sgeE_EVENTSIZE; i++) {
+      for (int i = 0; i < sgeE_EVENTSIZE; i++) {
          lFreeWhere(&old_sub[i].where);
          lFreeWhat(&old_sub[i].what);
 
@@ -2122,7 +2155,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
 
       /* is the event client in state terminated? remove it */
       if (lGetUlong(event_client, EV_state) == EV_terminated) {
-         remove_event_client(&event_client, ec_id, false);
+         remove_event_client(&event_client, false);
          /* we removed a client, continue with the next one */
          event_client = next_event_client;
          continue;
@@ -2264,7 +2297,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
       if (do_remove) {
          DPRINTF("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout);
          ERROR(MSG_COM_ACKTIMEOUT4EV_SIS, commproc, (int) commid, host);
-         remove_event_client(&event_client, ec_id, false);
+         remove_event_client(&event_client, false);
       }
 
       event_client = next_event_client;
@@ -2289,7 +2322,7 @@ flush_events(lListElem *event_client, int interval) {
    lSetUlong64(event_client, EV_next_send_time, next_send);
 
    if (now >= next_send) {
-      set_flush();
+      sge_event_master_flush_requests();
    }
 
    DPRINTF("%s: %s %d\tNOW: " sge_u64 " NEXT FLUSH: " sge_u64 " (%s,%s,%d)\n",
@@ -2764,8 +2797,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    /* chain in new event */
    lAppendElem(lp, ep);
 
-   DPRINTF("%d %s\n", lGetUlong(event_client, EV_id),
-           event_text(ep, &buffer_wrapper));
+   DPRINTF("%d %s\n", lGetUlong(event_client, EV_id), event_text(ep, &buffer_wrapper));
 
    /* check if event clients wants flushing */
    subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
@@ -3360,25 +3392,24 @@ static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock)
    }
 }
 
-/****** sge_event_master/set_flush() *******************************************
-*  NAME
-*     set_flush() -- Flush all events
+/**
+* @brief flush all requests
 *
-*  SYNOPSIS
-*     void set_flush()
+* Triggers immediate processing of all requests.
+* After processing requests the events are delivered to clients.
 *
-*  FUNCTION
-*     Flushes all pending events
+* @note The former name of the function (set_flush) suggested that events were immediately flushed.
+*       This is not the case! First all requests are processed, only then the events are delivered.
+*       Processing the events can take some time (e.g. when a total update of a client is requested.
+*       We might want to set a flag to signal that the existing events shall be delivered first.
 *
-*  NOTE
-*     MT-NOTE: set_flush is thread safe.
-*******************************************************************************/
-static void set_flush()
-{
+* @param force - if true, the delivery (the condition variable) is signalled again, even if it was already signaled
+*/
+void sge_event_master_flush_requests(bool force) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_master_cond_mutex", __func__, __LINE__, &Event_Master_Control.cond_mutex);
-   if (!Event_Master_Control.delivery_signaled) {
+   if (!Event_Master_Control.delivery_signaled || force) {
       Event_Master_Control.delivery_signaled = true;
       pthread_cond_signal(&Event_Master_Control.cond_var);
    }

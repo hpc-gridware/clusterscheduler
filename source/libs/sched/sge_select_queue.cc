@@ -100,14 +100,19 @@ enum {
 };
 
 typedef struct {
-   lListElem *category;          /* ref to the category */
-   lListElem *cache;             /* ref to the cache object in th category */
-   bool       use_category;      /* if true: use the category
-                                    with immediate dispatch runs only and only if there is more than a single job of that category
-                                    prevents 'skip_host_list' and 'skip_queue_list' be used with reservation */
-   bool       mod_category;      /* if true: update the category with new messages, queues, and hosts */
-   u_long32  *possible_pe_slots;  /* stores all possible slots settings for a pe job with ranges */
-   bool      is_pe_slots_rev;    /* if it is true, the possible_pe_slots are stored in the category */
+   lListElem *category;           /* ref to the category */
+   lListElem *cache;              /* ref to the cache object in the category */
+   bool       use_category;       /* if true: use the category
+                                   * with immediate dispatch runs only and only if there is more than a single job of that category
+                                   * prevents 'skip_host_list' and 'skip_queue_list' be used with reservation
+                                   */
+   bool       mod_category;       /* if true: update the category with new messages, queues, and hosts */
+   u_long32  *possible_pe_slots;  /* stores all possible slots settings for a pe job with ranges
+                                   * it is stored in the job category cache, attribute CCT_pe_job_slots
+                                   * and is *not* freed with the category_use_t object
+                                   * (unless is_pe_slots_rev == false which means: it is not referenced in the cache)
+                                   */
+   bool      is_pe_slots_rev;     /* if it is true, the possible_pe_slots are stored in the category */
 } category_use_t;
 
 static void
@@ -882,7 +887,6 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 static dispatch_t
 parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 {
-
    int min_slots, max_slots;
    int max_pe_slots;
    int first, last;
@@ -893,7 +897,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
    const char *pe_name = best->pe_name;
    bool is_first = true;
    int old_logging = 0;
-   category_use_t use_category;
+   category_use_t use_category{};
    u_long32 max_slotsp = 0;
    int current = 0;
    int match_current = 0;
@@ -953,6 +957,9 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
    }
    if (max_slotsp == 0) {
       DPRINTF("no slots in PE %s available for job " sge_u32"\n", pe_name, best->job_id);
+      if (!use_category.is_pe_slots_rev) {
+         sge_free(&(use_category.possible_pe_slots));
+      }
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -3712,6 +3719,7 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
          use_category->is_pe_slots_rev = true;
       } else {
          use_category->is_pe_slots_rev = false;
+
       }
    } else {
       use_category->is_pe_slots_rev = true;
@@ -3749,8 +3757,10 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
 
    use_category->category = (lListElem *)lGetRef(job, JB_category);
    if (use_category->category != nullptr) {
+      // the category cache is stored in the job category object and contains an element per pe
       use_category->cache = lGetElemStrRW(lGetList(use_category->category, CT_cache), CCT_pe_name, pe_name);
       if (use_category->cache == nullptr) {
+         // there is no cache yet, create it
          use_category->cache = lCreateElem(CCT_Type);
 
          lSetString(use_category->cache, CCT_pe_name, pe_name);
@@ -3758,6 +3768,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
          lSetList(use_category->cache, CCT_ignore_hosts, lCreateList(nullptr, CTI_Type));
          lSetList(use_category->cache, CCT_job_messages, lCreateList(nullptr, MES_Type));
 
+         // store the cache in the job category
          if (lGetList(use_category->category, CT_cache) == nullptr) {
             lSetList(use_category->category, CT_cache, lCreateList("pe_cache", CCT_Type));
          }
@@ -3769,6 +3780,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
       use_category->use_category = a->start == DISPATCH_TIME_NOW &&
                                    lGetUlong(use_category->category, CT_refcount) > MIN_JOBS_IN_CATEGORY;
    } else {
+      // we have a job without category (does this case exist at all?)
       use_category->cache = nullptr;
       use_category->mod_category = false;
       use_category->use_category = false;

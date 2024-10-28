@@ -202,6 +202,12 @@ namespace ocs {
       SGE_ASSERT(lock_type != LOCK_GLOBAL);
    }
 
+   MirrorDataStore::~MirrorDataStore() {
+      pthread_mutex_destroy(&mutex);
+      pthread_cond_destroy(&cond_var);
+      lFreeList(&new_events);
+   }
+
    /**
     * Mirror threads main routine.
     *

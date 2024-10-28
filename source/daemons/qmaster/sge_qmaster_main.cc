@@ -207,7 +207,14 @@ int main(int argc, char *argv[]) {
          CRITICAL(SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS);
          sge_exit(1);
       }
-      if (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
+      cl_com_handle *handle = cl_com_get_handle(prognames[QMASTER], 1);
+      if (handle != nullptr) {
+         // this is the smallest possible synchron receive timeout
+         // it is used by listener threads waiting for messages
+         // the default (5s) seems pretty high, if listener threads pass their main loop once a second in an idle
+         // system, this shouldn't cause any noticeable load
+         cl_com_set_synchron_receive_timeout(handle, 1);
+      } else {
          /* sleep when prepare_enroll() failed */
          sleep(1);
       }

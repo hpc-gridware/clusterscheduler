@@ -53,7 +53,7 @@ FILELIST="3rd_party bin ckpt dtrace examples inst_sge install_execd install_qmas
 
 OPTFILES="catman doc include man hadoop"
 
-SUIDFILES="utilbin/*/testsuidroot bin/*/sgepasswd"
+SUIDFILES="utilbin/*/testsuidroot"
 
 umask 022
 

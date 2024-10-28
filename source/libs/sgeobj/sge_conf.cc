@@ -53,6 +53,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "comm/commlib.h"
 
@@ -181,7 +182,7 @@ static bool enable_binding = true;
 static bool enable_binding = false;
 #endif
 static bool enable_addgrp_kill = false;
-static u_long32 pdc_interval = 1;
+static u_long64 pdc_interval = 1;
 static char s_descriptors[100];
 static char h_descriptors[100];
 static char s_maxproc[100];
@@ -1025,16 +1026,18 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (!strncasecmp(s, "PDC_INTERVAL", sizeof("PDC_INTERVAL")-1)) {
+            u_long32 tmp_pdc_interval;
+
             if (!strcasecmp(s, "PDC_INTERVAL=NEVER")) {
-               pdc_interval = U_LONG32_MAX;
+               pdc_interval = PDC_DISABLED;
             } else if (!strcasecmp(s, "PDC_INTERVAL=PER_LOAD_REPORT")) {
-               pdc_interval = load_report_time;
-            } else if (parse_time_param(s, "PDC_INTERVAL", &pdc_interval)) {
+               pdc_interval = sge_gmt32_to_gmt64(load_report_time);
+            } else if (parse_time_param(s, "PDC_INTERVAL", &tmp_pdc_interval)) {
+               pdc_interval = sge_gmt32_to_gmt64(tmp_pdc_interval);
             } else {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
-                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params", "PDC_INTERVAL",
-                                       1);
-               pdc_interval = 1;
+                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params", "PDC_INTERVAL", 1);
+               pdc_interval = sge_gmt32_to_gmt64(1);
             }
             continue;
          }
@@ -2113,13 +2116,18 @@ bool mconf_get_enable_addgrp_kill() {
    DRETURN(ret);
 }
 
-u_long32 mconf_get_pdc_interval() {
-   u_long32 ret;
-
+/** @brief Get the value of the PDC_INTERVAL configuration parameter.
+ *
+ * Returns the value of PDC_DISABLED if the PDC_INTERVAL has been set to NEVER.
+ * Will correspond to the load_report_time if the PDC_INTERVAL has been set PER_LOAD_REPORT.
+ * 1 if not other specified.
+ *
+ * @return The value of the pdc_interval configuration parameter.
+ */
+u_long64 mconf_get_pdc_interval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = pdc_interval;
+   u_long64 ret = pdc_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

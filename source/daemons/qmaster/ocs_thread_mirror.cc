@@ -19,11 +19,13 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_log.h"
 
 #include "ocs_thread_mirror.h"
 #include "ocs_MirrorReaderDataStore.h"
 #include "ocs_MirrorListenerDataStore.h"
 #include "sge_thread_main.h"
+#include "msg_qmaster.h"
 
 namespace ocs {
    static void *
@@ -82,6 +84,8 @@ namespace ocs {
 
       // empty the container
       Main_Control.mirror_thread_pool.clear();
+
+      INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[EVENT_MIRROR_THREAD]);
 
       DRETURN_VOID;
    }

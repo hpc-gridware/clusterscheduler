@@ -89,6 +89,8 @@ typedef struct {
 } event_master_control_t;
 
 extern event_master_control_t Event_Master_Control;
+void sge_cleanup_event_master_control(void *arg);
+void sge_event_master_flush_requests(bool force = false);
 
 void sge_event_master_process_requests(monitoring_t *monitor);
 void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
@@ -145,8 +147,8 @@ int sge_resync_schedd(monitoring_t *monitor, u_long64 gdi_session);
 
 u_long32 sge_set_max_dynamic_event_clients(u_long32 max);
 u_long32 sge_get_max_dynamic_event_clients();
+u_long32 sge_get_num_event_clients();
 
-void sge_event_master_shutdown();
 void sge_event_master_init();
 bool sge_commit(u_long64 gdi_session);
 void sge_set_commit_required();

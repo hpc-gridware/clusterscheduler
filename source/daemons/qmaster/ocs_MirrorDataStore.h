@@ -38,7 +38,7 @@ namespace ocs {
       pthread_cond_t cond_var;                     ///< used to wait for new events and to wakeup this thread
       const std::string mutex_name;                ///< unique mutex name
       volatile bool triggered;                     ///< true if new events are pending that need to get processed
-      lList *new_events;                           ///< new events that neet to get processed
+      lList *new_events;                           ///< new events that need to get processed
       ocs::DataStore::Id data_store_id;            ///< data store that is managed by this thread
       pthread_t thread{};                          ///< pthread that handles the mirroring
       sge_locktype_t lock_type;                    ///< lock type used to secure the DS
@@ -53,7 +53,7 @@ namespace ocs {
 
    public:
       explicit MirrorDataStore(ocs::DataStore::Id data_store_id, sge_locktype_t lock_type);
-      virtual ~MirrorDataStore() = default;
+      virtual ~MirrorDataStore();
 
       virtual void wait_for_event(lList **event_list);
       virtual void wakeup();

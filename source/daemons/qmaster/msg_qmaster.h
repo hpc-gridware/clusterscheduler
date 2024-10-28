@@ -608,10 +608,11 @@
 #define MSG_REPORTING_INTERMEDIATE_SS              _MESSAGE(33865, _("write intermediate accounting record for job " SFQ " at " SFN ""))
 
 #define MSG_THREAD_XTERMINATED_S                   _MESSAGE(33870, _(SFN " thread terminated"))
-#define MSG_THREAD_XNOTRUNNING_S                   _MESSAGE(33871, _(SFN " thread is not running"))
-#define MSG_THREAD_XHASSTARTED_S                   _MESSAGE(33872, _(SFN " has been started"))
-#define MSG_THREAD_XSTARTDISABLED_S                _MESSAGE(33873, _("start of " SFN " thread is disabled in bootstrap file"))
-#define MSG_THREAD_XISRUNNING_S                    _MESSAGE(33874, _(SFN " thread is already running"))
+#define MSG_THREADPOOL_XTERMINATED_S               _MESSAGE(33871, _(SFN " thread pool terminated"))
+#define MSG_THREAD_XNOTRUNNING_S                   _MESSAGE(33872, _(SFN " thread is not running"))
+#define MSG_THREAD_XHASSTARTED_S                   _MESSAGE(33873, _(SFN " has been started"))
+#define MSG_THREAD_XSTARTDISABLED_S                _MESSAGE(33874, _("start of " SFN " thread is disabled in bootstrap file"))
+#define MSG_THREAD_XISRUNNING_S                    _MESSAGE(33875, _(SFN " thread is already running"))
 
 #define MSG_JOB_CHANGEJOBSHARE                     _MESSAGE(33900, _("change job share"))
 #define MSG_JOB_PRIOSET_SSUI                       _MESSAGE(33901, _(SFN "@" SFN " sets scheduling priority of job " sge_U32CFormat " to %d"))

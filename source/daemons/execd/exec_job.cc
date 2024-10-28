@@ -2423,21 +2423,21 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
    DENTER(TOP_LAYER);
 
    if (!automatic) {
-
-      /* We have to determine the first socket and core to use for core binding 
+      /* We have to determine the first socket and core to use for core binding
          automatically. The rest of the cores are then implicitly given by the 
          strategy. */
 
       /* get the start socket and start core which was a submission parameter */
-      DPRINTF("Get user defined starting point for binding (socket, core)");
       first_socket = (int) lGetUlong(binding_elem, BN_parameter_socket_offset);
       first_core = (int) lGetUlong(binding_elem, BN_parameter_core_offset);
+      DPRINTF("Got starting point for binding (socket, core) %d %d", first_socket, first_core);
    }
 
    /* try to allocate first core and first socket */
    if (get_striding_first_socket_first_core_and_account(amount, step_size, first_socket,
                                                         first_core, automatic, &used_first_socket, &used_first_core,
                                                         &topo_job, &topo_job_length)) {
+      DPRINTF("Found following starting point (socket, core) %d %d\n", used_first_socket, used_first_core);
 
       /* found first socket and first core ! */
       sge_dstring_sprintf(result, "%s:%d:%d:%d,%d:%s",
@@ -2445,8 +2445,9 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
                           amount,
                           step_size,
                           automatic ? used_first_socket : first_socket,
-                          automatic ? used_first_socket : first_core,
+                          automatic ? used_first_core : first_core,
                           topo_job);
+      DPRINTF("Found following binding %s\n", sge_dstring_get_string(result));
       retval = true;
 
    } else {
@@ -3073,7 +3074,6 @@ static bool parse_job_accounting_and_create_logical_list(const char *binding_str
    if (!topology_string_to_socket_core_lists(pos, &sockets, &cores, &amount)) {
       WARNING("Core binding: Couldn't parse job topology string! %s", pos);
       retval = false;
-
    } else if (amount > 0) {
 
       /* build the string */

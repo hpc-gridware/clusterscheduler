@@ -36,6 +36,7 @@
 #include <pthread.h>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
@@ -54,6 +55,7 @@
 #include "sge_qmaster_timed_event.h"
 #include "sge_thread_main.h"
 #include "sge_thread_event_master.h"
+#include "msg_qmaster.h"
 
 static void
 sge_event_master_cleanup_monitor(void *arg) {
@@ -89,6 +91,20 @@ sge_event_master_initialize() {
 void
 sge_event_master_terminate() {
    DENTER(TOP_LAYER);
+   /*
+    * trigger pthread_cancel for each thread so that further
+    * shutdown process will be faster
+    */
+   cl_thread_list_elem_t *thr;
+   cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.event_master_thread_pool);
+   while ((thr = thr_nxt) != nullptr) {
+      thr_nxt = cl_thread_list_get_next_elem(thr);
+
+      cl_thread_shutdown(thr->thread_config);
+   }
+
+   // wakeup event master thread
+   sge_event_master_flush_requests(true);
 
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    while (thread != nullptr) {
@@ -97,6 +113,7 @@ sge_event_master_terminate() {
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    }
    DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MASTER_THREAD]);
+   INFO(MSG_THREAD_XTERMINATED_S, threadnames[EVENT_MASTER_THREAD]);
 
    DRETURN_VOID;
 }
@@ -139,7 +156,7 @@ sge_event_master_main(void *arg) {
       MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
       MONITOR_MESSAGES(p_monitor);
       MONITOR_EDT_COUNT(p_monitor);
-      MONITOR_CLIENT_COUNT(p_monitor, lGetNumberOfElem(Event_Master_Control.clients));
+      MONITOR_CLIENT_COUNT(p_monitor, sge_get_num_event_clients());
 
       sge_event_master_process_requests(p_monitor);
       sge_event_master_send_events(report, report_list, p_monitor);
@@ -151,14 +168,11 @@ sge_event_master_main(void *arg) {
       int execute = 0;
       pthread_cleanup_push(sge_event_master_cleanup_monitor, static_cast<void *>(&monitor));
       pthread_cleanup_push(sge_event_master_cleanup_report_list, static_cast<void *>(&report_list));
+      pthread_cleanup_push(sge_cleanup_event_master_control, nullptr);
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
-
-      if (sge_thread_has_shutdown_started()) {
-         DPRINTF("waiting for termination\n");
-         usleep(500);
-      }
+      pthread_cleanup_pop(execute);
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

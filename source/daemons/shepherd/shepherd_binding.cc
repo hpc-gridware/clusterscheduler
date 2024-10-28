@@ -421,6 +421,8 @@ namespace ocs {
 #if defined(OGE_HWLOC)
 
 bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
+   shepherd_trace("binding_add_core_to_cpuset: adding socket %d core %d to cpuset", socket, core);
+
    bool ret = false;
    hwloc_obj_t current_core = hwloc_get_obj_below_by_type(topo_get_hwloc_topology(),
                                               HWLOC_OBJ_SOCKET, socket,
@@ -635,9 +637,10 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
             /* next socket to use */
             int next_socket = first_socket;
             /* next core to use */
-            int next_core = first_core + offset;
+            int next_core = first_core;
             /* maximal amount of sockets on this system */
             int max_amount_of_sockets = topo_get_total_amount_of_sockets();
+            shepherd_trace("binding_set_striding_linux: max_amount_of_sockets: %d", max_amount_of_sockets);
 
             /* check if we are already out of range */
             if (next_socket >= max_amount_of_sockets) {
@@ -646,6 +649,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                return false;
             }
 
+            shepherd_trace("binding_set_striding_linux: max_amount_of_cores per socket %d", topo_get_amount_of_cores_for_socket(next_socket));
             while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
                /* move on to next socket - could be that we have to deal only with cores 
                   instead of <socket><core> tuples */
