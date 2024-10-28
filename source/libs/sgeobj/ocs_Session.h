@@ -19,5 +19,39 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <unordered_map>
+
+#include <pthread.h>
+
+#include "uti/sge_monitor.h"
+
+#include "gdi/sge_gdi_packet.h"
+
+#include "sge_qmaster_timed_event.h"
+
 namespace ocs {
+   class SessionManager {
+   private:
+      struct Session {
+         u_long64 write_time;           //< time when write_unique_id was set
+         u_long64 write_unique_id;      //< unique id for the last write event
+         u_long64 process_unique_id;    //< unique id for the last processed event
+      };
+
+      static pthread_mutex_t mutex;                             //< mutex that saves access to the session_map
+      static std::unordered_map<u_long64, Session> session_map; //< hashtable for sessions
+
+      static void remove_unused();
+
+   public:
+      static u_long64 get_session_id(sge_gdi_packet_class_t *packet);
+
+      static void set_write_unique_id(u_long64 session_id, u_long64 write_event_id);
+      static void set_process_unique_id(u_long64 session_id, u_long64 process_event_id);
+      static bool is_uptodate(u_long64 session_id, bool *is_uptodate);
+
+      static void session_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
+
+      static void dump_all();
+   };
 }

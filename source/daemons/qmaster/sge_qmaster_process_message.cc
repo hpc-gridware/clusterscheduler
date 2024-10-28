@@ -447,17 +447,20 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       if (!mconf_get_disable_secondary_ds_reader()) {
          u_long64 session_id = ocs::SessionManager::get_session_id(packet);
 
-         // status of the session decides if the request is put into the reader request queue or the waiting queue
-         bool is_uptodate = false;
-         ocs::SessionManager::is_uptodate(session_id, &is_uptodate);
-         if (is_uptodate) {
-            queue = ReaderRequestQueue;
-         } else {
-            queue = ReaderWaitingRequestQueue;
+         // Reader DS is enabled so as default we will use the ReaderRequestQueue unless the auto sessions are enabled
+         queue = ReaderRequestQueue;
+         if (!mconf_get_disable_automatic_session()) {
+
+            // Sessions are enabled so we have to check if the session is up-to-date
+            bool is_uptodate = false;
+            ocs::SessionManager::is_uptodate(session_id, &is_uptodate);
+            if (!is_uptodate) {
+               queue = ReaderWaitingRequestQueue;
+            }
          }
       }
 
-      // Store the decision about the queue also in the packet
+      // Store the decision about the DS also in the packet
       packet->ds_type = ds_type;
       sge_tq_store_notify(queue, SGE_TQ_GDI_PACKET, packet);
    } else {
