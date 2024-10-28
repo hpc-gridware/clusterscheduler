@@ -671,6 +671,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             sge_dstring_free(&cpu_string);
             sge_dstring_free(&vmem_string);
             sge_dstring_free(&maxvmem_string);
+            sge_dstring_free(&rss_string);
+            sge_dstring_free(&maxrss_string);
          }
       }
    }
