@@ -37,24 +37,23 @@ namespace ocs {
       evc->ec_set_edtime(evc, 1);
    }
 
-   void MirrorReaderDataStore::update_sessions_and_move_requests(u_long unique_id){
+   void MirrorReaderDataStore::update_sessions_and_move_requests(const u_long unique_id){
       DENTER(TOP_LAYER);
 
       // Update the session with the unique ID of the last event
-      SessionManager::set_process_unique_id(GDI_SESSION_NONE, unique_id);
+      SessionManager::set_process_unique_id(unique_id);
 
       // Move waiting reader requests that can now be handled
       // to the reader request queue (or global request queue if readers are disabled)
-      int moved_elements = sge_tq_move_from_to_if(ReaderWaitingRequestQueue, ReaderRequestQueue,
+      const int moved_elements = sge_tq_move_from_to_if(ReaderWaitingRequestQueue, ReaderRequestQueue,
                                                        [](const void *always_nullptr, const void *task_void) -> int {
          // Find the packet stored in the task of the TQ
-         auto *task = *static_cast<sge_tq_task_t *const *>(task_void);
-         auto *packet = static_cast<sge_gdi_packet_class_t *>(task->data);
+         const auto *task = *static_cast<sge_tq_task_t *const *>(task_void);
+         const auto *packet = static_cast<sge_gdi_packet_class_t *>(task->data);
 
          // Check if the session is up-to-date
-         u_long64 session_id = SessionManager::get_session_id(packet);
-         bool is_uptodate = false;
-         SessionManager::is_uptodate(session_id, &is_uptodate);
+         const u_long64 session_id = SessionManager::get_session_id(packet->user);
+         const bool is_uptodate = SessionManager::is_uptodate(session_id);
 
          // Return the outcome so that the task is moved
          return is_uptodate ? 0 : -1;

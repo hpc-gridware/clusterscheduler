@@ -32,6 +32,7 @@
 
 pthread_mutex_t ocs::SessionManager::mutex = PTHREAD_MUTEX_INITIALIZER;
 std::unordered_map<u_long64, ocs::SessionManager::Session> ocs::SessionManager::session_map;
+u_long64 ocs::SessionManager::process_unique_id = 0;
 
 /**
  * @brief Get a session ID that is unique for all requests of a user.
@@ -40,13 +41,13 @@ std::unordered_map<u_long64, ocs::SessionManager::Session> ocs::SessionManager::
  * to identify requests for a user therefore we use only one session for the
  * users whose hash would be 0 and 1.
  *
- * @param packet GDI packet
+ * @param user username for whom the session ID is generated
  * @return session ID
  */
 u_long64
-ocs::SessionManager::get_session_id(sge_gdi_packet_class_t *packet) {
-   std::hash<std::string> hasher;
-   std::string hash_input(packet->user);
+ocs::SessionManager::get_session_id(const char *user) {
+   constexpr std::hash<std::string> hasher;
+   const std::string hash_input(user);
    u_long64 session_id = hasher(hash_input);
 
    // avoid the use of session ID 0 (GDI_SESSION_NONE)
@@ -71,13 +72,12 @@ ocs::SessionManager::get_session_id(sge_gdi_packet_class_t *packet) {
  * @param write_event_id unique ID for the last write event
  */
 void
-ocs::SessionManager::set_write_unique_id(u_long64 session_id, u_long64 write_event_id) {
+ocs::SessionManager::set_write_unique_id(const u_long64 session_id, const u_long64 write_event_id) {
    Session s{};
-   u_long64 time = sge_get_gmt64();
+   const u_long64 time = sge_get_gmt64();
 
    pthread_mutex_lock(&mutex);
-   auto it = session_map.find(session_id);
-   if (it != session_map.end()) {
+   if (const auto it = session_map.find(session_id); it != session_map.end()) {
       s = it->second;
    }
    s.write_unique_id = write_event_id;
@@ -103,28 +103,12 @@ ocs::SessionManager::set_write_unique_id(u_long64 session_id, u_long64 write_eve
  * Updates the time when the session was accessed the last time but only for
  * specific sessions.
  *
- * @param session_id session ID
  * @param process_event_id unique ID for the last event
  */
 void
-ocs::SessionManager::set_process_unique_id(u_long64 session_id, u_long64 process_event_id) {
-   Session s{};
-
+ocs::SessionManager::set_process_unique_id(const u_long64 process_event_id) {
    pthread_mutex_lock(&mutex);
-   if (session_id != GDI_SESSION_NONE) {
-      auto it = session_map.find(session_id);
-      if (it != session_map.end()) {
-         s = it->second;
-      }
-      s.process_unique_id = process_event_id;
-      session_map[session_id] = s;
-   } else {
-      for (auto & it : session_map) {
-         s = it.second;
-         s.process_unique_id = process_event_id;
-         session_map[it.first] = s;
-      }
-   }
+   ocs::SessionManager::process_unique_id = process_event_id;
    pthread_mutex_unlock(&mutex);
 }
 
@@ -132,29 +116,22 @@ ocs::SessionManager::set_process_unique_id(u_long64 session_id, u_long64 process
  * @brief Check if a sessions allows access for a reader
  *
  * @param session_id session ID
- * @param is_uptodate true if the access is allowed
  * @return true if the session exists
  */
 bool
-ocs::SessionManager::is_uptodate(u_long64 session_id, bool *is_uptodate) {
-   bool ret = true;
-
+ocs::SessionManager::is_uptodate(const u_long64 session_id) {
+   bool ret;
    pthread_mutex_lock(&mutex);
-   auto it = session_map.find(session_id);
-   if (it != session_map.end()) {
-      auto [write_time, write_event_id, process_event_id] = it->second;
-
+   if (const auto it = session_map.find(session_id); it != session_map.end()) {
       // all write events have been processed (==) => true
       // more events are processed than there are expected write events (<) => true
       // there are still write events that we expect that have not been processed (>) => false
-      *is_uptodate = (write_event_id <= process_event_id);
-      ret = true;
+      ret = (it->second.write_unique_id <= process_unique_id);
    } else {
       // session does not exist, and we have to handle a RO-request
       // We can be sure that there is no previous write request because
       // otherwise the session would exit => session is up-to-date
-      *is_uptodate = true;
-      ret = false;
+      ret = true;
    }
    pthread_mutex_unlock(&mutex);
    return ret;
@@ -165,8 +142,8 @@ ocs::SessionManager::is_uptodate(u_long64 session_id, bool *is_uptodate) {
  */
 void
 ocs::SessionManager::remove_unused() {
-   u_long64 time = sge_get_gmt64();
-   u_long64 time_threshold = time - 15 * 60 * 1000000;
+   const u_long64 time = sge_get_gmt64();
+   const u_long64 time_threshold = time - 15 * 60 * 1000000;
 
    pthread_mutex_lock(&mutex);
    for (auto it = session_map.begin(); it != session_map.end(); ) {
@@ -204,7 +181,7 @@ ocs::SessionManager::dump_all() {
    pthread_mutex_lock(&mutex);
    for (auto & [session_id, session] : session_map) {
       DPRINTF("session %20lu: write_time=%16lu, write_unique_id=%lu, process_unique_id=%lu\n",
-              session_id, session.write_time, session.write_unique_id, session.process_unique_id);
+              session_id, session.write_time, session.write_unique_id, process_unique_id);
    }
    pthread_mutex_unlock(&mutex);
    DRETURN_VOID;

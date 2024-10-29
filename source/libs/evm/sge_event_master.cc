@@ -1513,6 +1513,11 @@ sge_create_event(u_long32 number, u_long64 timestamp, ev_event type, u_long32 in
    DRETURN(etp);
 }
 
+/** @brief Add a unique ID to all events part of the evr
+ *
+ * @param evr - the event request object
+ * @param unique_id - the unique ID to add
+ */
 static void
 add_unique_id_to_evr(lListElem *evr, u_long64 unique_id) {
    lListElem *ev;
@@ -1531,7 +1536,8 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
    // Find the next unique ID for the event
    u_long64 unique_id = oge_get_next_unique_event_id();
 
-   // Add a unique ID to to events part of the commited evr or evr_list.
+   // Add a unique ID to events part of the commited evr or evr_list.
+   // Check also if the event is execd related (like the config events)
    if (single_evr) {
       add_unique_id_to_evr(evr, unique_id);
    } else {
@@ -1542,8 +1548,16 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
       }
    }
 
-   // Process the unique ID for the event that was triggered
+   // Process the unique ID for the event that was triggered. session is the same as for the initiator of the request.
    ocs::SessionManager::set_write_unique_id(gdi_session, unique_id);
+
+   // All execd send GDI requests as admin user. In order to enforce them to see most current information
+   // via reader DS, we need to set the unique ID for the admin user session.
+   static const u_long64 admin_user_session = ocs::SessionManager::get_session_id(bootstrap_get_admin_user());
+   ocs::SessionManager::set_write_unique_id(admin_user_session, unique_id);
+
+   // @TODO: EB remove this
+   ocs::SessionManager::dump_all();
 
    // Add the request to the event master request list
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);

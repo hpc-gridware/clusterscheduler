@@ -120,7 +120,7 @@ sge_event_master_terminate() {
 
 [[noreturn]] void *
 sge_event_master_main(void *arg) {
-   auto *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = static_cast<cl_thread_settings_t *>(arg);
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    u_long64 next_prof_output = 0;
@@ -129,7 +129,7 @@ sge_event_master_main(void *arg) {
 
    // set thread name and id used by logging an others
    const char *thread_name = thread_config->thread_name;
-   int thread_id = thread_config->thread_id;
+   const int thread_id = thread_config->thread_id;
    component_set_thread_name(thread_name);
    component_set_thread_id(thread_id);
    DPRINTF(SFN "(%d) started\n", thread_name, thread_id);

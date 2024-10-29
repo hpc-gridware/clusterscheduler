@@ -270,16 +270,22 @@ static ocs::DataStore::Id
 get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
-   // check the packet itself
+   // Usually the request type defines which DS to be used but there are some exceptions where the global ds
+   // is enforced:
+   // - Internal GDI requests
+   // - DRMAA requests if automatic sessions are disabled (because DRMAA 1 must have a concise view on the data
+   //   otherwise the lib will fail).
+   // - Execd requests if secondary DS are disabled for execd (only for test purpose)
    if (packet->is_intern_request) {
       // Internal GDI requests will always be executed with access to the GLOBAL data store
       DRETURN(ocs::DataStore::GLOBAL);
    } else if (strcmp(packet->commproc, prognames[DRMAA]) == 0) {
-      // DRMAA requests will always be executed with access to the GLOBAL data store
-      // (@todo EB: as long as we do not have automatic GDI sessions)
-      DRETURN(ocs::DataStore::GLOBAL);
+      // DRMAA-requests will only be handled by reader if automatic sessions are enabled
+      if (mconf_get_disable_automatic_session()) {
+         DRETURN(ocs::DataStore::GLOBAL);
+      }
    } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 && mconf_get_disable_secondary_ds_execd()) {
-      // request coming from execd should be handled with GLOBAL DS if secondary DS are disabled for execd
+      // request coming from execd should be handled with global DS if secondary DS are disabled for execd
       DRETURN(ocs::DataStore::GLOBAL);
    }
 
@@ -362,7 +368,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
                                                  &(packet->gid), packet->group, sizeof(packet->group),
                                                  &packet->amount, &packet->grp_array);
 
-      packet->gdi_session = ocs::SessionManager::get_session_id(packet);
+      packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
 
    // check CSP mode if enabled
@@ -445,16 +451,14 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       // Default is the global request queue unless readers are enabled
       sge_tq_queue_t *queue = GlobalRequestQueue;
       if (!mconf_get_disable_secondary_ds_reader()) {
-         u_long64 session_id = ocs::SessionManager::get_session_id(packet);
+         u_long64 session_id = ocs::SessionManager::get_session_id(packet->user);
 
          // Reader DS is enabled so as default we will use the ReaderRequestQueue unless the auto sessions are enabled
          queue = ReaderRequestQueue;
          if (!mconf_get_disable_automatic_session()) {
 
             // Sessions are enabled so we have to check if the session is up-to-date
-            bool is_uptodate = false;
-            ocs::SessionManager::is_uptodate(session_id, &is_uptodate);
-            if (!is_uptodate) {
+            if (!ocs::SessionManager::is_uptodate(session_id)) {
                queue = ReaderWaitingRequestQueue;
             }
          }

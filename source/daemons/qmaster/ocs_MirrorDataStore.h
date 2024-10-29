@@ -61,7 +61,7 @@ namespace ocs {
 
       [[noreturn]] virtual void *main([[maybe_unused]] void *arg);
       virtual void subscribe_events() = 0;
-      virtual void update_sessions_and_move_requests(u_long64 unique_id) = 0;
+      virtual void update_sessions_and_move_requests(const u_long64 unique_id) = 0;
 
       static void event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **answer_list, lList *event_list, void *arg);
 
