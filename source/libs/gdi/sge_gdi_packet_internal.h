@@ -38,6 +38,7 @@
 
 extern sge_tq_queue_t *GlobalRequestQueue;
 extern sge_tq_queue_t *ReaderRequestQueue;
+extern sge_tq_queue_t *ReaderWaitingRequestQueue;
 
 void
 sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet);

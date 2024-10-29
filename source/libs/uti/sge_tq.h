@@ -84,3 +84,6 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue);
 
 bool
 sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds, sge_tq_type_t type, void **data);
+
+int
+sge_tq_move_from_to_if(sge_tq_queue_t *src, sge_tq_queue_t *dst, sge_sl_compare_f cmp_func);

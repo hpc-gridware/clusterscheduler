@@ -34,6 +34,7 @@
 
 #include "uti/sge_tq.h"
 #include "uti/sge_err.h"
+#include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
@@ -57,7 +58,7 @@
 *     is smaller or bigger that the second ('data2'). It is equal if the
 *     type field of the elements are equal.
 *
-*     If the type field in 'data1' is SGE_TQ_UNKNOWN then the function will
+*     If the type field in 'data1' is SGE_TQ_UNKNOWN then the function
 *     will always return 0 to indicate that independent of the type field
 *     inf 'data2' all tasks are identified as equal. This makes it possible
 *     to use this function as a search function where SGE_TQ_UNKNOWN
@@ -522,5 +523,49 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
       sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
    DRETURN(ret);
+}
+
+/** @brief Move all elements from src to dst if cmp_func returns true
+ *
+ * This function moves all elements from src to dst if cmp_func returns true.
+ * The elements are moved in the order they are found in the list. The
+ * function is thread safe and can be used to move elements from one queue
+ * to another as long as no other thread used the same queues as src and dst
+ * in reverse order.
+ *
+ * @param src - source queue
+ * @param dst - destination queue
+ * @param cmp_func - compare function
+ * @return true if all elements were moved, false otherwise
+ */
+int
+sge_tq_move_from_to_if(sge_tq_queue_t *src, sge_tq_queue_t *dst, sge_sl_compare_f cmp_func) {
+   DENTER(TOP_LAYER);
+   int count = 0;
+
+   // lock sequence is not problem for deadlocks as long as no one else is using src as dst and dst as src at the same time.
+   sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, &src->list->mutex);
+   sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, &dst->list->mutex);
+
+   sge_sl_elem_t *thiz = nullptr;
+   sge_sl_elem_t *next = nullptr;
+   bool lret = sge_sl_elem_search(src->list, &next, nullptr, cmp_func, SGE_SL_FORWARD);
+
+   while (lret && (thiz = next) != nullptr) {
+      // search the next element
+      lret &= sge_sl_elem_search(src->list, &next, nullptr, cmp_func, SGE_SL_FORWARD);
+
+      // move the element from src to dst
+      sge_sl_dechain(src->list, thiz);
+      sge_sl_elem_insert(dst->list, thiz, SGE_SL_BACKWARD);
+
+      // count the number of moved elements
+      count++;
+   }
+
+   sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, &dst->list->mutex);
+   sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, &src->list->mutex);
+
+   DRETURN(count);
 }
 

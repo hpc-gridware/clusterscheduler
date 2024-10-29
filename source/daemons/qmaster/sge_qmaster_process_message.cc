@@ -44,6 +44,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
@@ -269,16 +270,22 @@ static ocs::DataStore::Id
 get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
-   // check the packet itself
+   // Usually the request type defines which DS to be used but there are some exceptions where the global ds
+   // is enforced:
+   // - Internal GDI requests
+   // - DRMAA requests if automatic sessions are disabled (because DRMAA 1 must have a concise view on the data
+   //   otherwise the lib will fail).
+   // - Execd requests if secondary DS are disabled for execd (only for test purpose)
    if (packet->is_intern_request) {
       // Internal GDI requests will always be executed with access to the GLOBAL data store
       DRETURN(ocs::DataStore::GLOBAL);
    } else if (strcmp(packet->commproc, prognames[DRMAA]) == 0) {
-      // DRMAA requests will always be executed with access to the GLOBAL data store
-      // (@todo EB: as long as we do not have automatic GDI sessions)
-      DRETURN(ocs::DataStore::GLOBAL);
+      // DRMAA-requests will only be handled by reader if automatic sessions are enabled
+      if (mconf_get_disable_automatic_session()) {
+         DRETURN(ocs::DataStore::GLOBAL);
+      }
    } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 && mconf_get_disable_secondary_ds_execd()) {
-      // request coming from execd should be handled with GLOBAL DS if secondary DS are disabled for execd
+      // request coming from execd should be handled with global DS if secondary DS are disabled for execd
       DRETURN(ocs::DataStore::GLOBAL);
    }
 
@@ -351,22 +358,21 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // check GDI version
    if (local_ret) {
-      DTRACE;
       local_ret = sge_gdi_packet_verify_version(packet, &packet->first_task->answer_list);
    }
 
    // check auth_info (user/group)
    if (local_ret) {
-      DTRACE;
       local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
                                                  &(packet->uid), packet->user, sizeof(packet->user),
                                                  &(packet->gid), packet->group, sizeof(packet->group),
                                                  &packet->amount, &packet->grp_array);
+
+      packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
 
    // check CSP mode if enabled
    if (local_ret) {
-      DTRACE;
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
@@ -375,15 +381,14 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // handle GDI request limits
    if (local_ret) {
-      DTRACE;
       // TODO handle gdi request limits
+      ;
    }
 
    // handle request specific requirements already here so that we save time potentially in the worker
    //    - manager/operator permissions
    //    - admin/submit/exec host
    if (local_ret) {
-      DTRACE;
       sge_gdi_task_class_t *task = packet->first_task;
       while(task) {
          local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
@@ -396,7 +401,6 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      DTRACE;
       sge_gdi_task_class_t *task = packet->first_task;
 
       init_packbuffer(&packet->pb, 0, 0);
@@ -444,11 +448,23 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       sge_gdi_packet_free(&packet);
    } else if (ds_enabled && ds_type == ocs::DataStore::READER) {
 
-      // default is the reader request queue unless readers are disabled
-      sge_tq_queue_t *queue = ReaderRequestQueue;
-      if (mconf_get_disable_secondary_ds_reader()) {
-         queue = GlobalRequestQueue;
+      // Default is the global request queue unless readers are enabled
+      sge_tq_queue_t *queue = GlobalRequestQueue;
+      if (!mconf_get_disable_secondary_ds_reader()) {
+         u_long64 session_id = ocs::SessionManager::get_session_id(packet->user);
+
+         // Reader DS is enabled so as default we will use the ReaderRequestQueue unless the auto sessions are enabled
+         queue = ReaderRequestQueue;
+         if (!mconf_get_disable_automatic_session()) {
+
+            // Sessions are enabled so we have to check if the session is up-to-date
+            if (!ocs::SessionManager::is_uptodate(session_id)) {
+               queue = ReaderWaitingRequestQueue;
+            }
+         }
       }
+
+      // Store the decision about the DS also in the packet
       packet->ds_type = ds_type;
       sge_tq_store_notify(queue, SGE_TQ_GDI_PACKET, packet);
    } else {

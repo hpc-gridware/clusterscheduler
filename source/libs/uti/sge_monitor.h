@@ -288,7 +288,8 @@ typedef struct {
    u_long32 eproc_count; /* counts the execd processor reports */
    u_long32 eack_count;  /* counts the execd acks */
 
-   u_long32 queue_length;     /* worker queue length */
+   u_long32 queue_length;       //< main queue length (e.g. worker or reader queue depending on thread type)
+   u_long32 wqueue_length;      //< waiting queue length (e.g. reader waiting queue)
 } m_gdi_t;
 
 #define MONITOR_GDI_ADD(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_add_count++
@@ -309,6 +310,7 @@ typedef struct {
 #define MONITOR_EACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eack_count++
 
 #define MONITOR_SET_QLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->queue_length = (qlen)
+#define MONITOR_SET_WQLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->wqueue_length = (qlen)
 
 /* listener extension */
 typedef struct {

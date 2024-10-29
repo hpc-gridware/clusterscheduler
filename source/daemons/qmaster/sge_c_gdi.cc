@@ -745,10 +745,14 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
    if (reprioritize_tickets && ticket_orders != nullptr) {
       distribute_ticket_orders(ticket_orders, monitor);
       lFreeList(&ticket_orders);
+#if 0
       DPRINTF("DISTRIBUTED NEW PRIORITIZE TICKETS\n");
+#endif
    } else {
+#if 0
       /* tickets not needed at execd's if no repriorization is done */
       DPRINTF("NO TICKET DELIVERY\n");
+#endif
    }
 
    DRETURN_VOID;

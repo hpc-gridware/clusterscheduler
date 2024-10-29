@@ -1,6 +1,22 @@
 # Major Enhancements 
 
-## v9.0.1beta
+## v9.0.2beta
+
+### Automatic Session Management
+
+Patch 9.0.2 introduces the new concept of automatic sessions. This concept allows the xxQS_NAMExx system to synchronise internal data stores more efficiently, so that client commands can be enforced to get the most recent data. Session management is enabled, but can be disabled by setting the `DISABLE_AUTOMATIC_SESSIONS` parameter in the `qmaster_params` of the cluster configuration.
+
+The default for the `qmaster_param` `DISABLE_SECONDARY_DS_READER` is now *false*. This means that the reader thread pool is enabled by default and does not need to be enabled manually as in patch 9.0.1.
+
+What does all this mean? Sessions ensure that commands that trigger changes within the cluster, such as submitting a job, modifying a queue or changing a complex value, are executed in a consistent way. Sessions ensure that the result of changing commands in the cluster is immediately visible to the user who initiated the change. Commands that only read data, such as `qstat`, `qhost` or `qconf -s...`, always return the most recent data although all read-requests in the system are executed completely in parallel to the xxQS_NAMExx core components.
+
+Unlike other workload management systems, session management in xxQS_NAMExx is automatic. There is no need to manually create or destroy sessions. Session management runs silently in the background to offload the most critical internal components.
+
+All this further enhances cluster performance in large environments and improves cluster responsiveness, especially with tens of thousands of execution nodes, thousands of active users and millions of jobs/day. 
+
+(Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
+
+## v9.0.1
 
 ### Utilization of additional data stores and activation of new thread pools
 
@@ -76,6 +92,7 @@ additional data stores that can be utilized by pools of threads.
      GDI (g:0.00,t:0.00,p:0.00)/s) 
      out: 0.00m/s APT: 0.0001s/m idle: 98.54% wait: 0.00% time: 10.00s
   ```
+(Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
 
 ## v9.0.0
 

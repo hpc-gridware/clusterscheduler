@@ -64,9 +64,7 @@ typedef enum {
    TYPE_AR_ID_EVENT,/**/
    TYPE_AR_EVENT, /**/
    TYPE_ENFORCE_LIMIT_EVENT, /**/
-
-   /* EB: TODO: ST: can be removed after full scheduler is part of master process */
-   TYPE_ORDER_PROCESSING_EVENT
+   TYPE_SESSION_CLEANUP_EVENT,         //< trigger that cleans up old sessions that have not been used for a longer time
 } te_type_t;
 
 typedef enum {

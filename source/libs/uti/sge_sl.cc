@@ -765,6 +765,46 @@ sge_sl_unlock(sge_sl_list_t *list) {
    DRETURN_VOID;
 }
 
+/** @brief Insert a new element into a list
+ *
+ *  This function inserts a new element into a list. The element will be
+ *  inserted at the beginning of the list if 'direction' is SGE_SL_FORWARD
+ *  otherwise at the end.
+ *
+ *  @param list      - list
+ *  @param new_elem  - new element
+ *  @param direction - direction
+ */
+void
+sge_sl_elem_insert(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+   if (list != nullptr && new_elem != nullptr) {
+      sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
+      if (direction == SGE_SL_FORWARD) {
+         if (list->first != nullptr) {
+            list->first->prev = new_elem;
+         }
+         new_elem->next = list->first;
+         list->first = new_elem;
+         if (list->last == nullptr) {
+            list->last = new_elem;
+         }
+      } else {
+         if (list->last != nullptr) {
+            list->last->next = new_elem;
+         }
+         new_elem->prev = list->last;
+         list->last = new_elem;
+         if (list->first == nullptr) {
+            list->first = new_elem;
+         }
+      }
+      list->elements++;
+      sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
+   }
+   DRETURN_VOID;
+}
+
 /****** uti/sl/sge_sl_insert() *************************************************
 *  NAME
 *     sge_sl_insert() -- insert a new element 
@@ -806,28 +846,7 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
 
       ret = sge_sl_elem_create(&new_elem, data);
       if (ret) {
-         sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
-         if (direction == SGE_SL_FORWARD) {
-            if (list->first != nullptr) {
-               list->first->prev = new_elem;
-            }
-            new_elem->next = list->first;
-            list->first = new_elem;
-            if (list->last == nullptr) {
-               list->last = new_elem;
-            }
-         } else {
-            if (list->last != nullptr) {
-               list->last->next = new_elem;
-            }
-            new_elem->prev = list->last;
-            list->last = new_elem;
-            if (list->first == nullptr) {
-               list->first = new_elem;
-            }
-         }
-         list->elements++;
-         sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
+         sge_sl_elem_insert(list, new_elem, direction);
       }
    }
    DRETURN(ret);
