@@ -4,17 +4,40 @@
 
 ### Automatic Session Management
 
-Patch 9.0.2 introduces the new concept of automatic sessions. This concept allows the xxQS_NAMExx system to synchronise internal data stores more efficiently, so that client commands can be enforced to get the most recent data. Session management is enabled, but can be disabled by setting the `DISABLE_AUTOMATIC_SESSIONS` parameter in the `qmaster_params` of the cluster configuration.
+* Patch 9.0.2 introduces the new concept of automatic sessions. Session allows the xxQS_NAMExx system to synchronize internal data stores, so that client commands can be enforced to get the most recent data. Session management is disabled, but can be enabled by setting the `DISABLE_AUTOMATIC_SESSIONS` parameter to *false* in the `qmaster_params` of the cluster configuration. 
 
-The default for the `qmaster_param` `DISABLE_SECONDARY_DS_READER` is now *false*. This means that the reader thread pool is enabled by default and does not need to be enabled manually as in patch 9.0.1.
+  The default for the `qmaster_param` `DISABLE_SECONDARY_DS_READER` is now *false*. This means that the reader thread pool is enabled by default and does not need to be enabled manually as in patch 9.0.1.
 
-What does all this mean? Sessions ensure that commands that trigger changes within the cluster, such as submitting a job, modifying a queue or changing a complex value, are executed in a consistent way. Sessions ensure that the result of changing commands in the cluster is immediately visible to the user who initiated the change. Commands that only read data, such as `qstat`, `qhost` or `qconf -s...`, always return the most recent data although all read-requests in the system are executed completely in parallel to the xxQS_NAMExx core components.
+  The reader thread pool in combination with sessions ensure that commands that trigger changes within the cluster (write-requests), such as submitting a job, modifying a queue or changing a complex value, are executed and the outcome of those commands is guaranteed to be visible to the user who initiated the change. Commands that only read data (read-requests), such as `qstat`, `qhost` or `qconf -s...`, that are triggered by the same user, always return the most recent data although all read-requests in the system are executed completely in parallel to the other xxQS_NAMExx core components. This additional synchronization ensures that the data is consistent for the user with each read-request but on the other side might slow down individual read-requests.
 
-Unlike other workload management systems, session management in xxQS_NAMExx is automatic. There is no need to manually create or destroy sessions. Session management runs silently in the background to offload the most critical internal components.
+  Assume following script:
 
-All this further enhances cluster performance in large environments and improves cluster responsiveness, especially with tens of thousands of execution nodes, thousands of active users and millions of jobs/day. 
+  ```
+  #!/bin/sh
+  
+  job_id=`qsub -terse ...`
+  qstat -j $job_id
+  ```
 
-(Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
+  Without activated sessions it is *not* guaranteed that the `qstat -j` command will see the job that was submitted before. With sessions enabled, the `qstat -j` command will always see the job but the command will be slightly slower compared to the same scenario without sessions. 
+
+  Sessions eliminate the need to poll for information about an action until it is visible in the system. Unlike other workload management systems, session management in xxQS_NAMExx is automatic. There is no need to manually create or destroy sessions after they have been enabled globally.
+
+
+* The `sge_qmaster` monitoring has been improved. Beginning with this patch the output for worker and reader threads will show following numbers in the output section for reader and worker threads:
+
+  ```
+  ... OTHER (ql:0,rql:0,wrql:0) ...
+  ```
+
+  All three values show internal request queue lengths. Usually they are all 0 but in high load situations or when sessions are enabled then they can increase:
+  * *ql* shows the queue length of the worker threads. This request queue contains requests that require a write lock on the main data store.
+  * *rql* shows the queue length of the reader threads. The queue contains requests that require a read lock on the secondary reader data store.
+  * *wrql* shows the queue length of the waiting worker threads. All requests that cannot be handled by reader threads immediately are stored in this list till the secondary reader data store is ready to handle them. If sessions are disabled then the number will always be 0. 
+
+  Increasing values are uncritical as long as the numbers also decrease again. If the numbers increase continuously then the system is under high load and the performance might be impacted. 
+ 
+  (Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
 
 ## v9.0.1
 

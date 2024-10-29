@@ -164,8 +164,9 @@ sge_reader_main(void *arg) {
       MONITOR_IDLE_TIME(sge_tq_wait_for_task(ReaderRequestQueue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),
                         p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
-      MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(ReaderRequestQueue));
-      MONITOR_SET_WQLEN(p_monitor, sge_tq_get_task_count(ReaderWaitingRequestQueue));
+      MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
+      MONITOR_SET_RQLEN(p_monitor, sge_tq_get_task_count(ReaderRequestQueue));
+      MONITOR_SET_WRQLEN(p_monitor, sge_tq_get_task_count(ReaderWaitingRequestQueue));
 
       // handle the packet only if it is not nullptr and the shutdown has not started
       if (packet != nullptr && !sge_thread_has_shutdown_started()) {
