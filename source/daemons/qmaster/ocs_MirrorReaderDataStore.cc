@@ -37,7 +37,7 @@ namespace ocs {
       evc->ec_set_edtime(evc, 1);
    }
 
-   void MirrorReaderDataStore::update_sessions_and_move_requests(const u_long unique_id){
+   void MirrorReaderDataStore::update_sessions_and_move_requests(const u_long64 unique_id){
       DENTER(TOP_LAYER);
 
       // Update the session with the unique ID of the last event

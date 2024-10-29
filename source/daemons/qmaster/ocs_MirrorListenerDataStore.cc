@@ -83,7 +83,7 @@ namespace ocs {
       // no need to call evc->ec_commit(). This is done directly after this method returns.
    }
 
-   void MirrorListenerDataStore::update_sessions_and_move_requests(u_long unique_id) {
+   void MirrorListenerDataStore::update_sessions_and_move_requests(u_long64 unique_id) {
       // Nothing to do here because listener do not respect sessions intentionally for performance reasons
    }
 }
