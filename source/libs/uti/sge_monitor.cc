@@ -685,7 +685,7 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
 static void ext_gdi_output(dstring *message, void *monitoring_extension, double time) {
    auto *gdi_ext = (m_gdi_t *) monitoring_extension;
 
-   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFI,
+   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFIII,
                               gdi_ext->eload_count / time, gdi_ext->ejob_count / time,
                               gdi_ext->econf_count / time, gdi_ext->eproc_count / time,
                               gdi_ext->eack_count / time,
@@ -693,7 +693,10 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
                               gdi_ext->gdi_mod_count / time, gdi_ext->gdi_del_count / time,
                               gdi_ext->gdi_cp_count / time, gdi_ext->gdi_trig_count / time,
                               gdi_ext->gdi_perm_count / time,
-                              sge_u32c(gdi_ext->queue_length));
+                              sge_u32c(gdi_ext->queue_length),
+                              sge_u32c(gdi_ext->rqueue_length),
+                              sge_u32c(gdi_ext->wrqueue_length)
+                              );
 }
 
 /****** uti/monitor/ext_lis_output() *******************************************

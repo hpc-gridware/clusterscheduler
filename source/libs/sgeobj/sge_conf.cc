@@ -157,7 +157,7 @@ static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
 #define DEFAULT_DISABLE_SECONDARY_DS_EXECD (false)
 static bool disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
 
-#define DEFAULT_DISABLE_AUTOMATIC_SESSIONS (false)
+#define DEFAULT_DISABLE_AUTOMATIC_SESSIONS (true)
 static bool disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
 
 static bool prof_listener_thrd = false;
