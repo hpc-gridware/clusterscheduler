@@ -13,8 +13,8 @@ jobs:
           fetch-depth: 0
 
       - name: Code Review GPT
-        uses: mattzcarey/code-review-gpt@v0.1.9
+        uses: mattzcarey/code-review-gpt@v0.1.10
         with:
           OPENAI_API_KEY: ${{ secrets.GPTREVIEWKEY }}
-          MODEL: 'gpt-4o'
+          MODEL: 'gpt-4o-mini'
           GITHUB_TOKEN: ${{ github.token }}
