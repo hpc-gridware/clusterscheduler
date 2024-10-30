@@ -1721,22 +1721,27 @@ ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, i
    DRETURN_VOID;
 }
 
-static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall) 
-{
-   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
+static void
+ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall) {
    DENTER(EVC_LAYER);
-  
+
+   auto *sge_evc = static_cast<sge_evc_t *>(thiz->sge_evc_handle);
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed);
-      if (event != sgeE_ALL_EVENTS){
-         if (subscribed) {
-            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
-            if (sub_el) {
+      if (const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed)) {
+         if (event == sgeE_ALL_EVENTS) {
+            for (int e = sgeE_ALL_EVENTS; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
+               if (lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, e)) {
+                  lSetBool(sub_el, EVS_flush, flush);
+                  lSetUlong(sub_el, EVS_interval, intervall);
+                  lSetBool(sge_evc->ec, EV_changed, true);
+               }
+            }
+         } else {
+            if (lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event)) {
                lSetBool(sub_el, EVS_flush, flush);
                lSetUlong(sub_el, EVS_interval, intervall);
                lSetBool(sge_evc->ec, EV_changed, true);

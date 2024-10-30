@@ -364,6 +364,9 @@ namespace ocs {
 
                   // process the events
                   sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+#if 0
+                  DPRINTF("processed events\n");
+#endif
                   lFreeList(&event_list);
                   if (mirror_ret == SGE_EM_OK) {
                      did_handle_initial_events = true;
@@ -372,6 +375,9 @@ namespace ocs {
                      // update the sessions about the last event that we processed so that waiting requests can continue
                      if (found_last_event) {
                         update_sessions_and_move_requests(last_unique_id);
+#if 0
+                        DPRINTF("updates sessions and moved requests\n");
+#endif
                      }
                   } else {
                      DPRINTF("error during event processing\n");

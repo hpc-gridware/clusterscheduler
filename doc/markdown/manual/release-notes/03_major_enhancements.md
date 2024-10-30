@@ -4,9 +4,9 @@
 
 ### Automatic Session Management
 
-* Patch 9.0.2 introduces the new concept of automatic sessions. Session allows the xxQS_NAMExx system to synchronize internal data stores, so that client commands can be enforced to get the most recent data. Session management is disabled, but can be enabled by setting the `DISABLE_AUTOMATIC_SESSIONS` parameter to *false* in the `qmaster_params` of the cluster configuration. 
+* Patch 9.0.2 introduces the new concept of automatic sessions. Session allows the xxQS_NAMExx system to synchronize internal data stores, so that client commands can be enforced to get the most recent data. Session management is enabled, but can be disabled by setting the `DISABLE_AUTOMATIC_SESSIONS` parameter to *true* in the `qmaster_params` of the cluster configuration. 
 
-  The default for the `qmaster_param` `DISABLE_SECONDARY_DS_READER` is now *false*. This means that the reader thread pool is enabled by default and does not need to be enabled manually as in patch 9.0.1.
+  The default for the `qmaster_param` `DISABLE_SECONDARY_DS_READER` is now also *false*. This means that the reader thread pool is enabled by default and does not need to be enabled manually as in patch 9.0.1.
 
   The reader thread pool in combination with sessions ensure that commands that trigger changes within the cluster (write-requests), such as submitting a job, modifying a queue or changing a complex value, are executed and the outcome of those commands is guaranteed to be visible to the user who initiated the change. Commands that only read data (read-requests), such as `qstat`, `qhost` or `qconf -s...`, that are triggered by the same user, always return the most recent data although all read-requests in the system are executed completely in parallel to the other xxQS_NAMExx core components. This additional synchronization ensures that the data is consistent for the user with each read-request but on the other side might slow down individual read-requests.
 
