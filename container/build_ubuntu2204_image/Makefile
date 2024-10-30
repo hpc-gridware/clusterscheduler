@@ -22,7 +22,7 @@ REPOSITORY=hpcgridware
 IMAGE_NAME_BUILD=clusterscheduler-builder-ubuntu2204
 IMAGE_NAME=clusterscheduler-latest-ubuntu2204
 
-.PHONY: build-dependency-image
+THIS IS A MISTAKE .PHONY: build-dependency-image
 build-dependency-image:
 	@echo "Building Ubuntu 22.04 image with build dependencies..."
 	$(eval BUILD_TIME:=$(shell date -u '+%Y-%m-%d'))
