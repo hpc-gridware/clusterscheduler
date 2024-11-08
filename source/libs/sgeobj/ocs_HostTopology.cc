@@ -51,7 +51,8 @@ ocs::HostTopology::parseTopoMask(std::string &topo_mask){
    for (char &it : std::ranges::reverse_view(topo_mask)) {
       if (it == 'S' || it == 's') {
          // put collected cores into a socket
-         std::reverse(cores.begin(), cores.end());
+// 	std::reverse is not available at su0-0-lx-riscv64. Why?
+         //std::reverse(cores.begin(), cores.end());
          Node socket(it, std::move(cores));
          cores = std::vector<Node>();
 
@@ -59,7 +60,7 @@ ocs::HostTopology::parseTopoMask(std::string &topo_mask){
          this->sockets.push_back(std::move(socket));
       } else if (it == 'C' || it == 'c' || it == 'E' || it == 'e') {
          // put collected threads into a core
-         std::reverse(threads.begin(), threads.end());
+         //std::reverse(threads.begin(), threads.end());
          Node core(it, std::move(threads));
          threads = std::vector<Node>();
 
@@ -72,7 +73,7 @@ ocs::HostTopology::parseTopoMask(std::string &topo_mask){
          threads.push_back(std::move(thread));
       }
    }
-   std::reverse(sockets.begin(), sockets.end());
+   //std::reverse(sockets.begin(), sockets.end());
 
    // We did not strictly parse the EBNF syntax of the topology mask. But need to ensure that it is really well-formed.
    // Therefor, we compare the parsed topology mask with the original one.
@@ -126,9 +127,10 @@ ocs::HostTopology::numberTopoNodes(std::vector<Node> &nodes) {
 
 void
 ocs::HostTopology::sortNodes(std::vector<Node>& nodes) {
-   std::sort(nodes.begin(), nodes.end(), [](const Node& a, const Node& b) {
-      return a.c < b.c;
-   });
+   // also not available on su0-0-lx-riscv64 ?	
+   //std::sort(nodes.begin(), nodes.end(), [](const Node& a, const Node& b) {
+   //   return a.c < b.c;
+   //});
    for (auto& node : nodes) {
       sortNodes(node.nodes);
    }

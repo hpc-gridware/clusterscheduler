@@ -53,4 +53,4 @@ namespace ocs {
       std::string getTopoMask() const;
       std::string getFullTopoMask() const;
    };
-};
+}
