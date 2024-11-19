@@ -151,8 +151,6 @@ static int sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *optio
 */
 static FILE *fp = nullptr;
 
-int main(int argc, char *argv[]);
-
 /*
 ** NAME
 **   main
@@ -2151,7 +2149,6 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
    DENTER(TOP_LAYER);
 
    document.SetNull();
-   document.GetAllocator().Clear();
    document.Parse(line);
 
    if (document.IsObject()) {
