@@ -139,7 +139,7 @@
 }
 
 {
-   @todo CS-740 commlib threads are not properly terminated at sge_execd shutdown
+   @todo CS-740 (1) commlib threads are not properly terminated at sge_execd shutdown
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
@@ -156,7 +156,7 @@
 }
 
 {
-   @todo CS-740 commlib threads are not properly terminated at sge_execd shutdown
+   @todo CS-740 (2) commlib threads are not properly terminated at sge_execd shutdown
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
@@ -169,5 +169,37 @@
    fun:_Z28cl_thread_list_create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_EPFvS2_ES6_18cl_thread_type_def
    fun:_Z20cl_com_create_handlePi16cl_framework_def26cl_xml_connection_type_defbi18cl_tcp_connect_defPKcmii
    fun:_Z25gdi_client_prepare_enrollPP6_lList
+   fun:main
+}
+
+{
+   @todo CS-590 (1) interactive jobs: ijs threads are not properly terminated
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z17cl_raw_list_setupPP16cl_raw_list_typePKci
+   fun:_Z20cl_thread_list_setupPP16cl_raw_list_typePKc
+   fun:_Z15thread_init_libPP16cl_raw_list_type
+   fun:_Z14run_ijs_serverP13cl_com_handlePKcjiiii9ternary_tS3_PiP7dstring
+   fun:main
+}
+{
+   @todo CS-590 (2) interactive jobs: ijs threads are not properly terminated
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z14tty_to_commlibPv
+   fun:start_thread
+   fun:clone
+}
+
+{
+   @todo CS-347 overlapping buffers in sge_strok call
+   Memcheck:Overlap
+   fun:strcpy
+   fun:_Z10sge_strtokPKcS0_
+   fun:_Z11sge_jobnamePKc
    fun:main
 }
