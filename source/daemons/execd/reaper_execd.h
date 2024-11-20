@@ -50,3 +50,5 @@ void reaper_sendmail(lListElem *jep, lListElem *jr);
 void execd_slave_job_exit(u_long32 job_id, u_long32 ja_task_id);
 int count_master_tasks(const lList *lp, u_long32 job_id);
 void set_enforce_cleanup_old_jobs();
+
+void simulated_job_exit(const lListElem *jep, lListElem *jatep, u_long32 sig = 0);

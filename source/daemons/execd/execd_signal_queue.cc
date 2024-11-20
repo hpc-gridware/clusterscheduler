@@ -228,39 +228,10 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
 
    INFO(MSG_JOB_SIGNALTASK_UUS,   sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)), sge_sig2str(sig));
 
-   /* for simulated hosts do nothing */
+   // for simulated jobs fill in the job report
    if (mconf_get_simulate_jobs()) {
       if (sig == SGE_SIGKILL) {
-         lListElem *jr = nullptr;
-         u_long32 jobid, jataskid;
-         double wallclock;
-
-         jobid = lGetUlong(jep, JB_job_number);
-         jataskid = lGetUlong(jatep, JAT_task_number);
-         
-         DPRINTF("Simulated job " sge_u32"." sge_u32" is killed\n", jobid, jataskid);
-
-         if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
-            ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, sge_u32c(jobid), sge_u32c(jataskid));
-            jr = add_job_report(jobid, jataskid, nullptr, jep);
-         }
-
-         lSetUlong(jr, JR_state, JEXITING);
-         lSetUlong64(jatep, JAT_end_time, sge_get_gmt64());
-         add_usage(jr, "submission_time", nullptr, lGetUlong64(jep, JB_submission_time));
-         add_usage(jr, "start_time", nullptr, lGetUlong64(jatep, JAT_start_time));
-         add_usage(jr, "end_time", nullptr, lGetUlong64(jatep, JAT_end_time));
-         wallclock = (lGetUlong64(jatep, JAT_end_time) - lGetUlong64(jatep, JAT_start_time)) / 1000000.0;
-         add_usage(jr, "ru_wallclock", nullptr, wallclock);
-         add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
-         add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
-         add_usage(jr, "ru_stime", nullptr, wallclock * 0.1);
-         add_usage(jr, "exit_status", nullptr, 137);
-         add_usage(jr, "signal", nullptr, sig);
-
-         lSetUlong(jatep, JAT_status, JEXITING);
-
-         flush_job_report(jr);
+         simulated_job_exit(jep, jatep, sig);
       }
       
       DRETURN(0);

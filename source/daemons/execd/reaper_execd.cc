@@ -2242,4 +2242,57 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
    DRETURN(master_jobs);
 }
 
+void simulated_job_exit(const lListElem *jep, lListElem *jatep, u_long32 sig) {
+   DENTER(TOP_LAYER);
 
+   u_long32 jobid = lGetUlong(jep, JB_job_number);
+   u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
+
+   u_long32 state = lGetUlong(jatep, JAT_status);
+   if (state == JEXITING) {
+      DPRINTF("Simulated job " sge_u32"." sge_u32" is already in state JEXITING\n", jobid, jataskid);
+   } else {
+      DPRINTF("Simulated job " sge_u32"." sge_u32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
+
+      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
+      if (jr == nullptr) {
+         ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, sge_u32c(jobid), sge_u32c(jataskid));
+         jr = add_job_report(jobid, jataskid, nullptr, jep);
+      }
+
+      lSetUlong(jr, JR_state, JEXITING);
+      add_usage(jr, "submission_time", nullptr, lGetUlong64(jep, JB_submission_time));
+
+      u_long64 start_time = lGetUlong64(jatep, JAT_start_time);
+      add_usage(jr, "start_time", nullptr, start_time);
+
+      u_long64 end_time = lGetUlong64(jatep, JAT_end_time);
+      // if the job is gets signalled (killed) then use the current time as end_time
+      // same if it is 0 (which should actually not happen but has been seen when running performance/throughput test)
+      if (end_time == 0 || sig > 0) {
+         end_time = sge_get_gmt64();
+         ERROR("==> end_time was 0 or job is signalled, end_time is now: " sge_u64, end_time);
+         lSetUlong64(jatep, JAT_end_time, end_time);
+      }
+      add_usage(jr, "end_time", nullptr, end_time);
+
+      double wallclock = sge_gmt64_to_gmt32_double(end_time - start_time);
+      add_usage(jr, "ru_wallclock", nullptr, wallclock);
+      add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
+      add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
+      add_usage(jr, "ru_stime", nullptr, wallclock * 0.1);
+
+      if (sig > 0) {
+         add_usage(jr, "exit_status", nullptr, 137);
+         add_usage(jr, "signal", nullptr, sig);
+      } else {
+         add_usage(jr, "exit_status", nullptr, 0);
+      }
+
+      lSetUlong(jatep, JAT_status, JEXITING);
+      flush_job_report(jr);
+   }
+
+
+   DRETURN_VOID;
+}

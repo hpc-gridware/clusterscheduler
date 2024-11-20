@@ -555,34 +555,7 @@ int do_ck_to_do(bool is_qmaster_down) {
       for_each_rw(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong64(jatep, JAT_end_time) <= now) {
-               lListElem *jr = nullptr;
-               u_long32 jobid, jataskid;
-               double wallclock;
-
-               jobid = lGetUlong(jep, JB_job_number);
-               jataskid = lGetUlong(jatep, JAT_task_number);
-
-               DPRINTF("Simulated job " sge_u32"." sge_u32" is exiting\n", jobid, jataskid);
-
-               if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
-                  ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, sge_u32c(jobid), sge_u32c(jataskid));
-                  jr = add_job_report(jobid, jataskid, nullptr, jep);
-               }
-
-               lSetUlong(jr, JR_state, JEXITING);
-               add_usage(jr, "submission_time", nullptr, lGetUlong64(jep, JB_submission_time));
-               add_usage(jr, "start_time", nullptr, lGetUlong64(jatep, JAT_start_time));
-               add_usage(jr, "end_time", nullptr, lGetUlong64(jatep, JAT_end_time));
-               wallclock = sge_gmt64_to_gmt32_double(lGetUlong64(jatep, JAT_end_time) - lGetUlong64(jatep, JAT_start_time));
-               add_usage(jr, "ru_wallclock", nullptr, wallclock);
-               add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
-               add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
-               add_usage(jr, "ru_stime", nullptr, wallclock * 0.1);
-               add_usage(jr, "exit_status", nullptr, 0);
-            
-               
-               lSetUlong(jatep, JAT_status, JEXITING);
-               flush_job_report(jr);
+               simulated_job_exit(jep, jatep);
             }
          }
       }   
