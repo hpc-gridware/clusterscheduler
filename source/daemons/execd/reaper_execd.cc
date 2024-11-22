@@ -2266,14 +2266,9 @@ void simulated_job_exit(const lListElem *jep, lListElem *jatep, u_long32 sig) {
       u_long64 start_time = lGetUlong64(jatep, JAT_start_time);
       add_usage(jr, "start_time", nullptr, start_time);
 
-      u_long64 end_time = lGetUlong64(jatep, JAT_end_time);
-      // if the job is gets signalled (killed) then use the current time as end_time
-      // same if it is 0 (which should actually not happen but has been seen when running performance/throughput test)
-      if (end_time == 0 || sig > 0) {
-         end_time = sge_get_gmt64();
-         ERROR("==> end_time was 0 or job is signalled, end_time is now: " sge_u64, end_time);
-         lSetUlong64(jatep, JAT_end_time, end_time);
-      }
+      // get the current time as end time - it shall contain overhead in sge_execd
+      u_long64 end_time = sge_get_gmt64();
+      lSetUlong64(jatep, JAT_end_time, end_time);
       add_usage(jr, "end_time", nullptr, end_time);
 
       double wallclock = sge_gmt64_to_gmt32_double(end_time - start_time);
