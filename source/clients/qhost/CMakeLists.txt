@@ -25,6 +25,8 @@ add_executable(
         ocs_qhost_print.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
+      ../../common/parse_job_cull.cc
+      ../../common/parse_qsub.cc
       ../../common/usage.cc)
 target_include_directories(qhost PRIVATE ${SGE_INCLUDES})
 

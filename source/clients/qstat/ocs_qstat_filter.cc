@@ -65,6 +65,8 @@
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
+#include "sgeobj/sge_str.h"
+#include "sgeobj/sge_userset.h"
 
 #include "sched/sge_urgency.h"
 #include "sched/sge_support.h"
@@ -417,7 +419,12 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
    int ret = 0;
 
    DENTER(TOP_LAYER);
-   
+
+   bool perm_return = sge_gdi_get_permission(alpp, &qstat_env->is_manager, nullptr, nullptr, nullptr);
+   if (!perm_return) {
+      DRETURN(1);
+   }
+
    ret = qstat_env_get_all_lists(qstat_env, need_job_list, alpp);
    if (ret) {
       DRETURN(ret);
@@ -1334,6 +1341,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 /* ------------------- Queue Handler ---------------------------------------- */
 
 static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) {
+   DENTER(TOP_LAYER);
    char arch_string[80];
    const char *load_avg_str;
    char load_alarm_reason[MAX_STRING_SIZE];
@@ -1346,8 +1354,6 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    dstring state_string = DSTRING_INIT;
    int ret = 0;
    
-   DENTER(TOP_LAYER);
-
    memset(&summary, 0, sizeof(queue_summary_t));
    
    *load_alarm_reason = 0;
@@ -1405,12 +1411,32 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    }
    qinstance_state_append_to_dstring(q, &state_string);
    summary.state = sge_dstring_get_string(&state_string);
-   
+
+   // does the executing qstat user have access to this queue?
+   const char *username = component_get_username();
+   const char *groupname = component_get_groupname();
+   int amount;
+   ocs_grp_elem_t *grp_array;
+   component_get_supplementray_groups(&amount, &grp_array);
+   lList *grp_list = grp_list_array2list(amount, grp_array);
+   summary.has_access = sge_has_access(username, groupname, grp_list, q, qstat_env->acl_list);
+   lFreeList(&grp_list);
+
+   // show everything for managers but for normal users hide data if user has no access to the queue
+   bool hide_data = false;
+   if (qstat_env->is_manager) {
+      hide_data = false;
+   } else if (qstat_env->show_department_view) {
+      hide_data = !summary.has_access;
+   }
+   if (hide_data) {
+      return 0;
+   }
+
    if (handler->report_queue_summary && (ret=handler->report_queue_summary(handler, queue_name, &summary, alpp))) {
       DPRINTF("report_queue_summary failed\n");
       goto error;
    }
-   
 
    if ((qstat_env->full_listing & QSTAT_DISPLAY_ALARMREASON)) {
       if (*load_alarm_reason) {
@@ -1542,6 +1568,11 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
       nxt = lNextRW(jep);
       nxt_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       FoundTasks = 0;
+
+      bool hide_data = !job_is_visible(lGetString(jep, JB_owner), qstat_env->is_manager, qstat_env->show_department_view, qstat_env->user_list);
+      if (hide_data) {
+         continue;
+      }
 
       while ((jatep = nxt_jatep)) { 
          if (qstat_env->shut_me_down && qstat_env->shut_me_down() ) {

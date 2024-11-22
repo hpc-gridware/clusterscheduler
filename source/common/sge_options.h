@@ -295,7 +295,8 @@ enum {
    sce_OPT, /* show ce object */
    scel_OPT,/* show ce object list */
 
-   stl_OPT /* show thread list */
+   stl_OPT, //< show thread list
+   dept_OPT //< set department of job
 };
 
 /* macros used in parsing */

@@ -51,11 +51,11 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userprj.h"
+#include "sgeobj/sge_userset.h"
 
 #include "sched/sge_complex_schedd.h"
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"
-#include "sched/valid_queue_user.h"
 
 #include "msg_clients_common.h"
 #include "ocs_client_cqueue.h"

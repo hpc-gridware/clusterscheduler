@@ -52,7 +52,6 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_order.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
@@ -65,10 +64,10 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_userset.h"
 
 #include "sched/sgeee.h"
 #include "sched/sge_support.h"
-#include "sched/valid_queue_user.h"
 #include "sched/debit.h"
 
 #include "gdi/sge_gdi.h"

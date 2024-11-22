@@ -35,6 +35,8 @@
 #include <cstring>
 #include <math.h>
 
+#include "sgeobj/sge_userset.h"
+
 #ifndef NO_SGE_COMPILE_DEBUG   
 #   define NO_SGE_COMPILE_DEBUG
 #endif

@@ -547,6 +547,10 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_de_OPT_HOST_LIST , MSG_GDI_UTEXT_de_OPT_HOST_LIST );
    }
 
+   if (VALID_OPT(dept_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_dept_OPT_DEPT_NAME, MSG_GDI_UTEXT_dept_OPT_DEPT_NAME);
+   }
+
    if (VALID_OPT(display_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_display_OPT_DISPLAY, MSG_GDI_UTEXT_display_OPT_DISPLAY );
    }

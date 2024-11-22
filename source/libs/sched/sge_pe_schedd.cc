@@ -42,9 +42,9 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_userset.h"
 
 #include "sge_pe_schedd.h"
-#include "valid_queue_user.h"
 #include "sge_schedd_text.h"
 #include "schedd_message.h"
 #include "msg_schedd.h"

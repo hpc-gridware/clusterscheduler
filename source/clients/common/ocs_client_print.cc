@@ -52,6 +52,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
+#include "sgeobj/sge_userset.h"
 
 #include "sched/sge_urgency.h"
 #include "sched/sge_job_schedd.h"
@@ -65,8 +66,8 @@
 
 static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *task_str, u_long32 full_listing, int slots, int slot, lList *ehl, lList *cl,
-                         const lList *pe_list, const char *intend, u_long32 group_opt, int slots_per_line,
-                         int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp);
+                         const lList *pe_list, const lList *acl_list, const char *intend, u_long32 group_opt, int slots_per_line,
+                         int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show, bool is_manager);
 
 static char hashes[] =
     "##############################################################################################################";
@@ -182,7 +183,7 @@ static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
 int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
                          lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
                          u_long32 group_opt, int queue_name_length, qhost_report_handler_t *report_handler,
-                         lList **alpp) {
+                         lList **alpp, u_long32 show, bool is_manager) {
    lListElem *jlep;
    lListElem *jatep;
    const lListElem *gdilep;
@@ -283,8 +284,9 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                          (lGetUlong(jatep, JAT_state) & JRUNNING)) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list,
+                                      pe_list, user_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_SUSPENDED) &&
@@ -294,8 +296,8 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
 
@@ -303,8 +305,8 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_USER)) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
 
@@ -312,8 +314,8 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_OPERATOR)) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
 
@@ -321,8 +323,8 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_SYSTEM)) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
 
@@ -330,8 +332,8 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_JA_AD)) {
                         sge_print_job(jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list,
+                                      indent, group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
                         already_printed = 1;
                      }
                   }
@@ -371,11 +373,17 @@ void sge_printf_header(u_long32 full_listing, u_long32 sge_ext) {
    }
 }
 
-#define OPTI_PRINT8(value)                                                                                             \
+#define OPTI_PRINT8(output, hide_data, value)                                                                                             \
    if (value > 99999999)                                                                                               \
-      printf("%8.3g ", value);                                                                                         \
+      if (hide_data)                                                                                                    \
+         sge_dstring_sprintf_append(&output, "%8s ", "*");                                                                                         \
+      else                                                                                                                \
+         sge_dstring_sprintf_append(&output, "%8.3g ", value);                                                                                         \
    else                                                                                                                \
-      printf("%8.0f ", value)
+      if (hide_data)                                                                                                    \
+         sge_dstring_sprintf_append(&output, "%8s ", "*");                                                                                         \
+      else                                                                                                                \
+         sge_dstring_sprintf_append(&output, "%8.0f ", value)
 
 /* regular output */
 static char jhul1[] = "---------------------------------------------------------------------------------------------";
@@ -392,10 +400,11 @@ static char jhul6[] = "-----------------------------------";
 
 static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *dyn_task_str, u_long32 full_listing, int slots, int slot, lList *exechost_list,
-                         lList *centry_list, const lList *pe_list, const char *indent, u_long32 group_opt,
+                         lList *centry_list, const lList *pe_list, const lList *acl_list, const char *indent, u_long32 group_opt,
                          int slots_per_line, /* number of slots to be printed in slots column
                                                when 0 is passed the number of requested slots printed */
-                         int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp) {
+                         int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show, bool is_manager) {
+   DENTER(TOP_LAYER);
    char state_string[8];
    static int first_time = 1;
    u_long32 jstate;
@@ -414,8 +423,12 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    dstring queue_name_buffer = DSTRING_INIT;
    char jobid[128];
    int ret = QHOST_SUCCESS;
+   dstring output = DSTRING_INIT;
+   bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
+   bool hide_data = false;
 
-   DENTER(TOP_LAYER);
+   const char *owner = lGetString(job, JB_owner);
+   hide_data = !job_is_visible(owner, is_manager, dept_view, acl_list);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -453,7 +466,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             seperator[line_length - 1] = '\0';
             snprintf(part6, part6_size, "%s%d%s%d%s", part1, queue_name_length, part3, queue_name_length, part5);
 
-            printf(part6, indent, "job-ID", "prior ", (sge_pri || sge_urg) ? " nurg   " : "", sge_pri ? " npprior" : "",
+            sge_dstring_sprintf_append(&output, part6, indent, "job-ID", "prior ", (sge_pri || sge_urg) ? " nurg   " : "", sge_pri ? " npprior" : "",
                    (sge_pri || sge_ext) ? " ntckts " : "", sge_urg ? " urg      rrcontr  wtcontr  dlcontr " : "",
                    sge_pri ? "  ppri" : "", "name", "user", sge_ext ? "project          department " : "", "state",
                    sge_time ? "submit/start at     " : "", sge_urg ? " deadline           " : "",
@@ -465,7 +478,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
                    tsk_ext ? USAGE_ATTR_CPU "        " USAGE_ATTR_MEM "     " USAGE_ATTR_IO "      " : "",
                    tsk_ext ? "stat " : "", tsk_ext ? "failed " : "");
 
-            printf("\n%s%s%s%s%s%s%s%s\n", indent, jhul1, seperator, (group_opt & GROUP_NO_PETASK_GROUPS) ? jhul2 : "",
+            sge_dstring_sprintf_append(&output, "\n%s%s%s%s%s%s%s%s\n", indent, jhul1, seperator, (group_opt & GROUP_NO_PETASK_GROUPS) ? jhul2 : "",
                    sge_ext ? jhul3 : "", tsk_ext ? jhul4 : "", sge_urg ? jhul5 : "", sge_pri ? jhul6 : "");
 
             sge_free(&part6);
@@ -473,13 +486,17 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          }
       }
 
-      printf("%s", indent);
+      sge_dstring_sprintf_append(&output, "%s", indent);
 
       /* job number / ja task id */
       if (print_jobid) {
-         printf("%7d ", (int)lGetUlong(job, JB_job_number));
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%7s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%7d ", (int)lGetUlong(job, JB_job_number));
+         }
       } else {
-         printf("        ");
+         sge_dstring_sprintf_append(&output, "        ");
       }
    } else {
       snprintf(jobid, sizeof(jobid) - 1, "%d", (int)lGetUlong(job, JB_job_number));
@@ -499,56 +516,72 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          }
       } else {
          if (print_jobid) {
-            printf("%7.5f ", lGetDouble(jatep, JAT_prio)); /* nprio 0.0 - 1.0 */
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%7s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(jatep, JAT_prio)); /* nprio 0.0 - 1.0 */
+            }
          } else {
-            printf("        ");
+            sge_dstring_sprintf_append(&output, "        ");
          }
       }
 
       if (sge_pri || sge_urg) {
          if (print_jobid) {
-            printf("%7.5f ", lGetDouble(job, JB_nurg)); /* nurg 0.0 - 1.0 */
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%7s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(job, JB_nurg)); /* nurg 0.0 - 1.0 */
+            }
          } else {
-            printf("        ");
+            sge_dstring_sprintf_append(&output, "        ");
          }
       }
 
       if (sge_pri) {
          if (print_jobid) {
-            printf("%7.5f ", lGetDouble(job, JB_nppri)); /* nppri 0.0 - 1.0 */
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%7s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(job, JB_nppri)); /* nppri 0.0 - 1.0 */
+            }
          } else {
-            printf("        ");
+            sge_dstring_sprintf_append(&output, "        ");
          }
       }
 
       if (sge_pri || sge_ext) {
          if (print_jobid) {
-            printf("%7.5f ", lGetDouble(jatep, JAT_ntix)); /* ntix 0.0 - 1.0 */
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%7s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(jatep, JAT_ntix)); /* ntix 0.0 - 1.0 */
+            }
          } else {
-            printf("        ");
+            sge_dstring_sprintf_append(&output, "        ");
          }
       }
 
       if (sge_urg) {
          if (print_jobid) {
-            OPTI_PRINT8(lGetDouble(job, JB_urg));
-            OPTI_PRINT8(lGetDouble(job, JB_rrcontr));
-            OPTI_PRINT8(lGetDouble(job, JB_wtcontr));
-            OPTI_PRINT8(lGetDouble(job, JB_dlcontr));
+            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_urg));
+            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_rrcontr));
+            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_wtcontr));
+            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_dlcontr));
          } else {
-            printf("         "
-                   "         "
-                   "         "
-                   "         ");
+            sge_dstring_sprintf_append(&output, "                                    ");
          }
       }
 
       if (sge_pri) {
          if (print_jobid) {
-            printf("%5d ", ((int)lGetUlong(job, JB_priority)) - BASE_PRIORITY);
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%5s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%5d ", ((int)lGetUlong(job, JB_priority)) - BASE_PRIORITY);
+            }
          } else {
-            printf("         "
-                   "         ");
+            sge_dstring_sprintf_append(&output, "                  ");
          }
       }
    }
@@ -570,14 +603,15 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       }
    } else {
       if (print_jobid) {
-         /* job name */
-         printf("%-10.10s ", lGetString(job, JB_job_name));
-
-         /* job owner */
-         printf("%-12.12s ", lGetString(job, JB_owner));
+         if (hide_data) { /* job name */
+            sge_dstring_sprintf_append(&output, "%-10s ", "*");
+            sge_dstring_sprintf_append(&output, "%-12s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%-10.10s ", lGetString(job, JB_job_name));
+            sge_dstring_sprintf_append(&output, "%-12.12s ", lGetString(job, JB_owner));
+         }
       } else {
-         printf("           ");
-         printf("             ");
+         sge_dstring_sprintf_append(&output, "                        ");
       }
    }
 
@@ -585,13 +619,15 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       const char *s;
 
       if (print_jobid) {
-         /* job project */
-         printf("%-16.16s ", (s = lGetString(job, JB_project)) ? s : "NA");
-         /* job department */
-         printf("%-10.10s ", (s = lGetString(job, JB_department)) ? s : "NA");
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-16s ", "*");
+            sge_dstring_sprintf_append(&output, "%-10s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%-16.16s ", (s = lGetString(job, JB_project)) ? s : "NA");
+            sge_dstring_sprintf_append(&output, "%-10.10s ", (s = lGetString(job, JB_department)) ? s : "NA");
+         }
       } else {
-         printf("                 ");
-         printf("           ");
+         sge_dstring_sprintf_append(&output, "                            ");
       }
    }
 
@@ -616,11 +652,15 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       report_handler->report_job_string_value(report_handler, cqname, jobid, "job_state", state_string, alpp);
    } else {
       if (print_jobid) {
-         /* write states into string */
-         job_get_state_string(state_string, jstate);
-         printf("%-5.5s ", state_string);
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-5s ", "*");
+         } else {
+            /* write states into string */
+            job_get_state_string(state_string, jstate);
+            sge_dstring_sprintf_append(&output, "%-5.5s ", state_string);
+         }
       } else {
-         printf("      ");
+         sge_dstring_sprintf_append(&output, "      ");
       }
    }
 
@@ -636,14 +676,18 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          }
       } else {
          if (print_jobid) {
-            /* start/submit time */
-            if (lGetUlong64(jatep, JAT_start_time) == 0) {
-               printf("%s ", sge_ctime64_short(lGetUlong64(job, JB_submission_time), &ds));
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%s ", "*");
             } else {
-               printf("%s ", sge_ctime64_short(lGetUlong64(jatep, JAT_start_time), &ds));
+               /* start/submit time */
+               if (lGetUlong64(jatep, JAT_start_time) == 0) {
+                  sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(job, JB_submission_time), &ds));
+               } else {
+                  sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(jatep, JAT_start_time), &ds));
+               }
             }
          } else {
-            printf("                    ");
+            sge_dstring_sprintf_append(&output, "                    ");
          }
       }
    }
@@ -655,12 +699,16 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    if (sge_urg) {
       if (print_jobid) {
          if (lGetUlong64(job, JB_deadline) == 0) {
-            printf("                    ");
+            sge_dstring_sprintf_append(&output, "                    ");
          } else {
-            printf("%s ", sge_ctime64_short(lGetUlong64(job, JB_deadline), &ds));
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%s ", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(job, JB_deadline), &ds));
+            }
          }
       } else {
-         printf("                    ");
+         sge_dstring_sprintf_append(&output, "                    ");
       }
    }
 
@@ -699,35 +747,48 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
 
       /* scaled cpu usage */
       if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU))) {
-         printf("%-10.10s ", running ? "NA" : "");
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-10s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%-10.10s ", running ? "NA" : "");
+         }
       } else {
-         int secs, minutes, hours, days;
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-10s ", "*");
+         } else {
+            int secs, minutes, hours, days;
 
-         secs = lGetDouble(up, UA_value);
+            secs = lGetDouble(up, UA_value);
+            days = secs / (60 * 60 * 24);
+            secs -= days * (60 * 60 * 24);
+            hours = secs / (60 * 60);
+            secs -= hours * (60 * 60);
+            minutes = secs / 60;
+            secs -= minutes * 60;
 
-         days = secs / (60 * 60 * 24);
-         secs -= days * (60 * 60 * 24);
-
-         hours = secs / (60 * 60);
-         secs -= hours * (60 * 60);
-
-         minutes = secs / 60;
-         secs -= minutes * 60;
-
-         printf("%d:%2.2d:%2.2d:%2.2d ", days, hours, minutes, secs);
+            sge_dstring_sprintf_append(&output, "%d:%2.2d:%2.2d:%2.2d ", days, hours, minutes, secs);
+         }
       }
       /* scaled mem usage */
       if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM))) {
-         printf("%-7.7s ", running ? "NA" : "");
+         sge_dstring_sprintf_append(&output, "%-7.7s ", running ? "NA" : "");
       } else {
-         printf("%-5.5f ", lGetDouble(up, UA_value));
+         sge_dstring_sprintf_append(&output, "%-5.5f ", lGetDouble(up, UA_value));
       }
 
       /* scaled io usage */
       if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO))) {
-         printf("%-7.7s ", running ? "NA" : "");
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-7s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%-7.7s ", running ? "NA" : "");
+         }
       } else {
-         printf("%-5.5f ", lGetDouble(up, UA_value));
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%-5s ", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%-5.5f ", lGetDouble(up, UA_value));
+         }
       }
 
       lFreeList(&job_usage_list);
@@ -762,28 +823,31 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       /* report jobs dynamic scheduling attributes */
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
-      if (is_zombie_job) {
-         printf("   NA ");
-         printf("   NA ");
-         printf("   NA ");
-         printf("   NA ");
-         printf("   NA ");
-         printf("   NA ");
+      if (hide_data) {
+            sge_dstring_sprintf_append(&output, "    * ");
+            sge_dstring_sprintf_append(&output, "    * ");
+            sge_dstring_sprintf_append(&output, "    * ");
+            sge_dstring_sprintf_append(&output, "    * ");
+            sge_dstring_sprintf_append(&output, "    * ");
+            sge_dstring_sprintf_append(&output, "    * ");
       } else {
-         if (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            printf("%5d ", (int)tickets), printf("%5d ", (int)lGetUlong(job, JB_override_tickets));
-            printf("%5d ", (int)otickets);
-            printf("%5d ", (int)ftickets);
-            printf("%5d ", (int)stickets);
-            printf("%-5.2f ", lGetDouble(jatep, JAT_share));
+         if (is_zombie_job) {
+            sge_dstring_sprintf_append(&output, "   NA ");
+            sge_dstring_sprintf_append(&output, "   NA ");
+            sge_dstring_sprintf_append(&output, "   NA ");
+            sge_dstring_sprintf_append(&output, "   NA ");
+            sge_dstring_sprintf_append(&output, "   NA ");
+            sge_dstring_sprintf_append(&output, "   NA ");
          } else {
-            printf("      ");
-            printf("      ");
-            printf("      ");
-            printf("      ");
-            printf("      ");
-            printf("      ");
-            printf("      ");
+            if (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list)) {
+               sge_dstring_sprintf_append(&output, "%5d ", (int)tickets), printf("%5d ", (int)lGetUlong(job, JB_override_tickets));
+               sge_dstring_sprintf_append(&output, "%5d ", (int)otickets);
+               sge_dstring_sprintf_append(&output, "%5d ", (int)ftickets);
+               sge_dstring_sprintf_append(&output, "%5d ", (int)stickets);
+               sge_dstring_sprintf_append(&output, "%-5.2f ", lGetDouble(jatep, JAT_share));
+            } else {
+               sge_dstring_sprintf_append(&output, "                                          ");
+            }
          }
       }
    }
@@ -795,7 +859,11 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       } else {
          char temp[20];
          snprintf(temp, sizeof(temp), "%%-%d.%ds ", queue_name_length, queue_name_length);
-         printf(temp, queue_name ? queue_name : "");
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, temp, "*");
+         } else {
+            sge_dstring_sprintf_append(&output, temp, queue_name ? queue_name : "");
+         }
       }
    }
 
@@ -805,9 +873,13 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          report_handler->report_job_string_value(report_handler, cqname, jobid, "pe_master", master, alpp);
       } else {
          if (master) {
-            printf("%-7.6s", master);
+            if (hide_data) {
+               sge_dstring_sprintf_append(&output, "%-7s", "*");
+            } else {
+               sge_dstring_sprintf_append(&output, "%-7.6s", master);
+            }
          } else {
-            printf("       ");
+            sge_dstring_sprintf_append(&output, "       ");
          }
       }
    } else {
@@ -815,7 +887,11 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       if (!slots_per_line) {
          slots_per_line = sge_job_slot_request(job, pe_list);
       }
-      printf("%5d ", slots_per_line);
+      if (hide_data) {
+         sge_dstring_sprintf_append(&output, "%5s ", "*");
+      } else {
+         sge_dstring_sprintf_append(&output, "%5d ", slots_per_line);
+      }
    }
 
    if (report_handler) {
@@ -828,9 +904,13 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       }
    } else {
       if (sge_dstring_get_string(dyn_task_str) && job_is_array(job)) {
-         printf("%s", sge_dstring_get_string(dyn_task_str));
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "%s", "*");
+         } else {
+            sge_dstring_sprintf_append(&output, "%s", sge_dstring_get_string(dyn_task_str));
+         }
       } else {
-         printf("       ");
+         sge_dstring_sprintf_append(&output, "       ");
       }
    }
 
@@ -847,7 +927,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       if (!slot && task_list && queue_name && ((ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) &&
           ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name)) {
          if (indent++) {
-            printf("%*s", num_spaces, " ");
+            sge_dstring_sprintf_append(&output, "%*s", num_spaces, " ");
          }
          sge_print_subtask(job, jatep, nullptr, 0, 0);
          /* subtask_ndx++; */
@@ -859,20 +939,21 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
                         ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name) &&
                         ((subtask_ndx++ % slots) == slot))) {
             if (indent++) {
-               printf("%*s", num_spaces, " ");
+               sge_dstring_sprintf_append(&output, "%*s", num_spaces, " ");
             }
             sge_print_subtask(job, jatep, task, 0, 0);
          }
       }
 
       if (!indent) {
-         putchar('\n');
+         sge_dstring_sprintf_append(&output, "\n");
       }
 
    } else {
       if (!report_handler) {
          /* print a new line */
-         putchar('\n');
+         printf("%s\n", sge_dstring_get_string(&output));
+         sge_dstring_free(&output);
       } else {
          ret = report_handler->report_job_finished(report_handler, cqname, jobid, alpp);
          if (ret != QHOST_SUCCESS) {

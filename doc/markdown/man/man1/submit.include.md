@@ -379,6 +379,23 @@ The outcome of the evaluation of all `-ac`, `-dc`, and `-sc` options are passed 
 parameter with the name **ac**. (see `-jsv` option below or find more information concerning JSV 
 in xxqs_name_sxx_jsv(1))
 
+## -dept *department_name*
+
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
+
+Specifies the department to which this job is assigned.
+
+Usually, the department name is used to group users into a department. If a user belongs to exactly one department,
+then jobs submitted by this user automatically belong to this department. If a user belongs to more than one
+department, then the user can specify the department name with the `-dept` switch of the submit command,
+otherwise the job will be automatically assigned to the first found department where the user belongs to.
+
+The assignment of a job to a department is used for scheduling purposes, accounting, and it can define 
+visibility of the job. Find more information about departments in xxqs_name_sxx_access_list(1).
+
+If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+*dept*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1)).
+
 ## -display *display_specifier*
 
 Available for `qsh` and `qrsh (with command)`.
@@ -869,7 +886,7 @@ Specifies the project to which this job is assigned. The administrator needs to 
 to submit jobs to a specific project. (see `-aprj` option to qconf(1)).
 
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
-*ot*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+*ot*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1)).
 
 ## -p priority  
 

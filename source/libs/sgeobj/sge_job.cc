@@ -4585,3 +4585,35 @@ void job_set_command_line(lListElem *job, int argc, const char *argv[]) {
    lSetString(job, JB_submission_command_line, sge_dstring_from_argv(&dstr, argc, argv, true, true));
    sge_dstring_free(&dstr);
 }
+
+bool
+job_is_visible(const char *owner, const bool is_manager, const bool show_department_view, const lList *acl_list) {
+   // manager can see everything as well as all users if -sdv was not specified
+   if (is_manager || !show_department_view) {
+      return true;
+   }
+
+   // if the qstat-user is the owner of the job, show the data
+   const char *username = component_get_username();
+   if (strcmp(username, owner) == 0) {
+      return true;
+   }
+
+   // check all departments
+   const lListElem *acl_dep;
+   for_each_ep(acl_dep, acl_list) {
+      // skip non-departmental acl's
+      if (const u_long32 type = lGetUlong(acl_dep, US_type); (type & US_DEPT) == 0) {
+         continue;
+      }
+
+      // if the qstat-user and owner are in the same department, show the data
+      const lList *entries = lGetList(acl_dep, US_entries);
+      const lListElem *owner_elem = lGetElemStr(entries, UE_name, owner);
+      const lListElem *user_elem = lGetElemStr(entries, UE_name, username);
+      if (owner_elem != nullptr && user_elem != nullptr) {
+         return true;
+      }
+   }
+   return false;
+}

@@ -768,10 +768,15 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   /* try to dispatch a department to the job */
-   if (set_department(alpp, jep, master_userset_list) != 1) {
-      /* alpp gets filled by set_department */
-      DRETURN(STATUS_EUNKNOWN);
+   // check the given department or find a department for the user if none was specified
+   if (const char *dept_name = lGetString(jep, JB_department); dept_name != nullptr) {
+      if (!job_is_valid_department(jep, alpp, dept_name, master_userset_list)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+   } else {
+      if (!job_set_department(jep, alpp, master_userset_list)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
    }
 
    /* 

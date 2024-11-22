@@ -64,25 +64,31 @@ The current functional share of the department.
 
 ## *entries*
 
-The entries parameter contains the comma separated list of those UNIX users (see *user_name* in 
+The *entries* parameter contains the comma separated list of those UNIX users (see *user_name* in 
 xxqs_name_sxx_types(1)) or those UNIX groups that are assigned to the access list or the department. 
 
 By default, only a user's primary UNIX group is considered to gain/reject access. Supplementary groups are only 
 considered if the parameter `ENABLE_SUP_GRP_EVAL=1` is defined as *qmaster_param* in the configuration. 
 
-Symbolic names are allowed. A group is differentiated from a username by prefixing the group name with a '@' sign. 
-For UNIX groups that have no symbolic name it is allowed to specify the '@' character followed by the UNIX group ID.
+A group is differentiated from a username by prefixing the group name with a '@' sign. For UNIX groups that have no 
+symbolic name it is allowed to specify the '@' character followed by the UNIX group ID.
 
 Pure access lists allow enlisting any user or group in any access list.
 
-When using departments, each user or group enlisted may only be enlisted in one department, in order to ensure a 
-unique assignment of jobs to departments. To jobs whose users do not match with any of the users or groups enlisted 
-under entries the *defaultdepartment* is assigned, if existing. Please note that even if `ENABLE_SUP_GRP_EVAL=1` is 
-defined, only the primary group is used to assign a department to users jobs.
+When using departments, each user or group enlisted *should* only be enlisted in one department, in order to ensure a 
+unique assignment of jobs to departments. It is allowed to enlist a user or group in multiple departments, but
+this will automatically lead to a random assignment of jobs to departments if the submitting user of a job does not
+specify a department explicitly using the `-dept` switch during job submission.
+
+If a user does not belong to any department, the *defaultdepartment* is assigned, if existing.
+
+Displaying commands like qstat(1) and qhost(1) allow to provide a department specific view by using the `-sdv` switch.
+Those commands will then show hosts/queues/job information in the context of the department and access lists the user 
+belongs to. 
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), xxqs_name_sxx_types(1), qconf(1), xxqs_name_sxx_pe(5), xxqs_name_sxx_queue_conf(5).
+xxqs_name_sxx_intro(1), xxqs_name_sxx_types(1), qconf(1), qsub(1), xxqs_name_sxx_pe(5), xxqs_name_sxx_queue_conf(5).
 
 # COPYRIGHT
 

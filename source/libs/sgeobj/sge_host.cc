@@ -45,6 +45,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_userset.h"
 
 #include "uti/sge.h"
 #include "uti/sge_log.h"
@@ -550,4 +551,21 @@ host_do_per_host_booking(const char **last_hostname, const char *hostname)
    }
 
    return ret;
+}
+
+bool
+host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list) {
+   bool host_visible = true;
+
+   if (!is_manager && dept_view) {
+      const char *username = component_get_username();
+      const char *groupname = component_get_groupname();
+      int amount;
+      ocs_grp_elem_t *grp_array;
+      component_get_supplementray_groups(&amount, &grp_array);
+      lList *grp_list = grp_list_array2list(amount, grp_array);
+      host_visible = sge_has_access_(username, groupname, grp_list, lGetList(hep, EH_acl), lGetList(hep, EH_xacl), acl_list);
+      lFreeList(&grp_list);
+   }
+   return host_visible;
 }

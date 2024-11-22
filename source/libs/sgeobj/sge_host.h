@@ -111,3 +111,7 @@ int
 host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);
 
 bool host_do_per_host_booking(const char **last_hostname, const char *hostname);
+
+bool
+host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list);
+

@@ -539,3 +539,7 @@ job_set_command_line(lListElem *job, const char *client);
 void
 job_set_command_line(lListElem *job, int argc, const char *argv[]);
 
+bool
+job_is_visible(const char *owner, bool is_manager, bool show_department_view, const lList *acl_list);
+
+

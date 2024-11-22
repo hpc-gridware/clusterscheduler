@@ -482,6 +482,11 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lRemoveElem(cmdline, &ep);
    }
 
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dept"))) {
+      lSetString(*pjob, JB_department, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(cmdline, &ep);
+   }
+
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-pe"))) {
       lSetString(*pjob, JB_pe, lGetString(ep, SPA_argval_lStringT));
       lSwapList(*pjob, JB_pe_range, ep, SPA_argval_lListT);

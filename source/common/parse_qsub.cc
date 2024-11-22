@@ -587,8 +587,32 @@ lList *cull_parse_cmdline(
          continue;
       }
 
+/*----------------------------------------------------------------------------*/
 
-      
+      /* "-dept name" */
+
+      if (!strcmp("-dept", *sp)) {
+
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+            answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
+         }
+
+         /* next field is the department name */
+         sp++;
+         if (!*sp) {
+             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-dept");
+             DRETURN(answer);
+         }
+
+         DPRINTF("\"-dept %s\"\n", *sp);
+         ep_opt = sge_add_arg(pcmdline, dept_OPT, lStringT, *(sp - 1), *sp);
+         lSetString(ep_opt, SPA_argval_lStringT, *sp);
+
+         sp++;
+         continue;
+      }
+
 /*----------------------------------------------------------------------------*/
       /* "-display -- only for qsh " */
 

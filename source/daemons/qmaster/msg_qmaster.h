@@ -460,7 +460,6 @@
 #define MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS       _MESSAGE(33519, _("denied: project " SFQ " is still referenced in " SFN " of " SFN " " SFQ))
 #define MSG_SGETEXT_UNKNOWNPROJECT_SSSS               _MESSAGE(33520, _("denied: project " SFQ " referenced in " SFN " of " SFN " " SFQ " does not exist"))
 
-#define MSG_SGETEXT_NO_DEPARTMENT4USER_SS             _MESSAGE(33522, _("denied: no matching department for user " SFQ " or group " SFQ))
 #define MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS       _MESSAGE(33524, _("denied: userset " SFQ " is still referenced in " SFN " of " SFN " " SFQ))
 
 #define MSG_OBJ_CPLX                                  _MESSAGE(33534, _("complex"))
@@ -665,5 +664,9 @@
 #define MSG_JOB_BINDING                            _MESSAGE(33958, _("binding"))
 #define MSG_PARSE_LOOP_IN_SSOS_TREE_SS             _MESSAGE(33959, _("denied: adding " SFQ " to the subordinate_list of " SFQ " would create a loop in the slotwise preemption configuration!"))
 #define MSG_JOB_RESOURCESNOLONGERAVAILABLE_UU      _MESSAGE(33960, _("resources no longer available for start of job " sge_U32CFormat "." sge_U32CFormat))
+
+#define MSG_JOB_NODEPTFOUND                        _MESSAGE(33961, _("No department found for the job"))
+#define MSG_JOB_DEPTNOEXIST_S                      _MESSAGE(33962, _("Department " SFQ " does not exist"))
+#define MSG_JOB_USERNOTPARTDEPT_S                  _MESSAGE(33963, _("User " SFQ " is not part of a department"))
 
 // clang-format on

@@ -389,6 +389,12 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_checkpoint_name);
       }
 
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dept"))) {
+         lSetString(job, JB_department, lGetString(ep, SPA_argval_lStringT));
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_department);
+      }
+
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dl"))) {
          lSetUlong64(job, JB_deadline, lGetUlong64(ep, SPA_argval_lUlong64T));
          lRemoveElem(cmdline, &ep);

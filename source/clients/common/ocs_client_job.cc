@@ -556,6 +556,10 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       if (lGetString(job, JB_project))
          printf("project:                    %s\n", lGetString(job, JB_project));
 
+   if (lGetPosViaElem(job, JB_department, SGE_NO_ABORT) >= 0)
+      if (lGetString(job, JB_department))
+         printf("department:                 %s\n", lGetString(job, JB_department));
+
    if (lGetPosViaElem(job, JB_ar, SGE_NO_ABORT) >= 0) {
       if (lGetUlong(job, JB_ar)) {
          printf("ar_id:                      %d\n", (int) lGetUlong(job, JB_ar));

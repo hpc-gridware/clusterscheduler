@@ -64,6 +64,7 @@
 #define MSG_QSTAT_USAGE_DUMPCOMPLETEJOBLISTTOSTDOUT         _MESSAGE(19032, _("dump complete job list to stdout"))
 #define MSG_QSTAT_USAGE_DUMPCOMPLETEQUEUELISTTOSTDOUT       _MESSAGE(19033, _("dump complete queue list to stdout"))
 #define MSG_SCHEDD_SCHEDULINGINFO                           _MESSAGE(19034, _("scheduling info"))
+#define MSG_QSTAT_USAGE_SHOW_DEPT_VIEW                      _MESSAGE(19035, _("enable department view (hide objects without access)"))
 
 #define MSG_QSTAT_FOLLOWINGDONOTEXIST                       _MESSAGE(19040, _("Following jobs do not exist: "))
 #define MSG_QSTAT_USAGE_DISPLAYALLPARALLELJOBTASKS          _MESSAGE(19041, _("display all parallel job tasks (do not group)"))

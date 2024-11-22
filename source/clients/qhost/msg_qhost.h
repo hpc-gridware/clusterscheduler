@@ -56,5 +56,6 @@
 #define MSG_QHOST_F_OPT_USAGE       _MESSAGE(9005, _("show (selected) resources"))
 #define MSG_QHOST_u_OPT_USAGE       _MESSAGE(9006, _("show only jobs for user"))
 #define MSG_QHOST_ncb_OPT_USAGE     _MESSAGE(9007, _("suppress host topology based information"))
+#define MSG_QHOST_SHOW_DEPT_VIEW    _MESSAGE(9008, _("enable department view (hide objects without access)"))
 
 // clang-format on

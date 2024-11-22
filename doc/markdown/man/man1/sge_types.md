@@ -37,6 +37,12 @@ A complex name is the name of a xxQS_NAMExx resource attribute described in xxqs
 
     complex_name := object_name
 
+## *department_name*
+
+A department name is the name of a xxQS_NAMExx department described in xxqs_name_sxx_access_list(5).
+
+    department_name := object_name
+
 ## *host_identifier*
 
 A host identifier can be either a host name or a host group name.

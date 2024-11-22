@@ -236,6 +236,8 @@ sge_verify_department_entries(const lList *userset_list, lListElem *new_userset,
    */
    for_each_rw(up, depts) {
       answers = do_depts_conflict(new_userset, up);
+
+      // @todo: unreachable code
       if (answers)
          break;
    }
@@ -361,68 +363,65 @@ do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
    DRETURN(nullptr);
 }
 
-/* 
-
-   return
-      0   no matching department found
-      1   set department
-*/
-int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
-   const lListElem *dep;
-   const char *owner, *group;
-   const lList *grp_list;
-
+bool
+job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list) {
    DENTER(TOP_LAYER);
 
-   /* first try to find a department searching the user name directly
-      in a department */
-   owner = lGetString(job, JB_owner);
-   for_each_ep(dep, userset_list) {
-      /* use only departments */
-      if (!(lGetUlong(dep, US_type) & US_DEPT))
-         continue;
-
-      if (sge_contained_in_access_list(owner, nullptr, nullptr, dep)) {
-         lSetString(job, JB_department, lGetString(dep, US_name));
-         DPRINTF("user %s got department " SFQ "\n", owner, lGetString(dep, US_name));
-
-         DRETURN(1);
+   // Does the department exist?
+   const lListElem *dept = lGetElemStr(userset_list, US_name, dept_name);
+   if (!dept || !(lGetUlong(dept, US_type) & US_DEPT)) {
+      if (alpp) {
+         ERROR(MSG_JOB_DEPTNOEXIST_S, dept_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       }
+      DRETURN(false);
    }
 
-   /* the user does not appear in any department - now try to find
-      our group in the department */
-   group = lGetString(job, JB_group);
-   grp_list = lGetList(job, JB_grp_list);
-   for_each_ep(dep, userset_list) {
-      /* use only departments */
-      if (!(lGetUlong(dep, US_type) & US_DEPT))
-         continue;
-
-      if (sge_contained_in_access_list(nullptr, group, grp_list, dep)) {
-         lSetString(job, JB_department, lGetString(dep, US_name));
-         DPRINTF("user %s got department \"%s\"\n", owner, lGetString(dep, US_name));
-
-         DRETURN(1);
-      }
+   // Does the user belong to the department?
+   const char *owner = lGetString(job, JB_owner);
+   if (sge_contained_in_access_list(owner, nullptr, nullptr, dept)) {
+      DRETURN(true);
    }
 
-   /*
-   ** attach default department if present
-   ** if job has no department we reach this
-   */
-   if (lGetElemStr(userset_list, US_name, DEFAULT_DEPARTMENT)) {
-      lSetString(job, JB_department, DEFAULT_DEPARTMENT);
-      DPRINTF("user %s got department " SFQ "\n", owner, DEFAULT_DEPARTMENT);
-      DRETURN(1);
+   // Does the group or a supplementary group belong to the department?
+   const char *group = lGetString(job, JB_group);
+   const lList *grp_list = lGetList(job, JB_grp_list);
+   if (sge_contained_in_access_list(nullptr, group, grp_list, dept)) {
+      DRETURN(true);
    }
 
-   ERROR(MSG_SGETEXT_NO_DEPARTMENT4USER_SS, owner, group);
-   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-
-   DRETURN(0);
+   // User is not part of the department
+   if (alpp) {
+      ERROR(MSG_JOB_USERNOTPARTDEPT_S, owner);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   }
+   DRETURN(false);
 }
 
+bool
+job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
+   DENTER(TOP_LAYER);
+
+   // Find the first department where the user is a member of
+   const lListElem *dept;
+   for_each_ep(dept, userset_list) {
+      if (job_is_valid_department(job, nullptr, lGetString(dept, US_name), userset_list)) {
+         lSetString(job, JB_department, lGetString(dept, US_name));
+         DRETURN(true);
+      }
+   }
+
+   // No department found => set default department
+   if (lGetElemStr(userset_list, US_name, DEFAULT_DEPARTMENT)) {
+      lSetString(job, JB_department, DEFAULT_DEPARTMENT);
+      DRETURN(true);
+   }
+
+   // Also no default department found
+   ERROR(MSG_JOB_NODEPTFOUND);
+   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   DRETURN(false);
+}
 
 static int
 verify_userset_deletion(lList **alpp, const char *userset_name) {

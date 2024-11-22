@@ -43,8 +43,11 @@ sge_del_userset(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLis
 int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp);
 
-int
-set_department(lList **alpp, lListElem *job, const lList *userset_list);
+bool
+job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list);
+
+bool
+job_set_department(lListElem *job, lList **alpp, const lList *userset_list);
 
 void
 userset_update_categories(const lList *added, const lList *removed, u_long64 gdi_session);

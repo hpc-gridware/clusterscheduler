@@ -45,6 +45,7 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"
@@ -362,3 +363,78 @@ sge_contained_in_access_list(const char *user, const char *group, const lList *g
 
    DRETURN(found ? 1 : 0);
 }
+
+/* sge_contained_in_access_list_() returns
+   1  yes it is contained in the acl
+   0  no
+   -1 got nullptr for user/group
+
+   user, group: may be nullptr
+*/
+int
+sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+                              const lList *acl, const lList *acl_list) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *acl_search;
+   for_each_ep(acl_search, acl) {
+      const lListElem *acl_found = lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name));
+      if (acl_found != nullptr) {
+         /* ok - there is such an access list */
+         if (sge_contained_in_access_list(user, group, grp_list, acl_found)) {
+            DRETURN(1);
+         }
+      } else {
+      	DPRINTF("cannot find userset list entry \"%s\"\n", lGetString(acl_search, US_name));
+      }
+   }
+   DRETURN(0);
+}
+
+/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
+
+   sge_has_access - determines if a user/group has access to a queue
+
+   returns
+      1 for true
+      0 for false
+
+*/
+int
+sge_has_access(const char *user, const char *group, const lList *grp_list,
+               const lListElem *q, const lList *acl_list) {
+   return sge_has_access_(user, group, grp_list, lGetList(q, QU_acl), lGetList(q, QU_xacl), acl_list);
+}
+
+/* needed to test also sge_queue_type structures without converting the
+** whole queue
+*/
+int
+sge_has_access_(const char *user, const char *group, const lList *grp_list,
+                const lList *q_acl, const lList *q_xacl, const lList *acl_list) {
+   int ret;
+
+   DENTER(TOP_LAYER);
+
+   ret = sge_contained_in_access_list_(user, group, grp_list, q_xacl, acl_list);
+   if (ret < 0 || ret == 1) { /* also deny when an xacl entry was not found in acl_list */
+      DRETURN(0);
+   }
+
+   if (!q_acl) {  /* no entry in allowance list - ok everyone */
+       DRETURN(1);
+   }
+
+   ret = sge_contained_in_access_list_(user, group, grp_list, q_acl, acl_list);
+   if (ret < 0) {
+      DRETURN(0);
+   }
+   if (ret) {
+      /* we're explicitly allowed to access */
+      DRETURN(1);
+   }
+
+   /* there is an allowance list but the owner isn't there -> denied */
+   DRETURN(0);
+}
+

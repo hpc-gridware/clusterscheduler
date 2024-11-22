@@ -53,8 +53,7 @@
 #include "msg_clients_common.h"
 
 bool
-switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
-                                  int mode, const char *file)
+switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, int mode, const char *file)
 {
    bool ret = true;
 
@@ -63,10 +62,7 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
       ret = false;
    } else {
       if (!sge_is_file(file)) {
-         /*
-          * This is no error
-          */
-         DPRINTF("file " SFQ " does not exist\n", file);
+         // it is ok if the file does not exist
          ret = true;
       } else {
          char *file_as_string = nullptr;
@@ -74,16 +70,12 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
 
          file_as_string = sge_file2string(file, &file_as_string_length);
          if (file_as_string == nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR,
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
          } else {
-            char **token = nullptr;
-
-            token = stra_from_str(file_as_string, " \n\t");
-            ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list,
-                                                       mode, token);
+            char **token = stra_from_str(file_as_string, " \n\t");
+            ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, mode, token);
             sge_strafree(&token);
          }
          sge_free(&file_as_string);
@@ -111,6 +103,10 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
 
       /* -ncb */
       if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, answer_list)) != sp)
+         continue;
+
+      /* -sdv */
+      if ((rp = parse_noopt(sp, "-sdv", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -f option */
@@ -264,6 +260,7 @@ qstat_usage(int qselect_mode, FILE *fp, char *what)
          fprintf(fp, "        [-ne]                             %s\n",MSG_QSTAT_USAGE_HIDEEMPTYQUEUES);
       if (!qselect_mode) {
          fprintf(fp, "        [-ncb]                            %s\n",MSG_QSTAT_USAGE_VIEWALSOBINDINGATTRIBUTES);
+         fprintf(fp, "        [-sdv]                            %s\n",MSG_QSTAT_USAGE_SHOW_DEPT_VIEW);
       }
       fprintf(fp, "        [-pe pe_list]                     %s\n",MSG_QSTAT_USAGE_SELECTONLYQUEESWITHONOFTHESEPE);
       fprintf(fp, "        [-q wc_queue_list]                %s\n",MSG_QSTAT_USAGE_PRINTINFOONGIVENQUEUE);

@@ -52,6 +52,7 @@ struct qstat_env_str {
    u_long32 explain_bits;        /* -explain  */
    u_long32 job_info;            /* -j        */
    u_long32 is_binding_format;   /* -cb       */
+   u_long32 show_department_view;   //< -sdv show department view
    
    /* Needed lists */
    lList* queue_list;
@@ -67,6 +68,7 @@ struct qstat_env_str {
    lList* project_list;
    
    bool need_queues;
+   bool is_manager;
    
    int (*shut_me_down)();
    u_long32 global_showjobs;
@@ -162,7 +164,8 @@ struct queue_summary_str {
    bool has_load_value;
    bool has_load_value_from_object;
    double load_avg;
-   
+
+   bool has_access;                 //< qstat user has access to the queue that should be displayed
 };
 
 typedef struct job_summary_str job_summary_t;

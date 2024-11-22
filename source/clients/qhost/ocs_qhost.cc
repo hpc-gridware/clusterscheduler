@@ -41,6 +41,9 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_io.h"
+#include "uti/sge_string.h"
+#include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_feature.h"
@@ -58,6 +61,7 @@
 #include "basis_types.h"
 #include "sig_handlers.h"
 #include "ocs_qhost_print.h"
+#include "ocs_client_parse.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qhost.h"
@@ -360,8 +364,37 @@ static int xml_report_job_finished(qhost_report_handler_t* handler, const char *
    DRETURN(QHOST_SUCCESS);
 }
 
-                                      
-int main(int argc, char **argv);
+bool
+switch_list_qhost_parse_from_file(lList **switch_list, lList **answer_list, const char *file) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   if (switch_list == nullptr) {
+      ret = false;
+   } else {
+      if (!sge_is_file(file)) {
+         // it is ok if the file does not exist
+         ret = true;
+         DTRACE;
+      } else {
+         int file_as_string_length;
+         char *file_as_string = sge_file2string(file, &file_as_string_length);
+         if (file_as_string == nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
+            ret = false;
+            DTRACE;
+         } else {
+            char **token = stra_from_str(file_as_string, " \n\t");
+            ret = sge_parse_cmdline_qhost(token, environ, switch_list, answer_list);
+            sge_strafree(&token);
+            DTRACE;
+         }
+         sge_free(&file_as_string);
+      }
+   }
+   DRETURN(ret);
+}
 
 /************************************************************************/
 int main(int argc, char **argv)
@@ -389,35 +422,59 @@ int main(int argc, char **argv)
       sge_exit(1);
    }
 
-   /*
-   ** stage 1 of commandline parsing
-   */
-   if (!sge_parse_cmdline_qhost(argv, environ, &pcmdline, &alp)) {
-      /*
-      ** high level parsing error! sow answer list
-      */
+   // read parameter from a default qhost files
+   dstring file = DSTRING_INIT;
+   const char *cell_root = bootstrap_get_cell_root();
+   const char *username = component_get_username();
+   lList *args_file = nullptr;
+   get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QHOST_FILE);
+   switch_list_qhost_parse_from_file(&args_file, &alp, sge_dstring_get_string(&file));
+   if (get_user_home_file_path(&file, SGE_HOME_DEF_QHOST_FILE, username, &alp)) {
+      switch_list_qhost_parse_from_file(&args_file, &alp, sge_dstring_get_string(&file));
+   }
+   sge_dstring_free(&file);
+
+   // parse the command line
+   if (!sge_parse_cmdline_qhost(++argv, environ, &pcmdline, &alp)) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       sge_prof_cleanup();
       sge_exit(1);
    }
 
-   /*
-   ** stage 2 of commandline parsing 
-   */
-   is_ok = sge_parse_qhost(&pcmdline, 
-                           &resource_match_list,   /* -l resource_request           */
-                           &resource_list,         /* -F qresource_request          */
-                           &host_list,             /* -h host_list                  */
-                           &ul,                    /* -u user_list                  */
-                           &show,                  /* -q, -j                        */
-                           &report_handler,
-                           &alp);
+   // find duplicates in file and commandline and remove them
+   const lListElem *ep_1;
+   lListElem *ep_2;
+   for_each_ep(ep_1, pcmdline) {
+      bool more;
+      do {
+         more = false;
+         for_each_rw(ep_2, args_file) {
+            if (strcmp(lGetString(ep_1, SPA_switch_val), lGetString(ep_2, SPA_switch_val)) == 0) {
+               lRemoveElem(args_file, &ep_2);
+               more = true;
+               break;
+            }
+         }
+      } while(more);
+   }
+
+   // merge the command line and the file options
+   if (lGetNumberOfElem(pcmdline) > 0) {
+      lAppendList(pcmdline, args_file);
+      lFreeList(&args_file);
+   } else if (lGetNumberOfElem(args_file) > 0) {
+      lAppendList(args_file, pcmdline);
+      lFreeList(&pcmdline);
+      pcmdline = args_file;
+   }
+   sge_dstring_free(&file);
+
+   // parse the commandline
+   is_ok = sge_parse_qhost(&pcmdline, &resource_match_list, &resource_list, &host_list,
+                           &ul, &show, &report_handler, &alp);
    lFreeList(&pcmdline);
    if (is_ok == 0) {     
-      /*
-      ** low level parsing error! show answer list
-      */
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);
@@ -486,7 +543,8 @@ FILE *fp
    fprintf(fp, "  [-l attr=val,...]          %s\n", MSG_QHOST_l_OPT_USAGE);
    fprintf(fp, "  [-ncb]                     %s\n", MSG_QHOST_ncb_OPT_USAGE);
    fprintf(fp, "  [-q]                       %s\n", MSG_QHOST_q_OPT_USAGE);
-   fprintf(fp, "  [-u user[,user,...]]       %s\n", MSG_QHOST_u_OPT_USAGE); 
+   fprintf(fp, "  [-sdv]                     %s\n", MSG_QHOST_SHOW_DEPT_VIEW);
+   fprintf(fp, "  [-u user[,user,...]]       %s\n", MSG_QHOST_u_OPT_USAGE);
    fprintf(fp, "  [-xml]                     %s\n", MSG_COMMON_xml_OPT_USAGE);
 
    DRETURN(true);
@@ -508,7 +566,7 @@ lList **alpp
    char **rp;
    DENTER(TOP_LAYER);
 
-   rp = ++argv;
+   rp = argv;
 
    while(*(sp=rp)) {
       /* -help */
@@ -517,6 +575,10 @@ lList **alpp
  
       /* -ncb */
       if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, alpp)) != sp)
+         continue;
+
+      /* -sdv */
+      if ((rp = parse_noopt(sp, "-sdv", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -q */
@@ -617,6 +679,11 @@ static int sge_parse_qhost(lList **ppcmdline,
       if (parse_flag(ppcmdline, "-ncb", alpp, &binding)) {
          /* disable topology related information */
          (*show) ^= QHOST_DISPLAY_BINDING;
+         continue;
+      }
+      if (parse_flag(ppcmdline, "-sdv", alpp, &binding)) {
+         // show department view
+         (*show) |= QHOST_DISPLAY_DEPT_VIEW;
          continue;
       }
       if (parse_flag(ppcmdline, "-q", alpp, &full)) {

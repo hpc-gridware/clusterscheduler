@@ -65,3 +65,11 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string);
 
 int
 sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl);
+
+int sge_has_access(const char *user, const char *group, const lList *grp_list, const lListElem *q, const lList *acl_list);
+
+int sge_has_access_(const char *user, const char *group, const lList *grp_list, const lList *q_acl,
+                    const lList *q_xacl, const lList *acl_list);
+
+int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+                                  const lList *acl, const lList *acl_list);
