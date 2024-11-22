@@ -74,12 +74,6 @@ sge_reader_initialize() {
 
    DENTER(TOP_LAYER);
 
-   /*
-    * TODO: EB: corresponding destroy function is missing during shutdown
-    */
-   sge_tq_create(&ReaderRequestQueue);
-   sge_tq_create(&ReaderWaitingRequestQueue);
-
    INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_reader_threads), threadnames[READER_THREAD]);
    cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_reader_threads; i++) {
