@@ -18,6 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "gdi/sge_gdi_packet_internal.h"
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
@@ -38,6 +40,12 @@ namespace ocs {
    void
    event_mirror_initialize() {
       DENTER(TOP_LAYER);
+
+      /*
+       * TODO: EB: corresponding destroy function is missing during shutdown
+       */
+      sge_tq_create(&ReaderRequestQueue);
+      sge_tq_create(&ReaderWaitingRequestQueue);
 
       // create reader mirror
       auto reader_mirror_thread = new ocs::MirrorReaderDataStore();
