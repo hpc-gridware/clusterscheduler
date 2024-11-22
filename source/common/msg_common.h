@@ -924,7 +924,7 @@
 #define MSG_GDI_UTEXT_stl_OPT                            _MESSAGE(23518, _("show thread pool list"))
 
 #define MSG_GDI_USAGE_dept_OPT_DEPT_NAME                 "[-dept department_name]"
-#define MSG_GDI_UTEXT_dept_OPT_DEPT_NAME                 _MESSAGE(23398, _("set job's department"))
+#define MSG_GDI_UTEXT_dept_OPT_DEPT_NAME                 _MESSAGE(23519, _("set job's department"))
 
 
 
