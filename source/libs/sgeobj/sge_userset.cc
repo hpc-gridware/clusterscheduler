@@ -391,37 +391,43 @@ sge_contained_in_access_list_(const char *user, const char *group, const lList *
    DRETURN(0);
 }
 
-/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
-
-   sge_has_access - determines if a user/group has access to a queue
-
-   returns
-      1 for true
-      0 for false
-
-*/
+/** @brief Check if a user has access to a queue
+ *
+ * @param user The user name
+ * @param group The primary group name
+ * @param grp_list The supplementary group list
+ * @param q The object
+ * @param acl_list The list of ACLs
+ * @return 1 if the user has access, 0 otherwise
+ */
 int
-sge_has_access(const char *user, const char *group, const lList *grp_list,
-               const lListElem *q, const lList *acl_list) {
+sge_has_access(const char *user, const char *group, const lList *grp_list, const lListElem *q, const lList *acl_list) {
    return sge_has_access_(user, group, grp_list, lGetList(q, QU_acl), lGetList(q, QU_xacl), acl_list);
 }
 
-/* needed to test also sge_queue_type structures without converting the
-** whole queue
-*/
+/** @brief Check if a user has access to an object
+ *
+ * @param user The user name
+ * @param group The primary group name
+ * @param grp_list The supplementary group list
+ * @param q_acl The ACL
+ * @param q_xacl The XACL
+ * @param acl_list The list of ACLs
+ * @return 1 if the user has access, 0 otherwise
+ */
 int
 sge_has_access_(const char *user, const char *group, const lList *grp_list,
                 const lList *q_acl, const lList *q_xacl, const lList *acl_list) {
-   int ret;
-
    DENTER(TOP_LAYER);
 
-   ret = sge_contained_in_access_list_(user, group, grp_list, q_xacl, acl_list);
-   if (ret < 0 || ret == 1) { /* also deny when an xacl entry was not found in acl_list */
+   // deny access when a xacl entry was not found in acl_list
+   int ret = sge_contained_in_access_list_(user, group, grp_list, q_xacl, acl_list);
+   if (ret < 0 || ret == 1) {
       DRETURN(0);
    }
 
-   if (!q_acl) {  /* no entry in allowance list - ok everyone */
+   // no entry in allowance list - ok everyone
+   if (!q_acl) {
        DRETURN(1);
    }
 
@@ -429,12 +435,12 @@ sge_has_access_(const char *user, const char *group, const lList *grp_list,
    if (ret < 0) {
       DRETURN(0);
    }
+   // we're explicitly allowed to access
    if (ret) {
-      /* we're explicitly allowed to access */
       DRETURN(1);
    }
 
-   /* there is an allowance list but the owner isn't there -> denied */
+   // there is an allowance list but the owner isn't there -> denied
    DRETURN(0);
 }
 

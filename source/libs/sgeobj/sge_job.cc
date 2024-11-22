@@ -4586,17 +4586,27 @@ void job_set_command_line(lListElem *job, int argc, const char *argv[]) {
    sge_dstring_free(&dstr);
 }
 
+/** @brief Checks if a job should be visible to the current user.
+ *
+ * @param owner the owner of the job
+ * @param is_manager true if the current user is a manager
+ * @param show_department_view true if the department view should be shown
+ * @param acl_list the ACL list
+ * @return true if the job should be visible, false otherwise
+ */
 bool
 job_is_visible(const char *owner, const bool is_manager, const bool show_department_view, const lList *acl_list) {
+   DENTER(BASIS_LAYER);
+
    // manager can see everything as well as all users if -sdv was not specified
    if (is_manager || !show_department_view) {
-      return true;
+      DRETURN(true);
    }
 
    // if the qstat-user is the owner of the job, show the data
    const char *username = component_get_username();
    if (strcmp(username, owner) == 0) {
-      return true;
+      DRETURN(true);
    }
 
    // check all departments
@@ -4612,8 +4622,8 @@ job_is_visible(const char *owner, const bool is_manager, const bool show_departm
       const lListElem *owner_elem = lGetElemStr(entries, UE_name, owner);
       const lListElem *user_elem = lGetElemStr(entries, UE_name, username);
       if (owner_elem != nullptr && user_elem != nullptr) {
-         return true;
+         DRETURN(true);
       }
    }
-   return false;
+   DRETURN(false);
 }

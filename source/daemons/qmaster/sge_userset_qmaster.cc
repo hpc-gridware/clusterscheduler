@@ -67,8 +67,6 @@
 
 static void sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *acl_name);
 
-static lList *do_depts_conflict(lListElem *new_dep, lListElem *old);
-
 static int verify_userset_deletion(lList **alpp, const char *userset_name);
 
 static int dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list);
@@ -193,17 +191,8 @@ sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
  ******************************************************/
 int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
-   lListElem *up;
-   lList *depts;
-   lList *answers = nullptr;
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
-
    DENTER(TOP_LAYER);
 
-   /*
-    * make tests for the defaultdepartment
-    */
    if (!strcmp(lGetString(new_userset, US_name), DEFAULT_DEPARTMENT)) {
       if (!dept_is_valid_defaultdepartment(new_userset, alpp)) {
          DRETURN(STATUS_ESEMANTIC);
@@ -212,41 +201,6 @@ sge_verify_department_entries(const lList *userset_list, lListElem *new_userset,
 
    if (!(lGetUlong(new_userset, US_type) & US_DEPT)) {
       DRETURN(STATUS_OK);
-   }
-
-   /*
-   ** get the department usersets and only those that have a different
-   ** name than the new one.
-   */
-   what = lWhat("%T(ALL)", US_Type);
-   where = lWhere("%T(%I m= %u && %I != %s)", US_Type, US_type, US_DEPT,
-                  US_name, lGetString(new_userset, US_name));
-   depts = lSelect("Departments", userset_list, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
-
-   if (!depts) {
-      DRETURN(STATUS_OK);
-   }
-
-   /*
-   ** Loop over departments and check if a user in the new
-   ** element is already contained in another department list.
-   ** This requires expanding the group entries.
-   */
-   for_each_rw(up, depts) {
-      answers = do_depts_conflict(new_userset, up);
-
-      // @todo: unreachable code
-      if (answers)
-         break;
-   }
-
-   lFreeList(&depts);
-
-   if (answers) {
-      *alpp = answers;
-      DRETURN(STATUS_ESEMANTIC);
    }
 
    DRETURN(STATUS_OK);
@@ -329,38 +283,6 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
       }
    }
    DRETURN(ret);
-}
-
-static lList *
-do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
-   DENTER(TOP_LAYER);
-   const lListElem *np;
-   lList *alp = nullptr;
-   const char *nname;
-   const lList *new_users = lGetList(new_dep, US_entries);
-   const lList *old_users = lGetList(old_dep, US_entries);
-
-   if (!old_users || !new_users) {
-      DRETURN(nullptr);
-   }
-
-   /*
-   ** groups are encoded with the first letter @, e.g. @sge
-   */
-   for_each_ep(np, new_users) {
-      nname = lGetString(np, UE_name);
-      if (nname && nname[0] == '@') {
-         if (sge_contained_in_access_list(nullptr, &nname[1], nullptr, old_dep)) {
-            DRETURN(alp);
-         }
-      } else {
-         if (sge_contained_in_access_list(nname, nullptr, nullptr, old_dep)) {
-            DRETURN(alp);
-         }
-      }
-   }
-
-   DRETURN(nullptr);
 }
 
 bool

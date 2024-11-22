@@ -553,6 +553,17 @@ host_do_per_host_booking(const char **last_hostname, const char *hostname)
    return ret;
 }
 
+/** @brief Check if a host is visible to the user
+ *
+ * Manager see all hosts as well as all users. Only in the "department view" mode users would not see those hosts
+ * where they have no access to.
+ *
+ * @param hep the host to check
+ * @param is_manager true if the user is a manager
+ * @param dept_view true if the user has department view
+ * @param acl_list the list of ACLs
+ * @return true if the host is visible
+ */
 bool
 host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list) {
    bool host_visible = true;
@@ -560,10 +571,12 @@ host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lLi
    if (!is_manager && dept_view) {
       const char *username = component_get_username();
       const char *groupname = component_get_groupname();
+
       int amount;
       ocs_grp_elem_t *grp_array;
       component_get_supplementray_groups(&amount, &grp_array);
       lList *grp_list = grp_list_array2list(amount, grp_array);
+
       host_visible = sge_has_access_(username, groupname, grp_list, lGetList(hep, EH_acl), lGetList(hep, EH_xacl), acl_list);
       lFreeList(&grp_list);
    }

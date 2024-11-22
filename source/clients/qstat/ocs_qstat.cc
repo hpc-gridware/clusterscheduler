@@ -57,7 +57,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_userset.h"
+#include "sgeobj/sge_job.h"
 
 #include "sched/sge_schedd_text.h"
 
