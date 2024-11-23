@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
    DENTER_MAIN(TOP_LAYER, "main");
 
-   thrd_count = get_thrd_demand();
+   thrd_count = get_thread_demand();
    t = (pthread_t *) sge_malloc(thrd_count * sizeof(pthread_t));
    SGE_ASSERT(t != nullptr);
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
       printf("\n%s Create %d threads\n\n", __func__, i);
 
       for (j = 0; j < i; j++) {
-         pthread_create(&(t[j]), nullptr, get_thrd_func(), get_thrd_func_arg());
+         pthread_create(&(t[j]), nullptr, get_thread_func(), get_thread_func_arg());
       }
       for (j = 0; j < i; j++) {
          pthread_join(t[j], nullptr);

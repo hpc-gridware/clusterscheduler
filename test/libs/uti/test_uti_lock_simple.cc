@@ -43,7 +43,7 @@
 
 static void *thread_function(void *anArg);
 
-int get_thrd_demand() {
+int get_thread_demand() {
    long p = 2;  /* min num of threads */
 
 #if defined(SOLARIS)
@@ -53,11 +53,11 @@ int get_thrd_demand() {
    return (int) p;
 }
 
-void *(*get_thrd_func())(void *anArg) {
+void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg() {
+void *get_thread_func_arg() {
    return nullptr;
 }
 
@@ -100,6 +100,6 @@ static void *thread_function(void *anArg) {
    DRETURN((void *) nullptr);
 } /* thread_function */
 
-int validate(int thread_count) {
+int validate(int count) {
    return 0;
 }

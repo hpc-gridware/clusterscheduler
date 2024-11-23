@@ -46,19 +46,19 @@ static void *thread_function_2(void *anArg);
 static void lock_recursive();
 
 
-int get_thrd_demand() {
+int get_thread_demand() {
    long p = 2;  /* min num of threads */
 
    return (int) p;
 }
 
-void *(*get_thrd_func())(void *anArg) {
+void *(*get_thread_func())(void *anArg) {
    static int i = 0;
 
    return ((i++ % 2) ? thread_function_1 : thread_function_2);
 }
 
-void *get_thrd_func_arg() {
+void *get_thread_func_arg() {
    return nullptr;
 }
 
@@ -102,7 +102,7 @@ static void *thread_function_2(void *anArg) {
    DRETURN((void *) nullptr);
 } /* thread_function_2 */
 
-int validate(int thread_count) {
+int validate(int count) {
    return 0;
 }
 

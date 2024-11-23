@@ -56,17 +56,17 @@ void set_thread_count(int count) {
 }
 
 
-int get_thrd_demand() {
+int get_thread_demand() {
    long p = THREAD_COUNT;  /* max num of threads */
 
    return (int) p;
 }
 
-void *(*get_thrd_func())(void *anArg) {
+void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg() {
+void *get_thread_func_arg() {
    return nullptr;
 }
 
@@ -126,20 +126,20 @@ static int is_in_tolerance(u_long32 value1, u_long32 value2, u_int accepted_tole
    return ret;
 }
 
-int validate(int thread_count) {
+int validate(int count) {
    u_long32 sum = 0;
    u_long32 mean;
    int i;
    int ret = 0;
 
    /* compute mean value */
-   for (i = 0; i < thread_count; i++) {
+   for (i = 0; i < count; i++) {
       sum += results[i];
    }
-   mean = sum / thread_count;
+   mean = sum / count;
 
    /* every thread should got the same lock amount. We accept a tolerance of 50% */
-   for (i = 0; i < thread_count; i++) {
+   for (i = 0; i < count; i++) {
       if (is_in_tolerance(results[i], mean, 50) != 0) {
          ret = 1;
          break;
@@ -149,11 +149,11 @@ int validate(int thread_count) {
    /* for more than one thread we expact every thread had half of the locks then
       the run with just one thread */
    if (ret == 0) {
-      if (thread_count == 1) {
+      if (count == 1) {
          printf("set max locks to " sge_U32CFormat "\n", mean);
          maxlocks = mean;
       } else {
-         for (i = 0; i < thread_count; i++) {
+         for (i = 0; i < count; i++) {
             if (is_in_tolerance(results[i] * 2, maxlocks, 50) != 0) {
 #if !defined(DARWIN) && !defined(AIX)
                /* pthreads on darwin and aix scales very bad and this test fail */

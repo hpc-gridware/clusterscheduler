@@ -123,7 +123,7 @@ void set_thread_count(int count) {
    Control.working = count;
 }
 
-int get_thrd_demand() {
+int get_thread_demand() {
    int p = MAX_THREADS;  /* min num of threads */
 
    pthread_key_create(&state_key, &state_destroy);
@@ -135,11 +135,11 @@ static void log_once_init() {
    return;
 }
 
-void *(*get_thrd_func())(void *anArg) {
+void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }
 
-void *get_thrd_func_arg() {
+void *get_thread_func_arg() {
    return nullptr;
 }
 
@@ -264,6 +264,6 @@ static void *thread_function(void *anArg) {
    DRETURN((void *) nullptr);
 } /* thread_function */
 
-int validate(int thread_count) {
+int validate(int count) {
    return 0;
 }

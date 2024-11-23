@@ -35,13 +35,13 @@
 /*___INFO__MARK_END__*/
 
 /* Number of threads needed */
-int get_thrd_demand();
+int get_thread_demand();
 
 /* Thread function to execute */
-void *(*get_thrd_func())(void *anArg);
+void *(*get_thread_func())(void *anArg);
 
 /* Arguments to hand over to the thread function */
-void *get_thrd_func_arg();
+void *get_thread_func_arg();
 
 void set_thread_count(int count);
 

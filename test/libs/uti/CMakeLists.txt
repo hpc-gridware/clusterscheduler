@@ -55,6 +55,11 @@ target_include_directories(test_uti_lock_fifo PRIVATE "./")
 target_link_libraries(test_uti_lock_fifo PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_lock_fifo COMMAND test_uti_lock_fifo)
 
+add_executable(test_uti_lock_trylock test_uti_lock_main.cc test_uti_lock_trylock.cc)
+target_include_directories(test_uti_lock_trylock PRIVATE "./")
+target_link_libraries(test_uti_lock_trylock PRIVATE uti commlists ${SGE_LIBS})
+add_test(NAME test_uti_lock_trylock COMMAND test_uti_lock_trylock)
+
 add_executable(test_uti_profiling test_uti_profiling.cc)
 target_include_directories(test_uti_profiling PRIVATE "./")
 target_link_libraries(test_uti_profiling PRIVATE uti commlists ${SGE_LIBS})
