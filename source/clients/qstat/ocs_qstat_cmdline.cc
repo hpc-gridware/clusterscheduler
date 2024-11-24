@@ -105,9 +105,11 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
       if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
+#ifdef WITH_EXTENSIONS
       /* -sdv */
       if ((rp = parse_noopt(sp, "-sdv", nullptr, ppcmdline, answer_list)) != sp)
          continue;
+#endif
 
       /* -f option */
       if (!qselect_mode && (rp = parse_noopt(sp, "-f", nullptr, ppcmdline, answer_list)) != sp)
@@ -260,7 +262,6 @@ qstat_usage(int qselect_mode, FILE *fp, char *what)
          fprintf(fp, "        [-ne]                             %s\n",MSG_QSTAT_USAGE_HIDEEMPTYQUEUES);
       if (!qselect_mode) {
          fprintf(fp, "        [-ncb]                            %s\n",MSG_QSTAT_USAGE_VIEWALSOBINDINGATTRIBUTES);
-         fprintf(fp, "        [-sdv]                            %s\n",MSG_QSTAT_USAGE_SHOW_DEPT_VIEW);
       }
       fprintf(fp, "        [-pe pe_list]                     %s\n",MSG_QSTAT_USAGE_SELECTONLYQUEESWITHONOFTHESEPE);
       fprintf(fp, "        [-q wc_queue_list]                %s\n",MSG_QSTAT_USAGE_PRINTINFOONGIVENQUEUE);
@@ -273,6 +274,9 @@ qstat_usage(int qselect_mode, FILE *fp, char *what)
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_JOBSWITHSTARTTIMEINFUTORE);
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_HISABBREVIATIONFORHUHOHSHJHA);
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_AISABBREVIATIONFOR);
+#ifdef WITH_EXTENSIONS
+         fprintf(fp, "        [-sdv]                            %s\n",MSG_QSTAT_USAGE_SHOW_DEPT_VIEW);
+#endif
       }
       if (!qselect_mode) 
          fprintf(fp, "        [-t]                              %s\n",MSG_QSTAT_USAGE_SHOWTASKINFO);

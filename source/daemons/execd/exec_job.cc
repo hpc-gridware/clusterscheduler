@@ -118,7 +118,7 @@ static int get_nhosts(const lList *gdil_list);
 /* from execd.c import the working dir of the execd */
 extern char execd_spool_dir[SGE_PATH_MAX];
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
 /* creates string with core binding which is written to job "config" file */
 static bool create_binding_strategy_string_linux(dstring *result,
@@ -157,7 +157,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem,
                               char* err_str, int err_length, char** env);
 #endif
 
-#if defined(BINDING_SOLARIS) || defined(OGE_HWLOC)
+#if defined(BINDING_SOLARIS) || defined(OCS_HWLOC)
 
 static bool parse_job_accounting_and_create_logical_list(const char *binding_string,
                                                          char **rankfileinput);
@@ -507,7 +507,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                         LINUX   -> use setaffinity */
    if (mconf_get_enable_binding()) {
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
       dstring pseudo_usage = DSTRING_INIT;
       lListElem *jr = nullptr;
 
@@ -2114,7 +2114,7 @@ get_nhosts(const lList *gdil_orig) {
 }
 
 /* creates binding string for config file */
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
 /****** exec_job/create_binding_strategy_string_linux() ************************
 *  NAME
@@ -3027,7 +3027,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 #endif
 
 
-#if defined(BINDING_SOLARIS) || defined(OGE_HWLOC)
+#if defined(BINDING_SOLARIS) || defined(OCS_HWLOC)
 
 /****** exec_job/parse_job_accounting_and_create_logical_list() ****************
 *  NAME

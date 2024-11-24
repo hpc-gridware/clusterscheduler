@@ -275,18 +275,13 @@ int main(int argc, char *argv[]) {
    sge_signaler_initialize();
    sge_event_master_initialize();
 
-#define OGE_ENABLE_MIRROR_THREADS
-#if defined(OGE_ENABLE_MIRROR_THREADS)
    ocs::event_mirror_initialize();
-#endif
 
    sge_timer_initialize(&monitor);
    sge_worker_initialize();
 
-#if defined(OGE_ENABLE_MIRROR_THREADS)
    // before we start reader and listener we wait for the mirror threads to be ready
    ocs::event_mirror_block_till_initial_events_handled();
-#endif
 
    sge_reader_initialize();
    sge_listener_initialize();
@@ -308,9 +303,7 @@ int main(int argc, char *argv[]) {
    sge_reader_terminate();
    sge_worker_terminate();
    sge_timer_terminate();
-#if defined (OGE_ENABLE_MIRROR_THREADS)
    ocs::event_mirror_terminate();
-#endif
    sge_event_master_terminate();
    sge_signaler_terminate();
 

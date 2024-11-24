@@ -58,7 +58,7 @@
 #endif
 
 namespace ocs {
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
    static bool binding_set_linear_linux(int first_socket, int first_core,
                                         int amount_of_cores, int offset, const binding_type_t type);
@@ -78,7 +78,7 @@ namespace ocs {
    static bool bind_shepherd_to_pset(int pset_id);
 #endif
 
-#if defined(OGE_HWLOC) && !defined(SOLARIS)
+#if defined(OCS_HWLOC) && !defined(SOLARIS)
 
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME
@@ -418,7 +418,7 @@ namespace ocs {
 
 /* helper for core_binding */
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
 bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    shepherd_trace("binding_add_core_to_cpuset: adding socket %d core %d to cpuset", socket, core);

@@ -19,7 +19,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
 #include <string>
 #include <hwloc.h>

@@ -47,6 +47,8 @@ This command line switch can be used in order to get 6.2u5 compatible output wit
 Show information about the queues instances hosted by the displayed hosts. In combination with the `-sdv` option the output will be restricted to those hosts and queues where the user has access rights.
 
 ## -sdv
+This switch is available in Gridware Cluster Scheduler only.
+
 This option is only effective if the executing user has no administrative rights.
 
 If the `-sdv` option is used, the output of the command will be restricted to a department specific view. This means that following parts of the output will be suppressed:

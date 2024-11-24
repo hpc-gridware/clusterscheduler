@@ -149,7 +149,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_grp_list, SGE_NO_ABORT) > NoName) {
       printf("groups:                     ");
-#if defined(OGE_WITH_EXTENSIONS)
+#if defined(WITH_EXTENSIONS)
       const lListElem *grp_elem;
       const lList *grp_list = lGetList(job, JB_grp_list);
 

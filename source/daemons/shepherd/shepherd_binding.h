@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 namespace ocs {
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 
    int do_core_binding();
 

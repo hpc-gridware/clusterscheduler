@@ -74,7 +74,7 @@ bool get_execd_topology(char** topology, int* length);
 /* get the topology string where all cores currently in use are marked */
 bool get_execd_topology_in_use(char** topology);
 
-#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 bool account_job(const char* job_topology);
  
 bool binding_set_striding(int first_socket, int first_core, int amount_of_cores,

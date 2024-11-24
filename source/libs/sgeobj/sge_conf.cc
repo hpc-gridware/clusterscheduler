@@ -2611,7 +2611,7 @@ bool mconf_get_enable_sup_grp_eval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    bool ret = false;
-#if defined(OGE_WITH_EXTENSIONS)
+#if defined(WITH_EXTENSIONS)
    ret = enable_sup_grp_eval;
 #endif
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);

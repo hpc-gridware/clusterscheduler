@@ -39,6 +39,24 @@
  
   (Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
 
+### Departments, Users and Jobs - Department View
+
+With the release of patch 9.0.2, we have removed the restriction that users can only be assigned to one department. Users can now be assigned to multiple departments. This is particularly useful in environments where users are members of multiple departments in a company and access to resources is based on department affiliation. 
+
+Jobs must still be assigned to a single department. This means that a user who is a member of multiple departments can submit jobs to any of the departments of which he/she is a member, by specifying the department in the job submission command using the `-dept` switch. If a user does not specify a particular department, `sge_qmaster` assigns the job to the first department found.
+
+Using `qstat` and `qhost`, the output can be filtered based on access lists and departments using the `-sdv` switch. When this switch is used, the following applies:
+
+* Only the hosts/queues to which the user has access are displayed.
+* Jobs are only displayed if they belong to the executing user or a user who belongs to one of the departments where the executing user is also part of.
+* Child objects are only displayed if the user also has access to the corresponding parent object. This means that jobs are not displayed if the queue or host does not offer access (anymore) where the jobs are running, and queues if the host is not accessible (anymore).
+
+Please note that this may result in situations where users are no longer being able to see their own jobs if the access permissions are changed for a user who has jobs running in the system.
+
+Users having the manager role always see all hosts/queues and jobs independent of the use of the `-sdv` switch.
+
+Please note that this specific functionality is still in beta phase. It is only available in Gridware Cluster Scheduler and the implementation will change with upcoming patch releases.
+
 ## v9.0.1
 
 ### Utilization of additional data stores and activation of new thread pools

@@ -543,7 +543,9 @@ FILE *fp
    fprintf(fp, "  [-l attr=val,...]          %s\n", MSG_QHOST_l_OPT_USAGE);
    fprintf(fp, "  [-ncb]                     %s\n", MSG_QHOST_ncb_OPT_USAGE);
    fprintf(fp, "  [-q]                       %s\n", MSG_QHOST_q_OPT_USAGE);
+#ifdef WITH_EXTENSIONS
    fprintf(fp, "  [-sdv]                     %s\n", MSG_QHOST_SHOW_DEPT_VIEW);
+#endif
    fprintf(fp, "  [-u user[,user,...]]       %s\n", MSG_QHOST_u_OPT_USAGE);
    fprintf(fp, "  [-xml]                     %s\n", MSG_COMMON_xml_OPT_USAGE);
 
@@ -577,9 +579,11 @@ lList **alpp
       if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
+#ifdef WITH_EXTENSIONS
       /* -sdv */
       if ((rp = parse_noopt(sp, "-sdv", nullptr, ppcmdline, alpp)) != sp)
          continue;
+#endif
 
       /* -q */
       if ((rp = parse_noopt(sp, "-q", nullptr, ppcmdline, alpp)) != sp)
@@ -681,11 +685,13 @@ static int sge_parse_qhost(lList **ppcmdline,
          (*show) ^= QHOST_DISPLAY_BINDING;
          continue;
       }
+#ifdef WITH_EXTENSIONS
       if (parse_flag(ppcmdline, "-sdv", alpp, &binding)) {
          // show department view
          (*show) |= QHOST_DISPLAY_DEPT_VIEW;
          continue;
       }
+#endif
       if (parse_flag(ppcmdline, "-q", alpp, &full)) {
          if(full) {
             (*show) |= QHOST_DISPLAY_QUEUES;

@@ -462,9 +462,11 @@ sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
          continue;
       }
 
+#ifdef WITH_EXTENSIONS
       while (parse_flag(ppcmdline, "-sdv", &alp, &(qstat_env->show_department_view))) {
          continue;
       }
+#endif
 
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
          qstat_env->job_info = 1;

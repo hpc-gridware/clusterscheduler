@@ -1,5 +1,137 @@
 # Full List of Fixes
 
+# Release notes - Cluster Scheduler - 9.0.2
+
+## v9.0.2
+
+### Improvement
+
+[CS-270](https://hpc-gridware.atlassian.net/browse/CS-270) Allow threads to handle RO-request in parallel
+
+[CS-323](https://hpc-gridware.atlassian.net/browse/CS-323) Allow synchronized access to data stores by adding session 
+
+[CS-768](https://hpc-gridware.atlassian.net/browse/CS-768) allow testsuite to bootstrap its configuration from an existing cluster
+
+[CS-769](https://hpc-gridware.atlassian.net/browse/CS-769) cloud deployment: evaluate and possibly improve Terraform script to testsuite needs
+
+[CS-770](https://hpc-gridware.atlassian.net/browse/CS-770) make performance/throughput test run in the cloud environment
+
+[CS-781](https://hpc-gridware.atlassian.net/browse/CS-781) Create spec for binding and memory binding
+
+[CS-782](https://hpc-gridware.atlassian.net/browse/CS-782) create test application for hwloc topology detection
+
+[CS-798](https://hpc-gridware.atlassian.net/browse/CS-798) testsuite: throughput test sometimes fails with "TCL Error domain error: argument not in valid range"
+
+[CS-800](https://hpc-gridware.atlassian.net/browse/CS-800) cloud deployment: need to configure the bucket name
+
+### Sub-task
+
+[CS-278](https://hpc-gridware.atlassian.net/browse/CS-278) add session concept for incoming requests
+
+[CS-279](https://hpc-gridware.atlassian.net/browse/CS-279) store requests in different request queues
+
+[CS-566](https://hpc-gridware.atlassian.net/browse/CS-566) Add new test scenarios for JSV \[master|slave\]\_l\_hard attribute
+
+[CS-668](https://hpc-gridware.atlassian.net/browse/CS-668) Add a GDI session store and feed it with data from mirror threads
+
+[CS-669](https://hpc-gridware.atlassian.net/browse/CS-669) Introduce queue for requests waiting for secondary DS
+
+[CS-686](https://hpc-gridware.atlassian.net/browse/CS-686) Jenkins: enable config\_qmaster\_param\_keep\_active
+
+[CS-694](https://hpc-gridware.atlassian.net/browse/CS-694) Jenkins: enable issue\_1473
+
+[CS-695](https://hpc-gridware.atlassian.net/browse/CS-695) Jenkins: enable issue\_1741
+
+[CS-725](https://hpc-gridware.atlassian.net/browse/CS-725) striding binding is broken if automatic striding algorithm does not find a position for the first used core on the first socket.
+
+[CS-726](https://hpc-gridware.atlassian.net/browse/CS-726) explicit core binding test does only work with hosts having up to two cores
+
+[CS-743](https://hpc-gridware.atlassian.net/browse/CS-743) All execds should fetch configuration updates from reader DS/threads
+
+[CS-744](https://hpc-gridware.atlassian.net/browse/CS-744) DRMAA requests can be handled by secondary DS if sessions are enabled
+
+[CS-745](https://hpc-gridware.atlassian.net/browse/CS-745) Allow to disable automatic sessions \(to allow performance measurements\)
+
+[CS-746](https://hpc-gridware.atlassian.net/browse/CS-746) Improve automatic session performance with 10k of execution hosts
+
+[CS-747](https://hpc-gridware.atlassian.net/browse/CS-747) Show waiting reader queue length in monitoring
+
+[CS-755](https://hpc-gridware.atlassian.net/browse/CS-755) reduce wait time for pending read requests \(with enabled sessions\)
+
+[CS-757](https://hpc-gridware.atlassian.net/browse/CS-757) Create a module test for sessions that also measures performance with 5M sessions
+
+[CS-779](https://hpc-gridware.atlassian.net/browse/CS-779) testsuite performance/throughput test: need a more efficient way to read accounting data
+
+[CS-793](https://hpc-gridware.atlassian.net/browse/CS-793) Add -sdv switch to qstat that allows to hide queues and jobs from qstat that do not provide access or where user does not belong to
+
+[CS-794](https://hpc-gridware.atlassian.net/browse/CS-794) Department is not visible in qstat -j output
+
+[CS-795](https://hpc-gridware.atlassian.net/browse/CS-795) Verification of department lists is incorrect
+
+[CS-803](https://hpc-gridware.atlassian.net/browse/CS-803) Add -sda switch to qhost and filter data according to same rules as for qstat
+
+[CS-804](https://hpc-gridware.atlassian.net/browse/CS-804) Add support for sge\_qhost and .sge\_qhost files
+
+[CS-805](https://hpc-gridware.atlassian.net/browse/CS-805) Adapt man pages for qstat and qhost that document the department view
+
+[CS-806](https://hpc-gridware.atlassian.net/browse/CS-806) Change sge\_access\_list and document behaviour if user is part of multiple departments
+
+[CS-807](https://hpc-gridware.atlassian.net/browse/CS-807) Add new switch to submit commands and qalter that allows to define department 
+
+[CS-808](https://hpc-gridware.atlassian.net/browse/CS-808) Hide objects in qstat if parent objects does not allow access
+
+[CS-809](https://hpc-gridware.atlassian.net/browse/CS-809) Hide objects in qhost if parent objects do not give access
+
+[CS-810](https://hpc-gridware.atlassian.net/browse/CS-810) Hide jobs in qstat/qhost that that do not belong to users part of the same department
+
+[CS-811](https://hpc-gridware.atlassian.net/browse/CS-811) Summarize identical code of qstat/qhost
+
+[CS-812](https://hpc-gridware.atlassian.net/browse/CS-812) Enforce full view in qstat/qhost for managers
+
+[CS-813](https://hpc-gridware.atlassian.net/browse/CS-813) Apply the same filter rules for the xml output that are also applied for the  plain output
+
+[CS-814](https://hpc-gridware.atlassian.net/browse/CS-814) Move service functions used by multiple clients to sgeobj and document the code
+
+[CS-815](https://hpc-gridware.atlassian.net/browse/CS-815) Remove the incorrect department tests in qmaster.
+
+[CS-816](https://hpc-gridware.atlassian.net/browse/CS-816) Add doxygen comments for functions touched with the CS-748 enhancements
+
+### Task
+
+[CS-226](https://hpc-gridware.atlassian.net/browse/CS-226) eliminate gdi function wrapper and use the same prefix
+
+[CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
+
+[CS-719](https://hpc-gridware.atlassian.net/browse/CS-719) do full valgrind test on master branch \(9.0.1\)
+
+[CS-758](https://hpc-gridware.atlassian.net/browse/CS-758) Document the automated build, release and publish processes.
+
+[CS-759](https://hpc-gridware.atlassian.net/browse/CS-759) Write blog article about secondary DS and automatic session
+
+[CS-820](https://hpc-gridware.atlassian.net/browse/CS-820) create a module test for the fifo trylock implementation
+
+### Bug
+
+[CS-630](https://hpc-gridware.atlassian.net/browse/CS-630) several testsuite tests fail in environments where primary hostname is fully qualified
+
+[CS-632](https://hpc-gridware.atlassian.net/browse/CS-632) Event master does not clean up event clients and their data at shutdown
+
+[CS-715](https://hpc-gridware.atlassian.net/browse/CS-715) Describe binary replacement for patch release in the installation guide
+
+[CS-716](https://hpc-gridware.atlassian.net/browse/CS-716) Describe side by side upgrade in installation guide.
+
+[CS-720](https://hpc-gridware.atlassian.net/browse/CS-720) reset of PDC\_INTERVAL is delayed by one interval
+
+[CS-721](https://hpc-gridware.atlassian.net/browse/CS-721) Testsuite: Submitted jobs are 'invisible' in tests if scenarios are executed under Jenkins control and when job runtime is smaller 30s
+
+[CS-763](https://hpc-gridware.atlassian.net/browse/CS-763) testsuite: deletion of global temp files is broken
+
+[CS-778](https://hpc-gridware.atlassian.net/browse/CS-778) testsuite: performance/throughput test does not generate any reports
+
+[CS-797](https://hpc-gridware.atlassian.net/browse/CS-797) testsuite: throughput test sometimes reports "we had job submission errors - job got submitted, but qsub reported an error"
+
+[CS-819](https://hpc-gridware.atlassian.net/browse/CS-819) potential sge\_qmaster core dump at startup
+
 ## v9.0.1
 
 ### Improvement

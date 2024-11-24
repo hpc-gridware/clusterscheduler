@@ -55,7 +55,7 @@
 
 #include <TestClass.h>
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 #include <sys/utsname.h>
 #endif
 
@@ -63,11 +63,11 @@ void usage();
 void print_mem_load(const char *, const char *, int, double, const char*);
 void check_core_binding();
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 void test_hwloc();
 #endif 
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology);
 #endif
 
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
    tst.method("rhabarberkuchen");
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
    dstring msocket   = DSTRING_INIT;
    dstring mcore     = DSTRING_INIT;
    dstring mthread   = DSTRING_INIT;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
       printf("num_proc        %d\n", nprocs);
    }
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
    fill_socket_core_topology(&msocket, &mcore, &mthread, &mtopology);
    if ((pos && !strcmp("m_socket", argv[pos])) || !pos) {
       printf("m_socket        %s\n", sge_dstring_get_string(&msocket));
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
    memset(&mem_info, 0, sizeof(sge_mem_info_t));
    if (sge_loadmem(&mem_info)) {
       fprintf(stderr, "%s\n", MSG_SYSTEM_RETMEMORYINDICESFAILED);
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
       sge_dstring_free(&mcore);
       sge_dstring_free(&msocket);
       sge_dstring_free(&mthread);
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 
    if ((pos && !strcmp("with_extensions", argv[pos])) || !pos) {
       printf("with_extensions %d\n",
-#if defined(OGE_WITH_EXTENSIONS)
+#if defined(WITH_EXTENSIONS)
          1
 #else
          0
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
       );
    }
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
    sge_dstring_free(&mcore);
    sge_dstring_free(&msocket);
    sge_dstring_free(&mthread);
@@ -286,7 +286,7 @@ void print_mem_load(const char *name, const char *thisone, int precision, double
 void check_core_binding()
 {
    /* try if it is possible to use hwloc in case of Linux */
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
       printf("Your OGE version has built-in core binding functionality!\n");
       test_hwloc();
 #else
@@ -294,7 +294,7 @@ void check_core_binding()
 #endif
 }
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 void test_hwloc()
 {
    char* topology = nullptr;
@@ -348,7 +348,7 @@ void test_hwloc()
 }
 #endif
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
 /****** loadcheck/fill_socket_core_topology() **********************************
 *  NAME
 *     fill_socket_core_topology() -- Get load values regarding processor topology. 

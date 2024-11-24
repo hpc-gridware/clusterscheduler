@@ -147,6 +147,8 @@ execution unless the job has entries in the job dependency list. `qstat -s` *h* 
 `-hold_jid_ad` options to qsub(1)).
 
 ## -sdv
+This switch is available in Gridware Cluster Scheduler only.
+
 This option is only effective if the executing user has no administrative rights.
 
 If the `-sdv` option is used, the output of the command will be restricted to a department specific view. This means

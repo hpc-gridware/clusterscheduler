@@ -861,7 +861,7 @@ int main(int argc, char **argv)
    /* 
     * Perform core binding (do not use processor set together with core binding) 
     */ 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
    ocs::do_core_binding();
 #elif defined(BINDING_SOLARIS)
    /*switch later to startuser */

@@ -126,7 +126,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
 static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
 
-#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 static void update_used_cores(const char* path_to_config, lListElem** jr);
 #endif
 
@@ -1453,7 +1453,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             /* here we will call a ptf function to get */
             /* the first usage data after restart      */
 
-#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
             {
                /* do accounting of bound cores */ 
                dstring fconfig = DSTRING_INIT;
@@ -1506,7 +1506,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    DRETURN_VOID;
 }
 
-#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 static void update_used_cores(const char* path_to_config, lListElem** jr)
 {
    const char* binding_cfg;
@@ -2174,7 +2174,7 @@ static void clean_up_binding(char* binding)
    }
 #endif
 
-#if defined(OGE_HWLOC)
+#if defined(OCS_HWLOC)
    /* on Linux the used topology can be found just after the last ":" */
    /* -> find the used topology and release it */
    

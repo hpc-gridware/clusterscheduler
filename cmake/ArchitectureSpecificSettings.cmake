@@ -57,7 +57,7 @@ function(architecture_specific_settings)
 
    # defines if extensions are enabled
    if (PROJECT_FEATURES MATCHES "gcs-extensions")
-      add_compile_definitions(OGE_WITH_EXTENSIONS=1)
+      add_compile_definitions(WITH_EXTENSIONS=1)
       message("Build with extensions is enabled")
    endif()
 
