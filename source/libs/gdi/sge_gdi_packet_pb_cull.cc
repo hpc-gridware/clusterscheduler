@@ -480,6 +480,11 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
    DRETURN(ret);
  error_with_mapping:
    ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
+   if (task->do_select_pack_simultaneous) {
+      // data_list references a master list
+      // avoid it being freed when the packet/task gets freed
+      task->data_list = nullptr;
+   }
    DRETURN(ret);
 }
 

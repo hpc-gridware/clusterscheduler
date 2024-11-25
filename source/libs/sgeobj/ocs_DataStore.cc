@@ -20,6 +20,7 @@
 
 #include <pthread.h>
 
+#include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "basis_types.h"
@@ -118,9 +119,34 @@ namespace ocs {
     * @return pointer to the master list. will never be nullptr.
     */
    lList **
-   DataStore::get_master_list_rw(sge_object_type type) {
+   DataStore::get_master_list_rw(sge_object_type type, bool for_read) {
       DENTER(DATA_STORE_LAYER);
       GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
+
+#if defined (ENABLE_DEBUG_CHECKS)
+      auto ds_id = obj_state->ds_id;
+      const char *thread_name = component_get_thread_name();
+      if (thread_name != nullptr) {
+         if (strcmp(thread_name, "worker") == 0 && ds_id != DataStore::Id::GLOBAL) {
+            CRITICAL("Worker thread is trying to access data store %d for list %d", ds_id, type);
+            abort();
+         }
+
+         if (strcmp(thread_name, "reader") == 0) {
+            if (ds_id != DataStore::Id::READER) {
+               CRITICAL("Reader thread is trying to access data store %d for list %d", ds_id, type);
+               abort();
+            }
+            // @todo enable once CS-825 is fixed
+#if 0
+            if (!for_read) {
+               CRITICAL("Reader thread is trying to get master list with write access");
+               abort();
+            }
+#endif
+         }
+      }
+#endif
 
       lList **ret;
       ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);

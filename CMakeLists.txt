@@ -51,6 +51,7 @@ if (NOT CMAKE_BUILD_TYPE)
          "Debug"
          CACHE STRING "select build type between Debug and Release" FORCE)
 endif ()
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DENABLE_DEBUG_CHECKS")
 
 # 3RD_PARTY OPTIONS
 option(WITH_OS_3RDPARTY "Use 3rdparty libraries provided by OS packages" OFF)

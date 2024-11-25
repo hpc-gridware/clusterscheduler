@@ -37,6 +37,8 @@
 #include "gdi/sge_gdi_packet_type.h"
 #include "uti/sge_tq.h"
 
+#include "sge_gdi_packet_type.h"
+
 extern sge_tq_queue_t *GlobalRequestQueue;
 extern sge_tq_queue_t *ReaderRequestQueue;
 extern sge_tq_queue_t *ReaderWaitingRequestQueue;

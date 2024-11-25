@@ -41,7 +41,7 @@ namespace ocs {
       select_active_ds(ocs::DataStore::Id ds_id);
 
       static lList **
-      get_master_list_rw(sge_object_type type);
+      get_master_list_rw(sge_object_type type, bool for_read = false);
 
       /**
        * Returns a master list (RO-access) from the currently active data store of the active threads
@@ -50,7 +50,7 @@ namespace ocs {
        */
       static inline const lList **
       get_master_list(sge_object_type type) {
-         return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type));
+         return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type, true));
       }
 
       static void
