@@ -290,7 +290,7 @@ sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long3
 *  NOTES
 *     MT-NOTE: sge_gdi_task_free() is MT safe as long as the structure
 *              passed to this function is not accessed by more than one
-*              thread simultaniously.
+*              thread simultaneously.
 *
 *  SEE ALSO
 *     gdi/request_internal/sge_gdi_task_create()

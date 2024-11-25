@@ -562,7 +562,7 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gd
 
                /*
                 * DIRTY HACK: The "ok" message should be removed from the answer list
-                * 05/21/2007 qualitiy was ANSWER_QUALITY_INFO but this results in "ok"
+                * 05/21/2007 quality was ANSWER_QUALITY_INFO but this results in "ok"
                 * messages on qconf side
                 */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);

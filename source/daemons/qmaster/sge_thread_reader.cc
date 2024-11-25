@@ -137,6 +137,9 @@ sge_reader_main(void *arg) {
    component_set_thread_id(thread_id);
    DPRINTF(SFN "(%d) started\n", thread_name, thread_id);
 
+   // this thread will use the READER data store
+   ocs::DataStore::select_active_ds(ocs::DataStore::Id::READER);
+
    // init monitoring
    cl_thread_func_startup(thread_config);
    sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, RT_WARNING, RT_ERROR);
@@ -198,6 +201,13 @@ sge_reader_main(void *arg) {
             // PACKET_REPORT_REQUEST or PACKET_ACK_REQUEST
             is_only_read_request = false;
          }
+
+#if defined (ENABLE_DEBUG_CHECKS)
+         if (!is_only_read_request) {
+            CRITICAL("reader thread tries to execute write request");
+            abort();
+         }
+#endif
 
          /*
           * acquire the correct lock
