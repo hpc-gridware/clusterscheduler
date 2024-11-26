@@ -602,8 +602,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
       sge_schedd_send_orders(orders, &(orders->configOrderList), nullptr, "A: config orders");
       sge_schedd_send_orders(orders, &(orders->jobStartOrderList), nullptr, "A: job start orders");
-      sge_schedd_send_orders(orders, &(orders->pendingOrderList), nullptr,
-                             "A: pending ticket orders");
+      sge_schedd_send_orders(orders, &(orders->pendingOrderList), nullptr, "A: pending ticket orders");
 
       if (prof_is_active(SGE_PROF_CUSTOM1)) {
          prof_stop_measurement(SGE_PROF_CUSTOM1, nullptr);
@@ -711,10 +710,12 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    {
       bool is_immediate_array_job = false;
       bool do_prof = prof_is_active(SGE_PROF_CUSTOM4);
-
-      struct timeval tnow, later;
-      double time;
-      gettimeofday(&tnow, nullptr);
+      u_long64 tnow = sge_get_gmt64();
+      u_long32 min_intermediate_jobs{U_LONG32_MAX};
+      u_long32 max_intermediate_jobs{0};
+      u_long32 avg_intermediate_jobs{0};
+      u_long32 num_intermediate_jobs{0};
+      u_long32 num_intermediate_sends{0};
 
       memset(&pi, 0, sizeof(sched_prof_t));
 
@@ -857,27 +858,36 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                                                              maxujobs);
                sge_free(&owner);
 
-               /* do not send job start orders inbetween, if we have an immediate array
-                  job. */
-               if (!is_immediate_array_job && (lGetNumberOfElem(orders->jobStartOrderList) > 10)) {
-                  gettimeofday(&later, nullptr);
-                  time = later.tv_usec - tnow.tv_usec;
-                  time = (time / 1000000.0) + (later.tv_sec - tnow.tv_sec);
+               // do not send job start orders in between, if we have an immediate array job.
+               // and only if we have at least 10 jobs to start (why?)
+               u_long32 num_jobs = lGetNumberOfElem(orders->jobStartOrderList);
+               if (!is_immediate_array_job  && num_jobs > 0 /* 10 */) {
+                  u_long64 later = sge_get_gmt64();
+                  u_long64 passed = later - tnow;
 
-                  if (time > 0.5) {
+                  // send orders every 100ms
+                  if (passed > 100 * 1000) {
                      lList *answer_list = nullptr;
-                     sge_schedd_send_orders(orders, &(orders->configOrderList), &answer_list,
-                                            "B: config orders");
-                     sge_schedd_send_orders(orders, &(orders->jobStartOrderList), &answer_list,
-                                            "B: job start orders");
-                     sge_schedd_send_orders(orders, &(orders->pendingOrderList), &answer_list,
-                                            "B: pending ticket orders");
+                     // Why the config and pending order here? Send them earlier or at the end!
+                     // We actually send them before the loop over all jobs, so the calls here won't do anything.
+                     if (do_prof) {
+                        min_intermediate_jobs = std::min(min_intermediate_jobs, num_jobs);
+                        max_intermediate_jobs = std::max(max_intermediate_jobs, num_jobs);
+                        avg_intermediate_jobs = (avg_intermediate_jobs * num_intermediate_sends + num_jobs) /
+                                                (num_intermediate_sends + 1);
+                        num_intermediate_jobs += num_jobs;
+                        num_intermediate_sends++;
+                     }
+
+                     sge_schedd_send_orders(orders, &(orders->configOrderList), &answer_list, "B: config orders");
+                     sge_schedd_send_orders(orders, &(orders->jobStartOrderList), &answer_list, "B: job start orders");
+                     sge_schedd_send_orders(orders, &(orders->pendingOrderList), &answer_list, "B: pending ticket orders");
                      answer_list_output(&answer_list);
-                     gettimeofday(&tnow, nullptr);
+                     tnow = later;
                   }
                }
             }
-               break;
+            break;
 
             case DISPATCH_NOT_AT_TIME: /* reservation */
                /* here the job got a reservation but can't be started now */
@@ -972,6 +982,14 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
          }
 
       } /* end of while */
+
+      if (do_prof) {
+         PROFILING("PROF: " sge_uu32" intermediate start orders were sent in " sge_uu32 " sends. Min: " sge_uu32
+                   ", Max: " sge_uu32 ", Avg: " sge_uu32,
+                   num_intermediate_jobs, num_intermediate_sends,
+                   num_intermediate_sends > 0 ? min_intermediate_jobs : 0,
+                   max_intermediate_jobs, avg_intermediate_jobs);
+      }
    }
 
    if (prof_is_active(SGE_PROF_CUSTOM4)) {
