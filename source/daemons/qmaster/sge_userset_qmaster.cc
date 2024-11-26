@@ -340,7 +340,7 @@ job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
    }
 
    // Also no default department found
-   ERROR(MSG_JOB_NODEPTFOUND);
+   ERROR(SFNMAX, MSG_JOB_NODEPTFOUND);
    answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    DRETURN(false);
 }
