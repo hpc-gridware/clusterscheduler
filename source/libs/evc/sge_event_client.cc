@@ -1132,7 +1132,7 @@ ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) {
 
 /****** Eventclient/Client/ec_get_flush_delay() *****************************
 *  NAME
-*     ec_get_flush_delay() -- get configured flush delay paramter
+*     ec_get_flush_delay() -- get configured flush delay parameter
 *
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"

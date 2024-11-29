@@ -37,7 +37,7 @@
 
 #include "basis_types.h"
 
-/* This functions return the string length of the paramter */
+/* This functions return the string length of the parameter */
 int cl_util_get_ulong_number_length(unsigned long id);
 
 int cl_util_get_int_number_length(int id);

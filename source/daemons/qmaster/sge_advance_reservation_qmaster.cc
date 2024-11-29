@@ -1375,7 +1375,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
 *     This function tests if a modification of a ckpt list in a qinstance is
 *     allowed according to the advance reservations. 
 *
-*     Input paramters are: the advance reservation master list, the name of the
+*     Input parameters are: the advance reservation master list, the name of the
 *     qinstance which sould be modified and the ST_Type string list of ckpt
 *     names which represents the new setting for the qinstance.
 *
@@ -1433,7 +1433,7 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 *     This function tests if a modification of a pe list in a qinstance is
 *     allowed according to the advance reservations. 
 *
-*     Input paramters are: the advance reservation master list, the name of the
+*     Input parameters are: the advance reservation master list, the name of the
 *     qinstance which should be modified and the ST_Type string list of pe 
 *     names which represents the new setting for the qinstance.
 *
@@ -1492,7 +1492,7 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 *     This function tests if a modification of slots entry in a pe is
 *     allowed according to the advance reservations. 
 *
-*     Input paramters are: the advance reservation master list, the name of the
+*     Input parameters are: the advance reservation master list, the name of the
 *     pe which should be modified and the new slots value which should
 *     be set in the pe which might vialote the advance reservations in
 *     the system

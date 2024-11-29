@@ -227,7 +227,7 @@ static ScThreadInit sc_obj{};
  * Parameters:
  * - lList *param_list : target list
  * - lList ** answer_list : error messages
- * - const char* param :  the character version of the paramter
+ * - const char* param :  the character version of the parameter
  *
  * Return:
  * - bool : true, when everything was fine, otherwise false

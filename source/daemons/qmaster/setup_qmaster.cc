@@ -651,7 +651,7 @@ communication_setup() {
    /* fetching qmaster_params and begin to parse */
    qmaster_params = mconf_get_qmaster_params();
 
-   /* updating the commlib paramterlist with new or changed parameters */
+   /* updating the commlib parameterlist with new or changed parameters */
    cl_com_update_parameter_list(qmaster_params);
    DPRINTF("received qmaster_params are: %s\n", qmaster_params);
    sge_free(&qmaster_params);

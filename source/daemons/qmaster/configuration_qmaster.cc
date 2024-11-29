@@ -401,7 +401,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       /* 'max_unheard' may have changed */
       cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1), HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
 
-      /* updating the commlib paramterlist and gdi_timeout with new or changed parameters */
+      /* updating the commlib parameterlist and gdi_timeout with new or changed parameters */
       qmaster_params = mconf_get_qmaster_params();
       cl_com_update_parameter_list(qmaster_params);
       sge_free(&qmaster_params);

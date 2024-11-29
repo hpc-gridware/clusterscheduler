@@ -366,7 +366,7 @@ extern int _insure_is_internal_fd(int);
 *     So the highest file descriptor value is: max_fd - 1.
 *
 *  INPUTS
-*     void - no input paramteres
+*     void - no input parameters
 *
 *  RESULT
 *     int - max. possible open file descriptor count on this system
@@ -388,7 +388,7 @@ int sge_get_max_fd() {
 *  FUNCTION
 *     qsort() needs a callback function to compare two filedescriptors for
 *     sorting them. This is the implementation to value the difference of two
-*     file descriptors. If one paramter is nullptr, only the pointers are
+*     file descriptors. If one parameter is nullptr, only the pointers are
 *     used for the comparsion.
 *     Used by sge_close_all_fds().
 *
