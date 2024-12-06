@@ -111,27 +111,30 @@ The default for *prolog* is the special value NONE, which prevents from executio
 The following special variables expanded at runtime can be used (besides any other strings which have to be 
 interpreted by the procedure) to constitute a command line:
 
-### \$host  
+* \$host  
   The name of the host on which the prolog or epilog procedures are started.
 
-### \$job_owner  
+* \$job_owner  
   The username of the job owner.
   
-### \$job_id  
+* \$job_id  
   xxQS_NAMExx's unique job identification number.
 
-### \$job_name  
+* \$ja_task_id  
+  The task id of the job array task. 0 for non-array jobs.
+
+* \$job_name  
   The name of the job.
 
-### \$processors  
+* \$processors  
   The *processors* string as contained in the queue configuration (see xxqs_name_sxx_queue_conf(5)) of the master 
   queue (the queue in which the prolog and epilog procedures are started).
 
-### \$queue  
+* \$queue  
   The cluster queue name of the master queue instance, i.e. the cluster queue in which the prolog and epilog 
   procedures are started.
 
-### \$stdin_path \$stdout_path \$stderr_path
+* \$stdin_path \$stdout_path \$stderr_path
   The pathname of the stdin file. This is always /dev/null for prolog, pe_start, pe_stop and epilog. It is the 
   pathname of the stdin file for the job in the job script. When delegated file staging is enabled, this
   path is set to \$fs_stdin_tmp_path. When delegated file staging is not enabled, it is the stdin pathname given 
@@ -141,26 +144,26 @@ interpreted by the procedure) to constitute a command line:
   is enabled, this path is set to \$fs_stdout_tmp_path/\$fs_stderr_tmp_path. When delegated file staging is not 
   enabled, it is the stdout/stderr pathname given via DRMAA or qsub.
 
-### $merge_stderr  
+* $merge_stderr  
   If merging of stderr and stdout is requested, this flag is "1", otherwise it is "0". If this flag is 1, stdout 
   and stderr are merged in one file, the stdout file. Merging of stderr and stdout can be requested via the DRMAA 
   job template attribute *drmaa_join_files* (see drmaa_attributes(3) ) or the qsub parameter `-j y` (see qsub(1) ).
 
-### \$fs_stdin_host, \$fs_stdout_host, \$fs_stderr_host
+* \$fs_stdin_host, \$fs_stdout_host, \$fs_stderr_host
   When delegated file staging is requested for the stdin file, this is the name of the host where the stdin file 
   has to be copied from before the job is started.
 
   When delegated file staging is requested for the stdout/stderr file, this is the name of the host where the 
   stdout/stderr file has to be copied to after the job has run.
 
-### \$fs_stdin_path, \$fs_stdout_path, \$fs_stderr_path
+* \$fs_stdin_path, \$fs_stdout_path, \$fs_stderr_path
   When delegated file staging is requested for the stdin file, this is the pathname of the stdin file on the host 
   \$fs_stdin_host.
 
   When delegated file staging is requested for the stdout/stderr file, this is the pathname of the stdout/stderr 
   file on the host \$fs_stdout_host/\$fs_stderr_host.
 
-### \$fs_stdin_tmp_path, \$fs_stdout_tmp_path, \$fs_stderr_tmp_path
+* \$fs_stdin_tmp_path, \$fs_stdout_tmp_path, \$fs_stderr_tmp_path
   When delegated file staging is requested for the stdin file, this is the destination pathname of the stdin file 
   on the execution host. The prolog script must copy the stdin file from \$fs_stdin_host:\$fs_stdin_path to
   localhost:\$fs_stdin_tmp_path to establish delegated file staging of the stdin file.
@@ -171,7 +174,7 @@ interpreted by the procedure) to constitute a command line:
   localhost:\$fs_stderr_tmp_path to \$fs_stderr_host:\$fs_stderr_path) to establish delegated file staging of
   the stdout/stderr file.
 
-### \$fs_stdin_file_staging, \$fs_stdout_file_staging, \$fs_stderr_file_staging  
+* \$fs_stdin_file_staging, \$fs_stdout_file_staging, \$fs_stderr_file_staging  
   When delegated file staging is requested for the stdin/stdout/stderr file, the flag is set to "1", otherwise it 
   is set to "0" (see in *delegated_file_staging* how to enable delegated file staging). These three flags correspond 
   to the DRMAA job template attribute *drmaa_transfer_files* (see drmaa_attributes(3) ).

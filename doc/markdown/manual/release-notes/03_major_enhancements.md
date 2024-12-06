@@ -33,7 +33,7 @@
   All three values show internal request queue lengths. Usually they are all 0 but in high load situations or when sessions are enabled then they can increase:
   * *ql* shows the queue length of the worker threads. This request queue contains requests that require a write lock on the main data store.
   * *rql* shows the queue length of the reader threads. The queue contains requests that require a read lock on the secondary reader data store.
-  * *wrql* shows the queue length of the waiting worker threads. All requests that cannot be handled by reader threads immediately are stored in this list till the secondary reader data store is ready to handle them. If sessions are disabled then the number will always be 0. 
+  * *wrql* shows the queue length of the waiting reader threads. All requests that cannot be handled by reader threads immediately are stored in this list till the secondary reader data store is ready to handle them. If sessions are disabled then the number will always be 0. 
 
   Increasing values are uncritical as long as the numbers also decrease again. If the numbers increase continuously then the system is under high load and the performance might be impacted. 
  
@@ -268,8 +268,8 @@ The accounting and reporting files contain one line per record.
 The format of the records used to be a column-based format with a fixed number of columns,
 column separator was the colon `:`.
 
-The new acccounting and reporting file uses a one-line JSON format.
-This makes it easier to structurise and extend the accounting and reporting records with new fields in the future,
+The new accounting and reporting file uses a one-line JSON format.
+This makes it easier to structure and extend the accounting and reporting records with new fields in the future,
 and it makes it easier to parse the records with tools like `jq`, e.g.:
 
 ```

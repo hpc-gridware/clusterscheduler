@@ -103,6 +103,7 @@ const char *prolog_epilog_variables[] = {
         "host",
         "job_owner",
         "job_id",
+        "ja_task_id",
         "job_name",
         "processors",
         "queue",
