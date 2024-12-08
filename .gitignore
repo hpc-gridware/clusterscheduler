@@ -12,6 +12,7 @@ cvs_update.*
 ._*
 .idea
 .clion.source.upload.marker
+local_notes
 
 # clion build
 cmake-build-debug
