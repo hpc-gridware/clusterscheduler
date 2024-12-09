@@ -31,6 +31,8 @@
 #
 #  All Rights Reserved.
 #
+# Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 #
@@ -41,8 +43,8 @@
 #
 #    $SGE_ROOT/default/common
 #
-# directory. This will make sure that new releases or patches of Sun Grid
-# Engine don't override your local changes.
+# directory. This will make sure that new releases or patches of Cluster
+# Scheduler don't override your local changes.
 #
 #
 # After customization this script can be installed as a cron job. If your
@@ -259,10 +261,13 @@ fi
 
 if [ $ACTION_ON = 1 -o $ACTION_ON = 4 ]; then
    sge_logcheck 1 $qma_spool_dir
-   sge_logcheck 1 $qma_spool_dir/schedd
+   
+   if [ -f $SGE_ROOT/$SGE_CELL/common/schedd_runlog ]; then
+      sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/schedd_runlog
+   fi
 
    if [ $ACCT = yes ]; then
-      sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/accounting
+      sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/accounting.jsonl
    fi
 fi
 
