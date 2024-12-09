@@ -1,11 +1,10 @@
 on:
   pull_request:
-    branches:
-      - master
-      - review
+    types: [ review_requested ]
 
 jobs:
   run_code_review:
+    if: ${{ github.event.requested_reviewer.login == 'dgruber' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
