@@ -267,7 +267,12 @@ if [ $ACTION_ON = 1 -o $ACTION_ON = 4 ]; then
    fi
 
    if [ $ACCT = yes ]; then
-      sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/accounting.jsonl
+      if [ -f $SGE_ROOT/$SGE_CELL/common/accounting.jsonl ]; then
+         sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/accounting.jsonl
+      fi
+      if [ -f $SGE_ROOT/$SGE_CELL/common/accounting ]; then
+         sge_logcheck 2 $SGE_ROOT/$SGE_CELL/common/accounting
+      fi
    fi
 fi
 
