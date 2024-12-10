@@ -2,14 +2,20 @@
 	"className":	"ClusterQueue",
 	"summary":	"Cluster Queue",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of this type defines a cluster queue."
+         }, { "line":	"A cluster queue defines the attributes of queue instances (cluster queue on host)"
+         }, { "line":	"It contains attribute lists per attribute, which are used to define the value of an attribute"
+         }, { "line":	"per host and/or per host group"
+         }, { "line":	"@see man page sge_queue_conf.5"
+         }, { "line":	"@todo the attribute lists (starting below with seq_no) have a certain type, e.g. AULNG_Type, but"
+         }, { "line":	"      but their SubClassName and SubCullPrefix are all ANY."
 		}],
 	"cullPrefix":	"CQ",
 	"attributes":	[{
 			"name":	"name",
 			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The name of the cluster queue"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -27,7 +33,7 @@
 			"name":	"hostlist",
 			"summary":	"Host List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The list of hosts / host groups on which queue instances for the cluster queue shall be created."
 				}],
 			"type":	"lListT",
 			"subClassName":	"HR",
@@ -41,7 +47,7 @@
 			"name":	"qinstances",
 			"summary":	"Queue Instances",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of queue instances of the cluster queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"QU",
@@ -53,7 +59,7 @@
 			"name":	"seq_no",
 			"summary":	"Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue sequence number, used together with queue_sort_method seqno."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -67,7 +73,7 @@
 			"name":	"nsuspend",
 			"summary":	"NSuspend",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of jobs to suspend on suspend_threshold per time interval."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -81,7 +87,7 @@
 			"name":	"job_slots",
 			"summary":	"Job Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of slots per queue instance."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -95,7 +101,7 @@
 			"name":	"rerun",
 			"summary":	"Rerun",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Are jobs running in the queue re-runnable?"
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -109,7 +115,7 @@
 			"name":	"s_fsize",
 			"summary":	"Soft Filesize Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft filesize limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -123,7 +129,7 @@
 			"name":	"h_fsize",
 			"summary":	"Hard Filesize Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard filesize limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -137,7 +143,7 @@
 			"name":	"s_data",
 			"summary":	"Soft Data Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft data limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -151,7 +157,7 @@
 			"name":	"h_data",
 			"summary":	"Hard Data Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard data limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -165,7 +171,7 @@
 			"name":	"s_stack",
 			"summary":	"Soft Stack Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft stack size limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -179,7 +185,7 @@
 			"name":	"h_stack",
 			"summary":	"Hard Stack Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard stack size limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -193,7 +199,7 @@
 			"name":	"s_core",
 			"summary":	"Soft Core Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft core size limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -207,7 +213,7 @@
 			"name":	"h_core",
 			"summary":	"Hard Core Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard core size limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -221,7 +227,7 @@
 			"name":	"s_rss",
 			"summary":	"Soft RSS Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft RSS limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -235,7 +241,7 @@
 			"name":	"h_rss",
 			"summary":	"Hard RSS Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard RSS limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -249,7 +255,7 @@
 			"name":	"s_vmem",
 			"summary":	"Soft VMEM Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft VMEM limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -263,7 +269,7 @@
 			"name":	"h_vmem",
 			"summary":	"Hard VMEM Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard VMEM limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -277,7 +283,7 @@
 			"name":	"s_rt",
 			"summary":	"Soft Runtime Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft runtime limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -291,7 +297,7 @@
 			"name":	"h_rt",
 			"summary":	"Hard Runtime Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard runtime limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -305,7 +311,7 @@
 			"name":	"s_cpu",
 			"summary":	"Soft CPU Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Soft CPU time limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -319,7 +325,7 @@
 			"name":	"h_cpu",
 			"summary":	"Hard CPU Limit",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hard CPU time limit."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -333,7 +339,7 @@
 			"name":	"suspend_interval",
 			"summary":	"Suspend Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Once every interval nsuspend jobs can be suspended by suspend_threshold."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -347,7 +353,7 @@
 			"name":	"min_cpu_interval",
 			"summary":	"Min CPU Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Time between two automatic checkpoints."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -361,7 +367,7 @@
 			"name":	"notify",
 			"summary":	"Notify",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Notify jobs before signalling them?"
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -375,7 +381,7 @@
 			"name":	"tmpdir",
 			"summary":	"Tmp Directory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Toplevel tmp directory holding per job tmp directories on the execution side."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -389,7 +395,7 @@
 			"name":	"shell",
 			"summary":	"Shell",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Default shell used when starting jobs."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -403,7 +409,7 @@
 			"name":	"calendar",
 			"summary":	"Calendar",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue calendar."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -417,7 +423,7 @@
 			"name":	"priority",
 			"summary":	"Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Nice value applied to jobs running in the queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -431,7 +437,8 @@
 			"name":	"processors",
 			"summary":	"Processors",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Solaris processor set"
+               }, { "line": "@todo is it still used at all? We now have hwloc on Solaris as well."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -445,7 +452,7 @@
 			"name":	"prolog",
 			"summary":	"Prolog",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Prolog script started before a job."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -459,7 +466,7 @@
 			"name":	"epilog",
 			"summary":	"Epilog",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Epilog script started after a job."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -473,7 +480,7 @@
 			"name":	"shell_start_mode",
 			"summary":	"Shell Start Mode",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"How to start jobs (unix_behavior or posix_compliant, see sge_queue_conf.5 man page."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -487,7 +494,7 @@
 			"name":	"starter_method",
 			"summary":	"Starter Method",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job starter script."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -501,7 +508,7 @@
 			"name":	"suspend_method",
 			"summary":	"Suspend Method",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Signal to be sent to suspend a job or path to a script to be executed when a job shall be suspended."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -515,7 +522,7 @@
 			"name":	"resume_method",
 			"summary":	"Resume Method",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Signal to be sent to resume a job or path to a script to be executed when a job shall be resumed."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -529,7 +536,7 @@
 			"name":	"terminate_method",
 			"summary":	"Terminate Method",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Signal to be sent to terminate a job or path to a script to be executed when a job shall be terminated."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -543,7 +550,7 @@
 			"name":	"initial_state",
 			"summary":	"Initial State",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Initial state of a newly created queue instance (default, enabled, disabled)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -557,7 +564,7 @@
 			"name":	"pe_list",
 			"summary":	"PE List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of parallel environments available for a queue instance."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -571,7 +578,7 @@
 			"name":	"ckpt_list",
 			"summary":	"Checkpoint List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of  checkpointing environments available for a queue instance."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -585,7 +592,7 @@
 			"name":	"owner_list",
 			"summary":	"Owner List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of queue owners (has administrative rights like disable/enable, suspend/resume."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -599,7 +606,7 @@
 			"name":	"acl",
 			"summary":	"Access List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"ACL defining whose jobs may run in the queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -613,7 +620,7 @@
 			"name":	"xacl",
 			"summary":	"X Access List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"ACL defining whose jobs may not run in the queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -627,7 +634,7 @@
 			"name":	"projects",
 			"summary":	"Projects",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of projects whose jobs may run in the queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -641,7 +648,7 @@
 			"name":	"xprojects",
 			"summary":	"X Projects",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of projects whose jobs may not run in the queue."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -655,7 +662,7 @@
 			"name":	"load_thresholds",
 			"summary":	"Load Thresholds",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of load thresholds which will disable queue instances when exceeded."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -669,7 +676,7 @@
 			"name":	"suspend_thresholds",
 			"summary":	"Suspend Thresholds",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of load thresholds which will suspend queue instances (jobs running in the qinstance) when exceeded."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -683,7 +690,7 @@
 			"name":	"consumable_config_list",
 			"summary":	"Consumable Config List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Capacities of consumable resources."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -697,7 +704,7 @@
 			"name":	"subordinate_list",
 			"summary":	"Subordinate List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of subordinate queues."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -711,7 +718,7 @@
 			"name":	"qtype",
 			"summary":	"Queue Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue type (batch or interactive)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -725,7 +732,7 @@
 			"name":	"tag",
 			"summary":	"Tag",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Queue tag used in scheduler thread to mark certain queues."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -737,7 +744,7 @@
 			"description":	[{
 				"line":	"Placeholder which can be used for arbitrary data."
 			}, { "line":	"Its purpose is to be able to add new attributes without changing the spooling format."
-			}, { "line":	"It is a list of arbitrary type and it is spooled."
+			}, { "line":	"It is a list of VA type and it is spooled."
 			}],
 			"type":	"lListT",
 			"subClassName": "Variable",

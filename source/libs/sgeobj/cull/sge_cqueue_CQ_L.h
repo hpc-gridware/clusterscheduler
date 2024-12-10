@@ -30,168 +30,175 @@
 /**
 * @brief Cluster Queue
 *
-* @todo add description
+* An object of this type defines a cluster queue.
+* A cluster queue defines the attributes of queue instances (cluster queue on host)
+* It contains attribute lists per attribute, which are used to define the value of an attribute
+* per host and/or per host group
+* @see man page sge_queue_conf.5
+* @todo the attribute lists (starting below with seq_no) have a certain type, e.g. AULNG_Type, but
+*       but their SubClassName and SubCullPrefix are all ANY.
 *
 *    SGE_STRING(CQ_name) - Name
-*    @todo add description
+*    The name of the cluster queue
 *
 *    SGE_LIST(CQ_hostlist) - Host List
-*    @todo add description
+*    The list of hosts / host groups on which queue instances for the cluster queue shall be created.
 *
 *    SGE_LIST(CQ_qinstances) - Queue Instances
-*    @todo add description
+*    List of queue instances of the cluster queue.
 *
 *    SGE_LIST(CQ_seq_no) - Sequence Number
-*    @todo add description
+*    Queue sequence number, used together with queue_sort_method seqno.
 *
 *    SGE_LIST(CQ_nsuspend) - NSuspend
-*    @todo add description
+*    Number of jobs to suspend on suspend_threshold per time interval.
 *
 *    SGE_LIST(CQ_job_slots) - Job Slots
-*    @todo add description
+*    Number of slots per queue instance.
 *
 *    SGE_LIST(CQ_rerun) - Rerun
-*    @todo add description
+*    Are jobs running in the queue re-runnable?
 *
 *    SGE_LIST(CQ_s_fsize) - Soft Filesize Limit
-*    @todo add description
+*    Soft filesize limit.
 *
 *    SGE_LIST(CQ_h_fsize) - Hard Filesize Limit
-*    @todo add description
+*    Hard filesize limit.
 *
 *    SGE_LIST(CQ_s_data) - Soft Data Limit
-*    @todo add description
+*    Soft data limit.
 *
 *    SGE_LIST(CQ_h_data) - Hard Data Limit
-*    @todo add description
+*    Hard data limit.
 *
 *    SGE_LIST(CQ_s_stack) - Soft Stack Limit
-*    @todo add description
+*    Soft stack size limit.
 *
 *    SGE_LIST(CQ_h_stack) - Hard Stack Limit
-*    @todo add description
+*    Hard stack size limit.
 *
 *    SGE_LIST(CQ_s_core) - Soft Core Limit
-*    @todo add description
+*    Soft core size limit.
 *
 *    SGE_LIST(CQ_h_core) - Hard Core Limit
-*    @todo add description
+*    Hard core size limit.
 *
 *    SGE_LIST(CQ_s_rss) - Soft RSS Limit
-*    @todo add description
+*    Soft RSS limit.
 *
 *    SGE_LIST(CQ_h_rss) - Hard RSS Limit
-*    @todo add description
+*    Hard RSS limit.
 *
 *    SGE_LIST(CQ_s_vmem) - Soft VMEM Limit
-*    @todo add description
+*    Soft VMEM limit.
 *
 *    SGE_LIST(CQ_h_vmem) - Hard VMEM Limit
-*    @todo add description
+*    Hard VMEM limit.
 *
 *    SGE_LIST(CQ_s_rt) - Soft Runtime Limit
-*    @todo add description
+*    Soft runtime limit.
 *
 *    SGE_LIST(CQ_h_rt) - Hard Runtime Limit
-*    @todo add description
+*    Hard runtime limit.
 *
 *    SGE_LIST(CQ_s_cpu) - Soft CPU Limit
-*    @todo add description
+*    Soft CPU time limit.
 *
 *    SGE_LIST(CQ_h_cpu) - Hard CPU Limit
-*    @todo add description
+*    Hard CPU time limit.
 *
 *    SGE_LIST(CQ_suspend_interval) - Suspend Interval
-*    @todo add description
+*    Once every interval nsuspend jobs can be suspended by suspend_threshold.
 *
 *    SGE_LIST(CQ_min_cpu_interval) - Min CPU Interval
-*    @todo add description
+*    Time between two automatic checkpoints.
 *
 *    SGE_LIST(CQ_notify) - Notify
-*    @todo add description
+*    Notify jobs before signalling them?
 *
 *    SGE_LIST(CQ_tmpdir) - Tmp Directory
-*    @todo add description
+*    Toplevel tmp directory holding per job tmp directories on the execution side.
 *
 *    SGE_LIST(CQ_shell) - Shell
-*    @todo add description
+*    Default shell used when starting jobs.
 *
 *    SGE_LIST(CQ_calendar) - Calendar
-*    @todo add description
+*    Queue calendar.
 *
 *    SGE_LIST(CQ_priority) - Priority
-*    @todo add description
+*    Nice value applied to jobs running in the queue.
 *
 *    SGE_LIST(CQ_processors) - Processors
-*    @todo add description
+*    Solaris processor set
+*    @todo is it still used at all? We now have hwloc on Solaris as well.
 *
 *    SGE_LIST(CQ_prolog) - Prolog
-*    @todo add description
+*    Prolog script started before a job.
 *
 *    SGE_LIST(CQ_epilog) - Epilog
-*    @todo add description
+*    Epilog script started after a job.
 *
 *    SGE_LIST(CQ_shell_start_mode) - Shell Start Mode
-*    @todo add description
+*    How to start jobs (unix_behavior or posix_compliant, see sge_queue_conf.5 man page.
 *
 *    SGE_LIST(CQ_starter_method) - Starter Method
-*    @todo add description
+*    Job starter script.
 *
 *    SGE_LIST(CQ_suspend_method) - Suspend Method
-*    @todo add description
+*    Signal to be sent to suspend a job or path to a script to be executed when a job shall be suspended.
 *
 *    SGE_LIST(CQ_resume_method) - Resume Method
-*    @todo add description
+*    Signal to be sent to resume a job or path to a script to be executed when a job shall be resumed.
 *
 *    SGE_LIST(CQ_terminate_method) - Terminate Method
-*    @todo add description
+*    Signal to be sent to terminate a job or path to a script to be executed when a job shall be terminated.
 *
 *    SGE_LIST(CQ_initial_state) - Initial State
-*    @todo add description
+*    Initial state of a newly created queue instance (default, enabled, disabled).
 *
 *    SGE_LIST(CQ_pe_list) - PE List
-*    @todo add description
+*    List of parallel environments available for a queue instance.
 *
 *    SGE_LIST(CQ_ckpt_list) - Checkpoint List
-*    @todo add description
+*    List of  checkpointing environments available for a queue instance.
 *
 *    SGE_LIST(CQ_owner_list) - Owner List
-*    @todo add description
+*    List of queue owners (has administrative rights like disable/enable, suspend/resume.
 *
 *    SGE_LIST(CQ_acl) - Access List
-*    @todo add description
+*    ACL defining whose jobs may run in the queue.
 *
 *    SGE_LIST(CQ_xacl) - X Access List
-*    @todo add description
+*    ACL defining whose jobs may not run in the queue.
 *
 *    SGE_LIST(CQ_projects) - Projects
-*    @todo add description
+*    List of projects whose jobs may run in the queue.
 *
 *    SGE_LIST(CQ_xprojects) - X Projects
-*    @todo add description
+*    List of projects whose jobs may not run in the queue.
 *
 *    SGE_LIST(CQ_load_thresholds) - Load Thresholds
-*    @todo add description
+*    List of load thresholds which will disable queue instances when exceeded.
 *
 *    SGE_LIST(CQ_suspend_thresholds) - Suspend Thresholds
-*    @todo add description
+*    List of load thresholds which will suspend queue instances (jobs running in the qinstance) when exceeded.
 *
 *    SGE_LIST(CQ_consumable_config_list) - Consumable Config List
-*    @todo add description
+*    Capacities of consumable resources.
 *
 *    SGE_LIST(CQ_subordinate_list) - Subordinate List
-*    @todo add description
+*    List of subordinate queues.
 *
 *    SGE_LIST(CQ_qtype) - Queue Type
-*    @todo add description
+*    Queue type (batch or interactive).
 *
 *    SGE_ULONG(CQ_tag) - Tag
-*    @todo add description
+*    Queue tag used in scheduler thread to mark certain queues.
 *
 *    SGE_LIST(CQ_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
 *    Its purpose is to be able to add new attributes without changing the spooling format.
-*    It is a list of arbitrary type and it is spooled.
+*    It is a list of VA type and it is spooled.
 *
 */
 
