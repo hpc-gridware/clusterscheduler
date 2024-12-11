@@ -28,15 +28,17 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Queue Instance Message
 *
-* @todo add description
+* Objects of this type hold messages attached to queues (QU_message_list).
+* It is also used for ja_task specific messages (JAT_message_list), e.g. job error messages
 *
-*    SGE_ULONG(QIM_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(QIM_type) - Message Type
+*    QI states defined in libs/sgeobj/sge_qinstance_state.h, e.g. QI_ERROR, QI_AMBIGUOUS, ...
+*    Seems to be always 1 for ja_task messages.
 *
-*    SGE_STRING(QIM_message) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QIM_message) - Message
+*    Message as string.
 *
 */
 

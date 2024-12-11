@@ -1,15 +1,17 @@
 {
 	"className":	"QueueInstanceMessage",
-	"summary":	"@todo add summary",
+	"summary":	"Queue Instance Message",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Objects of this type hold messages attached to queues (QU_message_list)."
+         }, { "line": "It is also used for ja_task specific messages (JAT_message_list), e.g. job error messages"
 		}],
 	"cullPrefix":	"QIM",
 	"attributes":	[{
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Message Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"QI states defined in libs/sgeobj/sge_qinstance_state.h, e.g. QI_ERROR, QI_AMBIGUOUS, ..."
+               }, { "line": "Seems to be always 1 for ja_task messages."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -17,9 +19,9 @@
 				}]
 		}, {
 			"name":	"message",
-			"summary":	"@todo add summary",
+			"summary":	"Message",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Message as string."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
