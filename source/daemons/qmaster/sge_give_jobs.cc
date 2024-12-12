@@ -37,6 +37,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <ctime>
+#include <signal.h>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"

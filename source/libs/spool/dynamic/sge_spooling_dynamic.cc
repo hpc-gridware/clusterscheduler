@@ -36,6 +36,11 @@
 #define __USE_GNU
 #endif
 
+#if defined (ULINUXAMD64)
+// required on CentOS 6 to fix a compiler error about ::quick_exit
+#include <cstdlib>
+#endif
+
 #include <dlfcn.h>
 #include <cstring>
 

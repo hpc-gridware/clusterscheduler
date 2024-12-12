@@ -79,7 +79,7 @@ function(architecture_specific_settings)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
       set(JNI_ARCH "linux" PARENT_SCOPE)
-   elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*")
+   elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*" OR SGE_ARCH MATCHES "xlx-.*")
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
@@ -145,7 +145,7 @@ function(architecture_specific_settings)
          message(STATUS "using libntirpc")
       endif ()
 
-      if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86")
+      if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
          # we need patchelf for setting the run path in the db_* tools
          # but patchelf is not available on CentOS 7 x86
          message(STATUS "Building without Berkeley DB on ${SGE_ARCH}")
@@ -156,6 +156,16 @@ function(architecture_specific_settings)
          add_compile_options(-static-libstdc++ -static-libgcc)
          add_link_options(-static-libstdc++ -static-libgcc)
       endif ()
+
+      # can't build jemalloc on CentOS 6 - autoconf is too old
+      if (SGE_ARCH STREQUAL "xlx-amd64")
+         set(WITH_JEMALLOC OFF PARENT_SCOPE)
+         # we need to use a self-compiled gcc/g++/libstdc++ on this platform
+         # as the OS packages (CentOS-6) are too old
+         # link statically to make sure that the correct libstdc++ is used
+         add_compile_options(-static-libstdc++ -static-libgcc)
+         add_link_options(-static-libstdc++ -static-libgcc)
+      endif()
 
       set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "fbsd-amd64")

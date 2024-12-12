@@ -190,9 +190,10 @@ Linux)
       2.4.*|2.6.*|3.*|4.*|5.*|6.*)
          # verify the GNU C lib version
          # we expect libc version to be
-         # >= 2.17 - this is our supported lx-* platform
+         # >  2.17 - this is our supported lx-* platform
          # == 2.17 - unsupported but known to build and work: ulx-* platform
-         # <= 2.17 - not accepted as build or execution platform
+         # <  2.17 and >= 2.12 - long eoled platform but we can still build packages (e.g. CentOS 6)
+         # <  2.12 not accepted as build or execution platform
 
          # there must be a /bin/sh installed, and it certainly uses libc
          libc_ldd=`ldd /bin/sh | grep libc.so.6`
@@ -207,12 +208,12 @@ Linux)
                unsupported="UNSUPPORTED-"
             else
                libc_version=`echo $libc_string | tr ' ,' '\n' | grep "2\." | head -1 | cut -f 2 -d "." | cut -f 1 -d "-"`
-               if [ $libc_version -lt 17 ]; then
+               if [ $libc_version -lt 12 ]; then
                   unsupported="UNSUPPORTED-GLIBC-2.${libc_version}"
-               else
-                  if [ $libc_version -eq 17 ]; then
-                     unsupported="u"
-                  fi
+               elif [ $libc_version -lt 17 ]; then
+                  unsupported="x"
+               elif [ $libc_version -eq 17 ]; then
+                  unsupported="u"
                fi
             fi
          fi
