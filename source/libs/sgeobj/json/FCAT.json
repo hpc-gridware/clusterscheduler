@@ -1,31 +1,32 @@
 {
 	"className":	"FunctionalCategory",
-	"summary":	"@todo add summary",
+	"summary":	"Functional Category",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Objects of this type are used to sort the job list in the scheduler."
+         }, { "line": "All attributes are references to objects in other lists."
 		}],
 	"cullPrefix":	"FCAT",
 	"attributes":	[{
 			"name":	"job_share",
-			"summary":	"@todo add summary",
+			"summary":	"Job Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"All jobs in this functional category have this amount of jobs shares."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"user_share",
-			"summary":	"@todo add summary",
+			"summary":	"User Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"All jobs in this functional category have this amount of user shares."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"user",
-			"summary":	"@todo add summary",
+			"summary":	"User",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to the user structure."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -33,17 +34,17 @@
 			"flags":	[]
 		}, {
 			"name":	"project_share",
-			"summary":	"@todo add summary",
+			"summary":	"Project Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"All jobs in this functional category have this amount of project shares."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"project",
-			"summary":	"@todo add summary",
+			"summary":	"Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to the project structure."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -51,17 +52,17 @@
 			"flags":	[]
 		}, {
 			"name":	"dept_share",
-			"summary":	"@todo add summary",
+			"summary":	"Department Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"All jobs in this functional category have this amount of department shares."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"dept",
-			"summary":	"@todo add summary",
+			"summary":	"Department",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to the department structure."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -69,9 +70,9 @@
 			"flags":	[]
 		}, {
 			"name":	"jobrelated_ticket_first",
-			"summary":	"@todo add summary",
+			"summary":	"First Job Related Ticket",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to the first element of job ticket list."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -79,9 +80,9 @@
 			"flags":	[]
 		}, {
 			"name":	"jobrelated_ticket_last",
-			"summary":	"@todo add summary",
+			"summary":	"Last Job Related Ticket",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to the last element in the job ticket list."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",

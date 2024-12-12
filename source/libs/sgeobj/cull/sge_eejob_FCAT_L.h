@@ -28,36 +28,37 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Functional Category
 *
-* @todo add description
+* Objects of this type are used to sort the job list in the scheduler.
+* All attributes are references to objects in other lists.
 *
-*    SGE_ULONG(FCAT_job_share) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FCAT_job_share) - Job Share
+*    All jobs in this functional category have this amount of jobs shares.
 *
-*    SGE_ULONG(FCAT_user_share) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FCAT_user_share) - User Share
+*    All jobs in this functional category have this amount of user shares.
 *
-*    SGE_REF(FCAT_user) - @todo add summary
-*    @todo add description
+*    SGE_REF(FCAT_user) - User
+*    Pointer to the user structure.
 *
-*    SGE_ULONG(FCAT_project_share) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FCAT_project_share) - Project Share
+*    All jobs in this functional category have this amount of project shares.
 *
-*    SGE_REF(FCAT_project) - @todo add summary
-*    @todo add description
+*    SGE_REF(FCAT_project) - Project
+*    Pointer to the project structure.
 *
-*    SGE_ULONG(FCAT_dept_share) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(FCAT_dept_share) - Department Share
+*    All jobs in this functional category have this amount of department shares.
 *
-*    SGE_REF(FCAT_dept) - @todo add summary
-*    @todo add description
+*    SGE_REF(FCAT_dept) - Department
+*    Pointer to the department structure.
 *
-*    SGE_REF(FCAT_jobrelated_ticket_first) - @todo add summary
-*    @todo add description
+*    SGE_REF(FCAT_jobrelated_ticket_first) - First Job Related Ticket
+*    Pointer to the first element of job ticket list.
 *
-*    SGE_REF(FCAT_jobrelated_ticket_last) - @todo add summary
-*    @todo add description
+*    SGE_REF(FCAT_jobrelated_ticket_last) - Last Job Related Ticket
+*    Pointer to the last element in the job ticket list.
 *
 */
 
