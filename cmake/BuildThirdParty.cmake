@@ -121,7 +121,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         PREFIX ${3rdparty_build_path}/hwloc
                         INSTALL_DIR ${3rdparty_install_path}
                         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-                        CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --enable-static
+                        CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --enable-static --disable-libxml2
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make

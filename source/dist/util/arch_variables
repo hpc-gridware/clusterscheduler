@@ -78,7 +78,7 @@ case $ARCH in
    RSH_DAEMON=undef
    LOADSENSOR_COMMAND=undef
    ;;
- lx*|ulx*)
+ lx*|ulx*|xlx*)
    AWK=/usr/bin/gawk
    ECHO="/bin/echo -e"
    if [ -x /usr/lib/lsb/install_initd ]; then
