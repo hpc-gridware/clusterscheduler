@@ -80,6 +80,13 @@ function(architecture_specific_settings)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
       set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*" OR SGE_ARCH MATCHES "xlx-.*")
+      # Disable Python for unsupported qmaster architectures
+      if (WITH_PYTHON)
+         if (SGE_ARCH MATCHES "lx-ppc64le" OR SGE_ARCH MATCHES "lx-s390x")
+            set(WITH_PYTHON OFF PARENT_SCOPE)
+         endif()
+      endif()
+
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
@@ -143,6 +150,8 @@ function(architecture_specific_settings)
          set(TIRPC_INCLUDES /usr/include/ntirpc PARENT_SCOPE)
          set(TIRPC_LIB ntirpc PARENT_SCOPE)
          message(STATUS "using libntirpc")
+      else ()
+         message(STATUS "no libtirpc or libntirpc found")
       endif ()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
@@ -169,6 +178,9 @@ function(architecture_specific_settings)
 
       set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
+      # Disable Python for unsupported qmaster architectures
+      set(WITH_PYTHON OFF PARENT_SCOPE)
+
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
@@ -183,6 +195,9 @@ function(architecture_specific_settings)
 
       set(JNI_ARCH "freebsd" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "sol-.*")
+      # Disable Python for unsupported qmaster architectures
+      set(WITH_PYTHON OFF PARENT_SCOPE)
+
       # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
@@ -192,6 +207,9 @@ function(architecture_specific_settings)
 
       set(JNI_ARCH "solaris" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
+      # Disable Python for unsupported qmaster architectures
+      set(WITH_PYTHON OFF PARENT_SCOPE)
+
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
       # -Wextra
