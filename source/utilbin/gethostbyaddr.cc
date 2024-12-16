@@ -47,13 +47,13 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_arch.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "msg_utilbin.h"
 
 void usage()
 {
-  fprintf(stderr, "Version: %s\n", GDI_VERSION);
+  fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
   fprintf(stderr, "%s gethostbyaddr [-help|-name|-aname|-all]x.x.x.x\n", MSG_UTILBIN_USAGE );
   exit(1);
 }

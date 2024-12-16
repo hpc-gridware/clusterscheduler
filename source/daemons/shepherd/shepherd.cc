@@ -73,7 +73,7 @@
 #include "uti/sge_os.h"
 #include "uti/sge_pty.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_report.h"
@@ -674,7 +674,7 @@ static void signal_handler(int signal)
 
 static void show_shepherd_version() {
 
-   printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
+   printf("%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_shepherd");
    printf("   %-40.40s %s\n", MSG_GDI_USAGE_help_OPT , MSG_GDI_UTEXT_help_OPT);
 

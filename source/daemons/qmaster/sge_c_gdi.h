@@ -116,7 +116,3 @@ sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *ta
 
 void sge_clean_lists();
 
-/* EB: TODO: CLEANUP: should be replaced with sge_gdi_packet_verify_version() */
-int verify_request_version(lList **alpp, u_long32 version, char *host, char *commproc, int id);
-
-

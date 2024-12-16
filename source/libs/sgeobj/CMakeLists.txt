@@ -27,6 +27,7 @@ set(LIBRARY_SOURCES
       ocs_DataStore.cc
       ocs_HostTopology.cc
       ocs_Session.cc
+      ocs_Version.cc
       parse.cc
       sge_ack.cc
       sge_advance_reservation.cc

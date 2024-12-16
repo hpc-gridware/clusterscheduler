@@ -50,6 +50,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "msg_qmaster.h"
 #include "sge_c_gdi.h"
@@ -148,7 +149,7 @@ sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *r
 
    /* do not process load reports from old execution daemons */
    rversion = lGetUlong(lFirst(report_list), REP_version);
-   if (verify_request_version(nullptr, rversion, rhost, commproc, id)) {
+   if (!ocs::Version::do_versions_match(nullptr, rversion, rhost, commproc, id)) {
       DRETURN_VOID;
    }
 

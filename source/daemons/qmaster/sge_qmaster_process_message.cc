@@ -57,6 +57,7 @@
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet_internal.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "comm/commlib.h"
 
@@ -358,7 +359,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // check GDI version
    if (local_ret) {
-      local_ret = sge_gdi_packet_verify_version(packet, &packet->first_task->answer_list);
+      local_ret = ocs::Version::do_versions_match(&packet->first_task->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
    }
 
    // check auth_info (user/group)

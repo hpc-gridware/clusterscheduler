@@ -55,11 +55,12 @@
 
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_gdi_packet.h"
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 #include "gdi/sge_security.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "../../daemons/shepherd/shepherd_binding.h"
 
 /****** gdi/request_internal/--Packets_and_Taks() *****************************
 *  NAME
@@ -387,7 +388,7 @@ sge_gdi_packet_create_base(lList **answer_list) {
    }
 
    ret->request_type = PACKET_GDI_REQUEST;
-   ret->version = GRM_GDI_VERSION;
+   ret->version = ocs::Version::get_version();
    memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
 
    DRETURN(ret);
@@ -651,71 +652,3 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
    }
    DRETURN(ret);
 }
-
-/****** sge_gdi_packet/sge_gdi_packet_verify_version() ************************
-*  NAME
-*     sge_gdi_packet_verify_version() -- verify packet version
-*
-*  SYNOPSIS
-*     bool sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet,
-*                                        lList **alpp)
-*
-*  FUNCTION
-*     This function is the replacement for the function
-*     verify_request_version() which was part of the source code
-*     before the packet structure was introduced.
-*
-*     It compares the version information of the provided "packet"
-*     with the compiledin version number GRM_GDI_VERSION.
-*
-*     If both versions are not the same then it tries to find
-*     if the client which provided us with this packet structure
-*     has a higer version number or the binary executing
-*     this function. In both cases the answer_list will
-*     be filled with an appropriate message.
-*
-*  INPUTS
-*     sge_gdi_packet_class_t *packet - packet
-*     lList **alpp                   - answer list
-*
-*  RESULT
-*     bool - error state
-*        true  - same version
-*        false - differnet version numbers
-*
-*  NOTES
-*     MT-NOTE: sge_gdi_packet_verify_version() is not MT safe
-******************************************************************************/
-bool
-sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp) {
-   DENTER(TOP_LAYER);
-   dstring ds;
-   char buffer[256];
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   if (packet->version != GRM_GDI_VERSION) {
-      const vdict_t *vp;
-      const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
-      const char *client_version = nullptr;
-
-      // try to find a version entry in the version table
-      for (vp = &vdict[0]; vp->version; vp++) {
-         if (packet->version == vp->version) {
-            client_version = vp->release;
-         }
-      }
-
-      // show a warning and either print the version ID or the version string if we found one in the table
-      if (client_version) {
-         WARNING(MSG_GDI_WRONG_GDI_SSISS, packet->host, packet->commproc, (int) (packet->id),
-                 client_version, feature_get_product_name(FS_VERSION, &ds));
-      } else {
-         WARNING(MSG_GDI_WRONG_GDI_SSIUS, packet->host, packet->commproc, (int) (packet->id),
-                 sge_u32c(packet->version), feature_get_product_name(FS_VERSION, &ds));
-      }
-      answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-   DRETURN(true);
-}
-

@@ -40,7 +40,7 @@
 
 #include "cull/cull.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "sgeobj/sge_feature.h"         
 #include "sgeobj/msg_sgeobjlib.h"
@@ -479,10 +479,10 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
    DENTER(TOP_LAYER);
 
    if (feature_get_active_featureset_id() != FEATURE_UNINITIALIZED ) {
-      short_name = GE_SHORTNAME;
-      long_name  = GE_LONGNAME;
+      short_name = ocs::Version::get_short_product_name().c_str();
+      long_name  = ocs::Version::get_long_product_name().c_str();
    }
-   version = GDI_VERSION; 
+   version = ocs::Version::get_version_string().c_str();
 
    switch (style) {
       case FS_SHORT:

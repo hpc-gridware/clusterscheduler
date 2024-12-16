@@ -47,13 +47,13 @@
 
 #include "sgeobj/sge_feature.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "msg_common.h"
 
 static void show_coshepherd_version() {
 
-   printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
+   printf("%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_coshepherd");
    printf("   %-40.40s %s\n", MSG_GDI_USAGE_help_OPT , MSG_GDI_UTEXT_help_OPT);
 

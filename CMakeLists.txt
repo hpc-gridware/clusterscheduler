@@ -223,7 +223,14 @@ if (WITH_PYTHON)
       message(STATUS "pybind11 include dirs: ${pybind11_INCLUDE_DIR}")
    endif ()
 
+   # find the python/pybind11 extension suffix (e.g .cpython-310-x86_64-linux-gnu.so)
+   execute_process(COMMAND python3 -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))" OUTPUT_VARIABLE PYBIND11_EXT_SUFFIX)
+   string(STRIP ${PYBIND11_EXT_SUFFIX} PYBIND11_EXTENSION_SUFFIX)
+   message(STATUS "Python3 ext-suffix: ${PYBIND11_EXTENSION_SUFFIX}")
+
    set(PYTHON_ALL_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} ${pybind11_INCLUDE_DIR})
+   set(PYTHON_ALL_LIBRARIES ${Python3_LIBRARIES} util)
+   set(PYTHON_EXTENSION_SUFFIX ${PYBIND11_EXTENSION_SUFFIX})
 endif ()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")
