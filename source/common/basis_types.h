@@ -220,5 +220,3 @@ typedef enum {
 #define GRU_HARD_REQUEST_TYPE  0
 #define GRU_SOFT_REQUEST_TYPE  1
 #define GRU_RESOURCE_MAP_TYPE  2
-
-#define GDI_SESSION_NONE (0LL)

@@ -109,7 +109,7 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    packet->response_id = message->request_mid;
    packet->is_intern_request = false;
    packet->request_type = type;
-   packet->gdi_session = GDI_SESSION_NONE;
+   packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
    sge_gdi_packet_append_task(packet, nullptr, 0, 0, &data_list, nullptr, nullptr, nullptr, false);

@@ -44,6 +44,7 @@ namespace ocs {
       static void remove_unused();
 
    public:
+      static constexpr u_long64 GDI_SESSION_NONE = 0LL;
       static u_long64 get_session_id(const char *user);
 
       static void set_write_unique_id(const u_long64 session_id, const u_long64 write_event_id);

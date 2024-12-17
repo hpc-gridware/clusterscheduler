@@ -99,7 +99,7 @@ check_session_functionality() {
 
    // Create a session
    u_long64 session_id = ocs::SessionManager::get_session_id(generate_random_string(1000).c_str());
-   assert(session_id != GDI_SESSION_NONE);
+   assert(session_id != ocs::SessionManager::GDI_SESSION_NONE);
 
    // Check if the session is up-to-date
    ret &= ocs::SessionManager::is_uptodate(session_id);

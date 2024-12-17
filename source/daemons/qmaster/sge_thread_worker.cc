@@ -43,6 +43,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_DataStore.h"
 
 #include "sge_thread_ctrl.h"
@@ -161,7 +162,7 @@ sge_worker_terminate() {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
       DPRINTF("job/ar counter were made persistent\n");
-      sge_userprj_spool(GDI_SESSION_NONE); /* spool the latest usage */
+      sge_userprj_spool(ocs::SessionManager::GDI_SESSION_NONE); /* spool the latest usage */
       DPRINTF("final job and user/project spooling has been triggered\n");
    }
 

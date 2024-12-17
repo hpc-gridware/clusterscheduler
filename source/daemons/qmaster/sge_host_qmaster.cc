@@ -45,6 +45,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
@@ -889,13 +890,13 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       host_trash_nonstatic_load_values(hep);
 
       /* set all queues residing at this host in unknown state */
-      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true, GDI_SESSION_NONE);
+      cqueue_list_set_unknown_state(master_cqueue_list, host, true, true, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* add a trigger to enforce limits when they are exceeded */
       sge_host_add_enforce_limit_trigger(host);
 
       /* hedeby depends on this event */
-      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep, GDI_SESSION_NONE);
+      sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, nullptr, nullptr, hep, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* initiate timer for this host because they turn into 'unknown' state */
       reschedule_unknown_trigger(hep);

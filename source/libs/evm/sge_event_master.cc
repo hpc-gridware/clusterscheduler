@@ -2528,7 +2528,7 @@ check_send_new_subscribed_list(const subscription_t *old_subscription,
 {
    if ((new_subscription[event].subscription == EV_SUBSCRIBED) &&
       (old_subscription[event].subscription == EV_NOT_SUBSCRIBED)) {
-      total_update_event(event_client, event, true, GDI_SESSION_NONE);
+      total_update_event(event_client, event, true, ocs::SessionManager::GDI_SESSION_NONE);
    }
 }
 
@@ -2944,7 +2944,7 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
       }
 
       /* 'send_events()' will free the copy of 'lp' */
-      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, copy_lp, GDI_SESSION_NONE);
+      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, copy_lp, ocs::SessionManager::GDI_SESSION_NONE);
    } /* if */
 
    DRETURN_VOID;

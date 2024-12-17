@@ -203,7 +203,7 @@ sge_timer_initialize(monitoring_t *monitor) {
    DPRINTF("timed event module has been initialized\n");
    heartbeat_initialize();
    DPRINTF("heartbeat module initialized\n");
-   ar_initialize_timer(&answer_list, monitor, GDI_SESSION_NONE);
+   ar_initialize_timer(&answer_list, monitor, ocs::SessionManager::GDI_SESSION_NONE);
    answer_list_output(&answer_list);
    DPRINTF("ar and corresponding timers are initialized\n");
    calendar_initalize_timer(monitor);

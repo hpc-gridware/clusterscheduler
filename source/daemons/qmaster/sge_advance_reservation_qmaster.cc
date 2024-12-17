@@ -50,6 +50,7 @@
 
 #include "spool/sge_spooling.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -930,10 +931,10 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_ar_state_set_exited(ar);
 
       /* remove all jobs running in this AR */
-      sge_ar_remove_all_jobs(ar_id, 1, monitor, GDI_SESSION_NONE);
+      sge_ar_remove_all_jobs(ar_id, 1, monitor, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* unblock reserved queues */
-      ar_do_reservation(ar, false, GDI_SESSION_NONE);
+      ar_do_reservation(ar, false, ocs::SessionManager::GDI_SESSION_NONE);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_TERMINATED,
                                      "end time of AR reached",
@@ -943,14 +944,14 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all orphaned queue intances, which are empty. */
-      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, GDI_SESSION_NONE);
+      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* remove the AR itself */
       DPRINTF("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer));
       lRemoveElem(master_ar_list, &ar);
       sge_event_spool(nullptr, timestamp, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
-                      nullptr, nullptr, nullptr, true, true, GDI_SESSION_NONE);
+                      nullptr, nullptr, nullptr, true, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    } else {
       /* AR_RUNNING */
@@ -964,7 +965,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       /* this info is not spooled */
       sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
-                    sge_dstring_get_string(&buffer), nullptr, nullptr, ar, GDI_SESSION_NONE);
+                    sge_dstring_get_string(&buffer), nullptr, nullptr, ar, ocs::SessionManager::GDI_SESSION_NONE);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",

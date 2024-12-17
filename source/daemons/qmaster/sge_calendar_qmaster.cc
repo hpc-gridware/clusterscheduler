@@ -40,6 +40,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
@@ -50,6 +51,7 @@
 #include "spool/sge_spooling.h"
 
 #include "evm/sge_event_master.h"
+
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
 #include "sge_qinstance_qmaster.h"
@@ -75,7 +77,7 @@ calendar_initalize_timer(monitoring_t *monitor) {
 
       sge_gdi_packet_class_t packet;
       sge_gdi_task_class_t task;
-      packet.gdi_session = GDI_SESSION_NONE;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
    }
 
@@ -250,7 +252,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    sge_gdi_packet_class_t packet;
    sge_gdi_task_class_t task;
-   packet.gdi_session = GDI_SESSION_NONE;
+   packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
    calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);

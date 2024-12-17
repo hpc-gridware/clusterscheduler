@@ -47,6 +47,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/cull_parse_util.h"
@@ -471,7 +472,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                   sge_gdi_packet_class_t packet;
                   sge_gdi_task_class_t task;
 
-                  packet.gdi_session = GDI_SESSION_NONE;
+                  packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
                   if (sge_del_userprj(&packet, &task, user, &answer_list, master_user_list, admin, (char *) qmaster_host, 1) !=
                       STATUS_OK) {
                      /* 

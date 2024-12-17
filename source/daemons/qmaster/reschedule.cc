@@ -43,6 +43,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_report.h"
@@ -179,7 +180,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * unknown state and append the jobids/taskids into
     * a sublist of the exechost object
     */
-   reschedule_jobs(hep, 0, &answer_list, monitor, false, GDI_SESSION_NONE);
+   reschedule_jobs(hep, 0, &answer_list, monitor, false, ocs::SessionManager::GDI_SESSION_NONE);
    lFreeList(&answer_list);
 
    Error:

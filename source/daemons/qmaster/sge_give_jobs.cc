@@ -53,6 +53,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_usage.h"
@@ -736,15 +737,15 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
          // delete other timers for this job/jatask
          te_delete_one_time_event(TYPE_JOB_RESEND_EVENT, jobid, jataskid, nullptr);
          // create usage
-         sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, true, GDI_SESSION_NONE);
+         sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, true, ocs::SessionManager::GDI_SESSION_NONE);
       } else {
          if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
             // transition transferring to running state and set a timer for job end
-            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor, GDI_SESSION_NONE);
+            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_ARRIVED, COMMIT_DEFAULT, monitor, ocs::SessionManager::GDI_SESSION_NONE);
             trigger_job_resend(now, hep, jobid, jataskid, runtime);
          } else { /* must be JRUNNING */
             // job end, create usage
-            sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, false, GDI_SESSION_NONE);
+            sge_job_resend_event_handler_sim_job_end(jobid, jataskid, jep, jatep, monitor, now, runtime, false, ocs::SessionManager::GDI_SESSION_NONE);
          }
       }
 
@@ -792,7 +793,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       }
 
       /* send job to execd */
-      sge_give_job(jep, jatep, mqep, hep, monitor, GDI_SESSION_NONE);
+      sge_give_job(jep, jatep, mqep, hep, monitor, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* reset timer */
       lSetUlong64(jatep, JAT_start_time, now);

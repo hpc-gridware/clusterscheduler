@@ -58,6 +58,7 @@
 
 #include "sgeobj/parse.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_answer.h"
@@ -899,7 +900,7 @@ setup_qmaster() {
       /* add an exec host "template" */
       sge_gdi_packet_class_t packet;
       sge_gdi_task_class_t task;
-      packet.gdi_session = GDI_SESSION_NONE;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST);
    }
@@ -909,7 +910,7 @@ setup_qmaster() {
       /* add an exec host "global" */
       sge_gdi_packet_class_t packet;
       sge_gdi_task_class_t task;
-      packet.gdi_session = GDI_SESSION_NONE;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
@@ -918,7 +919,7 @@ setup_qmaster() {
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
       sge_gdi_packet_class_t packet;
       sge_gdi_task_class_t task;
-      packet.gdi_session = GDI_SESSION_NONE;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, qualified_hostname, SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
@@ -980,7 +981,7 @@ setup_qmaster() {
    DPRINTF("cluster_queue_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true, GDI_SESSION_NONE);
+   cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    /*
     * Initialize cached values for each qinstance:
@@ -1044,7 +1045,7 @@ setup_qmaster() {
       lListElem *qinstance;
       for_each_rw(qinstance, qinstance_list) {
          qinstance_set_full_name(qinstance);
-         sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false, GDI_SESSION_NONE);
+         sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false, ocs::SessionManager::GDI_SESSION_NONE);
       }
    }
 
@@ -1099,7 +1100,7 @@ setup_qmaster() {
 
          /* array successor jobs need to have their cache rebuilt. this will
             do nothing spectacular if the AD reqest list for this job is empty. */
-         sge_task_depend_init(jep, &answer_list, GDI_SESSION_NONE);
+         sge_task_depend_init(jep, &answer_list, ocs::SessionManager::GDI_SESSION_NONE);
 
          centry_list_fill_request(job_get_hard_resource_listRW(jep),
                                   nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY), false, true, false);
@@ -1133,7 +1134,7 @@ setup_qmaster() {
    for_each_rw(tmpqep, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       sge_gdi_packet_class_t packet;
       sge_gdi_task_class_t task;
-      packet.gdi_session = GDI_SESSION_NONE;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       cqueue_mod_qinstances(&packet, &task, tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
    }
 
@@ -1155,7 +1156,7 @@ setup_qmaster() {
 
    DPRINTF("scheduler config -----------------------------------\n");
 
-   sge_read_sched_configuration(spooling_context, &answer_list, GDI_SESSION_NONE);
+   sge_read_sched_configuration(spooling_context, &answer_list, ocs::SessionManager::GDI_SESSION_NONE);
    answer_list_output(&answer_list);
 
    DPRINTF("share tree list-----------------------------------\n");

@@ -43,6 +43,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_daemonize.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_centry.h"
@@ -453,7 +454,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    * Assassinate the job (qdel -f)
                    */
                   sge_commit_job(job, ja_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
-                                 COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, GDI_SESSION_NONE);
+                                 COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, ocs::SessionManager::GDI_SESSION_NONE);
                   job = nullptr;
                   ja_task = nullptr;
 
