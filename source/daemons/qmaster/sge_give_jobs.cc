@@ -1065,27 +1065,28 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
           * execd host .. sigh!
           */
          lSetUlong64(jatep, JAT_start_time, now);
-         job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
          break;
       }
-      case COMMIT_ST_ARRIVED:
+      case COMMIT_ST_ARRIVED: {
+         // change state to running
          lSetUlong(jatep, JAT_status, JRUNNING);
+
+         // spool job log
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELIVERED, MSG_QMASTER, qualified_hostname,
                                   jr, jep, jatep, nullptr, MSG_LOG_DELIVERED);
-         job_enroll(jep, nullptr, jataskid);
-         {
-            dstring buffer = DSTRING_INIT;
-            /* JG: TODO: why don't we generate an event? */
-            spool_write_object(&answer_list, spool_get_default_context(), jatep,
-                               job_get_key(jobid, jataskid, nullptr, &buffer), SGE_TYPE_JATASK, true);
-            answer_list_output(&answer_list);
-            sge_dstring_free(&buffer);
-         }
-         break;
 
+         // spool and notify others about the state change
+         dstring buffer = DSTRING_INIT;
+         sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
+                   jep, jatep, nullptr, true, true, gdi_session);
+         answer_list_output(&answer_list);
+         sge_dstring_free(&buffer);
+
+         break;
+      }
       case COMMIT_ST_RESCHEDULED:
       case COMMIT_ST_USER_RESCHEDULED:
       case COMMIT_ST_FAILED_AND_ERROR:
@@ -1201,7 +1202,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          ja_task_clear_finished_pe_tasks(jatep);
-         job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                          jep, jatep, nullptr, true, true, gdi_session);
 
@@ -1238,7 +1238,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             sge_to_zombies(jep, jatep);
          }
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
-         job_enroll(jep, nullptr, jataskid);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
             sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid,
                                jataskid,
@@ -1297,7 +1296,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          lSetUlong(jatep, JAT_status, JIDLE);
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
          sge_clear_granted_resources(jep, jatep, 0, monitor, gdi_session);
-         job_enroll(jep, nullptr, jataskid);
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
                          nullptr, nullptr, session, jep, jatep, nullptr, true, false, gdi_session);
          answer_list_output(&answer_list);
