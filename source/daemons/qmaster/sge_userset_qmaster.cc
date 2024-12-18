@@ -289,6 +289,13 @@ bool
 job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list) {
    DENTER(TOP_LAYER);
 
+   // Do we have a department name?
+   if (dept_name == nullptr) {
+      ERROR(MSG_JOB_NODEPTFOUND);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
    // Does the department exist?
    const lListElem *dept = lGetElemStr(userset_list, US_name, dept_name);
    if (!dept || !(lGetUlong(dept, US_type) & US_DEPT)) {
@@ -297,6 +304,12 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       }
       DRETURN(false);
+   }
+
+   // Is the department name the default department then we can skip remaining tests.
+   // The default department is always valid and the user or group(s) do not need to be part of it.
+   if (!strcmp(dept_name, DEFAULT_DEPARTMENT)) {
+      DRETURN(true);
    }
 
    // Does the user belong to the department?

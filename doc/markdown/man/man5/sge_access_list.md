@@ -41,6 +41,11 @@ Allows to submit, control and delete advance reservations (see qsub(1)).
 
 Allows to specify a deadline for jobs (see qsub(1) -dl).
 
+## defaultdepartment
+
+The *defaultdepartment* is the default department for users that are not assigned to any other department.
+In difference to other departments, users or groups of users must not explicitly be referenced in the *entries* field of the *defaultdepartment* so that a user can be part of the *defaultdepartment*.
+
 # FORMAT
 
 The following list of access list parameters specifies the access list content:
