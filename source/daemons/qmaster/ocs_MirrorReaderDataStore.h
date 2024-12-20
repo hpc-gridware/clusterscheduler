@@ -19,12 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_MirrorDataStore.h"
+#include "ocs_MirrorServerDataStore.h"
 
 namespace ocs {
-   class MirrorReaderDataStore : public MirrorDataStore {
+   class MirrorReaderDataStore : public MirrorServerDataStore {
    public:
-      MirrorReaderDataStore();
+      MirrorReaderDataStore() : MirrorServerDataStore(DataStore::Id::READER, LOCK_READER) {};
       ~MirrorReaderDataStore() override = default;
       void subscribe_events() override;
       void update_sessions_and_move_requests(const u_long64 unique_id) override;

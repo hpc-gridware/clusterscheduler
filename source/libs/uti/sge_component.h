@@ -64,7 +64,8 @@ enum {
    DRMAA,         // 29
    QPING,         // 30
    QQUOTA,        // 31
-   SGE_SHARE_MON  // 32
+   SGE_SHARE_MON, // 32
+   PYTHON_CLIENT  // 33
 };
 
 enum thread_type_t {

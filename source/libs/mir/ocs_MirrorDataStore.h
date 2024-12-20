@@ -34,22 +34,19 @@
 namespace ocs {
    class MirrorDataStore {
    private:
-      pthread_mutex_t mutex;                       ///< used to secure other attributes within this object
-      pthread_cond_t cond_var;                     ///< used to wait for new events and to wakeup this thread
-      const std::string mutex_name;                ///< unique mutex name
+      pthread_cond_t cond_var;                     ///< used to wait for new events and to wake up this thread
       volatile bool triggered;                     ///< true if new events are pending that need to get processed
       lList *new_events;                           ///< new events that need to get processed
-      ocs::DataStore::Id data_store_id;            ///< data store that is managed by this thread
-      pthread_t thread{};                          ///< pthread that handles the mirroring
       sge_locktype_t lock_type;                    ///< lock type used to secure the DS
       volatile bool did_handle_initial_events;     ///< true if the initial events have been handled and other threads can access the DS
-
-      static void thread_cleanup_monitor(void *arg);
-      static void thread_cleanup_event_client(void *arg);
-      static void thread_cleanup_data_store([[maybe_unused]] void *unused);
+      bool do_try_lock;                            ///< true if we should try to get the lock without waiting
 
    protected:
-      sge_evc_class_t *evc = nullptr;
+      pthread_mutex_t mutex;                       ///< used to secure other attributes within this object
+      const std::string mutex_name;                ///< unique mutex name
+      DataStore::Id data_store_id;                 ///< data store that is managed by this thread
+      pthread_t thread{};                          ///< pthread that handles the mirroring
+      sge_evc_class_t *evc = nullptr;              ///< event client that is used to subscribe to events
 
    public:
       explicit MirrorDataStore(ocs::DataStore::Id data_store_id, sge_locktype_t lock_type);
@@ -60,10 +57,18 @@ namespace ocs {
       virtual void block_till_initial_events_handled();
 
       [[noreturn]] virtual void *main([[maybe_unused]] void *arg);
+      virtual void init_connection() = 0;
+      virtual void init_event_mirror() = 0;
       virtual void subscribe_events() = 0;
-      virtual void update_sessions_and_move_requests(const u_long64 unique_id) = 0;
+      virtual void update_sessions_and_move_requests(u_long64 unique_id) = 0;
+      virtual bool lock();
+      virtual void unlock();
 
       static void event_mirror_update_func([[maybe_unused]] u_long32 ec_id, [[maybe_unused]] lList **answer_list, lList *event_list, void *arg);
+
+      static void thread_cleanup_monitor(void *arg);
+      static void thread_cleanup_event_client(void *arg);
+      static void thread_cleanup_data_store([[maybe_unused]] void *unused);
 
       friend void event_mirror_initialize();
       friend void event_mirror_terminate();

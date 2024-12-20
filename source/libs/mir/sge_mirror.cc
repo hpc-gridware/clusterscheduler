@@ -1015,6 +1015,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
 
    DENTER(TOP_LAYER);
 
+   /// ec2_get()
    if (evc && evc->ec_get(evc, &event_list, false)) {
       if (event_list != nullptr) {
          ret = sge_mirror_process_event_list(evc, event_list);

@@ -85,6 +85,7 @@ const char *prognames[] = {
         "qping",         /* 30 */
         "qquota",        /* 31 */
         "sge_share_mon", /* 32 */
+        "python_client", /* 33 */
         nullptr,
 };
 
