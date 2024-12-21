@@ -228,6 +228,16 @@ if (WITH_PYTHON)
    string(STRIP ${PYBIND11_EXT_SUFFIX} PYBIND11_EXTENSION_SUFFIX)
    message(STATUS "Python3 ext-suffix: ${PYBIND11_EXTENSION_SUFFIX}")
 
+   # find the pybind11-stubgen tool that allows us to generate pyi-files
+   # pyi-files are used by IDEs to provide type hints for the pybind11 module
+   #find_program(PYBIND11_STUBGEN pybind11-stubgen)
+   find_program(PYBIND11_STUBGEN stubgen)
+   if (NOT PYBIND11_STUBGEN)
+      message(FATAL_ERROR "pybind11 stubgen not found")
+   else()
+      message(STATUS "Python stubgen to generate pyi: ${PYBIND11_STUBGEN}")
+   endif()
+
    set(PYTHON_ALL_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} ${pybind11_INCLUDE_DIR})
    set(PYTHON_ALL_LIBRARIES ${Python3_LIBRARIES} util)
    set(PYTHON_EXTENSION_SUFFIX ${PYBIND11_EXTENSION_SUFFIX})
