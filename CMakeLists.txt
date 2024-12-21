@@ -232,9 +232,7 @@ if (WITH_PYTHON)
    # pyi-files are used by IDEs to provide type hints for the pybind11 module
    #find_program(PYBIND11_STUBGEN pybind11-stubgen)
    find_program(PYBIND11_STUBGEN stubgen)
-   if (NOT PYBIND11_STUBGEN)
-      message(FATAL_ERROR "pybind11 stubgen not found")
-   else()
+   if (PYBIND11_STUBGEN)
       message(STATUS "Python stubgen to generate pyi: ${PYBIND11_STUBGEN}")
    endif()
 
