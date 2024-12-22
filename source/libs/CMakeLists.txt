@@ -20,6 +20,9 @@
 
 # source/clients
 
+# sgeobj library needs to be first, as it contains the generation of CULL header files required by others
+add_subdirectory(sgeobj)
+
 add_subdirectory(comm)
 add_subdirectory(cull)
 add_subdirectory(evc)
@@ -31,7 +34,6 @@ add_subdirectory(japi)
 add_subdirectory(lck)
 add_subdirectory(mir)
 add_subdirectory(sched)
-add_subdirectory(sgeobj)
 add_subdirectory(spool)
 add_subdirectory(uti)
 # add_subdirectory(wingrid)
