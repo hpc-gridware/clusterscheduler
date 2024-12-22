@@ -103,10 +103,11 @@ set(LIBRARY_SOURCES
       sge_utility.cc
       sge_var.cc
       ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_RequestLimits.cc
-      cull/sge_sub_object.cc)
+      cull/sge_sub_object.cc
+)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
-add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
 add_dependencies(${LIBRARY_NAME} cull_header)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
