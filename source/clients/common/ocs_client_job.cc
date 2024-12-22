@@ -43,7 +43,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/ocs_binding_io.h"
 #include "sgeobj/sge_centry.h"
@@ -54,6 +53,13 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_var.h"
+#include "sgeobj/sge_str.h"
+#include "sgeobj/sge_path_alias.h"
+#include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_pe_task.h"
+#include "sgeobj/sge_mesobj.h"
+#include "sgeobj/sge_grantedres.h"
 
 #include "get_path.h"
 #include "ocs_client_job.h"
