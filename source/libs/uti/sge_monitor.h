@@ -46,7 +46,7 @@
  *
  * - keeping statistics on what is done during a thread loop
  *
- * - outputing the statistics information via message file or
+ * - outputting the statistics information via message file or
  *   qping
  *
  *
@@ -73,10 +73,10 @@
  *    sge_monitor_free(&monitor);
  * ------end thread----------------
  *
- * Improtant:
+ * Important:
  * ----------
  *  The call to MONITOR_IDLE_TIME has to be the first one after the thread loop otherwise
- *  certain parts of the monitoring structure are not correctly initilized.
+ *  certain parts of the monitoring structure are not correctly initialized.
  *
  * General statistic methods:
  * --------------------------
@@ -122,13 +122,13 @@ const long EXECD_ERROR = 600;
 const long SCT_ERROR = 600;
 
 /**
- * This function definition is the prototyp for the output function of a data
+ * This function definition is the prototype for the output function of a data
  * extension
  */
 typedef void (*extension_output)(
         dstring *info_message,    /* target memory buffer*/
-        void *monitor_extension,  /* contains the monitor extension structur */
-        double time               /* length of the time inteval */
+        void *monitor_extension,  /* contains the monitor extension structure */
+        double time               /* length of the time interval */
 );
 
 /**
@@ -149,7 +149,7 @@ typedef enum {
 typedef struct {
    /*--- init data ------------*/
    const char *thread_name;
-   time_t monitor_time;        /* stores the time interval for the mesuring run */
+   time_t monitor_time;        /* stores the time interval for the measuring run */
    bool log_monitor_mes;     /* if true, it logs the monitoring info into the message file */
    /*--- output data ----------*/
    dstring *output_line1;
@@ -157,7 +157,7 @@ typedef struct {
    dstring *work_line;
    int pos;                        /* position (line) in the qping output structure (kind of thread id) */
    /*--- work data ------------*/
-   struct timeval now;              /* start time of mesurement */
+   struct timeval now;              /* start time of measurement */
    bool output;              /* if true, triggers qping / message output */
    u_long32 message_in_count;
    u_long32 message_out_count;
@@ -216,7 +216,7 @@ void sge_monitor_reset(monitoring_t *monitor);
                               } \
 
 /**
- * This might pose a problem if it is called with another makro. 
+ * This might pose a problem if it is called with another macro.
  *
  * TODO: it should be customized for read/write locks.
  */
@@ -249,7 +249,7 @@ void sge_monitor_reset(monitoring_t *monitor);
  *
  * - create a new extension_t in the enum
  * - define a extension data structure
- * - modifiy the sge_monitor_init method to handle the new extension type
+ * - modify the sge_monitor_init method to handle the new extension type
  *   Example:
  *     case GDI_EXT :
  *          monitor->ext_data_size = sizeof(m_gdi_t);
