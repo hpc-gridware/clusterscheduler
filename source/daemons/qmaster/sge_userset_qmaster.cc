@@ -291,7 +291,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
 
    // Do we have a department name?
    if (dept_name == nullptr) {
-      ERROR(MSG_JOB_NODEPTFOUND);
+      ERROR(SFNMAX, MSG_JOB_NODEPTFOUND);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
