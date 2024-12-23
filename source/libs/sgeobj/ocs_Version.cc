@@ -75,8 +75,8 @@ const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSI
 const std::string ocs::Version::OCS_LONG_PRODUCT_NAME = "Gridware Cluster Scheduler";
 const std::string ocs::Version::OCS_SHORT_PRODUCT_NAME = "GCS";
 #else
-const std::string ocs::Version::GE_LONGNAME = "Open Cluster Scheduler";
-const std::string ocs::Version::GE_SHORTNAME = "OCS";
+const std::string ocs::Version::OCS_LONG_PRODUCT_NAME = "Open Cluster Scheduler";
+const std::string ocs::Version::OCS_SHORT_PRODUCT_NAME = "OCS";
 #endif
 
 std::string

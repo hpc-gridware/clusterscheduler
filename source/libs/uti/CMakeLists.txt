@@ -73,7 +73,7 @@ set(LIBRARY_SOURCES
       sge_unistd.cc)
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 
-# OGE-199 makes use of readdir_r/readdir64_r which is deprecated for Linux only
+# CS-199 makes use of readdir_r/readdir64_r which is deprecated for Linux only
 set_source_files_properties(sge_unistd.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
