@@ -11,11 +11,11 @@ Linux _arm64_. `qgpu` is a multi-purpose command which can act as a `load sensor
 reporting the characteristics and metrics of of NVIDIA GPU devices. For that it
 depends on NVIDIA DCGM to be installed on the GPU nodes. It also works as a
 `prolog` and `epilog` for jobs to setup NVIDIA runtime and environment variables.
-Further is sets up per job GPU accounting so that the GPU usage and power
+Further it sets up per job GPU accounting so that the GPU usage and power
 consumption is automatically reported in the accounting being visible in the
-standard `qacct -j` output. It support all NVIDIA GPUs which are supported by
+standard `qacct -j` output. It supports all NVIDIA GPUs which are supported by
 Nvidias DCGM including NVIDIA's latest Grace Hopper superchips. For more
-information about `qgpu` please refer to `Admin Guide`.
+information about `qgpu` please refer to the `Admin Guide`.
 
 (Available in Gridware Cluster Scheduler only)
 
