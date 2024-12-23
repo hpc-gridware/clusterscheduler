@@ -19,22 +19,24 @@
 #___INFO__MARK_END_NEW__
 
 # source/libs/sgeobj
-file(GLOB INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
-file(GLOB OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cull)
-set(OUTPUT_FILES
-        ${OUTPUT_DIR}/sge_sub_object.cc
-        ${OUTPUT_DIR}/sge_all_listsL.h
-        ${OUTPUT_DIR}/sge_boundaries.h
-        # no need to list other files here, they are included in the above files
-)
-add_custom_command(
-        OUTPUT ${OUTPUT_FILES}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND gen_types json CULL cull
-        DEPENDS ${INPUT_FILES} gen_types
-        COMMENT "Generating CULL header files"
-)
-add_custom_target(cull_header DEPENDS ${OUTPUT_FILES})
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    file(GLOB INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
+    file(GLOB OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cull)
+    set(OUTPUT_FILES
+            ${OUTPUT_DIR}/sge_sub_object.cc
+            ${OUTPUT_DIR}/sge_all_listsL.h
+            ${OUTPUT_DIR}/sge_boundaries.h
+            # no need to list other files here, they are included in the above files
+    )
+    add_custom_command(
+            OUTPUT ${OUTPUT_FILES}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMAND gen_types json CULL cull
+            DEPENDS ${INPUT_FILES} gen_types
+            COMMENT "Generating CULL header files"
+    )
+    add_custom_target(cull_header DEPENDS ${OUTPUT_FILES})
+endif()
 
 set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
@@ -108,7 +110,9 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
-add_dependencies(${LIBRARY_NAME} cull_header)
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    add_dependencies(${LIBRARY_NAME} cull_header)
+endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
 #add_subdirectory(cpp)
