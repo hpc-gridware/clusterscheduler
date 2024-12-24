@@ -41,11 +41,11 @@
 #include "msg_utilbin.h"
 #include "basis_types.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 void usage()
 {
-   fprintf(stderr, "Version: %s\n", GDI_VERSION);
+   fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
    fprintf(stderr, "%s\n getservbyname [-help|-number] service | -check port_number\n\n%s\n",MSG_UTILBIN_USAGE, MSG_COMMAND_USAGE_GETSERVBYNAME );
    /*fprintf(stderr, "       get number of a tcp service\n"); */
    exit(1);

@@ -33,6 +33,11 @@
 /*___INFO__MARK_END__*/
 
 #include <csignal>
+#include <iostream>
+
+#ifdef WITH_PYTHON_IN_QMASTER
+#  include "pybind11/embed.h"
+#endif
 
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
@@ -159,6 +164,32 @@ int main(int argc, char *argv[]) {
    lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qmaster");
+
+#ifdef WITH_PYTHON_IN_QMASTER
+   // @todo: initialize_interpreter() is called within scoped_interpreter(). This function allows to disable signal handling. We need to find out what this means for the qmaster.
+
+   // This is necessary to initialize the Python interpreter in the main thread. It will be automatically
+   // finalized when the main thread exits.
+   pybind11::scoped_interpreter python;
+
+
+   // Import the Python module that contains the Python code we want to execute within embedded Python.
+   // This will show already here if the module can be found. (Early exit in case of error)
+   pybind11::module_ gcs_bridge_module;
+   try {
+      gcs_bridge_module = pybind11::module::import("gcs_bridge");
+   } catch (const pybind11::error_already_set &e) {
+      // If the Python module could not be imported, we print the error message and exit.
+      std::cerr << e.what() << std::endl;
+      std::cerr << "To solve this you can add the correct path to your PYTHONPATH (export PYTHONPATH=$SGE_ROOT/lib/$SGE_ARCH)" << std::endl;
+      sge_exit(1);
+   }
+
+   // The GIL must be released here. The main thread is not interested in doing any Python work.
+   // After this call all other threads can acquire the GIL with py::gil_scoped_acquire acquire; before
+   // they do any Python work.
+   pybind11::gil_scoped_release release;
+#endif
 
    sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR);
 

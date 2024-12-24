@@ -64,6 +64,7 @@ option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON
 option(WITH_QMAKE "Enable build of qmake" ON)
 option(WITH_JNI "Add JNI code for libraries like libdrmaa" ON)
 option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
+option(WITH_PYTHON "Enable Python external bindings" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -159,6 +160,8 @@ if (WITH_GPERF)
       set(GPERFTOOLS_PROFILER "") # set to empty string to avoid linking against gperftools
       message("Cannot find gperftools although WITH_GPERF is set")
    endif()
+else()
+   set(GPERFTOOLS_PROFILER "")
 endif()
 
 if (WITH_HWLOC)
@@ -195,6 +198,48 @@ if (WITH_JNI)
       set(WITH_JNI OFF)
    endif()
 endif()
+
+if (WITH_PYTHON)
+   # Ensure that we have Python3 installed
+   find_package(Python3 COMPONENTS Interpreter Development)
+   if (Python3_FOUND)
+      message(STATUS "Python3 found: ${Python3_EXECUTABLE}")
+      message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
+      message(STATUS "Python3 libraries: ${Python3_LIBRARIES}")
+      message(STATUS "Python3 version: ${Python3_VERSION}")
+   else()
+      message(FATAL_ERROR "Python3 not found")
+   endif()
+
+   # We need pybind11 (usually installed via 'pip install pybind11')
+   # Find the cmake directory of pybind so that find_package will work
+   execute_process(COMMAND python3 -m pybind11 --cmakedir OUTPUT_VARIABLE PYBIND11_CMAKE_DIR)
+   string(STRIP ${PYBIND11_CMAKE_DIR} pybind11_DIR)
+   find_package(pybind11 REQUIRED)
+   if (NOT pybind11_FOUND)
+      message(FATAL_ERROR "pybind11 not found")
+   else()
+      # python3 -m pybind11 --includes
+      message(STATUS "pybind11 include dirs: ${pybind11_INCLUDE_DIR}")
+   endif ()
+
+   # find the python/pybind11 extension suffix (e.g .cpython-310-x86_64-linux-gnu.so)
+   execute_process(COMMAND python3 -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))" OUTPUT_VARIABLE PYBIND11_EXT_SUFFIX)
+   string(STRIP ${PYBIND11_EXT_SUFFIX} PYBIND11_EXTENSION_SUFFIX)
+   message(STATUS "Python3 ext-suffix: ${PYBIND11_EXTENSION_SUFFIX}")
+
+   # find the pybind11-stubgen tool that allows us to generate pyi-files
+   # pyi-files are used by IDEs to provide type hints for the pybind11 module
+   #find_program(PYBIND11_STUBGEN pybind11-stubgen)
+   find_program(PYBIND11_STUBGEN stubgen)
+   if (PYBIND11_STUBGEN)
+      message(STATUS "Python stubgen to generate pyi: ${PYBIND11_STUBGEN}")
+   endif()
+
+   set(PYTHON_ALL_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} ${pybind11_INCLUDE_DIR})
+   set(PYTHON_ALL_LIBRARIES ${Python3_LIBRARIES} util)
+   set(PYTHON_EXTENSION_SUFFIX ${PYBIND11_EXTENSION_SUFFIX})
+endif ()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")
    set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)

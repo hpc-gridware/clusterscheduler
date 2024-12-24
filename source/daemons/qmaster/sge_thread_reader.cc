@@ -21,6 +21,10 @@
 #include <pthread.h>
 #include <cstring>
 
+#ifdef WITH_PYTHON_IN_QMASTER
+#  include <pybind11/embed.h>
+#endif
+
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -218,47 +222,73 @@ sge_reader_main(void *arg) {
             MONITOR_WAIT_TIME(SGE_LOCK(LOCK_READER, LOCK_WRITE), p_monitor);
          }
 
-#ifdef OBSERVE
-         lObserveStart();
-         INFO("======================");
-#endif
-
-         // handle the request (GDI/Report/Ack ...
-         if (packet->request_type == PACKET_GDI_REQUEST) {
-            //sge_usleep(1000000);
-
-            task = packet->first_task;
-            while (task != nullptr) {
-               sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
-
-               task = task->next;
-            }
-         } else if (packet->request_type == PACKET_REPORT_REQUEST) {
-            task = packet->first_task;
-            sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
-         } else if (packet->request_type == PACKET_ACK_REQUEST) {
-            task = packet->first_task;
-            // @TODO: This could be done by listener already?
-            sge_c_ack(packet, task, p_monitor);
-         } else {
-            DPRINTF("unknown request type %d\n", packet->request_type);
-         }
-
-#ifdef OBSERVE
-         dstring observ = DSTRING_INIT;
-         lObserveGetInfoString(&observ);
+#ifdef WITH_PYTHON_IN_QMASTER
+         // We need to open a new scope here so that at the end the GIL is released
          {
-            struct saved_vars_s *context = nullptr;
-            const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
-            while (line) {
-               INFO("%s", line);
-               line = sge_strtok_r(nullptr, "\n", &context);
-            }
-            sge_free_saved_vars(context);
-         }
-         sge_dstring_free(&observ);
-         lObserveEnd();
+            pybind11::gil_scoped_acquire acquire;
+            // Beginning from here it is safe to utilize the python code
+
+#if 0
+            pybind11::exec(R"(
+                kwargs = dict(name="World", number=42)
+                message = "Hello, {name}! The answer is {number}".format(**kwargs)
+                print(message)
+                version = gcs_bridge.GcsVersion.get_string()
+                print("GCS version: " + version)
+            )");
 #endif
+
+            pybind11::eval_file("/home/ebablick/test.py");
+
+#endif
+
+#ifdef OBSERVE
+            lObserveStart();
+            INFO("======================");
+#endif
+
+            // handle the request (GDI/Report/Ack ...
+            if (packet->request_type == PACKET_GDI_REQUEST) {
+               //sge_usleep(1000000);
+
+               task = packet->first_task;
+               while (task != nullptr) {
+                  sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
+
+                  task = task->next;
+               }
+            } else if (packet->request_type == PACKET_REPORT_REQUEST) {
+               task = packet->first_task;
+               sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+            } else if (packet->request_type == PACKET_ACK_REQUEST) {
+               task = packet->first_task;
+               // @TODO: This could be done by listener already?
+               sge_c_ack(packet, task, p_monitor);
+            } else {
+               DPRINTF("unknown request type %d\n", packet->request_type);
+            }
+
+#ifdef OBSERVE
+            dstring observ = DSTRING_INIT;
+            lObserveGetInfoString(&observ);
+            {
+               struct saved_vars_s *context = nullptr;
+               const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
+               while (line) {
+                  INFO("%s", line);
+                  line = sge_strtok_r(nullptr, "\n", &context);
+               }
+               sge_free_saved_vars(context);
+            }
+            sge_dstring_free(&observ);
+            lObserveEnd();
+#endif
+
+#ifdef WITH_PYTHON_IN_QMASTER
+            // Here the Python GIL is released
+         }
+#endif
+
 
          /*
           * do unlock

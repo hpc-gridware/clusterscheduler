@@ -22,49 +22,44 @@
 
 #include "gdi/sge_gdi_packet_internal.h"
 
+#include <sgeobj/ocs_Session.h>
+
 #include "ocs_MirrorReaderDataStore.h"
 
 #include <sge_tq.h>
-#include <sgeobj/ocs_Session.h>
 
-namespace ocs {
-   MirrorReaderDataStore::MirrorReaderDataStore() : MirrorDataStore(DataStore::Id::READER, LOCK_READER) {
-      ;
+void ocs::MirrorReaderDataStore::subscribe_events() {
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
+   evc->ec_set_flush(evc, sgeE_ALL_EVENTS, true, 0);
+   evc->ec_set_edtime(evc, 1);
+}
+
+void ocs::MirrorReaderDataStore::update_sessions_and_move_requests(const u_long64 unique_id){
+   DENTER(TOP_LAYER);
+
+   // Update the session with the unique ID of the last event
+   SessionManager::set_process_unique_id(unique_id);
+
+   // Move waiting reader requests that can now be handled
+   // to the reader request queue (or global request queue if readers are disabled)
+   const int moved_elements = sge_tq_move_from_to_if(ReaderWaitingRequestQueue, ReaderRequestQueue,
+                                                    [](const void *always_nullptr, const void *task_void) -> int {
+      // Find the packet stored in the task of the TQ
+      const auto *task = *static_cast<sge_tq_task_t *const *>(task_void);
+      const auto *packet = static_cast<sge_gdi_packet_class_t *>(task->data);
+
+      // Check if the session is up-to-date
+      const u_long64 session_id = SessionManager::get_session_id(packet->user);
+      const bool is_uptodate = SessionManager::is_uptodate(session_id);
+
+      // Return the outcome so that the task is moved
+      return is_uptodate ? 0 : -1;
+   });
+
+   // Wake up the reader request queue if there are tasks to handle
+   if (moved_elements > 0) {
+      DPRINTF("Moved %d elements so that they can now be handled by reader threads\n", moved_elements);
+      sge_tq_wakeup_waiting(ReaderRequestQueue);
    }
-
-   void MirrorReaderDataStore::subscribe_events() {
-      sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
-      evc->ec_set_flush(evc, sgeE_ALL_EVENTS, true, 0);
-      evc->ec_set_edtime(evc, 1);
-   }
-
-   void MirrorReaderDataStore::update_sessions_and_move_requests(const u_long64 unique_id){
-      DENTER(TOP_LAYER);
-
-      // Update the session with the unique ID of the last event
-      SessionManager::set_process_unique_id(unique_id);
-
-      // Move waiting reader requests that can now be handled
-      // to the reader request queue (or global request queue if readers are disabled)
-      const int moved_elements = sge_tq_move_from_to_if(ReaderWaitingRequestQueue, ReaderRequestQueue,
-                                                       [](const void *always_nullptr, const void *task_void) -> int {
-         // Find the packet stored in the task of the TQ
-         const auto *task = *static_cast<sge_tq_task_t *const *>(task_void);
-         const auto *packet = static_cast<sge_gdi_packet_class_t *>(task->data);
-
-         // Check if the session is up-to-date
-         const u_long64 session_id = SessionManager::get_session_id(packet->user);
-         const bool is_uptodate = SessionManager::is_uptodate(session_id);
-
-         // Return the outcome so that the task is moved
-         return is_uptodate ? 0 : -1;
-      });
-
-      // Wake up the reader request queue if there are tasks to handle
-      if (moved_elements > 0) {
-         DPRINTF("Moved %d elements so that they can now be handled by reader threads\n", moved_elements);
-         sge_tq_wakeup_waiting(ReaderRequestQueue);
-      }
-      DRETURN_VOID;
-   }
+   DRETURN_VOID;
 }

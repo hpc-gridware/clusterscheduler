@@ -65,7 +65,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_usage.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdiP.h"
 
@@ -221,7 +221,7 @@ execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send)
       } else {
          lSetUlong(report, REP_type, NUM_REP_REPORT_LOAD);
       }
-      lSetUlong(report, REP_version, GRM_GDI_VERSION);
+      lSetUlong(report, REP_version, ocs::Version::get_version());
       lSetUlong(report, REP_seqno, sge_execd_report_seqno);
       lSetHost(report, REP_host, qualified_hostname);
 
@@ -306,7 +306,7 @@ execd_add_conf_report(lList *report_list, u_long64 now, u_long64 *next_send)
       */
       report = lCreateElem(REP_Type);
       lSetUlong(report, REP_type, NUM_REP_REPORT_CONF);
-      lSetUlong(report, REP_version, GRM_GDI_VERSION);
+      lSetUlong(report, REP_version, ocs::Version::get_version());
       lSetUlong(report, REP_seqno, sge_execd_report_seqno);
       lSetHost(report, REP_host, qualified_hostname);
       lSetList(report, REP_list, 
@@ -332,7 +332,7 @@ execd_add_license_report(lList *report_list, u_long64 now, u_long64 *next_send)
       */
       report = lCreateElem(REP_Type);
       lSetUlong(report, REP_type, NUM_REP_REPORT_PROCESSORS);
-      lSetUlong(report, REP_version, GRM_GDI_VERSION);
+      lSetUlong(report, REP_version, ocs::Version::get_version());
       lSetUlong(report, REP_seqno, sge_execd_report_seqno);
       lSetHost(report, REP_host, qualified_hostname);
       {
@@ -396,7 +396,7 @@ execd_add_job_report(lList *report_list, u_long64 now, u_long64 *next_send)
       /* create job report */
       job_report = lCreateElem(REP_Type);
       lSetUlong(job_report, REP_type, NUM_REP_REPORT_JOB);
-      lSetUlong(job_report, REP_version, GRM_GDI_VERSION);
+      lSetUlong(job_report, REP_version, ocs::Version::get_version());
       lSetUlong(job_report, REP_seqno, sge_execd_report_seqno);
       lSetHost(job_report, REP_host, qualified_hostname);
 

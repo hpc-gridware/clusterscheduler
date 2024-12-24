@@ -56,7 +56,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet.h"
 
@@ -205,46 +205,6 @@ void sge_clean_lists() {
    }
 
 }
-
-#if 1
-
-/* EB: TODO: CLEANUP: should be replaced with sge_gdi_packet_verify_version() */
-
-/*
- * MT-NOTE: verify_request_version() is MT safe
- */
-int verify_request_version(lList **alpp, u_long32 version, char *host, char *commproc, int id) {
-   const char *client_version = nullptr;
-   dstring ds;
-   char buffer[256];
-   const vdict_t *vp, *vdict = GRM_GDI_VERSION_ARRAY;
-
-   DENTER(TOP_LAYER);
-
-   if (version == GRM_GDI_VERSION) {
-      DRETURN(0);
-   }
-
-   for (vp = &vdict[0]; vp->version; vp++) {
-      if (version == vp->version) {
-         client_version = vp->release;
-         break;
-      }
-   }
-
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   if (client_version) {
-      WARNING(MSG_GDI_WRONG_GDI_SSISS, host, commproc, id, client_version, feature_get_product_name(FS_VERSION, &ds));
-   } else {
-      WARNING(MSG_GDI_WRONG_GDI_SSIUS, host, commproc, id, sge_u32c(version), feature_get_product_name(FS_VERSION, &ds));
-   }
-   answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
-
-   DRETURN(1);
-}
-
-#endif
 
 bool
 sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,

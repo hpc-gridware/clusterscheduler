@@ -53,27 +53,27 @@ target_link_libraries(fstype PRIVATE uti commlists ${SGE_LIBS})
 # gethostbyaddr
 add_executable(gethostbyaddr gethostbyaddr.cc)
 target_include_directories(gethostbyaddr PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyaddr PRIVATE gdi comm uti commlists ${SGE_LIBS})
+target_link_libraries(gethostbyaddr PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 # gethostbyname
 add_executable(gethostbyname gethostbyname.cc)
 target_include_directories(gethostbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyname PRIVATE gdi comm commlists uti ${SGE_LIBS})
+target_link_libraries(gethostbyname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 # gethostname
 add_executable(gethostname gethostname.cc)
 target_include_directories(gethostname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostname PRIVATE gdi comm commlists uti ${SGE_LIBS})
+target_link_libraries(gethostname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 # getservbyname
 add_executable(getservbyname getservbyname.cc)
 target_include_directories(getservbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(getservbyname PRIVATE gdi comm uti commlists ${SGE_LIBS})
+target_link_libraries(getservbyname PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 # infotext
 add_executable(infotext infotext.cc)
 target_include_directories(infotext PRIVATE ${SGE_INCLUDES})
-target_link_libraries(infotext PRIVATE gdi uti commlists ${SGE_LIBS})
+target_link_libraries(infotext PRIVATE sgeobj cull uti commlists ${SGE_LIBS})
 
 # loadcheck
 add_executable(loadcheck

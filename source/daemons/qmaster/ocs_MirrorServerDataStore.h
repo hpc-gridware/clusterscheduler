@@ -19,14 +19,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_MirrorServerDataStore.h"
+#include "mir/ocs_MirrorDataStore.h"
 
 namespace ocs {
-   class MirrorListenerDataStore : public MirrorServerDataStore {
+   class MirrorServerDataStore : public MirrorDataStore {
    public:
-      MirrorListenerDataStore() : MirrorServerDataStore(DataStore::Id::LISTENER, LOCK_LISTENER) {};
-      ~MirrorListenerDataStore() override = default;
-      void subscribe_events() override;
-      void update_sessions_and_move_requests(u_long64 unique_id) override {};
+      MirrorServerDataStore(ocs::DataStore::Id data_store_id, sge_locktype_t lock_type);
+      ~MirrorServerDataStore() override = default;
+      void init_event_mirror() override;
+      void init_connection() override;
+#if 0
+      void subscribe_events() override = 0;
+      void update_sessions_and_move_requests(u_long64 unique_id) override = 0;
+#endif
    };
 }

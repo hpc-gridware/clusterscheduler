@@ -141,8 +141,8 @@
 #define MSG_COM_ACK_QUEUE_SS           _MESSAGE(33112, _("ack event from host " SFN " for unknown queue " SFQ))
 #define MSG_COM_ACK_UNKNOWN_S          _MESSAGE(33113, _("unknown ack event from host " SFN))
 
-#define MSG_GDI_WRONG_GDI_SSISS  _MESSAGE(33115, _("denied: client (" SFN "/" SFN "/%d) uses old GDI version " SFN " while qmaster uses newer version " SFN))
-#define MSG_GDI_WRONG_GDI_SSIUS  _MESSAGE(33116, _("denied: client (" SFN "/" SFN "/%d) uses newer GDI version 0x" sge_X32CFormat " while qmaster uses older version " SFN))
+#define MSG_GDI_WRONG_GDI_SSISS  _MESSAGE(33115, _("denied: client (" SFN "/" SFN "/%d) uses GDI version " SFN " while qmaster uses version " SFN))
+#define MSG_GDI_WRONG_GDI_SSIUS  _MESSAGE(33116, _("denied: client (" SFN "/" SFN "/%d) uses GDI version 0x" sge_X32CFormat " while qmaster uses version " SFN))
 #define MSG_GDI_NULL_IN_GDI_SSS  _MESSAGE(33117, _("denied: got nullptr in " SFN "/" SFN " of gdi request from host " SFQ))
 #define MSG_GDI_OKNL             _MESSAGE(33118, _("ok"))
 #define MSG_MEM_MALLOC           _MESSAGE(33121, _("malloc failure"))

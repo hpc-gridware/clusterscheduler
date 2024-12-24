@@ -19,12 +19,15 @@
 #___INFO__MARK_END_NEW__
 
 # source
+
+# sgeobj library needs to be first, as it contains the generation of CULL header files required by others
+add_subdirectory(libs)
+
 add_subdirectory(3rdparty)
 add_subdirectory(clients)
 add_subdirectory(common)
 add_subdirectory(daemons)
 add_subdirectory(dist)
-add_subdirectory(libs)
 add_subdirectory(security)
 add_subdirectory(utilbin)
 

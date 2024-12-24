@@ -61,12 +61,17 @@ namespace ocs {
 
       static ev_registration_id
       get_ev_id_for_data_store(ocs::DataStore::Id data_store_id) {
-         if (data_store_id == DataStore::LISTENER) {
-            return EV_ID_EVENT_MIRROR_LISTENER;
-         } else if (data_store_id == DataStore::READER) {
-            return EV_ID_EVENT_MIRROR_READER;
-         } else {
-            return EV_ID_ANY;
+         switch (data_store_id) {
+            case DataStore::GLOBAL:
+               return EV_ID_ANY;
+            case DataStore::SCHEDULER:
+               return EV_ID_SCHEDD;
+            case DataStore::LISTENER:
+               return EV_ID_EVENT_MIRROR_LISTENER;
+            case DataStore::READER:
+               return EV_ID_EVENT_MIRROR_READER;
+            default:
+               return EV_ID_ANY;
          }
       }
    };

@@ -31,8 +31,7 @@ set(LIBRARY_SOURCES
       sge_gdi_packet_pb_cull.cc
       sge_qexec.cc
       sge_qtcsh.cc
-      sge_security.cc
-      version.cc)
+      sge_security.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

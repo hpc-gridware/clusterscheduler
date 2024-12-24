@@ -46,7 +46,7 @@
 #include "uti/sge_language.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "msg_utilbin.h"
 #include "basis_types.h"
@@ -633,7 +633,7 @@ static void sge_infotext_raw(char *format_string) {
 
 
 static void sge_infotext_usage() {
-   printf("Version: %s\n", GDI_VERSION);
+   printf("Version: %s\n", ocs::Version::get_version_string().c_str());
    printf("usage:\n");
    printf("infotext -help    : show help\n");
    printf("infotext -test    : test localization\n");

@@ -51,7 +51,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 #include "gdi/sge_gdi.h"
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
@@ -885,7 +885,7 @@ static void usage(int ret)
      out = stderr;
   }   
 
-  fprintf(out, "%s %s\n", GE_SHORTNAME, GDI_VERSION);
+  fprintf(out, "%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
   fprintf(out, "%s qping [-help] [-noalias] [-ssl|-tcp] [ [ [-i <interval>] [-info] [-f] ] | [ [-dump_tag tag [param] ] [-dump] [-nonewline] ] ] <host> <port> <name> <id>\n",MSG_UTILBIN_USAGE);
   fprintf(out, "   -i         : set ping interval time\n");
   fprintf(out, "   -info      : show full status information and exit\n");

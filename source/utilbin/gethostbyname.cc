@@ -47,14 +47,14 @@
 #include "uti/sge_language.h"
 #include "uti/sge_arch.h"
 
-#include "gdi/version.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "basis_types.h"
 #include "msg_utilbin.h"
 
 void usage()
 {
-  fprintf(stderr, "Version: %s\n", GDI_VERSION);
+  fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
   fprintf(stderr, "%s gethostbyname [-help|-name|-aname|-all] <name>\n",MSG_UTILBIN_USAGE);
   exit(1);
 }
