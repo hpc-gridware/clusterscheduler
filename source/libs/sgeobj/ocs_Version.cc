@@ -155,9 +155,9 @@ ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char
       char buffer[256];
       sge_dstring_init(&ds, buffer, sizeof(buffer));
       if (found) {
-         WARNING(MSG_GDI_WRONG_GDI_SSISS, host, commproc, id, client_version.c_str(), get_version_string());
+         WARNING(MSG_GDI_WRONG_GDI_SSISS, host, commproc, id, client_version.c_str(), get_version_string().c_str());
       } else {
-         WARNING(MSG_GDI_WRONG_GDI_SSIUS, host, commproc, id, sge_u32c(version), get_version_string());
+         WARNING(MSG_GDI_WRONG_GDI_SSIUS, host, commproc, id, sge_u32c(version), get_version_string().c_str());
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
       DRETURN(false);
