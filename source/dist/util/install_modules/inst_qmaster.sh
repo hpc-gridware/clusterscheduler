@@ -605,9 +605,9 @@ PrintBootstrap()
    $ECHO "# Version: $SGE_VERSION"
    $ECHO "#"
    if [ $ADMINUSER != default ]; then
-      $ECHO "admin_user             $ADMINUSER"
+      $ECHO "admin_user              $ADMINUSER"
    else
-      $ECHO "admin_user             none"
+      $ECHO "admin_user              none"
    fi
    $ECHO "default_domain          $CFG_DEFAULT_DOMAIN"
    $ECHO "ignore_fqdn             $IGNORE_FQDN_DEFAULT"
