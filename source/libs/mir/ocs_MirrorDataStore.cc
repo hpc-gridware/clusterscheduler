@@ -333,7 +333,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
       // wait for new events
       MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor),
-                        mconf_get_monitor_time(), mconf_is_monitor_message());
+                        mconf_get_monitoring_options());
 
       // if we lost connection we have to register again
       if (evc->ec_need_new_registration(evc)) {
