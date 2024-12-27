@@ -52,6 +52,7 @@
 
 #include "sched/sge_job_schedd.h"
 
+#include "ocs_JsonUtil.h"
 #include "sge_rusage.h"
 #include "msg_qmaster.h"
 
@@ -355,38 +356,6 @@ none_string(const char *str) {
    return ret;
 }
 
-static void
-write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, int value) {
-   writer->Key(key);
-   writer->Int(value);
-}
-
-static void
-write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, u_long32 value) {
-   writer->Key(key);
-   writer->Uint64(value);
-}
-
-static void
-write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, u_long64 value) {
-   writer->Key(key);
-   writer->Uint64(value);
-}
-
-static void
-write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, double value) {
-   writer->Key(key);
-   writer->Double(value);
-}
-
-static void
-write_json(rapidjson::Writer<rapidjson::StringBuffer> *writer, const char *key, const char *value) {
-   if (value != nullptr) {
-      writer->Key(key);
-      writer->String(value);
-   }
-}
-
 bool
 sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
                  lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
@@ -638,105 +607,105 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       writer->StartObject();
 
       if (is_reporting) {
-         write_json(writer, "time", now);
-         write_json(writer, "type", "acct");
+         write_json(*writer, "time", now);
+         write_json(*writer, "type", "acct");
       }
 
       // the following attributes can be used for filtering in qacct
-      write_json(writer, "job_number", job_id);
-      write_json(writer, "task_number", ja_task_id);
+      write_json(*writer, "job_number", job_id);
+      write_json(*writer, "task_number", ja_task_id);
 
-      write_json(writer, "start_time", start_time);
-      write_json(writer, "end_time", end_time);
+      write_json(*writer, "start_time", start_time);
+      write_json(*writer, "end_time", end_time);
 
-      write_json(writer, "owner", lGetString(job, JB_owner));
-      write_json(writer, "group", lGetString(job, JB_group));
-      write_json(writer, "account", lGetString(job, JB_account));
+      write_json(*writer, "owner", lGetString(job, JB_owner));
+      write_json(*writer, "group", lGetString(job, JB_group));
+      write_json(*writer, "account", lGetString(job, JB_account));
 
-      write_json(writer, "qname", qname);
-      write_json(writer, "hostname", hostname);
+      write_json(*writer, "qname", qname);
+      write_json(*writer, "hostname", hostname);
 
-      write_json(writer, "project", lGetString(job, JB_project));
-      write_json(writer, "department", lGetString(job, JB_department));
-      write_json(writer, "granted_pe", granted_pe);
-      write_json(writer, "slots", sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)));
+      write_json(*writer, "project", lGetString(job, JB_project));
+      write_json(*writer, "department", lGetString(job, JB_department));
+      write_json(*writer, "granted_pe", granted_pe);
+      write_json(*writer, "slots", sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)));
 
       if (ar != nullptr) {
-         write_json(writer, "arid", lGetUlong(job, JB_ar));
+         write_json(*writer, "arid", lGetUlong(job, JB_ar));
       }
 
       // further attributes
-      write_json(writer, "job_name", lGetString(job, JB_job_name));
-      write_json(writer, "priority", usage_list_get_ulong_usage(usage_list, "priority", 0));
+      write_json(*writer, "job_name", lGetString(job, JB_job_name));
+      write_json(*writer, "priority", usage_list_get_ulong_usage(usage_list, "priority", 0));
 
-      write_json(writer, "submission_time", submission_time);
-      write_json(writer, "submit_cmd_line", lGetString(job, JB_submission_command_line));
+      write_json(*writer, "submission_time", submission_time);
+      write_json(*writer, "submit_cmd_line", lGetString(job, JB_submission_command_line));
       if (ar != nullptr) {
-         write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
+         write_json(*writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
       }
 
-      write_json(writer, "pe_taskid", pe_task_id);
-      write_json(writer, "category", category_str);
+      write_json(*writer, "pe_taskid", pe_task_id);
+      write_json(*writer, "category", category_str);
 
-      write_json(writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
-      write_json(writer, "exit_status", exit_status);
+      write_json(*writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
+      write_json(*writer, "exit_status", exit_status);
 
       writer->Key("usage");
       writer->StartObject();
       writer->Key("rusage");
       writer->StartObject();
-      write_json(writer, "ru_wallclock", usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0));
-      write_json(writer, "ru_utime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_wallclock", usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0));
+      write_json(*writer, "ru_utime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
                                              ja_task, "ru_utime", "ru_utime", 0));
-      write_json(writer, "ru_stime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_stime", reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
                                              ja_task, "ru_stime", "ru_stime", 0));
-      write_json(writer, "ru_maxrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_maxrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_maxrss", "ru_maxrss", 0));
-      write_json(writer, "ru_ixrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_ixrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_ixrss", "ru_ixrss", 0));
-      write_json(writer, "ru_ismrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_ismrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_ismrss", "ru_ismrss", 0));
-      write_json(writer, "ru_idrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_idrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_idrss", "ru_idrss", 0));
-      write_json(writer, "ru_isrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_isrss", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_isrss", "ru_isrss", 0));
-      write_json(writer, "ru_minflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_minflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_minflt", "ru_minflt", 0));
-      write_json(writer, "ru_majflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_majflt", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_majflt", "ru_majflt", 0));
-      write_json(writer, "ru_nswap", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_nswap", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_nswap", "ru_nswap", 0));
-      write_json(writer, "ru_inblock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_inblock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                       ja_task, "ru_inblock", "ru_inblock", 0));
-      write_json(writer, "ru_oublock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_oublock", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                      ja_task, "ru_oublock", "ru_oublock", 0));
-      write_json(writer, "ru_msgsnd", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_msgsnd", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_msgsnd", "ru_msgsnd", 0));
-      write_json(writer, "ru_msgrcv", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_msgrcv", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_msgrcv", "ru_msgrcv", 0));
-      write_json(writer, "ru_nsignals", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_nsignals", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                       ja_task, "ru_nsignals", "ru_nsignals", 0));
-      write_json(writer, "ru_nvcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_nvcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                    ja_task, "ru_nvcsw", "ru_nvcsw", 0));
-      write_json(writer, "ru_nivcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
+      write_json(*writer, "ru_nivcsw", reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                     ja_task, "ru_nivcsw", "ru_nivcsw", 0));
       writer->EndObject();
 
       writer->Key("usage");
       writer->StartObject();
-      write_json(writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                                         USAGE_ATTR_WALLCLOCK, USAGE_ATTR_WALLCLOCK, 0));
-      write_json(writer, USAGE_ATTR_CPU, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_CPU, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT, USAGE_ATTR_CPU, 0));
-      write_json(writer, USAGE_ATTR_MEM, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_MEM, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT, USAGE_ATTR_MEM, 0));
-      write_json(writer, USAGE_ATTR_IO, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_IO, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT, USAGE_ATTR_IO, 0));
-      write_json(writer, USAGE_ATTR_IOW, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_IOW, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT, USAGE_ATTR_IOW, 0));
-      write_json(writer, USAGE_ATTR_MAXVMEM, reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_MAXVMEM, reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0));
-      write_json(writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      write_json(*writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                                               USAGE_ATTR_MAXRSS, USAGE_ATTR_MAXRSS, 0));
       writer->EndObject();
 
@@ -753,7 +722,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
             for_each_ep(ep, usage_list) {
                const char *name = lGetString(ep, UA_name);
                if (sge_eval_expression(TYPE_STR, pattern.c_str(), name, nullptr) == 0) {
-                  write_json(writer, name,
+                  write_json(*writer, name,
                              reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                             name, name, 0));
 

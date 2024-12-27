@@ -51,6 +51,7 @@
 #include "evm/sge_event_master.h"
 
 #include "basis_types.h"
+#include "ocs_ReportingFileWriter.h"
 #include "setup_qmaster.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_thread_main.h"
@@ -136,7 +137,8 @@ sge_event_master_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, EMAT_EXT, EVENT_MASTER_THREAD_WARNING, EVENT_MASTER_THREAD_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, EMAT_EXT, EVENT_MASTER_THREAD_WARNING,
+                    EVENT_MASTER_THREAD_ERROR, ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, EVENT_MASTER_THREAD, true);
 
    // register at profiling module
@@ -153,7 +155,7 @@ sge_event_master_main(void *arg) {
       thread_start_stop_profiling();
 
       // did a new event arrive which has a flush time of 0 seconds?
-      MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+      MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitoring_options());
       MONITOR_MESSAGES(p_monitor);
       MONITOR_EDT_COUNT(p_monitor);
       MONITOR_CLIENT_COUNT(p_monitor, sge_get_num_event_clients());

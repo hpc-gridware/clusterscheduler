@@ -79,7 +79,7 @@ int sge_execd_process_messages()
 
    DENTER(TOP_LAYER);
 
-   sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR);
+   sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
 
    /* If we just started the execd we skip alive check */
    last_alive_check = sge_get_gmt64();

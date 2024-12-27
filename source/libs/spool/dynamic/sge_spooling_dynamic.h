@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
-#include "cull/cull.h"
+#include "cull/cull_list.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"

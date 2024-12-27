@@ -36,6 +36,7 @@
 #include "ocs_ReportingFileWriter.h"
 #include "ocs_JsonAccountingFileWriter.h"
 #include "ocs_JsonReportingFileWriter.h"
+#include "ocs_MonitoringFileWriter.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_rusage.h"
 
@@ -69,6 +70,10 @@ namespace ocs {
          } else {
             writers[JSON_REPORTING] = new JsonReportingFileWriter;
          }
+      }
+
+      if (mconf_get_do_monitoring()) {
+         writers[JSON_MONITORING] = new MonitoringFileWriter;
       }
 
       // make Writers read their configuration
@@ -194,6 +199,17 @@ namespace ocs {
                // reporting has been disabled
                delete writers[JSON_REPORTING];
                writers[JSON_REPORTING] = nullptr;
+            }
+         }
+
+         if (mconf_get_do_monitoring()) {
+            if (writers[JSON_MONITORING] == nullptr) {
+               writers[JSON_MONITORING] = new MonitoringFileWriter;
+            }
+         } else {
+            if (writers[JSON_MONITORING] != nullptr) {
+               delete writers[JSON_MONITORING];
+               writers[JSON_MONITORING] = nullptr;
             }
          }
 
@@ -372,6 +388,18 @@ namespace ocs {
 
       for (auto w: writers) {
          if (w != nullptr && !w->create_ar_acct_record(answer_list, ar, report_time)) {
+            ret = false;
+         }
+      }
+
+      return ret;
+   }
+
+   bool ReportingFileWriter::create_monitoring_records(const char *json_data) {
+      bool ret = true;
+
+      for (auto w: writers) {
+         if (w != nullptr && !w->create_monitoring_record(json_data)) {
             ret = false;
          }
       }

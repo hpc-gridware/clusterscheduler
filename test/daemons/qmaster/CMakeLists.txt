@@ -34,6 +34,7 @@ add_executable(test_qmaster_calendar
         ../../../source/daemons/qmaster/ocs_BaseReportingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_JsonAccountingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_JsonReportingFileWriter.cc
+        ../../../source/daemons/qmaster/ocs_MonitoringFileWriter.cc
       ../../../source/daemons/qmaster/sge_calendar_qmaster.cc
       ../../../source/daemons/qmaster/sge_utility_qmaster.cc
       ../../../source/daemons/qmaster/sge_advance_reservation_qmaster.cc

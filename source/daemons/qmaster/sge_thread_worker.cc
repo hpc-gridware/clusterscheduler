@@ -194,7 +194,8 @@ sge_worker_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, WT_WARNING, WT_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, WT_WARNING, WT_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, WORKER_THREAD, true);
 
    /* register at profiling module */
@@ -211,7 +212,7 @@ sge_worker_main(void *arg) {
        * before all worker threads so that this won't be a problem.
        */
       MONITOR_IDLE_TIME(sge_tq_wait_for_task(GlobalRequestQueue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),
-                        p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+                        p_monitor, mconf_get_monitoring_options());
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
 

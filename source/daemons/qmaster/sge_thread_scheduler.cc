@@ -62,6 +62,7 @@
 #include "sched/schedd_monitor.h"
 
 #include "basis_types.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_sched_job_category.h"
 #include "sge_sched_order.h"
 #include "sge_thread_main.h"
@@ -505,7 +506,8 @@ sge_scheduler_main(void *arg) {
    cl_thread_func_startup(thread_config);
 
    /* initialize monitoring */
-   sge_monitor_init(&monitor, thread_config->thread_name, SCH_EXT, SCT_WARNING, SCT_ERROR);
+   sge_monitor_init(&monitor, thread_config->thread_name, SCH_EXT, SCT_WARNING, SCT_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(SCHEDD, SCHEDD_THREAD, true);
 
    /* register at profiling module */
@@ -589,8 +591,7 @@ sge_scheduler_main(void *arg) {
       /*
        * Wait for new events
        */
-      MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, &event_list), (&monitor), mconf_get_monitor_time(),
-                        mconf_is_monitor_message());
+      MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, &event_list), (&monitor), mconf_get_monitoring_options());
 
       /* If we lost connection we have to register again */
       if (evc->ec_need_new_registration(evc)) {

@@ -37,6 +37,8 @@
 #include <pthread.h>
 #include <dlfcn.h>
 
+#include <rapidjson/writer.h>
+
 #if defined(LINUX) || defined(SOLARIS)
 
 #  include <malloc.h>
@@ -44,6 +46,7 @@
 #endif
 
 #include "uti/msg_utilib.h"
+#include "uti/ocs_JsonUtil.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
@@ -92,15 +95,15 @@ static struct mallinfo (*mallinfo_func_pointer)() = nullptr;
  * static function def. for special extensions
  ***********************************************/
 
-static void ext_gdi_output(dstring *message, void *monitoring_extension, double time);
+static void ext_gdi_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer);
 
-static void ext_lis_output(dstring *message, void *monitoring_extension, double time);
+static void ext_lis_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer);
 
-static void ext_edt_output(dstring *message, void *monitoring_extension, double time);
+static void ext_edt_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer);
 
-static void ext_tet_output(dstring *message, void *monitoring_extension, double time);
+static void ext_tet_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer);
 
-static void ext_sch_output(dstring *message, void *monitoring_extension, double time);
+static void ext_sch_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer);
 
 /************************************************
  * implementation
@@ -191,8 +194,8 @@ void sge_monitor_free(monitoring_t *monitor) {
 *
 *******************************************************************************/
 void
-sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                 long warning_timeout, long error_timeout) {
+sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext, long warning_timeout,
+                 long error_timeout, json_output_func json_output) {
    DENTER(GDI_LAYER);
 
    sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
@@ -247,6 +250,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    sge_dstring_append(monitor->output_line1, MSG_UTI_MONITOR_NODATA);
    sge_dstring_clear(monitor->output_line2);
    monitor->work_line = monitor->output_line2;
+   monitor->json_output = json_output;
 
    switch (ext) {
       case SCH_EXT :
@@ -519,6 +523,22 @@ void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) {
    DRETURN_VOID;
 }
 
+// @todo move into a separate file, ocs_monitor_json.cc?
+static void sge_monitor_json_output(rapidjson::Writer<rapidjson::StringBuffer> *writer, monitoring_t *monitor, double time) {
+   write_json(*writer, "time", sge_get_gmt64());
+   write_json(*writer, "type", "thread");
+   DSTRING_STATIC(thread_id, 100);
+   write_json(*writer, "name", sge_dstring_sprintf(&thread_id, "%s-%02d", component_get_thread_name(),
+                                                  component_get_thread_id()));
+   // listener: runs: 0.58r/s (in (g:0.00 a:0.00 e:0.00 r:0.11)/s GDI (g:0.00,t:0.00,p:0.00)/s) out: 0.00m/s APT: 0.0000s/m idle: 100.00% wait: 0.00% time: 3600.77s
+   write_json(*writer, "duration", time);
+   write_json(*writer, "idle", monitor->idle / time * 100);
+   write_json(*writer, "wait", monitor->wait / time * 100);
+   write_json(*writer, "busy", (time - monitor->wait - monitor->idle) / time * 100);
+   write_json(*writer, "requests_in", monitor->message_in_count);
+   write_json(*writer, "answers_out", monitor->message_out_count);
+   write_json(*writer, "runs", monitor->message_in_count);
+}
 
 /****** uti/monitor/sge_monitor_output() ***************************************
 *  NAME
@@ -553,19 +573,29 @@ void sge_monitor_output(monitoring_t *monitor) {
    if ((monitor != nullptr) && monitor->output) {
       struct timeval after{};
       double time;
+      rapidjson::StringBuffer *json_buffer = nullptr;
+      rapidjson::Writer<rapidjson::StringBuffer> *json_writer = nullptr;
 
       gettimeofday(&after, nullptr);
       time = after.tv_usec - monitor->now.tv_usec;
       time = after.tv_sec - monitor->now.tv_sec + (time / 1000000);
 
+      // clear our output buffers
       sge_dstring_clear(monitor->work_line);
 
       sge_dstring_sprintf_append(monitor->work_line, MSG_UTI_MONITOR_DEFLINE_SF,
                                  monitor->thread_name, monitor->message_in_count / time);
 
+      if (monitor->log_monitor_json) {
+         json_buffer = new rapidjson::StringBuffer();
+         json_writer = new rapidjson::Writer<rapidjson::StringBuffer>(*json_buffer);
+         json_writer->StartObject();
+         sge_monitor_json_output(json_writer, monitor, time);
+      }
+
       if (monitor->ext_type != NONE_EXT) {
          sge_dstring_append(monitor->work_line, " (");
-         monitor->ext_output(monitor->work_line, monitor->ext_data, time);
+         monitor->ext_output(monitor->work_line, monitor->ext_data, time, json_writer);
          sge_dstring_append(monitor->work_line, ")");
       }
 
@@ -577,6 +607,16 @@ void sge_monitor_output(monitoring_t *monitor) {
       /* only log into the message file, if the user wants it */
       if (monitor->log_monitor_mes) {
          sge_log(LOG_PROF, sge_dstring_get_string(monitor->work_line), __FILE__, __LINE__);
+      }
+
+      // log to the monitoring file if a callback function was set
+      if (monitor->log_monitor_json) {
+         if (monitor->json_output != nullptr) {
+            json_writer->EndObject();
+            monitor->json_output(json_buffer->GetString());
+         }
+         delete json_writer;
+         delete json_buffer;
       }
 
       if (monitor->pos != -1) {
@@ -658,7 +698,8 @@ void sge_monitor_reset(monitoring_t *monitor) {
 *  NOTES
 *     MT-NOTE: ext_gdi_output() is MT safe 
 *******************************************************************************/
-static void ext_sch_output(dstring *message, void *monitoring_extension, double time) {
+static void ext_sch_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
+   // no extensions
    sge_dstring_sprintf_append(message, "");
 }
 
@@ -682,7 +723,7 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
 *  NOTES
 *     MT-NOTE: ext_gdi_output() is MT safe 
 *******************************************************************************/
-static void ext_gdi_output(dstring *message, void *monitoring_extension, double time) {
+static void ext_gdi_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *gdi_ext = (m_gdi_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFIII,
@@ -697,6 +738,40 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
                               sge_u32c(gdi_ext->rqueue_length),
                               sge_u32c(gdi_ext->wrqueue_length)
                               );
+
+   if (writer != nullptr) {
+      writer->Key("extensions");
+      writer->StartObject();
+
+      writer->Key("execd_reports");
+      writer->StartObject();
+      write_json(*writer, "load_reports", gdi_ext->eload_count);
+      write_json(*writer, "job_reports", gdi_ext->ejob_count);
+      write_json(*writer, "conf_reports", gdi_ext->econf_count);
+      write_json(*writer, "proc_reports", gdi_ext->eproc_count);
+      write_json(*writer, "ack_reports", gdi_ext->eack_count);
+      writer->EndObject();
+
+      writer->Key("gdi_requests");
+      writer->StartObject();
+      write_json(*writer, "add_requests", gdi_ext->gdi_add_count);
+      write_json(*writer, "get_requests", gdi_ext->gdi_get_count);
+      write_json(*writer, "mod_requests", gdi_ext->gdi_mod_count);
+      write_json(*writer, "del_requests", gdi_ext->gdi_del_count);
+      write_json(*writer, "cp_requests", gdi_ext->gdi_cp_count);
+      write_json(*writer, "trigger_requests", gdi_ext->gdi_trig_count);
+      write_json(*writer, "permission_requests", gdi_ext->gdi_perm_count);
+      writer->EndObject();
+
+      writer->Key("queue_lengths");
+      writer->StartObject();
+      write_json(*writer, "writer", gdi_ext->queue_length);
+      write_json(*writer, "reader", gdi_ext->rqueue_length);
+      write_json(*writer, "reader_wait", gdi_ext->wrqueue_length);
+      writer->EndObject();
+
+      writer->EndObject();
+   }
 }
 
 /****** uti/monitor/ext_lis_output() *******************************************
@@ -720,7 +795,7 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
 *  NOTES
 *     MT-NOTE: ext_lis_output() is MT safe 
 *******************************************************************************/
-static void ext_lis_output(dstring *message, void *monitoring_extension, double time) {
+static void ext_lis_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *lis_ext = (m_lis_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_LISEXT_FFFFFFF,
@@ -732,12 +807,25 @@ static void ext_lis_output(dstring *message, void *monitoring_extension, double 
                               lis_ext->gdi_trig_count / time,
                               lis_ext->gdi_perm_count / time
                               );
+
+   if (writer != nullptr) {
+      writer->Key("extensions");
+      writer->StartObject();
+      write_json(*writer, "incoming_gdi", lis_ext->inc_gdi);
+      write_json(*writer, "incoming_ack", lis_ext->inc_ack);
+      write_json(*writer, "incoming_event_client_exits", lis_ext->inc_ece);
+      write_json(*writer, "incoming_report", lis_ext->inc_rep);
+      write_json(*writer, "gdi_get_requests", lis_ext->gdi_get_count);
+      write_json(*writer, "gdi_trigger_requests", lis_ext->gdi_trig_count);
+      write_json(*writer, "gdi_permission_requests", lis_ext->gdi_perm_count);
+      writer->EndObject();
+   }
 }
 
 
 /****** uti/monitor/ext_edt_output() *******************************************
 *  NAME
-*     ext_edt_output() -- generates a string from the GDI extension
+*     ext_edt_output() -- generates a string from the event client extension
 *
 *  SYNOPSIS
 *     static void ext_edt_output(char *message, int size, void 
@@ -756,7 +844,7 @@ static void ext_lis_output(dstring *message, void *monitoring_extension, double 
 *     MT-NOTE: ext_edt_output() is MT safe 
 *
 *******************************************************************************/
-static void ext_edt_output(dstring *message, void *monitoring_extension, double time) {
+static void ext_edt_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *edt_ext = (m_edt_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_EDTEXT_FFFFFFFF,
@@ -769,6 +857,20 @@ static void ext_edt_output(dstring *message, void *monitoring_extension, double 
                               edt_ext->new_event_count / time,
                               edt_ext->added_event_count / time,
                               edt_ext->skip_event_count / time);
+
+   if (writer != nullptr) {
+      writer->Key("extensions");
+      writer->StartObject();
+      write_json(*writer, "avg_client_count", edt_ext->client_count / edt_ext->count);
+      write_json(*writer, "mod_client_count", edt_ext->mod_client_count);
+      write_json(*writer, "ack_count", edt_ext->ack_count);
+      write_json(*writer, "avg_blocked_client_count", edt_ext->blocked_client_count / edt_ext->count);
+      write_json(*writer, "avg_busy_client_count", edt_ext->busy_client_count / edt_ext->count);
+      write_json(*writer, "new_event_count", edt_ext->new_event_count);
+      write_json(*writer, "added_event_count", edt_ext->added_event_count);
+      write_json(*writer, "skip_event_count", edt_ext->skip_event_count);
+      writer->EndObject();
+   }
 }
 
 /****** uti/monitor/ext_tet_output() *******************************************
@@ -792,12 +894,20 @@ static void ext_edt_output(dstring *message, void *monitoring_extension, double 
 *
 *******************************************************************************/
 
-static void ext_tet_output(dstring *message, void *monitoring_extension, double time) {
+static void ext_tet_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *tet_ext = (m_tet_t *) monitoring_extension;
 
    sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_TETEXT_FF,
                               ((double) tet_ext->event_count) / tet_ext->count,
                               tet_ext->exec_count / time
    );
+
+   if (writer != nullptr) {
+      writer->Key("extensions");
+      writer->StartObject();
+      write_json(*writer, "pending_events", tet_ext->event_count);
+      write_json(*writer, "executed_events", tet_ext->exec_count);
+      writer->EndObject();
+   }
 }
 

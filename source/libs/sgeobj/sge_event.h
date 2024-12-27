@@ -35,7 +35,6 @@
 
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_monitor.h"
 
 #include "gdi/sge_gdi_packet.h"
 

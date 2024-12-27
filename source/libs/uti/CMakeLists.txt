@@ -22,6 +22,7 @@
 set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
       config_file.cc
+      ocs_JsonUtil.cc
       sge_afsutil.cc
       sge_arch.cc
       sge_binding_hlp.cc

@@ -33,6 +33,7 @@
 #include "evm/sge_event_master.h"
 #include "mir/sge_mirror.h"
 
+#include "ocs_ReportingFileWriter.h"
 #include "ocs_MirrorDataStore.h"
 
 /**
@@ -271,7 +272,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
    // initialize monitoring
    monitoring_t monitor;
-   sge_monitor_init(&monitor, thread_name, NONE_EXT, NO_WARNING, NO_ERROR);
+   sge_monitor_init(&monitor, thread_name, NONE_EXT, NO_WARNING, NO_ERROR, ocs::ReportingFileWriter::create_monitoring_records);
 
 
    init_connection();

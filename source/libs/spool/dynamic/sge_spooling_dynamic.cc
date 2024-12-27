@@ -32,25 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
-#ifdef LINUX
-#define __USE_GNU
-#endif
-
 #if defined (ULINUXAMD64)
 // required on CentOS 6 to fix a compiler error about ::quick_exit
 #include <cstdlib>
 #endif
 
 #include <dlfcn.h>
-#include <cstring>
-
-#ifdef LINUX
-#undef __USE_GNU
-#endif
 
 #ifdef SOLARIS
 #include <link.h>
 #endif
+
+#include <cstring>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"

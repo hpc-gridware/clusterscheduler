@@ -36,6 +36,7 @@
 /*___INFO__MARK_END__*/
 
 #include <string>
+#include <tuple>
 
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
@@ -155,6 +156,7 @@ int mconf_get_max_ds_deviation();
 u_long32 mconf_get_monitor_time();
 bool mconf_get_do_accounting();
 bool mconf_get_do_reporting();
+bool mconf_get_do_monitoring();
 bool mconf_get_do_joblog();
 int mconf_get_reporting_flush_time();
 int mconf_get_accounting_flush_time();
@@ -187,3 +189,6 @@ bool mconf_get_ignore_ngroups_max_limit();
 bool mconf_get_enable_submit_lib_path();
 bool mconf_get_enable_submit_ld_preload();
 u_long32 mconf_get_script_timeout();
+
+// one function for all monitoring options
+std::tuple<u_long32, bool, bool> mconf_get_monitoring_options();
