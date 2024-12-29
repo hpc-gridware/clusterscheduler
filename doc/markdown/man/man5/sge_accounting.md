@@ -17,9 +17,17 @@ file is processed by qacct(1) to derive accounting statistics.
 
 # FORMAT
 
-Each job is represented by a line in the accounting file. Empty lines and lines which contain one character or 
-less are ignored. Accounting record entries are separated by colon (':') signs. The entries denote in
-their order of appearance:
+The accounting file is a text file. Each line in the file represents an accounting record entry.
+
+Beginning with xxQS_NAMExx 9.0.0 the accounting file by default is written in a one line
+JSON format (JSONL).
+
+The old format is still supported and can be enabled by adding `old_accounting=true` to 
+the `reporting_params` in the global configuration.
+In the old format accounting record entries are separated by colon (':') signs.
+Empty lines and lines which contain one character or less are ignored.
+
+The entries denote in their order of appearance:
 
 ## *qname*
 
