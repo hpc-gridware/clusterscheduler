@@ -3,79 +3,9 @@
 Once you have gathered the necessary information as outlined in previous chapters, you may proceed with the 
 installation process for xxQS_NAMExx.
 
-## Download Product Packages
-
-For clusters intended for production environments, it is highly recommended to use pre-built packages by xxQS_COMPANY_NAMExx.
-xxQS_COMPANY_NAMExx ensures that all source code components used to build the packages are compatible with each other. 
-The packages are built and carefully tested.
-
-xxQS_COMPANY_NAMExx offers patch releases for pre-built packages, along with support services to ensure that productive
-clusters receive the latest fixes and security enhancements. Professional engineers are available to provide
-assistance in case of any questions.
-
-Additionally, the packages from xxQS_COMPANY_NAMExx contain product enhancements that would not be available in packages 
-that you built yourself.
-
-To receive a quote, please contact us at [xxQS_COMPANY_MAILxx](mailto:xxQS_COMPANY_MAILxx) or fill and send following
-[Questionnaire](https://www.hpc-gridware.com/quote/).
-
-The core xxQS_NAMExx code is available on GitHub. You can clone the required repositories and build the core product 
-yourself, or use the nightly build. Please note that we do not provide support for these packages. It is not 
-recommended to use the nightly build for production systems as it contains untested code that is still in development.
-
-The download of the pre-built packages is available at [xxQS_COMPANY_NAMExx Downloads](https://www.hpc-gridware.com/download-main).
-
-For a product installation you need a set of *tar.gz* files. Required are:
-
-* the common package containing architecture independent files (the file names *gcs-`<version>`-common.\** e.g. *gcs-9.0.0-common.tar.gz*)
-
-* one architecture specific package for each supported compute platform (files with the names *gcs-`<version>`-bin-`<os>`-`<platform>`.\** e.g. *gcs-9.0.0-bin-lx-amd64.tar.gz*)
-
-* the gcs-`<version>`-md5sum.txt file
-
-Additionally, you will also find product documentation, release notes and other packages for product extensions on the 
-download page.
-
-Once you have downloaded all packages, you can test and install them at the designated installation location. 
-Please note in the instructions below the placeholder `<install-dir>` refers to the absolute path of the 
-installation directory, while `<download-dir>` refers to the directory containing the downloaded files.
-
-1. Copy the packages from your download location into the installation directory
-
-    ```
-    % cp <download-dir>/gcs-* <install-dir>
-    ```
-
-2. Check if the downloaded files where downloaded correctly by calculating the MD5 checksum. 
-
-    ```
-    % cd <install-dir>
-    % md5 gcs-*
-    ...
-    % cat gcs-9.0.0-md5sum.txt
-    ...
-    ```
-   
-    Compare the output of the md5 command with that of the cat command. If one or more checksums are not correct then 
-    re-download the faulty files and repeat the previous steps, otherwise continue.
-
-3. Unpack the packages as root and set the SGE_ROOT variable manually and execute the script *util/setfileperm.sh* to verify and adapt ownership and file permissions of the unpacked files.
-
-    ```
-    % su
-    # cd <install-dir>
-    # tar xfz gcs-*.tar.gz
-    # SGE_ROOT=<install-dir>
-    # util/setfileperm.sh $SGE_ROOT
-    ```
-   
-4. If your `<install-dir>` is located on a shared filesystem available on all hosts in the cluster then you can start the installation process.
-
 ## Manual Installation
 
-This section covers the manual installation process on the command line on Linux hosts. Note the prerequisites are 
-required as outlined in previous chapters. If the hostname setup, usernames and service configuration are correct 
-for all hosts that you intend to include in you cluster, then you can continue with the installation the master service.
+This section covers the manual installation process on the command line. Note the prerequisites are required as outlined in previous chapters. If the hostname setup, usernames and service configuration are correct for all hosts that you intend to include in you cluster, then you can continue with the installation the master service.
 
 ### Installation of the Master Service
 
@@ -613,19 +543,248 @@ Here are the steps required to complete the installation.
  
     You are reaching the end of the manual installation.
 
+### Installation of the Execution Service
+
+During the execution host installation procedure following steps are processed:
+
+* It is tested that the master service is running and that the execution host is able to communicate with the master service.
+
+* An appropriate directory hierarchy is created as required by the `sge_execd` service.
+
+* The `sge_execd` service is started and basic tests of its functionality are executed.
+
+* The host is added to a default queue (optional)
+
+Here are the steps required to complete the installation.
+
+1. Log in as user root on an execution host.
+
+2. Source the settings file that was created during the master service installation or set the SGE_ROOT environment variable manually. This Installation Guide assumes that the installation directory is available on all hosts in the same location.
+
+   ```
+   # . <install_dir>/<cell_name>/common/settings.sh
+   # cd $SGE_ROOT
+   ```
+   
+4. Verify, that the execution host has been declared as administrative host. Do this by executing the following `qconf` command on the master machine. The hostlist should contain the hostname of the new execution host. If it does not exit, then add the hostname to the list of administrative hosts by executing `qconf -ah <hostname>` on the master machine.
+
+   ```
+   # qconf -sh
+   ...
+   ```
+5. Start the installation process by executing the `install_execd` script and read and follow the given instructions.
+
+   ```
+   # ./install_execd
+   Welcome to the Cluster Scheduler execution host installation
+   ------------------------------------------------------------
+   
+   If you haven't installed the Cluster Scheduler qmaster host yet, you must execute
+   this step (with >install_qmaster<) prior the execution host installation.
+   
+   For a successful installation you need a running Cluster Scheduler qmaster. It is
+   also necessary that this host is an administrative host.
+   
+   You can verify your current list of administrative hosts with
+   the command:
+   
+   # qconf -sh
+   
+   You can add an administrative host with the command:
+
+   # qconf -ah <hostname>
+   
+   The execution host installation will take approximately 5 minutes.
+
+   Hit <RETURN> to continue >>
+   ```
+ 
+6. Confirm the installation directory. The suggested default is the directory you set in the master service installation.
+
+   ```
+   Checking $SGE_ROOT directory
+   ----------------------------
+
+   The Cluster Scheduler root directory is:
+
+      $SGE_ROOT = <installation_directory>
+
+   If this directory is not correct (e.g. it may contain an automounter
+   prefix) enter the correct path to this directory or hit <RETURN>
+   to use default [<installation_directory>] >> 
+   ```
+   
+7. Confirm the cell directory. The suggested default is the directory you set in the master service installation. You can enter a different cell name if you intend to start the execution service in a different cell.
+
+   ```
+   Cluster Scheduler cells
+   -----------------------
+
+   Please enter cell name which you used for the qmaster
+   installation or press <RETURN> to use [default] >>
+   ```
+   
+8. Confirm the detected execution daemon TCP/IP port number.
+
+   ```
+   Cluster Scheduler TCP/IP communication service
+   ----------------------------------------------
+
+   The port for sge_execd is set as service.
+
+   sge_execd service set to port 6445
+
+   Hit <RETURN> to continue >>
+   ``` 
+   
+9. The installer does verify the local hostname resolution and if the current host is an administrative host. 
+
+   ```
+   Checking hostname resolving
+   ---------------------------
+
+   This hostname is known at qmaster as an administrative host.
+
+   Hit <RETURN> to continue >>
+   
+10. Specify the spooling directory for execution hosts
+
+   ```
+   Execd spool directory configuration
+   -----------------------------------
+
+   You defined a global spool directory when you installed the master host.
+   You can use that directory for spooling jobs from this execution host
+   or you can define a different spool directory for this execution host.
+   
+   ATTENTION: For most operating systems, the spool directory does not have to
+   be located on a local disk. The spool directory can be located on a 
+   network-accessible drive. However, using a local spool directory provides 
+   better performance.
+   
+   The spool directory is currently set to:
+   <<<installation_directory>/default/spool/<hostname>>>
+
+   Do you want to configure a different spool directory
+   for this host (y/n) [n] >>
+   ``` 
+   
+11. The installer will create a local configuration for the execution host.
+
+   ```
+   Creating local configuration
+   ----------------------------
+   <admin_user>@<hostname> added "<hostname>" to configuration list
+   Local configuration for host ><hostname>< created.
+
+   Hit <RETURN> to continue >> 
+   ```
+
+12. Now specify if you want to start the execution service automatically.
+
+   ```
+   execd startup script
+   --------------------
+   
+   We can install the startup script that will
+   start execd at machine boot (y/n) [y] >> 
+   ```
+   
+13. The execution service is started.
+
+   ```
+   Cluster Scheduler execution daemon startup
+   ------------------------------------------
+
+   Starting execution daemon. Please wait ...
+      starting sge_execd
+
+   Hit <RETURN> to continue >>
+   ```
+   
+14. Specify a queue for the new host.
+
+   ```
+   Adding a queue for this host
+   ----------------------------
+
+   We can now add a queue instance for this host:
+
+      - it is added to the >allhosts< host group
+      - the queue provides 32 slot(s) for jobs in all queues
+        referencing the >allhosts< host group
+
+   You do not need to add this host now, but before running jobs on this host
+   it must be added to at least one queue.
+
+   Do you want to add a default queue instance for this host (y/n) [y] >>
+   ```
+   
 ## Automatic Installation
 
-## Backup and Restore
+The automatic installation process is based on the manual installation process where the installer gets a configuration file with predefined answers to those questions that would normally be asked during an interactive installation. For an automatic installation the configuration file has to be prepared, and it has to be passed to the installation script as argument with the `-auto` option.
 
-## Upgrading Open Cluster Scheduler
+The auto installation is also able to install services on remote hosts if either passwordless `ssh` or `rsh` access is configured for the root user on the master machine. 
 
-### Patch installation
+1. Login as root on the system where you intend to install a service.
+ 
+2. Make of copy of a configuration template file and prepare it with the answers to the questions that are usually asked during the manual installation process. If the root user has no write permissions in $SGE_ROOT then choose a different path but make sure that you preserve the file for the uninstallation process.
 
-### Side by Side Upgrade
+   ```
+   $ cp $SGE_ROOT/util/install_modules/inst_template.conf $SGE_ROOT/my_template.conf
+   $ vi $SGE_ROOT/my_template.conf
+   ...
+   ```
+  
+3. On the master machine start the master installation
 
-## Testing the Installation/Upgrade
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -m -auto $SGE_ROOT/my_template.conf
+   ```
+   
+4. If you have a list of hosts specified as EXEC_HOST_LIST parameter in the configuration file AND when you have passwordless `ssh` or `rsh` access to those hosts then you can install the execution service on those hosts remotely from the master machine.
 
-## Troubleshooting
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -x -auto $SGE_ROOT/my_template.conf
+   ```
+   
+   If you have no passwordless `ssh` or `rsh` access to those hosts then you have to log in to each host and start the installation process manually for each host individually.
+
+5. On shadow hosts install the shadow service
+
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -sm -auto $SGE_ROOT/my_template.conf
+   ```
+
+## Uninstallation
+
+The uninstallation of the xxQS_NAMExx software can be done manually or automatically using the configuration template created during the auto installation. If you uninstall an execution host then make sure that there are no running jobs on that host. If you uninstall manually then make sure that all execution hosts are uninstalled first before you uninstall the master host or other services.
+
+1. Login as root on the system where you installed a service.
+
+2. Automatic uninstall the execution service on execution hosts.
+
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -ux -auto $SGE_ROOT/my_template.conf
+   ```
+   
+3. Manual uninstallation of the execution component.
+
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -ux
+   ```
+   
+4. Qmaster, shadow master and other services can be uninstalled the same way. To uninstall the qmaster service use the `-um` switch, for the shadow master service use the `-usm` switch. For the automatic uninstallation use the `-auto` switch with the configuration template.
+
+   ```
+   cd $SGE_ROOT
+   ./inst_sge ...  
+   ```
 
 [//]: # (Eeach file has to end with two emty lines)
 
