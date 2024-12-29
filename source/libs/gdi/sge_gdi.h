@@ -145,11 +145,10 @@ typedef struct _state_gdi_multi state_gdi_multi;
 struct _state_gdi_multi {
    sge_gdi_packet_class_t *packet;
    lList **malpp;
-   state_gdi_multi *next;
 };
 
 /* to be used for initializing state_gdi_multi */
-#define STATE_GDI_MULTI_INIT { nullptr, nullptr, nullptr}
+#define STATE_GDI_MULTI_INIT { nullptr, nullptr}
 
 bool gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 

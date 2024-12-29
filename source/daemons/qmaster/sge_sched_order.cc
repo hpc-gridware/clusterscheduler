@@ -114,9 +114,6 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
 
       if (order_id != -1) {
          sge_sl_insert(Master_Request_Queue.request_list, state, SGE_SL_BACKWARD);
-
-         /* EB: TODO: Why is this needed? */
-         state->next = nullptr;
       } else {
          answer_list_log(answer_list, false, false);
          ret = false;
