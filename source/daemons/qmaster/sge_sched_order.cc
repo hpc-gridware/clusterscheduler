@@ -94,15 +94,13 @@ sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list,
 
 bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
-   bool ret = true;
-   state_gdi_multi *state = nullptr;
-
    DENTER(TOP_LAYER);
-   state = (state_gdi_multi *) sge_malloc(sizeof(state_gdi_multi));
+   bool ret = true;
+   auto *state = new state_gdi_multi();
+
    if (state != nullptr) {
       int order_id;
 
-      memset(state, 0, sizeof(state_gdi_multi));
       orders->numberSendOrders += lGetNumberOfElem(*order_list);
       orders->numberSendPackages++;
 
@@ -138,7 +136,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
     */
    sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
    while ((current_elem = next_elem) != nullptr) {
-      state_gdi_multi *current_state = (state_gdi_multi *) sge_sl_elem_data(current_elem);
+      auto *current_state = static_cast<state_gdi_multi *>(sge_sl_elem_data(current_elem));
       lList *request_answer_list = nullptr;
       lList *multi_answer_list = nullptr;
       int order_id;
@@ -170,7 +168,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
        */
       lFreeList(&request_answer_list);
       lFreeList(&multi_answer_list);
-      sge_free(&current_state);
+      delete current_state;
    }
    DRETURN(ret);
 }

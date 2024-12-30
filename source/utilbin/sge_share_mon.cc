@@ -75,7 +75,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    lList *alp = nullptr;               /* answer list for individual gdi_multi */
    lList *malp = nullptr;              /* answer list for final gdi_multi */
    lEnumeration *what;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
    int sharetree_id = 0;
    int sched_conf_id = 0;
    int user_id = 0;

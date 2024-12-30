@@ -3247,7 +3247,7 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
    lList *alp = nullptr;
    const lListElem *aep = nullptr;
    int jb_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
    lCondition *job_selection = nullptr;
    lEnumeration *job_fields = nullptr;
    u_long32 quality = 0;

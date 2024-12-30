@@ -513,7 +513,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
       {
          lList *gdi_answer_list = nullptr;
          lList *mal_answer_list = nullptr;
-         state_gdi_multi state = STATE_GDI_MULTI_INIT;
+         state_gdi_multi state{};
          int del_id = -1;
          int mod_id = -1;
          int add_id = -1;

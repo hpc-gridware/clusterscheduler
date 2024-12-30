@@ -140,7 +140,7 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
    DENTER(TOP_LAYER);
 
    if (hgrp_list != nullptr && cq_list != nullptr) {
-      state_gdi_multi state = STATE_GDI_MULTI_INIT;
+      state_gdi_multi state{};
       lList *multi_answer_list = nullptr;
       lCondition *cqueue_where = nullptr;
       const lListElem *qref = nullptr;
@@ -250,7 +250,7 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
 
    DENTER(TOP_LAYER);
    if (hgrp_list != nullptr && cq_list != nullptr) {
-      state_gdi_multi state = STATE_GDI_MULTI_INIT;
+      state_gdi_multi state{};
       lEnumeration *hgrp_what = nullptr;
       lEnumeration *cqueue_what = nullptr;
       int hgrp_id = 0; 

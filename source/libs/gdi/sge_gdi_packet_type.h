@@ -192,10 +192,4 @@ struct _sge_gdi_packet_class_t {
 
    // DS hint
    u_long32 ds_type;
-
-   /* 
-    * if this packet is part of a packet queue then this
-    * pointer might point to the next packet in the queue
-    */
-   sge_gdi_packet_class_t *next;
 };

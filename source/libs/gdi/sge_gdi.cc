@@ -355,7 +355,7 @@ lList *sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnum
    DENTER(GDI_LAYER);
    lList *alp = nullptr;
    lList *mal = nullptr;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
    int id = sge_gdi_multi(&alp, SGE_GDI_SEND, target, cmd, lpp, cp, enp, &state, true);
@@ -518,9 +518,11 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 void
 sge_gdi_wait(lList **malpp, state_gdi_multi *state) {
    DENTER(GDI_LAYER);
-   sge_gdi_packet_class_t *packet = state->packet;
-   state->packet = nullptr;
-   if (packet != nullptr) {
+
+   if (state->packet != nullptr) {
+      sge_gdi_packet_class_t *packet = state->packet;
+      state->packet = nullptr;
+
       if (component_is_qmaster_internal()) {
          sge_gdi_packet_wait_for_result_internal(&packet, malpp);
       } else {

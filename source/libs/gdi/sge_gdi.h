@@ -40,6 +40,7 @@
 #include "cull/cull.h"
 #include "uti/sge_hostname.h"
 #include "gdi/sge_gdi_packet_type.h"
+#include "gdi/sge_gdi_packet.h"
 
 /*
  * allowed values for command field of a gdi request
@@ -139,16 +140,18 @@ enum {
    SGE_GDI_SHOW
 };
 
-/* preserves state between multiple calls to sge_gdi_multi() */
-typedef struct _state_gdi_multi state_gdi_multi;
-
-struct _state_gdi_multi {
+class state_gdi_multi {
+public:
    sge_gdi_packet_class_t *packet;
    lList **malpp;
+   state_gdi_multi() : packet(nullptr), malpp(nullptr) {
+      ;
+   }
+   ~state_gdi_multi() {
+      sge_gdi_packet_free(&packet);
+      lFreeList(malpp);
+   }
 };
-
-/* to be used for initializing state_gdi_multi */
-#define STATE_GDI_MULTI_INIT { nullptr, nullptr}
 
 bool gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 

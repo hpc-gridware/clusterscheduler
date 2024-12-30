@@ -1514,7 +1514,7 @@ lList **hgrp_l
    lEnumeration *what = nullptr;
    lList *mal = nullptr;
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
 
    DENTER(TOP_LAYER);
 

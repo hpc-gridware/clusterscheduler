@@ -402,7 +402,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    lCondition *where = nullptr, *nw = nullptr;
    lList *mal = nullptr;
    int rqs_id, ce_id, userset_id, hgroup_id, eh_id;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
    
    DENTER(TOP_LAYER);
 

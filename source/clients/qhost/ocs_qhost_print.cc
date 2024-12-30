@@ -945,7 +945,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    lList *mal = nullptr;
    lList *conf_l = nullptr;
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id, acl_id;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
 

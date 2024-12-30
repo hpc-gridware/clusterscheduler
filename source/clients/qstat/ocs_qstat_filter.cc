@@ -1015,7 +1015,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    int q_id = 0, j_id = 0, pe_id = 0, ckpt_id = 0, acl_id = 0, z_id = 0, up_id = 0;
    int ce_id, eh_id, sc_id, gc_id, hgrp_id = 0;
    int show_zombies = (show & QSTAT_DISPLAY_ZOMBIES) ? 1 : 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
 

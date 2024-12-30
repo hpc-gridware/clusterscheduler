@@ -342,7 +342,7 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
    lList *malp = nullptr;
 
    int order_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   state_gdi_multi state{};
 
    DENTER(TOP_LAYER);
 
