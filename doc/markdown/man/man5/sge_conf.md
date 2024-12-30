@@ -1064,6 +1064,12 @@ file can become quite large. Only activate the reporting file if you have a proc
 reporting file! See  xxsq_name_sxx_reporting(5) for further information about format and contents of the
 reporting file.
 
+***monitoring***
+
+If this parameter is set to true, the monitoring file is written. The monitoring file contains metrics about the xxQS_NAMExx qmaster's threads. 
+
+See xxqs_name_sxx_monitoring(5) for further information about format and contents of the monitoring file.
+
 ***flush_time***  
 
 Contents of the reporting file are buffered in the xxQS_NAMExx qmaster and flushed at a fixed interval. This 

@@ -225,7 +225,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
                              res = sge_gdi_get_any_request(msg.snd_host, msg.snd_name,
                                                             &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
 
-                     ), monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+                     ), monitor, mconf_get_monitoring_options());
 
    MONITOR_MESSAGES(monitor);
 

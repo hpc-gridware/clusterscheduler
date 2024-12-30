@@ -43,6 +43,7 @@
 #include "sge_rusage.h"
 
 #include "ocs_JsonReportingFileWriter.h"
+#include "ocs_JsonUtil.h"
 
 namespace ocs {
    bool JsonReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report,
@@ -75,40 +76,6 @@ namespace ocs {
       }
 
       DRETURN(ret);
-   }
-
-   static void
-   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, int value) {
-      writer.Key(key);
-      writer.Int(value);
-   }
-
-   static void
-   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, u_long32 value) {
-      writer.Key(key);
-      writer.Uint64(value);
-   }
-
-   static void
-   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, u_long64 value) {
-      writer.Key(key);
-      writer.Uint64(value);
-   }
-
-#if 0
-   static void
-   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, double value) {
-      writer.Key(key);
-      writer.Double(value);
-   }
-#endif
-
-   static void
-   write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, const char *value) {
-      if (value != nullptr) {
-         writer.Key(key);
-         writer.String(value);
-      }
    }
 
    void

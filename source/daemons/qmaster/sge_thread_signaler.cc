@@ -47,6 +47,7 @@
 #include "comm/cl_commlib.h"
 
 #include "basis_types.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 #include "setup_qmaster.h"
 #include "sge_thread_main.h"
@@ -144,7 +145,8 @@ sge_signaler_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(&monitor, thread_config->thread_name, NONE_EXT, ST_WARNING, ST_ERROR);
+   sge_monitor_init(&monitor, thread_config->thread_name, NONE_EXT, ST_WARNING, ST_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, SIGNAL_THREAD, true);
 
    sigemptyset(&sig_set);

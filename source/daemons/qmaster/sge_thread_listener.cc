@@ -56,6 +56,7 @@
 #include "sge_thread_main.h"
 #include "sge_thread_listener.h"
 #include "sge_thread_utility.h"
+#include "ocs_ReportingFileWriter.h"
 
 static void
 sge_listener_cleanup_monitor(monitoring_t *monitor) {
@@ -140,7 +141,8 @@ sge_listener_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(&monitor, thread_config->thread_name, LIS_EXT, MT_WARNING, MT_ERROR);
+   sge_monitor_init(&monitor, thread_config->thread_name, LIS_EXT, MT_WARNING, MT_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, LISTENER_THREAD, true);
 
    /* register at profiling module */

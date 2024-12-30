@@ -468,8 +468,8 @@ static lListElem *createCalObject(cal_entry_t *calendar)
    lListElem *sourceCal = nullptr;
    lListElem *destCal = nullptr;
    lList *answerList = nullptr;
-   
-   sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR);
+
+   sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
    
    sourceCal = lCreateElem(CAL_Type);
 

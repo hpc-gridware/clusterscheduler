@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
+#include <rapidjson/writer.h>
 
 #include "basis_types.h"
 #include "uti/sge_dstring.h"
@@ -126,9 +127,10 @@ const long SCT_ERROR = 600;
  * extension
  */
 typedef void (*extension_output)(
-        dstring *info_message,    /* target memory buffer*/
-        void *monitor_extension,  /* contains the monitor extension structure */
-        double time               /* length of the time interval */
+        dstring *info_message,    // target memory buffer
+        void *monitor_extension,  // contains the monitor extension structure
+        double time,              // length of the time interval
+        rapidjson::Writer<rapidjson::StringBuffer> *json_writer // json writer
 );
 
 /**
@@ -143,26 +145,30 @@ typedef enum {
    SCH_EXT = 4          /* SCH = scheduler thread */
 } extension_t;
 
+typedef bool (*json_output_func)(const char *json_string);
+
 /**
  * the monitoring data structure
  */
 typedef struct {
    /*--- init data ------------*/
    const char *thread_name;
-   time_t monitor_time;        /* stores the time interval for the measuring run */
-   bool log_monitor_mes;     /* if true, it logs the monitoring info into the message file */
+   time_t monitor_time;                   // stores the time interval for the measuring run
+   bool log_monitor_mes;                  // if true, it logs the monitoring info into the message file
+   bool log_monitor_json;                 // if true, it logs the monitoring info as json
    /*--- output data ----------*/
    dstring *output_line1;
    dstring *output_line2;
    dstring *work_line;
-   int pos;                        /* position (line) in the qping output structure (kind of thread id) */
+   int pos;                               // position (line) in the qping output structure (kind of thread id)
+   json_output_func json_output;          // function to output json data
    /*--- work data ------------*/
-   struct timeval now;              /* start time of measurement */
-   bool output;              /* if true, triggers qping / message output */
+   struct timeval now;                    // start time of measurement
+   bool output;                           // if true, triggers qping / message output
    u_long32 message_in_count;
    u_long32 message_out_count;
-   double idle;                /* idle time*/
-   double wait;                /* wait time*/
+   double idle;                           // idle time
+   double wait;                           // wait time
    /*--- extension data -------*/
    extension_t ext_type;
    void *ext_data;
@@ -170,8 +176,8 @@ typedef struct {
    extension_output ext_output;
 } monitoring_t;
 
-void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext,
-                      long warning_timeout, long error_timeout);
+void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext, long warning_timeout,
+                      long error_timeout, json_output_func json_output);
 
 void sge_monitor_free(monitoring_t *monitor);
 
@@ -188,17 +194,27 @@ void sge_monitor_reset(monitoring_t *monitor);
  * MACRO section
  ****************/
 
-#define MONITOR_IDLE_TIME(execute, monitor, output_time, is_log)    { \
+/**
+ * This macro is used to measure the idle time in a thread loop.
+ * @param execute  the code to execute
+ * @param monitor  the monitoring structure
+ * @param options  a tuple with the following values:
+ *                - the time interval for the measurement (qmaster_params MONITOR_TIME=timeval)
+ *                - log into message file (qmaster_params LOG_MONITOR_MESSAGE=TRUE|FALSE)
+ *                - log as json (reporting_params monitoring=true|false)
+ */
+#define MONITOR_IDLE_TIME(execute, monitor, options)    { \
                                  struct timeval before{};  \
                                  gettimeofday(&before, nullptr); \
                                  sge_set_last_wait_time((monitor), before); \
-                                 if (output_time > 0) { \
+                                 if (std::get<0>(options) > 0) { \
                                     struct timeval before1{};  \
                                     struct timeval after1{}; \
                                     double time; \
                                     \
-                                    (monitor)->monitor_time = output_time; \
-                                    (monitor)->log_monitor_mes = is_log; \
+                                    (monitor)->monitor_time = std::get<0>(options); \
+                                    (monitor)->log_monitor_mes = std::get<1>(options); \
+                                    (monitor)->log_monitor_json = std::get<2>(options); \
                                     gettimeofday(&before1, nullptr); \
                                     if ((monitor)->now.tv_sec == 0) { \
                                        (monitor)->now = before1; \

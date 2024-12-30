@@ -40,6 +40,7 @@ namespace ocs {
          CLASSIC_REPORTING,
          JSON_ACCOUNTING,
          JSON_REPORTING,
+         JSON_MONITORING,
          NUM_WRITERS
       };
 
@@ -117,6 +118,9 @@ namespace ocs {
       static bool
       is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task);
 
+      static bool
+      create_monitoring_records(const char *json_data);
+
 
       // Object methods
       virtual bool flush();
@@ -162,5 +166,8 @@ namespace ocs {
 
       virtual bool
       create_ar_acct_record(lList **answer_list, const lListElem *ar, u_long64 report_time) { return true; }
+
+      virtual bool
+      create_monitoring_record(const char *json_data) { return true; }
    };
 }

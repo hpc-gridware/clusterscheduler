@@ -61,6 +61,7 @@
 
 #include "basis_types.h"
 #include "ocs_MirrorDataStore.h"
+#include "ocs_ReportingFileWriter.h"
 #include "sge_thread_main.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
@@ -191,7 +192,8 @@ int main(int argc, char *argv[]) {
    pybind11::gil_scoped_release release;
 #endif
 
-   sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR);
+   sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
 
    sge_get_root_dir(true, nullptr, 0, true);
 

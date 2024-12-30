@@ -206,6 +206,7 @@ static char h_locks[100];
  */
 static bool do_accounting         = true;
 static bool do_reporting          = false;
+static bool do_monitoring         = false;
 static bool do_joblog             = false;
 static int reporting_flush_time   = 15;
 static int accounting_flush_time  = -1;
@@ -919,6 +920,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       set_lib_path = false;
       do_accounting = true;
       do_reporting = false;
+      do_monitoring = false;
       do_joblog = false;
       reporting_flush_time = 15;
       accounting_flush_time = -1;
@@ -1104,6 +1106,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "reporting", &do_reporting)) {
+            continue;
+         }
+         if (parse_bool_param(s, "monitoring", &do_monitoring)) {
             continue;
          }
          if (parse_bool_param(s, "joblog", &do_joblog)) {
@@ -2496,6 +2501,19 @@ bool mconf_get_do_reporting() {
 
 }
 
+bool mconf_get_do_monitoring() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = do_monitoring;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+
+}
+
 bool mconf_get_do_joblog() {
    bool ret;
 
@@ -2813,3 +2831,12 @@ u_long32 mconf_get_script_timeout() {
    DRETURN(ret);
 }
 
+std::tuple<u_long32, bool, bool> mconf_get_monitoring_options() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   auto ret =  std::make_tuple(monitor_time, is_monitor_message, do_monitoring);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}

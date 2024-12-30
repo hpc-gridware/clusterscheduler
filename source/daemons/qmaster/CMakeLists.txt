@@ -31,6 +31,7 @@ set(QMASTER_SOURCES
         ocs_MirrorReaderDataStore.cc
         ocs_MirrorServerDataStore.cc
         ocs_MirrorListenerDataStore.cc
+        ocs_MonitoringFileWriter.cc
         ocs_ReportingFileWriter.cc
         ocs_thread_mirror.cc
         qmaster_to_execd.cc

@@ -55,6 +55,7 @@
 #include "gdi/sge_gdi_packet.h"
 
 #include "basis_types.h"
+#include "ocs_ReportingFileWriter.h"
 #include "setup_qmaster.h"
 #include "sge_calendar_qmaster.h"
 #include "sge_persistence_qmaster.h"
@@ -318,7 +319,8 @@ sge_timer_main(void *arg) {
 
    // init monitoring
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(p_monitor, thread_config->thread_name, TET_EXT, TET_WARNING, TET_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, TET_EXT, TET_WARNING, TET_ERROR,
+                    ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, TIMER_THREAD, true);
 
    /* register at profiling module */
@@ -335,8 +337,7 @@ sge_timer_main(void *arg) {
 
       Event_Control.last = sge_get_gmt64();
 
-      MONITOR_IDLE_TIME(te_wait_empty(), p_monitor, mconf_get_monitor_time(),
-                        mconf_is_monitor_message());
+      MONITOR_IDLE_TIME(te_wait_empty(), p_monitor, mconf_get_monitoring_options());
       MONITOR_MESSAGES(p_monitor);
 
       MONITOR_TET_COUNT(p_monitor);
@@ -349,8 +350,7 @@ sge_timer_main(void *arg) {
       if (te->when > now) {
          Event_Control.next = te->when;
          Event_Control.deleted = false;
-         MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),
-                           mconf_is_monitor_message());
+         MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitoring_options());
 
          if ((Event_Control.next < te->when) || Event_Control.deleted) {
             DPRINTF("%s: event list changed - next:" sge_u64" --> start over\n", __func__, Event_Control.next);
