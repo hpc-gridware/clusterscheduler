@@ -1080,12 +1080,9 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                   jr, jep, jatep, nullptr, MSG_LOG_DELIVERED);
 
          // spool and notify others about the state change
-         dstring buffer = DSTRING_INIT;
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr, session,
                    jep, jatep, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
-         sge_dstring_free(&buffer);
-
          break;
       }
       case COMMIT_ST_RESCHEDULED:

@@ -123,6 +123,21 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 }
 
 #ifndef QEVENT_SHOW_ALL
+
+static u_long
+get_current_jatask_status(u_long job_id, u_long ja_task_id) {
+   u_long32 ret = JIDLE;
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lListElem *job = lGetElemUlong(master_job_list, JB_job_number, job_id);
+   if (job != nullptr) {
+      const lListElem *ja_task = lGetSubUlong(job, JAT_task_number, ja_task_id, JB_ja_tasks);
+      if (ja_task != nullptr) {
+         ret = lGetUlong(ja_task, JAT_status);
+      }
+   }
+   return ret;
+}
+
 static sge_callback_result
 print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                    [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
@@ -140,17 +155,22 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
       u_long64 timestamp = lGetUlong64(event, ET_timestamp);
       
       if (event_type == sgeE_JATASK_MOD) {
-         lList *jat = lGetListRW(event,ET_new_version);
+         lList *jat = lGetListRW(event, ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
-         const lListElem *ep = lFirst(jat);
-         u_long job_status = lGetUlong(ep, JAT_status);
-         int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
+         // we might get a JATASK_MOD event for a task that is already in transfer or running == already counted
+         // then ignore the event
+         u_long32 current_status = get_current_jatask_status(job_id, task_id);
+         if (current_status != JRUNNING && current_status != JTRANSFERING) {
+            const lListElem *ep = lFirst(jat);
+            u_long job_status = lGetUlong(ep, JAT_status);
+            int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
-         if (task_running) {
-            fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id ,task_id, timestamp);
-            fflush(stdout);  
-            Global_jobs_running++;
+            if (task_running) {
+               fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id ,task_id, timestamp);
+               fflush(stdout);
+               Global_jobs_running++;
+            }
          }
       }
    
@@ -654,7 +674,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    lFreeWhere(&where);
    lFreeWhat(&what);
  
-   /* we want a 5 second event delivery interval */
+   /* we want a 5-second event delivery interval */
    evc->ec_set_edtime(evc, 5);
 
    /* and have our events flushed immediately */
