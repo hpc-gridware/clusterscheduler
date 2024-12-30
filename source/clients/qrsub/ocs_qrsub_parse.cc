@@ -39,12 +39,10 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
+#include "uti/sge_hostname.h"
 
 #include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
 
-#include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_centry.h"

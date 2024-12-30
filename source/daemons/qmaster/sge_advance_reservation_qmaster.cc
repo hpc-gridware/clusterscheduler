@@ -47,6 +47,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
+#include "uti/sge_hostname.h"
 
 #include "spool/sge_spooling.h"
 
@@ -84,7 +85,6 @@
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_utility_qmaster.h"
-#include "sge_cqueue_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_qinstance_qmaster.h"

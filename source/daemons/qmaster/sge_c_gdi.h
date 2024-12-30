@@ -33,12 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __SGE_GDI_INTERN_H
-
-#   include "gdi/sge_gdiP.h"
-
-#endif
-
 #include "uti/sge_monitor.h"
 
 #include "cull/cull.h"

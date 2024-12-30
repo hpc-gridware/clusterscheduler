@@ -33,12 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __SGE_GDIP_H
-
-#   include "gdi/sge_gdiP.h"
-
-#endif
-
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_event.h"

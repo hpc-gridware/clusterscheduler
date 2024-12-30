@@ -38,6 +38,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_hostname.h"
 
 #include "cull/cull.h"
 
@@ -47,7 +48,6 @@
 #include "comm/cl_commlib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_object.h"
 
 #include "msg_common.h"

@@ -88,7 +88,6 @@
 #include "sgeobj/sge_daemonize.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_client.h"

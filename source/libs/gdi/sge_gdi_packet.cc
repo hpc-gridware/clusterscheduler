@@ -47,20 +47,16 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
 #include "uti/sge_thread_ctrl.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_feature.h"
-
-#include "gdi/sge_gdiP.h"
-#include "gdi/sge_gdi_packet.h"
 #include "sgeobj/ocs_Version.h"
+
+#include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_security.h"
+#include "gdi/sge_gdi.h"
 
 #include "msg_common.h"
-#include "msg_qmaster.h"
-#include "../../daemons/shepherd/shepherd_binding.h"
 
 /****** gdi/request_internal/--Packets_and_Taks() *****************************
 *  NAME

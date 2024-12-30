@@ -38,18 +38,15 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_userprj.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_userset.h"
 
 #include "spool/sge_spooling.h"
 

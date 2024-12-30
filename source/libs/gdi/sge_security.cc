@@ -38,7 +38,6 @@
 #include <pthread.h>
 
 #include "comm/cl_commlib.h"
-#include "comm/cl_ssl_framework.h"
 
 #include "cull/cull.h"
 
@@ -48,13 +47,10 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
-#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_var.h"
@@ -62,16 +58,12 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/qm_name.h"
-#include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"
 
 #include "execution_states.h"
-#include "dispatcher.h"
 
 #include "msg_common.h"
-#include "msg_qmaster.h"
 
 #ifdef CRYPTO
 #include <openssl/evp.h>

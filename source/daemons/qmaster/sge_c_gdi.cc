@@ -46,7 +46,6 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_utility.h"
@@ -55,8 +54,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
-
 #include "sgeobj/ocs_Version.h"
+
+#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet.h"
 

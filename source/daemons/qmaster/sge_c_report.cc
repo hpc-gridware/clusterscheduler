@@ -40,8 +40,10 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_report.h"
@@ -50,7 +52,6 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
-#include "sgeobj/ocs_Version.h"
 
 #include "msg_qmaster.h"
 #include "sge_c_gdi.h"

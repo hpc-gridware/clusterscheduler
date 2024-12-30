@@ -33,10 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
  
-#ifndef __SGE_GDIP_H
-#   include "gdi/sge_gdiP.h"
-#endif             
-
 #include "sgeobj/cull/sge_suser_SU_L.h"
 
 lListElem *suser_list_add(lList **suser_list, lList **answer_list,

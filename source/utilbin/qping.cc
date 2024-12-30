@@ -44,19 +44,15 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "gdi/sge_security.h"
-#include "sgeobj/ocs_Version.h"
 #include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
-#include "gdi/sge_gdi_data.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"

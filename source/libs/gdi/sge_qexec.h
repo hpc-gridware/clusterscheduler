@@ -35,8 +35,6 @@
 
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
-#include "sgeobj/sge_daemonize.h"
-
 typedef char *sge_tid_t;
 
 enum {                           /* possible values for RT_state */

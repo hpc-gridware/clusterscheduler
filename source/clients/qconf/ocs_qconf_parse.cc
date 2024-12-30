@@ -47,6 +47,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_event.h"
@@ -59,16 +60,12 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_utility.h"
@@ -77,8 +74,6 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "gdi/sge_gdi.h"
-
-#include "comm/commlib.h"
 
 #include "sge.h"
 #include "sge_options.h"

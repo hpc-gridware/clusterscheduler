@@ -34,11 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull_list.h"
-#include "sgeobj/sge_conf.h"
 
-/* may be this should be included by the gdi user */
-#include "cull/cull.h"
-#include "uti/sge_hostname.h"
 #include "gdi/sge_gdi_packet_type.h"
 #include "gdi/sge_gdi_packet.h"
 

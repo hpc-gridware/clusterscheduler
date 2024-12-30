@@ -45,15 +45,13 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_cqueue.h"
 
 #include "uti/sge.h"
 

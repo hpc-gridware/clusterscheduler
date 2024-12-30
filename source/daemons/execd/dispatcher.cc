@@ -41,6 +41,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/sge_conf.h"
+
 #include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"

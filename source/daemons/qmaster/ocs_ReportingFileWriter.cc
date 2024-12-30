@@ -21,9 +21,9 @@
 #include <filesystem>
 #include <fstream>
 
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_usage.h"
 
