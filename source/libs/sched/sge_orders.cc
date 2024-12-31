@@ -339,33 +339,31 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 {
    int ret = STATUS_OK;
    lList *alp = nullptr;
-   lList *malp = nullptr;
 
    int order_id = 0;
-   state_gdi_multi state{};
+   ocs::GdiMulti gdi_multi{};
 
    DENTER(TOP_LAYER);
 
    if (*orders != nullptr) {
       DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
-      order_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
-                               orders, nullptr, nullptr, &state, false);
-      sge_gdi_wait(&malp, &state);
+      order_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::Target::SGE_ORDER_LIST, SGE_GDI_ADD, orders, nullptr, nullptr, false);
 
       if (alp != nullptr) {
          ret = answer_list_handle_request_answer_list(&alp, stderr);
          DRETURN(ret);
       }
-   }   
+
+      gdi_multi.wait();
+   }
 
    /* check result of orders */
    if(order_id > 0) {
-      gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, nullptr);
+      gdi_multi.get_response(&alp, SGE_GDI_ADD, ocs::GdiTarget::SGE_ORDER_LIST, order_id, nullptr);
 
       ret = answer_list_handle_request_answer_list(&alp, stderr);
    }
 
-   lFreeList(&malp);
    DRETURN(ret);
 }
 

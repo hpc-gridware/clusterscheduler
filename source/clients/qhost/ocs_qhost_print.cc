@@ -942,10 +942,9 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
                 *eh_all = nullptr, *pe_all = nullptr, *acl_all = nullptr, *gc_what;
    lListElem *ep = nullptr;
    lListElem *jatep = nullptr;
-   lList *mal = nullptr;
    lList *conf_l = nullptr;
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id, acl_id;
-   state_gdi_multi state{};
+   ocs::GdiMulti gdi_multi{};
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
 
@@ -959,7 +958,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
 
    /*
    ** exechosts
-   ** build where struct to filter out  either all hosts or only the 
+   ** build where struct to filter out  either all hosts or only the
    ** hosts listed in host_list
    */
    for_each_rw(ep, hostref_list) {
@@ -974,28 +973,26 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
       nw = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
       where = lOrWhere(where, nw);
    }
-   
+
    nw = lWhere("%T(%I != %s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
    if (where)
       where = lAndWhere(where, nw);
    else
       where = nw;
    eh_all = lWhat("%T(ALL)", EH_Type);
-   
-   eh_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
-                          nullptr, where, eh_all, &state, true);
+
+   eh_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_EH_LIST, SGE_GDI_GET, nullptr, where, eh_all, true);
    lFreeWhat(&eh_all);
    lFreeWhere(&where);
 
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
-   
+
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
       q_all = lWhat("%T(ALL)", QU_Type);
-      
-      q_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET,
-                            nullptr, nullptr, q_all, &state, true);
+
+      q_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_CQ_LIST, SGE_GDI_GET, nullptr, nullptr, q_all, true);
       lFreeWhat(&q_all);
 
       if (answer_list_has_error(answer_list)) {
@@ -1003,9 +1000,9 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
       }
    }
 
-   /* 
-   ** jobs 
-   */ 
+   /*
+   ** jobs
+   */
    if (job_l && (show & QHOST_DISPLAY_JOBS)) {
 
 /* lWriteListTo(user_list, stdout); */
@@ -1028,7 +1025,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
       }
 
       j_all = lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)", JB_Type,
-                     JB_job_number, 
+                     JB_job_number,
                      JB_script_file,
                      JB_owner,
                      JB_group,
@@ -1054,14 +1051,13 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
                      JB_ja_s_h_ids,
                      JB_ja_o_h_ids,
                      JB_ja_a_h_ids,
-                     JB_ja_z_ids 
+                     JB_ja_z_ids
                     );
 
 /* printf("======================================\n"); */
 /* lWriteWhereTo(jw, stdout); */
 
-      j_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET,
-                         nullptr, jw, j_all, &state, true);
+      j_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, nullptr, jw, j_all, true);
       lFreeWhat(&j_all);
       lFreeWhere(&jw);
 
@@ -1074,8 +1070,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    ** complexes
    */
    ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
-                          nullptr, nullptr, ce_all, &state, true);
+   ce_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_CE_LIST, SGE_GDI_GET, nullptr, nullptr, ce_all, true);
    lFreeWhat(&ce_all);
 
    if (answer_list_has_error(answer_list)) {
@@ -1086,8 +1081,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    ** pe list
    */
    pe_all = lWhat("%T(ALL)", PE_Type);
-   pe_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET,
-                          nullptr, nullptr, pe_all, &state, true);
+   pe_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_PE_LIST, SGE_GDI_GET, nullptr, nullptr, pe_all, true);
    lFreeWhat(&pe_all);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
@@ -1097,8 +1091,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    ** user list
    */
    acl_all = lWhat("%T(ALL)", US_Type);
-   acl_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET,
-                          nullptr, nullptr, acl_all, &state, true);
+   acl_id = gdi_multi.request(answer_list, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_US_LIST, SGE_GDI_GET, nullptr, nullptr, acl_all, true);
    lFreeWhat(&acl_all);
 
    if (answer_list_has_error(answer_list)) {
@@ -1110,15 +1103,13 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    */
    gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
    gc_what = lWhat("%T(ALL)", CONF_Type);
-   
-   gc_id = sge_gdi_multi(answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
-                          nullptr, gc_where, gc_what, &state, true);
-   sge_gdi_wait(&mal, &state);
+
+   gc_id = gdi_multi.request(answer_list, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_CONF_LIST, SGE_GDI_GET, nullptr, gc_where, gc_what, true);
+   gdi_multi.wait();
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
@@ -1126,17 +1117,15 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    ** handle results
    */
    /* --- exec host */
-   gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_EH_LIST, eh_id, mal, exechost_l);
+   gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_EH_LIST, eh_id, exechost_l);
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- queue */
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CQ_LIST, q_id, mal, queue_l);
+      gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_CQ_LIST, q_id, queue_l);
       if (answer_list_has_error(answer_list)) {
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
@@ -1144,9 +1133,8 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    /* --- job */
    if (job_l && (show & QHOST_DISPLAY_JOBS)) {
       lListElem *ep = nullptr;
-      gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_JB_LIST, j_id, mal, job_l);
+      gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_JB_LIST, j_id, job_l);
       if (answer_list_has_error(answer_list)) {
-         lFreeList(&mal);
          DRETURN(false);
       }
       /*
@@ -1161,30 +1149,26 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    }
 
    /* --- complex attribute */
-   gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CE_LIST, ce_id, mal, centry_l);
+   gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_CE_LIST, ce_id, centry_l);
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- pe */
-   gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_PE_LIST, pe_id, mal, pe_l);
+   gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_PE_LIST, pe_id, pe_l);
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- user lists */
-   gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_US_LIST, acl_id, mal, acl_l);
+   gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_US_LIST, acl_id, acl_l);
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
    /* --- apply global configuration for sge_hostcmp() scheme */
-   gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_CONF_LIST, gc_id, mal, &conf_l);
+   gdi_multi.get_response(answer_list, SGE_GDI_GET, ocs::GdiTarget::SGE_CONF_LIST, gc_id, &conf_l);
    if (answer_list_has_error(answer_list)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
    if (lFirst(conf_l)) {
@@ -1193,7 +1177,6 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
    }
    
    lFreeList(&conf_l);
-   lFreeList(&mal);
    DRETURN(true);
 }
 

@@ -450,7 +450,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
      */
     sge_gdi_task_class_t *task = packet->first_task;
 
-    if (task->target == SGE_JB_LIST &&
+    if (task->target == ocs::GdiTarget::Target::SGE_JB_LIST &&
         ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
         (SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_COPY))) {
        lListElem *job, *next_job;

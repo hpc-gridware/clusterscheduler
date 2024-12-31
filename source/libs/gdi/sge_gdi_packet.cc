@@ -174,7 +174,7 @@ static void
 sge_gdi_task_free(sge_gdi_task_class_t **task);
 
 static sge_gdi_task_class_t *
-sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command, lList **lp,
+sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
                     lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
 
 #if defined(SGE_GDI_PACKET_DEBUG)
@@ -208,7 +208,7 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
 #endif
 
 static sge_gdi_task_class_t *
-sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command, lList **lp,
+sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
                     lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
 
@@ -482,7 +482,7 @@ sge_gdi_packet_create(lList **answer_list) {
 *     gdi/request_internal/sge_gdi_task_create()
 ******************************************************************************/
 void
-sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command,
+sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command,
                            lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
    sge_gdi_task_class_t *task = sge_gdi_task_create(packet, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);

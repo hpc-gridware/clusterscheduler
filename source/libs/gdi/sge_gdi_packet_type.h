@@ -34,15 +34,15 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
+
 #include "uti/sge_uidgid.h"
+
+#include "gdi/ocs_GdiMulti.h"
+#include "gdi/ocs_GdiTarget.h"
 
 #include "cull/cull.h"
 
 #include "comm/cl_communication.h"
-
-typedef struct _sge_gdi_task_class_t sge_gdi_task_class_t;
-
-typedef struct _sge_gdi_packet_class_t sge_gdi_packet_class_t;
 
 // request types that can be encapsulated into packages/tasks
 typedef enum {
@@ -51,7 +51,7 @@ typedef enum {
    PACKET_ACK_REQUEST
 } gdi_packet_request_type_t;
 
-struct _sge_gdi_task_class_t {
+struct sge_gdi_task_class_t {
    /*
     * id identifying the GDI packet uniquely within the
     * context of a GDI client
@@ -62,7 +62,7 @@ struct _sge_gdi_task_class_t {
     * common parts of a GDI request
     */
    u_long32 command;
-   u_long32 target;
+   ocs::GdiTarget::Target target;
    lList *data_list;
    lList *answer_list;
    lCondition *condition;
@@ -88,7 +88,7 @@ struct _sge_gdi_task_class_t {
    sge_gdi_task_class_t *next;
 };
 
-struct _sge_gdi_packet_class_t {
+struct sge_gdi_packet_class_t {
    /* 
     * mutex to gard the "is_handled" flag of this structure 
     */

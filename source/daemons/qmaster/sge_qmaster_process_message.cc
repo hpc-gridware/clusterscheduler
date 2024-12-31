@@ -113,7 +113,8 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
-   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &data_list, nullptr, nullptr, nullptr, false);
+   sge_gdi_packet_append_task(packet, nullptr, ocs::GdiTarget::Target::NO_TARGET, 0, &data_list, nullptr, nullptr, nullptr, false);
+
 
    // Put the packet into the task queue so that workers can handle it
    sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
@@ -304,14 +305,14 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
       if (operation == SGE_GDI_PERMCHECK) {
          // GDI permission requests to check client user and host permissions can be processed with Listener DS
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_TRIGGER && (target == SGE_MASTER_EVENT || target == SGE_SC_LIST || target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+      } else if (operation == SGE_GDI_TRIGGER && (target == ocs::GdiTarget::Target::SGE_MASTER_EVENT || target == ocs::GdiTarget::Target::SGE_SC_LIST || target == ocs::GdiTarget::Target::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
          // Also following requests can be processed with Listener DS:
          //    - shutdown request of qmaster (SGE_MASTER_EVENT)
          //    - trigger scheduling (SGE_SC_LIST)
          //    - termination of event client (SGE_EV_LIST)
          //    - start stop of thread (SGE_DUMMY_LIST)
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET && (target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+      } else if (operation == SGE_GDI_GET && (target == ocs::GdiTarget::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
          // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
          // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);

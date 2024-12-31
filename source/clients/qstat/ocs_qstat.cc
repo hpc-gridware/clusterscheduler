@@ -2026,7 +2026,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
 
    if (!isXML) {
@@ -2091,7 +2091,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
             JB_grp_list, RN_Type);
    /* get job list */
-   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
 
@@ -2250,7 +2250,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = sge_gdi(ocs::GdiTarget::SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
       xml_qstat_show_job_info(&ilp, &alp, qstat_env);

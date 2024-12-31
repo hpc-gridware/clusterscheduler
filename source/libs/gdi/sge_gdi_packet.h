@@ -51,7 +51,7 @@ bool
 sge_gdi_packet_free(sge_gdi_packet_class_t **packet_handle);
 
 void
-sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, u_long32 target, u_long32 command,
+sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command,
                            lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
 
 u_long32

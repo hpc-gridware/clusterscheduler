@@ -37,6 +37,7 @@
 
 #include "gdi/sge_gdi_packet_type.h"
 #include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiMulti.h"
 
 /*
  * allowed values for command field of a gdi request
@@ -82,74 +83,6 @@ enum {
 #define SGE_GDI_GET_OPERATION(x) ((x)&SGE_GDI_OPERATION)
 #define SGE_GDI_GET_SUBCOMMAND(x) ((x)&SGE_GDI_SUBCOMMAND)
 #define SGE_GDI_IS_SUBCOMMAND_SET(x,y) ((x)&(y))
-
-/*
- * allowed values for target field of GDI request
- * (see sge_gdi_packet_class_t and sge_gdi_task_class_t
- */
-enum {
-   SGE_AH_LIST = 1,
-   SGE_SH_LIST,
-   SGE_EH_LIST,
-   SGE_CQ_LIST,
-   SGE_JB_LIST,
-   SGE_EV_LIST,
-   SGE_CE_LIST,
-   SGE_ORDER_LIST,
-   SGE_MASTER_EVENT,
-   SGE_CONF_LIST,
-   SGE_UM_LIST,
-   SGE_UO_LIST,
-   SGE_PE_LIST,
-   SGE_SC_LIST,          /* schedconf list */
-   SGE_UU_LIST,
-   SGE_US_LIST,
-   SGE_PR_LIST,
-   SGE_STN_LIST,
-   SGE_CK_LIST,
-   SGE_CAL_LIST,
-   SGE_SME_LIST,
-   SGE_ZOMBIE_LIST,
-   SGE_USER_MAPPING_LIST,
-   SGE_HGRP_LIST,
-   SGE_RQS_LIST,
-   SGE_AR_LIST,
-   SGE_DUMMY_LIST
-};
-
-/*
-** Special target numbers for complex requests which shall be handled
-** directly at the master in order to reduce network traffic and replication
-** of master lists. They are only useful for SGE_GDI_GET requests
-** ATTENTION: the numbers below must not collide with the numbers in the enum
-**            directly above
-*/
-enum {
-   SGE_QSTAT = 1024,
-   SGE_QHOST
-};
-
-/* sge_gdi_multi enums */
-enum {
-   SGE_GDI_RECORD,
-   SGE_GDI_SEND,
-   SGE_GDI_SHOW
-};
-
-class state_gdi_multi {
-public:
-   sge_gdi_packet_class_t *packet;
-   lList **malpp;
-   state_gdi_multi() : packet(nullptr), malpp(nullptr) {
-      ;
-   }
-   ~state_gdi_multi() {
-      sge_gdi_packet_free(&packet);
-      lFreeList(malpp);
-   }
-};
-
-bool gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 
 /* from gdi_checkpermissions.h */
 #define MANAGER_CHECK     (1<<0)
@@ -214,14 +147,7 @@ typedef struct {
 } struct_msg_t;
 
 lList
-*sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp);
-
-int
-sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
-               state_gdi_multi *state, bool do_copy);
-
-void
-sge_gdi_wait(lList **malpp, state_gdi_multi *state);
+*sge_gdi(ocs::GdiTarget::Target target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp);
 
 int sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, int *tag, int synchron,
                              u_long32 for_request_mid, u_long32 *mid);
@@ -272,10 +198,6 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
 void general_communication_error(const cl_application_error_list_elem_t *commlib_error);
 
 int gdi_log_flush_func(cl_raw_list_t *list_p);
-
-bool
-gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
-
 
 void gdi_default_exit_func(int i);
 

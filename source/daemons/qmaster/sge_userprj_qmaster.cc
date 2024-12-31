@@ -81,7 +81,7 @@ do_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
 int
 userprj_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+   int user_flag = (object->target == ocs::GdiTarget::Target::SGE_UU_LIST) ? 1 : 0;
    int pos;
    const char *userprj;
    u_long32 uval;
@@ -233,7 +233,7 @@ userprj_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **
 
 int
 userprj_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+   int user_flag = (object->target == ocs::GdiTarget::Target::SGE_UU_LIST) ? 1 : 0;
    const lListElem *rqs;
    int obj_key, obj_filter, obj_consider;
    ev_event obj_add_event, obj_mod_event;
@@ -269,7 +269,7 @@ userprj_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLis
 int
 userprj_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+   int user_flag = (object->target == ocs::GdiTarget::SGE_UU_LIST) ? 1 : 0;
 
    DENTER(TOP_LAYER);
 
@@ -576,7 +576,7 @@ static int do_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
 
    DENTER(TOP_LAYER);
 
-   userList = get_gdi_object(SGE_UU_LIST);
+   userList = get_gdi_object(ocs::GdiTarget::SGE_UU_LIST);
 
    /* 
     * Add anUser to the user list.

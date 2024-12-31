@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   alp = sge_gdi(SGE_AR_LIST, SGE_GDI_DEL, &id_list, nullptr, nullptr);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_AR_LIST, SGE_GDI_DEL, &id_list, nullptr, nullptr);
    lFreeList(&id_list);
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);

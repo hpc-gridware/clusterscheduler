@@ -195,7 +195,7 @@ int main(int argc, const char **argv) {
    if (all_users)
       gdi_cmd |= SGE_GDI_ALL_USERS;
 
-   alp = sge_gdi(SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {

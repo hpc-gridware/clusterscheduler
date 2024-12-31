@@ -21,6 +21,9 @@
 # source/libs/gdi
 set(LIBRARY_NAME gdi)
 set(LIBRARY_SOURCES
+        ocs_GdiMode.cc
+        ocs_GdiMulti.cc
+        ocs_GdiTarget.cc
         ocs_gdi_execd_delivery.cc
       qm_name.cc
         ocs_gdi_client.cc

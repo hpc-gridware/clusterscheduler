@@ -645,7 +645,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
 static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);
 static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp); 
-static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state);
+static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
 static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error);
@@ -1490,7 +1490,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
+      alp = sge_gdi(ocs::GdiTarget::Target::SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
     
       aep = lFirst(alp);
     
@@ -2531,7 +2531,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
+      alp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
       lFreeList(&lp); 
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
@@ -2585,7 +2585,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
 static bool
-ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
+ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2617,9 +2617,8 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      commit_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_EV_LIST, SGE_GDI_MOD,
-                                &lp, nullptr, nullptr, state, false);
-      sge_gdi_wait(malpp, state);
+      commit_id = gdi_multi->request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr, false);
+      gdi_multi->wait();
       if (lp != nullptr) {
          lFreeList(&lp);
       }
@@ -2627,8 +2626,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
       if (alp != nullptr) {
          answer_list_handle_request_answer_list(&alp, stderr);
       } else {
-         gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, commit_id,
-                                      *malpp, nullptr);
+         gdi_multi->get_response(&alp, SGE_GDI_ADD, ocs::GdiTarget::SGE_ORDER_LIST, commit_id, nullptr);
 
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 

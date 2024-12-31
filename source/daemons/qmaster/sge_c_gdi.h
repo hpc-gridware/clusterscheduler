@@ -80,7 +80,7 @@ typedef int (*on_success_func_t)(
 );
 
 struct _gdi_object_t {
-   u_long32 target;          /* SGE_QUEUE_LIST */
+   ocs::GdiTarget::Target target;          /* SGE_QUEUE_LIST */
    int key_nm;          /* QU_qname */
    lDescr *type;           /* QU_Type */
    const char *object_name;    /* "queue" */

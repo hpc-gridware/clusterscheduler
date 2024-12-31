@@ -104,7 +104,7 @@ struct sge_evc_class_str {
 
    ev_registration_id (*ec_get_id)(sge_evc_class_t *thiz);
 
-   bool (*ec_commit_multi)(sge_evc_class_t *thiz, lList **malp, state_gdi_multi *state);
+   bool (*ec_commit_multi)(sge_evc_class_t *thiz, lList **malp, ocs::GdiMulti *state);
 
    bool (*ec_get)(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
 

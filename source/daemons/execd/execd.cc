@@ -493,13 +493,13 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
+         alp = sge_gdi(ocs::GdiTarget::Target::SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = sge_gdi(SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
+         alp = sge_gdi(ocs::GdiTarget::SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
                         &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);

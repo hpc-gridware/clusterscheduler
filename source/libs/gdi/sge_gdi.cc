@@ -86,102 +86,11 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id,
 static void
 dump_receive_info(cl_com_message_t **message, cl_com_endpoint_t **sender);
 
-static const char *
-target2string(u_long32 target);
-
 static int
 gdi_send_message(int synchron, const char *tocomproc, int toid, const char *tohost, int tag, char **buffer,
                   int buflen, u_long32 *mid);
 
 
-static const char *
-target2string(u_long32 target) {
-   const char *ret;
-
-   switch (target) {
-      case SGE_AH_LIST:
-         ret = "SGE_AH_LIST";
-         break;
-      case SGE_SH_LIST:
-         ret = "SGE_SH_LIST";
-         break;
-      case SGE_EH_LIST:
-         ret = "SGE_EH_LIST";
-         break;
-      case SGE_CQ_LIST:
-         ret = "SGE_CQ_LIST";
-         break;
-      case SGE_JB_LIST:
-         ret = "SGE_JB_LIST";
-         break;
-      case SGE_EV_LIST:
-         ret = "SGE_EV_LIST";
-         break;
-      case SGE_CE_LIST:
-         ret = "SGE_CE_LIST";
-         break;
-      case SGE_ORDER_LIST:
-         ret = "SGE_ORDER_LIST";
-         break;
-      case SGE_MASTER_EVENT:
-         ret = "SGE_MASTER_EVENT";
-         break;
-      case SGE_CONF_LIST:
-         ret = "SGE_CONF_LIST";
-         break;
-      case SGE_UM_LIST:
-         ret = "SGE_UM_LIST";
-         break;
-      case SGE_UO_LIST:
-         ret = "SGE_UO_LIST";
-         break;
-      case SGE_PE_LIST:
-         ret = "SGE_PE_LIST";
-         break;
-      case SGE_SC_LIST:
-         ret = "SGE_SC_LIST";
-         break;
-      case SGE_UU_LIST:
-         ret = "SGE_UU_LIST";
-         break;
-      case SGE_US_LIST:
-         ret = "SGE_US_LIST";
-         break;
-      case SGE_PR_LIST:
-         ret = "SGE_PR_LIST";
-         break;
-      case SGE_STN_LIST:
-         ret = "SGE_STN_LIST";
-         break;
-      case SGE_CK_LIST:
-         ret = "SGE_CK_LIST";
-         break;
-      case SGE_CAL_LIST:
-         ret = "SGE_CAL_LIST";
-         break;
-      case SGE_SME_LIST:
-         ret = "SGE_SME_LIST";
-         break;
-      case SGE_ZOMBIE_LIST:
-         ret = "SGE_ZOMBIE_LIST";
-         break;
-      case SGE_USER_MAPPING_LIST:
-         ret = "SGE_USER_MAPPING_LIST";
-         break;
-      case SGE_HGRP_LIST:
-         ret = "SGE_HGRP_LIST";
-         break;
-      case SGE_RQS_LIST:
-         ret = "SGE_RQS_LIST";
-         break;
-      case SGE_AR_LIST:
-         ret = "SGE_AR_LIST";
-         break;
-      default:
-         ret = "unknown list";
-   }
-   return ret;
-}
 
 const char *
 gdi_get_act_master_host(bool reread) {
@@ -268,266 +177,19 @@ gdi_is_alive(lList **answer_list) {
    DRETURN(cl_ret);
 }
 
-/****** gdi/request/gdi_extract_answer() **********************************
-*  NAME
-*     gdi_extract_answer() -- exctact answers of a multi request.
-*
-*  SYNOPSIS
-*     lList* gdi_extract_answer(u_long32 cmd, u_long32 target,
-*                                   int id, lList* mal, lList** olpp) 
-*
-*  FUNCTION
-*     This function extracts the answer for each invidual request on 
-*     previous sge_gdi_multi() calls. 
-*
-*  INPUTS
-*     lList** alpp    - 
-*        List for answers if an error occurs in gdi_extract_answer
-*        This list gets allocated by GDI. The caller is responsible for 
-*        freeing. A response is a list element containing a field with a 
-*        status value (AN_status). The value STATUS_OK is used in case of 
-*        success. STATUS_OK and other values are defined in sge_answerL.h. 
-*        The second field (AN_text) in a response list element is a string 
-*        that describes the performed operation or a description of an error.
-*
-*     u_long32 cmd    - 
-*        bitmask which decribes the operation 
-*        (see sge_gdi_multi)
-*
-*     u_long32 target - 
-*        unique id to identify masters list
-*        (see sge_gdi_multi) 
-*
-*     int id          - 
-*        unique id returned by a previous
-*        sge_gdi_multi() call. 
-*
-*     lList* mal      - List of answer/response lists returned from
-*        sge_gdi_multi(mode=SGE_GDI_SEND)
-*
-*     lList** olpp    - 
-*        This parameter is used to get a list in case of SGE_GDI_GET command. 
-         The caller is responsible for freeing by using lFreeList(). 
-*
-*  RESULT
-*     true   in case of success
-*     false  in case of error
-*
-*  NOTES
-*     MT-NOTE: gdi_extract_answer() is MT safe
-******************************************************************************/
-bool
-gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp) {
-   DENTER(GDI_LAYER);
-   int operation = SGE_GDI_GET_OPERATION(cmd);
-   int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
-
-   if (!mal || id < 0) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
-      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   lListElem *map = lGetElemUlongRW(mal, MA_id, id);
-   if (!map) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, target2string(target));
-      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   if ((operation == SGE_GDI_GET) || (operation == SGE_GDI_PERMCHECK) ||
-       (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
-      if (!olpp) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
-         answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DRETURN(false);
-      }
-      lXchgList(map, MA_objects, olpp);
-   }
-
-   lXchgList(map, MA_answers, alpp);
-   DRETURN(true);
-}
-
-lList *sge_gdi(u_long32 target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp) {
+lList *sge_gdi(ocs::GdiTarget::Target target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp) {
    DENTER(GDI_LAYER);
    lList *alp = nullptr;
-   lList *mal = nullptr;
-   state_gdi_multi state{};
+   ocs::GdiMulti gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
-   int id = sge_gdi_multi(&alp, SGE_GDI_SEND, target, cmd, lpp, cp, enp, &state, true);
+   int id = gdi_multi.request(&alp, ocs::GdiMode::SEND, target, cmd, lpp, cp, enp, true);
    if (id != -1) {
-      sge_gdi_wait(&mal, &state);
-      gdi_extract_answer(&alp, cmd, target, id, mal, lpp);
-      lFreeList(&mal);
+      gdi_multi.wait();
+      gdi_multi.get_response(&alp, cmd, target, id, lpp);
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
    DRETURN(alp);
-}
-
-int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp,
-                   state_gdi_multi *state, bool do_copy) {
-   DENTER(GDI_LAYER);
-   int ret;
-
-   /*
-    * Create a new packet (if it not already exist) and store it
-    * in state_gdi_multi structure
-    */
-   sge_gdi_packet_class_t *packet = state->packet;
-   if (packet == nullptr) {
-      packet = sge_gdi_packet_create(alpp);
-      state->packet = packet;
-   }
-
-   /*
-    * Add a task to the packet and if it is the last task of a
-    * multi GDI request (mode == SGE_GDI_SEND) then execute it
-    */
-   if (packet != nullptr) {
-      sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
-      ret = sge_gdi_packet_get_last_task_id(packet);
-      if (mode == SGE_GDI_SEND) {
-         int local_ret;
-
-         if (component_is_qmaster_internal()) {
-            local_ret = sge_gdi_packet_execute_internal(alpp, packet);
-         } else {
-            local_ret = sge_gdi_packet_execute_external(alpp, packet);
-         }
-         if (!local_ret) {
-            /* answer has been written in ctx->sge_gdi_packet_execute() */
-            sge_gdi_packet_free(&packet);
-            state->packet = nullptr;
-            ret = -1;
-         }
-      }
-   } else {
-      /* answer list has been filled by sge_gdi_packet_create() */
-      ret = -1;
-   }
-   DRETURN(ret);
-}
-
-/****** gdi/request/sge_gdi_wait() *******************************************
-*  NAME
-*     sge_gdi_wait() -- wait till a GDI request is finished
-*
-*  SYNOPSIS
-*     bool 
-*     sge_gdi_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp,
-*                   state_gdi_multi *state) 
-*
-*  FUNCTION
-*     This functions waits until a GDI multi request is handled by
-*     a qmaster "worker" thread. This means that the thread executing this
-*     function will block till either the GDI request is done successfully
-*     or till a detailed list of error messages, describing the reason
-*     why the request could not be executed, is available.
-*
-*     Input parameters for this function are the GDI context "ctx" 
-*     and the "state" structure which has to be initialized by calling 
-*     sge_gdi_multi(... mode=SGE_GDI_RECORED...) zero or multiple times
-*     and sge_gdi_multi(... mode=SGE_GDI_SEND...) once.
-*
-*     If the function itself fails it will append answer list messages
-*     to "alpp" and return this "false" as return value". Otherwise
-*     the multi answer list "malpp" will be initialized, which can later 
-*     on be evaluated with gdi_extract_answer(), and the function
-*     will return with "true".
-*
-*  INPUTS
-*     sge_gdi_ctx_class_t* ctx - context object 
-*     lList **alpp             - answer list for this function 
-*     lList **malpp            - multi answer list 
-*     state_gdi_multi *state   - gdi state variable 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  EXAMPLE
-*     {
-*        state_gdi_multi state = STATE_GDI_MULTI_INIT;
-*        lEnumeration *what_cqueue = lWhat("%T(ALL)", CQ_Type);
-*        lCondition *where_cqueue = nullptr;
-*        lEnumeration *what_job = lWhat("%T(ALL)", JB_Type);
-*        lCondition *where_job = nullptr;
-*        lList *local_answer_list = nullptr;
-*        int cqueue_request_id;
-*        int job_request_id;
-*
-*        cqueue_request_id = sge_gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
-*                                          SGE_CQ_LIST, SGE_GDI_GET, nullptr,
-*                                          where_cqueue, what_cqueue, &state, true);
-*        job_request_id = sge_gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
-*                                        SGE_JB_LIST, SGE_GDI_GET, nullptr,
-*                                        where_job, what_job, &state, true);
-*        if (cqueue_request_id != -1 && job_request_id != -1 &&
-*            !answer_list_has_error(&local_answer_list)) {
-*           lList *multi_answer_list = nullptr;
-*           lList *list_cqueue = nullptr;
-*           lList *list_job = nullptr;
-*           lList *answer_cqueue = nullptr;
-*           lList *answer_job = nullptr;
-*           bool local_ret;
-*
-*           local_ret = sge_gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
-*           gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST,
-*                                  cqueue_request_id, multi_answer_list, &list_cqueue);
-*           gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
-*                                  job_request_id, multi_answer_list, &list_job);
-*
-*           if (!local_ret || answer_list_has_error(&answer_cqueue) || 
-*               answer_list_has_error(&answer_job) || answer_list_has_error(&local_answer_list)) {
-*              ERROR("GDI multi request failed");
-*           } else {
-*              INFO("GDI multi request was successful");
-*              INFO("got cqueue list with " sge_U32CFormat " and cqueue answer "
-*                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_cqueue)),
-*                    sge_u32c(lGetNumberOfElem(answer_cqueue)));
-*              INFO("got job list with " sge_U32CFormat " and job answer "
-*                    "list with " sge_U32CFormat " elements.", sge_u32c(lGetNumberOfElem(list_job)),
-*                    sge_u32c(lGetNumberOfElem(answer_job)));
-*           }
-*           lFreeList(&multi_answer_list);
-*           lFreeList(&answer_cqueue);
-*           lFreeList(&answer_job);
-*           lFreeList(&list_cqueue);
-*           lFreeList(&list_job);
-*        } else {
-*           ERROR("QMASTER INTERNAL MULTI GDI TEST FAILED");
-*           ERROR("unable to send intern gdi request (cqueue_request_id=%d, " "job_request_id=%d", cqueue_request_id, job_request_id);
-*        }
-*
-*        lFreeList(&local_answer_list);
-*     }
-*
-*  NOTES
-*     MT-NOTE: sge_gdi_wait() is MT safe
-*
-*  SEE ALSO
-*     gdi/request/sge_gdi()
-*     gdi/request/sge_gdi_multi()
-*     gdi/request/gdi_extract_answer()
-*******************************************************************************/
-void
-sge_gdi_wait(lList **malpp, state_gdi_multi *state) {
-   DENTER(GDI_LAYER);
-
-   if (state->packet != nullptr) {
-      sge_gdi_packet_class_t *packet = state->packet;
-      state->packet = nullptr;
-
-      if (component_is_qmaster_internal()) {
-         sge_gdi_packet_wait_for_result_internal(&packet, malpp);
-      } else {
-         sge_gdi_packet_wait_for_result_external(&packet, malpp);
-      }
-   }
-   DRETURN_VOID;
 }
 
 /*---------------------------------------------------------
@@ -776,7 +438,7 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
 */
 lList *gdi_tsm() {
    DENTER(GDI_LAYER);
-   lList *alp = sge_gdi(SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+   lList *alp = sge_gdi(ocs::GdiTarget::SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
    DRETURN(alp);
 }
 
@@ -804,7 +466,7 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
    lList *alp = lCreateList("answer", AN_Type);
 
    if (action_flag & MASTER_KILL) {
-      lList *tmpalp = sge_gdi(SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -815,12 +477,12 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
-      lList *tmpalp = sge_gdi(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
    if (action_flag & THREAD_START) {
-      lList *tmpalp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -832,7 +494,7 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
       }
-      lList *tmpalp = sge_gdi(SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -856,7 +518,7 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
          lSetUlong(hlep, ID_force, (action_flag & JOB_KILL) ? 1 : 0);
          lAppendElem(hlp, hlep);
       }
-      lList *tmpalp = sge_gdi(SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);
       lFreeList(&hlp);
    }
@@ -900,7 +562,7 @@ sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
 
    // fetch permissions for current user and host from qmaster
    lList *permission_list = nullptr;
-   lList *alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permission_list, nullptr, nullptr);
+   lList *alp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permission_list, nullptr, nullptr);
    if (permission_list == nullptr || lGetNumberOfElem(permission_list) != 1) {
       answer_list_append_list(alpp, &alp);
       lFreeList(&permission_list);
@@ -1284,7 +946,7 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
       DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = sge_gdi(SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
+   alp = sge_gdi(ocs::GdiTarget::SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);

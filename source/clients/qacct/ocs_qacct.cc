@@ -1512,19 +1512,17 @@ lList **hgrp_l
 ) {
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
-   lList *mal = nullptr;
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
-   state_gdi_multi state{};
+   ocs::GdiMulti gdi_multi{};
 
    DENTER(TOP_LAYER);
 
    /*
-   ** GET SGE_CE_LIST 
+   ** GET SGE_CE_LIST
    */
    if (ppcentries) {
       what = lWhat("%T(ALL)", CE_Type);
-      ce_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
-                             nullptr, nullptr, what, &state, true);
+      ce_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
       lFreeWhat(&what);
 
       if (answer_list_has_error(alpp)) {
@@ -1532,13 +1530,12 @@ lList **hgrp_l
       }
    }
    /*
-   ** GET SGE_EH_LIST 
+   ** GET SGE_EH_LIST
    */
    if (ppexechosts) {
       where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
       what = lWhat("%T(ALL)", EH_Type);
-      eh_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
-                              nullptr, where, what, &state, true);
+      eh_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_EH_LIST, SGE_GDI_GET, nullptr, where, what, true);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -1548,12 +1545,11 @@ lList **hgrp_l
    }
 
    /*
-   ** hgroup 
+   ** hgroup
    */
    if (hgrp_l) {
       what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
-                           nullptr, nullptr, what, &state, true);
+      hgrp_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_HGRP_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
       lFreeWhat(&what);
 
       if (answer_list_has_error(alpp)) {
@@ -1561,16 +1557,14 @@ lList **hgrp_l
       }
    }
    /*
-   ** GET SGE_QUEUE_LIST 
+   ** GET SGE_QUEUE_LIST
    */
    what = lWhat("%T(ALL)", QU_Type);
-   q_id = sge_gdi_multi(alpp, SGE_GDI_SEND, SGE_CQ_LIST, SGE_GDI_GET,
-                           nullptr, nullptr, what, &state, true);
-   sge_gdi_wait(&mal, &state);
+   q_id = gdi_multi.request(alpp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_CQ_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   gdi_multi.wait();
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
@@ -1579,45 +1573,36 @@ lList **hgrp_l
    */
    /* --- complex */
    if (ppcentries) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CE_LIST, ce_id,
-                                   mal, ppcentries);
+      gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_CE_LIST, ce_id, ppcentries);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- exec host */
    if (ppexechosts) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_EH_LIST, eh_id,
-                                    mal, ppexechosts);
+      gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_EH_LIST, eh_id, ppexechosts);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- queue */
    if (ppqueues) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CQ_LIST, q_id,
-                                 mal, ppqueues);
+      gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_CQ_LIST, q_id, ppqueues);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- hgrp */
    if (hgrp_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_HGRP_LIST, hgrp_id, mal,
-                                   hgrp_l);
+      gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_HGRP_LIST, hgrp_id, hgrp_l);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
    /* --- end */
-   lFreeList(&mal);
    DRETURN(true);
 }
 

@@ -82,14 +82,14 @@ sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
    }
 
    switch (target) {
-      case SGE_UM_LIST:
+      case ocs::GdiTarget::Target::SGE_UM_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
          key = UM_name;
          descr = UM_Type;
          eve = sgeE_MANAGER_ADD;
          break;
-      case SGE_UO_LIST:
+      case ocs::GdiTarget::Target::SGE_UO_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
          key = UO_name;
@@ -187,13 +187,13 @@ sge_del_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
    }
 
    switch (target) {
-      case SGE_UM_LIST:
+      case ocs::GdiTarget::Target::SGE_UM_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
          key = UM_name;
          eve = sgeE_MANAGER_DEL;
          break;
-      case SGE_UO_LIST:
+      case ocs::GdiTarget::Target::SGE_UO_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
          key = UO_name;

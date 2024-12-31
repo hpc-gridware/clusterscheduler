@@ -101,7 +101,7 @@ hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 g
       element = lCopyElem(this_elem);
       hgroup_list = lCreateList("", HGRP_Type);
       lAppendElem(hgroup_list, element);
-      gdi_answer_list = sge_gdi(SGE_HGRP_LIST, gdi_command, &hgroup_list, nullptr, nullptr);
+      gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_HGRP_LIST, gdi_command, &hgroup_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
       lFreeList(&hgroup_list);
    }
@@ -122,7 +122,7 @@ hgroup_get_via_gdi(lList **answer_list, const char *name)
 
       what = lWhat("%T(ALL)", HGRP_Type);
       where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name);
-      gdi_answer_list = sge_gdi(SGE_HGRP_LIST, SGE_GDI_GET, &hostgroup_list, where, what);
+      gdi_answer_list = sge_gdi(ocs::GdiTarget::SGE_HGRP_LIST, SGE_GDI_GET, &hostgroup_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -420,7 +420,7 @@ bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree
       const lListElem *alep = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
-      alp = sge_gdi(SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, nullptr, what);
+      alp = sge_gdi(ocs::GdiTarget::SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, nullptr, what);
       lFreeWhat(&what);
 
       alep = lFirst(alp);

@@ -224,7 +224,8 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
       bool first = true;
 
       do {
-         u_long32 target = 0;
+         u_long32 target_ulong32 = 0;
+         ocs::GdiTarget::Target target = ocs::GdiTarget::Target::NO_TARGET;
          u_long32 command = 0;
          lList *data_list = nullptr;
          u_long32 version = 0;
@@ -239,9 +240,10 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
          if ((pack_ret = unpackint(pb, &(command)))) {
             goto error_with_mapping;
          }
-         if ((pack_ret = unpackint(pb, &(target)))) {
+         if ((pack_ret = unpackint(pb, &target_ulong32))) {
             goto error_with_mapping;
          }
+         target = static_cast<ocs::GdiTarget::Target>(target_ulong32);
          if ((pack_ret = unpackint(pb, &(version)))) {
             goto error_with_mapping;
          }

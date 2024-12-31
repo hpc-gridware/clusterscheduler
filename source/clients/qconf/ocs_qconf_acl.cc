@@ -83,7 +83,7 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
          user_name=lGetString(userarg, UE_name);
    
          /* get old acl */
-         answers = sge_gdi(SGE_US_LIST, SGE_GDI_GET, &acl, where, what);
+         answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_GET, &acl, where, what);
          lFreeList(&answers);
 
          if (acl && lGetNumberOfElem(acl) > 0) {
@@ -91,7 +91,7 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
                lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
 
                /* mod the acl */
-               answers = sge_gdi(SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
+               answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
             } else {
                already = 1;
             }
@@ -101,7 +101,7 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
             lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
             
             /* add the acl */
-            answers = sge_gdi(SGE_US_LIST, SGE_GDI_ADD, &acl, nullptr, nullptr);
+            answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_ADD, &acl, nullptr, nullptr);
          }
 
          if (already) {
@@ -168,14 +168,14 @@ sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args) {
          char *cp = nullptr;
          user_name=lGetString(userarg, UE_name);
          /* get old acl */
-         answers = sge_gdi(SGE_US_LIST, SGE_GDI_GET, &acl, where, what);
+         answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_GET, &acl, where, what);
          cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
          lFreeList(&answers);
          if (acl && lGetNumberOfElem(acl) > 0) {
             sge_free(&cp);
             if (lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
                lDelSubStr(lFirstRW(acl), UE_name, user_name, US_entries);
-               answers = sge_gdi(SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
+               answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
                cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
                status = lGetUlong(lFirst(answers), AN_status);
                lFreeList(&answers);
@@ -258,7 +258,7 @@ sge_client_get_acls(lList **alpp, lList *acl_args, lList **dst) {
       }
    }
    what = lWhat("%T(ALL)", US_Type);
-   answers = sge_gdi(SGE_US_LIST, SGE_GDI_GET, dst, where, what);
+   answers = sge_gdi(ocs::GdiTarget::Target::SGE_US_LIST, SGE_GDI_GET, dst, where, what);
    lFreeWhat(&what);
    lFreeWhere(&where);
 

@@ -240,7 +240,7 @@ host_list_add_missing_href(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t 
       lListElem *host = host_list_locate(this_list, hostname);
 
       if (host == nullptr) {
-         ret &= (sge_add_host_of_type(packet, task, hostname, SGE_EH_LIST, monitor) == 0);
+         ret &= (sge_add_host_of_type(packet, task, hostname, ocs::GdiTarget::Target::SGE_EH_LIST, monitor) == 0);
       }
    }
    DRETURN(ret);
@@ -279,17 +279,17 @@ int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
    }
 
    switch (target) {
-      case SGE_EH_LIST:
+      case ocs::GdiTarget::Target::SGE_EH_LIST:
          host_list = master_ehost_list;
          nm = EH_name;
          name = "execution host";
          break;
-      case SGE_AH_LIST:
+      case ocs::GdiTarget::Target::SGE_AH_LIST:
          host_list = master_ahost_list;
          nm = AH_name;
          name = "administrative host";
          break;
-      case SGE_SH_LIST:
+      case ocs::GdiTarget::SGE_SH_LIST:
          host_list = master_shost_list;
          nm = SH_name;
          name = "submit host";
@@ -341,20 +341,20 @@ int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
       check if someone tries to delete 
       the qmaster host from admin host list
    */
-   if (target == SGE_AH_LIST &&
+   if (target == ocs::GdiTarget::SGE_AH_LIST &&
        !sge_hostcmp(unique, qualified_hostname)) {
       ERROR(MSG_SGETEXT_CANTDELADMINQMASTER_S, qualified_hostname);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   if (target == SGE_EH_LIST &&
+   if (target == ocs::GdiTarget::SGE_EH_LIST &&
        host_is_referenced(hep, alpp, master_cqueue_list, master_hgroup_list)) {
       answer_list_log(alpp, false, true);
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   if (target == SGE_EH_LIST && !strcasecmp(unique, "global")) {
+   if (target == ocs::GdiTarget::SGE_EH_LIST && !strcasecmp(unique, "global")) {
       ERROR(SFNMAX, MSG_OBJ_DELGLOBALHOST);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
@@ -362,7 +362,7 @@ int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
 
    /* remove host file and send event */
    switch (target) {
-      case SGE_AH_LIST: {
+      case ocs::GdiTarget::SGE_AH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_ADMINHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -370,7 +370,7 @@ int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
          answer_list_output(&answer_list);
       }
          break;
-      case SGE_EH_LIST: {
+      case ocs::GdiTarget::SGE_EH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -380,7 +380,7 @@ int sge_del_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLi
          host_update_categories(nullptr, ep, packet->gdi_session);
 
          break;
-      case SGE_SH_LIST: {
+      case ocs::GdiTarget::SGE_SH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_SUBMITHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -1212,7 +1212,7 @@ sge_execd_startedup(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, 
 
    hep = host_list_locate(master_ehost_list, rhost);
    if (!hep) {
-      if (sge_add_host_of_type(packet, task, rhost, SGE_EH_LIST, monitor) < 0) {
+      if (sge_add_host_of_type(packet, task, rhost, ocs::GdiTarget::SGE_EH_LIST, monitor) < 0) {
          ERROR(MSG_OBJ_INVALIDHOST_S, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
