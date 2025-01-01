@@ -18,3 +18,11 @@
  ***************************************************************************/
 
 #include "ocs_GdiMode.h"
+
+std::string ocs::GdiMode::toString(Mode mode) {
+   switch (mode) {
+      case RECORD: return "RECORD";
+      case SEND: return "SEND";
+      default: return "UNKNOWN_MODE";
+   }
+}

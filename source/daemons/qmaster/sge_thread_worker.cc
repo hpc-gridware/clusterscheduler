@@ -218,7 +218,6 @@ sge_worker_main(void *arg) {
 
       // handle the packet only if it is not nullptr and the shutdown has not started
       if (packet != nullptr) {
-         sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
 
          DPRINTF("Request should be handled by thread type %d\n", packet->ds_type);
@@ -238,15 +237,13 @@ sge_worker_main(void *arg) {
             /*
              * test if a write lock is necessary
              */
-            task = packet->first_task;
-            while (task != nullptr) {
+            for (const auto *task : packet->tasks) {
                u_long32 command = SGE_GDI_GET_OPERATION(task->command);
 
                if (command != SGE_GDI_GET) {
                   is_only_read_request = false;
                   break;
                }
-               task = task->next;
             }
          } else {
             // PACKET_REPORT_REQUEST or PACKET_ACK_REQUEST
@@ -269,18 +266,16 @@ sge_worker_main(void *arg) {
 
          // handle the request (GDI/Report/Ack ...
          if (packet->request_type == PACKET_GDI_REQUEST) {
-            task = packet->first_task;
-            while (task != nullptr) {
-               sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
+            for (size_t i = 0; i < packet->tasks.size(); ++i) {
+               bool has_next = (i < packet->tasks.size() - 1);
 
-               task = task->next;
+               sge_gdi_task_class_t *task = packet->tasks[i];
+               sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor, has_next);
             }
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
-            task = packet->first_task;
-            sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+            sge_c_report(packet, packet->tasks[0], packet->host, packet->commproc, packet->commproc_id, packet->tasks[0]->data_list, p_monitor);
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
-            task = packet->first_task;
-            sge_c_ack(packet, task, p_monitor);
+            sge_c_ack(packet, packet->tasks[0], p_monitor);
          } else {
             DPRINTF("unknown request type %d\n", packet->request_type);
          }

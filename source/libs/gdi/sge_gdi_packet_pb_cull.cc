@@ -345,15 +345,14 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_
 bool
 sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb) {
    DENTER(GDI_PACKET_LAYER);
-   bool ret = true;
+   for (size_t i = 0; i < packet->tasks.size(); ++i) {
+      bool has_next = (i < packet->tasks.size() - 1);
 
-   sge_gdi_task_class_t *task = packet->first_task;
-   while (ret && task != nullptr) {
-      ret |= sge_gdi_packet_pack_task(packet, task, answer_list, pb);
-      task = task->next;
+      if (const bool ret = sge_gdi_packet_pack_task(packet, packet->tasks[i], answer_list, pb, has_next); !ret) {
+         return ret;
+      }
    }
-
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /****** gdi/request_internal/sge_gdi_packet_pack_task() **********************
@@ -402,7 +401,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *******************************************************************************/
 bool
 sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
-                         sge_pack_buffer *pb) {
+                         sge_pack_buffer *pb, bool has_next) {
    DENTER(GDI_PACKET_LAYER);
    bool ret = true;
    int pack_ret;
@@ -473,7 +472,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
-      pack_ret = packint(pb, (task->next != nullptr) ? 1 : 0);
+      pack_ret = packint(pb, has_next ? 1 : 0);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }

@@ -297,8 +297,7 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    // the assumption is correct. If READER or GLOBAL DS is required for at least one subtask, then
    // corresponding DS should be used for all sub-tasks.
    ocs::DataStore::Id type = ocs::DataStore::LISTENER;
-   sge_gdi_task_class_t *task = packet->first_task;
-   while (task) {
+   for (auto *task : packet->tasks) {
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 target = task->target;
 
@@ -337,7 +336,6 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
       if (type == ocs::DataStore::GLOBAL) {
          DRETURN(type);
       }
-      task = task->next;
    }
 
    DRETURN(type);
@@ -360,12 +358,12 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // check GDI version
    if (local_ret) {
-      local_ret = ocs::Version::do_versions_match(&packet->first_task->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
+      local_ret = ocs::Version::do_versions_match(&packet->tasks[0]->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
    }
 
    // check auth_info (user/group)
    if (local_ret) {
-      local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
+      local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->tasks[0]->answer_list,
                                                  &(packet->uid), packet->user, sizeof(packet->user),
                                                  &(packet->gid), packet->group, sizeof(packet->group),
                                                  &packet->amount, &packet->grp_array);
@@ -377,7 +375,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    if (local_ret) {
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
-         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+         answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
 
@@ -391,29 +389,27 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    //    - manager/operator permissions
    //    - admin/submit/exec host
    if (local_ret) {
-      sge_gdi_task_class_t *task = packet->first_task;
-      while(task) {
+      for (auto *task : packet->tasks) {
          local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
          if (!local_ret) {
             break;
          }
-         task = task->next;
       }
    }
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      sge_gdi_task_class_t *task = packet->first_task;
-
       init_packbuffer(&packet->pb, 0, 0);
-      while(task) {
+      for (size_t i = 0; i < packet->tasks.size(); ++i) {
+         bool has_next = (i < packet->tasks.size() - 1);
+         sge_gdi_task_class_t *task = packet->tasks[i];
+
          // data might still be that what client sent initially. no need to re-transfer that
          lFreeList(&task->data_list);
 
          // for all tasks we pack the answer of the first task which contains general errors
          // like version mismatch, auth_info or security issues.
-         sge_gdi_packet_pack_task(packet, task, &packet->first_task->answer_list, &packet->pb);
-         task = task->next;
+         sge_gdi_packet_pack_task(packet, task, &packet->tasks[0]->answer_list, &packet->pb, has_next);
       }
       sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                &packet->pb, TAG_GDI_REQUEST, packet->response_id, nullptr);
@@ -433,12 +429,10 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
       // handle the requests
       SGE_LOCK(LOCK_LISTENER, LOCK_READ);
-      sge_gdi_task_class_t *task = packet->first_task;
-      while (task != nullptr) {
-         DTRACE;
-         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
-
-         task = task->next;
+      for (size_t i = 0; i < packet->tasks.size(); ++i) {
+         bool has_next = (i < packet->tasks.size() - 1);
+         sge_gdi_task_class_t *task = packet->tasks[i];
+         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor, has_next);
       }
       SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
 

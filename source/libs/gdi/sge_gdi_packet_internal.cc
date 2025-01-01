@@ -115,8 +115,7 @@ sge_gdi_packet_create_multi_answer(sge_gdi_packet_class_t **packet, lList **malp
     * make multi answer list and move all data contained in packet 
     * into that structure 
     */
-   sge_gdi_task_class_t *task = (*packet)->first_task;
-   while (task != nullptr) {
+   for (auto *task : (*packet)->tasks) {
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
       lListElem *map = lAddElemUlong(malpp, MA_id, task->id, MA_Type);
@@ -129,8 +128,6 @@ sge_gdi_packet_create_multi_answer(sge_gdi_packet_class_t **packet, lList **malp
 
       lSetList(map, MA_answers, task->answer_list);
       task->answer_list = nullptr;
-
-      task = task->next;
    }
 
    /*
@@ -448,7 +445,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
      * job verification process might destroy the job and create a completely
      * new one with adjusted job attributes.
      */
-    sge_gdi_task_class_t *task = packet->first_task;
+    sge_gdi_task_class_t *task = packet->tasks[0];
 
     if (task->target == ocs::GdiTarget::Target::SGE_JB_LIST &&
         ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
@@ -643,32 +640,32 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
     *    - is the task sequence and the task id of each received task the same
     */
    if (ret) {
-      sge_gdi_task_class_t *send;
-      sge_gdi_task_class_t *recv;
       bool gdi_mismatch = false;
 
       if (packet->id != ret_packet->id) {
          gdi_mismatch = true;
       }
 
-      send = packet->first_task;
-      recv = ret_packet->first_task;
-      while (send != nullptr && recv != nullptr) {
-         if (send->id == recv->id) {
+      if (!gdi_mismatch && packet->tasks.size() != ret_packet->tasks.size()) {
+         gdi_mismatch = true;
+      }
+
+      if (!gdi_mismatch) {
+         for (size_t i = 0; i < packet->tasks.size(); i++) {
+            sge_gdi_task_class_t *send = packet->tasks[i];
+            sge_gdi_task_class_t *recv = ret_packet->tasks[i];
+
+            if (send->id != recv->id) {
+               gdi_mismatch = true;
+               break;
+            }
+
             lFreeList(&send->data_list);
             send->data_list = recv->data_list;
             send->answer_list = recv->answer_list;
             recv->data_list = nullptr;
             recv->answer_list = nullptr;
-         } else {
-            gdi_mismatch = true;
-            break;
          }
-         send = send->next;
-         recv = recv->next;
-      }
-      if (send != nullptr || recv != nullptr) {
-         gdi_mismatch = true;
       }
       if (gdi_mismatch) {
          /* For unusual errors, give more detail */
@@ -746,7 +743,7 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
    strncpy(packet->host, gdi_get_act_master_host(false), sizeof(packet->host)-1);
    packet->is_intern_request = true;
 
-   bool ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
+   bool ret = sge_gdi_packet_parse_auth_info(packet, &packet->tasks[0]->answer_list,
                                              &packet->uid, packet->user, sizeof(packet->user),
                                              &packet->gid, packet->group, sizeof(packet->group),
                                              &packet->amount, &packet->grp_array);

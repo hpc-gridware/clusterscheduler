@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <vector>
+
 #include "basis_types.h"
 
 #include "uti/sge_uidgid.h"
@@ -81,11 +83,6 @@ struct sge_gdi_task_class_t {
     * This avoids a copy operation 
     */
    bool do_select_pack_simultaneous;
-
-   /*
-    * pointer to the next task in a multi GDI request
-    */
-   sge_gdi_task_class_t *next;
 };
 
 struct sge_gdi_packet_class_t {
@@ -143,8 +140,7 @@ struct sge_gdi_packet_class_t {
     * pointers to the first and last task part of a multi
     * GDI request. This list contains at least one element
     */
-   sge_gdi_task_class_t *first_task;
-   sge_gdi_task_class_t *last_task;  
+   std::vector<sge_gdi_task_class_t *> tasks;
 
    /*
     * encrypted authenitication information. This information will 

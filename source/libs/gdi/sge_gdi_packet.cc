@@ -198,7 +198,6 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
       DPRINTF("task->answer_list = %p\n", task->answer_list);
       DPRINTF("task->condition = %p\n", task->condition);
       DPRINTF("task->enumeration = %p\n", task->enumeration);
-      DPRINTF("task->next = %p\n", task->next);
    } else {
       DPRINTF("task is nullptr\n");
    }
@@ -218,10 +217,9 @@ sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::Gd
       DRETURN(nullptr);
    }
 
-   task->id = ((packet->last_task != nullptr) ? (packet->last_task->id + 1) : 1);
+   task->id = packet->tasks.size() + 1;
    task->command = command;
    task->target = target;
-   task->next = nullptr;
    task->do_select_pack_simultaneous = false;
    if (do_copy) {
       if (enumeration != nullptr && *enumeration != nullptr) {
@@ -312,20 +310,15 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
    DENTER(TOP_LAYER);
 
    if (packet != nullptr) {
-      sge_gdi_task_class_t *task;
-
       DPRINTF("packet->id = " sge_U32CFormat "\n", sge_u32c(packet->id));
       DPRINTF("packet->host = " SFQ "\n", packet->host);
       DPRINTF("packet->commproc = " SFQ "\n", packet->commproc);
       DPRINTF("packet->auth_info = " SFQ "\n", packet->auth_info ? packet->auth_info : "<null>");
       DPRINTF("packet->version = " sge_U32CFormat "\n", sge_u32c(packet->version));
-      DPRINTF("packet->first_task = %p\n", packet->first_task);
-      DPRINTF("packet->last_task = %p\n", packet->last_task);
+      DPRINTF("packet->tasks = %d\n", packet->tasks.size());
 
-      task = packet->first_task;
-      while (task != nullptr) {
+      for (auto *task : packet->tasks) {
          sge_gdi_task_debug_print(task);
-         task = task->next;
       }
    } else {
       DPRINTF("packet is nullptr\n");;
@@ -368,12 +361,7 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet) {
 sge_gdi_packet_class_t *
 sge_gdi_packet_create_base(lList **answer_list) {
    DENTER(TOP_LAYER);
-   auto ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
-   if (ret == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_SGETEXT_NOMEM);
-      DRETURN(nullptr);
-   }
-   memset(ret, 0, sizeof(sge_gdi_packet_class_t));
+   auto ret = new sge_gdi_packet_class_t();
 
    int local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
    int local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
@@ -481,19 +469,13 @@ sge_gdi_packet_create(lList **answer_list) {
 *  SEE ALSO
 *     gdi/request_internal/sge_gdi_task_create()
 ******************************************************************************/
-void
+int
 sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command,
                            lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
    sge_gdi_task_class_t *task = sge_gdi_task_create(packet, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);
-   if (packet->last_task != nullptr) {
-      packet->last_task->next = task;
-      packet->last_task = task;
-   } else {
-      packet->first_task = task;
-      packet->last_task = task;
-   }
-   DRETURN_VOID;
+   packet->tasks.push_back(task);
+   DRETURN(task->id);
 }
 
 /****** gdi/request_internal/sge_gdi_task_get_operation_name() ****************
@@ -555,45 +537,6 @@ sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task) {
    return ret;
 }
 
-/****** gdi/request_internal/sge_gdi_packet_get_last_task_id() ****************
-*  NAME
-*     sge_gdi_packet_get_last_task_id() -- returns the last used task id
-*
-*  SYNOPSIS
-*     u_long32
-*     sge_gdi_packet_get_last_task_id(sge_gdi_packet_class_t *packet)
-*
-*  FUNCTION
-*     Returns the last used task id in a package or 0 if there is no task.
-*     Can be used to get the id of the last task created with
-*     sge_gdi_packet_append_task()
-*
-*  INPUTS
-*     sge_gdi_packet_class_t *packet - packet pointer
-*
-*  RESULT
-*     u_long32 - task id in the range [1, ULONG32_MAX]
-*                or 0
-*
-*  NOTES
-*     MT-NOTE: sge_gdi_packet_get_last_task_id() is not MT safe
-*
-*  SEE ALSO
-*     gdi/request_internal/sge_gdi_task_create()
-*     gdi/request_internal/sge_gdi_packet_append_task()
-******************************************************************************/
-u_long32
-sge_gdi_packet_get_last_task_id(sge_gdi_packet_class_t *packet) {
-   u_long32 ret = 0;
-
-   DENTER(TOP_LAYER);
-
-   if (packet->last_task != nullptr) {
-      ret = packet->last_task->id;
-   }
-   DRETURN(ret);
-}
-
 /****** gdi/request_internal/sge_gdi_packet_free() ****************************
 *  NAME
 *     sge_gdi_packet_free() -- free memory allocated by packet
@@ -630,11 +573,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
 
    DENTER(TOP_LAYER);
    if (packet != nullptr && *packet != nullptr) {
-      sge_gdi_task_class_t *task;
-
-      sge_gdi_task_class_t *next_task = (*packet)->first_task;
-      while ((task = next_task) != nullptr) {
-         next_task = task->next;
+      for (auto *task : (*packet)->tasks) {
          sge_gdi_task_free(&task);
       }
       int local_ret1 = pthread_mutex_destroy(&((*packet)->mutex));
@@ -644,7 +583,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
       }
       sge_free(&(*packet)->auth_info);
       sge_free(&(*packet)->grp_array);
-      sge_free(packet);
+      delete *packet;
    }
    DRETURN(ret);
 }

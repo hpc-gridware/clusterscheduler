@@ -521,10 +521,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      sge_gdi_packet_class_t *packet = nullptr;
                
                      if (sge_gdi_packet_unpack(&packet, nullptr, &buf)) {
-                        sge_gdi_task_class_t *task = nullptr;
-
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
-
                         printf("         packet:\n");
 
                         if (packet->id) {
@@ -544,8 +541,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         } else {
                            printf("auth_info   : %s\n", "nullptr");
                         }
-                        task = packet->first_task;
-                        while (task != nullptr) {
+                        for (auto *task : packet->tasks) {
                            printf("         task:\n");
 
                            if (task->command) {
@@ -586,8 +582,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            } else {
                               printf("id    : %s\n", "nullptr");
                            }
-   
-                           task = task->next;
                         }
                      }
 

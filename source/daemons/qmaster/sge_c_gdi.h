@@ -94,7 +94,7 @@ gdi_object_t *get_gdi_object(u_long32);
 
 bool
 sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                              lList **answer_list, monitoring_t *monitor);
+                              lList **answer_list, monitoring_t *monitor, bool has_next);
 
 bool
 sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
@@ -102,7 +102,7 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
 
 void
 sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
-                            monitoring_t *monitor);
+                            monitoring_t *monitor, bool has_next);
 
 int
 sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,

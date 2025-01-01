@@ -208,7 +208,7 @@ void sge_clean_lists() {
 
 bool
 sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                              lList **answer_list, monitoring_t *monitor) {
+                              lList **answer_list, monitoring_t *monitor, bool has_next) {
    DENTER(TOP_LAYER);
 
    const char *target_name = nullptr;
@@ -231,17 +231,17 @@ sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class
       case SGE_GDI_TRIGGER:
          MONITOR_LIS_GDI_TRIG(monitor);
          sge_c_gdi_trigger_in_listener(packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          DRETURN(true);
       case SGE_GDI_PERMCHECK:
          MONITOR_LIS_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          DRETURN(true);
       case SGE_GDI_GET:
          MONITOR_LIS_GDI_GET(monitor);
          sge_c_gdi_get_in_listener(ao, packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          DRETURN(true);
       default:
          // requests that are not handled in listener will be processed in a worker thread
@@ -308,7 +308,7 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
 /* ------------------------------------------------------------ */
 void
 sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                            lList **answer_list, monitoring_t *monitor) {
+                            lList **answer_list, monitoring_t *monitor, bool has_next) {
    DENTER(TOP_LAYER);
 
    const char *target_name = nullptr;
@@ -391,47 +391,47 @@ sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
       case SGE_GDI_GET:
          MONITOR_GDI_GET(monitor);
          sge_c_gdi_get_in_worker(ao, packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_ADD:
          MONITOR_GDI_ADD(monitor);
          sge_c_gdi_add(packet, task, ao, sub_command, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_DEL:
          MONITOR_GDI_DEL(monitor);
          sge_c_gdi_del(packet, task, sub_command, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_MOD:
          MONITOR_GDI_MOD(monitor);
          sge_c_gdi_mod(ao, packet, task, sub_command, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_COPY:
          MONITOR_GDI_CP(monitor);
          sge_c_gdi_copy(ao, packet, task, sub_command, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_TRIGGER:
          MONITOR_GDI_TRIG(monitor);
          sge_c_gdi_trigger_in_worker(packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_PERMCHECK:
          MONITOR_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       case SGE_GDI_REPLACE:
          MONITOR_GDI_REPLACE(monitor);
          sge_c_gdi_replace(ao, packet, task, sub_command, monitor);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
       default:
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_UNKNOWNOP);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-         sge_gdi_packet_pack_task(packet, task, answer_list, pb);
+         sge_gdi_packet_pack_task(packet, task, answer_list, pb, has_next);
          break;
    }
 

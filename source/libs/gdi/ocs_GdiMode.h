@@ -29,12 +29,6 @@ namespace ocs {
          SEND,
       };
 
-      static std::string targetToString(Mode target) {
-         switch (target) {
-            case RECORD: return "RECORD";
-            case SEND: return "SEND";
-            default: return "UNKNOWN_MODE";
-         }
-      }
+      static std::string toString(Mode mode);
    };
 }

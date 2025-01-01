@@ -76,8 +76,7 @@ ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target targe
     * multi GDI request (mode == ocs::GdiMode::SEND) then execute it
     */
    if (packet != nullptr) {
-      sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
-      ret = sge_gdi_packet_get_last_task_id(packet);
+      ret = sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
       if (mode == GdiMode::SEND) {
          int local_ret;
 
