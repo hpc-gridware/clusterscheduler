@@ -48,7 +48,7 @@ void
 rebuild_signal_events();
 
 void
-sge_gdi_qmod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+sge_gdi_qmod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, monitoring_t *monitor);
 
 int
 sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor);

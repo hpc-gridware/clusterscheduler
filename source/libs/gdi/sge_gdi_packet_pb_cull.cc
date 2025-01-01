@@ -362,7 +362,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *  SYNOPSIS
 *     bool 
 *     sge_gdi_packet_pack_task(sge_gdi_packet_class_t * packet, 
-*                              sge_gdi_task_class_t * task, 
+*                              ocs::GdiTask * task,
 *                              lList **answer_list, 
 *                              sge_pack_buffer *pb) 
 *
@@ -383,7 +383,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *
 *  INPUTS
 *     sge_gdi_packet_class_t * packet - GDI packet 
-*     sge_gdi_task_class_t * task     - GDI task 
+*     ocs::GdiTask * task     - GDI task
 *     lList **answer_list             - answer_list 
 *     sge_pack_buffer *pb             - packing buffer 
 *
@@ -400,7 +400,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 *     gdi/request_internal/sge_gdi_packet_pack() 
 *******************************************************************************/
 bool
-sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
+sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list,
                          sge_pack_buffer *pb, bool has_next) {
    DENTER(GDI_PACKET_LAYER);
    bool ret = true;

@@ -402,7 +402,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       init_packbuffer(&packet->pb, 0, 0);
       for (size_t i = 0; i < packet->tasks.size(); ++i) {
          bool has_next = (i < packet->tasks.size() - 1);
-         sge_gdi_task_class_t *task = packet->tasks[i];
+         ocs::GdiTask *task = packet->tasks[i];
 
          // data might still be that what client sent initially. no need to re-transfer that
          lFreeList(&task->data_list);
@@ -431,7 +431,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       SGE_LOCK(LOCK_LISTENER, LOCK_READ);
       for (size_t i = 0; i < packet->tasks.size(); ++i) {
          bool has_next = (i < packet->tasks.size() - 1);
-         sge_gdi_task_class_t *task = packet->tasks[i];
+         ocs::GdiTask *task = packet->tasks[i];
          sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor, has_next);
       }
       SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
@@ -592,7 +592,7 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
  * @param monitor Monitoring object
  */
 void
-sge_c_ack(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+sge_c_ack(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    // extract information from the task about the ACK

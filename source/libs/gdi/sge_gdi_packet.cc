@@ -67,7 +67,7 @@
 *     implementing GDI. The real C structure names are 
 *
 *        "sge_gdi_packet_cass_t" and 
-*        "sge_gdi_task_class_t". 
+*        "ocs::GdiTask".
 *
 *     An instance of the packet structure represents a GDI request.
 *     Each packet has assigned at least one task. But it may have
@@ -166,29 +166,12 @@
 #if defined(SGE_GDI_PACKET_DEBUG)
 
 void
-sge_gdi_task_debug_print(sge_gdi_task_class_t *task);
-
-#endif
-
-static void
-sge_gdi_task_free(sge_gdi_task_class_t **task);
-
-static sge_gdi_task_class_t *
-sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
-                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
-
-#if defined(SGE_GDI_PACKET_DEBUG)
-
-void
 sge_gdi_packet_debug_print(sge_gdi_packet_class_t *packet);
 
 #endif
 
-
-#if defined(SGE_GDI_PACKET_DEBUG)
-
 void
-sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
+sge_gdi_task_debug_print(ocs::GdiTask *task) {
    DENTER(TOP_LAYER);
    if (task != nullptr) {
       DPRINTF("task->id = " sge_U32CFormat "\n", sge_u32c(task->id));
@@ -200,105 +183,6 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t *task) {
       DPRINTF("task->enumeration = %p\n", task->enumeration);
    } else {
       DPRINTF("task is nullptr\n");
-   }
-   DRETURN_VOID;
-}
-
-#endif
-
-static sge_gdi_task_class_t *
-sge_gdi_task_create(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
-                    lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
-   DENTER(TOP_LAYER);
-
-   auto *task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
-   if (task == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(nullptr);
-   }
-
-   task->id = packet->tasks.size() + 1;
-   task->command = command;
-   task->target = target;
-   task->do_select_pack_simultaneous = false;
-   if (do_copy) {
-      if (enumeration != nullptr && *enumeration != nullptr) {
-         task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
-                            lSelect("", *lp, nullptr, *enumeration) : nullptr);
-      } else {
-         task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
-                            lCopyList("", *lp) : nullptr);
-      }
-      task->answer_list = (((a_list != nullptr) && (*a_list != nullptr)) ?
-                           lCopyList("", *a_list) : nullptr);
-      task->condition = (((condition != nullptr) && (*condition != nullptr)) ?
-                         lCopyWhere(*condition) : nullptr);
-      task->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ?
-                           lCopyWhat(*enumeration) : nullptr);
-   } else {
-      if ((lp != nullptr) && (*lp != nullptr)) {
-         task->data_list = *lp;
-         *lp = nullptr;
-      } else {
-         task->data_list = nullptr;
-      }
-      if ((a_list != nullptr) && (*a_list != nullptr)) {
-         task->answer_list = *a_list;
-         *a_list = nullptr;
-      } else {
-         task->answer_list = nullptr;
-      }
-      if ((condition != nullptr) && (*condition != nullptr)) {
-         task->condition = *condition;
-         *condition = nullptr;
-      } else {
-         task->condition = nullptr;
-      }
-      if ((enumeration != nullptr) && (*enumeration != nullptr)) {
-         task->enumeration = *enumeration;
-         *enumeration = nullptr;
-      } else {
-         task->enumeration = nullptr;
-      }
-   }
-   DRETURN(task);
-}
-
-/****** gdi/request_internal/sge_gdi_task_free() ******************************
-*  NAME
-*     sge_gdi_task_free() -- free a gdi task structure
-*
-*  SYNOPSIS
-*     static bool
-*     sge_gdi_task_free(sge_gdi_task_class_t **task)
-*
-*  FUNCTION
-*     free all elements of the gdi task structure and the structure itself.
-*
-*  INPUTS
-*     sge_gdi_task_class_t **task - pointer to the task structure pointer
-*
-*  RESULT
-*     static bool -
-*        true - success (always)
-*
-*  NOTES
-*     MT-NOTE: sge_gdi_task_free() is MT safe as long as the structure
-*              passed to this function is not accessed by more than one
-*              thread simultaneously.
-*
-*  SEE ALSO
-*     gdi/request_internal/sge_gdi_task_create()
-******************************************************************************/
-static void
-sge_gdi_task_free(sge_gdi_task_class_t **task) {
-   DENTER(TOP_LAYER);
-   if (/* task != nullptr && */ *task != nullptr) {
-      lFreeList(&((*task)->data_list));
-      lFreeList(&((*task)->answer_list));
-      lFreeWhat(&((*task)->enumeration));
-      lFreeWhere(&((*task)->condition));
-      sge_free(task);
    }
    DRETURN_VOID;
 }
@@ -473,7 +357,7 @@ int
 sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command,
                            lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
    DENTER(TOP_LAYER);
-   sge_gdi_task_class_t *task = sge_gdi_task_create(packet, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);
+   auto task = new ocs::GdiTask(packet->tasks.size() + 1, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);
    packet->tasks.push_back(task);
    DRETURN(task->id);
 }
@@ -484,7 +368,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, 
 *
 *  SYNOPSIS
 *     const char * 
-*     sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task) 
+*     sge_gdi_task_get_operation_name(ocs::GdiTask *task)
 *
 *  FUNCTION
 *     This function returns a string of represending the command type
@@ -492,7 +376,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, 
 *     "GET" when (task->command == SGE_GDI_GET))
 *
 *  INPUTS
-*     sge_gdi_task_class_t *task - gdi task 
+*     ocs::GdiTask *task - gdi task
 *
 *  RESULT
 *     const char * - string
@@ -501,7 +385,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t *packet, lList **answer_list, 
 *     MT-NOTE: sge_gdi_task_get_operation_name() is MT safe 
 *******************************************************************************/
 const char *
-sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task) {
+sge_gdi_task_get_operation_name(ocs::GdiTask *task) {
    const char *ret;
    int operation = SGE_GDI_GET_OPERATION(task->command);
 
@@ -574,7 +458,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
    DENTER(TOP_LAYER);
    if (packet != nullptr && *packet != nullptr) {
       for (auto *task : (*packet)->tasks) {
-         sge_gdi_task_free(&task);
+         delete task;
       }
       int local_ret1 = pthread_mutex_destroy(&((*packet)->mutex));
       int local_ret2 = pthread_cond_destroy(&((*packet)->cond));

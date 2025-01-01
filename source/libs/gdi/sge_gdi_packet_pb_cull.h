@@ -46,5 +46,5 @@ bool
 sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb);
 
 bool
-sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
+sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list,
                          sge_pack_buffer *pb, bool has_next);

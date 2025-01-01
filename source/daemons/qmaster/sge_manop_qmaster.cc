@@ -63,7 +63,7 @@
    target may be SGE_UM_LIST or SGE_UO_LIST
 */
 int
-sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_add_manop(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    const char *manop_name;
    const char *object_name;
    lList **lpp = nullptr;
@@ -169,7 +169,7 @@ sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
 *     MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
 *******************************************************************************/
 int
-sge_del_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_del_manop(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    lListElem *found;
    int pos;
    const char *manop_name;

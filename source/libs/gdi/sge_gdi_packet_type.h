@@ -40,7 +40,7 @@
 #include "uti/sge_uidgid.h"
 
 #include "gdi/ocs_GdiMulti.h"
-#include "gdi/ocs_GdiTarget.h"
+#include "gdi/ocs_GdiTask.h"
 
 #include "cull/cull.h"
 
@@ -52,38 +52,6 @@ typedef enum {
    PACKET_REPORT_REQUEST,
    PACKET_ACK_REQUEST
 } gdi_packet_request_type_t;
-
-struct sge_gdi_task_class_t {
-   /*
-    * id identifying the GDI packet uniquely within the
-    * context of a GDI client
-    */
-   u_long32 id;
-
-   /*
-    * common parts of a GDI request
-    */
-   u_long32 command;
-   ocs::GdiTarget::Target target;
-   lList *data_list;
-   lList *answer_list;
-   lCondition *condition;
-   lEnumeration *enumeration;
-
-   /*
-    * This flag is used in qmaster to identify if a special 
-    * optimization can be done. This optimization can only be
-    * done for GDI GET requests where the client is
-    * an external GDI client (no thread using GDI). 
-    *
-    * In that case it is possible that the lSelectHashPack()
-    * function is called with a packbuffer so that the function
-    * directly packs into this packbuffer.
-    * 
-    * This avoids a copy operation 
-    */
-   bool do_select_pack_simultaneous;
-};
 
 struct sge_gdi_packet_class_t {
    /* 
@@ -140,7 +108,7 @@ struct sge_gdi_packet_class_t {
     * pointers to the first and last task part of a multi
     * GDI request. This list contains at least one element
     */
-   std::vector<sge_gdi_task_class_t *> tasks;
+   std::vector<ocs::GdiTask *> tasks;
 
    /*
     * encrypted authenitication information. This information will 

@@ -44,7 +44,7 @@
  */
 enum { INVALID_THREAD = 0 };
 
-void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
+void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task);
 
 /* misc functions */
 bool sge_daemonize_qmaster();

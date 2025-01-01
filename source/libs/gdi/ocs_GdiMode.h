@@ -17,6 +17,7 @@
  *  limitations under the License.
  *
  ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
 
 #include <string>
 

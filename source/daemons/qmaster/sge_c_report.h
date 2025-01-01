@@ -40,4 +40,4 @@
 
 #include <sge_gdi_packet_type.h>
 
-void sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);
+void sge_c_report(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);

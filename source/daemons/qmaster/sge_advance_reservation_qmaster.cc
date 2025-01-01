@@ -217,7 +217,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
 *  NOTES
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
-int ar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+int ar_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
@@ -347,7 +347,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 
 *******************************************************************************/
-int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ar_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
 
@@ -399,7 +399,7 @@ int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 *     MT-NOTE: ar_success() is not MT safe 
 *******************************************************************************/
 int
-ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ar_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
@@ -473,7 +473,7 @@ ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
 int
-ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
+ar_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;

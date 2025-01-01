@@ -69,7 +69,7 @@
 /* ------------------------------------------------------------ */
 
 int
-centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
+centry_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
@@ -243,7 +243,7 @@ centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
 /* ------------------------------------------------------------ */
 
 int
-centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+centry_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -318,7 +318,7 @@ centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 *
 *******************************************************************************/
 int
-centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+centry_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    bool rebuild_consumables = false;
 
@@ -355,7 +355,7 @@ centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList
 }
 
 int
-sge_del_centry(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
+sge_del_centry(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

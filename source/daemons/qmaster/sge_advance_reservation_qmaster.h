@@ -44,19 +44,19 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-ar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+ar_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+ar_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+ar_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
            monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **ar_list, monitoring_t *monitor);
+ar_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **ar_list, monitoring_t *monitor);
 
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);

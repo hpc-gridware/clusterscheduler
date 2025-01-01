@@ -90,7 +90,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
   Master_Sched_Config_List. So we replace it with the new one.
  ************************************************************/
 int
-sge_mod_sched_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sched_configuration(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
    lList *temp_conf_list = nullptr;
 
    DENTER(TOP_LAYER);

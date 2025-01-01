@@ -208,7 +208,7 @@ static const char JOB_NAME_DEL = ':';
 /*-------------------------------------------------------------------------*/
 int
 sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
-                sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                sge_gdi_packet_class_t *packet, ocs::GdiTask *task,
                 monitoring_t *monitor) {
    int ret;
    bool lret;
@@ -356,7 +356,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
  * @param[in] monitor for monitoring qmaster threads
  */
 int
-sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,  lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
+sge_gdi_del_job(const sge_gdi_packet_class_t *packet, ocs::GdiTask *task,  lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
    int all_users_flag;
    int jid_flag;
@@ -1119,7 +1119,7 @@ enum {
 };
 
 int
-sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command) {
+sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *jep, lList **alpp, int sub_command) {
    lListElem *nxt, *jobep = nullptr;   /* pointer to old job */
    int job_id_pos;
    int user_list_pos;
@@ -3386,7 +3386,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 }
 
 int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
-                     sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+                     sge_gdi_packet_class_t *packet, ocs::GdiTask *task, monitoring_t *monitor) {
    u_long32 seek_jid;
    int ret;
    const lListElem *old_jep;

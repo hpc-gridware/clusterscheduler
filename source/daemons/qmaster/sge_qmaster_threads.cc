@@ -66,7 +66,7 @@
 *     sge_gdi_kill_master() -- Shutdown qmaster via GDI
 *
 *  SYNOPSIS
-*     void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
+*     void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task);
 *
 *  FUNCTION
 *     Shutdown qmaster by means of a GDI request. This operation is only
@@ -74,7 +74,7 @@
 *
 *  INPUTS
 *     sge_gdi_packet_class_t *packet - request packet
-*     sge_gdi_task_class_t *task     - request task
+*     ocs::GdiTask *task     - request task
 *
 *  RESULT
 *     void - none
@@ -90,7 +90,7 @@
 *
 *******************************************************************************/
 void
-sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
+sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task) {
    DENTER(GDI_LAYER);
 
    if (!sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),

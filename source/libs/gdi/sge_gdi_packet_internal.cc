@@ -445,7 +445,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
      * job verification process might destroy the job and create a completely
      * new one with adjusted job attributes.
      */
-    sge_gdi_task_class_t *task = packet->tasks[0];
+    ocs::GdiTask *task = packet->tasks[0];
 
     if (task->target == ocs::GdiTarget::Target::SGE_JB_LIST &&
         ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
@@ -652,8 +652,8 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 
       if (!gdi_mismatch) {
          for (size_t i = 0; i < packet->tasks.size(); i++) {
-            sge_gdi_task_class_t *send = packet->tasks[i];
-            sge_gdi_task_class_t *recv = ret_packet->tasks[i];
+            ocs::GdiTask *send = packet->tasks[i];
+            ocs::GdiTask *recv = ret_packet->tasks[i];
 
             if (send->id != recv->id) {
                gdi_mismatch = true;

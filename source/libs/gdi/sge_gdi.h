@@ -41,7 +41,7 @@
 
 /*
  * allowed values for command field of a gdi request
- * (see sge_gdi_packet_class_t and sge_gdi_task_class_t
+ * (see sge_gdi_packet_class_t and ocs::GdiTask
  */
 enum {
    /* OPERATION -------------- */

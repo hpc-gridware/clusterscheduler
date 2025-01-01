@@ -311,7 +311,7 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
 
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
-                      sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                      sge_gdi_packet_class_t *packet, ocs::GdiTask *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
 

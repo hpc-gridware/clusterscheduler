@@ -269,7 +269,7 @@ sge_worker_main(void *arg) {
             for (size_t i = 0; i < packet->tasks.size(); ++i) {
                bool has_next = (i < packet->tasks.size() - 1);
 
-               sge_gdi_task_class_t *task = packet->tasks[i];
+               ocs::GdiTask *task = packet->tasks[i];
                sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor, has_next);
             }
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {

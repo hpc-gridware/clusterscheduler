@@ -92,11 +92,11 @@ static bool
 cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts, u_long64 gdi_session);
 
 static bool
-cqueue_add_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
+cqueue_add_qinstances(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
                       monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static lListElem *
-qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
+qinstance_create(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
                  bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static void
@@ -106,7 +106,7 @@ static void
 qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list, u_long64 gdi_session);
 
 static lListElem *
-qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
+qinstance_create(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
                  bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list,
                  lList *master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -186,7 +186,7 @@ qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, con
 }
 
 static bool
-cqueue_add_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
+cqueue_add_qinstances(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
                       monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list) {
    bool ret = true;
 
@@ -373,7 +373,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
 }
 
 bool
-cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list) {
    dstring buffer = DSTRING_INIT;
@@ -549,7 +549,7 @@ cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
 }
 
 bool
-cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list) {
    bool ret = true;
@@ -570,7 +570,7 @@ cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
 }
 
 int
-cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
+cqueue_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
@@ -677,7 +677,7 @@ cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
 }
 
 int
-cqueue_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+cqueue_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const lList *qinstances;
    lListElem *qinstance;
    DENTER(TOP_LAYER);
@@ -812,7 +812,7 @@ cqueue_commit(lListElem *cqueue, u_long64 gdi_session) {
 }
 
 int
-cqueue_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
+cqueue_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
    int ret = 0;
    const char *name = lGetString(cqueue, CQ_name);
    lListElem *qinstance;
@@ -852,7 +852,7 @@ cqueue_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 }
 
 int
-cqueue_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+cqueue_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
