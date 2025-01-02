@@ -120,7 +120,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *     MT-NOTE: rqs_mod() is MT safe 
 *******************************************************************************/
 int
-rqs_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+rqs_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
    bool rules_changed = false;
@@ -219,7 +219,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     MT-NOTE: rqs_spool() is MT safe 
 *******************************************************************************/
 int
-rqs_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+rqs_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -270,7 +270,7 @@ rqs_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lLis
 *     MT-NOTE: rqs() is MT safe 
 *******************************************************************************/
 int
-rqs_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+rqs_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const char *rqs_name = lGetString(ep, RQS_name);
    rqs_update_categories(ep, old_ep, packet->gdi_session);
@@ -306,7 +306,7 @@ rqs_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, l
 *     MT-NOTE: rqs_del() is MT safe 
 *******************************************************************************/
 int
-rqs_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+rqs_del(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
    int pos;
    lListElem *found;

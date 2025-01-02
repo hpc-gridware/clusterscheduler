@@ -35,8 +35,6 @@
 
 #include "basis_types.h"
 
-#include "gdi/sge_gdi_packet.h"
-
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_daemonize.h"
 
@@ -96,7 +94,7 @@ void sge_event_master_process_requests(monitoring_t *monitor);
 void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
 void sge_event_master_wait_next();
 
-int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *ev,
+int sge_add_event_client(const ocs::GdiPacket *packet, lListElem *ev,
                          lList **alpp,
                          lList **eclpp,
                          event_client_update_func_t update_func,
@@ -106,8 +104,8 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
 bool sge_has_event_client(u_long32 aClientID);
 void sge_remove_event_client(u_long32 aClientID);
 lList* sge_select_event_clients(const char *list_name, const lCondition *where, const lEnumeration *what);
-int sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 aClientID, lList **alpp);
-int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lList **alpp, monitoring_t *monitor);
+int sge_shutdown_event_client(const ocs::GdiPacket *packet, u_long32 aClientID, lList **alpp);
+int sge_shutdown_dynamic_event_clients(const ocs::GdiPacket *packet, lList **alpp, monitoring_t *monitor);
 
 bool sge_add_event(u_long64 timestamp,
                    ev_event type,

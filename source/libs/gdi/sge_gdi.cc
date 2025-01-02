@@ -67,8 +67,6 @@
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_data.h"
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_internal.h"
 #include "gdi/msg_gdilib.h"
 
 #include "basis_types.h"

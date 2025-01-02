@@ -66,14 +66,14 @@
 *     sge_gdi_kill_master() -- Shutdown qmaster via GDI
 *
 *  SYNOPSIS
-*     void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task);
+*     void sge_gdi_kill_master(ocs::GdiPacket *packet, ocs::GdiTask *task);
 *
 *  FUNCTION
 *     Shutdown qmaster by means of a GDI request. This operation is only
 *     permitted for a user of type 'manager'.
 *
 *  INPUTS
-*     sge_gdi_packet_class_t *packet - request packet
+*     ocs::GdiPacket *packet - request packet
 *     ocs::GdiTask *task     - request task
 *
 *  RESULT
@@ -90,11 +90,11 @@
 *
 *******************************************************************************/
 void
-sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task) {
+sge_gdi_kill_master(ocs::GdiPacket *packet, ocs::GdiTask *task) {
    DENTER(GDI_LAYER);
 
-   if (!sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
-                                      &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
+   if (!packet->parse_auth_info(&(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
+                                &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
       ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;

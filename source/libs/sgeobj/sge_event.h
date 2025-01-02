@@ -36,7 +36,7 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "sgeobj/cull/sge_event_EVS_L.h"
@@ -96,7 +96,7 @@ typedef int (*evm_mod_func_t)(
  *  EventMaster/sge_add_event_client_local
  **/
 typedef int (*evm_add_func_t)(
-   const sge_gdi_packet_class_t *packet,
+   const ocs::GdiPacket *packet,
    lListElem *clio,                        /* the new event client */
    lList **alpp,                           /* the answer list */
    lList **eclpp,                          /* list with added event client elem */

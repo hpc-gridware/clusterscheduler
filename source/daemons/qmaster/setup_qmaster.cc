@@ -898,7 +898,7 @@ setup_qmaster() {
 
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
-      sge_gdi_packet_class_t packet;
+      ocs::GdiPacket packet;
       ocs::GdiTask task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, SGE_TEMPLATE_NAME, ocs::GdiTarget::Target::SGE_EH_LIST, &monitor))
@@ -908,7 +908,7 @@ setup_qmaster() {
    /* add host "global" to master exechost list as an exec host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
-      sge_gdi_packet_class_t packet;
+      ocs::GdiPacket packet;
       ocs::GdiTask task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, SGE_GLOBAL_NAME, ocs::GdiTarget::SGE_EH_LIST, &monitor))
@@ -917,7 +917,7 @@ setup_qmaster() {
 
    /* add qmaster host to master admin host list as an administrative host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
-      sge_gdi_packet_class_t packet;
+      ocs::GdiPacket packet;
       ocs::GdiTask task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       if (sge_add_host_of_type(&packet, &task, qualified_hostname, ocs::GdiTarget::SGE_AH_LIST, &monitor)) {
@@ -1132,7 +1132,7 @@ setup_qmaster() {
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    for_each_rw(tmpqep, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      sge_gdi_packet_class_t packet;
+      ocs::GdiPacket packet;
       ocs::GdiTask task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       cqueue_mod_qinstances(&packet, &task, tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);

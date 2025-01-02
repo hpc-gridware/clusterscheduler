@@ -23,6 +23,7 @@ set(LIBRARY_NAME gdi)
 set(LIBRARY_SOURCES
         ocs_GdiMode.cc
         ocs_GdiMulti.cc
+        ocs_GdiPacket.cc
         ocs_GdiTarget.cc
         ocs_GdiTask.cc
         ocs_gdi_execd_delivery.cc
@@ -30,13 +31,13 @@ set(LIBRARY_SOURCES
         ocs_gdi_client.cc
       sge_gdi.cc
       sge_gdi_data.cc
-      sge_gdi_packet.cc
-      sge_gdi_packet_internal.cc
-      sge_gdi_packet_pb_cull.cc
       sge_qexec.cc
       sge_qtcsh.cc
       sge_security.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    add_dependencies(${LIBRARY_NAME} cull_header)
+endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})

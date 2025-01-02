@@ -22,7 +22,7 @@
 #include <pthread.h>
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 void
 sge_reader_initialize();

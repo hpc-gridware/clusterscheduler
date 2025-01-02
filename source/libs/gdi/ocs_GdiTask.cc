@@ -25,6 +25,8 @@
 
 #include "sgeobj/sge_answer.h"
 
+#include "gdi/sge_gdi.h"
+
 #include "ocs_GdiTask.h"
 
 ocs::GdiTask::GdiTask(int id, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
@@ -97,4 +99,41 @@ ocs::GdiTask::debug_print() {
    DPRINTF("condition = %p\n", condition);
    DPRINTF("enumeration = %p\n", enumeration);
    DRETURN_VOID;
+}
+
+const char *
+ocs::GdiTask::get_operation_name() {
+   const char *ret;
+   int operation = SGE_GDI_GET_OPERATION(command);
+
+   switch (operation) {
+      case SGE_GDI_GET:
+         ret = "GET";
+         break;
+      case SGE_GDI_ADD:
+         ret = "ADD";
+         break;
+      case SGE_GDI_DEL:
+         ret = "DEL";
+         break;
+      case SGE_GDI_MOD:
+         ret = "MOD";
+         break;
+      case SGE_GDI_COPY:
+         ret = "COPY";
+         break;
+      case SGE_GDI_TRIGGER:
+         ret = "TRIGGER";
+         break;
+      case SGE_GDI_PERMCHECK:
+         ret = "PERMCHECK";
+         break;
+      case SGE_GDI_REPLACE:
+         ret = "REPLACE";
+         break;
+      default:
+         ret = "???";
+         break;
+   }
+   return ret;
 }

@@ -89,7 +89,7 @@ update_license_data(lListElem *hep, lList *lp_lic, u_long64 gdi_session);
 *
 ******************************************************************************/
 void
-sge_c_report(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
+sge_c_report(ocs::GdiPacket *packet, ocs::GdiTask *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = nullptr;
    u_long32 rep_type;
    lListElem *report;

@@ -39,19 +39,19 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-pe_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
+pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-pe_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+pe_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-pe_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+pe_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
            monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_pe(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *, lList **, char *, char *);
+sge_del_pe(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *, lList **, char *, char *);
 
 /* to do at qmasters startup */
 void

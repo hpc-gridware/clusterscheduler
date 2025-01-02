@@ -61,7 +61,7 @@
   Add the sharetree
  ************************************************************/
 int
-sge_add_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_add_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
 
    DENTER(TOP_LAYER);
@@ -77,7 +77,7 @@ sge_add_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem 
   lList **lpp,     list to change 
  ************************************************************/
 int
-sge_mod_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
    int prev_version;
    int adding;
@@ -151,7 +151,7 @@ sge_mod_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem 
   Delete the sharetree
  ************************************************************/
 int
-sge_del_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_del_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!*lpp || !lFirst(*lpp)) {

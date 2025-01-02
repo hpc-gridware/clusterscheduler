@@ -38,16 +38,16 @@
 #include "sgeobj/sge_daemonize.h"
 
 int 
-sge_del_centry(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
+sge_del_centry(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
 
 int 
-centry_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+centry_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 int 
-centry_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *cep, gdi_object_t *object);
+centry_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *cep, gdi_object_t *object);
 
 int 
-centry_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_complex, lListElem *ep, int add,
+centry_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_complex, lListElem *ep, int add,
            const char *ruser, const char *rhost, gdi_object_t *object, 
            int sub_command, monitoring_t *monitor);
 

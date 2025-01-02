@@ -36,13 +36,13 @@
 #include "uti/sge_htable.h"
 #include "uti/sge_dstring.h"
 
+#include "gdi/ocs_GdiPacket.h"
+
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
 #include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
-
-#include <gdi/sge_gdi_packet_type.h>
 
 /* Job states moved in from def.h */
 #define JIDLE                                0x00000000
@@ -396,7 +396,7 @@ int job_check_qsh_display(const lListElem *job,
                           lList **answer_list, 
                           bool output_warning);
 
-int job_check_owner(const sge_gdi_packet_class_t *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
+int job_check_owner(const ocs::GdiPacket *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 

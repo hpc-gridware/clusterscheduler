@@ -24,8 +24,6 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_internal.h"
 #include "gdi/ocs_GdiTarget.h"
 #include "gdi/msg_gdilib.h"
 
@@ -39,7 +37,7 @@ ocs::GdiMulti::GdiMulti() : packet(nullptr), multi_answer_list(nullptr) {
 }
 
 ocs::GdiMulti::~GdiMulti() {
-   sge_gdi_packet_free(&packet);
+   delete packet;
    lFreeList(&multi_answer_list);
 }
 
@@ -49,9 +47,9 @@ ocs::GdiMulti::wait() {
 
    if (packet != nullptr) {
       if (component_is_qmaster_internal()) {
-         sge_gdi_packet_wait_for_result_internal(&packet, &multi_answer_list);
+         packet->wait_for_result_internal(&multi_answer_list);
       } else {
-         sge_gdi_packet_wait_for_result_external(&packet, &multi_answer_list);
+         packet->wait_for_result_external(&multi_answer_list);
       }
       packet = nullptr;
    }
@@ -68,33 +66,30 @@ ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target targe
     * in state_gdi_multi structure
     */
    if (packet == nullptr) {
-      packet = sge_gdi_packet_create(alpp);
+      packet = new GdiPacket();
    }
+
+   packet->initialize_auth_info();
 
    /*
     * Add a task to the packet and if it is the last task of a
     * multi GDI request (mode == ocs::GdiMode::SEND) then execute it
     */
-   if (packet != nullptr) {
-      ret = sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
-      if (mode == GdiMode::SEND) {
-         int local_ret;
+   ret = packet->append_task(alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
+   if (mode == GdiMode::SEND) {
+      int local_ret;
 
-         if (component_is_qmaster_internal()) {
-            local_ret = sge_gdi_packet_execute_internal(alpp, packet);
-         } else {
-            local_ret = sge_gdi_packet_execute_external(alpp, packet);
-         }
-         if (!local_ret) {
-            /* answer has been written in ctx->sge_gdi_packet_execute() */
-            sge_gdi_packet_free(&packet);
-            packet = nullptr;
-            ret = -1;
-         }
+      if (component_is_qmaster_internal()) {
+         local_ret = packet->execute_internal(alpp);
+      } else {
+         local_ret = packet->execute_external(alpp);
       }
-   } else {
-      /* answer list has been filled by sge_gdi_packet_create() */
-      ret = -1;
+      if (!local_ret) {
+         /* answer has been written in ctx->sge_gdi_packet_execute() */
+         delete packet;
+         packet = nullptr;
+         ret = -1;
+      }
    }
    DRETURN(ret);
 }

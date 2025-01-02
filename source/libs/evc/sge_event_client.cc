@@ -1356,7 +1356,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 
          // for internal request we create a pseudo packet just containing
          // information required for potential error message
-         sge_gdi_packet_class_t pseudo_packet;
+         ocs::GdiPacket pseudo_packet;
          strcpy(pseudo_packet.user, bootstrap_get_admin_user());
          strcpy(pseudo_packet.host, gdi_get_act_master_host(false));
 

@@ -39,4 +39,4 @@ int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u_long64 gdi_session);
 
 int
-sge_mod_sched_configuration(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *confp, lList **alpp, char *ruser, char *rhost);
+sge_mod_sched_configuration(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *confp, lList **alpp, char *ruser, char *rhost);

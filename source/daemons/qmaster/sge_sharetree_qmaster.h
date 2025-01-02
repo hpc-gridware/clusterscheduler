@@ -36,13 +36,13 @@
 #include "sgeobj/sge_daemonize.h"
 
 int
-sge_add_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_add_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
-sge_mod_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_mod_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
-sge_del_sharetree(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_del_sharetree(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
 int
 update_sharetree(lList *dst, const lList *src);

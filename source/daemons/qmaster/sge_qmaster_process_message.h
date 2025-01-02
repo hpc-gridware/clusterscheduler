@@ -36,11 +36,11 @@
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 void 
 sge_qmaster_process_message(monitoring_t *monitor);
 
 void
-sge_c_ack(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, monitoring_t *monitor);
+sge_c_ack(ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *monitor);
 

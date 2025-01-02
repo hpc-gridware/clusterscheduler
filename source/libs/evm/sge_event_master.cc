@@ -450,7 +450,7 @@ static void sge_event_master_process_add_event_client(const lListElem *request, 
    /* to be implemented later on - handling the internal event clients could become a little bit tricky */
 }
 
-int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, lList **alpp, lList **eclpp,
+int sge_add_event_client(const ocs::GdiPacket *packet, lListElem *clio, lList **alpp, lList **eclpp,
                          event_client_update_func_t update_func, void *update_func_arg)
 {
    lListElem *ep = nullptr;
@@ -1145,7 +1145,7 @@ sge_select_event_clients(const char *list_name, const lCondition *where, const l
 *
 *******************************************************************************/
 int
-sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_client_id, lList **alpp) {
+sge_shutdown_event_client(const ocs::GdiPacket *packet, u_long32 event_client_id, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
@@ -1219,7 +1219,7 @@ sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_c
 *               global_lock and internal ones.
 *
 *******************************************************************************/
-int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lList **alpp, monitoring_t *monitor)
+int sge_shutdown_dynamic_event_clients(const ocs::GdiPacket *packet, lList **alpp, monitoring_t *monitor)
 {
    const lListElem *client;
    int id = 0;

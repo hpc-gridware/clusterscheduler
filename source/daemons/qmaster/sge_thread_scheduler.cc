@@ -56,7 +56,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "sched/sge_serf.h"
 #include "sched/schedd_monitor.h"

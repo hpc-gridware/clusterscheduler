@@ -66,5 +66,7 @@ namespace ocs {
       ~GdiTask();
 
       void debug_print();
+
+      const char *get_operation_name();
    };
 }

@@ -35,7 +35,7 @@
 
 #include <pthread.h>
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 /*
  * This is NOT officially approved by POSIX. In fact, POSIX does not specify a
@@ -44,7 +44,7 @@
  */
 enum { INVALID_THREAD = 0 };
 
-void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, ocs::GdiTask *task);
+void sge_gdi_kill_master(ocs::GdiPacket *packet, ocs::GdiTask *task);
 
 /* misc functions */
 bool sge_daemonize_qmaster();

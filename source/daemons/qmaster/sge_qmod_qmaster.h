@@ -36,7 +36,7 @@
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -48,7 +48,7 @@ void
 rebuild_signal_events();
 
 void
-sge_gdi_qmod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, monitoring_t *monitor);
+sge_gdi_qmod(ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *monitor);
 
 int
 sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor);

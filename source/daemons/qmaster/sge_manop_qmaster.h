@@ -37,7 +37,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 int
-sge_add_manop(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
+sge_add_manop(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
 
 int
-sge_del_manop(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
+sge_del_manop(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);

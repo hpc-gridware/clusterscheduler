@@ -38,7 +38,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 int
-sge_del_userset(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost);
+sge_del_userset(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost);
 
 int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp);
@@ -53,12 +53,12 @@ void
 userset_update_categories(const lList *added, const lList *removed, u_long64 gdi_session);
 
 int
-userset_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_userset, lListElem *userset, int add,
+userset_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_userset, lListElem *userset, int add,
             const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-userset_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *userset, gdi_object_t *object);
+userset_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *userset, gdi_object_t *object);
 
 int
-userset_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+userset_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                 monitoring_t *monitor);

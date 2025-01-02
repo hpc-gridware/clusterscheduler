@@ -52,7 +52,7 @@
 #include "uti/sge_thread_ctrl.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "basis_types.h"
 #include "ocs_ReportingFileWriter.h"

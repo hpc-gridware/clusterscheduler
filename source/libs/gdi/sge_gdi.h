@@ -35,13 +35,11 @@
 
 #include "cull/cull_list.h"
 
-#include "gdi/sge_gdi_packet_type.h"
-#include "gdi/sge_gdi_packet.h"
 #include "gdi/ocs_GdiMulti.h"
 
 /*
  * allowed values for command field of a gdi request
- * (see sge_gdi_packet_class_t and ocs::GdiTask
+ * (see ocs::GdiPacket and ocs::GdiTask
  */
 enum {
    /* OPERATION -------------- */

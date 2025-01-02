@@ -55,8 +55,7 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_internal.h"
+#include "gdi/ocs_GdiPacket.h"
 #include "gdi/sge_gdi.h"
 
 #include "comm/cl_commlib.h"
@@ -203,7 +202,7 @@ sge_worker_main(void *arg) {
    conf_update_thread_profiling("Worker Thread");
 
    while (true) {
-      sge_gdi_packet_class_t *packet = nullptr;
+      ocs::GdiPacket *packet = nullptr;
 
       /*
        * Wait for packets. As long as packets are available cancellation
@@ -314,7 +313,7 @@ sge_worker_main(void *arg) {
                sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                          &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
-               sge_gdi_packet_free(&packet);
+               delete packet;
                /*
                 * Code only for TS: 
                 *
@@ -330,7 +329,7 @@ sge_worker_main(void *arg) {
                   sleep(5);
                }
             } else {
-               sge_gdi_packet_broadcast_that_handled(packet);
+               packet->broadcast_that_handled();
                /* this is an internal request, packet will get destroyed later,
                 * where the caller waits for the answer
                 * make sure it is no longer accessed here
@@ -338,7 +337,7 @@ sge_worker_main(void *arg) {
                packet = nullptr;
             }
          } else {
-            sge_gdi_packet_free(&packet);
+            delete packet;
          }
 
          thread_output_profiling("worker thread profiling summary:\n", &next_prof_output);

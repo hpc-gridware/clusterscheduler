@@ -215,7 +215,7 @@ hgroup_rollback(lListElem *this_elem) {
 }
 
 int
-hgroup_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
+hgroup_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
@@ -413,7 +413,7 @@ hgroup_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_li
 }
 
 int
-hgroup_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+hgroup_del(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    int ret = true;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -511,7 +511,7 @@ hgroup_del(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *this_e
 }
 
 int
-hgroup_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+hgroup_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *name = lGetHost(hgroup, HGRP_name);
    lList *cqueue_list = nullptr;
 
@@ -536,7 +536,7 @@ hgroup_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *hg
 
 
 int
-hgroup_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
+hgroup_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    bool tmp_ret = true;
    bool dbret;
    const char *name = lGetHost(this_elem, HGRP_name);

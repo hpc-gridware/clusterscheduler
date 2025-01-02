@@ -40,12 +40,12 @@
 #include "sgeobj/sge_object.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 typedef struct _gdi_object_t gdi_object_t;
 
 typedef int (*modifier_func_t)(
-        sge_gdi_packet_class_t *packet,
+        ocs::GdiPacket *packet,
         ocs::GdiTask *task,
         lList **alpp,
         lListElem *new_cal,   /* destination */
@@ -59,7 +59,7 @@ typedef int (*modifier_func_t)(
 );
 
 typedef int (*writer_func_t)(
-        sge_gdi_packet_class_t *packet,
+        ocs::GdiPacket *packet,
         ocs::GdiTask *task,
         lList **alpp,
         lListElem *ep,      /* new modified element */
@@ -70,7 +70,7 @@ typedef int (*writer_func_t)(
 typedef lList **(*getMasterList)();
 
 typedef int (*on_success_func_t)(
-        sge_gdi_packet_class_t *packet,
+        ocs::GdiPacket *packet,
         ocs::GdiTask *task,
         lListElem *ep,       /* new modified and already spooled element */
         lListElem *old_ep,   /* old element is nullptr in add case */
@@ -93,19 +93,19 @@ struct _gdi_object_t {
 gdi_object_t *get_gdi_object(u_long32);
 
 bool
-sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, ocs::GdiTask *task,
+sge_c_gdi_process_in_listener(ocs::GdiPacket *packet, ocs::GdiTask *task,
                               lList **answer_list, monitoring_t *monitor, bool has_next);
 
 bool
-sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, ocs::GdiTask *task,
+sge_c_gdi_check_execution_permission(ocs::GdiPacket *packet, ocs::GdiTask *task,
                                      monitoring_t *monitor);
 
 void
-sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **answer_list,
+sge_c_gdi_process_in_worker(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list,
                             monitoring_t *monitor, bool has_next);
 
 int
-sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
+sge_gdi_add_mod_generic(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
                         const char *ruser, const char *rhost, int sub_command, lList **ppList, monitoring_t *monitor);
 
 void sge_clean_lists();

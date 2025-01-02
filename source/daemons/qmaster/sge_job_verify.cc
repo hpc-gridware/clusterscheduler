@@ -49,7 +49,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 #include "gdi/sge_security.h"
 
 #include "spool/sge_spooling.h"
@@ -311,7 +311,7 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
 
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
-                      sge_gdi_packet_class_t *packet, ocs::GdiTask *task,
+                      ocs::GdiPacket *packet, ocs::GdiTask *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
 
@@ -889,7 +889,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    if (mconf_get_do_credentials()) {
       const char *sge_root = bootstrap_get_sge_root();
 
-      if (store_sec_cred(sge_root, packet, jep, mconf_get_do_authentication(), alpp) != 0) {
+      if (store_sec_cred(sge_root, jep, mconf_get_do_authentication(), alpp) != 0) {
          DRETURN(STATUS_EUNKNOWN);
       }
    }

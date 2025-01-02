@@ -51,8 +51,7 @@
 
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_pb_cull.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"
@@ -518,9 +517,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
-                     sge_gdi_packet_class_t *packet = nullptr;
+                     ocs::GdiPacket *packet = new ocs::GdiPacket();
                
-                     if (sge_gdi_packet_unpack(&packet, nullptr, &buf)) {
+                     if (packet->unpack(nullptr, &buf)) {
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
                         printf("         packet:\n");
 
@@ -583,9 +582,10 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                               printf("id    : %s\n", "nullptr");
                            }
                         }
+                     } else {
+                        delete packet;
                      }
 
-                     sge_gdi_packet_free(&packet);
                      clear_packbuffer(&buf);
                   }
                }

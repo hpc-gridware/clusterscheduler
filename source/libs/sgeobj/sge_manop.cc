@@ -41,7 +41,6 @@
 
 #include <sge_conf.h>
 #include <cull/sge_userset_UE_L.h>
-#include <gdi/sge_gdi_packet_type.h>
 
 static bool
 user_list_is_group_in_list(const char *group, const lList *usr_grp_sgrp_list, int nm) {
@@ -72,7 +71,7 @@ user_list_is_group_in_list(const char *group, const lList *usr_grp_sgrp_list, in
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 bool
-user_list_is_user_grp_sgrp_in_list(const sge_gdi_packet_class_t *packet, const lList *usr_grp_sgrp_list, int nm) {
+user_list_is_user_grp_sgrp_in_list(const ocs::GdiPacket *packet, const lList *usr_grp_sgrp_list, int nm) {
    DENTER(TOP_LAYER);
 
    if (packet == nullptr) {
@@ -109,7 +108,7 @@ user_list_is_user_grp_sgrp_in_list(const sge_gdi_packet_class_t *packet, const l
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 static bool
-user_is_X_user(const sge_gdi_packet_class_t *packet, const lList *master_userset_list, const char *userset_name) {
+user_is_X_user(const ocs::GdiPacket *packet, const lList *master_userset_list, const char *userset_name) {
    DENTER(TOP_LAYER);
 
    // find the userset
@@ -141,7 +140,7 @@ user_is_X_user(const sge_gdi_packet_class_t *packet, const lList *master_userset
  *                            referenced in the "arusers"
  */
 bool
-user_is_ar_user(const sge_gdi_packet_class_t *packet, const lList *master_userset_list) {
+user_is_ar_user(const ocs::GdiPacket *packet, const lList *master_userset_list) {
    return user_is_X_user(packet, master_userset_list, AR_USERS);
 }
 
@@ -154,7 +153,7 @@ user_is_ar_user(const sge_gdi_packet_class_t *packet, const lList *master_userse
  *                            referenced in the "deadlineusers"
  */
 bool
-user_is_deadline_user(const sge_gdi_packet_class_t *packet, const lList *master_userset_list) {
+user_is_deadline_user(const ocs::GdiPacket *packet, const lList *master_userset_list) {
    return user_is_X_user(packet, master_userset_list, DEADLINE_USERS);
 }
 
@@ -166,7 +165,7 @@ user_is_deadline_user(const sge_gdi_packet_class_t *packet, const lList *master_
  * @return                    True if packet initiator was a manager.
  */
 bool
-manop_is_manager(const sge_gdi_packet_class_t *packet, const lList *master_manager_list) {
+manop_is_manager(const ocs::GdiPacket *packet, const lList *master_manager_list) {
    DENTER(TOP_LAYER);
 
    if (user_list_is_user_grp_sgrp_in_list(packet, master_manager_list, UM_name)) {
@@ -183,7 +182,7 @@ manop_is_manager(const sge_gdi_packet_class_t *packet, const lList *master_manag
  * @return                    True if packet initiator was an operator.
  */
 bool
-manop_is_operator(const sge_gdi_packet_class_t *packet, const lList *master_manager_list, const lList *master_operator_list) {
+manop_is_operator(const ocs::GdiPacket *packet, const lList *master_manager_list, const lList *master_operator_list) {
    DENTER(TOP_LAYER);
 
    if (user_list_is_user_grp_sgrp_in_list(packet, master_operator_list, UO_name)) {

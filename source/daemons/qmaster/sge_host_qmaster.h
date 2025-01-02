@@ -36,7 +36,7 @@
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_GdiPacket.h"
 
 #include "sgeobj/sge_feature.h"
 
@@ -45,27 +45,27 @@
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_host(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *, lList **, char *, char *, u_long32,
+sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *, lList **, char *, char *, u_long32,
              const lList *master_hGroup_List);
 
 int
-host_spool(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object);
+host_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object);
 
 int
-host_mod(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_host, lListElem *ep, int add, const char *ruser,
+host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_host, lListElem *ep, int add, const char *ruser,
          const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
 int
-host_success(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+host_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 void
 sge_mark_unheard(lListElem *hep, u_long64 gdi_session);
 
 int
-sge_add_host_of_type(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, const char *hostname, u_long32 target, monitoring_t *monitor);
+sge_add_host_of_type(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *hostname, u_long32 target, monitoring_t *monitor);
 
 void
-sge_gdi_kill_exechost(sge_gdi_packet_class_t *packet, ocs::GdiTask *task);
+sge_gdi_kill_exechost(ocs::GdiPacket *packet, ocs::GdiTask *task);
 
 void
 sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session);
@@ -74,14 +74,14 @@ void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_execd_startedup(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, lListElem *hep, lList **alpp, char *ruser, char *rhost,
+sge_execd_startedup(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lList **alpp, char *ruser, char *rhost,
                     u_long32 target, monitoring_t *monitor, bool is_restart);
 
 u_long32
 load_report_interval(lListElem *hep);
 
 bool
-host_list_add_missing_href(sge_gdi_packet_class_t *packet, ocs::GdiTask *task, const lList *this_list, lList **answer_list,
+host_list_add_missing_href(ocs::GdiPacket *packet, ocs::GdiTask *task, const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor);
 
 void

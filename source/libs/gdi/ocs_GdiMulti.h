@@ -21,15 +21,14 @@
 
 #include "cull/cull.h"
 
+#include "gdi/ocs_GdiPacket.h"
 #include "gdi/ocs_GdiTarget.h"
 #include "gdi/ocs_GdiMode.h"
-
-struct sge_gdi_packet_class_t;
 
 namespace ocs {
    class GdiMulti {
    public:
-      sge_gdi_packet_class_t *packet;
+      ocs::GdiPacket *packet;
       lList *multi_answer_list;
 
       GdiMulti();
@@ -38,5 +37,7 @@ namespace ocs {
       void wait();
       int request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
       bool get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target, int id, lList **olpp);
+
+      bool execute_external(lList **answer_list);
    };
 }
