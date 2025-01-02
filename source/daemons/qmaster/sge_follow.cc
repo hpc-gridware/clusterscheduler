@@ -663,6 +663,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   lSetPosDouble(jatp, ja_pos->JAT_prio_pos, 0);
                   lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, 0);
                   if (task_number != 0) { /* if task_number == 0, we only change the */
+                     sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
                      jatp = next_ja_task; /* pending tickets, otherwise all */
                      next_ja_task = lNextRW(next_ja_task);
                   } else {
@@ -686,6 +687,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   lSetDouble(jatp, JAT_prio, 0);
                   lSetDouble(jatp, JAT_ntix, 0);
                   if (task_number != 0) {   /* if task_number == 0, we only change the */
+                     sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
                      jatp = next_ja_task;   /* pending tickets, otherwise all */
                      next_ja_task = lNextRW(next_ja_task);
                   } else {
@@ -702,9 +704,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-            // @todo use sgeE_JOB_MOD_SCHED_PRIORITY?
-            // @todo we should have the tickets in sub-objects and have a ticket event having only the sub-object as data
-            // @todo don't we have to send an event for every ja_task we modified above?
+            // @todo CS-913 we should have the tickets in sub-objects and have a ticket event having only the sub-object as data
             sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
          }
          break;
@@ -1403,7 +1403,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);
          }
-         // @todo don't we have to send an event here?
+         // @todo CS-911 don't we have to send an event here?
       }
          break;
 
@@ -1423,7 +1423,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
             }
             /* no need to spool sched conf */
-            // @todo don't we have to send an event here?
+            // @todo CS-912 don't we have to send an event here?
          }
 
          break;
