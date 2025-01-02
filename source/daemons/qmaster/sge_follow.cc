@@ -663,6 +663,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   lSetPosDouble(jatp, ja_pos->JAT_prio_pos, 0);
                   lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, 0);
                   if (task_number != 0) { /* if task_number == 0, we only change the */
+                     sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
                      jatp = next_ja_task; /* pending tickets, otherwise all */
                      next_ja_task = lNextRW(next_ja_task);
                   } else {
@@ -686,6 +687,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   lSetDouble(jatp, JAT_prio, 0);
                   lSetDouble(jatp, JAT_ntix, 0);
                   if (task_number != 0) {   /* if task_number == 0, we only change the */
+                     sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
                      jatp = next_ja_task;   /* pending tickets, otherwise all */
                      next_ja_task = lNextRW(next_ja_task);
                   } else {
@@ -702,6 +704,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+            // @todo CS-913 we should have the tickets in sub-objects and have a ticket event having only the sub-object as data
+            sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
          }
          break;
 
@@ -794,6 +798,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lSetPosDouble(jatp, ja_pos->JAT_prio_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_prio_pos));
                lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_ntix_pos));
 
+               // @todo do we really update the *job* values with every ja_task update?
                lSetPosDouble(jep, job_pos->JB_nppri_pos, lGetPosDouble(joker, order_job_pos->JB_nppri_pos));
                lSetPosDouble(jep, job_pos->JB_nurg_pos, lGetPosDouble(joker, order_job_pos->JB_nurg_pos));
                lSetPosDouble(jep, job_pos->JB_urg_pos, lGetPosDouble(joker, order_job_pos->JB_urg_pos));
@@ -803,6 +808,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+            sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
+            sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
 
 #if 0
             DPRINTF(("PRIORITY: " sge_u32"." sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
@@ -821,9 +828,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
 
          /* -----------------------------------------------------------------------
-          * CHANGE TICKETS OF RUNNING/TRANSFERING JOBS
+          * CHANGE TICKETS OF RUNNING/TRANSFERRING JOBS
           *
-          * Our aim is to collect all ticket orders of an gdi request
+          * Our aim is to collect all ticket orders of a gdi request
           * and to send ONE packet to each exec host. Here we just
           * check the orders for consistency. They get forwarded to
           * execd having checked all orders.
@@ -1006,6 +1013,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   sge_free(&rdp);
                }
             }
+            sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
+            sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
          }
          break;
 
@@ -1382,7 +1391,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          break;
 
          /* -----------------------------------------------------------------------
-          * FILL IN SEVERAL SCHEDULING VALUES INTO QMASTERS SHARE TREE
+          * FILL IN SEVERAL SCHEDULING VALUES INTO QMASTER'S SHARE TREE
           * TO BE DISPLAYED BY QMON AND OTHER CLIENTS
           * ----------------------------------------------------------------------- */
       case ORT_share_tree: {
@@ -1394,6 +1403,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);
          }
+         // @todo CS-911 don't we have to send an event here?
       }
          break;
 
@@ -1413,6 +1423,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
             }
             /* no need to spool sched conf */
+            // @todo CS-912 don't we have to send an event here?
          }
 
          break;
