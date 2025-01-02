@@ -748,8 +748,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-2);
             }
 
+            bool send_task_event = true;
             jatp = job_search_task(jep, nullptr, task_number);
             if (jatp == nullptr) {
+               send_task_event = false;
                jatp = job_get_ja_task_template_pending(jep, task_number);
 
                if (jatp == nullptr) {
@@ -808,7 +810,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-            sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
+            if (send_task_event) {
+               sge_add_event(0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
+            }
             sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
 
 #if 0
