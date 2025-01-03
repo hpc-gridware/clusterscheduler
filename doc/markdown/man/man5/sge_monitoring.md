@@ -16,22 +16,29 @@ The monitoring file is available since xxQS_NAMExx 9.0.0 and is written by the x
 
 Further metrics, e.g. about the cluster state, will be added in future versions.
 
+To enable monitoring data to be written to the monitoring file
+* set `monitoring=true`in the `reporting_params` section of the global configuration
+* set `MONITOR_TIME=seconds` in the `qmaster_params` section of the global configuration
+
 # FORMAT
 
 The monitoring file is a text file. Each line in the file represents a monitoring record entry. Every record is written in a JSON format (one line JSON).
 
+It is located in `$SGE_ROOT/$SGE_CELL/common` and has the name `monitoring.jsonl`.
+
 The monitoring file can contain different types of records. In the current version there is per thread monitoring.
 
-Every entry in the monitoring file starts with a timestamp (microseconds since epoch) followed by the record type, e.g.
+Every entry in the monitoring file starts with a timestamp (microseconds since epoch) followed by the record type and the schema version, e.g.
 
 ```json
-{"time":1735032063284912,"type":"thread", ...
+{"time":1735032063284912,"type":"worker-thread","version": "1", ... }
  ```
 
 ## Per Thread monitoring
 
 Per thread monitoring is written for the following thread types:
-* event master
+
+* event-master
 * listener
 * mirror
 * timer
@@ -41,15 +48,27 @@ Per thread monitoring is written for the following thread types:
 
 For every thread a monitoring record contains a set of metrics. In addition, there are thread type specific metrics, e.g. metrics which are only available for worker threads.
 
-The following metrics are available for every thread:
+The following metrics are available for every thread in a sub-structure `data` of the monitoring record:
+
+### *start_time*
+
+The time when the monitoring interval was started (microseconds since epoch).
+
+### *end_time*
+
+The time when the monitoring interval was ended (microseconds since epoch).
 
 ### *name*
 
 Name of the thread (e.g. "reader-01"). The name is unique for every thread. "reader" is the thread type and "01" is a thread serial number.
 
+### *hostname*
+
+The hostname of the machine where the thread (sge_qmaster) is running. In case of a HA set-up with sge_shadowd the host name will change if a failover occurs.
+
 ### *duration*
 
-Duration of the reported monitoring interval. The monitoring interval is configured in the global configuration, `qmaster_params`, `MONITOR_TIME=seconds`.
+Duration of the reported monitoring interval in microseconds. The monitoring interval is configured in the global configuration, `qmaster_params`, `MONITOR_TIME=seconds`.
 
 ### *idle*
 
@@ -160,6 +179,7 @@ The number of events which were executed by the timer thread during the monitori
 #### Extensions for reader and worker threads
 
 There are 3 types of extensions for reader and worker threads:
+
 * *execd_reports* reports sent by execution daemons
 * *gdi_requests* GDI requests processed by the thread
 * *queue_lengths* queue lengths of the internal request queues
@@ -167,6 +187,7 @@ There are 3 types of extensions for reader and worker threads:
 ##### *execd_reports*
 
 Reports from an execution daemon can be
+
 * load reports
 * job reports
 * configuration reports
@@ -176,6 +197,7 @@ Reports from an execution daemon can be
 ##### *gdi_requests*
 
 The number of processed GDI requests are listed for the following request types:
+
 * add requests
 * get requests
 * modify requests
@@ -187,46 +209,53 @@ The number of processed GDI requests are listed for the following request types:
 ##### *queue_lengths*
 
 The queue lengths of the internal request queues are reported for the following queues:
+
 * writer (containing requests for the worker threads)
 * reader (contains requests for the reader threads)
 * reader_wait (contains requests for the reader threads which will be processed later due to the automatic session management)
 
 
-Example for a monitoring record from a reader thread (pretty printed):
+Example for a monitoring record from a worker thread (pretty printed):
 
 ```json
 {
-  "time": 1735302078012803,
-  "type": "thread",
-  "name": "reader-01",
-  "duration": 59.983546,
-  "idle": 97.63390280394545,
-  "wait": 0.0021339185249234774,
-  "busy": 2.363963277529626,
-  "requests_in": 2389,
-  "answers_out": 2389,
-  "runs": 2389,
-  "extensions": {
-    "execd_reports": {
-      "load_reports": 0,
-      "job_reports": 0,
-      "conf_reports": 0,
-      "proc_reports": 0,
-      "ack_reports": 0
-    },
-    "gdi_requests": {
-      "add_requests": 0,
-      "get_requests": 26279,
-      "mod_requests": 0,
-      "del_requests": 0,
-      "cp_requests": 0,
-      "trigger_requests": 0,
-      "permission_requests": 0
-    },
-    "queue_lengths": {
-      "writer": 0,
-      "reader": 0,
-      "reader_wait": 0
+  "time": 1735914863000676,
+  "type": "worker-thread",
+  "version": "1",
+  "data": {
+    "start_time": 1735914803568156,
+    "end_time": 1735914863000676,
+    "name": "worker-00",
+    "hostname": "ubuntu-24-amd64-1",
+    "duration": 59432520,
+    "idle": 99.99912169297212,
+    "wait": 0.0000673032205264054,
+    "busy": 0.0008110038073519356,
+    "requests_in": 12,
+    "answers_out": 6,
+    "runs": 12,
+    "extensions": {
+      "execd_reports": {
+        "load_reports": 6,
+        "job_reports": 0,
+        "conf_reports": 6,
+        "proc_reports": 0,
+        "ack_reports": 0
+      },
+      "gdi_requests": {
+        "add_requests": 6,
+        "get_requests": 0,
+        "mod_requests": 0,
+        "del_requests": 0,
+        "cp_requests": 0,
+        "trigger_requests": 0,
+        "permission_requests": 0
+      },
+      "queue_lengths": {
+        "writer": 1,
+        "reader": 0,
+        "reader_wait": 0
+      }
     }
   }
 }

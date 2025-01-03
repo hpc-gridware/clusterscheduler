@@ -524,20 +524,36 @@ void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) {
 }
 
 // @todo move into a separate file, ocs_monitor_json.cc?
-static void sge_monitor_json_output(rapidjson::Writer<rapidjson::StringBuffer> *writer, monitoring_t *monitor, double time) {
-   write_json(*writer, "time", sge_get_gmt64());
-   write_json(*writer, "type", "thread");
-   DSTRING_STATIC(thread_id, 100);
-   write_json(*writer, "name", sge_dstring_sprintf(&thread_id, "%s-%02d", component_get_thread_name(),
-                                                  component_get_thread_id()));
+static void sge_monitor_json_output(rapidjson::Writer<rapidjson::StringBuffer> *writer, monitoring_t *monitor, struct timeval &start, struct timeval &end) {
+   // common part
+   u_long64 start_time = start.tv_sec * 1000000 + start.tv_usec;
+   u_long64 now = end.tv_sec * 1000000 + end.tv_usec;
+   u_long64 duration = now - start_time;
+   double duration_s = sge_gmt64_to_gmt32_double(duration);
+
+   write_json(*writer, "time", now);
+   DSTRING_STATIC(dstr, 100);
+   const char *thread_name = component_get_thread_name();
+   write_json(*writer, "type", sge_dstring_sprintf(&dstr, "%s-thread", thread_name));
+   write_json(*writer, "version", "1");
+
+   // thread monitoring specific data
    // listener: runs: 0.58r/s (in (g:0.00 a:0.00 e:0.00 r:0.11)/s GDI (g:0.00,t:0.00,p:0.00)/s) out: 0.00m/s APT: 0.0000s/m idle: 100.00% wait: 0.00% time: 3600.77s
-   write_json(*writer, "duration", time);
-   write_json(*writer, "idle", monitor->idle / time * 100);
-   write_json(*writer, "wait", monitor->wait / time * 100);
-   write_json(*writer, "busy", (time - monitor->wait - monitor->idle) / time * 100);
+   writer->Key("data");
+   writer->StartObject();
+   write_json(*writer, "start_time", start_time);
+   write_json(*writer, "end_time", now);
+   write_json(*writer, "name", sge_dstring_sprintf(&dstr, "%s-%02d", thread_name,
+                                                               component_get_thread_id()));
+   write_json(*writer, "hostname", component_get_qualified_hostname());
+   write_json(*writer, "duration", duration);
+   write_json(*writer, "idle", monitor->idle / duration_s * 100.0);
+   write_json(*writer, "wait", monitor->wait / duration_s * 100.0);
+   write_json(*writer, "busy", (duration_s - monitor->wait - monitor->idle) / duration_s * 100.0);
    write_json(*writer, "requests_in", monitor->message_in_count);
    write_json(*writer, "answers_out", monitor->message_out_count);
    write_json(*writer, "runs", monitor->message_in_count);
+   // the EndObject for data and for the whole json object must be done later, as we optionally add extensions here
 }
 
 /****** uti/monitor/sge_monitor_output() ***************************************
@@ -573,9 +589,6 @@ void sge_monitor_output(monitoring_t *monitor) {
    if ((monitor != nullptr) && monitor->output) {
       struct timeval after{};
       double time;
-      rapidjson::StringBuffer *json_buffer = nullptr;
-      rapidjson::Writer<rapidjson::StringBuffer> *json_writer = nullptr;
-
       gettimeofday(&after, nullptr);
       time = after.tv_usec - monitor->now.tv_usec;
       time = after.tv_sec - monitor->now.tv_sec + (time / 1000000);
@@ -586,11 +599,13 @@ void sge_monitor_output(monitoring_t *monitor) {
       sge_dstring_sprintf_append(monitor->work_line, MSG_UTI_MONITOR_DEFLINE_SF,
                                  monitor->thread_name, monitor->message_in_count / time);
 
+      rapidjson::StringBuffer *json_buffer = nullptr;
+      rapidjson::Writer<rapidjson::StringBuffer> *json_writer = nullptr;
       if (monitor->log_monitor_json) {
          json_buffer = new rapidjson::StringBuffer();
          json_writer = new rapidjson::Writer<rapidjson::StringBuffer>(*json_buffer);
          json_writer->StartObject();
-         sge_monitor_json_output(json_writer, monitor, time);
+         sge_monitor_json_output(json_writer, monitor, monitor->now, after);
       }
 
       if (monitor->ext_type != NONE_EXT) {
@@ -612,7 +627,8 @@ void sge_monitor_output(monitoring_t *monitor) {
       // log to the monitoring file if a callback function was set
       if (monitor->log_monitor_json) {
          if (monitor->json_output != nullptr) {
-            json_writer->EndObject();
+            json_writer->EndObject(); // end data
+            json_writer->EndObject(); // end json object
             monitor->json_output(json_buffer->GetString());
          }
          delete json_writer;
