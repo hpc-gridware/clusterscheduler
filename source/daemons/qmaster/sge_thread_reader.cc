@@ -248,6 +248,9 @@ sge_reader_main(void *arg) {
             if (packet->request_type == PACKET_GDI_REQUEST) {
                //sge_usleep(1000000);
 
+               lList *tmp_answer_list = nullptr;
+               packet->pack_header(&tmp_answer_list, &packet->pb);
+
                for (size_t i = 0; i < packet->tasks.size(); ++i) {
                   bool has_next = (i < packet->tasks.size() - 1);
                   ocs::GdiTask *task = packet->tasks[i];

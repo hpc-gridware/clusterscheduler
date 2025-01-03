@@ -136,14 +136,17 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
    case PACK_SUCCESS:
       break;
    case PACK_ENOMEM:
+      DTRACE;
       answer_list_add_sprintf(answer_list, STATUS_ERROR2, ANSWER_QUALITY_ERROR,
                               MSG_GDI_MEMORY_NOTENOUGHMEMORYFORPACKINGGDIREQUEST);
       break;
    case PACK_FORMAT:
+      DTRACE;
       answer_list_add_sprintf(answer_list, STATUS_ERROR3, ANSWER_QUALITY_ERROR,
                               MSG_GDI_REQUESTFORMATERROR);
       break;
    default:
+      DTRACE;
       answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                               MSG_GDI_UNEXPECTEDERRORWHILEPACKINGGDIREQUEST);
       break;
@@ -724,6 +727,7 @@ ocs::GdiPacket::execute_external(lList **answer_list)
       ret_packet = new GdiPacket();
       ret = ret_packet->unpack(answer_list, &rpb);
       if (!ret) {
+         DTRACE;
          delete ret_packet;
       }
       clear_packbuffer(&rpb);
@@ -736,6 +740,7 @@ ocs::GdiPacket::execute_external(lList **answer_list)
     *    - is the task sequence and the task id of each received task the same
     */
    if (ret) {
+      DTRACE;
       bool gdi_mismatch = false;
 
       if (!gdi_mismatch && tasks.size() != ret_packet->tasks.size()) {
@@ -842,18 +847,17 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
    int pack_ret;
 
    DENTER(TOP_LAYER);
-   bool first = true;
+
+   unpack_header(answer_list, pb);
 
    do {
       u_long32 target_ulong32 = 0;
-      ocs::GdiTarget::Target target = ocs::GdiTarget::Target::NO_TARGET;
+      GdiTarget::Target target = GdiTarget::Target::NO_TARGET;
       u_long32 command = 0;
       lList *data_list = nullptr;
-      u_long32 tmp_version = 0;
       lList *a_list = nullptr;
       lCondition *condition = nullptr;
       lEnumeration *enumeration = nullptr;
-      char *tmp_auth_info = nullptr;
       u_long32 task_id = 0;
       u_long32 has_next_int = 0;
 
@@ -863,18 +867,7 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = unpackint(pb, &target_ulong32))) {
          goto error_with_mapping;
       }
-      target = static_cast<ocs::GdiTarget::Target>(target_ulong32);
-      if ((pack_ret = unpackint(pb, &tmp_version))) {
-         goto error_with_mapping;
-      }
-      /* JG: TODO (322): At this point we should check the version!
-       **                 The existent check function sge_gdi_packet_verify_version
-       **                 cannot be called as necessary data structures are
-       **                 available here (e.g. answer list).
-       **                 Better do these changes at a more general place
-       **                 together with (hopefully coming) further communication
-       **                 redesign.
-       */
+      target = static_cast<GdiTarget::Target>(target_ulong32);
       if ((pack_ret = cull_unpack_list(pb, &(data_list)))) {
          goto error_with_mapping;
       }
@@ -887,9 +880,6 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = cull_unpack_enum(pb, &(enumeration)))) {
          goto error_with_mapping;
       }
-      if ((pack_ret = unpackstr(pb, &tmp_auth_info))) {
-         goto error_with_mapping;
-      }
       if ((pack_ret = unpackint(pb, &(task_id)))) {
          goto error_with_mapping;
       }
@@ -898,17 +888,41 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       }
       has_next = (has_next_int > 0) ? true : false;
 
-      if (first) {
-         version = tmp_version;
-         auth_info = tmp_auth_info;
-         first = false;
-      } else {
-         sge_free(&tmp_auth_info);
-      }
-
       append_task(&a_list, target, command, &data_list, &a_list, &condition, &enumeration, false);
    } while (has_next);
+
+   debug_print();
+
    DRETURN(ret);
+error_with_mapping:
+   ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
+   DRETURN(ret);
+}
+
+bool
+ocs::GdiPacket::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
+   DENTER(TOP_LAYER);
+   bool ret;
+   int pack_ret;
+   u_long32 tmp_version = 0;
+   char *tmp_auth_info = nullptr;
+
+   if ((pack_ret = unpackint(pb, &tmp_version))) {
+      goto error_with_mapping;
+   }
+   version = tmp_version;
+   /* JG: TODO (322): At this point we should check the version!
+    **                 The existent check function sge_gdi_packet_verify_version
+    **                 cannot be called as necessary data structures are
+    **                 available here (e.g. answer list).
+    **                 Better do these changes at a more general place
+    **                 together with (hopefully coming) further communication
+    **                 redesign.
+    */
+   if ((pack_ret = unpackstr(pb, &tmp_auth_info))) {
+      goto error_with_mapping;
+   }
+   auth_info = tmp_auth_info;
 error_with_mapping:
    ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
    DRETURN(ret);
@@ -917,6 +931,15 @@ error_with_mapping:
 bool
 ocs::GdiPacket::pack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
+   bool ret = true;
+
+   debug_print();
+
+   ret = pack_header(answer_list, pb);
+   if (!ret) {
+      DRETURN(ret);
+   }
+
    for (size_t i = 0; i < tasks.size(); ++i) {
       bool has_next = (i < tasks.size() - 1);
 
@@ -927,50 +950,27 @@ ocs::GdiPacket::pack(lList **answer_list, sge_pack_buffer *pb) {
    DRETURN(true);
 }
 
-/****** gdi/request_internal/sge_gdi_packet_pack_task() **********************
-*  NAME
-*     sge_gdi_packet_pack_task() -- pack a single GDI task
-*
-*  SYNOPSIS
-*     bool
-*     sge_gdi_packet_pack_task(ocs::GdiPacket * packet,
-*                              ocs::GdiTask * task,
-*                              lList **answer_list,
-*                              sge_pack_buffer *pb)
-*
-*  FUNCTION
-*     This functions packs all data representing one GDI request
-*     of a multi GDI request (represented by "packet" and "task")
-*     into "pb". Errors will be reported with a corresponding
-*     "answer_list" message and a negative return value.
-*
-*     "pb" has to be initialized before this function is called.
-*     init_packbuffer() or a similar function has do be used to
-*     initialize this "pb". The function sge_gdi_packet_get_pb_size()
-*     might be used to calculate the maximum size as if the buffer
-*     would be needed to pack all tasks of a multi GDI request.
-*     Using this size as initial size for the "pb"
-*     will prevent continuous reallocation of memory in this
-*     function.
-*
-*  INPUTS
-*     ocs::GdiPacket * packet - GDI packet
-*     ocs::GdiTask * task     - GDI task
-*     lList **answer_list             - answer_list
-*     sge_pack_buffer *pb             - packing buffer
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - failure
-*
-*  NOTES
-*     MT-NOTE: sge_gdi_packet_pack_task() is MT safe
-*
-*  SEE ALSO
-*     gdi/request_internal/sge_gdi_packet_get_pb_size()
-*     gdi/request_internal/sge_gdi_packet_pack()
-*******************************************************************************/
+bool
+ocs::GdiPacket::pack_header(lList **answer_list, sge_pack_buffer *pb) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   int pack_ret;
+
+   pack_ret = packint(pb, version);
+   if (pack_ret != PACK_SUCCESS) {
+      goto error_with_mapping;
+   }
+   pack_ret = packstr(pb, auth_info);
+   if (pack_ret != PACK_SUCCESS) {
+      goto error_with_mapping;
+   }
+
+   DRETURN(true);
+error_with_mapping:
+   ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
+   DRETURN(ret);
+}
+
 bool
 ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buffer *pb, bool has_next) {
    DENTER(TOP_LAYER);
@@ -986,10 +986,6 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
          goto error_with_mapping;
       }
       pack_ret = packint(pb, task->target);
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
-      pack_ret = packint(pb, version);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
@@ -1032,10 +1028,6 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
          goto error_with_mapping;
       }
 
-      pack_ret = packstr(pb, auth_info);
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
       pack_ret = packint(pb, task->id);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;

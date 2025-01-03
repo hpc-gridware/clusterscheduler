@@ -162,7 +162,10 @@ namespace ocs {
 
       u_long32 get_pb_size();
       bool unpack(lList **answer_list, sge_pack_buffer *pb);
+      bool unpack_header(lList **answer_list, sge_pack_buffer *pb);
+
       bool pack(lList **answer_list, sge_pack_buffer *pb);
+      bool pack_header(lList **answer_list, sge_pack_buffer *pb);
       bool pack_task(GdiTask *task, lList **answer_list, sge_pack_buffer *pb, bool has_next);
       void debug_print();
    };

@@ -202,10 +202,9 @@ do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
 *******************************************************************************/
 void
 sge_qmaster_process_message(monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    int res;
    struct_msg_t msg{};
-
-   DENTER(TOP_LAYER);
 
    /*
     * INFO (CR)  
@@ -403,6 +402,11 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    // handle errors that might have happened above and then exit
    if (!local_ret) {
       init_packbuffer(&packet->pb, 0, 0);
+
+      if (packet != nullptr) {
+         lList *tmp_anser_list = nullptr;
+         packet->pack_header(&tmp_anser_list, &packet->pb);
+      }
       for (size_t i = 0; i < packet->tasks.size(); ++i) {
          bool has_next = (i < packet->tasks.size() - 1);
          ocs::GdiTask *task = packet->tasks[i];
@@ -429,6 +433,9 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    if (ds_enabled && ds_type == ocs::DataStore::LISTENER) {
       // prepare packbuffer for the clients answer
       init_packbuffer(&(packet->pb), 0, 0);
+
+      lList *tmp_answer_list = nullptr;
+      packet->pack_header(&tmp_answer_list, &packet->pb);
 
       // handle the requests
       SGE_LOCK(LOCK_LISTENER, LOCK_READ);
