@@ -636,9 +636,16 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
             lFreeElem(&new_ep);
          }
       } else {
+#if 1
+         // add a 1 to the packbuffer to indicate that there is an element
+         if (packint(pb, 1) != PACK_SUCCESS) {
+            DRETURN(nullptr);
+         }
+#else
          if (elements != nullptr) {
             (*elements)++;
          }
+#endif
 
          lCopyElemPartialPack(nullptr, &index, slp, enp, isHash, pb);
          new_ep = nullptr;
@@ -761,6 +768,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          lSelectDPack(name, slp, cp, nullptr, enp, isHash, pb,
                       &number_of_packed_elements);
 
+#if 0
          /*
           * change number of elements contained in the packbuffer 
           */
@@ -781,6 +789,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             pb->cur_ptr = old_cur_ptr;
             pb->bytes_used = old_used;
          }
+#endif
       }
    } else {
       if (pb == nullptr) {
@@ -858,6 +867,15 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
          }
       }
    }
+
+#if 1
+   // write 0 to the end of the list to indicate that there are no more elements
+   if (pb != nullptr) {
+      if (packint(pb, 0) != PACK_SUCCESS) {
+         DRETURN(nullptr);
+      }
+   }
+#endif
 
    if (pb == nullptr && isHash) {
       /* now create the hash tables */
