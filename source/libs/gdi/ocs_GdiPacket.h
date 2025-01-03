@@ -75,12 +75,6 @@ namespace ocs {
       gdi_packet_request_type_t request_type;
 
       /*
-       * unique id identifying this packet uniquely in the context
-       * of the creating process/thread
-       */
-      u_long32 id;
-
-      /*
        * set in qmaster to identify the source for this GDI packet.
        * qmaster will use that information to send a response
        * to the correct external communication partner using the

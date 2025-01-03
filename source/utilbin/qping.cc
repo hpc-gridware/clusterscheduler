@@ -523,11 +523,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
                         printf("         packet:\n");
 
-                        if (packet->id) {
-                           printf("id   : " sge_U32CFormat "\n", sge_u32c(packet->id));
-                        } else {
-                           printf("id   : %s\n", "nullptr");
-                        } 
                         printf("host   : %s\n", packet->host);
                         printf("commproc   : %s\n", packet->commproc);
                         if (packet->version) {

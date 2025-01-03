@@ -154,7 +154,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
 
 ocs::GdiPacket::GdiPacket()
        : mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), is_handled(false), is_intern_request(false),
-         request_type(PACKET_GDI_REQUEST), id(0), commproc_id(0),
+         request_type(PACKET_GDI_REQUEST), commproc_id(0),
          response_id(0), gdi_session(0), version(0), auth_info(nullptr), uid(0), gid(0), amount(0), grp_array(nullptr),
          ds_type(0) {
    DENTER(TOP_LAYER);
@@ -521,9 +521,6 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 
    DENTER(TOP_LAYER);
 
-   /* here the packet gets a unique request id */
-   id = gdi_data_get_next_request_id();
-
 #ifdef KERBEROS
    /* request that the Kerberos library forward the TGT */
    if (ret && packet->first_task->target == SGE_JB_LIST &&
@@ -741,10 +738,6 @@ ocs::GdiPacket::execute_external(lList **answer_list)
    if (ret) {
       bool gdi_mismatch = false;
 
-      if (id != ret_packet->id) {
-         gdi_mismatch = true;
-      }
-
       if (!gdi_mismatch && tasks.size() != ret_packet->tasks.size()) {
          gdi_mismatch = true;
       }
@@ -791,7 +784,6 @@ bool
 ocs::GdiPacket::execute_internal(lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   id = gdi_data_get_next_request_id();
    strncpy(commproc, prognames[QMASTER], sizeof(commproc)-1);
    strncpy(host, gdi_get_act_master_host(false), sizeof(host)-1);
    is_intern_request = true;
@@ -863,7 +855,6 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       lEnumeration *enumeration = nullptr;
       char *tmp_auth_info = nullptr;
       u_long32 task_id = 0;
-      u_long32 packet_id = 0;
       u_long32 has_next_int = 0;
 
       if ((pack_ret = unpackint(pb, &command))) {
@@ -902,16 +893,12 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = unpackint(pb, &(task_id)))) {
          goto error_with_mapping;
       }
-      if ((pack_ret = unpackint(pb, &(packet_id)))) {
-         goto error_with_mapping;
-      }
       if ((pack_ret = unpackint(pb, &has_next_int))) {
          goto error_with_mapping;
       }
       has_next = (has_next_int > 0) ? true : false;
 
       if (first) {
-         id = packet_id;
          version = tmp_version;
          auth_info = tmp_auth_info;
          first = false;
@@ -1053,10 +1040,6 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
-      pack_ret = packint(pb, id);
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
       pack_ret = packint(pb, has_next ? 1 : 0);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
@@ -1077,7 +1060,6 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
 void ocs::GdiPacket::debug_print() {
    DENTER(TOP_LAYER);
 
-   DPRINTF("packet->id = " sge_U32CFormat "\n", sge_u32c(id));
    DPRINTF("packet->host = " SFQ "\n", host);
    DPRINTF("packet->commproc = " SFQ "\n", commproc);
    DPRINTF("packet->auth_info = " SFQ "\n", auth_info ? auth_info : "<null>");

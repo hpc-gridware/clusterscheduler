@@ -1238,7 +1238,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask
          /* fill address infos from request into event client that must be added */
          lSetHost(ep, EV_host, packet->host);
          lSetString(ep, EV_commproc, packet->commproc);
-         lSetUlong(ep, EV_commid, packet->id);
+         lSetUlong(ep, EV_commid, packet->commproc_id);
 
          /* fill in authentication infos from request */
          lSetUlong(ep, EV_uid, packet->uid);
