@@ -308,7 +308,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
 
    // Is the department name the default department then we can skip remaining tests.
    // The default department is always valid and the user or group(s) do not need to be part of it.
-   if (!strcmp(dept_name, DEFAULT_DEPARTMENT)) {
+   if (strcmp(dept_name, DEFAULT_DEPARTMENT) == 0) {
       DRETURN(true);
    }
 
@@ -340,7 +340,11 @@ job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
    // Find the first department where the user is a member of
    const lListElem *dept;
    for_each_ep(dept, userset_list) {
-      if (job_is_valid_department(job, nullptr, lGetString(dept, US_name), userset_list)) {
+      const char *dept_name = lGetString(dept, US_name);
+      if (strcmp(dept_name, DEFAULT_DEPARTMENT) == 0) {
+         continue;
+      }
+      if (job_is_valid_department(job, nullptr, dept_name, userset_list)) {
          lSetString(job, JB_department, lGetString(dept, US_name));
          DRETURN(true);
       }
