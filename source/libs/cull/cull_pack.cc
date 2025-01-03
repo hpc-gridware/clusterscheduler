@@ -73,8 +73,6 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
 
 static int cull_unpack_descr(sge_pack_buffer *pb, lDescr **dpp);
 
-static int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp);
-
 static int cull_unpack_cont(sge_pack_buffer *pb, lMultiType **mpp, const lDescr *dp, int flags);
 
 static int
@@ -85,9 +83,6 @@ static int cull_unpack_object(sge_pack_buffer *pb, lListElem **epp, int flags);
 
 static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, int flags);
 
-static int
-cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
-                        const lDescr *dp);
 
 /* ------------------------------------------------------------
 
@@ -397,7 +392,7 @@ static int cull_unpack_descr(
    PACK_FORMAT
 
  */
-static int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
+int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
    int i, ret;
 
    DENTER(CULL_LAYER);
@@ -421,7 +416,7 @@ static int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
 
 /* TODO EB: doc is missing */
 /* TODO EB: remove not needed exit points */
-static int
+int
 cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
                         const lDescr *descr) {
    int i, ret;
@@ -829,75 +824,6 @@ int cull_pack_list(sge_pack_buffer *pb, const lList *lp) {
    DRETURN(ret);
 }
 
-int
-cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
-                       const lEnumeration *what, const char *name,
-                       size_t *offset, size_t *used) {
-   int ret;
-
-   DENTER(CULL_LAYER);
-
-   PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   if ((ret = packint(pb, lp != nullptr)) != PACK_SUCCESS) {
-      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DRETURN(ret);
-   }
-
-   if (lp != nullptr) {
-#if 0
-      /*
-       * TODO: The next release where it is possible to change the pb-format
-       *       makes it possible to delete this hack 
-       *       Then it is possible to remove the argument 'bytes_used'
-       *
-       * Future implementation:
-       *    The number of elements can't be written before the list
-       *    elements. Instead each element has to be introduced by an int.
-       *    0 means that no element will follow. 1 means that an element
-       *    will follow    
-       */
-      *offset = pb->cur_ptr - pb->head_ptr;
-      *used = pb->bytes_used;
-
-      /*
-       * pack number of elements contained in the list 
-       */
-      if ((ret = packint(pb, lp->nelem)) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-#endif
-
-      /*
-       * name of the list
-       */
-      if (name == nullptr) {
-         name = lp->listname;
-      }
-      if ((ret = packstr(pb, name)) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-
-      /* pack descriptor */
-      if (what == nullptr) {
-         ret = cull_pack_descr(pb, lp->descr);
-         if (ret != PACK_SUCCESS) {
-            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DRETURN(ret);
-         }
-      } else {
-         ret = cull_pack_enum_as_descr(pb, what, lp->descr);
-         if (ret != PACK_SUCCESS) {
-            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DRETURN(ret);
-         }
-      }
-   }
-
-   DRETURN(PACK_SUCCESS);
-}
-
 int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
                            lEnumeration *what, int flags) {
    int ret;
@@ -912,13 +838,6 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
       }
-
-#if 0
-      if ((ret = packint(pb, lp->nelem)) != PACK_SUCCESS) {
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-#endif
 
       if ((ret = packstr(pb, lp->listname)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -948,25 +867,23 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
       /* pack each list element */
 
       for_each_ep(ep, lp) {
-#if 1
          // each element will be preceded by a 1 to indicate that another element follows
          if ((ret = packint(pb, 1)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
-#endif
+
          if ((ret = cull_pack_elem_partial(pb, ep, what, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
       }
-#if 1
+
       // after the last element a 0 will be written to indicate that no more elements follow
       if ((ret = packint(pb, 0)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
       }
-#endif
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -998,9 +915,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    lListElem *ep;
 
    u_long32 i = 0;
-#if 0
-   u_long32 n = 0;
-#endif
 
    DENTER(CULL_LAYER);
 
@@ -1023,14 +937,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(PACK_ENOMEM);
    }
 
-#if 0
-   if ((ret = unpackint(pb, &n)) != PACK_SUCCESS) {
-      lFreeList(&lp);
-      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DRETURN(ret);
-   }
-#endif
-
    if ((ret = unpackstr(pb, &(lp->listname))) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -1049,7 +955,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
 #endif
 
    /* unpack each list element */
-#if 1
    u_long32 has_more_elements = 0;
    // as long as we find a 1 we have to unpack an element
    if ((ret = unpackint(pb, &has_more_elements)) != PACK_SUCCESS) {
@@ -1071,16 +976,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
          DRETURN(ret);
       }
    }
-#else
-   for (i = 0; i < n; i++) {
-      if ((ret = cull_unpack_elem_partial(pb, &ep, lp->descr, flags)) != PACK_SUCCESS) {
-         lFreeList(&lp);
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(ret);
-      }
-      lAppendElem(lp, ep);
-   }
-#endif
 
    cull_hash_create_hashtables(lp);
 

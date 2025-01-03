@@ -2728,8 +2728,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 
          if (!list_select(subscription, type, &clp, lp, selection, fields,
                           descr, internal_client)) {
-            clp = lSelectDPack("updating list", lp, selection, descr,
-                               fields, internal_client, nullptr, nullptr);
+            clp = lSelectDPack("updating list", lp, selection, descr, fields, internal_client, nullptr);
          }
 
          /* no elements in the event list, no need for an event */
@@ -3124,7 +3123,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
          /* for some reason, we did not get a descriptor for the target element */
          el = lSelectElemPack(element, selection, fields, false, nullptr);
       } else {
-         el = lSelectElemDPack(element, selection, dp, fields, false, nullptr, nullptr);
+         el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
       }
 
       /* if we have a new reduced main element */
@@ -3133,8 +3132,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
          for (counter = 0; counter < ids_size; counter ++) {
             if (sub_list[counter] && (lGetPosViaElem(el, ids[counter], SGE_NO_ABORT) != -1)) {
                lSetList(el, ids[counter],
-                        lSelectDPack("", sub_list[counter], sub_selection,
-                                     sub_descr, sub_fields, false, nullptr, nullptr));
+                        lSelectDPack("", sub_list[counter], sub_selection, sub_descr, sub_fields, false, nullptr));
             }
          }
       }
@@ -3147,7 +3145,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
       sge_free(&sub_list);
    } else {
       DPRINTF("no sub filter specified\n");
-      el = lSelectElemDPack(element, selection, dp, fields, false, nullptr, nullptr);
+      el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
    }
 
    DRETURN(el);

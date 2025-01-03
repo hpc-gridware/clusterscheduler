@@ -968,7 +968,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                         lListElem *rtic_ep;
                         lList *host_tickets;
 
-                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr, nullptr);
+                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr);
                         lSetDouble(newep, OR_ticket, lGetDouble(oep, UA_value));
 
                         rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);
@@ -986,7 +986,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   } else {
                      const lList *gdil = lGetList(jatp, JAT_granted_destin_identifier_list);
                      if (gdil != nullptr) {
-                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr, nullptr);
+                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr);
                         lList *host_tickets;
                         const char *hostname = lGetHost(lFirst(gdil), JG_qhostname);
                         lListElem *rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);

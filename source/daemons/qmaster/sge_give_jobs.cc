@@ -318,7 +318,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
-      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
+      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr);
 
       /* build minimum of job request and queue resource limit */
       reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
@@ -560,7 +560,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
-      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
+      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr);
 
       /* build minimum of job request and queue resource limit */
       reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
