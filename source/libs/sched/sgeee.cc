@@ -695,17 +695,11 @@ job_is_active( lListElem *job,
 /*--------------------------------------------------------------------
  * locate_department - locate the department object by name
  *--------------------------------------------------------------------*/
-
 static lListElem *
-locate_department( lList *dept_list,
-                   const char *name )
-{
-   if (!name)
+locate_department(lList *dept_list, const char *name) {
+   if (name == nullptr) {
       return nullptr;
-
-   /*-------------------------------------------------------------
-    * Look up the department object by name
-    *-------------------------------------------------------------*/
+   }
 
    return lGetElemStrRW(dept_list, US_name, name);
 }
@@ -759,8 +753,7 @@ sge_set_job_refs( lListElem *job,
     * locate user object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->user = user_list_locate(lists->user_list,
-                                   lGetString(job, JB_owner));
+   ref->user = user_list_locate(lists->user_list, lGetString(job, JB_owner));
    if (ref->user) {
       lSetUlong(ref->user, UU_job_cnt, 0);
       lSetUlong(ref->user, UU_pending_job_cnt, 0);
@@ -770,8 +763,7 @@ sge_set_job_refs( lListElem *job,
     * locate project object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->project = prj_list_locate(lists->project_list,
-                                      lGetString(job, JB_project));
+   ref->project = prj_list_locate(lists->project_list, lGetString(job, JB_project));
    if (ref->project) {
       lSetUlong(ref->project, PR_job_cnt, 0);
       lSetUlong(ref->project, PR_pending_job_cnt, 0);
@@ -813,8 +805,7 @@ sge_set_job_refs( lListElem *job,
     * locate department object and save off reference in job entry
     *-------------------------------------------------------------*/
 
-   ref->dept = locate_department(lists->dept_list,
-                                 lGetString(job, JB_department));
+   ref->dept = locate_department(lists->dept_list, lGetString(job, JB_department));
    if (ref->dept) {
       lSetUlong(ref->dept, US_job_cnt, 0);
       lSetUlong(ref->dept, US_pending_job_cnt, 0);
@@ -827,9 +818,7 @@ sge_set_job_refs( lListElem *job,
  *--------------------------------------------------------------------*/
 
 static void
-sge_set_job_cnts( sge_ref_t *ref,
-                  int queued )
-{
+sge_set_job_cnts(sge_ref_t *ref, int queued) {
    int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
    int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
    int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
@@ -842,8 +831,6 @@ sge_set_job_cnts( sge_ref_t *ref,
    if (ref->dept) {
       lAddUlong(ref->dept, us_job_cnt_nm, 1);
    }
-
-   return;
 }
 
 
@@ -852,9 +839,7 @@ sge_set_job_cnts( sge_ref_t *ref,
  *--------------------------------------------------------------------*/
 
 static void
-sge_unset_job_cnts( sge_ref_t *ref,
-                    int queued )
-{
+sge_unset_job_cnts(sge_ref_t *ref, int queued) {
    int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
    int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
    int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
@@ -867,7 +852,6 @@ sge_unset_job_cnts( sge_ref_t *ref,
    if (ref->dept) {
       lAddUlong(ref->dept, us_job_cnt_nm, -1);
    }
-   return;
 }
 
 
@@ -1609,10 +1593,7 @@ calc_job_share_tree_tickets_pass2( sge_ref_t *ref, double total_share_tree_ticke
 *     ??? 
 *******************************************************************************/
 static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
-   if (source == nullptr || dest == nullptr) {
-      return;
-   }
-   else { 
+   if (source != nullptr && dest != nullptr) {
       sge_ref_t *dest_r = dest->ref;
       sge_ref_t *source_r = source->ref;
  
@@ -2673,7 +2654,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    }
 
    /*-----------------------------------------------------------------
-    * Note: use of the the job_ref_t array assumes that no jobs
+    * Note: use of the job_ref_t array assumes that no jobs
     * will be removed from the job lists and the job list order will
     * be maintained during the execution of sge_calc_tickets.
     *-----------------------------------------------------------------*/
