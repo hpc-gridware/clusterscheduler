@@ -147,18 +147,21 @@ namespace ocs {
       GdiPacket();
       ~GdiPacket();
 
-      int append_task(lList **answer_list, GdiTarget::Target target, u_long32 command,
-                      lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
+      int append_task(GdiTask *task);
       bool initialize_auth_info();
       bool parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array);
+
       void create_multi_answer(lList **malpp);
-      void wait_till_handled();
+
       bool get_is_handled();
+      void wait_till_handled();
       void broadcast_that_handled();
-      bool execute_external(lList **answer_list);
+
       bool execute_internal(lList **answer_list);
-      void wait_for_result_external(lList **malpp);
       void wait_for_result_internal(lList **malpp);
+
+      bool execute_external(lList **answer_list);
+      void wait_for_result_external(lList **malpp);
 
       u_long32 get_pb_size();
       bool unpack(lList **answer_list, sge_pack_buffer *pb);

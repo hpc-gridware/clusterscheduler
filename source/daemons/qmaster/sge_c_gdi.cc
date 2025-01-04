@@ -223,8 +223,8 @@ sge_c_gdi_process_in_listener(ocs::GdiPacket *packet, ocs::GdiTask *task,
    int operation = SGE_GDI_GET_OPERATION(task->command);
    const char *operation_name = task->get_operation_name();
 
-   DPRINTF("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
-           (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
+   DPRINTF("GDI %s %s (%s/%s) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
+           packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 
    sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
@@ -382,8 +382,8 @@ sge_c_gdi_process_in_worker(ocs::GdiPacket *packet, ocs::GdiTask *task,
    INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc, (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid);
    sge_dstring_free(&target_dstr);
 #else
-   DPRINTF("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
-           (int) task->id, packet->user, (int) packet->uid, packet->group, (int) packet->gid);
+   DPRINTF("GDI %s %s (%s/%s) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
+           packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 #endif
 
    sge_pack_buffer *pb = &(packet->pb);

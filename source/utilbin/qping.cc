@@ -571,11 +571,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            } else {
                               printf("enp   : %s\n", "nullptr");
                            }
-                           if (task->id) {
-                              printf("id     : " sge_U32CFormat "\n", sge_u32c(task->id));
-                           } else {
-                              printf("id    : %s\n", "nullptr");
-                           }
                         }
                      } else {
                         delete packet;

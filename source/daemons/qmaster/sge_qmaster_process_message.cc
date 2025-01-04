@@ -111,7 +111,8 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
-   packet->append_task(nullptr, ocs::GdiTarget::Target::NO_TARGET, 0, &data_list, nullptr, nullptr, nullptr, false);
+   auto task = new ocs::GdiTask(ocs::GdiTarget::NO_TARGET, 0, &data_list, nullptr, nullptr, nullptr, false);
+   packet->append_task(task);
 
    // Put the packet into the task queue so that workers can handle it
    sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);

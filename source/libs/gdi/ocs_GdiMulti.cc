@@ -45,6 +45,7 @@ void
 ocs::GdiMulti::wait() {
    DENTER(GDI_MULTI_LAYER);
 
+   // wait for the result of the packet
    if (packet != nullptr) {
       if (component_is_qmaster_internal()) {
          packet->wait_for_result_internal(&multi_answer_list);
@@ -59,53 +60,53 @@ ocs::GdiMulti::wait() {
 int
 ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy) {
    DENTER(GDI_MULTI_LAYER);
-   int ret;
+   int id = -1;
 
-   /*
-    * Create a new packet (if it not already exist) and store it
-    * in state_gdi_multi structure
-    */
+   // create a new packet if it does not exist
    if (packet == nullptr) {
       packet = new GdiPacket();
+      packet->initialize_auth_info();
    }
 
-   packet->initialize_auth_info();
+   // create a new task and append it to the packet
+   auto task = new GdiTask(target, cmd, lp, nullptr, &cp, &enp, do_copy);
+   id = packet->append_task(task);
 
-   /*
-    * Add a task to the packet and if it is the last task of a
-    * multi GDI request (mode == ocs::GdiMode::SEND) then execute it
-    */
-   ret = packet->append_task(alpp, target, cmd, lp, nullptr, &cp, &enp, do_copy);
+   // execute the packet if it is the last task (mode == ocs::GdiMode::SEND)
    if (mode == GdiMode::SEND) {
       int local_ret;
 
+      // internal execution allows to bypass the communication and authentication
       if (component_is_qmaster_internal()) {
          local_ret = packet->execute_internal(alpp);
       } else {
          local_ret = packet->execute_external(alpp);
       }
+
+      // execution failed. cleanup packet and tasks.
       if (!local_ret) {
-         /* answer has been written in ctx->sge_gdi_packet_execute() */
          delete packet;
          packet = nullptr;
-         ret = -1;
+         id = -1;
       }
    }
-   DRETURN(ret);
+
+   // return the id of the task
+   DRETURN(id);
 }
 
 bool
 ocs::GdiMulti::get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target, int id, lList **olpp) {
    DENTER(GDI_MULTI_LAYER);
-   int operation = SGE_GDI_GET_OPERATION(cmd);
-   int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
 
+   // still no response available? should not happen unless wait() was not called.
    if (multi_answer_list == nullptr || id < 0) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
 
+   // get the response for the given id
    lListElem *map = lGetElemUlongRW(multi_answer_list, MA_id, id);
    if (!map) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, ocs::GdiTarget::targetToString(target).c_str());
@@ -113,6 +114,9 @@ ocs::GdiMulti::get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target
       DRETURN(false);
    }
 
+   // get the response data for commands where we expect a response
+   int operation = SGE_GDI_GET_OPERATION(cmd);
+   int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
    if ((operation == SGE_GDI_GET) || (operation == SGE_GDI_PERMCHECK) ||
        (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
       if (!olpp) {
@@ -123,6 +127,7 @@ ocs::GdiMulti::get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target
       lXchgList(map, MA_objects, olpp);
    }
 
+   // get the answer list for the given id
    lXchgList(map, MA_answers, alpp);
    DRETURN(true);
 }

@@ -180,12 +180,10 @@ ocs::GdiPacket::~GdiPacket() {
 }
 
 int
-ocs::GdiPacket::append_task(lList **answer_list, ocs::GdiTarget::Target target, u_long32 command,
-                            lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy) {
+ocs::GdiPacket::append_task(GdiTask *task) {
    DENTER(TOP_LAYER);
-   auto task = new ocs::GdiTask(tasks.size() + 1, answer_list, target, command, lp, a_list, condition, enumeration, do_copy);
    tasks.push_back(task);
-   DRETURN(task->id);
+   DRETURN(tasks.size() - 1);
 }
 
 /**
@@ -377,10 +375,11 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
     * make multi answer list and move all data contained in packet
     * into that structure
     */
-   for (auto *task : tasks) {
+   for (size_t id = 0; id < tasks.size(); ++id) {
+      GdiTask *task = tasks[id];
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
-      lListElem *map = lAddElemUlong(malpp, MA_id, task->id, MA_Type);
+      lListElem *map = lAddElemUlong(malpp, MA_id, id, MA_Type);
 
       if (operation == SGE_GDI_GET || operation == SGE_GDI_PERMCHECK ||
           (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
@@ -749,13 +748,8 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 
       if (!gdi_mismatch) {
          for (size_t i = 0; i < tasks.size(); i++) {
-            ocs::GdiTask *send = tasks[i];
-            ocs::GdiTask *recv = ret_packet->tasks[i];
-
-            if (send->id != recv->id) {
-               gdi_mismatch = true;
-               break;
-            }
+            GdiTask *send = tasks[i];
+            GdiTask *recv = ret_packet->tasks[i];
 
             lFreeList(&send->data_list);
             send->data_list = recv->data_list;
@@ -842,53 +836,54 @@ ocs::GdiPacket::get_pb_size() {
 
 bool
 ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
+   DENTER(TOP_LAYER);
    bool ret = true;
    bool has_next;
    int pack_ret;
 
-   DENTER(TOP_LAYER);
 
    unpack_header(answer_list, pb);
 
    do {
+      auto task = new GdiTask(GdiTarget::NO_TARGET, 0, nullptr, nullptr, nullptr, nullptr, false);
       u_long32 target_ulong32 = 0;
-      GdiTarget::Target target = GdiTarget::Target::NO_TARGET;
       u_long32 command = 0;
       lList *data_list = nullptr;
       lList *a_list = nullptr;
       lCondition *condition = nullptr;
       lEnumeration *enumeration = nullptr;
-      u_long32 task_id = 0;
       u_long32 has_next_int = 0;
 
       if ((pack_ret = unpackint(pb, &command))) {
          goto error_with_mapping;
       }
+      task->command = command;
       if ((pack_ret = unpackint(pb, &target_ulong32))) {
          goto error_with_mapping;
       }
-      target = static_cast<GdiTarget::Target>(target_ulong32);
+      task->target = static_cast<GdiTarget::Target>(target_ulong32);
       if ((pack_ret = cull_unpack_list(pb, &(data_list)))) {
          goto error_with_mapping;
       }
+      task->data_list = data_list;
       if ((pack_ret = cull_unpack_list(pb, &(a_list)))) {
          goto error_with_mapping;
       }
+      task->answer_list = a_list;
       if ((pack_ret = cull_unpack_cond(pb, &(condition)))) {
          goto error_with_mapping;
       }
+      task->condition = condition;
       if ((pack_ret = cull_unpack_enum(pb, &(enumeration)))) {
          goto error_with_mapping;
       }
-      if ((pack_ret = unpackint(pb, &(task_id)))) {
-         goto error_with_mapping;
-      }
+      task->enumeration = enumeration;
       if ((pack_ret = unpackint(pb, &has_next_int))) {
          goto error_with_mapping;
       }
       has_next = (has_next_int > 0) ? true : false;
 
-      append_task(&a_list, target, command, &data_list, &a_list, &condition, &enumeration, false);
+      append_task(task);
    } while (has_next);
 
    debug_print();
@@ -1028,10 +1023,6 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
          goto error_with_mapping;
       }
 
-      pack_ret = packint(pb, task->id);
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
       pack_ret = packint(pb, has_next ? 1 : 0);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;

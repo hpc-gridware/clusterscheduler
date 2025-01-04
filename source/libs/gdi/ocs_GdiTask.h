@@ -31,16 +31,10 @@ namespace ocs {
    class GdiTask {
    public:
       /*
-       * id identifying the GDI packet uniquely within the
-       * context of a GDI client
-       */
-      u_long32 id;
-
-      /*
        * common parts of a GDI request
        */
       u_long32 command;
-      ocs::GdiTarget::Target target;
+      GdiTarget::Target target;
       lList *data_list;
       lList *answer_list;
       lCondition *condition;
@@ -60,7 +54,7 @@ namespace ocs {
        */
       bool do_select_pack_simultaneous;
    public:
-      GdiTask(int id, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
+      GdiTask(GdiTarget::Target target, u_long32 command, lList **lp,
               lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
       GdiTask();
       ~GdiTask();

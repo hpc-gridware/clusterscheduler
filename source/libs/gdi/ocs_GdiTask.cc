@@ -29,9 +29,9 @@
 
 #include "ocs_GdiTask.h"
 
-ocs::GdiTask::GdiTask(int id, lList **answer_list, ocs::GdiTarget::Target target, u_long32 command, lList **lp,
+ocs::GdiTask::GdiTask(GdiTarget::Target target, u_long32 command, lList **lp,
                       lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
-      : id(id), command(command), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
+      : command(command), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
         enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
 
@@ -73,7 +73,7 @@ ocs::GdiTask::GdiTask(int id, lList **answer_list, ocs::GdiTarget::Target target
 }
 
 ocs::GdiTask::GdiTask()
-       : id(0), command(0), target(ocs::GdiTarget::Target::NO_TARGET), data_list(nullptr),
+       : command(0), target(ocs::GdiTarget::Target::NO_TARGET), data_list(nullptr),
          answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
@@ -91,7 +91,6 @@ ocs::GdiTask::~GdiTask() {
 void
 ocs::GdiTask::debug_print() {
    DENTER(TOP_LAYER);
-   DPRINTF("id = " sge_U32CFormat "\n", sge_u32c(id));
    DPRINTF("command = " sge_U32CFormat "\n", sge_u32c(command));
    DPRINTF("target = " sge_U32CFormat "\n", sge_u32c(target));
    DPRINTF("data_list = %p\n", data_list);
