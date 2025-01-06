@@ -1382,7 +1382,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
 *
 *     If there is no reservation for this qinstance-ckpt combination or if 
 *     the reservation would be still valid after the modification then 
-*     the function returnes 'false". Otherwise 'true' 
+*     the function returns 'false". Otherwise 'true' 
 *
 *  INPUTS
 *     lList *ar_master_list      - advance reservation master list
@@ -1440,7 +1440,7 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 *
 *     If there is no reservation for this qinstance-ckpt combination or if 
 *     the reservation would be still valid after the modification then 
-*     the function returnes 'false". Otherwise 'true' 
+*     the function returns 'false". Otherwise 'true' 
 *
 *  INPUTS
 *     lList *ar_master_list      - advance reservation master list
