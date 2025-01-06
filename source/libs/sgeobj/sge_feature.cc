@@ -450,7 +450,7 @@ bool feature_is_enabled(feature_id_t id)
 *
 *  FUNCTION
 *     This function will return a text string containing the
-*     the product name. The return value depends on the style
+*     product name. The return value depends on the style
 *     parameter. An invalid style value will automatically be
 *     interpreted as FS_SHORT.
 *
@@ -472,11 +472,12 @@ bool feature_is_enabled(feature_id_t id)
 ******************************************************************************/
 const char *feature_get_product_name(featureset_product_name_id_t style, dstring *buffer)
 {
+   DENTER(TOP_LAYER);
+
    const char *long_name  = "";
    const char *short_name = "";
    const char *version    = "";
    const char *ret = nullptr;
-   DENTER(TOP_LAYER);
 
    if (feature_get_active_featureset_id() != FEATURE_UNINITIALIZED ) {
       short_name = ocs::Version::get_short_product_name().c_str();
@@ -486,34 +487,32 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
 
    switch (style) {
       case FS_SHORT:
-         ret = short_name;
+         ret = sge_dstring_copy_string(buffer, short_name);
          break;
 
       case FS_LONG:
-         ret = long_name;
+         ret = sge_dstring_copy_string(buffer, long_name);
          break;
 
       case FS_VERSION:
-         ret = version;
+         ret = sge_dstring_copy_string(buffer, version);
          break;
 
       case FS_SHORT_VERSION:
-         sge_dstring_sprintf(buffer, "" SFN " " SFN "", short_name, version);
-         ret = sge_dstring_get_string(buffer);
+         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", short_name, version);
          break;
 
       case FS_LONG_VERSION:
-         sge_dstring_sprintf(buffer, "" SFN " " SFN "", long_name, version);
-         ret = sge_dstring_get_string(buffer);
+         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", long_name, version);
          break;
 
       default:
-         ret = short_name;
+         ret = sge_dstring_copy_string(buffer, short_name);
          break;
    }
 #ifdef CMAKE_BUILD_ID
    if (CMAKE_BUILD_ID != NULL && strlen(CMAKE_BUILD_ID) > 0) {
-      sge_dstring_sprintf_append(buffer, " (%s)", CMAKE_BUILD_ID);
+      ret = sge_dstring_sprintf_append(buffer, " (%s)", CMAKE_BUILD_ID);
    }
 #endif
 
