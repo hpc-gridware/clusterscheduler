@@ -2453,7 +2453,7 @@ static int CONF_test() {
 
    fields = sge_build_CONF_field_list(true);
    
-   /* Write a CU file using classic spooling */
+   /* Write a CONF file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        fields,
                                        &qconf_sfi,
@@ -2462,13 +2462,13 @@ static int CONF_test() {
                                        file1, true);
 
    
-   /* Read a CU file using flatfile spooling */
+   /* Read a CONF file using flatfile spooling */
    lFreeElem(&ep);
    ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
                                    fields, nullptr, false, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
 
-   /* Write a CU file using flatfile spooling */
+   /* Write a CONF file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
                                        fields,
                                        &qconf_sfi,
