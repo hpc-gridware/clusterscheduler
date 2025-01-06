@@ -164,6 +164,8 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, u_long32 j
             DPRINTF("Clearing status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n", job_id, task_id);
          }
          lSetUlong(jatep, JAT_state, state);
+         sge_add_event(0, sgeE_JATASK_MOD, job_id, task_id, nullptr, nullptr,
+                       nullptr, jatep, 0);
          ret = true;
       } else {
          /* TODO: HP: Add error handling! */
@@ -1227,7 +1229,7 @@ do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool chec
 *
 *  FUNCTION
 *     Compares the old and the new subordinate list configured in a queue and
-*     returnes true if they differ. The order of subordinates doesn't matter.
+*     returns true if they differ. The order of subordinates doesn't matter.
 *
 *  INPUTS
 *     const lList* old_so_list - The old subordinate list. SO_Type list.
