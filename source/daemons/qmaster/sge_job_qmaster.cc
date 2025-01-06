@@ -1996,7 +1996,6 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_PRIOSET_SSUI, packet->user, packet->host, sge_u32c(jobid), ((int) (uval)) - BASE_PRIORITY);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-
    }
 
    /* ---- JB_jobshare */
@@ -2020,7 +2019,6 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBSHARESET_SSUU, packet->user, packet->host, sge_u32c(jobid), sge_u32c(uval));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-
    }
 
    /* ---- JB_ar */
@@ -2043,7 +2041,6 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBARSET_SSUU, packet->user, packet->host, sge_u32c(jobid), sge_u32c(uval));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-
    }
 
 
@@ -2080,6 +2077,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
          DRETURN(STATUS_EUNKNOWN);
       }
       lSetString(new_job, JB_account, lGetString(jep, JB_account));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ACCOUNT, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2088,6 +2086,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
    if ((pos = lGetPosViaElem(jep, JB_cwd, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_cwd\n");
       lSetString(new_job, JB_cwd, lGetString(jep, JB_cwd));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_WD, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2117,8 +2116,8 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stderr_path_list)) != STATUS_OK) {
          DRETURN(status);
       }
-      lSetList(new_job, JB_stderr_path_list,
-               lCopyList("", lGetList(jep, JB_stderr_path_list)));
+      lSetList(new_job, JB_stderr_path_list, lCopyList("", lGetList(jep, JB_stderr_path_list)));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDERRPATHLIST, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2131,10 +2130,8 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stdin_path_list)) != STATUS_OK) {
          DRETURN(status);
       }
-
-
-      lSetList(new_job, JB_stdin_path_list,
-               lCopyList("", lGetList(jep, JB_stdin_path_list)));
+      lSetList(new_job, JB_stdin_path_list, lCopyList("", lGetList(jep, JB_stdin_path_list)));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDINPATHLIST, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2152,6 +2149,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
    if ((pos = lGetPosViaElem(jep, JB_merge_stderr, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_merge_stderr\n");
       lSetBool(new_job, JB_merge_stderr, lGetBool(jep, JB_merge_stderr));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MERGEOUTPUT, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2524,9 +2522,8 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stdout_path_list)) != STATUS_OK) {
          DRETURN(status);
       }
-
-      lSetList(new_job, JB_stdout_path_list,
-               lCopyList("", lGetList(jep, JB_stdout_path_list)));
+      lSetList(new_job, JB_stdout_path_list, lCopyList("", lGetList(jep, JB_stdout_path_list)));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDOUTPATHLIST, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2592,9 +2589,8 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       if ((status = job_resolve_host_for_path_list(jep, alpp, JB_shell_list)) != STATUS_OK) {
          DRETURN(status);
       }
-
-      lSetList(new_job, JB_shell_list,
-               lCopyList("", lGetList(jep, JB_shell_list)));
+      lSetList(new_job, JB_shell_list, lCopyList("", lGetList(jep, JB_shell_list)));
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SHELLLIST, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2621,6 +2617,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
       var_list_split_prefix_vars(&tmp_var_list, &prefix_vars, VAR_PREFIX);
       lSetList(new_job, JB_env_list, lCopyList("", lGetList(jep, JB_env_list)));
       lAddList(lGetListRW(new_job, JB_env_list), &prefix_vars);
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ENVLIST, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
@@ -2631,12 +2628,10 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
    /* ---- JB_qs_args */
    if ((pos = lGetPosViaElem(jep, JB_qs_args, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_qs_args\n");
-      lSetList(new_job, JB_qs_args,
-               lCopyList("", lGetList(jep, JB_qs_args)));
+      lSetList(new_job, JB_qs_args, lCopyList("", lGetList(jep, JB_qs_args)));
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_QSARGS, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
-
 
    /* ---- JB_job_args */
    if ((pos = lGetPosViaElem(jep, JB_job_args, SGE_NO_ABORT)) >= 0) {
@@ -2663,6 +2658,7 @@ mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lLi
    if ((pos = lGetPosViaElem(jep, JB_context, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_context\n");
       set_context(lGetListRW(jep, JB_context), new_job);
+      *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_CONTEXT, sge_u32c(jobid));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
