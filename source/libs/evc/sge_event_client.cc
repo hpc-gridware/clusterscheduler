@@ -46,12 +46,13 @@
 
 #include "comm/commlib.h"
 
+#include "gdi/ocs_GdiCommand.h"
+#include "gdi/ocs_GdiSubCommand.h"
 #include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
-
 #include "sgeobj/sge_event.h"
 
 #include "evc/sge_event_client.h"
@@ -1490,7 +1491,8 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(ocs::GdiTarget::Target::SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
+      alp = sge_gdi(ocs::GdiTarget::Target::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_ADD,
+                    ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
     
       aep = lFirst(alp);
     
@@ -2531,7 +2533,8 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
+      alp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                    &lp, nullptr, nullptr);
       lFreeList(&lp); 
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
@@ -2617,7 +2620,9 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi)
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      commit_id = gdi_multi->request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr, false);
+      commit_id = gdi_multi->request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EV_LIST,
+                                     ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                                     &lp, nullptr, nullptr, false);
       gdi_multi->wait();
       if (lp != nullptr) {
          lFreeList(&lp);
@@ -2626,7 +2631,8 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi)
       if (alp != nullptr) {
          answer_list_handle_request_answer_list(&alp, stderr);
       } else {
-         gdi_multi->get_response(&alp, SGE_GDI_ADD, ocs::GdiTarget::SGE_ORDER_LIST, commit_id, nullptr);
+         gdi_multi->get_response(&alp, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                                 ocs::GdiTarget::SGE_ORDER_LIST, commit_id, nullptr);
 
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 

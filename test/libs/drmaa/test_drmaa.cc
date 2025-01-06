@@ -2909,7 +2909,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3391,7 +3391,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3496,7 +3496,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3617,7 +3617,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3722,7 +3722,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere ("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);

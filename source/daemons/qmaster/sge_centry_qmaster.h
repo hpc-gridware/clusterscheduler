@@ -48,8 +48,8 @@ centry_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem
 
 int 
 centry_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_complex, lListElem *ep, int add,
-           const char *ruser, const char *rhost, gdi_object_t *object, 
-           int sub_command, monitoring_t *monitor);
+           const char *ruser, const char *rhost, gdi_object_t *object,
+           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 void
 centry_redebit_consumables(const lList *centries, u_long64 gdi_version);

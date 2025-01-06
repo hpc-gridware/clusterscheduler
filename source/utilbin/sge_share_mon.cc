@@ -84,14 +84,14 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
    /* get share tree */
    what = lWhat("%T(ALL)", STN_Type);
-   sharetree_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_STN_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   sharetree_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_STN_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
    lFreeWhat(&what);
    error = answer_list_output(&alp);
 
    /* get config list */
    if (!error) {
       what = lWhat("%T(ALL)", SC_Type);
-      sched_conf_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_SC_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+      sched_conf_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_SC_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -99,7 +99,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    /* get user list */
    if (!error) {
       what = lWhat("%T(ALL)", UU_Type);
-      user_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_UU_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+      user_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_UU_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -107,7 +107,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    /* get project list */
    if (!error) {
       what = lWhat("%T(ALL)", PR_Type);
-      project_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_PR_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+      project_id = gdi_multi.request(&alp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_PR_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -118,7 +118,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
     */
    if (!error) {
       what = lWhat("%T(ALL)", US_Type);
-      userset_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_US_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+      userset_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_US_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       gdi_multi.wait();
       lFreeWhat(&what);
       error = answer_list_output(&alp);
@@ -130,7 +130,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    }
 
    /* extract the sharetree lists */
-   gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_STN_LIST, sharetree_id, sharetree);
+   gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_STN_LIST, sharetree_id, sharetree);
    error = answer_list_output(&alp);
 
    /* if we have no sharetree, output message and exit */
@@ -144,19 +144,19 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 
    /* extract sched_conf, users, projects, usersets */
    if (!error) {
-      gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_SC_LIST, sched_conf_id, config);
+      gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_SC_LIST, sched_conf_id, config);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_UU_LIST, user_id, users);
+      gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_UU_LIST, user_id, users);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_PR_LIST, project_id, projects);
+      gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_PR_LIST, project_id, projects);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_US_LIST, userset_id, usersets);
+      gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_US_LIST, userset_id, usersets);
       error = answer_list_output(&alp);
    }
 

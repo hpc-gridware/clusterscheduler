@@ -175,16 +175,17 @@ gdi_is_alive(lList **answer_list) {
    DRETURN(cl_ret);
 }
 
-lList *sge_gdi(ocs::GdiTarget::Target target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp) {
+lList *sge_gdi(ocs::GdiTarget::Target target, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_cmd,
+               lList **lpp, lCondition *cp, lEnumeration *enp) {
    DENTER(GDI_LAYER);
    lList *alp = nullptr;
    ocs::GdiMulti gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
-   int id = gdi_multi.request(&alp, ocs::GdiMode::SEND, target, cmd, lpp, cp, enp, true);
+   int id = gdi_multi.request(&alp, ocs::GdiMode::SEND, target, cmd, sub_cmd, lpp, cp, enp, true);
    if (id != -1) {
       gdi_multi.wait();
-      gdi_multi.get_response(&alp, cmd, target, id, lpp);
+      gdi_multi.get_response(&alp, cmd, sub_cmd, target, id, lpp);
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
    DRETURN(alp);
@@ -436,7 +437,8 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
 */
 lList *gdi_tsm() {
    DENTER(GDI_LAYER);
-   lList *alp = sge_gdi(ocs::GdiTarget::SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+   lList *alp = sge_gdi(ocs::GdiTarget::SGE_SC_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                        ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, nullptr);
    DRETURN(alp);
 }
 
@@ -464,7 +466,8 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
    lList *alp = lCreateList("answer", AN_Type);
 
    if (action_flag & MASTER_KILL) {
-      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_MASTER_EVENT, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                              ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -475,12 +478,14 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
-      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                              ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
    if (action_flag & THREAD_START) {
-      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                              ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -492,7 +497,8 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
       }
-      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                              ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -516,7 +522,8 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
          lSetUlong(hlep, ID_force, (action_flag & JOB_KILL) ? 1 : 0);
          lAppendElem(hlp, hlep);
       }
-      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(ocs::GdiTarget::SGE_EH_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                              ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);
       lFreeList(&hlp);
    }
@@ -528,31 +535,6 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
    DRETURN(alp);
 }
 
-/****** gdi/sge/sge_gdi_get_permission() **********************************
-*
-*  NAME
-*     sge_gdi_get_permission() -- check permissions of gdi request
-*
-*  SYNOPSIS
-*     int sge_gdi_get_permission(int option);
-*
-*  FUNCTION
-*     This function asks the qmaster for the permission (PERM_Type) 
-*     list. The option flag specifies which right should be checked. 
-*     It can be MANAGER_CHECK or/and OPERATOR_CHECK at this time. If 
-*     the caller has access the function returns true.
-* 
-*  INPUTS
-*     int option - check flag (MANAGER_CHECK or OPERATOR_CHECK)
-*
-*  RESULT
-*     bool true if caller has the right, false if not (false if qmaster 
-*     not reachable)
-* 
-*  SEE ALSO
-*     gdilib/sge_gdi_get_mapping_name()
-*     gdilib/PERM_LOWERBOUND
-******************************************************************************/
 bool
 sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
                        bool *is_admin_host, bool *is_submit_host) {
@@ -560,7 +542,8 @@ sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
 
    // fetch permissions for current user and host from qmaster
    lList *permission_list = nullptr;
-   lList *alp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permission_list, nullptr, nullptr);
+   lList *alp = sge_gdi(ocs::GdiTarget::SGE_DUMMY_LIST, ocs::GdiCommand::SGE_GDI_PERMCHECK,
+                        ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &permission_list, nullptr, nullptr);
    if (permission_list == nullptr || lGetNumberOfElem(permission_list) != 1) {
       answer_list_append_list(alpp, &alp);
       lFreeList(&permission_list);
@@ -944,7 +927,8 @@ gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lep
       DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = sge_gdi(ocs::GdiTarget::SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
+   alp = sge_gdi(ocs::GdiTarget::SGE_CONF_LIST, ocs::GdiCommand::SGE_GDI_GET,
+                 ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);

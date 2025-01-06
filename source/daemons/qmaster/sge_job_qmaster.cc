@@ -356,7 +356,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
  * @param[in] monitor for monitoring qmaster threads
  */
 int
-sge_gdi_del_job(const ocs::GdiPacket *packet, ocs::GdiTask *task,  lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
+sge_gdi_del_job(const ocs::GdiPacket *packet, ocs::GdiTask *task,  lListElem *idep, lList **alpp,
+                ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
    int all_users_flag;
    int jid_flag;
@@ -405,8 +406,8 @@ sge_gdi_del_job(const ocs::GdiPacket *packet, ocs::GdiTask *task,  lListElem *id
    }
 
    /* sub-commands */
-   all_jobs_flag = ((sub_command & SGE_GDI_ALL_JOBS) != 0);
-   all_users_flag = ((sub_command & SGE_GDI_ALL_USERS) != 0);
+   all_jobs_flag = ((sub_command & ocs::GdiSubCommand::SGE_GDI_ALL_JOBS) != 0);
+   all_users_flag = ((sub_command & ocs::GdiSubCommand::SGE_GDI_ALL_USERS) != 0);
 
    /* Did we get a user list or something else ? */
    if (lGetPosViaElem(idep, ID_user_list, SGE_NO_ABORT) >= 0) {
@@ -1145,8 +1146,8 @@ sge_gdi_mod_job(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep
    }
 
    /* sub-commands */
-   all_jobs_flag = ((sub_command & SGE_GDI_ALL_JOBS) > 0);
-   all_users_flag = ((sub_command & SGE_GDI_ALL_USERS) > 0);
+   all_jobs_flag = ((sub_command & ocs::GdiSubCommand::SGE_GDI_ALL_JOBS) > 0);
+   all_users_flag = ((sub_command & ocs::GdiSubCommand::SGE_GDI_ALL_USERS) > 0);
 
    /* Did we get a user list? */
    if (((user_list_pos = lGetPosViaElem(jep, JB_user_list, SGE_NO_ABORT)) >= 0)

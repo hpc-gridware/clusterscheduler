@@ -89,7 +89,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
 
 int
 calendar_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
-             const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+             const char *ruser, const char *rhost, gdi_object_t *object,
+             ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lListElem *cqueue;

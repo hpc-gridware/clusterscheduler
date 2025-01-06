@@ -103,7 +103,9 @@
 ******************************************************************************/
 int
 ckpt_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
-         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+         const char *rhost, gdi_object_t *object,
+         ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+         monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -149,10 +151,9 @@ ckpt_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
       new_flags = sge_parse_checkpoint_attr(lGetString(new_ckpt, CK_when));
       flags = sge_parse_checkpoint_attr(lGetString(ckpt, CK_when));
 
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND)
-          || SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
+      if ((sub_command & ocs::GdiSubCommand::SGE_GDI_APPEND) || (sub_command & ocs::GdiSubCommand::SGE_GDI_CHANGE)) {
          new_flags |= flags;
-      } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+      } else if (sub_command & ocs::GdiSubCommand::SGE_GDI_REMOVE) {
          new_flags &= (~flags);
       } else {
          new_flags = flags;

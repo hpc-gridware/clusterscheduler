@@ -121,7 +121,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *******************************************************************************/
 int
 rqs_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
-        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+        const char *rhost, gdi_object_t *object, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
@@ -151,9 +151,9 @@ rqs_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new
    /* ---- RQS_rule */
    if (lGetPosViaElem(rqs, RQS_rule, SGE_NO_ABORT) >= 0) {
       rules_changed = true;
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
+      if (sub_command & ocs::GdiSubCommand::SGE_GDI_SET_ALL) {
          normalize_sublist(rqs, RQS_rule);
-         attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, sub_command,
+         attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, cmd, sub_command,
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
@@ -165,7 +165,7 @@ rqs_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new
             lListElem *new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
-               attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule,
+               attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,
                                  sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
             } else {
                ERROR(SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED);

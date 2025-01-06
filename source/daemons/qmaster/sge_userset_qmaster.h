@@ -54,7 +54,9 @@ userset_update_categories(const lList *added, const lList *removed, u_long64 gdi
 
 int
 userset_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_userset, lListElem *userset, int add,
-            const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+            const char *ruser, const char *rhost, gdi_object_t *object,
+            ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+            monitoring_t *monitor);
 
 int
 userset_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *userset, gdi_object_t *object);

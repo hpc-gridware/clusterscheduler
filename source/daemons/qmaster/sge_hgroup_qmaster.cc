@@ -62,8 +62,9 @@
 #include "msg_qmaster.h"
 
 static bool
-hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts, lList **occupant_groups);
+hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
+                    ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+                    lList **add_hosts, lList **rem_hosts, lList **occupant_groups);
 
 static void
 hgroup_commit(lListElem *hgroup, u_long64 gdi_session);
@@ -72,7 +73,8 @@ static void
 hgroup_rollback(lListElem *this_elem);
 
 static bool
-hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
+hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
+                    ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, lList **add_hosts,
                     lList **rem_hosts, lList **occupant_groups) {
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
@@ -93,7 +95,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
          }
          if (ret) {
             attr_mod_sub_list(answer_list, hgroup, HGRP_host_list, HR_name,
-                              reduced_elem, sub_command, SGE_ATTR_HOSTLIST,
+                              reduced_elem, cmd, sub_command, SGE_ATTR_HOSTLIST,
                               SGE_OBJ_HGROUP, 0, nullptr);
             href_list = lGetList(hgroup, HGRP_host_list);
          }
@@ -216,7 +218,8 @@ hgroup_rollback(lListElem *this_elem) {
 
 int
 hgroup_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
-           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
+           const char *remote_user, const char *remote_host, gdi_object_t *object,
+           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
            monitoring_t *monitor) {
    bool ret = true;
    int pos;
@@ -273,9 +276,7 @@ hgroup_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lLis
          DPRINTF("got new HGRP_host_list\n");
 
          if (ret) {
-            ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem,
-                                       sub_command, &add_hosts, &rem_hosts,
-                                       &occupant_groups);
+            ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts, &occupant_groups);
          }
          if (ret) {
             const lListElem *cqueue;

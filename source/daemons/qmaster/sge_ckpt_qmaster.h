@@ -39,7 +39,9 @@
 
 int
 ckpt_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
-         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+         const char *rhost, gdi_object_t *object,
+         ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+         monitoring_t *monitor);
 
 int
 ckpt_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object);

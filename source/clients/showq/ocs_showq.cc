@@ -229,7 +229,7 @@ static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
 
    /* get job data */
    what = lWhat("%T(ALL)", JB_Type);
-   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &jlp, where, what);
    if (alp != nullptr) {
       answer_list_output(&alp);
    }

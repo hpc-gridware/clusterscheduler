@@ -116,8 +116,8 @@ static void
 host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_long64 gdi_session);
 
 static int
-attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   const char *attr_name, const char *object_name);
+attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::GdiCommand::Command cmd,
+                   ocs::GdiSubCommand::SubCommand sub_command, const char *attr_name, const char *object_name);
 
 void
 host_initalitze_timer() {
@@ -221,7 +221,8 @@ sge_add_host_of_type(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *hos
       DPRINTF("sge_add_host_of_type: unexpected datatype\n");
    }
    ret = sge_gdi_add_mod_generic(packet, task, nullptr, ep, 1, object, username,
-                                 qualified_hostname, 0, &ppList, monitor);
+                                 qualified_hostname, ocs::GdiCommand::SGE_GDI_NONE,
+                                 ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &ppList, monitor);
    lFreeElem(&ep);
    lFreeList(&ppList);
 
@@ -402,8 +403,8 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
 
 int
 host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
-         monitoring_t *monitor) {
+         const char *ruser, const char *rhost, gdi_object_t *object,
+         ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    const char *host;
    int nm;
    int pos;
@@ -437,7 +438,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
 
       /* ---- EH_scaling_list */
       if (lGetPosViaElem(ep, EH_scaling_list, SGE_NO_ABORT) >= 0) {
-         attr_mod_sub_list(alpp, new_host, EH_scaling_list, HS_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_scaling_list, HS_name, ep, cmd,
                            sub_command, SGE_ATTR_LOAD_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
          if (verify_scaling_list(alpp, new_host) != STATUS_OK) {
             goto ERROR;
@@ -449,9 +450,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
 
       /* ---- EH_consumable_config_list */
       if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
-         if (attr_mod_threshold(alpp, ep, new_host,
-                                sub_command, SGE_ATTR_COMPLEX_VALUES,
-                                SGE_OBJ_EXECHOST)) {
+         if (attr_mod_threshold(alpp, ep, new_host, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_EXECHOST)) {
             goto ERROR;
          }
          if (changed) {
@@ -466,7 +465,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
          if (userset_list_validate_acl_list(lGetList(ep, EH_acl), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_host, EH_acl, US_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_acl, US_name, ep, cmd,
                            sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
             acl_changed = true;
@@ -481,7 +480,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
          if (userset_list_validate_acl_list(lGetList(ep, EH_xacl), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_host, EH_xacl, US_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_xacl, US_name, ep, cmd,
                            sub_command, SGE_ATTR_XUSER_LISTS,
                            SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
@@ -499,7 +498,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
                                  host) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_host, EH_prj, PR_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_prj, PR_name, ep, cmd,
                            sub_command, SGE_ATTR_PROJECTS,
                            SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
@@ -515,7 +514,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
                                  host) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_host, EH_xprj, PR_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_xprj, PR_name, ep, cmd,
                            sub_command, SGE_ATTR_XPROJECTS,
                            SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
@@ -525,7 +524,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
 
       /* ---- EH_usage_scaling_list */
       if (lGetPosViaElem(ep, EH_usage_scaling_list, SGE_NO_ABORT) >= 0) {
-         attr_mod_sub_list(alpp, new_host, EH_usage_scaling_list, HS_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_usage_scaling_list, HS_name, ep, cmd,
                            sub_command, SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
             update_qversion = true;
@@ -535,7 +534,7 @@ host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
       if (lGetPosViaElem(ep, EH_report_variables, SGE_NO_ABORT) >= 0) {
          const lListElem *var;
 
-         attr_mod_sub_list(alpp, new_host, EH_report_variables, STU_name, ep,
+         attr_mod_sub_list(alpp, new_host, EH_report_variables, STU_name, ep, cmd,
                            sub_command, "report_variables",
                            SGE_OBJ_EXECHOST, 0, nullptr);
 
@@ -1464,8 +1463,8 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_lon
 *
 *******************************************************************************/
 static int
-attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
-                   const char *attr_name, const char *object_name) {
+attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::GdiCommand::Command cmd,
+                   ocs::GdiSubCommand::SubCommand sub_command, const char *attr_name, const char *object_name) {
 
    DENTER(TOP_LAYER);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
@@ -1488,7 +1487,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
       tmp_elem = lCopyElem(new_ep);
 
       /* the attr_mod_sub_list return boolean and there is stored in the int value, attention true=1 */
-      if (!attr_mod_sub_list(alpp, tmp_elem, EH_consumable_config_list, CE_name, ep,
+      if (!attr_mod_sub_list(alpp, tmp_elem, EH_consumable_config_list, CE_name, ep, cmd,
                              sub_command, attr_name, object_name, 0, nullptr)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);

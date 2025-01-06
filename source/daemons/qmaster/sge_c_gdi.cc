@@ -59,6 +59,7 @@
 #include "gdi/sge_gdi.h"
 #include "gdi/ocs_GdiPacket.h"
 #include "gdi/ocs_GdiTask.h"
+#include "gdi/ocs_GdiCommand.h"
 
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
@@ -94,14 +95,14 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask
 
 static void
 sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task, gdi_object_t *ao,
-              int sub_command, monitoring_t *monitor);
+              ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 static void
-sge_c_gdi_del(ocs::GdiPacket *packet, ocs::GdiTask *task, int sub_command, monitoring_t *monitor);
+sge_c_gdi_del(ocs::GdiPacket *packet, ocs::GdiTask *task, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 static void
 sge_c_gdi_mod(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task,
-              int sub_command, monitoring_t *monitor);
+              ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 static void
 sge_c_gdi_copy(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task,
@@ -122,8 +123,8 @@ static void
 sge_gdi_do_permcheck(ocs::GdiPacket *packet, ocs::GdiTask *task);
 
 static void
-sge_c_gdi_replace(gdi_object_t *ao, ocs::GdiPacket *packet,
-                  ocs::GdiTask *task, int sub_command, monitoring_t *monitor);
+sge_c_gdi_replace(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task,
+                  ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 
 static void
@@ -150,7 +151,9 @@ sge_chck_mod_perm_host(const ocs::GdiPacket *packet, lList **alpp, u_long32 targ
 
 static int
 schedd_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+           const char *rhost, gdi_object_t *object,
+           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+           monitoring_t *monitor);
 
 /*
  * Prevent these functions made inline by compiler. This is
@@ -220,25 +223,25 @@ sge_c_gdi_process_in_listener(ocs::GdiPacket *packet, ocs::GdiTask *task,
       target_name = MSG_UNKNOWN_OBJECT;
    }
 
-   int operation = SGE_GDI_GET_OPERATION(task->command);
-   const char *operation_name = task->get_operation_name();
+   int operation = task->command;
+   const char *operation_name = ocs::GdiCommand::toString(task->command).c_str();
 
    DPRINTF("GDI %s %s (%s/%s) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
            packet->user, (int) packet->uid, packet->group, (int) packet->gid);
 
    sge_pack_buffer *pb = &(packet->pb);
    switch (operation) {
-      case SGE_GDI_TRIGGER:
+      case ocs::GdiCommand::SGE_GDI_TRIGGER:
          MONITOR_LIS_GDI_TRIG(monitor);
          sge_c_gdi_trigger_in_listener(packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          DRETURN(true);
-      case SGE_GDI_PERMCHECK:
+      case ocs::GdiCommand::SGE_GDI_PERMCHECK:
          MONITOR_LIS_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          DRETURN(true);
-      case SGE_GDI_GET:
+      case ocs::GdiCommand::SGE_GDI_GET:
          MONITOR_LIS_GDI_GET(monitor);
          sge_c_gdi_get_in_listener(ao, packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
@@ -255,15 +258,15 @@ bool
 sge_c_gdi_check_execution_permission(ocs::GdiPacket *packet, ocs::GdiTask *task,
                                      monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   int operation = SGE_GDI_GET_OPERATION(task->command);
+   int operation = task->command;
    switch (operation) {
-      case SGE_GDI_GET:
+      case ocs::GdiCommand::SGE_GDI_GET:
          DRETURN(sge_task_check_get_perm_host(packet, task, monitor));
-      case SGE_GDI_ADD:
-      case SGE_GDI_MOD:
-      case SGE_GDI_COPY:
-      case SGE_GDI_REPLACE:
-      case SGE_GDI_DEL: {
+      case ocs::GdiCommand::SGE_GDI_ADD:
+      case ocs::GdiCommand::SGE_GDI_MOD:
+      case ocs::GdiCommand::SGE_GDI_COPY:
+      case ocs::GdiCommand::SGE_GDI_REPLACE:
+      case ocs::GdiCommand::SGE_GDI_DEL: {
          if (!sge_chck_mod_perm_user(packet, &(task->answer_list), task->target)) {
             DRETURN(false);
          }
@@ -272,7 +275,7 @@ sge_c_gdi_check_execution_permission(ocs::GdiPacket *packet, ocs::GdiTask *task,
          }
          DRETURN(true);
       }
-      case SGE_GDI_TRIGGER:
+      case ocs::GdiCommand::SGE_GDI_TRIGGER:
       {
          const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
          const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
@@ -297,7 +300,7 @@ sge_c_gdi_check_execution_permission(ocs::GdiPacket *packet, ocs::GdiTask *task,
          }
          DRETURN(true);
       }
-      case SGE_GDI_PERMCHECK:
+      case ocs::GdiCommand::SGE_GDI_PERMCHECK:
       default:
          // no checks required anyone can do that
          break;
@@ -320,9 +323,9 @@ sge_c_gdi_process_in_worker(ocs::GdiPacket *packet, ocs::GdiTask *task,
       target_name = MSG_UNKNOWN_OBJECT;
    }
 
-   int sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
-   int operation = SGE_GDI_GET_OPERATION(task->command);
-   const char *operation_name = task->get_operation_name();
+   ocs::GdiCommand::Command command = task->command;
+   ocs::GdiSubCommand::SubCommand sub_command = task->sub_command;
+   const char *operation_name = ocs::GdiCommand::toString(task->command).c_str();
 
 #ifdef OBSERVE
    dstring target_dstr = DSTRING_INIT;
@@ -387,45 +390,45 @@ sge_c_gdi_process_in_worker(ocs::GdiPacket *packet, ocs::GdiTask *task,
 #endif
 
    sge_pack_buffer *pb = &(packet->pb);
-   switch (operation) {
-      case SGE_GDI_GET:
+   switch (command) {
+      case ocs::GdiCommand::SGE_GDI_GET:
          MONITOR_GDI_GET(monitor);
          sge_c_gdi_get_in_worker(ao, packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_ADD:
+      case ocs::GdiCommand::SGE_GDI_ADD:
          MONITOR_GDI_ADD(monitor);
-         sge_c_gdi_add(packet, task, ao, sub_command, monitor);
+         sge_c_gdi_add(packet, task, ao, command, sub_command, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_DEL:
+      case ocs::GdiCommand::SGE_GDI_DEL:
          MONITOR_GDI_DEL(monitor);
-         sge_c_gdi_del(packet, task, sub_command, monitor);
+         sge_c_gdi_del(packet, task, command, sub_command, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_MOD:
+      case ocs::GdiCommand::SGE_GDI_MOD:
          MONITOR_GDI_MOD(monitor);
-         sge_c_gdi_mod(ao, packet, task, sub_command, monitor);
+         sge_c_gdi_mod(ao, packet, task, command, sub_command, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_COPY:
+      case ocs::GdiCommand::SGE_GDI_COPY:
          MONITOR_GDI_CP(monitor);
          sge_c_gdi_copy(ao, packet, task, sub_command, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_TRIGGER:
+      case ocs::GdiCommand::SGE_GDI_TRIGGER:
          MONITOR_GDI_TRIG(monitor);
          sge_c_gdi_trigger_in_worker(packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_PERMCHECK:
+      case ocs::GdiCommand::SGE_GDI_PERMCHECK:
          MONITOR_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
-      case SGE_GDI_REPLACE:
+      case ocs::GdiCommand::SGE_GDI_REPLACE:
          MONITOR_GDI_REPLACE(monitor);
-         sge_c_gdi_replace(ao, packet, task, sub_command, monitor);
+         sge_c_gdi_replace(ao, packet, task, command, sub_command, monitor);
          packet->pack_task(task, answer_list, pb, has_next);
          break;
       default:
@@ -548,7 +551,7 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *
  */
 static void
 sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
-              gdi_object_t *ao, int sub_command, monitoring_t *monitor) {
+              gdi_object_t *ao, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    lListElem *ep;
    lList *ticket_orders = nullptr;
    bool reprioritize_tickets = (mconf_get_reprioritize() == 1) ? true : false;
@@ -576,7 +579,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
                     sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients()));
 
             sge_add_event_client(packet, ep, &(task->answer_list),
-                                 (sub_command & SGE_GDI_RETURN_NEW_VERSION) ? &(task->data_list) : nullptr,
+                                 (sub_command & ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION) ? &(task->data_list) : nullptr,
                                  (event_client_update_func_t) nullptr, nullptr);
          }
       }
@@ -595,7 +598,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
          } else {
             /* submit needs to know user and group */
             sge_gdi_add_job(&ep, &(task->answer_list),
-                            (sub_command & SGE_GDI_RETURN_NEW_VERSION) ?
+                            (sub_command & ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION) ?
                             &(task->data_list) : nullptr,
                             packet, task, monitor);
          }
@@ -666,7 +669,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
                if (task->target == ocs::GdiTarget::SGE_EH_LIST && !strcmp(prognames[EXECD], packet->commproc)) {
                   bool is_restart = false;
 
-                  if (sub_command == SGE_GDI_EXECD_RESTART) {
+                  if (sub_command == ocs::GdiSubCommand::SGE_GDI_EXECD_RESTART) {
                      is_restart = true;
                   }
 
@@ -674,7 +677,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
                                       packet->host, task->target, monitor, is_restart);
                } else {
                   sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
-                                          sub_command, &tmp_list, monitor);
+                                          cmd, sub_command, &tmp_list, monitor);
                }
                break;
          }
@@ -693,7 +696,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
       /*
       ** tmp_list contains the changed AR element, set in ar_success
       */
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_RETURN_NEW_VERSION)) {
+      if (sub_command & ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION) {
          lFreeList(&(task->data_list));
          task->data_list = tmp_list;
          tmp_list = nullptr;
@@ -722,7 +725,7 @@ sge_c_gdi_add(ocs::GdiPacket *packet, ocs::GdiTask *task,
  * MT-NOTE: sge_c_gdi-del() is MT safe
  */
 void
-sge_c_gdi_del(ocs::GdiPacket *packet, ocs::GdiTask *task, int sub_command, monitoring_t *monitor) {
+sge_c_gdi_del(ocs::GdiPacket *packet, ocs::GdiTask *task, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    lListElem *ep;
 
    DENTER(GDI_LAYER);
@@ -758,7 +761,7 @@ sge_c_gdi_del(ocs::GdiPacket *packet, ocs::GdiTask *task, int sub_command, monit
                break;
 
             case ocs::GdiTarget::SGE_JB_LIST:
-               sge_gdi_del_job(packet, task, ep, &(task->answer_list), sub_command, monitor);
+               sge_gdi_del_job(packet, task, ep, &(task->answer_list), cmd, sub_command, monitor);
                break;
 
             case ocs::GdiTarget::SGE_CE_LIST:
@@ -837,7 +840,7 @@ static void sge_c_gdi_copy(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTas
          case ocs::GdiTarget::SGE_JB_LIST:
             /* gdi_copy_job uses the global lock internal */
             sge_gdi_copy_job(ep, &(task->answer_list),
-                             (sub_command & SGE_GDI_RETURN_NEW_VERSION) ? &(task->answer_list) : nullptr,
+                             (sub_command & ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION) ? &(task->answer_list) : nullptr,
                              packet, task, monitor);
             break;
          default:
@@ -909,8 +912,8 @@ sge_c_gdi_permcheck(ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *mo
    DRETURN_VOID;
 }
 
-void sge_c_gdi_replace(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task,
-                       int sub_command, monitoring_t *monitor) {
+void sge_c_gdi_replace(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task, ocs::GdiCommand::Command cmd,
+                       ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    lList *tmp_list = nullptr;
    lListElem *ep = nullptr;
 
@@ -930,7 +933,8 @@ void sge_c_gdi_replace(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *t
          }
 
          for_each_rw (ep, task->data_list) {
-            sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host, SGE_GDI_SET_ALL,
+            sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
+                                    cmd, ocs::GdiSubCommand::SGE_GDI_SET_ALL,
                                     &tmp_list, monitor);
          }
          lFreeList(&tmp_list);
@@ -1223,7 +1227,8 @@ trigger_scheduler_monitoring(ocs::GdiPacket *packet, ocs::GdiTask *task,
 /*
  * MT-NOTE: sge_c_gdi_mod() is MT safe
  */
-static void sge_c_gdi_mod(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task, int sub_command,
+static void sge_c_gdi_mod(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask *task,
+                          ocs::GdiCommand::Command command, ocs::GdiSubCommand::SubCommand sub_command,
                           monitoring_t *monitor) {
    lListElem *ep;
    lList *tmp_list = nullptr;
@@ -1270,8 +1275,8 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::GdiPacket *packet, ocs::GdiTask
                   answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
                   break;
                }
-               sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 0, ao, packet->user, packet->host, sub_command,
-                                       &tmp_list, monitor);
+               sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 0, ao, packet->user,
+                                       packet->host, command, sub_command, &tmp_list, monitor);
                break;
          }
       }
@@ -1556,7 +1561,7 @@ sge_task_check_get_perm_host(ocs::GdiPacket *packet, ocs::GdiTask *task, monitor
 */
 int
 sge_gdi_add_mod_generic(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
-                        const char *rhost, int sub_command, lList **tmp_list, monitoring_t *monitor) {
+                        const char *rhost, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, lList **tmp_list, monitoring_t *monitor) {
    int pos;
    int dataType;
    const char *name;
@@ -1640,7 +1645,7 @@ sge_gdi_add_mod_generic(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp
    }
 
    /* modify the new object base on information in the request */
-   if (object->modifier(packet, task, &tmp_alp, new_obj, instructions, add, ruser, rhost, object, sub_command, monitor) != 0) {
+   if (object->modifier(packet, task, &tmp_alp, new_obj, instructions, add, ruser, rhost, object, cmd, sub_command, monitor) != 0) {
 
       if (alpp) {
          /* ON ERROR: DISPOSE NEW OBJECT */
@@ -1709,7 +1714,7 @@ sge_gdi_add_mod_generic(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp
 
    lFreeElem(&old_obj);
 
-   if (!SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_RETURN_NEW_VERSION)) {
+   if (!(sub_command & ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
       INFO(add ? MSG_SGETEXT_ADDEDTOLIST_SSSS : MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, name, object->object_name);
 
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -1736,7 +1741,8 @@ gdi_object_t *get_gdi_object(u_long32 target) {
 }
 
 static int schedd_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-                      const char *rhost, gdi_object_t *object, int sub_command,
+                      const char *rhost, gdi_object_t *object,
+                      ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
                       monitoring_t *monitor) {
    int ret;
    DENTER(TOP_LAYER);

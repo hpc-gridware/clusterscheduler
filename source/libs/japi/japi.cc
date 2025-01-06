@@ -1263,7 +1263,8 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
                            amount, grp_array);
 
    /* use GDI to submit job for this session */
-   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_ADD,
+                 ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
 
    /* reinitialize 'job' with pointer to new version from qmaster */
    lFreeElem(sge_job_template);
@@ -1785,8 +1786,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
                id_list_build_from_str_list(&id_list, &alp, ref_list,
                                            QI_DO_UNSUSPEND, 0);
             }
-            alp = sge_gdi(ocs::GdiTarget::Target::SGE_CQ_LIST, SGE_GDI_TRIGGER,
-                          &id_list, nullptr, nullptr);
+            alp = sge_gdi(ocs::GdiTarget::Target::SGE_CQ_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                          ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
             lFreeList(&id_list);
             lFreeList(&ref_list);
 
@@ -1889,7 +1890,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
          }
 
          if (request_list) {
-            alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_MOD, &request_list, nullptr, nullptr);
+            alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_MOD,
+                          ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &request_list, nullptr, nullptr);
             lFreeList(&request_list);
 
             for_each_rw (aep, alp) {
@@ -3272,12 +3274,14 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   jb_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_GET, nullptr, job_selection, job_fields, true);
+   jb_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET,
+                             ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, job_selection, job_fields, true);
    gdi_multi.wait();
    lFreeWhere(&job_selection);
    lFreeWhat(&job_fields);
 
-   gdi_multi.get_response(&alp, SGE_GDI_GET, ocs::GdiTarget::SGE_JB_LIST, jb_id, retrieved_job_list);
+   gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                          ocs::GdiTarget::SGE_JB_LIST, jb_id, retrieved_job_list);
    aep = lFirst(alp);
    
    if (aep == nullptr) {
@@ -4896,7 +4900,8 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all,
 
    DENTER(TOP_LAYER);
 
-   alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, SGE_GDI_DEL, id_list, nullptr, nullptr);
+   alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_DEL, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                 id_list, nullptr, nullptr);
    lFreeList(id_list);
 
    for_each_rw (aep, alp) {

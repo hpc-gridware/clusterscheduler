@@ -47,7 +47,8 @@ userprj_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList
 
 int
 userprj_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+            const char *rhost, gdi_object_t *object,
+            ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 int
 userprj_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *upe, gdi_object_t *object);

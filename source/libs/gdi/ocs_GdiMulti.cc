@@ -58,7 +58,8 @@ ocs::GdiMulti::wait() {
 }
 
 int
-ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target target, u_long32 cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy) {
+ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target target, GdiCommand::Command cmd,
+                       GdiSubCommand::SubCommand sub_cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy) {
    DENTER(GDI_MULTI_LAYER);
    int id = -1;
 
@@ -69,7 +70,7 @@ ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target targe
    }
 
    // create a new task and append it to the packet
-   auto task = new GdiTask(target, cmd, lp, nullptr, &cp, &enp, do_copy);
+   auto task = new GdiTask(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
    id = packet->append_task(task);
 
    // execute the packet if it is the last task (mode == ocs::GdiMode::SEND)
@@ -96,7 +97,7 @@ ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target targe
 }
 
 bool
-ocs::GdiMulti::get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target, int id, lList **olpp) {
+ocs::GdiMulti::get_response(lList **alpp, GdiCommand::Command cmd, GdiSubCommand::SubCommand sub_cmd, GdiTarget::Target target, int id, lList **olpp) {
    DENTER(GDI_MULTI_LAYER);
 
    // still no response available? should not happen unless wait() was not called.
@@ -115,10 +116,8 @@ ocs::GdiMulti::get_response(lList **alpp, u_long32 cmd, GdiTarget::Target target
    }
 
    // get the response data for commands where we expect a response
-   int operation = SGE_GDI_GET_OPERATION(cmd);
-   int sub_command = SGE_GDI_GET_SUBCOMMAND(cmd);
-   if ((operation == SGE_GDI_GET) || (operation == SGE_GDI_PERMCHECK) ||
-       (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
+   if (cmd == GdiCommand::SGE_GDI_GET || cmd == GdiCommand::SGE_GDI_PERMCHECK ||
+       (cmd == GdiCommand::SGE_GDI_ADD && sub_cmd == GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
       if (!olpp) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

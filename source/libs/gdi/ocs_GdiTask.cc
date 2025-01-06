@@ -27,11 +27,12 @@
 
 #include "gdi/sge_gdi.h"
 
+#include "gdi/ocs_GdiCommand.h"
 #include "ocs_GdiTask.h"
 
-ocs::GdiTask::GdiTask(GdiTarget::Target target, u_long32 command, lList **lp,
-                      lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
-      : command(command), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
+ocs::GdiTask::GdiTask(GdiTarget::Target target, GdiCommand::Command command, GdiSubCommand::SubCommand sub_cmd,
+                      lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
+      : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
         enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
 
@@ -73,7 +74,7 @@ ocs::GdiTask::GdiTask(GdiTarget::Target target, u_long32 command, lList **lp,
 }
 
 ocs::GdiTask::GdiTask()
-       : command(0), target(ocs::GdiTarget::Target::NO_TARGET), data_list(nullptr),
+       : command(GdiCommand::SGE_GDI_NONE), target(GdiTarget::Target::NO_TARGET), data_list(nullptr),
          answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
@@ -98,41 +99,4 @@ ocs::GdiTask::debug_print() {
    DPRINTF("condition = %p\n", condition);
    DPRINTF("enumeration = %p\n", enumeration);
    DRETURN_VOID;
-}
-
-const char *
-ocs::GdiTask::get_operation_name() {
-   const char *ret;
-   int operation = SGE_GDI_GET_OPERATION(command);
-
-   switch (operation) {
-      case SGE_GDI_GET:
-         ret = "GET";
-         break;
-      case SGE_GDI_ADD:
-         ret = "ADD";
-         break;
-      case SGE_GDI_DEL:
-         ret = "DEL";
-         break;
-      case SGE_GDI_MOD:
-         ret = "MOD";
-         break;
-      case SGE_GDI_COPY:
-         ret = "COPY";
-         break;
-      case SGE_GDI_TRIGGER:
-         ret = "TRIGGER";
-         break;
-      case SGE_GDI_PERMCHECK:
-         ret = "PERMCHECK";
-         break;
-      case SGE_GDI_REPLACE:
-         ret = "REPLACE";
-         break;
-      default:
-         ret = "???";
-         break;
-   }
-   return ret;
 }

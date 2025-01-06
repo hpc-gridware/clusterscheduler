@@ -347,7 +347,9 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    if (*orders != nullptr) {
       DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
-      order_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::Target::SGE_ORDER_LIST, SGE_GDI_ADD, orders, nullptr, nullptr, false);
+      order_id = gdi_multi.request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::Target::SGE_ORDER_LIST,
+                                   ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                                   orders, nullptr, nullptr, false);
 
       if (alp != nullptr) {
          ret = answer_list_handle_request_answer_list(&alp, stderr);
@@ -359,7 +361,8 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    /* check result of orders */
    if(order_id > 0) {
-      gdi_multi.get_response(&alp, SGE_GDI_ADD, ocs::GdiTarget::SGE_ORDER_LIST, order_id, nullptr);
+      gdi_multi.get_response(&alp, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                             ocs::GdiTarget::SGE_ORDER_LIST, order_id, nullptr);
 
       ret = answer_list_handle_request_answer_list(&alp, stderr);
    }

@@ -80,7 +80,9 @@ do_add_auto_user(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *, lList 
 
 int
 userprj_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+            const char *rhost, gdi_object_t *object,
+            ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+            monitoring_t *monitor) {
    int user_flag = (object->target == ocs::GdiTarget::Target::SGE_UU_LIST) ? 1 : 0;
    int pos;
    const char *userprj;
@@ -582,8 +584,7 @@ static int do_add_auto_user(ocs::GdiPacket *packet, ocs::GdiTask *task, lListEle
     * Add anUser to the user list.
     * Owner of the operation is the admin user on the qmaster host.
     */
-   res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, 0, &ppList,
-                                 monitor);
+   res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, ocs::GdiCommand::SGE_GDI_NONE, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &ppList, monitor);
 
    lFreeList(&ppList);
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {

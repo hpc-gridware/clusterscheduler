@@ -82,11 +82,13 @@
 
 
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts);
+cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+                    ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+                    lList **add_hosts, lList **rem_hosts);
 
 static bool
-cqueue_mod_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command);
+cqueue_mod_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+                      ocs::GdiCommand::Command command, ocs::GdiSubCommand::SubCommand sub_command);
 
 static bool
 cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts, u_long64 gdi_session);
@@ -267,7 +269,7 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts,
 
 static bool
 cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
-                      lListElem *reduced_elem, int sub_command) {
+                      lListElem *reduced_elem, ocs::GdiCommand::Command command, ocs::GdiSubCommand::SubCommand sub_command) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -281,7 +283,7 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 
          if (pos >= 0) {
             ret &= cqueue_mod_sublist(cqueue, answer_list, reduced_elem,
-                                      sub_command,
+                                      command, sub_command,
                                       cqueue_attribute_array[index].cqueue_attr,
                                       cqueue_attribute_array[index].href_attr,
                                       cqueue_attribute_array[index].value_attr,
@@ -296,8 +298,8 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 }
 
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts) {
+cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, ocs::GdiCommand::Command cmd,
+                    ocs::GdiSubCommand::SubCommand sub_command, lList **add_hosts, lList **rem_hosts) {
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
@@ -315,10 +317,8 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
 
          ret &= href_list_resolve_hostnames(list, answer_list, true);
          if (ret) {
-            ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name,
-                                    reduced_elem, sub_command,
-                                    SGE_ATTR_HOST_LIST,
-                                    cqueue_name, 0, nullptr);
+            ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name, reduced_elem, cmd, sub_command,
+                                    SGE_ATTR_HOST_LIST, cqueue_name, 0, nullptr);
             href_list = lGetList(cqueue, CQ_hostlist);
          }
          if (ret) {
@@ -571,8 +571,8 @@ cqueue_handle_qinstances(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *
 
 int
 cqueue_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
-           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor) {
+           const char *remote_user, const char *remote_host, gdi_object_t *object,
+           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    bool ret = true;
    lList *add_hosts = nullptr;
    lList *rem_hosts = nullptr;
@@ -623,8 +623,7 @@ cqueue_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lLis
     * Find differences of hostlist configuration
     */
    if (ret) {
-      ret &= cqueue_mod_hostlist(cqueue, answer_list, reduced_elem,
-                                 sub_command, &add_hosts, &rem_hosts);
+      ret &= cqueue_mod_hostlist(cqueue, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts);
    }
 
    /*
@@ -634,7 +633,7 @@ cqueue_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lLis
     */
    if (ret) {
       ret &= cqueue_mod_attributes(cqueue, answer_list,
-                                   reduced_elem, sub_command);
+                                   reduced_elem, cmd, sub_command);
    }
    if (ret) {
       ret &= cqueue_verify_attributes(cqueue, answer_list,

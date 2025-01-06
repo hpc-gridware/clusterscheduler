@@ -604,7 +604,8 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *******************************************************************************/
 int userset_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_userset,
                 lListElem *userset, int add, const char *ruser,
-                const char *rhost, gdi_object_t *object, int sub_command,
+                const char *rhost, gdi_object_t *object,
+                ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
                 monitoring_t *monitor) {
    const char *userset_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -646,7 +647,7 @@ int userset_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListE
    }
    /* ---- US_entries */
    attr_mod_sub_list(alpp, new_userset, US_entries,
-                     UE_name, userset, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
+                     UE_name, userset, cmd, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
    /* interpret user/group names */
    if (userset_validate_entries(new_userset, alpp) != STATUS_OK) {
       goto ERROR;

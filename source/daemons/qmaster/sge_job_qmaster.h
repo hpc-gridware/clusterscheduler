@@ -78,7 +78,8 @@ int
 sge_gdi_mod_job(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lList **alpp, int sub_command);
 
 int
-sge_gdi_del_job(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lList **alpp, int sub_command, monitoring_t *monitor);
+sge_gdi_del_job(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lList **alpp,
+                ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
 
 void
 sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatep, u_long64 gdi_request);

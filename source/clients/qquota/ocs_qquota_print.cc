@@ -409,7 +409,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** resource quota sets
    */
    what = lWhat("%T(ALL)", RQS_Type);
-   rqs_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_RQS_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   rqs_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_RQS_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -420,7 +420,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** complexes
    */
    what = lWhat("%T(ALL)", CE_Type);
-   ce_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   ce_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -430,7 +430,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** usersets
    */
    what = lWhat("%T(ALL)", US_Type);
-   userset_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_US_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   userset_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_US_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -440,7 +440,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
    ** host groups
    */
    what = lWhat("%T(ALL)", HGRP_Type);
-   hgroup_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_HGRP_LIST, SGE_GDI_GET, nullptr, nullptr, what, true);
+   hgroup_id = gdi_multi.request(alpp, ocs::GdiMode::RECORD, ocs::GdiTarget::SGE_HGRP_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
    lFreeWhat(&what);
    /*
    ** exec hosts
@@ -465,7 +465,7 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
       where = nw;
 
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
-   eh_id = gdi_multi.request(alpp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EH_LIST, SGE_GDI_GET, nullptr, where, what, true);
+   eh_id = gdi_multi.request(alpp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EH_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
    gdi_multi.wait();
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -476,32 +476,32 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
 
    /* --- resource quota sets */
    lFreeList(alpp);
-   gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_RQS_LIST, rqs_id, rqs_l);
+   gdi_multi.get_response(alpp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_RQS_LIST, rqs_id, rqs_l);
    if (answer_list_has_error(alpp)) {
       DRETURN(false);
    }
 
    /* --- complex attribute */
    lFreeList(alpp);
-   gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_CE_LIST, ce_id, centry_l);
+   gdi_multi.get_response(alpp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_CE_LIST, ce_id, centry_l);
    if (answer_list_has_error(alpp)) {
       DRETURN(false);
    }
    /* --- usersets */
    lFreeList(alpp);
-   gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_US_LIST, userset_id, userset_l);
+   gdi_multi.get_response(alpp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_US_LIST, userset_id, userset_l);
    if (answer_list_has_error(alpp)) {
       DRETURN(false);
    }
    /* --- hostgroups */
    lFreeList(alpp);
-   gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_HGRP_LIST, hgroup_id, hgroup_l);
+   gdi_multi.get_response(alpp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_HGRP_LIST, hgroup_id, hgroup_l);
    if (answer_list_has_error(alpp)) {
       DRETURN(false);
    }
    /* --- exec hosts*/
    lFreeList(alpp);
-   gdi_multi.get_response(alpp, SGE_GDI_GET, ocs::GdiTarget::SGE_EH_LIST, eh_id, exechost_l);
+   gdi_multi.get_response(alpp, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_EH_LIST, eh_id, exechost_l);
 
    if (answer_list_has_error(alpp)) {
       DRETURN(false);

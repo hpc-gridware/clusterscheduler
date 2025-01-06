@@ -90,7 +90,8 @@ int main(int argc, const char **argv) {
    const lListElem *aep;
    int all_jobs = 0;
    int all_users = 0;
-   u_long32 gdi_cmd = SGE_GDI_MOD; 
+   ocs::GdiCommand::Command gdi_cmd = ocs::GdiCommand::SGE_GDI_MOD;
+   ocs::GdiSubCommand::SubCommand sub_cmd = ocs::GdiSubCommand::SGE_GDI_SUB_NONE;
    int tmp_ret;
    int me_who;
 
@@ -181,21 +182,21 @@ int main(int argc, const char **argv) {
        (me_who == QRLS) 
       ) {
       DPRINTF("QALTER\n");
-      gdi_cmd = SGE_GDI_MOD;
+      gdi_cmd = ocs::GdiCommand::SGE_GDI_MOD;
    } else if (me_who == QRESUB){
       DPRINTF("QRESUB\n");
-      gdi_cmd = SGE_GDI_COPY;
+      gdi_cmd = ocs::GdiCommand::SGE_GDI_COPY;
    } else {
       printf("unknown binary name.\n");
       sge_exit(1);
    }
 
    if (all_jobs)
-      gdi_cmd |= SGE_GDI_ALL_JOBS;
+      sub_cmd = ocs::GdiSubCommand::SGE_GDI_ALL_JOBS;
    if (all_users)
-      gdi_cmd |= SGE_GDI_ALL_USERS;
+      sub_cmd = ocs::GdiSubCommand::SGE_GDI_ALL_USERS;
 
-   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
+   alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, gdi_cmd, sub_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {

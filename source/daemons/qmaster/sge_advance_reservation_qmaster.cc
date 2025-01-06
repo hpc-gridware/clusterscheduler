@@ -218,7 +218,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
 int ar_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+           const char *rhost, gdi_object_t *object, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -282,25 +282,25 @@ int ar_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
                      nullptr);
    /*   AR_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_mail_options, SGE_ULONG   */
    attr_mod_ulong(ar, new_ar, AR_mail_options, object->object_name);
    /*   AR_mail_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, cmd, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
                      nullptr);
    /*   AR_pe_range, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_acl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_xacl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_type, SGE_ULONG     */
    attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
 

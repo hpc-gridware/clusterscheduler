@@ -25,15 +25,16 @@
 
 #include "cull/cull.h"
 
+#include "gdi/ocs_GdiCommand.h"
+#include "gdi/ocs_GdiSubCommand.h"
 #include "gdi/ocs_GdiTarget.h"
 
 namespace ocs {
    class GdiTask {
    public:
-      /*
-       * common parts of a GDI request
-       */
-      u_long32 command;
+      GdiCommand::Command command;
+      GdiSubCommand::SubCommand sub_command;
+
       GdiTarget::Target target;
       lList *data_list;
       lList *answer_list;
@@ -54,7 +55,7 @@ namespace ocs {
        */
       bool do_select_pack_simultaneous;
    public:
-      GdiTask(GdiTarget::Target target, u_long32 command, lList **lp,
+      GdiTask(GdiTarget::Target target, GdiCommand::Command command, GdiSubCommand::SubCommand sub_cmd, lList **lp,
               lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
       GdiTask();
       ~GdiTask();

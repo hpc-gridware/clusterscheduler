@@ -45,23 +45,10 @@ namespace ocs {
 
    class GdiPacket {
    public:
-      /*
-       * mutex to gard the "is_handled" flag of this structure
-       */
       pthread_mutex_t mutex;
-
-      /*
-       * condition used for synchronisation of multiple threads
-       * which want to access this structure
-       */
       pthread_cond_t cond;
 
    private:
-      /*
-       * true if the worker thread does not need to access this
-       * structure anymore. Guarded with "mutex" part of this
-       * structure
-       */
       bool is_handled;
 
    public:
@@ -130,7 +117,7 @@ namespace ocs {
        *
        * EB: TODO: Cleanup: eleminate "pb" from ocs::GdiPacket
        *
-       *    We might eleminate this member as soon as pure GDI GET
+       *    We might eliminate this member as soon as pure GDI GET
        *    requests are handled by some kind of read only thread.
        *    in qmaster. Write requests don't need the packbuffer.
        *    Due to that fact we could create and release the packbuffer

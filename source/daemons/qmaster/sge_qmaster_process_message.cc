@@ -111,7 +111,8 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
-   auto task = new ocs::GdiTask(ocs::GdiTarget::NO_TARGET, 0, &data_list, nullptr, nullptr, nullptr, false);
+   auto task = new ocs::GdiTask(ocs::GdiTarget::NO_TARGET, ocs::GdiCommand::SGE_GDI_NONE, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                                &data_list, nullptr, nullptr, nullptr, false);
    packet->append_task(task);
 
    // Put the packet into the task queue so that workers can handle it
@@ -295,24 +296,24 @@ get_gdi_executor_ds(ocs::GdiPacket *packet) {
    // corresponding DS should be used for all sub-tasks.
    ocs::DataStore::Id type = ocs::DataStore::LISTENER;
    for (auto *task : packet->tasks) {
-      u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
+      u_long32 operation = task->command;
       u_long32 target = task->target;
 
-      if (operation == SGE_GDI_PERMCHECK) {
+      if (operation == ocs::GdiCommand::SGE_GDI_PERMCHECK) {
          // GDI permission requests to check client user and host permissions can be processed with Listener DS
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_TRIGGER && (target == ocs::GdiTarget::Target::SGE_MASTER_EVENT || target == ocs::GdiTarget::Target::SGE_SC_LIST || target == ocs::GdiTarget::Target::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
+      } else if (operation == ocs::GdiCommand::SGE_GDI_TRIGGER && (target == ocs::GdiTarget::Target::SGE_MASTER_EVENT || target == ocs::GdiTarget::Target::SGE_SC_LIST || target == ocs::GdiTarget::Target::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
          // Also following requests can be processed with Listener DS:
          //    - shutdown request of qmaster (SGE_MASTER_EVENT)
          //    - trigger scheduling (SGE_SC_LIST)
          //    - termination of event client (SGE_EV_LIST)
          //    - start stop of thread (SGE_DUMMY_LIST)
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET && (target == ocs::GdiTarget::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
+      } else if (operation == ocs::GdiCommand::SGE_GDI_GET && (target == ocs::GdiTarget::SGE_EV_LIST || target == ocs::GdiTarget::SGE_DUMMY_LIST)) {
          // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
          // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET) {
+      } else if (operation == ocs::GdiCommand::SGE_GDI_GET) {
          bool is_qconf = (strcmp(packet->commproc, prognames[QCONF]) == 0);
          const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
          bool is_manager = manop_is_manager(packet, master_manager_list);

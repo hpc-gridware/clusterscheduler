@@ -54,7 +54,8 @@ typedef int (*modifier_func_t)(
         const char *ruser,
         const char *rhost,
         gdi_object_t *object, /* some kind of "this" */
-        int sub_command,
+        ocs::GdiCommand::Command cmd,
+        ocs::GdiSubCommand::SubCommand sub_com,
         monitoring_t *monitor
 );
 
@@ -106,7 +107,7 @@ sge_c_gdi_process_in_worker(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **
 
 int
 sge_gdi_add_mod_generic(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
-                        const char *ruser, const char *rhost, int sub_command, lList **ppList, monitoring_t *monitor);
+                        const char *ruser, const char *rhost, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, lList **ppList, monitoring_t *monitor);
 
 void sge_clean_lists();
 

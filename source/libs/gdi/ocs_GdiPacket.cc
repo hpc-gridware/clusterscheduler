@@ -75,60 +75,6 @@ static int get_gdi_retries_value() {
 }
 
 static bool
-sge_pack_gdi_info(u_long32 command) {
-   DENTER(GDI_LAYER);
-   bool ret = true;
-
-   switch (command) {
-   case SGE_GDI_GET:
-      DPRINTF("packing SGE_GDI_GET request\n");
-      break;
-   case SGE_GDI_ADD:
-   case SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION:
-   case SGE_GDI_ADD | SGE_GDI_SET_ALL:
-   case SGE_GDI_ADD | SGE_GDI_EXECD_RESTART:
-      DPRINTF("packing SGE_GDI_ADD request\n");
-      break;
-   case SGE_GDI_DEL:
-   case SGE_GDI_DEL | SGE_GDI_ALL_JOBS:
-   case SGE_GDI_DEL | SGE_GDI_ALL_USERS:
-   case SGE_GDI_DEL | SGE_GDI_ALL_JOBS | SGE_GDI_ALL_USERS:
-      DPRINTF("packing SGE_GDI_DEL request\n");
-      break;
-   case SGE_GDI_MOD:
-   case SGE_GDI_MOD | SGE_GDI_ALL_JOBS:
-   case SGE_GDI_MOD | SGE_GDI_ALL_USERS:
-   case SGE_GDI_MOD | SGE_GDI_ALL_JOBS | SGE_GDI_ALL_USERS:
-   case SGE_GDI_MOD | SGE_GDI_APPEND:
-   case SGE_GDI_MOD | SGE_GDI_REMOVE:
-   case SGE_GDI_MOD | SGE_GDI_CHANGE:
-   case SGE_GDI_MOD | SGE_GDI_SET_ALL:
-      DPRINTF("packing SGE_GDI_MOD request\n");
-      break;
-   case SGE_GDI_TRIGGER:
-      DPRINTF("packing SGE_GDI_TRIGGER request\n");
-      break;
-   case SGE_GDI_PERMCHECK:
-      DPRINTF("packing SGE_GDI_PERMCHECK request\n");
-      break;
-   case SGE_GDI_SPECIAL:
-      DPRINTF("packing special things\n");
-      break;
-   case SGE_GDI_COPY:
-      DPRINTF("request denied\n");
-      break;
-   case SGE_GDI_REPLACE:
-   case SGE_GDI_REPLACE | SGE_GDI_SET_ALL:
-      DPRINTF("packing SGE_GDI_REPLACE request\n");
-      break;
-   default:
-      ERROR(MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D, sge_u32c(command));
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-static bool
 sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
    DENTER(GDI_LAYER);
 
@@ -377,12 +323,11 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
     */
    for (size_t id = 0; id < tasks.size(); ++id) {
       GdiTask *task = tasks[id];
-      u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
-      u_long32 sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
       lListElem *map = lAddElemUlong(malpp, MA_id, id, MA_Type);
 
-      if (operation == SGE_GDI_GET || operation == SGE_GDI_PERMCHECK ||
-          (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
+      if (task->command == GdiCommand::SGE_GDI_GET ||
+          task->command == GdiCommand::SGE_GDI_PERMCHECK ||
+          (task->command == GdiCommand::SGE_GDI_ADD && task->sub_command == GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
          lSetList(map, MA_objects, task->data_list);
          task->data_list = nullptr;
       }
@@ -526,7 +471,7 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 #ifdef KERBEROS
    /* request that the Kerberos library forward the TGT */
    if (ret && packet->first_task->target == SGE_JB_LIST &&
-       SGE_GDI_GET_OPERATION(packet->first_task->command) == SGE_GDI_ADD ) {
+       packet->first_task->command == SGE_GDI_ADD ) {
       krb_set_client_flags(krb_get_client_flags() | KRB_FORWARD_TGT);
       krb_set_tgt_id(packet->id);
    }
@@ -538,11 +483,10 @@ ocs::GdiPacket::execute_external(lList **answer_list)
      * job verification process might destroy the job and create a completely
      * new one with adjusted job attributes.
      */
-    ocs::GdiTask *task = tasks[0];
+    GdiTask *task = tasks[0];
 
     if (task->target == ocs::GdiTarget::Target::SGE_JB_LIST &&
-        ((SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_ADD) ||
-        (SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_COPY))) {
+        (task->command == GdiCommand::SGE_GDI_ADD || task->command == GdiCommand::SGE_GDI_COPY)) {
        lListElem *job, *next_job;
 
        next_job = lLastRW(task->data_list);
@@ -769,7 +713,7 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 #ifdef KERBEROS
    /* clear the forward TGT request */
    if (ret && state->first->target == SGE_JB_LIST &&
-       SGE_GDI_GET_OPERATION(packet->first_task->command) == SGE_GDI_ADD) {
+       packet->first_task->command == SGE_GDI_ADD) {
       krb_set_client_flags(krb_get_client_flags() & ~KRB_FORWARD_TGT);
       krb_set_tgt_id(0);
    }
@@ -845,9 +789,11 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
    unpack_header(answer_list, pb);
 
    do {
-      auto task = new GdiTask(GdiTarget::NO_TARGET, 0, nullptr, nullptr, nullptr, nullptr, false);
+      auto task = new GdiTask(GdiTarget::NO_TARGET, GdiCommand::SGE_GDI_NONE, GdiSubCommand::SGE_GDI_SUB_NONE,
+                              nullptr, nullptr, nullptr, nullptr, false);
       u_long32 target_ulong32 = 0;
       u_long32 command = 0;
+      u_long32 sub_command = 0;
       lList *data_list = nullptr;
       lList *a_list = nullptr;
       lCondition *condition = nullptr;
@@ -857,27 +803,38 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = unpackint(pb, &command))) {
          goto error_with_mapping;
       }
-      task->command = command;
+      task->command = static_cast<GdiCommand::Command>(command);
+
+      if ((pack_ret = unpackint(pb, &sub_command))) {
+         goto error_with_mapping;
+      }
+      task->sub_command = static_cast<GdiSubCommand::SubCommand>(sub_command);
+
       if ((pack_ret = unpackint(pb, &target_ulong32))) {
          goto error_with_mapping;
       }
       task->target = static_cast<GdiTarget::Target>(target_ulong32);
+
       if ((pack_ret = cull_unpack_list(pb, &(data_list)))) {
          goto error_with_mapping;
       }
       task->data_list = data_list;
+
       if ((pack_ret = cull_unpack_list(pb, &(a_list)))) {
          goto error_with_mapping;
       }
       task->answer_list = a_list;
+
       if ((pack_ret = cull_unpack_cond(pb, &(condition)))) {
          goto error_with_mapping;
       }
       task->condition = condition;
+
       if ((pack_ret = cull_unpack_enum(pb, &(enumeration)))) {
          goto error_with_mapping;
       }
       task->enumeration = enumeration;
+
       if ((pack_ret = unpackint(pb, &has_next_int))) {
          goto error_with_mapping;
       }
@@ -973,13 +930,16 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
    int pack_ret;
 
    if (task != nullptr && !is_intern_request) {
-      sge_pack_gdi_info(task->command);
-
-      /* ===> pack the prefix */
       pack_ret = packint(pb, task->command);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
+
+      pack_ret = packint(pb, task->sub_command);
+      if (pack_ret != PACK_SUCCESS) {
+         goto error_with_mapping;
+      }
+
       pack_ret = packint(pb, task->target);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;

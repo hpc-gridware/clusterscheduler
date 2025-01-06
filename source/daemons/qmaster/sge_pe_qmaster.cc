@@ -68,7 +68,8 @@ static void pe_update_categories(const lListElem *new_pe, const lListElem *old_p
 
 int
 pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
-       int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
+       int add, const char *ruser, const char *rhost, gdi_object_t *object,
+       ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
        monitoring_t *monitor) {
    int ret;
    const char *s, *pe_name;
@@ -119,7 +120,7 @@ pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_
          goto ERROR;
       }
 
-      attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, sub_command,
+      attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, cmd, sub_command,
                         SGE_ATTR_USER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
@@ -131,7 +132,7 @@ pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_
       if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
-      attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, sub_command,
+      attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, cmd, sub_command,
                         SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 

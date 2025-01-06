@@ -60,7 +60,7 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list);
 
-bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 gdi_command) {
+bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::GdiCommand::Command gdi_command) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -70,7 +70,8 @@ bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_lon
 
       centry_list = lCreateList("", CE_Type);
       lAppendElem(centry_list, this_elem);
-      gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, gdi_command, &centry_list, nullptr, nullptr);
+      gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, gdi_command, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+                                &centry_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
    }
 
@@ -89,7 +90,7 @@ lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
 
       what = lWhat("%T(ALL)", CE_Type);
       where = lWhere("%T(%I==%s)", CE_Type, CE_name, name);
-      gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_GET, &centry_list, where, what);
+      gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &centry_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -182,7 +183,7 @@ bool centry_add(lList **answer_list, const char *name) {
          ret &= centry_provide_modify_context(&centry, answer_list);
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_ADD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::GdiCommand::SGE_GDI_ADD);
       }
    }
 
@@ -219,7 +220,7 @@ bool centry_add_from_file(lList **answer_list, const char *filename) {
          ret = false;
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_ADD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::GdiCommand::SGE_GDI_ADD);
       }
    }
 
@@ -241,7 +242,7 @@ bool centry_modify(lList **answer_list, const char *name) {
          ret &= centry_provide_modify_context(&centry, answer_list);
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_MOD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::GdiCommand::SGE_GDI_MOD);
       }
       if (centry) {
          lFreeElem(&centry);
@@ -283,7 +284,7 @@ bool centry_modify_from_file(lList **answer_list, const char *filename) {
          ret = false;
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_MOD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::GdiCommand::SGE_GDI_MOD);
       }
       if (centry) {
          lFreeElem(&centry);
@@ -301,7 +302,7 @@ bool centry_delete(lList **answer_list, const char *name) {
       lListElem *centry = centry_create(answer_list, name);
 
       if (centry != nullptr) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_DEL);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::GdiCommand::SGE_GDI_DEL);
       }
    }
 
@@ -363,7 +364,7 @@ lList *centry_list_get_via_gdi(lList **answer_list) {
 
    DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
-   gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_GET, &ret, nullptr, what);
+   gdi_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &ret, nullptr, what);
    lFreeWhat(&what);
 
    if (answer_list_has_error(&gdi_answer_list)) {
@@ -542,7 +543,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
           */
          if (ret && do_del) {
             ocs::GdiMode::Mode mode = (--number_req > 0) ? ocs::GdiMode::RECORD : ocs::GdiMode::SEND;
-            del_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_DEL, old_list, nullptr, nullptr, false);
+            del_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_DEL, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, old_list, nullptr, nullptr, false);
             if (mode == ocs::GdiMode::SEND) {
                gdi_multi.wait();
             }
@@ -555,7 +556,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
          }
          if (ret && do_mod) {
             ocs::GdiMode::Mode mode = (--number_req > 0) ? ocs::GdiMode::RECORD : ocs::GdiMode::SEND;
-            mod_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr, false);
+            mod_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &modify_list, nullptr, nullptr, false);
             if (mode == ocs::GdiMode::SEND) {
                gdi_multi.wait();
             }
@@ -568,7 +569,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
          }
          if (ret && do_add) {
             ocs::GdiMode::Mode mode = (--number_req > 0) ? ocs::GdiMode::RECORD : ocs::GdiMode::SEND;
-            add_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr, false);
+            add_id = gdi_multi.request(&gdi_answer_list, mode, ocs::GdiTarget::Target::SGE_CE_LIST, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &add_list, nullptr, nullptr, false);
             if (mode == ocs::GdiMode::SEND) {
                gdi_multi.wait();
             }
@@ -584,15 +585,15 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
           * Verify that the parts of the multi request are successful
           */
          if (do_del && ret) {
-            gdi_multi.get_response(&gdi_answer_list, SGE_GDI_DEL, ocs::GdiTarget::SGE_CE_LIST, del_id, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::GdiCommand::SGE_GDI_DEL, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_CE_LIST, del_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_mod && ret) {
-            gdi_multi.get_response(&gdi_answer_list, SGE_GDI_MOD, ocs::GdiTarget::SGE_CE_LIST, mod_id, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_CE_LIST, mod_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_add && ret) {
-            gdi_multi.get_response(&gdi_answer_list, SGE_GDI_ADD, ocs::GdiTarget::SGE_CE_LIST, add_id, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::SGE_CE_LIST, add_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
 

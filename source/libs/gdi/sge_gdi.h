@@ -37,59 +37,6 @@
 
 #include "gdi/ocs_GdiMulti.h"
 
-/*
- * allowed values for command field of a gdi request
- * (see ocs::GdiPacket and ocs::GdiTask
- */
-enum {
-   /* OPERATION -------------- */
-   SGE_GDI_GET = 1,
-   SGE_GDI_ADD,
-   SGE_GDI_DEL,
-   SGE_GDI_MOD,
-   SGE_GDI_TRIGGER,
-   SGE_GDI_PERMCHECK,
-   SGE_GDI_SPECIAL,
-   SGE_GDI_COPY,
-   SGE_GDI_REPLACE,
-
-   /* SUB COMMAND  ----------- */
-
-   /* for SGE_JB_LIST => SGE_GDI_ADD */
-   SGE_GDI_RETURN_NEW_VERSION = (1<<8),
-
-   /* for SGE_JB_LIST => SGE_GDI_DEL, SGE_GDI_MOD */
-   SGE_GDI_ALL_JOBS  = (1<<9),
-   SGE_GDI_ALL_USERS = (1<<10),
-
-   /* for SGE_QUEUE_LIST, SGE_EH_LIST => SGE_GDI_MOD */
-   SGE_GDI_SET     = 0,        /* overwrite the sublist with given values */
-   SGE_GDI_CHANGE  = (1<<11),  /* change the given elements */
-   SGE_GDI_APPEND  = (1<<12),  /* add some elements into a sublist */
-   SGE_GDI_REMOVE  = (1<<13),  /* remove some elements from a sublist */
-   SGE_GDI_SET_ALL = (1<<14),  /*
-                                * overwrite the sublist with given values
-                                * and erase all domain/host specific values
-                                * not given with the current request
-                                */
-   SGE_GDI_EXECD_RESTART = (1<<15)
-};
-
-#define SGE_GDI_OPERATION (0xFF)
-#define SGE_GDI_SUBCOMMAND (~SGE_GDI_OPERATION)
-
-#define SGE_GDI_GET_OPERATION(x) ((x)&SGE_GDI_OPERATION)
-#define SGE_GDI_GET_SUBCOMMAND(x) ((x)&SGE_GDI_SUBCOMMAND)
-#define SGE_GDI_IS_SUBCOMMAND_SET(x,y) ((x)&(y))
-
-/* from gdi_checkpermissions.h */
-#define MANAGER_CHECK     (1<<0)
-#define OPERATOR_CHECK    (1<<1)
-/*
-#define USER_CHECK        (1<<2)
-#define SGE_USER_CHECK    (1<<3)
-*/
-
 /* from gdi_setup.h */
 /* these values are standarized gdi return values */
 enum {
@@ -145,7 +92,7 @@ typedef struct {
 } struct_msg_t;
 
 lList
-*sge_gdi(ocs::GdiTarget::Target target, u_long32 cmd, lList **lpp, lCondition *cp, lEnumeration *enp);
+*sge_gdi(ocs::GdiTarget::Target target, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand, lList **lpp, lCondition *cp, lEnumeration *enp);
 
 int sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, int *tag, int synchron,
                              u_long32 for_request_mid, u_long32 *mid);

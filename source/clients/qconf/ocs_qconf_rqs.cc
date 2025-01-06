@@ -162,7 +162,7 @@ rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
             where = lOrWhere(where, add_where);
          }
       }
-      *answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, SGE_GDI_GET, rqs_list, where, what);
+      *answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, rqs_list, where, what);
       if (!answer_list_has_error(answer_list)) {
          ret = true;
       }
@@ -204,7 +204,7 @@ rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
 
    DENTER(TOP_LAYER);
 
-   *answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
+   *answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, rqs_list, nullptr, what);
    if (!answer_list_has_error(answer_list)) {
       ret = true;
    }
@@ -255,7 +255,7 @@ rqs_add(lList **answer_list, const char *name)
       ret = rqs_provide_modify_context(&rqs_list, answer_list, true);
 
       if (ret) {
-         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, SGE_GDI_ADD | SGE_GDI_SET_ALL);
+         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SET_ALL);
       }
 
       lFreeList(&rqs_list);
@@ -289,22 +289,23 @@ rqs_add(lList **answer_list, const char *name)
 *******************************************************************************/
 bool
 rqs_modify(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
    bool ret = false;
    lList *rqs_list = nullptr;
-   u_long32 gdi_command = 0;
-
-   DENTER(TOP_LAYER);
+   ocs::GdiCommand::Command cmd = ocs::GdiCommand::SGE_GDI_NONE;
+   ocs::GdiSubCommand::SubCommand sub_cmd = ocs::GdiSubCommand::SGE_GDI_SUB_NONE;
 
    if (name != nullptr) {
       lList *rqsref_list = nullptr;
 
-      gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
+      cmd = ocs::GdiCommand::SGE_GDI_MOD;
+      sub_cmd = ocs::GdiSubCommand::SGE_GDI_SET_ALL;
 
       lString2List(name, &rqsref_list, RQS_Type, RQS_name, ", ");
       ret = rqs_get_via_gdi(answer_list, rqsref_list, &rqs_list);
       lFreeList(&rqsref_list);
    } else {
-      gdi_command = SGE_GDI_REPLACE;
+      cmd = ocs::GdiCommand::SGE_GDI_REPLACE;
       ret = rqs_get_all_via_gdi(answer_list, &rqs_list);
    }
 
@@ -312,7 +313,7 @@ rqs_modify(lList **answer_list, const char *name) {
       ret = rqs_provide_modify_context(&rqs_list, answer_list, false);
    }
    if (ret) {
-      ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, gdi_command);
+      ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, cmd, sub_cmd);
    }
 
    lFreeList(&rqs_list);
@@ -354,7 +355,7 @@ rqs_add_from_file(lList **answer_list, const char *filename) {
       /* fields_out field does not work for rqs because of duplicate entry */
       rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filename);
       if (!answer_list_has_error(answer_list)) {
-         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, SGE_GDI_ADD | SGE_GDI_SET_ALL);
+         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SET_ALL);
       }
 
       lFreeList(&rqs_list);
@@ -482,7 +483,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
 *
 *******************************************************************************/
 bool
-rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_command)
+rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_cmd)
 {
    bool ret = false;
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
@@ -490,15 +491,15 @@ rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_comma
    DENTER(TOP_LAYER);
 
    if (rqs_list != nullptr) {
-      u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
-      bool do_verify = (operation == SGE_GDI_MOD) || (operation == SGE_GDI_ADD
-                        || (operation == SGE_GDI_REPLACE)) ? true : false;
+      bool do_verify = (cmd == ocs::GdiCommand::SGE_GDI_MOD) ||
+                       (cmd == ocs::GdiCommand::SGE_GDI_ADD ||
+                       (cmd == ocs::GdiCommand::SGE_GDI_REPLACE)) ? true : false;
 
       if (do_verify) {
          ret = rqs_list_verify_attributes(rqs_list, answer_list, false, master_centry_list);
       }
       if (ret) {
-         lList *my_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
+         lList *my_answer_list = sge_gdi(ocs::GdiTarget::Target::SGE_RQS_LIST, cmd, sub_cmd, &rqs_list, nullptr, nullptr);
          if (my_answer_list != nullptr) {
             answer_list_append_list(answer_list, &my_answer_list);
          }
@@ -535,8 +536,9 @@ bool
 rqs_modify_from_file(lList **answer_list, const char *filename, const char* name)
 {
    bool ret = false;
-   u_long32 gdi_command = 0;
-   
+   ocs::GdiCommand::Command cmd = ocs::GdiCommand::SGE_GDI_NONE;
+   ocs::GdiSubCommand::SubCommand sub_cmd = ocs::GdiSubCommand::SGE_GDI_SUB_NONE;
+
    DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lList *rqs_list = nullptr;
@@ -552,7 +554,8 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
             const lListElem *tmp_rqs = nullptr;
             lList *found_rqs_list = lCreateList("rqs_list", RQS_Type);
 
-            gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
+            cmd = ocs::GdiCommand::SGE_GDI_MOD;
+            sub_cmd = ocs::GdiSubCommand::SGE_GDI_SET_ALL;
 
             lString2List(name, &selected_rqs_list, RQS_Type, RQS_name, ", ");
             for_each_ep(tmp_rqs, selected_rqs_list) {
@@ -570,11 +573,11 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
             lFreeList(&rqs_list);
             rqs_list = found_rqs_list;
          } else {
-            gdi_command = SGE_GDI_REPLACE;
+            cmd = ocs::GdiCommand::SGE_GDI_REPLACE;
          }
 
          if (rqs_list != nullptr) {
-            ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, gdi_command);
+            ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, cmd, sub_cmd);
          }
       }
       lFreeList(&rqs_list);

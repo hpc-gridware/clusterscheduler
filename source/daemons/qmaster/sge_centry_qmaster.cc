@@ -70,8 +70,8 @@
 
 int
 centry_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
-           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor) {
+           const char *remote_user, const char *remote_host, gdi_object_t *object,
+           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
    bool ret = true;
    bool is_slots_attr = false;
    int pos;

@@ -126,7 +126,8 @@ char **argv
    }
 
    if (ref_list) {
-      alp = sge_gdi(ocs::GdiTarget::Target::SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
+      alp = sge_gdi(ocs::GdiTarget::Target::SGE_CQ_LIST, ocs::GdiCommand::SGE_GDI_TRIGGER,
+                    ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &ref_list, nullptr, nullptr);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 
