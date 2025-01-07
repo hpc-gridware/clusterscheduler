@@ -3786,7 +3786,7 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
                /*
                 * if ENABLE_FORCED_QDEL_IF_UNKNOWN is enabled and a user send a qdel (not forced)
                 * then we will handle it as a forced request if the job (master-task) is running
-                * on a host in unknwon state.
+                * on a host in unknown state.
                 */
                if (get_enable_forced_qdel_if_unknown) {
                   const lList *gdil = lGetList(tmp_task, JAT_granted_destin_identifier_list);
@@ -3798,7 +3798,7 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
 
                      if (qinstance != nullptr) {
                         /*
-                         * is the queue (=host) in unknwon state, then make the qdel request a forced request
+                         * is the queue (=host) in unknown state, then make the qdel request a forced request
                          * otherwise check if we have a tight pe job. in that case a pe slave tasks will be tagged
                          * where the corresponding execution node can't be contacted so that a regular
                          * qdel will delete the job (code part of the qmaster<->execd protocol)
