@@ -82,7 +82,7 @@ extern volatile int jobs_to_start;
 static int handle_job(lListElem *jelem, lListElem *jatep, int slave);
 static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb);
 
-int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
+int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
    int ret = 1;
    u_long32 feature_set;
@@ -169,7 +169,7 @@ int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb)
    DRETURN(0);
 }
 
-int do_job_slave(struct_msg_t *aMsg)
+int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    int ret = 1;
    lListElem *jelem, *ja_task;

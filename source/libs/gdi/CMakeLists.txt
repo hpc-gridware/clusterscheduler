@@ -21,16 +21,16 @@
 # source/libs/gdi
 set(LIBRARY_NAME gdi)
 set(LIBRARY_SOURCES
-        ocs_GdiCommand.cc
-        ocs_GdiSubCommand.cc
-        ocs_GdiMode.cc
-        ocs_GdiMulti.cc
-        ocs_GdiPacket.cc
-        ocs_GdiTarget.cc
-        ocs_GdiTask.cc
-        ocs_gdi_execd_delivery.cc
-      qm_name.cc
-        ocs_gdi_client.cc
+        ocs_gdi_Client.cc
+        ocs_gdi_ClientBase.cc
+        ocs_gdi_ClientServerBase.cc
+        ocs_gdi_Command.cc
+        ocs_gdi_SubCommand.cc
+        ocs_gdi_Mode.cc
+        ocs_gdi_Request.cc
+        ocs_gdi_Packet.cc
+        ocs_gdi_Target.cc
+        ocs_gdi_Task.cc
       sge_gdi.cc
       sge_gdi_data.cc
       sge_qexec.cc

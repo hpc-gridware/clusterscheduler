@@ -216,7 +216,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
  * necessary to introduce something like 'protected' configuration entries.
  */
 int
-sge_del_configuration(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
+sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;

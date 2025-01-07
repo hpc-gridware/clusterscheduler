@@ -24,25 +24,25 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_GdiTarget.h"
+#include "gdi/ocs_gdi_Target.h"
 #include "gdi/msg_gdilib.h"
 
 #include "msg_common.h"
-#include "ocs_GdiMulti.h"
+#include "ocs_gdi_Request.h"
 
 #define GDI_MULTI_LAYER GDI_LAYER
 
-ocs::GdiMulti::GdiMulti() : packet(nullptr), multi_answer_list(nullptr) {
+ocs::gdi::Request::Request() : packet(nullptr), multi_answer_list(nullptr) {
    ;
 }
 
-ocs::GdiMulti::~GdiMulti() {
+ocs::gdi::Request::~Request() {
    delete packet;
    lFreeList(&multi_answer_list);
 }
 
 void
-ocs::GdiMulti::wait() {
+ocs::gdi::Request::wait() {
    DENTER(GDI_MULTI_LAYER);
 
    // wait for the result of the packet
@@ -58,23 +58,23 @@ ocs::GdiMulti::wait() {
 }
 
 int
-ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target target, GdiCommand::Command cmd,
-                       GdiSubCommand::SubCommand sub_cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy) {
+ocs::gdi::Request::request(lList **alpp, Mode::ModeValue mode, gdi::Target::TargetValue target, gdi::Command::Cmd cmd,
+                       gdi::SubCommand::SubCmd sub_cmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy) {
    DENTER(GDI_MULTI_LAYER);
    int id = -1;
 
    // create a new packet if it does not exist
    if (packet == nullptr) {
-      packet = new GdiPacket();
+      packet = new Packet();
       packet->initialize_auth_info();
    }
 
    // create a new task and append it to the packet
-   auto task = new GdiTask(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
+   auto task = new gdi::Task(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
    id = packet->append_task(task);
 
-   // execute the packet if it is the last task (mode == ocs::GdiMode::SEND)
-   if (mode == GdiMode::SEND) {
+   // execute the packet if it is the last task (mode == ocs::Mode::SEND)
+   if (mode == Mode::SEND) {
       int local_ret;
 
       // internal execution allows to bypass the communication and authentication
@@ -97,7 +97,7 @@ ocs::GdiMulti::request(lList **alpp, GdiMode::Mode mode, GdiTarget::Target targe
 }
 
 bool
-ocs::GdiMulti::get_response(lList **alpp, GdiCommand::Command cmd, GdiSubCommand::SubCommand sub_cmd, GdiTarget::Target target, int id, lList **olpp) {
+ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCommand::SubCmd sub_cmd, gdi::Target::TargetValue target, int id, lList **olpp) {
    DENTER(GDI_MULTI_LAYER);
 
    // still no response available? should not happen unless wait() was not called.
@@ -110,14 +110,14 @@ ocs::GdiMulti::get_response(lList **alpp, GdiCommand::Command cmd, GdiSubCommand
    // get the response for the given id
    lListElem *map = lGetElemUlongRW(multi_answer_list, MA_id, id);
    if (!map) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, ocs::GdiTarget::targetToString(target).c_str());
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, ocs::gdi::Target::targetToString(target).c_str());
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
 
    // get the response data for commands where we expect a response
-   if (cmd == GdiCommand::SGE_GDI_GET || cmd == GdiCommand::SGE_GDI_PERMCHECK ||
-       (cmd == GdiCommand::SGE_GDI_ADD && sub_cmd == GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
+   if (cmd == gdi::Command::SGE_GDI_GET || cmd == gdi::Command::SGE_GDI_PERMCHECK ||
+       (cmd == gdi::Command::SGE_GDI_ADD && sub_cmd == gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
       if (!olpp) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

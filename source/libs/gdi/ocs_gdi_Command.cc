@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,12 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_GdiMode.h"
+#include "ocs_gdi_Command.h"
 
-std::string ocs::GdiMode::toString(Mode mode) {
-   switch (mode) {
-      case RECORD: return "RECORD";
-      case SEND: return "SEND";
-      default: return "UNKNOWN_MODE";
+std::string ocs::gdi::Command::toString(Cmd command) {
+   switch (command) {
+      case SGE_GDI_GET: return "GET";
+      case SGE_GDI_ADD: return "ADD";
+      case SGE_GDI_DEL: return "DEL";
+      case SGE_GDI_MOD: return "MOD";
+      case SGE_GDI_TRIGGER: return "TRIGGER";
+      case SGE_GDI_PERMCHECK: return "PERMCHECK";
+      case SGE_GDI_SPECIAL: return "SPECIAL";
+      case SGE_GDI_COPY: return "COPY";
+      case SGE_GDI_REPLACE: return "REPLACE";
+      default: return "???";
    }
 }

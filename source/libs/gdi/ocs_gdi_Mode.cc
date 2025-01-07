@@ -1,4 +1,3 @@
-#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,17 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <string>
+#include "ocs_gdi_Mode.h"
 
-namespace ocs {
-   class GdiMode {
-      GdiMode() = default; // prevent instantiation
-   public:
-      enum Mode {
-         RECORD,
-         SEND,
-      };
-
-      static std::string toString(Mode mode);
-   };
+std::string ocs::Mode::toString(ModeValue mode) {
+   switch (mode) {
+      case RECORD: return "RECORD";
+      case SEND: return "SEND";
+      default: return "UNKNOWN_MODE";
+   }
 }

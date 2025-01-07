@@ -18,9 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_GdiTarget.h"
+#include "ocs_gdi_Target.h"
 
-std::string ocs::GdiTarget::targetToString(const Target target) {
+std::string ocs::gdi::Target::targetToString(const TargetValue target) {
    switch (target) {
       case NO_TARGET: return "NO_TARGET";
       case SGE_AH_LIST: return "SGE_AH_LIST";

@@ -37,7 +37,7 @@
 #include "cull/cull.h"
 #include "uti/sge_monitor.h"
 
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 
-void sge_c_report(ocs::GdiPacket *packet, ocs::GdiTask *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);
+void sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);

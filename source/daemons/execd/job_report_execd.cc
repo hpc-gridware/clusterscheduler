@@ -260,7 +260,7 @@ RETURN
    Typical dispatcher service function return values
 
    ------------------------------------------------------------ */
-int do_ack(struct_msg_t *aMsg)
+int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    u_long32 jobid, jataskid;
    lListElem *jr;

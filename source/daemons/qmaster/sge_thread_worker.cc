@@ -43,6 +43,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "gdi/ocs_gdi_ClientServerBase.h"
+
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_DataStore.h"
 
@@ -55,7 +57,7 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 #include "gdi/sge_gdi.h"
 
 #include "comm/cl_commlib.h"
@@ -202,7 +204,7 @@ sge_worker_main(void *arg) {
    conf_update_thread_profiling("Worker Thread");
 
    while (true) {
-      ocs::GdiPacket *packet = nullptr;
+      ocs::gdi::Packet *packet = nullptr;
 
       /*
        * Wait for packets. As long as packets are available cancellation
@@ -239,7 +241,7 @@ sge_worker_main(void *arg) {
             for (const auto *task : packet->tasks) {
                u_long32 command = task->command;
 
-               if (command != ocs::GdiCommand::SGE_GDI_GET) {
+               if (command != ocs::gdi::Command::SGE_GDI_GET) {
                   is_only_read_request = false;
                   break;
                }
@@ -271,7 +273,7 @@ sge_worker_main(void *arg) {
             for (size_t i = 0; i < packet->tasks.size(); ++i) {
                bool has_next = (i < packet->tasks.size() - 1);
 
-               ocs::GdiTask *task = packet->tasks[i];
+               ocs::gdi::Task *task = packet->tasks[i];
                sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor, has_next);
             }
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
@@ -313,8 +315,8 @@ sge_worker_main(void *arg) {
              */
             if (!packet->is_intern_request) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                                         &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+               ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                                                &(packet->pb), ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
                delete packet;
                /*

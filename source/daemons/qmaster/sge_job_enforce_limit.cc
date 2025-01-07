@@ -325,7 +325,7 @@ sge_add_check_limit_trigger() {
 *     been added can be removed by sge_host_remove_enforce_limit_trigger().
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context object 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     te_event_t event         - timed event structure 
 *     monitoring_t *monitor    - monitoring object 
 *

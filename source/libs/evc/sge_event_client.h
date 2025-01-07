@@ -36,7 +36,8 @@
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_event.h"
-#include "gdi/sge_gdi.h"
+
+#include "gdi/ocs_gdi_Request.h"
 
 /* 
  * The local event client has direct access to the event master. Every
@@ -104,7 +105,7 @@ struct sge_evc_class_str {
 
    ev_registration_id (*ec_get_id)(sge_evc_class_t *thiz);
 
-   bool (*ec_commit_multi)(sge_evc_class_t *thiz, lList **malp, ocs::GdiMulti *state);
+   bool (*ec_commit_multi)(sge_evc_class_t *thiz, lList **malp, ocs::gdi::Request *state);
 
    bool (*ec_get)(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
 

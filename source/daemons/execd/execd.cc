@@ -46,7 +46,7 @@
 #include "uti/sge_profiling.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -58,8 +58,6 @@
 #include "sgeobj/sge_conf.h"
 
 #include "spool/classic/read_write_job.h"
-
-#include "gdi/msg_gdilib.h"
 
 #include "sge_load_sensor.h"
 #include "dispatcher.h"
@@ -202,7 +200,7 @@ int main(int argc, char **argv)
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(EXECD);
 
-   if (gdi_client_setup(EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup(EXECD, MAIN_THREAD, &alp, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -235,7 +233,7 @@ int main(int argc, char **argv)
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
-      gdi_client_prepare_enroll(&alp);
+      ocs::gdi::ClientBase::prepare_enroll(&alp);
       max_enroll_tries--;
 
       if (max_enroll_tries <= 0 || shut_me_down) {
@@ -275,7 +273,7 @@ int main(int argc, char **argv)
    {
       cl_com_SIRM_t* status = nullptr;
       ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(component_get_component_name(), 0),
-                                               (char *)gdi_get_act_master_host(true),
+                                               (char *)ocs::gdi::ClientBase::gdi_get_act_master_host(true),
                                                (char*)prognames[QMASTER], 1, &status);
       if (ret_val != CL_RETVAL_OK) {
          ERROR(SFNMAX, cl_get_error_text(ret_val));
@@ -306,12 +304,12 @@ int main(int argc, char **argv)
    
    /* here we have to wait for qmaster registration */
    while (sge_execd_register_at_qmaster(false) != 0) {
-      if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true)) {
+      if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, true)) {
          /* This is no error */
          DPRINTF("*****  got SGE_COM_ACCESS_DENIED from qmaster  *****\n");
       }
-      if (sge_get_com_error_flag(EXECD, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
-         execd_exit_state = SGE_COM_ENDPOINT_NOT_UNIQUE;
+      if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
+         execd_exit_state = ocs::gdi::SGE_COM_ENDPOINT_NOT_UNIQUE;
          break;
       }
       if (shut_me_down != 0) {
@@ -422,7 +420,7 @@ static void execd_exit_func(int i)
 {
    DENTER(TOP_LAYER);
 
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
 
    /* trigger load sensors shutdown */
    sge_ls_stop(0);
@@ -473,7 +471,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * If it is a reconnect (is_restart is true) the act_qmaster file must be
     * re-read in order to update ctx qmaster cache when master migrates. 
     */
-   const char *master_host = gdi_get_act_master_host(is_restart);
+   const char *master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(is_restart);
 
    DENTER(TOP_LAYER);
 
@@ -481,7 +479,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && gdi_is_alive(&alp) == CL_RETVAL_OK) {
+   if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
@@ -493,13 +491,13 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = sge_gdi(ocs::GdiTarget::Target::SGE_EH_LIST, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &hlp, nullptr, nullptr);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = sge_gdi(ocs::GdiTarget::SGE_EH_LIST, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_EXECD_RESTART,
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_EXECD_RESTART,
                         &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);

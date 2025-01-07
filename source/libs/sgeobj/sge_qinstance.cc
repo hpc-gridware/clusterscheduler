@@ -257,7 +257,7 @@ qinstance_increase_qversion(lListElem *this_elem) {
 *     bool - true, if the user is owner, else false
 ******************************************************************************/
 bool
-qinstance_check_owner(const ocs::GdiPacket *packet, const lListElem *this_elem,
+qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem,
                       const lList *master_manager_list, const lList *master_operator_list) {
    bool ret = false;
 

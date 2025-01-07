@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,22 +22,14 @@
 #include <string>
 
 namespace ocs {
-   class GdiCommand {
-      GdiCommand() = default; // prevent instantiation
+   class Mode {
+      Mode() = default; // prevent instantiation
    public:
-      enum Command {
-         SGE_GDI_NONE = 0,
-         SGE_GDI_GET = 1,
-         SGE_GDI_ADD,
-         SGE_GDI_DEL,
-         SGE_GDI_MOD,
-         SGE_GDI_TRIGGER,
-         SGE_GDI_PERMCHECK,
-         SGE_GDI_SPECIAL,
-         SGE_GDI_COPY,
-         SGE_GDI_REPLACE,
+      enum ModeValue {
+         RECORD,
+         SEND,
       };
 
-      static std::string toString(Command mode);
+      static std::string toString(ModeValue mode);
    };
 }

@@ -27,11 +27,11 @@
 
 #include "gdi/sge_gdi.h"
 
-#include "gdi/ocs_GdiCommand.h"
-#include "ocs_GdiTask.h"
+#include "gdi/ocs_gdi_Command.h"
+#include "ocs_gdi_Task.h"
 
-ocs::GdiTask::GdiTask(GdiTarget::Target target, GdiCommand::Command command, GdiSubCommand::SubCommand sub_cmd,
-                      lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
+ocs::gdi::Task::Task(Target::TargetValue target, Command::Cmd command, SubCommand::SubCmd sub_cmd,
+                     lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
       : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
         enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
@@ -73,14 +73,14 @@ ocs::GdiTask::GdiTask(GdiTarget::Target target, GdiCommand::Command command, Gdi
    }
 }
 
-ocs::GdiTask::GdiTask()
-       : command(GdiCommand::SGE_GDI_NONE), target(GdiTarget::Target::NO_TARGET), data_list(nullptr),
+ocs::gdi::Task::Task()
+       : command(gdi::Command::SGE_GDI_NONE), target(gdi::Target::TargetValue::NO_TARGET), data_list(nullptr),
          answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-ocs::GdiTask::~GdiTask() {
+ocs::gdi::Task::~Task() {
    DENTER(TOP_LAYER);
    lFreeList(&data_list);
    lFreeList(&answer_list);
@@ -90,7 +90,7 @@ ocs::GdiTask::~GdiTask() {
 }
 
 void
-ocs::GdiTask::debug_print() {
+ocs::gdi::Task::debug_print() {
    DENTER(TOP_LAYER);
    DPRINTF("command = " sge_U32CFormat "\n", sge_u32c(command));
    DPRINTF("target = " sge_U32CFormat "\n", sge_u32c(target));

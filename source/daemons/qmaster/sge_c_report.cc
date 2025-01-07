@@ -51,6 +51,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 
+#include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/sge_gdi.h"
 
 #include "msg_qmaster.h"
@@ -89,7 +90,7 @@ update_license_data(lListElem *hep, lList *lp_lic, u_long64 gdi_session);
 *
 ******************************************************************************/
 void
-sge_c_report(ocs::GdiPacket *packet, ocs::GdiTask *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
+sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = nullptr;
    u_long32 rep_type;
    lListElem *report;
@@ -273,7 +274,7 @@ sge_c_report(ocs::GdiPacket *packet, ocs::GdiTask *task, char *rhost, char *comm
       if (pb_filled(&pb)) {
          lList *alp = nullptr;
          /* send all stuff packed during processing to execd */
-         sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
+         ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }

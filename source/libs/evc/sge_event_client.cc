@@ -46,8 +46,10 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/ocs_GdiCommand.h"
-#include "gdi/ocs_GdiSubCommand.h"
+#include "gdi/ocs_gdi_Client.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
+#include "gdi/ocs_gdi_Command.h"
+#include "gdi/ocs_gdi_SubCommand.h"
 #include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
@@ -59,6 +61,8 @@
 #include "evc/msg_evclib.h"
 
 #include "msg_common.h"
+
+#include <gdi/ocs_gdi_ClientBase.h>
 
 #define EVC_LAYER TOP_LAYER
 
@@ -646,7 +650,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
 static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);
 static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp); 
-static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi);
+static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
 static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error);
@@ -964,7 +968,7 @@ static void
 ec2_mark4registration(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    auto *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-   const char *master_name = gdi_get_act_master_host(true);
+   const char *master_name = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
 
    cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
    if (handle != nullptr) {
@@ -1357,9 +1361,9 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 
          // for internal request we create a pseudo packet just containing
          // information required for potential error message
-         ocs::GdiPacket pseudo_packet;
+         ocs::gdi::Packet pseudo_packet;
          strcpy(pseudo_packet.user, bootstrap_get_admin_user());
-         strcpy(pseudo_packet.host, gdi_get_act_master_host(false));
+         strcpy(pseudo_packet.host, ocs::gdi::ClientBase::gdi_get_act_master_host(false));
 
          /*
          ** set busy handling, sets EV_changed to true if it is really changed
@@ -1463,13 +1467,13 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
    const char* progname = nullptr;
    const char* mastername = nullptr;
 
-      progname = sge_gdi_ctx->get_progname(sge_gdi_ctx);
-      mastername = sge_gdi_ctx->get_master(sge_gdi_ctx);
+      progname = ocs::gdi::Client::sge_gdi_ctx->get_progname(sge_gdi_ctx);
+      mastername = ocs::gdi::Client::sge_gdi_ctx->get_master(sge_gdi_ctx);
 
       /* TODO: is this code section really necessary */
       /* closing actual connection to qmaster and reopen new connection. This will delete all
          buffered messages  - CR */
-      com_handle = sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
+      com_handle = ocs::gdi::Client::sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
       if (com_handle != nullptr) {
          int ngc_error;
          ngc_error = cl_commlib_close_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
@@ -1491,8 +1495,8 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(ocs::GdiTarget::Target::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_ADD,
-                    ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_EV_LIST, ocs::gdi::Command::SGE_GDI_ADD,
+                    ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
     
       aep = lFirst(alp);
     
@@ -1596,13 +1600,13 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
          lList *alp = nullptr;
          /* TODO: to master only !!!!! */
          const char* commproc = prognames[QMASTER];
-         const char* rhost = gdi_get_act_master_host(false);
+         const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
          int         commid   = 1;
 
 
          packint(&pb, lGetUlong(sge_evc->ec, EV_id));
 
-         send_ret = sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
+         send_ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, ocs::gdi::ClientServerBase::TAG_EVENT_CLIENT_EXIT, 0, &alp);
          
          clear_packbuffer(&pb);
          answer_list_output (&alp);
@@ -2437,7 +2441,7 @@ ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
    } else {
       local_t *evc_local = &(thiz->ec_local);
       const char *ruser = bootstrap_get_admin_user();
-      const char *rhost = gdi_get_act_master_host(false);
+      const char *rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
       lSetRef(sge_evc->ec, EV_update_function_arg, (void *)evc_local->update_func_arg);
 
@@ -2533,8 +2537,8 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi(ocs::GdiTarget::SGE_EV_LIST, ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
-                    &lp, nullptr, nullptr);
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EV_LIST, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                      &lp, nullptr, nullptr);
       lFreeList(&lp); 
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
@@ -2570,8 +2574,8 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
 *
 *  FUNCTION
 *     Similar to ec_commit configuration changes will be sent to qmaster.
-*     But unless ec_commit which uses sge_gdi to send the change request, 
-*     ec_commit_multi uses a sge_gdi_multi call to send the configuration
+*     But unless ec_commit which uses ocs::gdi::Client::sge_gdi to send the change request,
+*     ec_commit_multi uses a ocs::gdi::Client::sge_gdi_multi call to send the configuration
 *     change along with other gdi requests.
 *     The ec_commit_multi call has to be the last request of the multi 
 *     request and will trigger the communication of the requests.
@@ -2588,7 +2592,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
 *     Eventclient/Client/ec_get()
 *******************************************************************************/
 static bool
-ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi) {
+ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2616,12 +2620,12 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi)
       }
 
       /*
-       * TODO: extend sge_gdi_ctx_class_t to support sge_gdi_multi()
+       * TODO: extend ocs::gdi::Client::sge_gdi_ctx_class_t to support ocs::gdi::Client::sge_gdi_multi()
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      commit_id = gdi_multi->request(&alp, ocs::GdiMode::SEND, ocs::GdiTarget::SGE_EV_LIST,
-                                     ocs::GdiCommand::SGE_GDI_MOD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
+      commit_id = gdi_multi->request(&alp, ocs::Mode::SEND, ocs::gdi::Target::SGE_EV_LIST,
+                                     ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
                                      &lp, nullptr, nullptr, false);
       gdi_multi->wait();
       if (lp != nullptr) {
@@ -2631,8 +2635,8 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::GdiMulti *gdi_multi)
       if (alp != nullptr) {
          answer_list_handle_request_answer_list(&alp, stderr);
       } else {
-         gdi_multi->get_response(&alp, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE,
-                                 ocs::GdiTarget::SGE_ORDER_LIST, commit_id, nullptr);
+         gdi_multi->get_response(&alp, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                 ocs::gdi::Target::SGE_ORDER_LIST, commit_id, nullptr);
 
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 
@@ -3036,12 +3040,12 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
 
    /* TODO: check if all the functionality of get_event_list has been mapped */
    
-   int tag = TAG_REPORT_REQUEST;
+   ocs::gdi::ClientServerBase::ClientServerBaseTag tag = ocs::gdi::ClientServerBase::TAG_REPORT_REQUEST;
    u_short id = 1;
 
    u_long64 now = sge_get_gmt64();
    DPRINTF("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id );
-   if ( (help=sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
+   if ( (help=ocs::gdi::ClientServerBase::sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          DEBUG("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));
       } else {

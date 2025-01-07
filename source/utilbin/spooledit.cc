@@ -55,7 +55,7 @@
 #include "spool/loader/sge_spooling_loader.h"
 //#include "spool/berkeleydb/sge_bdb.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "msg_common.h"
 #include "msg_utilbin.h"
@@ -390,7 +390,7 @@ main(int argc, char *argv[])
 
    DENTER_MAIN(TOP_LAYER, "spooledit");
 
-   if (gdi_client_setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }

@@ -277,7 +277,7 @@ int sge_chdir(const char *dir) {
 *     Calls 'exit_func' if installed. Stops monitoring with DCLOSE 
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t **ref_ctx - address of the context, the context is freed in exit_func
+*     ocs::gdi::Client::sge_gdi_ctx_class_t **ref_ctx - address of the context, the context is freed in exit_func
 *     int i          - exit state 
 *
 *  SEE ALSO

@@ -54,7 +54,7 @@
 #include "sgeobj/sge_cull_xml.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/commlib.h"
 
@@ -416,7 +416,7 @@ int main(int argc, char **argv)
    log_state_set_log_gui(true);
    sge_setup_sig_handlers(QHOST);
 
-   if (gdi_client_setup_and_enroll(QHOST, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QHOST, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
       sge_exit(1);

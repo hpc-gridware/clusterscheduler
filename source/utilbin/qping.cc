@@ -51,7 +51,7 @@
 
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"
@@ -517,7 +517,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
-                     ocs::GdiPacket *packet = new ocs::GdiPacket();
+                     ocs::gdi::Packet *packet = new ocs::gdi::Packet();
                
                      if (packet->unpack(nullptr, &buf)) {
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
@@ -772,7 +772,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
          case TAG_SIGJOB
          case TAG_SIGQUEUE
          case TAG_KILL_EXECD
-         case TAG_NEW_FEATURES
          case TAG_GET_NEW_CONF
          case TAG_FULL_LOAD_REPORT
          ...

@@ -46,7 +46,7 @@
 #include "sgeobj/sge_str.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "parse_qsub.h"
 #include "usage.h"
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (gdi_client_setup_and_enroll(QRDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QRDEL, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -103,8 +103,8 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   alp = sge_gdi(ocs::GdiTarget::Target::SGE_AR_LIST, ocs::GdiCommand::SGE_GDI_DEL,
-                 ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_DEL,
+                 ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
    lFreeList(&id_list);
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);
@@ -112,12 +112,12 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

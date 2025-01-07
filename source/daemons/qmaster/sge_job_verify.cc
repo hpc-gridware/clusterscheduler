@@ -49,7 +49,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 #include "gdi/sge_security.h"
 
 #include "spool/sge_spooling.h"
@@ -311,7 +311,7 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
 
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
-                      ocs::GdiPacket *packet, ocs::GdiTask *task,
+                      ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
 

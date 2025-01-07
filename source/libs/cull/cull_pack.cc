@@ -1587,3 +1587,38 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
 
    return size;
 }
+
+/****** pack_job_delivery/pack_job_delivery() **********************************
+*  NAME
+*     pack_job_delivery() -- pack a job to be sent to execd
+*
+*  SYNOPSIS
+*     int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep, lList *qlp,
+*     lListElem *pep)
+*
+*  FUNCTION
+*     This function is used in qmaster and by qrsh -inherit to deliver
+*     jobs to execd's.
+*
+*  INPUTS
+*     sge_pack_buffer *pb - packing buffer
+*     lListElem *jep      - JB_Type
+*
+*  RESULT
+*     int - PACK_SUCCESS on success
+*
+*  NOTES
+*     MT-NOTE: pack_job_delivery() is MT safe
+*******************************************************************************/
+int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep, int feature_set_id)
+{
+   int ret;
+
+   if ((ret=packint(pb, feature_set_id))) {
+      return ret;
+   }
+   if ((ret=cull_pack_elem(pb, jep)) != PACK_SUCCESS) {
+      return ret;
+   }
+   return PACK_SUCCESS;
+}

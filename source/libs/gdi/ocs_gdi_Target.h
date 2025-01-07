@@ -21,11 +21,11 @@
 
 #include <string>
 
-namespace ocs {
-   class GdiTarget {
-      GdiTarget() = default; // prevent instantiation
+namespace ocs::gdi {
+   class Target {
+      Target() = default; // prevent instantiation
    public:
-      enum Target {
+      enum TargetValue {
          NO_TARGET = 0,
          SGE_AH_LIST = 1,
          SGE_SH_LIST,
@@ -56,6 +56,6 @@ namespace ocs {
          SGE_DUMMY_LIST
       };
 
-      static std::string targetToString(Target target);
+      static std::string targetToString(TargetValue target);
    };
 }

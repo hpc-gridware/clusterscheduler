@@ -41,7 +41,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_client_parse.h"
 #include "parse_qsub.h"
@@ -69,7 +69,7 @@ int main(int argc, const char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (gdi_client_setup_and_enroll(QRSUB, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QRSUB, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -130,12 +130,12 @@ int main(int argc, const char **argv) {
    ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
-   alp = sge_gdi(ocs::GdiTarget::Target::SGE_AR_LIST, ocs::GdiCommand::SGE_GDI_ADD,
-                 ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_ADD,
+                 ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
    lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {
-      gdi_client_shutdown();
+      ocs::gdi::ClientBase::shutdown();
       sge_prof_cleanup();
       if (answer_list_has_status(&alp, STATUS_NOTOK_DOAGAIN)) {
          DRETURN(25);
@@ -144,12 +144,12 @@ int main(int argc, const char **argv) {
       }
    }
 
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

@@ -102,9 +102,9 @@
 *     STATUS_EUNKNOWN - an error occured
 ******************************************************************************/
 int
-ckpt_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
          const char *rhost, gdi_object_t *object,
-         ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+         ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
          monitoring_t *monitor) {
    const char *ckpt_name;
 
@@ -151,9 +151,9 @@ ckpt_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ne
       new_flags = sge_parse_checkpoint_attr(lGetString(new_ckpt, CK_when));
       flags = sge_parse_checkpoint_attr(lGetString(ckpt, CK_when));
 
-      if ((sub_command & ocs::GdiSubCommand::SGE_GDI_APPEND) || (sub_command & ocs::GdiSubCommand::SGE_GDI_CHANGE)) {
+      if ((sub_command & ocs::gdi::SubCommand::SGE_GDI_APPEND) || (sub_command & ocs::gdi::SubCommand::SGE_GDI_CHANGE)) {
          new_flags |= flags;
-      } else if (sub_command & ocs::GdiSubCommand::SGE_GDI_REMOVE) {
+      } else if (sub_command & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
          new_flags &= (~flags);
       } else {
          new_flags = flags;
@@ -214,7 +214,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     0 - success
 *     STATUS_EEXIST - an error occured
 ******************************************************************************/
-int ckpt_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -260,7 +260,7 @@ int ckpt_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListEl
 *     0 - success
 ******************************************************************************/
 int
-ckpt_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -299,7 +299,7 @@ ckpt_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListEle
 *     STATUS_EUNKNOWN - an error occured
 ******************************************************************************/
 int
-sge_del_ckpt(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;
    int pos;
    const char *ckpt_name;

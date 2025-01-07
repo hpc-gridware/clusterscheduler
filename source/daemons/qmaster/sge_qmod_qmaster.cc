@@ -88,6 +88,8 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+#include <ocs_gdi_ClientServerBase.h>
+
 /*-------------------------------------------------------------------------*/
 static void
 signal_slave_jobs_in_queue(int how, lListElem *jep, monitoring_t *monitor);
@@ -96,37 +98,37 @@ static void
 signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
 
 static int
-sge_change_queue_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *qep, u_long32 action,
+sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *qep, u_long32 action,
                        u_long32 force, lList **answer, monitoring_t *monitor);
 
 static int
-sge_change_job_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep,
+sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep,
                      u_long32 task_id, u_long32 action, u_long32 force, lList **answer, monitoring_t *monitor);
 
 static int
-qmod_queue_weakclean(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *qep, u_long32 force, lList **answer,
                      int isoperator, int isowner, monitoring_t *monitor);
 
 static int
-qmod_queue_clean(const ocs::GdiPacket *packet, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, u_long32 force, lList **answer,
                  int isoperator, int isowner, monitoring_t *monitor);
 
 static void
-qmod_job_suspend(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                  lList **answer, monitoring_t *monitor);
 
 static void
-qmod_job_unsuspend(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                    lList **answer, monitoring_t *monitor);
 
 static void
-qmod_job_reschedule(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                     lList **answer, monitoring_t *monitor);
 
 /*-------------------------------------------------------------------------*/
 
 void
-sge_gdi_qmod(ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *monitor) {
+sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    lList *alp = nullptr;
    const lListElem *dep;
    lListElem *jatask = nullptr, *job, *tmp_task;
@@ -390,7 +392,7 @@ sge_gdi_qmod(ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *monitor) 
 }
 
 static int
-sge_change_queue_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *qep, u_long32 action,
+sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *qep, u_long32 action,
                        u_long32 force, lList **answer, monitoring_t *monitor) {
    bool isoperator;
    bool isowner;
@@ -474,7 +476,7 @@ sge_change_queue_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *qe
 }
 
 static int
-sge_change_job_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep,
+sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep,
                      u_long32 task_id, u_long32 action, u_long32 force, lList **answer, monitoring_t *monitor) {
    lListElem *queueep;
    u_long32 job_id;
@@ -567,7 +569,7 @@ sge_change_job_state(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep,
  **** qmod_queue_weakclean (static)
  ****/
 static int
-qmod_queue_weakclean(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *qep, u_long32 force, lList **answer,
                      int isoperator, int isowner, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -589,7 +591,7 @@ qmod_queue_weakclean(const ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem
  **** The user will do this via qconf -cq <qname>
  ****/
 static int
-qmod_queue_clean(const ocs::GdiPacket *packet, lListElem *qep, u_long32 force, lList **answer,
+qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, u_long32 force, lList **answer,
                  int isoperator, int isowner, monitoring_t *monitor) {
    lListElem *nextjep, *jep;
    const char *qname = nullptr;
@@ -636,7 +638,7 @@ qmod_queue_clean(const ocs::GdiPacket *packet, lListElem *qep, u_long32 force, l
  **** qmod_job_reschedule (static)
  ****/
 static void
-qmod_job_reschedule(ocs::GdiPacket *packet, ocs::GdiTask *task,  lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                     lList **answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -649,7 +651,7 @@ qmod_job_reschedule(ocs::GdiPacket *packet, ocs::GdiTask *task,  lListElem *jep,
  **** qmod_job_suspend (static)
  ****/
 static void
-qmod_job_suspend(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                  lList **answer, monitoring_t *monitor) {
    int i;
    u_long32 state = 0;
@@ -776,7 +778,7 @@ qmod_job_suspend(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lLi
  **** qmod_job_unsuspend (static)
  ****/
 static void
-qmod_job_unsuspend(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
+qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, u_long32 force,
                    lList **answer, monitoring_t *monitor) {
    int i;
    u_long32 state = 0;
@@ -1087,8 +1089,8 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
          } else {
             if (pb_filled(&pb)) {
                u_long32 dummy = 0;
-               i = gdi_send_message_pb(0, pnm, 1, hnm, jep ? TAG_SIGJOB : TAG_SIGQUEUE,
-                                        &pb, &dummy);
+               i = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, pnm, 1, hnm,
+                                                               jep ? ocs::gdi::ClientServerBase::TAG_SIGJOB : ocs::gdi::ClientServerBase::TAG_SIGQUEUE, &pb, &dummy);
             }
          }
 

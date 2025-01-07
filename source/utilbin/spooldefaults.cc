@@ -58,7 +58,7 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/sge_dirent.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "msg_utilbin.h"
 
@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
 
    log_state_set_log_gui(0);
 
-   if (gdi_client_setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       show_answer(answer_list);
       lFreeList(&answer_list);
       sge_exit(EXIT_FAILURE);

@@ -40,18 +40,18 @@
 
 
 int
-calendar_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add, const char *ruser,
-             const char *rhost, gdi_object_t *object, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
+calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add, const char *ruser,
+             const char *rhost, gdi_object_t *object, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor);
 
 int
-calendar_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *cep, gdi_object_t *object);
+calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object);
 
 int
-calendar_update_queue_states(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
+calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                              lList **ppList, monitoring_t *monitor);
 
 int
-sge_del_calendar(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, char *ruser, char *rhost);
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost);
 
 void
 sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);

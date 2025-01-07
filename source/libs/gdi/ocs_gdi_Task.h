@@ -25,17 +25,17 @@
 
 #include "cull/cull.h"
 
-#include "gdi/ocs_GdiCommand.h"
-#include "gdi/ocs_GdiSubCommand.h"
-#include "gdi/ocs_GdiTarget.h"
+#include "gdi/ocs_gdi_Command.h"
+#include "gdi/ocs_gdi_SubCommand.h"
+#include "gdi/ocs_gdi_Target.h"
 
-namespace ocs {
-   class GdiTask {
+namespace ocs::gdi {
+   class Task {
    public:
-      GdiCommand::Command command;
-      GdiSubCommand::SubCommand sub_command;
+      gdi::Command::Cmd command;
+      gdi::SubCommand::SubCmd sub_command;
 
-      GdiTarget::Target target;
+      gdi::Target::TargetValue target;
       lList *data_list;
       lList *answer_list;
       lCondition *condition;
@@ -55,13 +55,11 @@ namespace ocs {
        */
       bool do_select_pack_simultaneous;
    public:
-      GdiTask(GdiTarget::Target target, GdiCommand::Command command, GdiSubCommand::SubCommand sub_cmd, lList **lp,
-              lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
-      GdiTask();
-      ~GdiTask();
+      Task(Target::TargetValue target, Command::Cmd command, SubCommand::SubCmd sub_cmd, lList **lp,
+           lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
+      Task();
+      ~Task();
 
       void debug_print();
-
-      const char *get_operation_name();
    };
 }

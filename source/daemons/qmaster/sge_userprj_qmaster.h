@@ -42,19 +42,19 @@ void
 sge_userprj_spool(u_long64 gdi_session);
 
 int
-userprj_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                 monitoring_t *monitor);
 
 int
-userprj_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object,
-            ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
+            ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor);
 
 int
-userprj_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *upe, gdi_object_t *object);
+userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object);
 
 int
-sge_del_userprj(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **upl, const char *ruser,
+sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **upl, const char *ruser,
                 const char *rhost, int user);
 
 int
@@ -65,7 +65,7 @@ void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_add_auto_user(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *user, lList **alpp, monitoring_t *monitor);
+sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor);
 
 void
 project_update_categories(const lList *added, const lList *removed, u_long64 gdi_session);

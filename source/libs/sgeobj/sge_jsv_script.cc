@@ -2083,7 +2083,7 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
 *     JSV_done, JSV_new_job)
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GE context 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GE context
 *     lListElem *jsv           - JSV_Type instance
 *     lList **answer_list      - AN_Type list 
 *

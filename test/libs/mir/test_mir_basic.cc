@@ -46,7 +46,7 @@
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
@@ -92,8 +92,8 @@ int main()
    ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);
 
    /* setup event client */
-   int cl_err = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
-   if (cl_err != AE_OK) {
+   int cl_err = ocs::gdi::ClientBase::setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
+   if (cl_err != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }

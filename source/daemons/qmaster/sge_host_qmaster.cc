@@ -100,13 +100,13 @@ static void
 exec_host_change_queue_version(const char *exechost_name, u_long64 gdi_session);
 
 static void
-master_kill_execds(ocs::GdiPacket *packet, ocs::GdiTask *task);
+master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static void
 host_trash_nonstatic_load_values(lListElem *host);
 
 static void
-notify(lListElem *lel, ocs::GdiPacket *packet, ocs::GdiTask *task,
+notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
        int kill_jobs, int force);
 
 static int
@@ -116,8 +116,8 @@ static void
 host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_long64 gdi_session);
 
 static int
-attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::GdiCommand::Command cmd,
-                   ocs::GdiSubCommand::SubCommand sub_command, const char *attr_name, const char *object_name);
+attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Command::Cmd cmd,
+                   ocs::gdi::SubCommand::SubCmd sub_command, const char *attr_name, const char *object_name);
 
 void
 host_initalitze_timer() {
@@ -188,7 +188,7 @@ host_trash_nonstatic_load_values(lListElem *host) {
 
  */
 int
-sge_add_host_of_type(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *hostname, u_long32 target, monitoring_t *monitor) {
+sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname, u_long32 target, monitoring_t *monitor) {
    int ret;
    int dataType;
    int pos;
@@ -221,8 +221,8 @@ sge_add_host_of_type(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *hos
       DPRINTF("sge_add_host_of_type: unexpected datatype\n");
    }
    ret = sge_gdi_add_mod_generic(packet, task, nullptr, ep, 1, object, username,
-                                 qualified_hostname, ocs::GdiCommand::SGE_GDI_NONE,
-                                 ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &ppList, monitor);
+                                 qualified_hostname, ocs::gdi::Command::SGE_GDI_NONE,
+                                 ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ppList, monitor);
    lFreeElem(&ep);
    lFreeList(&ppList);
 
@@ -230,7 +230,7 @@ sge_add_host_of_type(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *hos
 }
 
 bool
-host_list_add_missing_href(ocs::GdiPacket *packet, ocs::GdiTask *task, const lList *this_list, lList **answer_list,
+host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor) {
    bool ret = true;
    const lListElem *href = nullptr;
@@ -241,7 +241,7 @@ host_list_add_missing_href(ocs::GdiPacket *packet, ocs::GdiTask *task, const lLi
       lListElem *host = host_list_locate(this_list, hostname);
 
       if (host == nullptr) {
-         ret &= (sge_add_host_of_type(packet, task, hostname, ocs::GdiTarget::Target::SGE_EH_LIST, monitor) == 0);
+         ret &= (sge_add_host_of_type(packet, task, hostname, ocs::gdi::Target::TargetValue::SGE_EH_LIST, monitor) == 0);
       }
    }
    DRETURN(ret);
@@ -255,7 +255,7 @@ host_list_add_missing_href(ocs::GdiPacket *packet, ocs::GdiTask *task, const lLi
    spooled to disk
 
 */
-int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
+int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
                  const lList *master_hgroup_list) {
    int pos;
    lListElem *ep;
@@ -280,17 +280,17 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
    }
 
    switch (target) {
-      case ocs::GdiTarget::Target::SGE_EH_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_EH_LIST:
          host_list = master_ehost_list;
          nm = EH_name;
          name = "execution host";
          break;
-      case ocs::GdiTarget::Target::SGE_AH_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_AH_LIST:
          host_list = master_ahost_list;
          nm = AH_name;
          name = "administrative host";
          break;
-      case ocs::GdiTarget::SGE_SH_LIST:
+      case ocs::gdi::Target::SGE_SH_LIST:
          host_list = master_shost_list;
          nm = SH_name;
          name = "submit host";
@@ -342,20 +342,20 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
       check if someone tries to delete 
       the qmaster host from admin host list
    */
-   if (target == ocs::GdiTarget::SGE_AH_LIST &&
+   if (target == ocs::gdi::Target::SGE_AH_LIST &&
        !sge_hostcmp(unique, qualified_hostname)) {
       ERROR(MSG_SGETEXT_CANTDELADMINQMASTER_S, qualified_hostname);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   if (target == ocs::GdiTarget::SGE_EH_LIST &&
+   if (target == ocs::gdi::Target::SGE_EH_LIST &&
        host_is_referenced(hep, alpp, master_cqueue_list, master_hgroup_list)) {
       answer_list_log(alpp, false, true);
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   if (target == ocs::GdiTarget::SGE_EH_LIST && !strcasecmp(unique, "global")) {
+   if (target == ocs::gdi::Target::SGE_EH_LIST && !strcasecmp(unique, "global")) {
       ERROR(SFNMAX, MSG_OBJ_DELGLOBALHOST);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
@@ -363,7 +363,7 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
 
    /* remove host file and send event */
    switch (target) {
-      case ocs::GdiTarget::SGE_AH_LIST: {
+      case ocs::gdi::Target::SGE_AH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_ADMINHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -371,7 +371,7 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
          answer_list_output(&answer_list);
       }
          break;
-      case ocs::GdiTarget::SGE_EH_LIST: {
+      case ocs::gdi::Target::SGE_EH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -381,7 +381,7 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
          host_update_categories(nullptr, ep, packet->gdi_session);
 
          break;
-      case ocs::GdiTarget::SGE_SH_LIST: {
+      case ocs::gdi::Target::SGE_SH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_SUBMITHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -402,9 +402,9 @@ int sge_del_host(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hep, lLi
 /* ------------------------------------------------------------ */
 
 int
-host_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
+host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
-         ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
+         ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    const char *host;
    int nm;
    int pos;
@@ -576,7 +576,7 @@ DRETURN(STATUS_EUNKNOWN);
 }
 
 int
-host_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    int pos;
    int dataType;
    const char *key;
@@ -620,7 +620,7 @@ host_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *
 }
 
 int
-host_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
@@ -983,14 +983,14 @@ exec_host_change_queue_version(const char *exechost_name, u_long64 gdi_session) 
 }
 
 /****
- **** sge_gdi_kill_exechost
+ **** ocs::gdi::Client::sge_gdi_kill_exechost
  ****
  **** prepares the killing of an exechost (or all).
  **** Actutally only the permission is checked here
  **** and master_kill_execds is called to do the work.
  ****/
 void
-sge_gdi_kill_exechost(ocs::GdiPacket *packet, ocs::GdiTask *task) {
+sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
@@ -1015,7 +1015,7 @@ sge_gdi_kill_exechost(ocs::GdiPacket *packet, ocs::GdiTask *task) {
       If ID_force is 0, we don't kill jobs.
  *******************************************************************/
 static void
-master_kill_execds(ocs::GdiPacket *packet, ocs::GdiTask *task) {
+master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    int kill_jobs;
    lListElem *lel;
    const lListElem *rep;
@@ -1082,7 +1082,7 @@ master_kill_execds(ocs::GdiPacket *packet, ocs::GdiTask *task) {
  Notify execd on a host to shutdown
  ********************************************************************/
 static void
-notify(lListElem *lel, ocs::GdiPacket *packet, ocs::GdiTask *task, int kill_jobs, int force) {
+notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_jobs, int force) {
    const char *hostname;
    u_long execd_alive;
    const char *action_str;
@@ -1191,7 +1191,7 @@ notify(lListElem *lel, ocs::GdiPacket *packet, ocs::GdiTask *task, int kill_jobs
  **** gdi call for old request starting_up.
  ****/
 int
-sge_execd_startedup(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
+sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
                     monitoring_t *monitor, bool is_restart) {
    lListElem *hep, *cqueue;
    dstring ds;
@@ -1211,7 +1211,7 @@ sge_execd_startedup(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *host,
 
    hep = host_list_locate(master_ehost_list, rhost);
    if (!hep) {
-      if (sge_add_host_of_type(packet, task, rhost, ocs::GdiTarget::SGE_EH_LIST, monitor) < 0) {
+      if (sge_add_host_of_type(packet, task, rhost, ocs::gdi::Target::SGE_EH_LIST, monitor) < 0) {
          ERROR(MSG_OBJ_INVALIDHOST_S, rhost);
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
@@ -1447,7 +1447,7 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_lon
 *   Elements which already exist here are copied into sublist of new_ep.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx  - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx  - gdi context
 *     lList **alpp              - The answer list 
 *     lListElem *ep            - The source object element 
 *     lListElem *new_ep         - The target object element 
@@ -1463,8 +1463,8 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep, u_lon
 *
 *******************************************************************************/
 static int
-attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::GdiCommand::Command cmd,
-                   ocs::GdiSubCommand::SubCommand sub_command, const char *attr_name, const char *object_name) {
+attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Command::Cmd cmd,
+                   ocs::gdi::SubCommand::SubCmd sub_command, const char *attr_name, const char *object_name) {
 
    DENTER(TOP_LAYER);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);

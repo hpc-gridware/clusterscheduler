@@ -54,7 +54,7 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "mir/sge_mirror.h"
 
@@ -619,7 +619,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   if (gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QEVENT, MAIN_THREAD, &answer_list) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }

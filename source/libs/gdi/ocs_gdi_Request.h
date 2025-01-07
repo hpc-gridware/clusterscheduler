@@ -1,7 +1,8 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,19 +19,25 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_GdiCommand.h"
+#include "cull/cull.h"
 
-std::string ocs::GdiCommand::toString(Command command) {
-   switch (command) {
-      case SGE_GDI_GET: return "GET";
-      case SGE_GDI_ADD: return "ADD";
-      case SGE_GDI_DEL: return "DEL";
-      case SGE_GDI_MOD: return "MOD";
-      case SGE_GDI_TRIGGER: return "TRIGGER";
-      case SGE_GDI_PERMCHECK: return "PERMCHECK";
-      case SGE_GDI_SPECIAL: return "SPECIAL";
-      case SGE_GDI_COPY: return "COPY";
-      case SGE_GDI_REPLACE: return "REPLACE";
-      default: return "???";
-   }
+#include "gdi/ocs_gdi_Packet.h"
+#include "gdi/ocs_gdi_Target.h"
+#include "gdi/ocs_gdi_Mode.h"
+
+namespace ocs::gdi {
+   class Request {
+   public:
+      Packet *packet;
+      lList *multi_answer_list;
+
+      Request();
+      ~Request();
+
+      void wait();
+      int request(lList **alpp, Mode::ModeValue mode, gdi::Target::TargetValue target, gdi::Command::Cmd cmd,
+                  gdi::SubCommand::SubCmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
+
+      bool get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCommand::SubCmd, gdi::Target::TargetValue target, int id, lList **olpp);
+   };
 }

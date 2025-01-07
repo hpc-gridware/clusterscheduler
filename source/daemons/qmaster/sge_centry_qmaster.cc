@@ -69,9 +69,9 @@
 /* ------------------------------------------------------------ */
 
 int
-centry_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
+centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
-           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor) {
+           ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    bool ret = true;
    bool is_slots_attr = false;
    int pos;
@@ -243,7 +243,7 @@ centry_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lLis
 /* ------------------------------------------------------------ */
 
 int
-centry_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -318,7 +318,7 @@ centry_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem
 *
 *******************************************************************************/
 int
-centry_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    bool rebuild_consumables = false;
 
@@ -355,7 +355,7 @@ centry_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListE
 }
 
 int
-sge_del_centry(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
+sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

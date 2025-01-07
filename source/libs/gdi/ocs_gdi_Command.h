@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -18,19 +19,25 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_GdiSubCommand.h"
+#include <string>
 
-std::string ocs::GdiSubCommand::toString(SubCommand command) {
-   switch (command) {
-      case SGE_GDI_RETURN_NEW_VERSION: return "SGE_GDI_RETURN_NEW_VERSION";
-      case SGE_GDI_ALL_JOBS: return "SGE_GDI_ALL_JOBS";
-      case SGE_GDI_ALL_USERS: return "SGE_GDI_ALL_USERS";
-      case SGE_GDI_SET: return "SGE_GDI_SET";
-      case SGE_GDI_CHANGE: return "SGE_GDI_CHANGE";
-      case SGE_GDI_APPEND: return "SGE_GDI_APPEND";
-      case SGE_GDI_REMOVE: return "SGE_GDI_REMOVE";
-      case SGE_GDI_SET_ALL: return "SGE_GDI_SET_ALL";
-      case SGE_GDI_EXECD_RESTART: return "SGE_GDI_EXECD_RESTART";
-      default: return "UNKNOWN_SUBCOMMAND";
-   }
+namespace ocs::gdi {
+   class Command {
+         Command() = default; // prevent instantiation
+   public:
+      enum Cmd {
+         SGE_GDI_NONE = 0,
+         SGE_GDI_GET = 1,
+         SGE_GDI_ADD,
+         SGE_GDI_DEL,
+         SGE_GDI_MOD,
+         SGE_GDI_TRIGGER,
+         SGE_GDI_PERMCHECK,
+         SGE_GDI_SPECIAL,
+         SGE_GDI_COPY,
+         SGE_GDI_REPLACE,
+      };
+
+      static std::string toString(Cmd mode);
+   };
 }

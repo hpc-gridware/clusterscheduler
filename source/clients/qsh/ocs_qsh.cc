@@ -72,7 +72,7 @@
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_qexec.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
@@ -106,6 +106,8 @@
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_jsv.h"
+
+#include <sge_feature.h>
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
@@ -981,7 +983,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
    }
   
    /* get configuration from qmaster */
-   if (gdi_get_configuration(qualified_hostname, &global, &local) ||
+   if (ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||
       merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
       lFreeList(&conf_list);
@@ -1403,7 +1405,7 @@ int main(int argc, const char **argv)
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(my_who);
 
-   if (gdi_client_setup_and_enroll(my_who, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(my_who, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -1415,7 +1417,7 @@ int main(int argc, const char **argv)
    cell_root = bootstrap_get_cell_root();
    myuid = component_get_uid();
    username = component_get_username();
-   mastername = gdi_get_act_master_host(false);
+   mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
 
    if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
       csp_mode = true;
@@ -1796,7 +1798,7 @@ int main(int argc, const char **argv)
       tid = sge_qexecve(host, nullptr,
                         lGetString(job, JB_cwd), 
                         lGetList(job, JB_env_list),
-                        lGetList(job, JB_path_aliases)); 
+                        lGetList(job, JB_path_aliases), feature_get_active_featureset_id());
       if (tid == nullptr) {
          const char *qexec_lasterror = qexec_last_err();
 
@@ -1915,8 +1917,8 @@ int main(int argc, const char **argv)
       DPRINTF("=====================================================\n");
 
       /* submit the job to the QMaster */
-      alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_ADD,
-                    ocs::GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION, &lp_jobs, nullptr, nullptr);
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_ADD,
+                    ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION, &lp_jobs, nullptr, nullptr);
 
       /* reinitialize 'job' with pointer to new version from qmaster */
       job = lFirstRW(lp_jobs);
@@ -2140,7 +2142,7 @@ int main(int argc, const char **argv)
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          what = lWhat("%T(%I)", JB_Type, JB_ja_tasks); 
          where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id); 
-         alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_GET, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &lp_poll, where, what);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp_poll, where, what);
 
          do_exit = parse_result_list(alp, &alp_error);
    
@@ -2280,7 +2282,7 @@ static void delete_job(u_long32 job_id, lList *jlp)
    snprintf(job_str, sizeof(job_str), sge_u32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
-   alp = sge_gdi(ocs::GdiTarget::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_DEL, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &idlp, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &idlp, nullptr, nullptr);
 
    /* no error handling here, we try to delete the job if we can */
    lFreeList(&idlp);

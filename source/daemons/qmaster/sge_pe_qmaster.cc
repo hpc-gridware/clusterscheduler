@@ -67,9 +67,9 @@ static char object_name[] = "parallel environment";
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, u_long64 gdi_session);
 
 int
-pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
-       ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+       ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
        monitoring_t *monitor) {
    int ret;
    const char *s, *pe_name;
@@ -208,7 +208,7 @@ pe_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_
 }
 
 int
-pe_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -226,7 +226,7 @@ pe_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *pe
    DRETURN(dbret ? 0 : 1);
 }
 
-int pe_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;
 
@@ -242,7 +242,7 @@ int pe_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListE
 }
 
 int
-sge_del_pe(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;

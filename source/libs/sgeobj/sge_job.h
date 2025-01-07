@@ -36,7 +36,7 @@
 #include "uti/sge_htable.h"
 #include "uti/sge_dstring.h"
 
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
@@ -396,7 +396,7 @@ int job_check_qsh_display(const lListElem *job,
                           lList **answer_list, 
                           bool output_warning);
 
-int job_check_owner(const ocs::GdiPacket *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
+int job_check_owner(const ocs::gdi::Packet *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 

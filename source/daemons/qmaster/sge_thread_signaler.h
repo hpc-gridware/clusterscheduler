@@ -36,7 +36,7 @@
 #include <pthread.h>
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 void
 sge_signaler_initialize();

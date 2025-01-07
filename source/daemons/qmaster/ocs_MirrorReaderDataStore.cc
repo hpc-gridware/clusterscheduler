@@ -44,7 +44,7 @@ void ocs::MirrorReaderDataStore::update_sessions_and_move_requests(const u_long6
                                                     [](const void *always_nullptr, const void *task_void) -> int {
       // Find the packet stored in the task of the TQ
       const auto *task = *static_cast<sge_tq_task_t *const *>(task_void);
-      const auto *packet = static_cast<ocs::GdiPacket *>(task->data);
+      const auto *packet = static_cast<ocs::gdi::Packet *>(task->data);
 
       // Check if the session is up-to-date
       const u_long64 session_id = SessionManager::get_session_id(packet->user);

@@ -53,7 +53,7 @@
  get a list of jobid/tickets tuples and pass them to the PTF
  *************************************************************************/
 
-int do_ticket(struct_msg_t *aMsg)
+int do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    u_long32 jobid, jataskid;
    double ticket;

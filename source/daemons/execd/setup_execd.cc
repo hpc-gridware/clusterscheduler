@@ -49,6 +49,9 @@
 #include "sgeobj/sge_binding.h"
 #include "sgeobj/sge_utility.h"
 
+#include "gdi/ocs_gdi_ClientBase.h"
+#include "gdi/sge_gdi.h"
+
 #include "spool/classic/read_write_job.h"
 
 #include "job_report_execd.h"
@@ -101,7 +104,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
          sge_exit(1);
       }
       sleep(1);
-      gdi_get_act_master_host(true);
+      ocs::gdi::ClientBase::gdi_get_act_master_host(true);
    }
    sge_show_conf();         
 

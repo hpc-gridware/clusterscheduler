@@ -33,10 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/sge_daemonize.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
-int do_job_exec(struct_msg_t *aMsg, sge_pack_buffer *apb);
+int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb);
 
-int do_job_slave(struct_msg_t *aMsg);
+int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
 
 bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname);

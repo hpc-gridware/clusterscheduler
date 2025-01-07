@@ -96,7 +96,7 @@ bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
-   auto *gdi_multi = new ocs::GdiMulti();
+   auto *gdi_multi = new ocs::gdi::Request();
 
    if (gdi_multi != nullptr) {
       int order_id;
@@ -107,7 +107,7 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
       /*
        * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
        */
-      order_id = gdi_multi->request(answer_list, ocs::GdiMode::SEND, ocs::GdiTarget::Target::SGE_ORDER_LIST, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, order_list, nullptr, nullptr, false);
+      order_id = gdi_multi->request(answer_list, ocs::Mode::SEND, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, order_list, nullptr, nullptr, false);
 
       if (order_id != -1) {
          sge_sl_insert(Master_Request_Queue.request_list, gdi_multi, SGE_SL_BACKWARD);
@@ -135,7 +135,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
     */
    sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
    while ((current_elem = next_elem) != nullptr) {
-      auto *gdi_multi = static_cast<ocs::GdiMulti *>(sge_sl_elem_data(current_elem));
+      auto *gdi_multi = static_cast<ocs::gdi::Request *>(sge_sl_elem_data(current_elem));
       lList *request_answer_list = nullptr;
       lList *multi_answer_list = nullptr;
       int order_id;
@@ -155,7 +155,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
        * now we have an answer. is it positive?
        */
       order_id = 1;
-      gdi_multi->get_response(&request_answer_list, ocs::GdiCommand::SGE_GDI_ADD, ocs::GdiSubCommand::SGE_GDI_SUB_NONE, ocs::GdiTarget::Target::SGE_ORDER_LIST, order_id, nullptr);
+      gdi_multi->get_response(&request_answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST, order_id, nullptr);
       if (request_answer_list != nullptr) {
          answer_list_log(&request_answer_list, false, false);
          ret = false;

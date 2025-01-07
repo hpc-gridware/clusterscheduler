@@ -123,7 +123,7 @@ int pack_get_chunk() {
 *     word in the packbuffer. This triggeres error handling in former versions.
 *
 *     Functions using packing buffers in GDI or related code should use the 
-*     function sge_gdi_packet_get_pb_size() to find the correct
+*     function ocs::gdi::Client::sge_gdi_packet_get_pb_size() to find the correct
 *     "initial_size".  
 *
 *  INPUTS

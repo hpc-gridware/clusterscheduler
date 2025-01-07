@@ -44,6 +44,7 @@
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/commlib.h"
 
@@ -100,48 +101,48 @@ int sge_execd_process_messages()
 
    while (!terminate) {
       u_long64 now = sge_get_gmt64();
-      struct_msg_t msg;
+      ocs::gdi::ClientServerBase::struct_msg_t msg;
       char* buffer     = nullptr;
       u_long32 buflen  = 0;
       sge_monitor_output(&monitor);
 
-      memset((void*)&msg, 0, sizeof(struct_msg_t));
+      memset((void*)&msg, 0, sizeof(ocs::gdi::ClientServerBase::struct_msg_t));
 
-      ret = gdi_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
-                              &msg.tag, &buffer, &buflen, 0);
+      ret = ocs::gdi::ClientServerBase::gdi_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
+                                                        &msg.tag, &buffer, &buflen, 0);
       init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
 
       if (ret == CL_RETVAL_OK) {
          bool is_apb_used = false;
          sge_pack_buffer apb;
-         int atag = 0;
+         ocs::gdi::ClientServerBase::ClientServerBaseTag atag = ocs::gdi::ClientServerBase::TAG_NONE;
 
          switch (msg.tag) {
-            case TAG_JOB_EXECUTION:
+            case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
                if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
                   do_job_exec(&msg, &apb);
                   is_apb_used = true;
                   atag = msg.tag;
                }
                break;
-            case TAG_SLAVE_ALLOW:
+            case ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW:
                do_job_slave(&msg);
                break;
-            case TAG_CHANGE_TICKET:
+            case ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET:
                do_ticket(&msg);
                break;
-            case TAG_ACK_REQUEST:
+            case ocs::gdi::ClientServerBase::TAG_ACK_REQUEST:
                do_ack(&msg);
                break;
-            case TAG_SIGQUEUE:
-            case TAG_SIGJOB:
+            case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
+               case ocs::gdi::ClientServerBase::TAG_SIGJOB:
                if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
                   do_signal_queue(&msg, &apb);
                   is_apb_used = true;
-                  atag = TAG_ACK_REQUEST;
+                  atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
                }
                break;
-            case TAG_KILL_EXECD:
+            case ocs::gdi::ClientServerBase::TAG_KILL_EXECD:
                do_kill_execd(&msg);
 #if defined(SOLARIS)
                if (sge_smf_used() == 1) {
@@ -150,7 +151,7 @@ int sge_execd_process_messages()
                }
 #endif   
                break;
-            case TAG_GET_NEW_CONF:
+            case ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF:
                do_get_new_conf(&msg);
                 /* calculate alive check interval based on load report time POS 2/2 
                  * If modified, please also change POS 1/2
@@ -163,7 +164,7 @@ int sge_execd_process_messages()
                   alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
                }
                break;
-            case TAG_FULL_LOAD_REPORT:
+            case ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT:
                execd_trash_load_report();
                sge_set_flush_lr_flag(true);
                break;
@@ -175,8 +176,8 @@ int sge_execd_process_messages()
          clear_packbuffer(&(msg.buf));
          if (is_apb_used) {
             if (pb_filled(&apb)) {
-               gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
-                                atag, &apb, nullptr);
+               ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
+                                                           atag, &apb, nullptr);
             }
             clear_packbuffer(&apb);
          }
@@ -196,7 +197,7 @@ int sge_execd_process_messages()
          cl_commlib_trigger(cl_com_get_handle(component_get_component_name(), 0), 1);
       }
 
-      if (sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
+      if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
          do_reconnect = true;
       }
 
@@ -233,8 +234,8 @@ int sge_execd_process_messages()
                if (sge_execd_register_at_qmaster(true) == 0) {
                   do_reconnect = false;    /* we are reconnected */
                   last_heard = sge_get_gmt64();
-                  sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, true);
-                  sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true);
+                  ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_WAS_COMMUNICATION_ERROR, true);
+                  ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, true);
 
                  /* this is to record whether we recovered from a qmaster
                    * fail over or our own comm failure.
@@ -294,7 +295,7 @@ int sge_execd_process_messages()
                 */
                if (now - last_heard > alive_check_interval) {
                   int ret_val = CL_RETVAL_OK;
-                  const char* master_host = gdi_get_act_master_host(false);
+                  const char* master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
                   cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
                   cl_com_SIRM_t* ep_status = nullptr;
 
@@ -315,14 +316,14 @@ int sge_execd_process_messages()
          }
       }
 
-      if (sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, false)) {
+      if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
          /* we have to reconnect, when the problem is fixed */
          do_reconnect = true;
          /* we do not expect that the problem is fast to fix */
          sleep(EXECD_MAX_RECONNECT_TIMEOUT);
-      } else if (sge_get_com_error_flag(EXECD, SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
+      } else if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
          terminate = true; /* leave sge_execd_process_messages */
-         ret = SGE_COM_ENDPOINT_NOT_UNIQUE;
+         ret = ocs::gdi::SGE_COM_ENDPOINT_NOT_UNIQUE;
       }
 
 

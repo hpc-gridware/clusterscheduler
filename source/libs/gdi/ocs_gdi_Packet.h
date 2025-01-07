@@ -27,7 +27,7 @@
 
 #include "comm/cl_communication.h"
 
-#include "gdi/ocs_GdiTask.h"
+#include "gdi/ocs_gdi_Task.h"
 
 extern sge_tq_queue_t *GlobalRequestQueue;
 extern sge_tq_queue_t *ReaderRequestQueue;
@@ -39,11 +39,11 @@ typedef enum {
    PACKET_ACK_REQUEST
 } gdi_packet_request_type_t;
 
-namespace ocs {
+namespace ocs::gdi {
    // request types that can be encapsulated into packages/tasks
 
 
-   class GdiPacket {
+   class Packet {
    public:
       pthread_mutex_t mutex;
       pthread_cond_t cond;
@@ -82,14 +82,14 @@ namespace ocs {
        * pointers to the first and last task part of a multi
        * GDI request. This list contains at least one element
        */
-      std::vector<ocs::GdiTask *> tasks;
+      std::vector<ocs::gdi::Task *> tasks;
 
       /*
        * encrypted authenitication information. This information will
        * be decrypted to the field "uid", "gid", "user" and "group"
        * part of this structure
        *
-       * EB: TODO: Cleanup: remove "auth_info" from ocs::GdiPacket
+       * EB: TODO: Cleanup: remove "auth_info" from ocs::gdi::Packet
        *
        *    authinfo is not needed in this structure because the
        *    same information is stored in "uid", "gid", "user" and "group"
@@ -115,7 +115,7 @@ namespace ocs {
        * Packbuffer used for GDI GET requests to directly store the
        * result of lSelectHashPack()
        *
-       * EB: TODO: Cleanup: eleminate "pb" from ocs::GdiPacket
+       * EB: TODO: Cleanup: eleminate "pb" from ocs::gdi::Packet
        *
        *    We might eliminate this member as soon as pure GDI GET
        *    requests are handled by some kind of read only thread.
@@ -131,10 +131,10 @@ namespace ocs {
       // DS hint
       u_long32 ds_type;
 
-      GdiPacket();
-      ~GdiPacket();
+      Packet();
+      ~Packet();
 
-      int append_task(GdiTask *task);
+      int append_task(gdi::Task *task);
       bool initialize_auth_info();
       bool parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array);
 
@@ -156,7 +156,7 @@ namespace ocs {
 
       bool pack(lList **answer_list, sge_pack_buffer *pb);
       bool pack_header(lList **answer_list, sge_pack_buffer *pb);
-      bool pack_task(GdiTask *task, lList **answer_list, sge_pack_buffer *pb, bool has_next);
+      bool pack_task(gdi::Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next);
       void debug_print();
    };
 }

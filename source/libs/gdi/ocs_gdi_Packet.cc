@@ -32,15 +32,18 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_jsv.h"
 
+#include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_data.h"
 #include "gdi/sge_security.h"
-#include "gdi/ocs_GdiPacket.h"
-#include "gdi/ocs_GdiTask.h"
+#include "gdi/ocs_gdi_Packet.h"
+#include "gdi/ocs_gdi_Task.h"
 
 #include "msg_gdilib.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
+
+#include <ocs_gdi_ClientServerBase.h>
 
 #define CLIENT_WAIT_TIME_S 1
 #define GDI_PACKET_MUTEX "gdi_packet_mutex"
@@ -101,7 +104,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
 }
 
 
-ocs::GdiPacket::GdiPacket()
+ocs::gdi::Packet::Packet()
        : mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), is_handled(false), is_intern_request(false),
          request_type(PACKET_GDI_REQUEST), commproc_id(0),
          response_id(0), gdi_session(0), version(0), auth_info(nullptr), uid(0), gid(0), amount(0), grp_array(nullptr),
@@ -112,7 +115,7 @@ ocs::GdiPacket::GdiPacket()
    DRETURN_VOID;
 }
 
-ocs::GdiPacket::~GdiPacket() {
+ocs::gdi::Packet::~Packet() {
    DENTER(TOP_LAYER);
 
    for (auto *task : tasks) {
@@ -126,7 +129,7 @@ ocs::GdiPacket::~GdiPacket() {
 }
 
 int
-ocs::GdiPacket::append_task(GdiTask *task) {
+ocs::gdi::Packet::append_task(gdi::Task *task) {
    DENTER(TOP_LAYER);
    tasks.push_back(task);
    DRETURN(tasks.size() - 1);
@@ -142,7 +145,7 @@ ocs::GdiPacket::append_task(GdiTask *task) {
  * @return                 True if successfull. False if encrypting the information failed.
  */
 bool
-ocs::GdiPacket::initialize_auth_info() {
+ocs::gdi::Packet::initialize_auth_info() {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -193,7 +196,7 @@ ocs::GdiPacket::initialize_auth_info() {
 }
 
 bool
-ocs::GdiPacket::parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array)
+ocs::gdi::Packet::parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array)
 {
    DENTER(TOP_LAYER);
    char auth_buffer[2 * SGE_SEC_BUFSIZE];
@@ -314,7 +317,7 @@ ocs::GdiPacket::parse_auth_info(lList **answer_list, uid_t *uid, char *user, siz
 }
 
 void
-ocs::GdiPacket::create_multi_answer(lList **malpp) {
+ocs::gdi::Packet::create_multi_answer(lList **malpp) {
    DENTER(TOP_LAYER);
 
    /*
@@ -322,12 +325,12 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
     * into that structure
     */
    for (size_t id = 0; id < tasks.size(); ++id) {
-      GdiTask *task = tasks[id];
+      gdi::Task *task = tasks[id];
       lListElem *map = lAddElemUlong(malpp, MA_id, id, MA_Type);
 
-      if (task->command == GdiCommand::SGE_GDI_GET ||
-          task->command == GdiCommand::SGE_GDI_PERMCHECK ||
-          (task->command == GdiCommand::SGE_GDI_ADD && task->sub_command == GdiSubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
+      if (task->command == gdi::Command::SGE_GDI_GET ||
+          task->command == gdi::Command::SGE_GDI_PERMCHECK ||
+          (task->command == gdi::Command::SGE_GDI_ADD && task->sub_command == gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
          lSetList(map, MA_objects, task->data_list);
          task->data_list = nullptr;
       }
@@ -341,15 +344,15 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
 
 /****** gdi/request_internal/sge_gdi_packet_wait_till_handled() *************
 *  NAME
-*     sge_gdi_packet_wait_till_handled() -- wait til packet is handled
+*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled() -- wait til packet is handled
 *
 *  SYNOPSIS
 *     void
-*     sge_gdi_packet_wait_till_handled(ocs::GdiPacket *packet)
+*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled(ocs::gdi::Packet *packet)
 *
 *  FUNCTION
 *     This function blocks the calling thread till another one executes
-*     sge_gdi_packet_broadcast_that_handled(). Mutiple threads can use
+*     ocs::gdi::Client::sge_gdi_packet_broadcast_that_handled(). Mutiple threads can use
 *     this call to get response if the packet is accessed by someone
 *     else anymore.
 *
@@ -363,13 +366,13 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
 *     structure again.
 *
 *  INPUTS
-*     ocs::GdiPacket *packet - packet element
+*     ocs::gdi::Packet *packet - packet element
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_gdi_packet_wait_till_handled() is MT safe
+*     MT-NOTE: ocs::gdi::Client::sge_gdi_packet_wait_till_handled() is MT safe
 *
 *  SEE ALSO
 *     gdi/request_internal/Master_Packet_Queue
@@ -379,7 +382,7 @@ ocs::GdiPacket::create_multi_answer(lList **malpp) {
 *     gdi/request_internal/sge_gdi_packet_is_handled()
 *******************************************************************************/
 void
-ocs::GdiPacket::wait_till_handled() {
+ocs::gdi::Packet::wait_till_handled() {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &mutex);
@@ -401,29 +404,29 @@ ocs::GdiPacket::wait_till_handled() {
 
 /****** gdi/request_internal/sge_gdi_packet_is_handled() ********************
 *  NAME
-*     sge_gdi_packet_is_handled() -- returns if packet was handled by worker
+*     ocs::gdi::Client::sge_gdi_packet_is_handled() -- returns if packet was handled by worker
 *
 *  SYNOPSIS
 *     void
-*     sge_gdi_packet_is_handled(ocs::GdiPacket *packet)
+*     ocs::gdi::Client::sge_gdi_packet_is_handled(ocs::gdi::Packet *packet)
 *
 *  FUNCTION
 *     Returns if the given packet was already handled by a worker thread.
 *     "true" means that the packet is completely done so that a call
-*     to sge_gdi_packet_wait_till_handled() will return immediately. If
+*     to ocs::gdi::Client::sge_gdi_packet_wait_till_handled() will return immediately. If
 *     "false" is returned the the packet is not finished so a call to
-*     sge_gdi_packet_wait_till_handled() might block when it is called
+*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled() might block when it is called
 *     afterwards.
 *
 *  INPUTS
-*     ocs::GdiPacket *packet - packet element
+*     ocs::gdi::Packet *packet - packet element
 *
 *  RESULT
 *     bool - true    packet was already handled by a worker
 *            false   packet is not done.
 *
 *  NOTES
-*     MT-NOTE: sge_gdi_packet_is_handled() is MT safe
+*     MT-NOTE: ocs::gdi::Client::sge_gdi_packet_is_handled() is MT safe
 *
 *  SEE ALSO
 *     gdi/request_internal/Master_Packet_Queue
@@ -432,7 +435,7 @@ ocs::GdiPacket::wait_till_handled() {
 *     gdi/request_internal/sge_gdi_packet_broadcast_that_handled()
 *******************************************************************************/
 bool
-ocs::GdiPacket::get_is_handled() {
+ocs::gdi::Packet::get_is_handled() {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -443,7 +446,7 @@ ocs::GdiPacket::get_is_handled() {
 }
 
 void
-ocs::GdiPacket::broadcast_that_handled()
+ocs::gdi::Packet::broadcast_that_handled()
 {
    DENTER(TOP_LAYER);
 
@@ -457,7 +460,7 @@ ocs::GdiPacket::broadcast_that_handled()
 }
 
 bool
-ocs::GdiPacket::execute_external(lList **answer_list)
+ocs::gdi::Packet::execute_external(lList **answer_list)
 {
    bool ret = true;
    sge_pack_buffer pb;
@@ -483,10 +486,10 @@ ocs::GdiPacket::execute_external(lList **answer_list)
      * job verification process might destroy the job and create a completely
      * new one with adjusted job attributes.
      */
-    GdiTask *task = tasks[0];
+    gdi::Task *task = tasks[0];
 
-    if (task->target == ocs::GdiTarget::Target::SGE_JB_LIST &&
-        (task->command == GdiCommand::SGE_GDI_ADD || task->command == GdiCommand::SGE_GDI_COPY)) {
+    if (task->target == ocs::gdi::Target::TargetValue::SGE_JB_LIST &&
+        (task->command == gdi::Command::SGE_GDI_ADD || task->command == gdi::Command::SGE_GDI_COPY)) {
        lListElem *job, *next_job;
 
        next_job = lLastRW(task->data_list);
@@ -527,16 +530,16 @@ ocs::GdiPacket::execute_external(lList **answer_list)
     */
    if (ret) {
       const char *tmp_commproc = prognames[QMASTER];
-      const char *tmp_host = gdi_get_act_master_host(false);
+      const char *tmp_host = gdi::ClientBase::gdi_get_act_master_host(false);
       int tmp_id = 1;
       int tmp_response_id = 0;
-      commlib_error = sge_gdi_send_any_request(0, &message_id, tmp_host, tmp_commproc, tmp_id, &pb,
-                                                TAG_GDI_REQUEST, tmp_response_id, nullptr);
+      commlib_error = ClientServerBase::sge_gdi_send_any_request(0, &message_id, tmp_host, tmp_commproc, tmp_id, &pb,
+                                                             ClientServerBase::TAG_GDI_REQUEST, tmp_response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
-         commlib_error = gdi_is_alive(answer_list);
+         commlib_error = ClientBase::gdi_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-            const char *mastername = gdi_get_act_master_host(true);
+            const char *mastername = ClientBase::gdi_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
@@ -568,10 +571,10 @@ ocs::GdiPacket::execute_external(lList **answer_list)
     */
    if (ret) {
       const char *commproc = prognames[QMASTER];
-      const char *host = gdi_get_act_master_host(false);
+      const char *host = ClientBase::gdi_get_act_master_host(false);
       char rcv_host[CL_MAXHOSTNAMELEN+1];
       char rcv_commproc[CL_MAXHOSTNAMELEN+1];
-      int tag = TAG_GDI_REQUEST;
+      ClientServerBase::ClientServerBaseTag tag = ClientServerBase::TAG_GDI_REQUEST;
       u_short id = 1;
       int gdi_error = CL_RETVAL_OK;
       int runs = 0;
@@ -595,7 +598,7 @@ ocs::GdiPacket::execute_external(lList **answer_list)
             }
          }
 
-         gdi_error = sge_gdi_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag, true, message_id, nullptr);
+         gdi_error = ClientServerBase::sge_gdi_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag, true, message_id, nullptr);
 
          bool do_ping = get_cl_ping_value();
          retries = get_gdi_retries_value();
@@ -640,10 +643,10 @@ ocs::GdiPacket::execute_external(lList **answer_list)
       } while (retries == -1 || runs++ < retries);
 
       if (!ret) {
-         commlib_error = gdi_is_alive(answer_list);
+         commlib_error = ClientBase::gdi_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-            const char *mastername = gdi_get_act_master_host(true);
+            const char *mastername = ClientBase::gdi_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
@@ -665,9 +668,9 @@ ocs::GdiPacket::execute_external(lList **answer_list)
    /*
     * unpack result. the returned packet contains data and/or answer lists
     */
-   GdiPacket *ret_packet = nullptr;
+   Packet *ret_packet = nullptr;
    if (ret) {
-      ret_packet = new GdiPacket();
+      ret_packet = new Packet();
       ret = ret_packet->unpack(answer_list, &rpb);
       if (!ret) {
          DTRACE;
@@ -692,8 +695,8 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 
       if (!gdi_mismatch) {
          for (size_t i = 0; i < tasks.size(); i++) {
-            GdiTask *send = tasks[i];
-            GdiTask *recv = ret_packet->tasks[i];
+            gdi::Task *send = tasks[i];
+            gdi::Task *recv = ret_packet->tasks[i];
 
             lFreeList(&send->data_list);
             send->data_list = recv->data_list;
@@ -724,11 +727,11 @@ ocs::GdiPacket::execute_external(lList **answer_list)
 }
 
 bool
-ocs::GdiPacket::execute_internal(lList **answer_list) {
+ocs::gdi::Packet::execute_internal(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    strncpy(commproc, prognames[QMASTER], sizeof(commproc)-1);
-   strncpy(host, gdi_get_act_master_host(false), sizeof(host)-1);
+   strncpy(host, ClientBase::gdi_get_act_master_host(false), sizeof(host)-1);
    is_intern_request = true;
 
    bool ret = parse_auth_info(&tasks[0]->answer_list, &uid, user, sizeof(user), &gid, group, sizeof(group), &amount, &grp_array);
@@ -741,11 +744,11 @@ ocs::GdiPacket::execute_internal(lList **answer_list) {
 }
 
 void
-ocs::GdiPacket::wait_for_result_external(lList **malpp) {
+ocs::gdi::Packet::wait_for_result_external(lList **malpp) {
    DENTER(TOP_LAYER);
 
    /*
-    * The packet itself has already be executed in sge_gdi_packet_execute_external()
+    * The packet itself has already be executed in ocs::gdi::Client::sge_gdi_packet_execute_external()
     * so it is only necessary to create the muti answer and do cleanup
     */
    create_multi_answer(malpp);
@@ -754,7 +757,7 @@ ocs::GdiPacket::wait_for_result_external(lList **malpp) {
 }
 
 void
-ocs::GdiPacket::wait_for_result_internal(lList **malpp) {
+ocs::gdi::Packet::wait_for_result_internal(lList **malpp) {
    DENTER(TOP_LAYER);
    wait_till_handled();
    create_multi_answer(malpp);
@@ -762,7 +765,7 @@ ocs::GdiPacket::wait_for_result_internal(lList **malpp) {
 }
 
 u_long32
-ocs::GdiPacket::get_pb_size() {
+ocs::gdi::Packet::get_pb_size() {
    DENTER(TOP_LAYER);
    u_long32 ret = 0;
    bool local_ret;
@@ -779,7 +782,7 @@ ocs::GdiPacket::get_pb_size() {
 }
 
 bool
-ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::unpack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
    bool has_next;
@@ -789,7 +792,7 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
    unpack_header(answer_list, pb);
 
    do {
-      auto task = new GdiTask(GdiTarget::NO_TARGET, GdiCommand::SGE_GDI_NONE, GdiSubCommand::SGE_GDI_SUB_NONE,
+      auto task = new gdi::Task(gdi::Target::NO_TARGET, gdi::Command::SGE_GDI_NONE, gdi::SubCommand::SGE_GDI_SUB_NONE,
                               nullptr, nullptr, nullptr, nullptr, false);
       u_long32 target_ulong32 = 0;
       u_long32 command = 0;
@@ -803,17 +806,17 @@ ocs::GdiPacket::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = unpackint(pb, &command))) {
          goto error_with_mapping;
       }
-      task->command = static_cast<GdiCommand::Command>(command);
+      task->command = static_cast<gdi::Command::Cmd>(command);
 
       if ((pack_ret = unpackint(pb, &sub_command))) {
          goto error_with_mapping;
       }
-      task->sub_command = static_cast<GdiSubCommand::SubCommand>(sub_command);
+      task->sub_command = static_cast<gdi::SubCommand::SubCmd>(sub_command);
 
       if ((pack_ret = unpackint(pb, &target_ulong32))) {
          goto error_with_mapping;
       }
-      task->target = static_cast<GdiTarget::Target>(target_ulong32);
+      task->target = static_cast<gdi::Target::TargetValue>(target_ulong32);
 
       if ((pack_ret = cull_unpack_list(pb, &(data_list)))) {
          goto error_with_mapping;
@@ -852,7 +855,7 @@ error_with_mapping:
 }
 
 bool
-ocs::GdiPacket::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret;
    int pack_ret;
@@ -864,7 +867,7 @@ ocs::GdiPacket::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
    }
    version = tmp_version;
    /* JG: TODO (322): At this point we should check the version!
-    **                 The existent check function sge_gdi_packet_verify_version
+    **                 The existent check function ocs::gdi::Client::sge_gdi_packet_verify_version
     **                 cannot be called as necessary data structures are
     **                 available here (e.g. answer list).
     **                 Better do these changes at a more general place
@@ -881,7 +884,7 @@ error_with_mapping:
 }
 
 bool
-ocs::GdiPacket::pack(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -903,7 +906,7 @@ ocs::GdiPacket::pack(lList **answer_list, sge_pack_buffer *pb) {
 }
 
 bool
-ocs::GdiPacket::pack_header(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::pack_header(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
    int pack_ret;
@@ -924,7 +927,7 @@ error_with_mapping:
 }
 
 bool
-ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buffer *pb, bool has_next) {
+ocs::gdi::Packet::pack_task(ocs::gdi::Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next) {
    DENTER(TOP_LAYER);
    bool ret = true;
    int pack_ret;
@@ -1000,7 +1003,7 @@ ocs::GdiPacket::pack_task(ocs::GdiTask *task, lList **answer_list, sge_pack_buff
    DRETURN(ret);
 }
 
-void ocs::GdiPacket::debug_print() {
+void ocs::gdi::Packet::debug_print() {
    DENTER(TOP_LAYER);
 
    DPRINTF("packet->host = " SFQ "\n", host);

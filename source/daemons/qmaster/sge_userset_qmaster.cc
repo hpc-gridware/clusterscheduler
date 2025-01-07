@@ -65,7 +65,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-static void sge_change_queue_version_acl(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *acl_name);
+static void sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name);
 
 static int verify_userset_deletion(lList **alpp, const char *userset_name);
 
@@ -79,7 +79,7 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
    deletes an userset list from the global userset_list
  ******************************************************************/
 int
-sge_del_userset(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
    lListElem *found;
    int pos, ret;
    const char *userset_name;
@@ -139,7 +139,7 @@ sge_del_userset(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lList
    of all queues containing this complex;
  **********************************************************************/
 static void
-sge_change_queue_version_acl(ocs::GdiPacket *packet, ocs::GdiTask *task, const char *acl_name) {
+sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name) {
    const lListElem *cqueue;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
@@ -582,7 +582,7 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *     added or modified.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lList **alpp             - answer list
 *     lListElem *new_userset   - if add it's an empty userset that needs to
 *                                be filled
@@ -602,10 +602,10 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *  NOTES
 *     MT-NOTE: userset_mod() is not MT safe, needs global lock 
 *******************************************************************************/
-int userset_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *new_userset,
+int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset,
                 lListElem *userset, int add, const char *ruser,
                 const char *rhost, gdi_object_t *object,
-                ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+                ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
                 monitoring_t *monitor) {
    const char *userset_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -735,7 +735,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     modifing a userset.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lList **alpp             - answer list
 *     lListElem *userset       - userset object to spool
 *     gdi_object_t *object     - structure of the gdi framework
@@ -748,7 +748,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  NOTES
 *     MT-NOTE: userset_spool() is not MT safe 
 *******************************************************************************/
-int userset_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
+int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -780,7 +780,7 @@ int userset_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lLis
 *     spool.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lListElem *ep            - new added userset
 *     lListElem *old_ep        - for mod the old userset
 *     gdi_object_t *object     - structure of the gdi framework
@@ -793,7 +793,7 @@ int userset_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lLis
 *  NOTES
 *     MT-NOTE: userset_success() is not MT safe 
 *******************************************************************************/
-int userset_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                     monitoring_t *monitor) {
    const char *userset_name;
    dstring ds = DSTRING_INIT;

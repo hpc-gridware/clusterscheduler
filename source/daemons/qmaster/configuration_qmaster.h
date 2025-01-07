@@ -50,7 +50,7 @@ lListElem *
 sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
 
 int
-sge_del_configuration(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
+sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
 
 int
 sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, u_long64 gdi_session);

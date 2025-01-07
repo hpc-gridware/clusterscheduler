@@ -37,7 +37,7 @@
 
 #include "uti/sge_dstring.h"
 
-#include "gdi/ocs_GdiPacket.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 
@@ -85,7 +85,7 @@ void
 qinstance_increase_qversion(lListElem *this_elem);
 
 bool
-qinstance_check_owner(const ocs::GdiPacket *packet, const lListElem *queue,
+qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *queue,
                       const lList *master_manager_list, const lList *master_operator_list);
 
 bool

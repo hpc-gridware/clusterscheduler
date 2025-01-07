@@ -45,8 +45,10 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
-#include "exec_job.h"
 
+#include "gdi/sge_gdi.h"
+
+#include "exec_job.h"
 #include "execd_get_new_conf.h"
 #include "sge_load_sensor.h"
 #include "admin_mail.h"
@@ -65,7 +67,7 @@
 **   executed on startup. This function is triggered by the execd
 **   dispatcher table when the tag TAG_GET_NEW_CONF is received.
 */
-int do_get_new_conf(struct_msg_t *aMsg)
+int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    int ret;
    bool use_qidle = mconf_get_use_qidle();

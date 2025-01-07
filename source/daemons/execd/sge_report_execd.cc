@@ -42,6 +42,8 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
 
+#include "gdi/sge_gdi.h"
+
 #include "comm/commlib.h"
 
 #include "job_report_execd.h"
@@ -49,6 +51,8 @@
 #include "execd.h"
 #include "sge.h"
 #include "sge_report_execd.h"
+
+#include <ocs_gdi_ClientBase.h>
 
 #ifndef NO_SGE_COMPILE_DEBUG
 static const char* report_types[] = {
@@ -77,16 +81,16 @@ int sge_send_all_reports(u_long64 now, int which, report_source *report_sources)
     */
 
    cl_commlib_get_connect_time(cl_com_get_handle(component_get_component_name(), 0),
-                               (char *)gdi_get_act_master_host(true), (char*)prognames[QMASTER], 1,
+                               (char *)ocs::gdi::ClientBase::gdi_get_act_master_host(true), (char*)prognames[QMASTER], 1,
                                &connect_time);
 
    if (connect_time != 0 && get_last_qmaster_register_time() >= sge_gmt32_to_gmt64(connect_time)) {
-      if (!sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
+      if (!ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
          const char *master_host = nullptr;
          lList *report_list = nullptr;
          int i = 0;
 
-         master_host = gdi_get_act_master_host(false);
+         master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
          DPRINTF("SENDING LOAD AND REPORTS\n");
          report_list = lCreateList("report list", REP_Type);
          for (i = 0; report_sources[i].type; i++) {

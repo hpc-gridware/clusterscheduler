@@ -38,12 +38,12 @@
 #include "sgeobj/sge_daemonize.h"
 
 bool
-cqueue_mod_qinstances(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list);
 
 bool
-cqueue_handle_qinstances(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list);
 
@@ -54,18 +54,18 @@ void
 cqueue_rollback(lListElem *cqueue);
 
 int
-cqueue_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor);
 
 int
-cqueue_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, monitoring_t *monitor);
+cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+           const char *rhost, gdi_object_t *object, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor);
 
 int
-cqueue_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **alpp, lListElem *this_elem, gdi_object_t *object);
+cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *this_elem, gdi_object_t *object);
 
 int
-cqueue_del(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
+cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
 
 bool
 cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, u_long64 gdi_session);

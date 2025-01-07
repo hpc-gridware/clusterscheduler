@@ -21,11 +21,11 @@
 
 #include <string>
 
-namespace ocs {
-   class GdiSubCommand {
-      GdiSubCommand() = default; // prevent instantiation
+namespace ocs::gdi {
+   class SubCommand {
+      SubCommand() = default; // prevent instantiation
    public:
-      enum SubCommand {
+      enum SubCmd {
          SGE_GDI_SUB_NONE = 0,
 
          // used for add-job-reuqests so that the created job with jid is returned
@@ -46,6 +46,6 @@ namespace ocs {
          SGE_GDI_EXECD_RESTART = (1<<15)
       };
 
-      static std::string toString(SubCommand mode);
+      static std::string toString(SubCmd mode);
    };
 }

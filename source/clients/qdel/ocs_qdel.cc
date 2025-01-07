@@ -50,8 +50,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "comm/commlib.h"
 
@@ -82,7 +81,7 @@ int main(int argc, char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (gdi_client_setup_and_enroll(QDEL, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QDEL, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       goto error_exit;
    }
@@ -136,7 +135,7 @@ int main(int argc, char **argv) {
    /* Has the user the permission to use the the '-f' (forced) flag */
    have_master_privileges = false;
    if (force == 1) {
-      sge_gdi_get_permission(&alp, &have_master_privileges, nullptr, nullptr, nullptr);
+      ocs::gdi::Client::sge_gdi_get_permission(&alp, &have_master_privileges, nullptr, nullptr, nullptr);
       lFreeList(&alp);
    }
    /* delete the job */
@@ -209,8 +208,8 @@ int main(int argc, char **argv) {
                   }   
                }
             }
-            alp = sge_gdi(ocs::GdiTarget::Target::SGE_JB_LIST, ocs::GdiCommand::SGE_GDI_DEL,
-                          ocs::GdiSubCommand::SGE_GDI_SUB_NONE, &part_ref_list, nullptr, nullptr);
+            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_DEL,
+                          ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &part_ref_list, nullptr, nullptr);
 
             for_each_ep(aep, alp) {
                status = lGetUlong(aep, AN_status);
@@ -265,7 +264,7 @@ int main(int argc, char **argv) {
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(ret);
    return ret;
@@ -274,7 +273,7 @@ error_exit:
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

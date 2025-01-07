@@ -318,7 +318,7 @@ sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc)
     at 0x4C360A5 malloc (vg_replace_malloc.c:380)
     at 0x6CBC97 sge_malloc(unsigned long) (sge_stdlib.cc:72)
     at 0x59D17F sge_evc_class_create(ev_registration_id, _lList**, char const*) (sge_event_client.cc:667)
-    at 0x5A5979 sge_gdi2_evc_setup(sge_evc_class_str**, ev_registration_id, _lList**, char const*) (sge_event_client.cc:3066)
+    at 0x5A5979 ocs::gdi::Client::sge_gdi2_evc_setup(sge_evc_class_str**, ev_registration_id, _lList**, char const*) (sge_event_client.cc:3066)
     at 0x47F575 ocs::MirrorDataStore::main(void*) (ocs_MirrorDataStore.cc:253)
     at 0x4860CB ocs::event_mirror_main(void*) (ocs_thread_mirror.cc:33)
     at 0x4E4E179 start_thread

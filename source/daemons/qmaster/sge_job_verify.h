@@ -35,6 +35,6 @@
 
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
-                      ocs::GdiPacket *packet, ocs::GdiTask *task, monitoring_t *monitor);
+                      ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 bool
 job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *master_centry_list);

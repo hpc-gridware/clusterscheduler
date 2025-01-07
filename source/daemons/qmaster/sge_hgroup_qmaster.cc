@@ -63,7 +63,7 @@
 
 static bool
 hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
-                    ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+                    ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
                     lList **add_hosts, lList **rem_hosts, lList **occupant_groups);
 
 static void
@@ -74,7 +74,7 @@ hgroup_rollback(lListElem *this_elem);
 
 static bool
 hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
-                    ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command, lList **add_hosts,
+                    ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, lList **add_hosts,
                     lList **rem_hosts, lList **occupant_groups) {
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
@@ -217,9 +217,9 @@ hgroup_rollback(lListElem *this_elem) {
 }
 
 int
-hgroup_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
+hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
-           ocs::GdiCommand::Command cmd, ocs::GdiSubCommand::SubCommand sub_command,
+           ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
            monitoring_t *monitor) {
    bool ret = true;
    int pos;
@@ -414,7 +414,7 @@ hgroup_mod(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lLis
 }
 
 int
-hgroup_del(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    int ret = true;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -512,7 +512,7 @@ hgroup_del(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *this_elem, lLi
 }
 
 int
-hgroup_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *name = lGetHost(hgroup, HGRP_name);
    lList *cqueue_list = nullptr;
 
@@ -537,7 +537,7 @@ hgroup_success(ocs::GdiPacket *packet, ocs::GdiTask *task, lListElem *hgroup, lL
 
 
 int
-hgroup_spool(ocs::GdiPacket *packet, ocs::GdiTask *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
+hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    bool tmp_ret = true;
    bool dbret;
    const char *name = lGetHost(this_elem, HGRP_name);
