@@ -92,6 +92,10 @@ ocs::SessionManager::set_write_unique_id(const u_long64 session_id, const u_long
 
    session_map[session_id] = s;
    pthread_mutex_unlock(&mutex);
+
+#if 0
+   dump_all();
+#endif
 }
 
 /**
