@@ -34,7 +34,6 @@ set(LIBRARY_SOURCES
         ocs_gdi_Task.cc
       sge_gdi_data.cc
       sge_qexec.cc
-      sge_qtcsh.cc
       sge_security.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
