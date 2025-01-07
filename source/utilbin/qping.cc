@@ -50,7 +50,6 @@
 #include "sgeobj/ocs_Version.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "comm/cl_commlib.h"
@@ -58,9 +57,6 @@
 
 #include "basis_types.h"
 #include "msg_utilbin.h"
-
-
-
 #include "msg_clients_common.h"
 
 #define ARGUMENT_COUNT 15

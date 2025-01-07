@@ -38,11 +38,11 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientBase.h"
+#include "gdi/ocs_gdi_ClientExecd.h"
 
 #include "comm/commlib.h"
 
@@ -51,8 +51,6 @@
 #include "execd.h"
 #include "sge.h"
 #include "sge_report_execd.h"
-
-#include <ocs_gdi_ClientBase.h>
 
 #ifndef NO_SGE_COMPILE_DEBUG
 static const char* report_types[] = {
@@ -106,7 +104,7 @@ int sge_send_all_reports(u_long64 now, int which, report_source *report_sources)
             if (++sge_execd_report_seqno == 10000) {
                sge_execd_report_seqno = 0;
             }
-            report_list_send(report_list, master_host, prognames[QMASTER], 1, 0);
+            ocs::gdi::ClientExecd::report_list_send(report_list, master_host, prognames[QMASTER], 1, 0);
          }
          lFreeList(&report_list);
       }

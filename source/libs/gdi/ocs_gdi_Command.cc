@@ -20,6 +20,7 @@
 
 #include "ocs_gdi_Command.h"
 
+// const char *s = toString().c_str();
 std::string ocs::gdi::Command::toString(Cmd command) {
    switch (command) {
       case SGE_GDI_GET: return "GET";

@@ -40,7 +40,6 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_client_parse.h"

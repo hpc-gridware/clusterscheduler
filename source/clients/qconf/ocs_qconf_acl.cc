@@ -41,7 +41,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userset.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "cull/cull.h"

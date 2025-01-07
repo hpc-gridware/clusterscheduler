@@ -41,8 +41,7 @@
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_answer.h"
-
-#include "comm/commlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "mir/sge_mirror.h"
 

@@ -52,6 +52,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "uti/sge.h"
 

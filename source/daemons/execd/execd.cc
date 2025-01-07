@@ -45,7 +45,6 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -66,7 +65,6 @@
 #include "setup_execd.h"
 #include "shutdown.h"
 #include "sig_handlers.h"
-#include "startprog.h"
 #include "usage.h"
 #include "execd.h"
 #include "sge.h"

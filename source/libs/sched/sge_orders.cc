@@ -37,14 +37,11 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 
 #include "evc/sge_event_client.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sge_orders.h"
 #include "schedd_message.h"

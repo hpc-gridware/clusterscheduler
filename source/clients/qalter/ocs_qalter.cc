@@ -48,13 +48,8 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_daemonize.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
-
-#include "comm/commlib.h"
 
 #include "sig_handlers.h"
 #include "ocs_client_job.h"

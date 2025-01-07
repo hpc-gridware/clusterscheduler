@@ -46,7 +46,6 @@
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_hgroup.h"
@@ -54,17 +53,10 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
-
 #include "basis_types.h"
-#include "../qstat/ocs_qstat_filter.h"
 #include "ocs_qquota_print.h"
 #include "sge.h"
 

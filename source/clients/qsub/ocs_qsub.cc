@@ -47,14 +47,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 
-#include "comm/commlib.h"
-
 #include "japi/japi.h"
 #include "japi/japiP.h"
 
 #include "gdi/sge_security.h"
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"

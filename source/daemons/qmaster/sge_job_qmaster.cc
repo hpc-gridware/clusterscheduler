@@ -84,14 +84,12 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/sge_ack.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/sge_job_schedd.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
 #include "sched/sge_complex_schedd.h"
-#include "sched/valid_queue_user.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "cull/cull_list.h"
 
@@ -102,7 +100,6 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_job_verify.h"
-#include "sge_qmaster_main.h"
 #include "symbols.h"
 #include "mail.h"
 #include "sge_cqueue_qmaster.h"

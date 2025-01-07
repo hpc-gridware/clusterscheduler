@@ -56,7 +56,6 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/ocs_Version.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
 #include "gdi/ocs_gdi_Command.h"
@@ -224,7 +223,8 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    }
 
    int operation = task->command;
-   const char *operation_name = ocs::gdi::Command::toString(task->command).c_str();
+   std::string cmd_string = ocs::gdi::Command::toString(task->command);
+   const char *operation_name = cmd_string.c_str();
 
    DPRINTF("GDI %s %s (%s/%s) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
            packet->user, (int) packet->uid, packet->group, (int) packet->gid);
@@ -325,7 +325,8 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
    ocs::gdi::Command::Cmd command = task->command;
    ocs::gdi::SubCommand::SubCmd sub_command = task->sub_command;
-   const char *operation_name = ocs::gdi::Command::toString(task->command).c_str();
+   std::string cmd_string = ocs::gdi::Command::toString(task->command);
+   const char *operation_name = cmd_string.c_str();
 
 #ifdef OBSERVE
    dstring target_dstr = DSTRING_INIT;

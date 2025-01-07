@@ -25,7 +25,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_mtutil.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 
 #include "sgeobj/ocs_Version.h"
@@ -33,7 +32,6 @@
 #include "sgeobj/sge_jsv.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_data.h"
 #include "gdi/sge_security.h"
 #include "gdi/ocs_gdi_Packet.h"

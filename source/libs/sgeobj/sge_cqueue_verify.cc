@@ -37,15 +37,11 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
+#include "uti/sge.h"
 
 #include "cull/cull_list.h"
 
-#include "gdi/sge_gdi.h"
-
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
@@ -60,8 +56,6 @@
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "symbols.h"
-#include "uti/sge.h"
 
 #define CQUEUE_VERIFY_LAYER TOP_LAYER
 

@@ -58,7 +58,6 @@
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/ocs_gdi_Packet.h"
-#include "gdi/sge_gdi.h"
 
 #include "comm/cl_commlib.h"
 

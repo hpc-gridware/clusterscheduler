@@ -41,13 +41,10 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
-
-#include <ocs_gdi_ClientServerBase.h>
-
 
 static int
 host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id);

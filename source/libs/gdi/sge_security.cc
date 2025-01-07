@@ -49,7 +49,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 
 #include "sgeobj/sge_feature.h"
@@ -57,7 +56,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"
 

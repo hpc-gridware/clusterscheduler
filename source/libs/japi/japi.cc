@@ -53,7 +53,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge.h"
 
 #include "japi/drmaa.h"
@@ -62,21 +61,15 @@
 #include "japi/japiP.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_usage.h"
 
 #include "cull/cull_list.h"
@@ -85,14 +78,10 @@
 
 #include "evc/sge_event_client.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_Client.h"
-#include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
 
 #include "evm/sge_event_master.h"
-#include "msg_common.h"
 
 /****** JAPI/--Job_API ********************************************************
 *  NAME

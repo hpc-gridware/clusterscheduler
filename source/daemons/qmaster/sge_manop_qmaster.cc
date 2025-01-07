@@ -37,12 +37,10 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "comm/commlib.h"
-
 #include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_manop.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 

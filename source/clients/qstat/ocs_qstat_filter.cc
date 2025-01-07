@@ -74,7 +74,6 @@
 #include "sched/sge_select_queue.h"
 #include "sched/sge_complex_schedd.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_client_cqueue.h"

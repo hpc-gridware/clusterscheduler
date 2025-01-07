@@ -69,7 +69,6 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_qexec.h"
 #include "gdi/ocs_gdi_Client.h"

@@ -46,7 +46,6 @@
 
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_unistd.h"
 
 #include "cull/cull_list.h"
 #include "cull/cull_hash.h"
@@ -57,7 +56,6 @@
 #include "cull/cull_whereP.h"
 #include "cull/cull_pack.h"
 #include "cull/cull_parse.h"
-#include "cull/cull_what_print.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"

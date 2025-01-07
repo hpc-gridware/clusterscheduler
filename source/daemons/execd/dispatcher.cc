@@ -43,7 +43,6 @@
 
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/commlib.h"

@@ -49,7 +49,6 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "comm/commlib.h"

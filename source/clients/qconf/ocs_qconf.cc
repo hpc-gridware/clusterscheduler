@@ -37,12 +37,8 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_feature.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
-
-#include "comm/commlib.h"
 
 #include "ocs_qconf_parse.h"
 #include "sig_handlers.h"

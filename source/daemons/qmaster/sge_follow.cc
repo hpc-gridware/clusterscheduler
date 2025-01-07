@@ -48,11 +48,9 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/cull/sge_message_SME_L.h"
@@ -63,14 +61,11 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_grantedres.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "sched/sgeee.h"
 #include "sched/sge_support.h"
 #include "sched/debit.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sge.h"
 #include "sge_userprj_qmaster.h"
@@ -81,7 +76,6 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_job_qmaster.h"
 #include "sge_follow.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"

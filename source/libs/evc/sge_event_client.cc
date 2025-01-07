@@ -47,10 +47,10 @@
 #include "comm/commlib.h"
 
 #include "gdi/ocs_gdi_Client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_SubCommand.h"
-#include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_report.h"
@@ -61,8 +61,6 @@
 #include "evc/msg_evclib.h"
 
 #include "msg_common.h"
-
-#include <gdi/ocs_gdi_ClientBase.h>
 
 #define EVC_LAYER TOP_LAYER
 

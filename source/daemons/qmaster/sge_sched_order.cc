@@ -37,9 +37,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
-
 #include "sgeobj/sge_answer.h"
 
 #include "sge_sched_order.h"

@@ -41,21 +41,20 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ack.h"
-
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_security.h"
 #include "sgeobj/ocs_Version.h"
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_manop.h"
+
+#include "gdi/ocs_gdi_ClientServerBase.h"
+#include "gdi/sge_security.h"
 
 #include "comm/commlib.h"
 
@@ -64,12 +63,9 @@
 #include "evm/sge_event_master.h"
 
 #include "sge_c_gdi.h"
-#include "sge_qmaster_main.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
-#include <ocs_gdi_ClientServerBase.h>
-#include <sge_manop.h>
 
 static void
 do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor);

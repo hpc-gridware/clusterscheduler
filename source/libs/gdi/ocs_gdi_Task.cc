@@ -23,10 +23,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_answer.h"
-
-#include "gdi/sge_gdi.h"
-
 #include "gdi/ocs_gdi_Command.h"
 #include "ocs_gdi_Task.h"
 

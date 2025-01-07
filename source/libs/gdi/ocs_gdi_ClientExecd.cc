@@ -1,19 +1,19 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
@@ -27,62 +27,25 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2011 Univa Corporation
- *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstring>
-#include <pthread.h>
-
-#include <pwd.h>
-
-#include <unistd.h>
-
-#include "comm/commlib.h"
-
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap_env.h"
-#include "uti/sge_bootstrap_files.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_mtutil.h"
-#include "uti/sge_parse_num_par.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_time.h"
+#include "uti/sge_bootstrap_files.h"
 
-#include "sgeobj/sge_feature.h"
-#include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_event.h"
-#include "sgeobj/sge_id.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/cull/sge_permission_PERM_L.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_data.h"
-#include "gdi/ocs_gdi_ClientBase.h"
-#include "gdi/ocs_gdi_Client.h"
-#include "gdi/sge_security.h"
-#include "gdi/msg_gdilib.h"
-
-#include "basis_types.h"
+#include "ocs_gdi_ClientExecd.h"
 #include "msg_common.h"
-#include "uti/sge.h"
+#include "msg_gdilib.h"
 
-#include <ocs_gdi_ClientServerBase.h>
-
-#ifdef KERBEROS
-#  include "krb_lib.h"
-#endif
-
-
-
-int gdi_wait_for_conf(lList **conf_list) {
+int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    int ret_val;
@@ -161,7 +124,7 @@ int gdi_wait_for_conf(lList **conf_list) {
  * EXTERNAL
  *
  *-------------------------------------------------------------------------*/
-int gdi_get_merged_configuration(lList **conf_list) {
+int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -234,7 +197,7 @@ int gdi_get_merged_configuration(lList **conf_list) {
 *  NOTES
 *     MT-NOTE: report_list_send() is not MT safe (assumptions)
 *******************************************************************************/
-int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
+int ocs::gdi::ClientExecd::report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
    sge_pack_buffer pb;
    int ret;
    lList *alp = nullptr;

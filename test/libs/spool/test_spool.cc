@@ -48,11 +48,9 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_utility.h"
-
-#include "comm/commlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -62,7 +60,6 @@
 #include "spool/loader/sge_spooling_loader.h"
 
 #include "sig_handlers.h"
-#include "msg_clients_common.h"
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {

@@ -46,6 +46,7 @@
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"

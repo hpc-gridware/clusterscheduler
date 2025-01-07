@@ -47,7 +47,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -73,8 +72,8 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sched/debit.h"

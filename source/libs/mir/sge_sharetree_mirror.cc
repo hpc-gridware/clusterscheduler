@@ -34,6 +34,8 @@
 
 #include "uti/sge_rmon_macros.h"
 
+#include "sgeobj/ocs_DataStore.h"
+
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
 

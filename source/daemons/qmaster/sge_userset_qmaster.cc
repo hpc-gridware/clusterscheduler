@@ -35,21 +35,14 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_unistd.h"
 
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_resource_quota.h"
-#include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "spool/sge_spooling.h"

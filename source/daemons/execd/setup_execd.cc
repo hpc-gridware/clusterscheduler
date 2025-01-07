@@ -40,17 +40,13 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 
-#include "cull/cull_file.h"
-
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_binding.h"
 #include "sgeobj/sge_utility.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientExecd.h"
 
 #include "spool/classic/read_write_job.h"
 
@@ -60,7 +56,6 @@
 #include "reaper_execd.h"
 #include "execution_states.h"
 #include "sge.h"
-#include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "msg_execd.h"
 
@@ -97,7 +92,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
       sge_exit(1);
    }
 
-   while (gdi_wait_for_conf(&Execd_Config_List)) {
+   while (ocs::gdi::ClientExecd::gdi_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL(SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT);
          /* TODO: remove */

@@ -47,6 +47,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"

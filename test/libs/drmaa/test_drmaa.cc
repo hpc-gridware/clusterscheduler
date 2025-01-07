@@ -59,12 +59,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 
-#include "comm/commlib.h"
-
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
-#include "ocs_client_job.h"
 #include "msg_common.h"
 
 #include <uti/sge_log.h>

@@ -47,7 +47,6 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sge_options.h"

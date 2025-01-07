@@ -52,7 +52,6 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
-#include "gdi/sge_gdi.h"
 
 #include "msg_qmaster.h"
 #include "sge_c_gdi.h"

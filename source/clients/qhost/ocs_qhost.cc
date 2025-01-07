@@ -53,10 +53,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cull_xml.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
-
-#include "comm/commlib.h"
 
 #include "basis_types.h"
 #include "sig_handlers.h"

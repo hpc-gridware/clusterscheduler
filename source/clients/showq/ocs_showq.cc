@@ -43,10 +43,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
-
-#include "comm/commlib.h"
 
 #include "sig_handlers.h"
 #include "ocs_showq_cmdline_tacc.h"

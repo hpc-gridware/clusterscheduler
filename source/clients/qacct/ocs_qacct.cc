@@ -68,13 +68,9 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
-#include "gdi/ocs_gdi_ClientBase.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sched/sge_select_queue.h"

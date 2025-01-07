@@ -47,6 +47,7 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 

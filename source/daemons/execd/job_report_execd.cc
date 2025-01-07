@@ -44,8 +44,6 @@
 
 #include "cull/cull.h"
 
-#include "gdi/sge_gdi.h"
-
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_report.h"

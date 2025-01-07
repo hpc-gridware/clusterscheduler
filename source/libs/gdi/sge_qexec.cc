@@ -48,7 +48,6 @@
 #include "uti/sge_uidgid.h"
 
 #include "gdi/sge_qexec.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_pe_task.h"

@@ -45,10 +45,8 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
-#include "parse_qsub.h"
 #include "usage.h"
 #include "sig_handlers.h"
 #include "msg_common.h"

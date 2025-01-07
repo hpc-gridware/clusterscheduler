@@ -49,9 +49,7 @@
 
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_id.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -59,20 +57,14 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_range.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
-
-#include "comm/commlib.h"
-
-#include "spool/sge_spooling.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "ocs_ReportingFileWriter.h"
-#include "sge.h"
 #include "sge_pe_qmaster.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_qmod_qmaster.h"
@@ -88,7 +80,6 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-#include <ocs_gdi_ClientServerBase.h>
 
 /*-------------------------------------------------------------------------*/
 static void

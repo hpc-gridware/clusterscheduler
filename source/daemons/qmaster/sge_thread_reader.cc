@@ -45,7 +45,6 @@
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/ocs_gdi_Packet.h"
-#include "gdi/sge_gdi.h"
 
 #include "comm/cl_commlib.h"
 
@@ -53,8 +52,6 @@
 #include "setup_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
-#include "sge_userprj_qmaster.h"
-#include "sge_job_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_c_report.h"
 #include "sge_thread_main.h"

@@ -49,7 +49,6 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
-#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge.h"
@@ -58,8 +57,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
 
-#include "gdi/ocs_gdi_ClientBase.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/commlib.h"

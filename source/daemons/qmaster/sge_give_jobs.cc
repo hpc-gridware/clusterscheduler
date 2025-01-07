@@ -40,7 +40,6 @@
 #include <signal.h>
 
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
@@ -50,13 +49,11 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_conf.h"
@@ -71,14 +68,12 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "sched/sge_select_queue.h"
 #include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
 
 #include "spool/sge_spooling.h"
 
@@ -87,7 +82,6 @@
 #include "basis_types.h"
 #include "execution_states.h"
 #include "sge_subordinate_qmaster.h"
-#include "sge_ckpt_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_host_qmaster.h"
@@ -99,7 +93,6 @@
 #include "sge_qmaster_timed_event.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
-#include "sge_conf.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 

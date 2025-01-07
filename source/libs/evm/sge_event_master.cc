@@ -57,27 +57,16 @@
 #include "comm/lists/cl_errors.h"
 #include "comm/cl_commlib.h"
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientExecd.h"
 
 #include "sgeobj/ocs_DataStore.h"
-#include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_report.h"
-#include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_range.h"
@@ -86,10 +75,8 @@
 #include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "configuration_qmaster.h"   /* TODO: bad dependency!! */
 #include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
-#include "uti/sge.h"
 
 #include "msg_common.h"
 #include "msg_evmlib.h"
@@ -2267,7 +2254,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
                update_func(ec_id, nullptr, report_list, update_func_arg);
                ret = CL_RETVAL_OK;
             } else {
-               ret = report_list_send(report_list, host, commproc, commid, 0);
+               ret = ocs::gdi::ClientExecd::report_list_send(report_list, host, commproc, commid, 0);
                MONITOR_MESSAGES_OUT(monitor);
             }
 

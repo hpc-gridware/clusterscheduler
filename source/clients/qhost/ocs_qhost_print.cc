@@ -67,16 +67,12 @@
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
-#include "sched/load_correction.h"
 #include "sched/sge_complex_schedd.h"
 #include "sched/sge_select_queue.h"
 

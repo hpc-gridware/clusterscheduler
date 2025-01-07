@@ -59,8 +59,8 @@
 #include "uti/sge_time.h"
 #include "uti/sge_mtutil.h"
 
+#include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_data.h"
 #include "gdi/msg_gdilib.h"
 #include "gdi/sge_security.h"
@@ -69,8 +69,6 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-
-#include "ocs_gdi_ClientBase.h"
 
 static void gdi_default_exit_func(int i) {
    sge_security_exit(i);

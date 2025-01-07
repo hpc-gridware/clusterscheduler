@@ -56,10 +56,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_cull_xml.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_ClientBase.h"
-
-#include "comm/commlib.h"
 
 #include "sig_handlers.h"
 #include "ocs_qquota_print.h"

@@ -23,7 +23,6 @@
 
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Target.h"
 #include "gdi/msg_gdilib.h"
 

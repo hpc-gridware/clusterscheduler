@@ -72,6 +72,7 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"

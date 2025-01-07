@@ -61,7 +61,6 @@
 
 #include "sched/sge_schedd_text.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"

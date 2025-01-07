@@ -44,7 +44,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/ocs_gdi_Client.h"
 
 #include "basis_types.h"

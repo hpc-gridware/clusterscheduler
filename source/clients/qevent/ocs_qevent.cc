@@ -62,8 +62,7 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
-
-#include "comm/commlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "mir/sge_mirror.h"
 
