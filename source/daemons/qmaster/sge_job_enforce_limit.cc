@@ -256,7 +256,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
 *     hosts is reached. 
 *
 *     When the trigger function is executed then all jobs running on hosts
-*     still in unknwon state will be checked how long they have till the
+*     still in unknown state will be checked how long they have till the
 *     corresponding runtime limit is reached. In that case an additional 
 *     trigger event is registered which will be fired, when the real limit
 *     is reached.
@@ -315,7 +315,7 @@ sge_add_check_limit_trigger() {
 *     as numeric parameters. 
 *
 *     The function will check if the job is still running and if the
-*     host where the job is running is still in unknwon state. Before the
+*     host where the job is running is still in unknown state. Before the
 *     function terminates the job like "qdel -f" the data structures are
 *     manipulated in a way so that the online unsage of the job which was
 *     reported in the past will be written to accounting records.
@@ -354,7 +354,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
        * Either we will receive a valid job and task id or the value 0 for both.
        * Valid ids mean that we have to handle a certain job or task
        * 0 for both means that some time has been elapsed since the master process has been started
-       * and now we have to check whether a host in still in "unknwon" state.
+       * and now we have to check whether a host in still in "unknown" state.
        */
       if (job_id == 0 && ja_task_id == 0) {
          sge_host_add_enforce_limit_trigger(nullptr);
@@ -486,7 +486,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
 *     ADOC comment of sge_host_add_remove_enforce_limit_trigger().
 *
 *  INPUTS
-*     const char *hostname - hostname of a host in unknwon state.
+*     const char *hostname - hostname of a host in unknown state.
 *
 *  RESULT
 *     void - None 
@@ -595,7 +595,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
          /*
           * If the job is a tightly integrated parallel job than we have to take care
           * that the qmaster<->execd protocol does not try to contact or wait for pe tasks
-          * which are running on the host currently changing to unknwon state.
+          * which are running on the host currently changing to unknown state.
           */
          if (job_is_tight_parallel(job, master_pe_list)) {
             const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
@@ -743,7 +743,7 @@ sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id) {
    DENTER(TOP_LAYER);
 
    /*
-    * Delete pe task flag which prevents communication with unknwon 
+    * Delete pe task flag which prevents communication with unknown 
     * hosts in qmaster<->execd protocol
     */
    if (job != nullptr && ja_task != nullptr) {
