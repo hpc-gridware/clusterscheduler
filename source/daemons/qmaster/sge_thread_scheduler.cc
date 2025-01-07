@@ -695,7 +695,7 @@ sge_scheduler_main(void *arg) {
           * - fetch and merge new cluster (global, local) configuration if it has changed
           * - reset counters in job categories
           */
-         // @todo: replace this - gets config via GDI!!!
+         // @todo CS-924: replace this - gets config via GDI!!!
          sge_before_dispatch(evc);
 
          // prepare data for the scheduler itself
