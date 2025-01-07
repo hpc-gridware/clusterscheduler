@@ -1550,11 +1550,6 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, u_long64
    // Process the unique ID for the event that was triggered. session is the same as for the initiator of the request.
    ocs::SessionManager::set_write_unique_id(gdi_session, unique_id);
 
-   // All execd send GDI requests as admin user. In order to enforce them to see most current information
-   // via reader DS, we need to set the unique ID for the admin user session.
-   static const u_long64 admin_user_session = ocs::SessionManager::get_session_id(bootstrap_get_admin_user());
-   ocs::SessionManager::set_write_unique_id(admin_user_session, unique_id);
-
    // Add the request to the event master request list
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
    if (single_evr) {
