@@ -131,7 +131,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       hostname = lGetHost(queueep, QU_qhostname);
    }
 
-   if (failed) {        /* a problem occured */
+   if (failed) {        /* a problem occurred */
       WARNING(MSG_JOB_FAILEDONHOST_UUSSSS, sge_u32c(jobid), sge_u32c(jataskid), hostname, general_failure ? MSG_GENERAL : "", get_sstate_description(failed), err_str);
    } else {
       INFO(MSG_JOB_JFINISH_UUS, sge_u32c(jobid), sge_u32c(jataskid), hostname);

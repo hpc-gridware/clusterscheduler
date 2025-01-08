@@ -1525,7 +1525,7 @@ build_path(int type) {
 
    /* Try to get information about 'base' */
    if( SGE_STAT(base, &statbuf)) {
-      /* An error occured */
+      /* An error occurred */
       if (errno != ENOENT) {
          char *t;
          snprintf(err_str, sizeof(err_str), "can't stat() \"%s\" as %s: %s", base, name, strerror(errno));
@@ -1787,7 +1787,7 @@ static void start_qlogin_job(const char *shell_path)
 *  FUNCTION
 *     Prepares the argument list and starts the qrsh <command> job, i.e.
 *     usually starts the qrsh_starter binary. If this function succeeds, it
-*     doesn't return, because it execs the job. If it returns, an error occured.
+*     doesn't return, because it execs the job. If it returns, an error occurred.
 *
 *  INPUTS
 *     void - no input 

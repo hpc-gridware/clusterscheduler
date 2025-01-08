@@ -73,7 +73,7 @@
 *
 *  RESULT
 *     1, if the file could be deleted
-*     0, if and error occured. Possible error situations are:
+*     0, if and error occurred. Possible error situations are:
 *           - the environment variable TMPDIR cannot be read
 *           - the file cannot be deleted
 *
@@ -262,7 +262,7 @@ void write_exit_code_to_qrsh(int exit_code)
 *
 *  RESULT
 *     0, success
-*     1, if an error occured while trying to get the exit code
+*     1, if an error occurred while trying to get the exit code
 ******************************************************************************/
 int get_exit_code_of_qrsh_starter(int* exit_code)
 {

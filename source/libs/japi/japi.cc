@@ -2471,7 +2471,7 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose)
 *                                      JAPI_JOB_START
 *                                      JAPI_JOB_FINISH
 *                                    or a combination by oring them together.
-*     int *event                   - returns the actual event that occured.  When
+*     int *event                   - returns the actual event that occurred.  When
 *                                    the event_mask includes JAPI_JOB_START, this
 *                                    parameter must be checked to be sure that
 *                                    a JAPI_JOB_START event was received.  It is

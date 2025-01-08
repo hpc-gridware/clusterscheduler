@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -658,7 +658,7 @@ static int diff(const char *file1, const char *file2)
       argv[3] = nullptr;
       
       execv(path, argv);
-      /* if execv return an error occured */
+      /* if execv return an error occurred */
    }
    else {
       int stat_loc = 0;

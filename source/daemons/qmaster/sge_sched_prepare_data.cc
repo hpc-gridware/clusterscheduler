@@ -776,7 +776,7 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
          /* need to redo categories if certain changes occur:
             --> it gets used or was used as ACL with queue_conf(5)/host_conf(5)/sge_pe(5)
             --> it is in use as ACL with queue_conf(5)/host_conf(5)/sge_pe(5)
-                and a change with users/groups occured */
+                and a change with users/groups occurred */
 
          if ((lGetBool(new_ep, US_consider_with_categories) != lGetBool(old_ep, US_consider_with_categories))
              || (lGetBool(old_ep, US_consider_with_categories) &&

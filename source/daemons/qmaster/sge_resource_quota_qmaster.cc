@@ -117,7 +117,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *
 *  RESULT
 *     int - 0 on success
-*           STATUS_EUNKNOWN if an error occured
+*           STATUS_EUNKNOWN if an error occurred
 *
 *  NOTES
 *     MT-NOTE: rqs_mod() is MT safe 
@@ -216,7 +216,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EEXIST - an error occured
+*     STATUS_EEXIST - an error occurred
 *
 *  NOTES
 *     MT-NOTE: rqs_spool() is MT safe 
@@ -303,7 +303,7 @@ rqs_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListEle
 *
 *  RESULT
 *     0 - success
-*     STATUS_EUNKNOWN - an error occured
+*     STATUS_EUNKNOWN - an error occurred
 *
 *  NOTES
 *     MT-NOTE: rqs_del() is MT safe 

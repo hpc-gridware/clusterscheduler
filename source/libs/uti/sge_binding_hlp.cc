@@ -778,7 +778,7 @@ binding_get_topology_for_job(const char *binding_result) {
 *     int* amount          - Length of the arrays.  
 *
 *  RESULT
-*     bool - false when problems occured true otherwise
+*     bool - false when problems occurred true otherwise
 *
 *  NOTES
 *     MT-NOTE: topology_string_to_socket_core_lists() is MT safe 

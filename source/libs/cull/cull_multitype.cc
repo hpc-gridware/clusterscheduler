@@ -3859,7 +3859,7 @@ lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
 *     const char* str - value 
 *
 *  RESULT
-*     nullptr when element was not found or if an error occured
+*     nullptr when element was not found or if an error occurred
 *     otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
@@ -4282,7 +4282,7 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
 *
 *  RESULT
 *     1 element was found and removed 
-*     0 an error occured
+*     0 an error occurred
 ******************************************************************************/
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    lListElem *ep;
@@ -4369,7 +4369,7 @@ const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) 
 *     lUlong val - unsigned long value 
 *
 *  RESULT
-*    nullptr if element was not found or an error occured
+*    nullptr if element was not found or an error occurred
 *    otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
@@ -4681,7 +4681,7 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
 *
 *  RESULT
 *     1 element was found and removed 
-*     0 an error occured
+*     0 an error occurred
 ******************************************************************************/
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    lListElem *ep;
@@ -4768,7 +4768,7 @@ const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int s
 *     lUlong64 val - unsigned long value 
 *
 *  RESULT
-*    nullptr if element was not found or an error occured
+*    nullptr if element was not found or an error occurred
 *    otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
@@ -4975,7 +4975,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
 *     const char* str - string 
 *
 *  RESULT
-*     nullptr when element is not found or an error occured
+*     nullptr when element is not found or an error occurred
 *     otherwise the pointer to an element 
 *
 ******************************************************************************/

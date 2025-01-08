@@ -539,7 +539,7 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
  * return  
  *         0 if present 
  *         1 if not
- *        -1 error occured
+ *        -1 error occurred
  *----------------------------------------------------------------------*/
 static int
 host_in_file(const char *host, const char *file) {
