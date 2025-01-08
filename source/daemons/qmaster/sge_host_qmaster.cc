@@ -1088,7 +1088,6 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
    u_long execd_alive;
    const char *action_str;
    u_long32 state;
-   const lListElem *jep;
    const lList *mail_users;
    const lList *gdil;
    int mail_options;
@@ -1126,7 +1125,8 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
       char sge_mail_body[1024];
 
       /* mark killed jobs as deleted */
-      for_each_ep(jep, master_job_list) {
+      lListElem *jep;
+      for_each_rw(jep, master_job_list) {
          lListElem *jatep;
          mail_users = nullptr;
          mail_options = 0;
@@ -1161,19 +1161,13 @@ notify(lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *tas
                   state = lGetUlong(jatep, JAT_state);
                   SETBIT(JDELETED, state);
                   lSetUlong(jatep, JAT_state, state);
-                  /* spool job */
-                  {
-                     lList *answer_list = nullptr;
-                     dstring buffer = DSTRING_INIT;
-                     spool_write_object(&answer_list,
-                                        spool_get_default_context(), jep,
-                                        job_get_key(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
-                                                    nullptr, &buffer),
-                                        SGE_TYPE_JOB, true);
-                     /* JG: TODO: don't we have to send an event? */
-                     answer_list_output(&answer_list);
-                     sge_dstring_free(&buffer);
-                  }
+
+                  /* spool job and propagate state change to event clients */
+                  lList *answer_list = nullptr;
+                  sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, lGetUlong(jep, JB_job_number),
+                                  lGetUlong(jatep, JAT_task_number), nullptr, nullptr, nullptr,
+                                  jep, jatep, nullptr, true, true, 0);
+                  answer_list_output(&answer_list);
                }
             }
          }
