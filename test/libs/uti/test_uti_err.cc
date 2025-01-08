@@ -50,7 +50,7 @@ test_err_has_which_error() {
    DENTER(ERR_LAYER);
 
    if (sge_err_has_error()) {
-      fprintf(stderr, "in error state although no error occured in %s()\n", __func__);
+      fprintf(stderr, "in error state although no error occurred in %s()\n", __func__);
       ret = false;
    }
 
@@ -60,7 +60,7 @@ test_err_has_which_error() {
    }
 
    if (sge_err_has_error() != true) {
-      fprintf(stderr, "not in error state although error occured in %s()\n", __func__);
+      fprintf(stderr, "not in error state although error occurred in %s()\n", __func__);
       ret = false;
    }
 

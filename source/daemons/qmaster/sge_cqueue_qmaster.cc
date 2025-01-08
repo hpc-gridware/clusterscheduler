@@ -537,7 +537,7 @@ cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
 
          if (!ret) {
             /*
-             * Skip remaining qinstances if an error occured.
+             * Skip remaining qinstances if an error occurred.
              */
             break;
          }

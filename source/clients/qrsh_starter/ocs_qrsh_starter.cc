@@ -166,7 +166,7 @@ static void qrsh_error(const char *fmt, ...)
 *
 *  RESULT
 *     command, if all actions could be performed
-*     nullptr,    if an error occured; possible errors are:
+*     nullptr,    if an error occurred; possible errors are:
 *                 - the environment file cannot be opened
 *                 - a PWD entry is found, but changing to the named directory fails
 *                 - necessary memory cannot be allocated
@@ -305,7 +305,7 @@ FCLOSE_ERROR:
 *     const char *jobdir - the jobs spool directory
 *
 *  RESULT
-*     static int - 0, if an error occured
+*     static int - 0, if an error occurred
 *                  1, if function completed without errors
 *
 *******************************************************************************/
@@ -337,7 +337,7 @@ static int readConfig(const char *jobdir)
 *     change the current working directory.
 *
 *  RESULT
-*     static int - 0, if an error occured
+*     static int - 0, if an error occurred
 *                  1, if function completed without errors
 *  SEE ALSO
 *     Interactive/qrsh/readConfig()
@@ -383,7 +383,7 @@ static int changeDirectory()
 *
 *  RESULT
 *     1, if all actions could be performed
-*     0, if an error occured. Possible error situations are:
+*     0, if an error occurred. Possible error situations are:
 *        - the environement variable TMPDIR cannot be read
 *        - the file cannot be opened
 *
@@ -465,7 +465,7 @@ static void forward_signal(int sig)
 *     char ***cmdargs - pointer to string array to be filled with arguments
 *
 *  RESULT
-*     static int - the number of arguments or 0 if an error occured
+*     static int - the number of arguments or 0 if an error occurred
 *
 *  SEE ALSO
 *     Interactive/qrsh/join_command()
@@ -539,7 +539,7 @@ static int split_command(char *command, char ***cmdargs) {
 *     char **argv - argument vector
 *
 *  RESULT
-*     static char* - the resulting commandline or nullptr, if an error occured.
+*     static char* - the resulting commandline or nullptr, if an error occurred.
 *
 *  SEE ALSO
 *     Interactive/qrsh/split_command()
@@ -762,7 +762,7 @@ static int startJob(char *command, char *wrapper, int noshell)
 *     static int writeExitCode(int myExitCode, int programExitCode)
 *
 *  FUNCTION
-*     If myExitCode != EXIT_SUCCESS, that means, if an error occured in
+*     If myExitCode != EXIT_SUCCESS, that means, if an error occurred in
 *     qrsh_starter, write this exit code to file,
 *     else write the exit code of the child process (programExitCode).
 *     The exit code is written to a file "qrsh_exit_code" in the
@@ -774,7 +774,7 @@ static int startJob(char *command, char *wrapper, int noshell)
 *
 *  RESULT
 *     EXIT_SUCCESS, if all actions could be performed,
-*     EXIT_FAILURE, if one of the following errors occured:
+*     EXIT_FAILURE, if one of the following errors occurred:
 *        - the environment variable TMPDIR cannot be read
 *        - the file $TMPDIR/qrsh_exit_code cannot be written
 *
@@ -857,7 +857,7 @@ static int writeExitCode(int myExitCode, int programExitCode)
 *
 *  RESULT
 *     EXIT_SUCCESS, if all actions could be performed,
-*     EXIT_FAILURE, if an error occured
+*     EXIT_FAILURE, if an error occurred
 *
 *  EXAMPLE
 *     setenv QRSH_COMMAND "echo test"

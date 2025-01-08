@@ -565,7 +565,7 @@ static spooling_field *get_recursion_field_list (const spool_flatfile_instr *ins
 *     spooling_field *fields  - field description used for alignment
 *
 *  RESULT
-*     bool - true on success, false if an error occured
+*     bool - true on success, false if an error occurred
 *
 *  SEE ALSO
 *     spool/flatfile/spool_flatfile_align_list()

@@ -116,13 +116,13 @@
 *        SGE_EM_OK              - action performed successfully
 *        SGE_EM_NOT_INITIALIZED - the interface is not yet initialized 
 *        SGE_EM_BAD_ARG         - some input parameter was incorrect
-*        SGE_EM_TIMEOUT         - a timeout occured
+*        SGE_EM_TIMEOUT         - a timeout occurred
 *        SGE_EM_DUPLICATE_KEY   - an object should be added, but an object 
 *                                 with the same unique identifier already 
 *                                 exists.
 *        SGE_EM_KEY_NOT_FOUND   - an object with the given key was not found.
 *        SGE_EM_CALLBACK_FAILED - a callback function failed
-*        SGE_EM_PROCESS_ERRORS  - an error occured during event processing
+*        SGE_EM_PROCESS_ERRORS  - an error occurred during event processing
 *
 *     The event mirroring interface allows to install callback funktions for
 *     actions on certain event types. These callback functions have to have 

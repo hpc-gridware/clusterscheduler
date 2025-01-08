@@ -99,7 +99,7 @@
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EUNKNOWN - an error occured
+*     STATUS_EUNKNOWN - an error occurred
 ******************************************************************************/
 int
 ckpt_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
@@ -211,7 +211,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EEXIST - an error occured
+*     STATUS_EEXIST - an error occurred
 ******************************************************************************/
 int ckpt_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -295,7 +295,7 @@ ckpt_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListEl
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EUNKNOWN - an error occured
+*     STATUS_EUNKNOWN - an error occurred
 ******************************************************************************/
 int
 sge_del_ckpt(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {

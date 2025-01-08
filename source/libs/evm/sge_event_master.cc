@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -982,7 +982,7 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
       /* compress the range list to reduce fragmentation */
       range_list_compress(Event_Master_Control.client_ids);
 
-      /* output any errors that might have occured */
+      /* output any errors that might have occurred */
       answer_list_output(&answer_list);
 
    } /* if */

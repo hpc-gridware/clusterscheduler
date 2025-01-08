@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1778,7 +1778,7 @@ static sge_callback_result
 *
 *  RESULT
 *     static sge_callback_result - true, if update is successful
-*                                  false if an error occured
+*                                  false if an error occurred
 *
 *  NOTES
 *     MT-NOTE: ar_update_master_list() is not MT safe

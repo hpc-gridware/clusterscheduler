@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -598,7 +598,7 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *
 *  RESULT
 *     int - 0 on success
-*           STATUS_EUNKNOWN if an error occured
+*           STATUS_EUNKNOWN if an error occurred
 *  NOTES
 *     MT-NOTE: userset_mod() is not MT safe, needs global lock 
 *******************************************************************************/
@@ -742,7 +742,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EEXIST - an error occured
+*     STATUS_EEXIST - an error occurred
 *
 *  NOTES
 *     MT-NOTE: userset_spool() is not MT safe 
