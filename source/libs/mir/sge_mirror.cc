@@ -1111,6 +1111,11 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
       }
       num_events++;
 
+#if 0
+      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+      INFO("<-- %s", event_text(event, &dstr));
+#endif
+
       switch (lGetUlong(event, ET_type)) {
          case sgeE_ADMINHOST_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ADMINHOST, SGE_EMA_LIST, event);

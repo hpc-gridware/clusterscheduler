@@ -581,9 +581,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         } else {
                            u_long32 failed = lGetUlong(jr, JR_failed);
 
-                           if (failed == SSTATE_FAILURE_AFTER_JOB &&
-                               !lGetString(jep, JB_checkpoint_name)) {
-
+                           if (failed == SSTATE_FAILURE_AFTER_JOB && !lGetString(jep, JB_checkpoint_name)) {
                               if (!ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
                                  job_mark_job_as_deleted(jep, jatep);
                                  ERROR(MSG_JOB_MASTERTASKFAILED_S, job_id_string);
@@ -711,8 +709,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               INFO(MSG_JOB_TASKFAILED_SSUUU, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid), sge_u32c(failed));
                            }
 
-                           if (failed == SSTATE_FAILURE_AFTER_JOB &&
-                               !lGetString(jep, JB_checkpoint_name)) {
+                           if (failed == SSTATE_FAILURE_AFTER_JOB && !lGetString(jep, JB_checkpoint_name)) {
                               if (!ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
                                  job_mark_job_as_deleted(jep, jatep);
                                  ERROR(MSG_JOB_JOBTASKFAILED_S, job_id_string);

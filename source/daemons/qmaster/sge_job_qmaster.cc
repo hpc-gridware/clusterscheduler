@@ -1070,23 +1070,22 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    DRETURN_VOID;
 }
 
-void job_mark_job_as_deleted(lListElem *j,
-                             lListElem *t) {
+void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
    DENTER(TOP_LAYER);
-   if (j && t) {
-      lList *answer_list = nullptr;
-      dstring buffer = DSTRING_INIT;
-      u_long32 state = lGetUlong(t, JAT_state);
+   if (j != nullptr && t != nullptr) {
 
+      u_long32 state = lGetUlong(t, JAT_state);
       SETBIT(JDELETED, state);
       lSetUlong(t, JAT_state, state);
       lSetUlong64(t, JAT_stop_initiate_time, sge_get_gmt64());
-      spool_write_object(&answer_list, spool_get_default_context(), j,
-                         job_get_key(lGetUlong(j, JB_job_number), lGetUlong(t, JAT_task_number), nullptr, &buffer),
-                         SGE_TYPE_JOB, true);
+
+      lList *answer_list = nullptr;
+      sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, lGetUlong(j, JB_job_number),
+                      lGetUlong(t, JAT_task_number), nullptr, nullptr, nullptr,
+                      j, t, nullptr, true, true, 0);
       answer_list_output(&answer_list);
-      sge_dstring_free(&buffer);
    }
+
    DRETURN_VOID;
 }
 
@@ -3844,7 +3843,7 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
                   continue;
                }
 
-               /*If job has large array of tasks, and time to delete the array
+               /* If job has large array of tasks, and time to delete the array
                 * of jobs is greater than MAX_JOB_DELETION_TIME, break out of
                 * qdel and delete remaining jobs later
                 */
@@ -3857,13 +3856,15 @@ static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lLi
                   DRETURN(njobs);
                }
 
-               ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED, packet->user, packet->host, nullptr, job, tmp_task, nullptr,
-                                        MSG_LOG_DELETED);
+               ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
+                                                         packet->user, packet->host, nullptr, job,
+                                                         tmp_task, nullptr, MSG_LOG_DELETED);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);
                   get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor, packet->gdi_session);
                } else {
+                  // @todo: spool_job = 1 = COMMIT_NO_SPOOLING = 0x0001
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
                                  monitor, packet->gdi_session);
                   showmessage = 1;
