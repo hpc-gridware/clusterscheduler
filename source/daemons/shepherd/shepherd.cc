@@ -2445,7 +2445,8 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       npid = wait3(&status, wait_options, rusage);
 
       if (npid == -1) {
-         shepherd_trace("wait3 returned -1");
+         DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+         shepherd_trace("wait3 returned -1, errno = %d: %s", errno, sge_strerror(errno, &dstr));
          if (errno == ECHILD) {
             shepherd_trace("all childs have exited, quit wait3() loop.");
             break;
