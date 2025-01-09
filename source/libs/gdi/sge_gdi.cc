@@ -1812,7 +1812,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
 *     sge_gdi_stored_com_error_t error_type - error type value
 *
 *  RESULT
-*     bool - true: error has occured, false: error never occured
+*     bool - true: error has occurred, false: error never occurred
 *
 *  NOTES
 *     MT-NOTE: sge_get_com_error_flag() is MT safe 

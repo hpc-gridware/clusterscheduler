@@ -579,7 +579,7 @@ static int cull_unpack_cont(
    } else if (last_error != PACK_SUCCESS || !only_at_bufferend) {
       /*
        * If we are here then an error != PACK_FORMAT happened or
-       * or a PACK_FORMAT occured but after it occured either
+       * or a PACK_FORMAT occurred but after it occurred either
        * a different error happended or an operation succeeded. 
        * Format errors should only be catched if they ocure at the en of 
        * the descriptor.

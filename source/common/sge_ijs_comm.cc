@@ -856,7 +856,7 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
       }
    }
    if (waited_usec/1000000 >= wait_secs) {
-      sge_dstring_sprintf(err_msg, "Timeout occured while waiting for connection");
+      sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for connection");
       DPRINTF(sge_dstring_get_string(err_msg));
       ret_val = COMM_GOT_TIMEOUT;
    } else if (ret2 != CL_RETVAL_OK) {
@@ -970,7 +970,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
    DPRINTF("wait_for_no_connection: after while\n");
    if (waited_usec/1000000 >= wait_secs) {
       sge_dstring_sprintf(err_msg, 
-                          "Timeout occured while waiting for no connection");
+                          "Timeout occurred while waiting for no connection");
       DPRINTF(sge_dstring_get_string(err_msg));
       ret_val = COMM_GOT_TIMEOUT;
    }
@@ -1214,7 +1214,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
 *  RESULT
 *     int - 0: Ok, all messages were flushed.
 *          <0: Retries needed to flush all messages * -1
-*          >0: An error occured, error number is a commlib error.
+*          >0: An error occurred, error number is a commlib error.
 *
 *  NOTES
 *     MT-NOTE: comm_flush_write_messages() is not MT safe 

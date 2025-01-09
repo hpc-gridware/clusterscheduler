@@ -393,7 +393,7 @@ typedef struct cl_com_host_spec_type {
    bool read_ready     states if the fd is ready for reading
    bool write_ready    states if the fd is ready for writing
    void* user_data          void pointer to some data of the application
-   int err_val              states if an error occured while poll/select of the external fd
+   int err_val              states if an error occurred while poll/select of the external fd
 */
 typedef int   (*cl_fd_func_t)(int fd, bool read_ready, bool write_ready, void *user_data, int err_val);
 

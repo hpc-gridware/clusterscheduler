@@ -271,7 +271,7 @@ static void forward_signal(int sig)
 *
 *  RESULT
 *     function returns the socket file descriptor, 
-*     or 0, if an error occured
+*     or 0, if an error occurred
 *     [port] - the port number of the socket is returned in the 
 *              reference parameter
 *
@@ -400,7 +400,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
 *
 *  RESULT
 *     the read message,
-*     nullptr, if an error occured
+*     nullptr, if an error occurred
 *
 *  NOTES
 *     The result points to a static buffer - in subsequent calls of 

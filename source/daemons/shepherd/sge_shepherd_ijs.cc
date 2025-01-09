@@ -119,7 +119,7 @@ extern int           received_signal; /* defined in shepherd.c */
 *
 *  RESULT
 *     int - >0: OK, number of bytes read from the fd
-*           =0: EINTR or EAGAIN occured, just call select() and read again
+*           =0: EINTR or EAGAIN occurred, just call select() and read again
 *           -1: error occcured, connection was closed
 *
 *  NOTES
@@ -176,7 +176,7 @@ static int trace_buf(const char *buffer, int length, const char *format, ...)
 *
 *  RESULT
 *     int - >0: OK, number of bytes read from the fd
-*           =0: EINTR or EAGAIN occured, just call select() and read again
+*           =0: EINTR or EAGAIN occurred, just call select() and read again
 *           -1: error occcured, connection was closed
 *
 *  NOTES

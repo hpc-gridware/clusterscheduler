@@ -288,7 +288,7 @@ void shepherd_error_chown(const char* job_owner)
 *     ...: The parameters to the format string. See printf(3c).
 *
 *  RESULT
-*     int - 0 if successful, 1 if an error occured.
+*     int - 0 if successful, 1 if an error occurred.
 *******************************************************************************/
 int shepherd_trace(const char *format, ...) 
 {

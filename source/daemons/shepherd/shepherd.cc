@@ -654,7 +654,7 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
  breakdown should cause this.
 
  If the "exit_status"-file exists the shepherd has terminated regular.
- If exit_status==0 everything is fine. If exit_status!=0 a problem occured.
+ If exit_status==0 everything is fine. If exit_status!=0 a problem occurred.
  The error file should give hints what happened.
  exit_status values: see shepherd_states header file
 
@@ -2461,7 +2461,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       /* qsub -pty handling */
       if (fd_pty_master != -1) {
          int ret;
-         int stop_job = 0;    /* This flag will be set if an error occured */
+         int stop_job = 0;    /* This flag will be set if an error occurred */
          int stop_poll = 1;   /* This flag will be reset if polling is still necessary */
 
          /* look for data to write */
@@ -2586,9 +2586,9 @@ int fd_std_err             /* fd of stderr. -1 if not set */
             }
          }
 
-         /* If an error occured we have to terminate the job. */
+         /* If an error occurred we have to terminate the job. */
          if (stop_job == 1) {
-            shepherd_trace("An error occured while executing the job. Job will be terminated.");
+            shepherd_trace("An error occurred while executing the job. Job will be terminated.");
             shepherd_signal_job(-pid, SIGTERM);
             /* Reset fd_pty_master as we do not have to poll again. */
             fd_pty_master = -1;

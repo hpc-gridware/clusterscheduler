@@ -52,7 +52,7 @@ typedef enum {
    STATUS_ESEMANTIC,         /* semantic error */
    STATUS_EEXIST,            /* elem does not exist OR it exists for a
                               * "add" request */
-   STATUS_EUNKNOWN,          /* unknown error occured */
+   STATUS_EUNKNOWN,          /* unknown error occurred */
    STATUS_ENOIMP,            /* command not implemented for target */
    STATUS_ENOKEY,            /* missing key field in case of add,del,mod */
    STATUS_ESYNTAX,           /* syntax error parsing a_source field */

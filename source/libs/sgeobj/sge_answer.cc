@@ -800,7 +800,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
 *  RESULT
 *     int - error state
 *        true  - OK
-*        false - error occured
+*        false - error occurred
 *
 *  SEE ALSO
 *     sgeobj/answer/answer_list_add_sprintf()

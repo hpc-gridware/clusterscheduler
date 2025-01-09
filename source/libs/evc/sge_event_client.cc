@@ -2673,7 +2673,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
 *  RESULT
 *     bool - true, if events or an empty event list was received, or
 *                  if no data was received within a certain time period
-*            false, if an error occured
+*            false, if an error occurred
 *
 *  NOTES
 *     The event_list has to be freed by the calling function.

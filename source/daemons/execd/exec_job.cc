@@ -2644,7 +2644,7 @@ static bool create_binding_strategy_string_solaris(dstring* result,
       retval = false;
    }
 
-   /* in case no core binding is selected or any other error occured */
+   /* in case no core binding is selected or any other error occurred */
    if (!retval) {
       sge_dstring_append(result, "nullptr");
    } else {

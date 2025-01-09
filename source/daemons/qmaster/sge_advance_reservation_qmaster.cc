@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -211,7 +211,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
 *
 *  RESULT
 *     int - 0 on success
-*           STATUS_EUNKNOWN if an error occured
+*           STATUS_EUNKNOWN if an error occurred
 *           STATUS_NOTOK_DOAGAIN if a temporary error
 *
 *  NOTES
@@ -342,7 +342,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *  RESULT
 *     [alpp] - error messages will be added to this list
 *     0 - success
-*     STATUS_EEXIST - an error occured
+*     STATUS_EEXIST - an error occurred
 *
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 

@@ -148,7 +148,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *
 *  RESULT
 *     spooling_field * - an array of type spooling_field, or 
-*                        nullptr, if an error occured, error messages are returned
+*                        nullptr, if an error occurred, error messages are returned
 *                        in answer_list
 *
 *  NOTES

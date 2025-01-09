@@ -138,7 +138,7 @@ static object_description object_base[SGE_TYPE_ALL] = {
 *  RESULT
 *     const char * - string representation of the attribute value
 *                    (pointer to the string in the dynamic string
-*                    buffer, or nullptr if an error occured.
+*                    buffer, or nullptr if an error occurred.
 *
 *  NOTES
 *     For sublists, subobjects and references nullptr is returned.
@@ -499,7 +499,7 @@ object_get_primary_key(const lDescr *descr) {
 *
 *  RESULT
 *     const char * - the prefix or
-*                    nullptr, if an error occured
+*                    nullptr, if an error occurred
 *
 *  EXAMPLE
 *     object_get_name_prefix(QU_Type, buffer) = "QU_"
@@ -612,7 +612,7 @@ object_get_name(const lDescr *descr) {
 *  RESULT
 *     const char * - string representation of the attribute value 
 *                    (pointer to the string in the dynamic string 
-*                    buffer, or nullptr if an error occured.
+*                    buffer, or nullptr if an error occurred.
 *
 *  NOTES
 *     For sublists, subobjects and references nullptr is returned.

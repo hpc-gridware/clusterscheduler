@@ -893,7 +893,7 @@ spool_type_search_default_rule(const lListElem *spool_type)
 *
 *  RESULT
 *     lListElem* - the newly created mapping object between type and rule 
-*                  (SPTR_Type), or nullptr, if an error occured.
+*                  (SPTR_Type), or nullptr, if an error occurred.
 *
 *  SEE ALSO
 *     spool/--Spooling
@@ -968,7 +968,7 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
 *     const sge_object_type object_type - the object type
 *
 *  RESULT
-*     int - true, on success, false, if an error occured
+*     int - true, on success, false, if an error occurred
 *
 *  SEE ALSO
 *     spool/--Spooling
