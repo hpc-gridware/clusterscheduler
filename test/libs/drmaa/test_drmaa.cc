@@ -1884,7 +1884,13 @@ static int test(int *argc, char **argv[], int parse_args)
             fprintf(stderr, "drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose) failed: %s\n", diagnosis);
             return 1;
          }
-         printf("synchronized with job finish\n");
+         printf("synchronized with job finish (1)\n");
+         // @todo: drmaa_job_ps below will give us old data until reader threads are updated.
+         //        need to wait for the reader data store to be updated
+         //        after the 2s the job is most probably already gone, in which case drmaa_job_ps will consult
+         //        the japi internal copy of the job which contains the job report from the JOB_FINISH event
+         //        and in the end gets the correct data
+         sleep(2);
 
          /* get job state */
          drmaa_errno = drmaa_job_ps(jobid, &remote_ps, diagnosis, sizeof(diagnosis)-1);
@@ -2182,7 +2188,9 @@ static int test(int *argc, char **argv[], int parse_args)
             fprintf(stderr, "drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose) failed: %s\n", diagnosis);
             return 1;
          }
-         printf("synchronized with job finish\n");
+         printf("synchronized with job finish (2)\n");
+         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         sleep(2);
 
          /* report job finish state */
          if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)!=DRMAA_ERRNO_SUCCESS) {
@@ -2314,7 +2322,9 @@ static int test(int *argc, char **argv[], int parse_args)
             free_jobids(all_jobids, size_all_jobids);
             return 1;
          }
-         printf("synchronized with job finish\n");
+         printf("synchronized with job finish (3)\n");
+         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         sleep(2);
 
          /* 
           * Verify job state of all jobs in the job id array 
@@ -4328,12 +4338,14 @@ static int test(int *argc, char **argv[], int parse_args)
             fprintf(stderr, "drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose) failed: %s\n", diagnosis);
             return 1;
          }
-         printf("synchronized with job finish\n");
+         printf("synchronized with job finish (4)\n");
+         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         sleep(2);
 
          /* get job state */
          drmaa_errno = drmaa_job_ps(jobid, &remote_ps, diagnosis, sizeof(diagnosis)-1);
          if (remote_ps == DRMAA_PS_FAILED) {
-            fprintf(stderr, "job \"%s\" is not in failed state: %s\n", 
+            fprintf(stderr, "job \"%s\" is not in failed state: %s\n",
                      jobid, drmaa_state2str(remote_ps));
             return 1;
          }

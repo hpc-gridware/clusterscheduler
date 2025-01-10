@@ -3282,8 +3282,8 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
 
    gdi_extract_answer(&alp, SGE_GDI_GET, SGE_JB_LIST, jb_id, mal, retrieved_job_list);
    lFreeList(&mal);
+
    aep = lFirst(alp);
-   
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
@@ -4319,11 +4319,10 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
                const lList *jat = lGetList(event, ET_new_version);
                const lListElem *ep = lFirst(jat);
                u_long job_status = lGetUlong(ep, JAT_status);
-               bool task_running = (job_status==JRUNNING || 
-                                    job_status==JTRANSFERING) ? true : false;
+               bool task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
                if (task_running) {
-                  DPRINTF("Handling task start event\n");
+                  DPRINTF("Handling task modify event\n");
 
                   JAPI_LOCK_JOB_LIST();
 
@@ -4359,9 +4358,10 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
             } /* else if type == sgeE_JATASK_MOD */
             /* Bug Fix: Issuezilla #826
              * Since we only want to stop when explicitly told to, we have to
-             * draw a distinction between SHUTDOWN and QMASTER_GOES_DOWN. On
-             * SHUTDOWN we exit the event client thread.  On QMASTER_GOES_DOWN
-             * we may eventually want to issue a warning message. */
+             * draw a distinction between SHUTDOWN and QMASTER_GOES_DOWN.
+             * On SHUTDOWN, we exit the event client thread.
+             * On QMASTER_GOES_DOWN, * we may eventually want to issue a warning message.
+             */
             else if (type == sgeE_SHUTDOWN) {
                JAPI_LOCK_JOB_LIST();
                DPRINTF (("Received shutdown message\n"));
