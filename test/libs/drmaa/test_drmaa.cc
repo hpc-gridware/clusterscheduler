@@ -1885,7 +1885,7 @@ static int test(int *argc, char **argv[], int parse_args)
             return 1;
          }
          printf("synchronized with job finish (1)\n");
-         // @todo: drmaa_job_ps below will give us old data until reader threads are updated.
+         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated.
          //        need to wait for the reader data store to be updated
          //        after the 2s the job is most probably already gone, in which case drmaa_job_ps will consult
          //        the japi internal copy of the job which contains the job report from the JOB_FINISH event
@@ -2189,7 +2189,7 @@ static int test(int *argc, char **argv[], int parse_args)
             return 1;
          }
          printf("synchronized with job finish (2)\n");
-         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
          sleep(2);
 
          /* report job finish state */
@@ -2323,7 +2323,7 @@ static int test(int *argc, char **argv[], int parse_args)
             return 1;
          }
          printf("synchronized with job finish (3)\n");
-         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
          sleep(2);
 
          /* 
@@ -4339,7 +4339,7 @@ static int test(int *argc, char **argv[], int parse_args)
             return 1;
          }
          printf("synchronized with job finish (4)\n");
-         // @todo: drmaa_job_ps below will give us old data until reader threads are updated - see above
+         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
          sleep(2);
 
          /* get job state */
