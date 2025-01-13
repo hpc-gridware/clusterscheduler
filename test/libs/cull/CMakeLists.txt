@@ -45,7 +45,13 @@ target_include_directories(test_cull_enumeration PRIVATE "./")
 target_link_libraries(test_cull_enumeration PRIVATE cull uti commlists ${SGE_LIBS})
 add_test(NAME test_cull_enumeration COMMAND test_cull_enumeration)
 
+add_executable(test_ocs_cull_perf test_ocs_cull_perf.cc)
+target_include_directories(test_ocs_cull_perf PRIVATE "./")
+target_link_libraries(test_ocs_cull_perf PRIVATE cull sgeobj uti commlists ${SGE_LIBS})
+add_test(NAME test_ocs_cull_perf COMMAND test_ocs_cull_perf)
+
 if (INSTALL_SGE_TEST)
+   install(TARGETS test_ocs_cull_perf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_cull_hash DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_cull_list DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_cull_observe DESTINATION testbin/${SGE_ARCH})
