@@ -474,40 +474,40 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
 {
    DENTER(TOP_LAYER);
 
-   const char *long_name  = "";
-   const char *short_name = "";
-   const char *version    = "";
+   std::string long_name;
+   std::string short_name;
+   std::string version;
    const char *ret = nullptr;
 
    if (feature_get_active_featureset_id() != FEATURE_UNINITIALIZED ) {
-      short_name = ocs::Version::get_short_product_name().c_str();
-      long_name  = ocs::Version::get_long_product_name().c_str();
+      short_name = ocs::Version::get_short_product_name();
+      long_name  = ocs::Version::get_long_product_name();
    }
-   version = ocs::Version::get_version_string().c_str();
+   version = ocs::Version::get_version_string();
 
    switch (style) {
       case FS_SHORT:
-         ret = sge_dstring_copy_string(buffer, short_name);
+         ret = sge_dstring_copy_string(buffer, short_name.c_str());
          break;
 
       case FS_LONG:
-         ret = sge_dstring_copy_string(buffer, long_name);
+         ret = sge_dstring_copy_string(buffer, long_name.c_str());
          break;
 
       case FS_VERSION:
-         ret = sge_dstring_copy_string(buffer, version);
+         ret = sge_dstring_copy_string(buffer, version.c_str());
          break;
 
       case FS_SHORT_VERSION:
-         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", short_name, version);
+         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", short_name.c_str(), version.c_str());
          break;
 
       case FS_LONG_VERSION:
-         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", long_name, version);
+         ret = sge_dstring_sprintf(buffer, "" SFN " " SFN "", long_name.c_str(), version.c_str());
          break;
 
       default:
-         ret = sge_dstring_copy_string(buffer, short_name);
+         ret = sge_dstring_copy_string(buffer, short_name.c_str());
          break;
    }
 #ifdef CMAKE_BUILD_ID
