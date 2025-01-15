@@ -37,7 +37,7 @@
 // TODO: Add also an entry to the table further down below when you change this
 //       And change SGE_VERSION in dist/inst_sge
 //       And change the VERSION in the main CMakeLists.txt
-const std::string ocs::Version::OCS_VERSION_STRING = "9.0.2alpha";
+const std::string ocs::Version::OCS_VERSION_STRING = "9.0.2";
 const uint32_t ocs::Version::OCS_VERSION = 0x10009000;
 
 const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSIONS_VECTOR = {
