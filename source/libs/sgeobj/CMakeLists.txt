@@ -19,7 +19,7 @@
 #___INFO__MARK_END_NEW__
 
 # source/libs/sgeobj
-if (PROJECT_FEATURES MATCHES "gcs-extensions")
+if (PROJECT_FEATURES MATCHES "XXX gcs-extensions")
     file(GLOB INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
     file(GLOB OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cull)
     set(OUTPUT_FILES
@@ -111,7 +111,7 @@ set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
 if (PROJECT_FEATURES MATCHES "gcs-extensions")
-    add_dependencies(${LIBRARY_NAME} cull_header)
+	#	add_dependencies(${LIBRARY_NAME} cull_header)
 endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
