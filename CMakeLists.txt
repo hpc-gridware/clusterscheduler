@@ -88,6 +88,9 @@ include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
 include(CTest)
 
+# Catch2 is a header-only test framework, so we can use CPM to install it
+#include(cmake/Catch2Config.cmake)
+
 architecture_specific_settings()
 
 # set rpath in binaries and shared libs
