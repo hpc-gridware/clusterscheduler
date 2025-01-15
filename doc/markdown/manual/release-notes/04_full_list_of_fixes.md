@@ -8,7 +8,11 @@
 
 [CS-270](https://hpc-gridware.atlassian.net/browse/CS-270) Allow threads to handle RO-request in parallel
 
+[CS-305](https://hpc-gridware.atlassian.net/browse/CS-305) Enhance testsuite framework function is\_version\_in\_range to allow multiple versions and optionally customer specific versions
+
 [CS-323](https://hpc-gridware.atlassian.net/browse/CS-323) Allow synchronized access to data stores by adding session 
+
+[CS-386](https://hpc-gridware.atlassian.net/browse/CS-386) Race condition in TS when multiple TS instances use the same test source directory
 
 [CS-768](https://hpc-gridware.atlassian.net/browse/CS-768) allow testsuite to bootstrap its configuration from an existing cluster
 
@@ -16,13 +20,57 @@
 
 [CS-770](https://hpc-gridware.atlassian.net/browse/CS-770) make performance/throughput test run in the cloud environment
 
+[CS-773](https://hpc-gridware.atlassian.net/browse/CS-773) add a runlevel to the performance/throughput test doing massive read only requests while submitting and running the test jobs
+
 [CS-781](https://hpc-gridware.atlassian.net/browse/CS-781) Create spec for binding and memory binding
 
 [CS-782](https://hpc-gridware.atlassian.net/browse/CS-782) create test application for hwloc topology detection
 
+[CS-784](https://hpc-gridware.atlassian.net/browse/CS-784) cloud deployment: \(optionally\) also install an execution daemon on the master node
+
+[CS-786](https://hpc-gridware.atlassian.net/browse/CS-786) cloud deployment: \(optionally\) add the user's ssh public key to sgetest's authorized keys
+
+[CS-787](https://hpc-gridware.atlassian.net/browse/CS-787) testsuite: add menu item resetting the testsuite configuration to defaults without re-installing
+
+[CS-790](https://hpc-gridware.atlassian.net/browse/CS-790) cloud deployment: install mailutils on the head node
+
+[CS-796](https://hpc-gridware.atlassian.net/browse/CS-796) cloud deployment: make sure that core size limit is set to unlimited on master and exec hosts
+
 [CS-798](https://hpc-gridware.atlassian.net/browse/CS-798) testsuite: throughput test sometimes fails with "TCL Error domain error: argument not in valid range"
 
 [CS-800](https://hpc-gridware.atlassian.net/browse/CS-800) cloud deployment: need to configure the bucket name
+
+[CS-827](https://hpc-gridware.atlassian.net/browse/CS-827) send scheduler start orders during a scheduling run more often
+
+[CS-829](https://hpc-gridware.atlassian.net/browse/CS-829) testsuite: add option to install / configure cluster without local host configurations
+
+[CS-832](https://hpc-gridware.atlassian.net/browse/CS-832) cloud deployment: make sure that the master-instance is started first
+
+[CS-863](https://hpc-gridware.atlassian.net/browse/CS-863) testsuite: while or after scanning the checktree a high number of ssh connections is opened
+
+[CS-871](https://hpc-gridware.atlassian.net/browse/CS-871) monitor cpu and memory usage of the expect process itself to identify testsuite itself being a bottleneck
+
+[CS-874](https://hpc-gridware.atlassian.net/browse/CS-874) allow to specify the OS image for the head node installation
+
+[CS-877](https://hpc-gridware.atlassian.net/browse/CS-877) improvements to the performance/throughput test
+
+[CS-887](https://hpc-gridware.atlassian.net/browse/CS-887) create checktree\_qgpu in testsuite for building and testing qgpu
+
+[CS-898](https://hpc-gridware.atlassian.net/browse/CS-898) Write qmaster monitoring metrics to a monitoring file
+
+### New Feature
+
+[CS-215](https://hpc-gridware.atlassian.net/browse/CS-215) Loadsensor for reporting GPU metrics
+
+[CS-216](https://hpc-gridware.atlassian.net/browse/CS-216) Provide GPU accounting facility per job
+
+[CS-753](https://hpc-gridware.atlassian.net/browse/CS-753) HowTo: Allow users to find the error reason for a job or queue
+
+[CS-927](https://hpc-gridware.atlassian.net/browse/CS-927) Add MIG support to qgpu loadsensor
+
+### Epic
+
+[CS-214](https://hpc-gridware.atlassian.net/browse/CS-214) Add Support for NVIDIA Grace Hopper Platform
 
 ### Sub-task
 
@@ -30,7 +78,7 @@
 
 [CS-279](https://hpc-gridware.atlassian.net/browse/CS-279) store requests in different request queues
 
-[CS-566](https://hpc-gridware.atlassian.net/browse/CS-566) Add new test scenarios for JSV \[master|slave\]\_l\_hard attribute
+[CS-340](https://hpc-gridware.atlassian.net/browse/CS-340) testsuite configuration options for the cmake build
 
 [CS-668](https://hpc-gridware.atlassian.net/browse/CS-668) Add a GDI session store and feed it with data from mirror threads
 
@@ -96,11 +144,41 @@
 
 [CS-816](https://hpc-gridware.atlassian.net/browse/CS-816) Add doxygen comments for functions touched with the CS-748 enhancements
 
+[CS-839](https://hpc-gridware.atlassian.net/browse/CS-839) Add a CentOS 6.10 VM in our Lab
+
+[CS-856](https://hpc-gridware.atlassian.net/browse/CS-856) Install python build environment for all architectures that allow to run qmaster
+
+[CS-857](https://hpc-gridware.atlassian.net/browse/CS-857) Create  pybind11 compatible GCS library
+
+[CS-859](https://hpc-gridware.atlassian.net/browse/CS-859) Adapt TS so that additional cmake options can be specified via TS parameter
+
+[CS-869](https://hpc-gridware.atlassian.net/browse/CS-869) Embed python interpreter in qmaster and enable it in all reader threads
+
+[CS-875](https://hpc-gridware.atlassian.net/browse/CS-875) Rewrite version module, make information available vi C\+\+ class and expose it to python
+
+[CS-878](https://hpc-gridware.atlassian.net/browse/CS-878) do not use CHECK\_USER \(admin user\) for cluster actions \(qsub, qstat\)
+
+[CS-879](https://hpc-gridware.atlassian.net/browse/CS-879) use a higher number of reader threads
+
+[CS-880](https://hpc-gridware.atlassian.net/browse/CS-880) do not limit the number of submit and qstat hosts
+
+[CS-881](https://hpc-gridware.atlassian.net/browse/CS-881) in mixed\_with\_qstat scenario use a qstat request which is independent on the number of jobs to get consistent behavior
+
+[CS-889](https://hpc-gridware.atlassian.net/browse/CS-889) Add a new class that represents a DataStore on client side and make it available for Python.
+
+[CS-890](https://hpc-gridware.atlassian.net/browse/CS-890) PyCharm code completion not working for the ocs-bridge
+
+[CS-903](https://hpc-gridware.atlassian.net/browse/CS-903) auto \(un\)installation not covered by the installation guide
+
+[CS-925](https://hpc-gridware.atlassian.net/browse/CS-925) Create CULL interface to create/destroy  descriptors dynamically
+
+[CS-926](https://hpc-gridware.atlassian.net/browse/CS-926) Add methods to create a full descriptor with a reduced set of attributes
+
 ### Task
 
 [CS-226](https://hpc-gridware.atlassian.net/browse/CS-226) eliminate gdi function wrapper and use the same prefix
 
-[CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
+[CS-316](https://hpc-gridware.atlassian.net/browse/CS-316) replace deprecated function calls
 
 [CS-719](https://hpc-gridware.atlassian.net/browse/CS-719) do full valgrind test on master branch \(9.0.1\)
 
@@ -108,15 +186,23 @@
 
 [CS-759](https://hpc-gridware.atlassian.net/browse/CS-759) Write blog article about secondary DS and automatic session
 
+[CS-765](https://hpc-gridware.atlassian.net/browse/CS-765) Allow to compile GCS on CentOs 6
+
 [CS-820](https://hpc-gridware.atlassian.net/browse/CS-820) create a module test for the fifo trylock implementation
+
+[CS-828](https://hpc-gridware.atlassian.net/browse/CS-828) Provide ready to use qgpu loadsensor / prolog and epilog scripts
+
+[CS-891](https://hpc-gridware.atlassian.net/browse/CS-891) Verify GCS support on NVIDIA Grace Hopper Superchip
 
 ### Bug
 
-[CS-630](https://hpc-gridware.atlassian.net/browse/CS-630) several testsuite tests fail in environments where primary hostname is fully qualified
+[CS-276](https://hpc-gridware.atlassian.net/browse/CS-276) The default queue configuration contains /bin/csh but csh is not per default installed in most Linux distros
+
+[CS-290](https://hpc-gridware.atlassian.net/browse/CS-290) add a build step that allows to generate CULL header from JSON files
+
+[CS-321](https://hpc-gridware.atlassian.net/browse/CS-321) sorting tests by duration is broken
 
 [CS-632](https://hpc-gridware.atlassian.net/browse/CS-632) Event master does not clean up event clients and their data at shutdown
-
-[CS-715](https://hpc-gridware.atlassian.net/browse/CS-715) Describe binary replacement for patch release in the installation guide
 
 [CS-716](https://hpc-gridware.atlassian.net/browse/CS-716) Describe side by side upgrade in installation guide.
 
@@ -130,7 +216,41 @@
 
 [CS-797](https://hpc-gridware.atlassian.net/browse/CS-797) testsuite: throughput test sometimes reports "we had job submission errors - job got submitted, but qsub reported an error"
 
+[CS-802](https://hpc-gridware.atlassian.net/browse/CS-802) sge\_qmaster core dump when processing qstat request
+
 [CS-819](https://hpc-gridware.atlassian.net/browse/CS-819) potential sge\_qmaster core dump at startup
+
+[CS-848](https://hpc-gridware.atlassian.net/browse/CS-848) Update logchecker.sh script to support new accounting and reporting files
+
+[CS-867](https://hpc-gridware.atlassian.net/browse/CS-867) performance/throughput with 30.000 jobs fails on Ubuntu 22 when writing its test data to file
+
+[CS-882](https://hpc-gridware.atlassian.net/browse/CS-882) Jobs stuck in t-state although they have been delivered to execd.
+
+[CS-884](https://hpc-gridware.atlassian.net/browse/CS-884) There is a session 0 created although it is not required
+
+[CS-886](https://hpc-gridware.atlassian.net/browse/CS-886) qresub fails for jobs that are part of the defaultdepartment
+
+[CS-893](https://hpc-gridware.atlassian.net/browse/CS-893) Fix TS issues on CentOS 6
+
+[CS-894](https://hpc-gridware.atlassian.net/browse/CS-894) testsuite: start\_remote\_prog will never time out if the executed command is constantly doing output
+
+[CS-895](https://hpc-gridware.atlassian.net/browse/CS-895) testsuite: function drmaa\_test is duplicated
+
+[CS-896](https://hpc-gridware.atlassian.net/browse/CS-896) resource reservation test fails due to too low h\_vmem limit
+
+[CS-897](https://hpc-gridware.atlassian.net/browse/CS-897) testsuite reports lots of errors when initializing the messages cache and OCS/GCS is not yet installed
+
+[CS-908](https://hpc-gridware.atlassian.net/browse/CS-908) qevent reports too high running job count
+
+[CS-910](https://hpc-gridware.atlassian.net/browse/CS-910) updates of job priority and ticket values done by scheduler are not visible in qstat
+
+[CS-915](https://hpc-gridware.atlassian.net/browse/CS-915) job is assigned to the defaultdepartment despite the user being member of an other department
+
+[CS-917](https://hpc-gridware.atlassian.net/browse/CS-917) updates of job states due to slotwise suspend on subordinate are not visible in qstat
+
+[CS-918](https://hpc-gridware.atlassian.net/browse/CS-918) some job modifications done with qalter are not visible in qstat -j job\_id
+
+[CS-922](https://hpc-gridware.atlassian.net/browse/CS-922) jobs are not shown in dr state after deleting them with qdel
 
 ## v9.0.1
 
