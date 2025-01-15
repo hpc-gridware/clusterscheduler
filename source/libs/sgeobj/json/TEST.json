@@ -1,0 +1,111 @@
+{
+	"className":	"Test",
+	"summary":	"Test Object",
+	"description":	[{
+			"line":	"Objects of this type are used for testing purposes with modules tests."
+		}],
+	"cullPrefix":	"TEST",
+	"attributes":	[{
+			"name":	"bool",
+			"summary":	"Boolean type attribute",
+			"description":	[{
+					"line":	"This field holds a boolean value."
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		},{
+			"name":	"char",
+			"summary":	"Character type attribute",
+			"description":	[{
+					"line":	"This field holds a character value."
+					}],
+			"type":	"lCharT",
+			"flags":	[{
+					"name":	"HASH"
+				}]
+		},{
+			"name":	"uint32",
+			"summary":	"uint32_t type attribute",
+			"description":	[{
+				"line":	"This field holds a uint32_t value."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"uint64",
+			"summary":	"uint64_t type attribute",
+			"description":	[{
+				"line":	"This field holds a uint64_t value."
+			}],
+			"type":	"lUlong64T",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"int",
+			"summary":	"int type attribute",
+			"description":	[{
+				"line":	"This field holds a int value."
+			}],
+			"type":	"lIntT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"long",
+			"summary":	"long type attribute",
+			"description":	[{
+				"line":	"This field holds a long value."
+			}],
+			"type":	"lLongT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"float",
+			"summary":	"float type attribute",
+			"description":	[{
+				"line":	"This field holds a float value."
+			}],
+			"type":	"lFloatT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"double",
+			"summary":	"double type attribute",
+			"description":	[{
+				"line":	"This field holds a double value."
+			}],
+			"type":	"lDoubleT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"host",
+			"summary":	"host type attribute",
+			"description":	[{
+				"line":	"This field holds a host name."
+			}],
+			"type":	"lHostT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		},{
+			"name":	"string",
+			"summary":	"string type attribute",
+			"description":	[{
+				"line":	"This field holds a string value."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
+		}]
+}

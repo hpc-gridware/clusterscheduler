@@ -19,23 +19,47 @@
 #___INFO__MARK_END_NEW__
 
 # source/libs/sgeobj
-if (PROJECT_FEATURES MATCHES "XXX gcs-extensions")
-    file(GLOB INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
-    file(GLOB OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cull)
-    set(OUTPUT_FILES
-            ${OUTPUT_DIR}/sge_sub_object.cc
-            ${OUTPUT_DIR}/sge_all_listsL.h
-            ${OUTPUT_DIR}/sge_boundaries.h
-            # no need to list other files here, they are included in the above files
-    )
-    add_custom_command(
-            OUTPUT ${OUTPUT_FILES}
+
+# Generate CULL header files from JSON files
+# This is a custom target that is not triggered automatically and only available with the gcs-extensions
+# Automatic generation of header files is not supported because it would break the build via testsuite.
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    add_custom_target(cull_header
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             COMMAND gen_types json CULL cull
-            DEPENDS ${INPUT_FILES} gen_types
             COMMENT "Generating CULL header files"
     )
-    add_custom_target(cull_header DEPENDS ${OUTPUT_FILES})
+endif()
+
+# Generate LWDB header files from JSON files
+# This is a custom target that is not triggered automatically and only available with the gcs-extensions
+# Automatic generation of header files is not supported because it would break the build via testsuite.
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    if (1)
+        # manual way to generate the header files
+        add_custom_target(lwdb_header
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                COMMAND gen_types json LWDB lwdb
+                COMMENT "Generating LWDB header files"
+        )
+    else()
+        # automatic way to generate the header files (will break parallel build with TS)
+        file(GLOB INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
+        file(GLOB OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lwdb)
+        set(OUTPUT_FILES
+                ${OUTPUT_DIR}/ocs_all_attributes.h
+                # no need to list other files here, they are included in the file above
+        )
+        add_custom_command(
+                OUTPUT ${OUTPUT_FILES}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                COMMAND gen_types json LWDB lwdb
+                DEPENDS ${INPUT_FILES} gen_types
+                COMMENT "Generating LWDB header files"
+        )
+        add_custom_target(lwdb_header
+                DEPENDS ${OUTPUT_FILES})
+    endif()
 endif()
 
 set(LIBRARY_NAME sgeobj)
@@ -110,9 +134,9 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
-if (PROJECT_FEATURES MATCHES "gcs-extensions")
-	#	add_dependencies(${LIBRARY_NAME} cull_header)
-endif ()
+#if (PROJECT_FEATURES MATCHES "gcs-extensions")
+#    add_dependencies(${LIBRARY_NAME} cull_header)
+#endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
 #add_subdirectory(cpp)
