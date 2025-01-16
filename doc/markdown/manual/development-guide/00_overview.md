@@ -23,12 +23,15 @@ They will not be described here.
 
 Tags and branches before `V9` will also not be described here.
 
-| Branch         | Tag         | Description                                                             |  
-|:---------------|:------------|:------------------------------------------------------------------------|
-| master         |             | main development branch                                                 |  
-|                | V900\_TAG   | first OCS/GCS release                                                   |  
-|                | V901\_TAG   | first 9.0 patch                                                         |
-|                | V902\_TAG   | second 9.0 patch                                                        |
-|                |             |                                                                         |
-| V900\_BRANCH   |             | maintenance of 9.0.0                                                    |
-|                | V900p1\_TAG | patch to the 9.0.0 making it work on GCP (CS-663)                       |
+| Branch       | Tag         | Description                                       |  
+|:-------------|:------------|:--------------------------------------------------|
+| master       |             | main development branch                           |  
+|              | V900\_TAG   | first OCS/GCS release                             |  
+|              | V901\_TAG   | first 9.0 patch                                   |
+|              | V902\_TAG   | second 9.0 patch                                  |
+|              |             |                                                   |
+| V900\_BRANCH |             | maintenance of 9.0.0                              |
+|              | V900p1\_TAG | patch to the 9.0.0 making it work on GCP (CS-663) |
+|              |             |                                                   |
+| V90_\BRANCH  |             | maintenance of 9.0                                |
+|              |             |                                                   |
