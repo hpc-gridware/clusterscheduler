@@ -22,14 +22,34 @@
 
 cmake_minimum_required(VERSION 3.0...3.27.0)
 
+# Get version token from source/libs/sgeobj/ocs_Version.cc
+file(STRINGS "source/libs/sgeobj/ocs_Version.cc" VERSION_MAJOR REGEX "^#define OCS_VERSION_MAJOR ")
+file(STRINGS "source/libs/sgeobj/ocs_Version.cc" VERSION_MINOR REGEX "^#define OCS_VERSION_MINOR ")
+file(STRINGS "source/libs/sgeobj/ocs_Version.cc" VERSION_PATCH REGEX "^#define OCS_VERSION_PATCH ")
+file(STRINGS "source/libs/sgeobj/ocs_Version.cc" VERSION_SUFFIX REGEX "^#define OCS_VERSION_SUFFIX ")
+string(REGEX REPLACE "#define OCS_VERSION_MAJOR ([0-9]*)" "\\1" VERSION_MAJOR "${VERSION_MAJOR}")
+string(REGEX REPLACE "#define OCS_VERSION_MINOR ([0-9]*)" "\\1" VERSION_MINOR "${VERSION_MINOR}")
+string(REGEX REPLACE "#define OCS_VERSION_PATCH ([0-9]*)" "\\1" VERSION_PATCH "${VERSION_PATCH}")
+string(REGEX REPLACE "#define OCS_VERSION_SUFFIX \"([a-z0-0\-]*)\"" "\\1" VERSION_SUFFIX "${VERSION_SUFFIX}")
+
+# Set the version string and use it to set the version within inst_sge
+set(OCS_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX}")
+configure_file(
+        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge.in"
+        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge"
+        @ONLY
+)
+
+# Set the version string and use it also for the cmake project
 project(
       clusterscheduler
-      VERSION 9.0.2
+      VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
       DESCRIPTION "Open Cluster Scheduler Workload Manager"
       HOMEPAGE_URL "https://www.openclusterscheduler.org"
       LANGUAGES C CXX)
 
-message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION}")
+
+message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION} (suffix: ${VERSION_SUFFIX})")
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
