@@ -34,7 +34,8 @@
 #  include "copyright.h"
 #endif
 
-// TODO: Add also an entry to the table further down below when you change this
+// @todo: Add also an entry to the table further down below when you change this
+//
 //       And change SGE_VERSION in dist/inst_sge
 //       And change the VERSION in the main CMakeLists.txt
 const std::string ocs::Version::OCS_VERSION_STRING = "9.1.0prealpha";

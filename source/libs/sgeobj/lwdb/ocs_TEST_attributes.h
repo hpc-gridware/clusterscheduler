@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ enum {
    TEST_float,
    TEST_double,
    TEST_host,
-   TEST_string
+   TEST_string,
+   TEST_ref
 };
 
 constexpr const int TEST_Type[] = {
@@ -52,20 +53,22 @@ constexpr const int TEST_Type[] = {
    TEST_double,
    TEST_host,
    TEST_string,
+   TEST_ref,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
 #define TEST_ATTRIBUTES \
    {TEST_bool, "TEST_bool", AttributeStatic::BOOL, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_char, "TEST_char", AttributeStatic::CHAR, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_uint32, "TEST_uint32", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
+   {TEST_char, "TEST_char", AttributeStatic::CHAR, AttributeStatic::NO_HASH}, \
+   {TEST_uint32, "TEST_uint32", AttributeStatic::UINT32, AttributeStatic::UNORDERED_NON_UNIQUE}, \
    {TEST_uint64, "TEST_uint64", AttributeStatic::UINT64, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_int, "TEST_int", AttributeStatic::INT, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_long, "TEST_long", AttributeStatic::LONG, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_float, "TEST_float", AttributeStatic::FLOAT, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_double, "TEST_double", AttributeStatic::DOUBLE, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_host, "TEST_host", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_string, "TEST_string", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {TEST_int, "TEST_int", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
+   {TEST_long, "TEST_long", AttributeStatic::LONG, AttributeStatic::NO_HASH}, \
+   {TEST_float, "TEST_float", AttributeStatic::FLOAT, AttributeStatic::NO_HASH}, \
+   {TEST_double, "TEST_double", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
+   {TEST_host, "TEST_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
+   {TEST_string, "TEST_string", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
+   {TEST_ref, "TEST_ref", AttributeStatic::REF, AttributeStatic::NO_HASH} \
 
 } // end namespace
 

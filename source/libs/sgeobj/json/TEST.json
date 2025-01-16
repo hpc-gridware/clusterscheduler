@@ -15,7 +15,7 @@
 			"flags":	[{
 					"name":	"HASH"
 				}, {
-					"name":	"SPOOL_SUBLIST"
+					"name":	"SPOOL"
 				}]
 		},{
 			"name":	"char",
@@ -25,7 +25,7 @@
 					}],
 			"type":	"lCharT",
 			"flags":	[{
-					"name":	"HASH"
+					"name":	"SPOOL"
 				}]
 		},{
 			"name":	"uint32",
@@ -35,8 +35,10 @@
 			}],
 			"type":	"lUlongT",
 			"flags":	[{
-				"name":	"HASH"
-			}]
+					"name":	"SPOOL"
+				}, {
+					"name":	"UNIQUE"
+				}]
 		},{
 			"name":	"uint64",
 			"summary":	"uint64_t type attribute",
@@ -45,8 +47,10 @@
 			}],
 			"type":	"lUlong64T",
 			"flags":	[{
-				"name":	"HASH"
-			}]
+					"name":	"SPOOL"
+				}, {
+					"name":	"HASH"
+				}]
 		},{
 			"name":	"int",
 			"summary":	"int type attribute",
@@ -55,7 +59,7 @@
 			}],
 			"type":	"lIntT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		},{
 			"name":	"long",
@@ -65,7 +69,7 @@
 			}],
 			"type":	"lLongT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		},{
 			"name":	"float",
@@ -75,7 +79,7 @@
 			}],
 			"type":	"lFloatT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		},{
 			"name":	"double",
@@ -85,7 +89,7 @@
 			}],
 			"type":	"lDoubleT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		},{
 			"name":	"host",
@@ -95,7 +99,7 @@
 			}],
 			"type":	"lHostT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		},{
 			"name":	"string",
@@ -105,7 +109,7 @@
 			}],
 			"type":	"lStringT",
 			"flags":	[{
-				"name":	"HASH"
+				"name":	"SPOOL"
 			}]
 		}]
 }
