@@ -38,7 +38,4 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
-if (PROJECT_FEATURES MATCHES "gcs-extensions")
-    add_dependencies(${LIBRARY_NAME} cull_header)
-endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
