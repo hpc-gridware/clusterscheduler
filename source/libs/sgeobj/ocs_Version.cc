@@ -34,11 +34,15 @@
 #  include "copyright.h"
 #endif
 
-// @todo: Add also an entry to the table further down below when you change this
-//
-//       And change SGE_VERSION in dist/inst_sge
-//       And change the VERSION in the main CMakeLists.txt
-const std::string ocs::Version::OCS_VERSION_STRING = "9.1.0prealpha";
+// @todo CHANGE THE VERSION NUMBERS HERE. ADD A NEW VERSION TO THE LIST BELOW IF PACKING OR CULL CHANGES.
+// CMakeList.txt and dist/inst_sge will be updated automatically during the next cmake run
+#define OCS_VERSION_MAJOR 9
+#define OCS_VERSION_MINOR 1
+#define OCS_VERSION_PATCH 0
+#define OCS_VERSION_SUFFIX "prealpha"
+
+const std::string ocs::Version::OCS_VERSION_STRING = std::to_string(OCS_VERSION_MAJOR) + "."
+         + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX;
 const uint32_t ocs::Version::OCS_VERSION = 0x10009001;
 
 const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSIONS_VECTOR = {

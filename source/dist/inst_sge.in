@@ -33,6 +33,7 @@
 #  All Rights Reserved.
 #
 #  Portions of this code are Copyright 2011 Univa Corp.
+#  Portions of this code are Copyright 2025 HPC-Gridware GmbH.
 #
 ##########################################################################
 #___INFO__MARK_END__
@@ -40,7 +41,7 @@
 # set -x
 
 SCRIPT_VERSION="9"
-SGE_VERSION="9.1.0prealpha"
+SGE_VERSION="@OCS_VERSION_STRING@"
 
 #Reset PATH to a safe value
 #
