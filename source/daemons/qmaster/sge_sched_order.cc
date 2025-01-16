@@ -121,11 +121,10 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
 
 bool
 sge_schedd_block_until_orders_processed(lList **answer_list) {
+   DENTER(TOP_LAYER);
    bool ret = true;
    sge_sl_elem_t *next_elem = nullptr;
    sge_sl_elem_t *current_elem = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /*
     * wait till all GDI order requests are finished
@@ -135,7 +134,6 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
       auto *gdi_multi = static_cast<ocs::gdi::Request *>(sge_sl_elem_data(current_elem));
       lList *request_answer_list = nullptr;
       lList *multi_answer_list = nullptr;
-      int order_id;
 
       /* get next element, dechain current and destroy it */
       sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
@@ -151,7 +149,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
       /*
        * now we have an answer. is it positive?
        */
-      order_id = 1;
+      int order_id = 0;
       gdi_multi->get_response(&request_answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST, order_id, nullptr);
       if (request_answer_list != nullptr) {
          answer_list_log(&request_answer_list, false, false);
