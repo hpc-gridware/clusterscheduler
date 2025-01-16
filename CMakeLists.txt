@@ -24,7 +24,7 @@ cmake_minimum_required(VERSION 3.0...3.27.0)
 
 project(
       clusterscheduler
-      VERSION 9.0.2
+      VERSION 9.1.0
       DESCRIPTION "Open Cluster Scheduler Workload Manager"
       HOMEPAGE_URL "https://www.openclusterscheduler.org"
       LANGUAGES C CXX)
