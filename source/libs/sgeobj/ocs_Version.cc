@@ -37,8 +37,8 @@
 // TODO: Add also an entry to the table further down below when you change this
 //       And change SGE_VERSION in dist/inst_sge
 //       And change the VERSION in the main CMakeLists.txt
-const std::string ocs::Version::OCS_VERSION_STRING = "9.0.2";
-const uint32_t ocs::Version::OCS_VERSION = 0x10009000;
+const std::string ocs::Version::OCS_VERSION_STRING = "9.1.0prealpha";
+const uint32_t ocs::Version::OCS_VERSION = 0x10009001;
 
 const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSIONS_VECTOR = {
    { 0x10000000, "5.0"},
@@ -68,6 +68,7 @@ const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSI
    { 0x100020F8, "6.2u5"},
    { 0x10003000, "8.0.x Univa"},
    { 0x10003001, "8.0.x Some Gridengine"},
+   { 0x10009000, "9.0.x Gridware Cluster Scheduler"},
    { OCS_VERSION, get_version_string().c_str()},
 };
 
