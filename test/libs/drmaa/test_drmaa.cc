@@ -56,17 +56,11 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_daemonize.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 
-#include "comm/commlib.h"
+#include "gdi/ocs_gdi_Client.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
-
-#include "ocs_client_job.h"
 #include "msg_common.h"
 
 #include <uti/sge_log.h>
@@ -672,12 +666,12 @@ int main(int argc, char *argv[])
    }
 
    /*
-   ** since drmaa doesn't give an explicit handle to the context and sge_gdi 
+   ** since drmaa doesn't give an explicit handle to the context and ocs::gdi::Client::sge_gdi
    ** is used below, we provide our own context here
    */
    lList *alp = nullptr;
-   int gdi_errno = gdi_client_setup_and_enroll(JAPI, MAIN_THREAD, &alp);
-   if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
+   ocs::gdi::ErrorValue gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(JAPI, MAIN_THREAD, &alp);
+   if ((gdi_errno != ocs::gdi::ErrorValue::AE_OK) && (gdi_errno != ocs::gdi::ErrorValue::AE_ALREADY_SETUP)) {
       DPRINTF("gdi_errno = %d", gdi_errno);
       answer_list_output(&alp);
       sge_exit(1);
@@ -754,7 +748,7 @@ int main(int argc, char *argv[])
       }
    } 
    drmaa_exit(nullptr, 0);
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
 
    sge_prof_cleanup();
    return failed;
@@ -2754,20 +2748,20 @@ static int test(int *argc, char **argv[], int parse_args)
          DRMAA_JOB_CATEGORY
           - submit job with job category containing -h and -N
           - use drmaa_ps_job to verify state
-          - use sge_gdi to verify name
+          - use ocs::gdi::Client::sge_gdi to verify name
           - release hold
           - submit job with job category containing -h and -N and DRMAA_JOB_NAME
-          - use sge_gdi to verify name
+          - use ocs::gdi::Client::sge_gdi to verify name
           - use drmaa_ps_job to verify state
           - release hold
           - wait for job to complete
          DRMAA_NATIVE_SPECIFICATION
           - submit job with -h and -N
           - use drmaa_ps_job to verify state
-          - use sge_gdi to verify name
+          - use ocs::gdi::Client::sge_gdi to verify name
           - release hold
           - submit job with -h and -N and DRMAA_JOB_NAME
-          - use sge_gdi to verify name
+          - use ocs::gdi::Client::sge_gdi to verify name
           - use drmaa_ps_job to verify state
           - release hold
           - wait for job to complete
@@ -2919,7 +2913,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3401,7 +3395,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3506,7 +3500,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3627,7 +3621,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);
@@ -3732,7 +3726,7 @@ static int test(int *argc, char **argv[], int parse_args)
             {
                lCondition *where = lWhere ("%T(%I==%u)", JB_Type, JB_job_number, (u_long32)atol(jobid));
                lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &job_lp, where, what);
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &job_lp, where, what);
                job_ep = lFirst(job_lp);
                lFreeWhere(&where);
                lFreeWhat(&what);

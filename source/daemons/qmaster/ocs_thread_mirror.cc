@@ -18,8 +18,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "gdi/sge_gdi_packet_internal.h"
-
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 

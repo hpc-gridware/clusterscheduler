@@ -47,6 +47,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
+#include "uti/sge_hostname.h"
 
 #include "spool/sge_spooling.h"
 
@@ -71,6 +72,7 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"
@@ -84,7 +86,6 @@
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_utility_qmaster.h"
-#include "sge_cqueue_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_qinstance_qmaster.h"
@@ -193,7 +194,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
 *     Modifing is currently not supported.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context pointer
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context pointer
 *     lList **alpp             - the answer_list
 *     lListElem *new_ar        - if a new ar object will be created by this
 *                                function, then new_ar is a newly initialized
@@ -217,8 +218,8 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
 *  NOTES
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
-int ar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+           const char *rhost, gdi_object_t *object, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
    u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -282,25 +283,25 @@ int ar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
                      nullptr);
    /*   AR_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_mail_options, SGE_ULONG   */
    attr_mod_ulong(ar, new_ar, AR_mail_options, object->object_name);
    /*   AR_mail_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, cmd, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
                      nullptr);
    /*   AR_pe_range, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_acl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_xacl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_type, SGE_ULONG     */
    attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
 
@@ -334,7 +335,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *     is necessary to spool the current state to the filesystem.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
 *     lList **alpp             - answer_list
 *     lListElem *ep            - element to spool
 *     gdi_object_t *object     - structure from the GDI framework
@@ -347,7 +348,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 
 *******************************************************************************/
-int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
 
@@ -384,7 +385,7 @@ int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 *     other daemon.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
 *     lListElem *ep            - new added object
 *     lListElem *old_ep        - old object before modifications or nullptr
 *                                for add requests
@@ -399,7 +400,7 @@ int ar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 *     MT-NOTE: ar_success() is not MT safe 
 *******************************************************************************/
 int
-ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
@@ -457,7 +458,7 @@ ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem
 *     performs the necessary cleanup.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
 *     lListElem *ep            - element that should be removed (ID_Type)
 *     lList **alpp             - answer list
 *     lList **ar_list          - list from where the element should be removed
@@ -473,7 +474,7 @@ ar_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
 int
-ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
+ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
@@ -689,7 +690,7 @@ ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep
 *     returns the next possible unused advance reservation id.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     monitoring_t *monitor    - monitoring structure
 *
 *  RESULT
@@ -741,7 +742,7 @@ sge_get_ar_id(monitoring_t *monitor) {
 *     timer in specific intervall.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
 *     te_event_t anEvent       - event that triggered this function
 *     monitoring_t *monitor    - pointer to monitor (not used here)
 *
@@ -889,7 +890,7 @@ guess_highest_ar_id() {
 *     the advance reservation.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
 *     te_event_t anEvent       - triggered timed event
 *     monitoring_t *monitor    - monitoring structure
 *
@@ -1766,7 +1767,7 @@ ar_initialize_reserved_queue_list(lListElem *ar) {
 *     reservation
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context handler
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context handler
 *     u_long32 ar_id           - advance reservation id
 *     monitoring_t *monitor    - monitoring structure
 *

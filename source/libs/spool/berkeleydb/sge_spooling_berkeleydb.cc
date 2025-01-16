@@ -49,12 +49,10 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_ja_task.h"
@@ -62,6 +60,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"

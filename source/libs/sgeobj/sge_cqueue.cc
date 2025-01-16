@@ -39,13 +39,11 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
+#include "uti/sge.h"
 
 #include "comm/commlib.h"
 
 #include "cull/cull_list.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_object.h"
@@ -55,28 +53,20 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_cqueue_verify.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
-#include "sge_utility_qmaster.h"
-#include "symbols.h"
-#include "uti/sge.h"
 
 #define CQUEUE_LAYER TOP_LAYER
 

@@ -68,14 +68,10 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
-#include "gdi/qm_name.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sched/sge_select_queue.h"
 
@@ -205,7 +201,7 @@ int main(int argc, char **argv)
 
    log_state_set_log_gui(1);
 
-   if (gdi_client_setup_and_enroll(QACCT, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QACCT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       goto QACCT_EXIT;
    }
@@ -291,7 +287,7 @@ int main(int argc, char **argv)
             } else {
                char unique[CL_MAXHOSTNAMELEN + 1];
                lList *answer_list = nullptr;
-               gdi_client_prepare_enroll(&answer_list);
+               ocs::gdi::ClientBase::prepare_enroll(&answer_list);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
                     * we can't resolve the hostname, but that's no drama for qacct.
@@ -642,9 +638,9 @@ int main(int argc, char **argv)
          }
          /* lDumpList(stdout, complex_options, 0); */
          if (!is_path_setup) {
-            gdi_client_prepare_enroll(&alp);
-            gdi_get_act_master_host(true);
-            if (gdi_is_alive(&alp) != CL_RETVAL_OK) {
+            ocs::gdi::ClientBase::prepare_enroll(&alp);
+            ocs::gdi::ClientBase::gdi_get_act_master_host(true);
+            if (ocs::gdi::ClientBase::gdi_is_alive(&alp) != CL_RETVAL_OK) {
                answer_list_output(&alp);
                goto QACCT_EXIT;
             }
@@ -1512,19 +1508,17 @@ lList **hgrp_l
 ) {
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
-   lList *mal = nullptr;
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   ocs::gdi::Request gdi_multi{};
 
    DENTER(TOP_LAYER);
 
    /*
-   ** GET SGE_CE_LIST 
+   ** GET SGE_CE_LIST
    */
    if (ppcentries) {
       what = lWhat("%T(ALL)", CE_Type);
-      ce_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
-                             nullptr, nullptr, what, &state, true);
+      ce_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       lFreeWhat(&what);
 
       if (answer_list_has_error(alpp)) {
@@ -1532,13 +1526,12 @@ lList **hgrp_l
       }
    }
    /*
-   ** GET SGE_EH_LIST 
+   ** GET SGE_EH_LIST
    */
    if (ppexechosts) {
       where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
       what = lWhat("%T(ALL)", EH_Type);
-      eh_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
-                              nullptr, where, what, &state, true);
+      eh_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -1548,12 +1541,11 @@ lList **hgrp_l
    }
 
    /*
-   ** hgroup 
+   ** hgroup
    */
    if (hgrp_l) {
       what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
-                           nullptr, nullptr, what, &state, true);
+      hgrp_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_HGRP_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
       lFreeWhat(&what);
 
       if (answer_list_has_error(alpp)) {
@@ -1561,16 +1553,14 @@ lList **hgrp_l
       }
    }
    /*
-   ** GET SGE_QUEUE_LIST 
+   ** GET SGE_QUEUE_LIST
    */
    what = lWhat("%T(ALL)", QU_Type);
-   q_id = sge_gdi_multi(alpp, SGE_GDI_SEND, SGE_CQ_LIST, SGE_GDI_GET,
-                           nullptr, nullptr, what, &state, true);
-   sge_gdi_wait(&mal, &state);
+   q_id = gdi_multi.request(alpp, ocs::Mode::SEND, ocs::gdi::Target::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   gdi_multi.wait();
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(false);
    }
 
@@ -1579,45 +1569,36 @@ lList **hgrp_l
    */
    /* --- complex */
    if (ppcentries) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CE_LIST, ce_id,
-                                   mal, ppcentries);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, ce_id, ppcentries);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- exec host */
    if (ppexechosts) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_EH_LIST, eh_id,
-                                    mal, ppexechosts);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_EH_LIST, eh_id, ppexechosts);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- queue */
    if (ppqueues) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CQ_LIST, q_id,
-                                 mal, ppqueues);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CQ_LIST, q_id, ppqueues);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
 
    /* --- hgrp */
    if (hgrp_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_HGRP_LIST, hgrp_id, mal,
-                                   hgrp_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_HGRP_LIST, hgrp_id, hgrp_l);
       if (answer_list_has_error(alpp)) { 
-         lFreeList(&mal);
          DRETURN(false);
       }
    }
    /* --- end */
-   lFreeList(&mal);
    DRETURN(true);
 }
 

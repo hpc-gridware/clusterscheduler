@@ -45,15 +45,14 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_cqueue.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "uti/sge.h"
 
@@ -616,10 +615,10 @@ spool_classic_default_list_func(lList **answer_list,
             directory = EXECHOST_DIR;
             break;
          case SGE_TYPE_MANAGER:
-            ret = read_manop(SGE_UM_LIST);
+            ret = read_manop(ocs::gdi::Target::TargetValue::SGE_UM_LIST);
             break;
          case SGE_TYPE_OPERATOR:
-            ret = read_manop(SGE_UO_LIST);
+            ret = read_manop(ocs::gdi::Target::TargetValue::SGE_UO_LIST);
             break;
          case SGE_TYPE_PE:
             directory = PE_DIR;
@@ -1048,10 +1047,10 @@ spool_classic_default_write_func(lList **answer_list,
          filename  = key;
          break;
       case SGE_TYPE_MANAGER:
-         ret = write_manop(1, SGE_UM_LIST);
+         ret = write_manop(1, ocs::gdi::Target::TargetValue::SGE_UM_LIST);
          break;
       case SGE_TYPE_OPERATOR:
-         ret = write_manop(1, SGE_UO_LIST);
+         ret = write_manop(1, ocs::gdi::Target::TargetValue::SGE_UO_LIST);
          break;
       case SGE_TYPE_PE:
          directory = PE_DIR;
@@ -1324,10 +1323,10 @@ spool_classic_default_delete_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_MANAGER:
-         write_manop(1, SGE_UM_LIST);
+         write_manop(1, ocs::gdi::Target::SGE_UM_LIST);
          break;
       case SGE_TYPE_OPERATOR:
-         write_manop(1, SGE_UO_LIST);
+         write_manop(1, ocs::gdi::Target::SGE_UO_LIST);
          break;
       case SGE_TYPE_SHARETREE:
          ret = sge_unlink(nullptr, SHARETREE_FILE);
@@ -1391,7 +1390,7 @@ static bool write_manop(int spool, int target) {
    DENTER(TOP_LAYER);
 
    switch (target) {
-   case SGE_UM_LIST:
+   case ocs::gdi::Target::SGE_UM_LIST:
       lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
       strcpy(filename, ".");
       strcat(filename, MAN_FILE);
@@ -1399,7 +1398,7 @@ static bool write_manop(int spool, int target) {
       key = UM_name;
       break;
       
-   case SGE_UO_LIST:
+   case ocs::gdi::Target::SGE_UO_LIST:
       lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
       strcpy(filename, ".");
       strcat(filename, OP_FILE);
@@ -1455,14 +1454,14 @@ static bool read_manop(int target) {
    DENTER(TOP_LAYER);
 
    switch (target) {
-   case SGE_UM_LIST:
+   case ocs::gdi::Target::SGE_UM_LIST:
       lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
       strcpy(filename, MAN_FILE);
       key = UM_name;
       descr = UM_Type;
       break;
       
-   case SGE_UO_LIST:
+   case ocs::gdi::Target::SGE_UO_LIST:
       lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
       strcpy(filename, OP_FILE);
       key = UO_name;

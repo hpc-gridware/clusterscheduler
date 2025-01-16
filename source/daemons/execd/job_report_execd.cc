@@ -40,20 +40,15 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_string.h"
+#include "uti/sge_hostname.h"
 
 #include "cull/cull.h"
 
-#include "gdi/sge_gdi.h"
-
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
-#include "sgeobj/sge_qinstance.h"
 
-#include "sge_report_execd.h"
 #include "job_report_execd.h"
 #include "reaper_execd.h"
 #include "execd_signal_queue.h"
@@ -263,7 +258,7 @@ RETURN
    Typical dispatcher service function return values
 
    ------------------------------------------------------------ */
-int do_ack(struct_msg_t *aMsg)
+int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    u_long32 jobid, jataskid;
    lListElem *jr;

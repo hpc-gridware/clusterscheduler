@@ -33,19 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __SGE_GDIP_H
-
-#   include "gdi/sge_gdiP.h"
-
-#endif
-
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_event.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -74,17 +68,18 @@ get_job_log_name(job_log_t type);
 
 int
 sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
-                sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+                ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
 sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
-                 sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
+                 ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
-sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command);
+sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp, int sub_command);
 
 int
-sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command, monitoring_t *monitor);
+sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp,
+                ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor);
 
 void
 sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatep, u_long64 gdi_request);

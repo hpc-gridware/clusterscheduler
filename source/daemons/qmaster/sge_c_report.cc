@@ -40,8 +40,10 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_report.h"
@@ -49,8 +51,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
-#include "sgeobj/ocs_Version.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "msg_qmaster.h"
 #include "sge_c_gdi.h"
@@ -88,7 +89,7 @@ update_license_data(lListElem *hep, lList *lp_lic, u_long64 gdi_session);
 *
 ******************************************************************************/
 void
-sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
+sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = nullptr;
    u_long32 rep_type;
    lListElem *report;
@@ -272,7 +273,7 @@ sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *r
       if (pb_filled(&pb)) {
          lList *alp = nullptr;
          /* send all stuff packed during processing to execd */
-         sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
+         ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }

@@ -47,6 +47,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 
@@ -75,8 +76,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
       calendar_parse_week(cep, &answer_list);
       answer_list_output(&answer_list);
 
-      sge_gdi_packet_class_t packet;
-      sge_gdi_task_class_t task;
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task{};
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
    }
@@ -88,8 +89,9 @@ calendar_initalize_timer(monitoring_t *monitor) {
 }
 
 int
-calendar_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
-             const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
+             const char *ruser, const char *rhost, gdi_object_t *object,
+             ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lListElem *cqueue;
@@ -142,7 +144,7 @@ DRETURN(STATUS_EUNKNOWN);
 }
 
 int
-calendar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -160,7 +162,7 @@ calendar_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList
 }
 
 int
-sge_del_calendar(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    const char *cal_name;
    lList **master_calendar_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -250,8 +252,8 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   sge_gdi_packet_class_t packet;
-   sge_gdi_task_class_t task;
+   ocs::gdi::Packet packet;
+   ocs::gdi::Task task;
    packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
    calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
 
@@ -263,7 +265,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 
-int calendar_update_queue_states(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
+int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;

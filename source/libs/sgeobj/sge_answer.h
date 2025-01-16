@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_error_class.h"
+#include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
 
 typedef enum {

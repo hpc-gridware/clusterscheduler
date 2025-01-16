@@ -44,9 +44,7 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_internal.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "comm/cl_commlib.h"
 
@@ -54,14 +52,14 @@
 #include "setup_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
-#include "sge_userprj_qmaster.h"
-#include "sge_job_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_c_report.h"
 #include "sge_thread_main.h"
 #include "sge_thread_reader.h"
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
+
+#include <ocs_gdi_ClientServerBase.h>
 
 static void
 sge_reader_cleanup_monitor(void *arg) {
@@ -155,7 +153,7 @@ sge_reader_main(void *arg) {
    conf_update_thread_profiling("Reader Thread");
 
    while (true) {
-      sge_gdi_packet_class_t *packet = nullptr;
+      ocs::gdi::Packet *packet = nullptr;
 
       /*
        * Wait for packets. As long as packets are available cancellation
@@ -172,7 +170,6 @@ sge_reader_main(void *arg) {
 
       // handle the packet only if it is not nullptr and the shutdown has not started
       if (packet != nullptr && !sge_thread_has_shutdown_started()) {
-         sge_gdi_task_class_t *task;
          bool is_only_read_request = true;
 
          DPRINTF("Request should be handled by thread type %d\n", packet->ds_type);
@@ -192,15 +189,13 @@ sge_reader_main(void *arg) {
             /*
              * test if a write lock is necessary
              */
-            task = packet->first_task;
-            while (task != nullptr) {
-               u_long32 command = SGE_GDI_GET_OPERATION(task->command);
+            for (auto *task : packet->tasks) {
+               u_long32 command = task->command;
 
-               if (command != SGE_GDI_GET) {
+               if (command != ocs::gdi::Command::SGE_GDI_GET) {
                   is_only_read_request = false;
                   break;
                }
-               task = task->next;
             }
          } else {
             // PACKET_REPORT_REQUEST or PACKET_ACK_REQUEST
@@ -252,19 +247,18 @@ sge_reader_main(void *arg) {
             if (packet->request_type == PACKET_GDI_REQUEST) {
                //sge_usleep(1000000);
 
-               task = packet->first_task;
-               while (task != nullptr) {
-                  sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor);
+               lList *tmp_answer_list = nullptr;
+               packet->pack_header(&tmp_answer_list, &packet->pb);
 
-                  task = task->next;
+               for (size_t i = 0; i < packet->tasks.size(); ++i) {
+                  bool has_next = (i < packet->tasks.size() - 1);
+                  ocs::gdi::Task *task = packet->tasks[i];
+                  sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor, has_next);
                }
             } else if (packet->request_type == PACKET_REPORT_REQUEST) {
-               task = packet->first_task;
-               sge_c_report(packet, task, packet->host, packet->commproc, packet->commproc_id, task->data_list, p_monitor);
+               sge_c_report(packet, packet->tasks[0], packet->host, packet->commproc, packet->commproc_id, packet->tasks[0]->data_list, p_monitor);
             } else if (packet->request_type == PACKET_ACK_REQUEST) {
-               task = packet->first_task;
-               // @TODO: This could be done by listener already?
-               sge_c_ack(packet, task, p_monitor);
+               sge_c_ack(packet, packet->tasks[0], p_monitor);
             } else {
                DPRINTF("unknown request type %d\n", packet->request_type);
             }
@@ -306,10 +300,10 @@ sge_reader_main(void *arg) {
              */
             if (!packet->is_intern_request) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                                         &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+               ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                                                &(packet->pb), ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
-               sge_gdi_packet_free(&packet);
+               delete packet;
                /*
                 * Code only for TS: 
                 *
@@ -325,7 +319,7 @@ sge_reader_main(void *arg) {
                   sleep(5);
                }
             } else {
-               sge_gdi_packet_broadcast_that_handled(packet);
+              packet->broadcast_that_handled();
                /* this is an internal request, packet will get destroyed later,
                 * where the caller waits for the answer
                 * make sure it is no longer accessed here
@@ -333,7 +327,7 @@ sge_reader_main(void *arg) {
                packet = nullptr;
             }
          } else {
-            sge_gdi_packet_free(&packet);
+            delete packet;
          }
 
          thread_output_profiling("reader thread profiling summary:\n", &next_prof_output);

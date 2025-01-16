@@ -39,19 +39,19 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-rqs_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
-        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+        const char *rhost, gdi_object_t *object, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor);
 
 int
-rqs_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-rqs_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
             monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-rqs_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost);
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost);
 
 bool
 rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_acl, lList **old_acl,

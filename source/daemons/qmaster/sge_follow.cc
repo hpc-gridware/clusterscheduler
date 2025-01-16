@@ -48,11 +48,9 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/cull/sge_message_SME_L.h"
@@ -63,14 +61,11 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_grantedres.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "sched/sgeee.h"
 #include "sched/sge_support.h"
 #include "sched/debit.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sge.h"
 #include "sge_userprj_qmaster.h"
@@ -81,10 +76,11 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_job_qmaster.h"
 #include "sge_follow.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+
+#include <ocs_gdi_ClientServerBase.h>
 
 typedef enum {
    NOT_DEFINED = 0,
@@ -979,7 +975,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                         lListElem *rtic_ep;
                         lList *host_tickets;
 
-                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr, nullptr);
+                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr);
                         lSetDouble(newep, OR_ticket, lGetDouble(oep, UA_value));
 
                         rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);
@@ -997,7 +993,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   } else {
                      const lList *gdil = lGetList(jatp, JAT_granted_destin_identifier_list);
                      if (gdil != nullptr) {
-                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr, nullptr);
+                        lListElem *newep = lSelectElemDPack(ep, nullptr, rdp, what, false, nullptr);
                         lList *host_tickets;
                         const char *hostname = lGetHost(lFirst(gdil), JG_qhostname);
                         lListElem *rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);
@@ -1603,8 +1599,8 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));
             }
-            cl_err = gdi_send_message_pb(0, prognames[EXECD], 1, host_name,
-                                          TAG_CHANGE_TICKET, &pb, &dummyid);
+            cl_err = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, host_name,
+                                                                 ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
             clear_packbuffer(&pb);
             DPRINTF("%s %d ticket changings to execd@%s\n",

@@ -34,7 +34,7 @@
 
 #include <cstring>
 
-#include "gdi/qm_name.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
@@ -151,7 +151,7 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 
    if (check_act_qmaster_file == 1) {
       strcpy(err_str,"");
-      if (get_qm_name(act_qmaster_name, act_qmaster_file, err_str, sizeof(err_str)) == 0) {
+      if (ocs::gdi::ClientBase::get_qm_name(act_qmaster_name, act_qmaster_file, err_str, sizeof(err_str)) == 0) {
          /* got qmaster name */
          if ( getuniquehostname(act_qmaster_name, act_resolved_qmaster_name, 0) == CL_RETVAL_OK &&
               sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0      ) {

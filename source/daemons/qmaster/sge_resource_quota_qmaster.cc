@@ -38,18 +38,16 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_userprj.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_userset.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 
@@ -123,8 +121,8 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 *     MT-NOTE: rqs_mod() is MT safe 
 *******************************************************************************/
 int
-rqs_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
-        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+        const char *rhost, gdi_object_t *object, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
@@ -154,9 +152,9 @@ rqs_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp
    /* ---- RQS_rule */
    if (lGetPosViaElem(rqs, RQS_rule, SGE_NO_ABORT) >= 0) {
       rules_changed = true;
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
+      if (sub_command & ocs::gdi::SubCommand::SGE_GDI_SET_ALL) {
          normalize_sublist(rqs, RQS_rule);
-         attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, sub_command,
+         attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, cmd, sub_command,
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
@@ -168,7 +166,7 @@ rqs_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp
             lListElem *new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
-               attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule,
+               attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,
                                  sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
             } else {
                ERROR(SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED);
@@ -222,7 +220,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     MT-NOTE: rqs_spool() is MT safe 
 *******************************************************************************/
 int
-rqs_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -273,7 +271,7 @@ rqs_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **al
 *     MT-NOTE: rqs() is MT safe 
 *******************************************************************************/
 int
-rqs_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const char *rqs_name = lGetString(ep, RQS_name);
    rqs_update_categories(ep, old_ep, packet->gdi_session);
@@ -309,7 +307,7 @@ rqs_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListEle
 *     MT-NOTE: rqs_del() is MT safe 
 *******************************************************************************/
 int
-rqs_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
    int pos;
    lListElem *found;

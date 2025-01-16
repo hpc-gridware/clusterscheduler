@@ -37,7 +37,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 typedef struct object_info_entry {
-   u_long32 target;
+   ocs::gdi::Target::TargetValue target;
    const char *object_name;
    lDescr *cull_descriptor;
    const char *attribute_name;

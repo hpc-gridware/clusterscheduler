@@ -37,14 +37,11 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 
 #include "evc/sge_event_client.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sge_orders.h"
 #include "schedd_message.h"
@@ -339,33 +336,34 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 {
    int ret = STATUS_OK;
    lList *alp = nullptr;
-   lList *malp = nullptr;
 
    int order_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   ocs::gdi::Request gdi_multi{};
 
    DENTER(TOP_LAYER);
 
    if (*orders != nullptr) {
       DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
-      order_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
-                               orders, nullptr, nullptr, &state, false);
-      sge_gdi_wait(&malp, &state);
+      order_id = gdi_multi.request(&alp, ocs::Mode::SEND, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST,
+                                   ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                   orders, nullptr, nullptr, false);
 
       if (alp != nullptr) {
          ret = answer_list_handle_request_answer_list(&alp, stderr);
          DRETURN(ret);
       }
-   }   
+
+      gdi_multi.wait();
+   }
 
    /* check result of orders */
    if(order_id > 0) {
-      gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, nullptr);
+      gdi_multi.get_response(&alp, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                             ocs::gdi::Target::SGE_ORDER_LIST, order_id, nullptr);
 
       ret = answer_list_handle_request_answer_list(&alp, stderr);
    }
 
-   lFreeList(&malp);
    DRETURN(ret);
 }
 

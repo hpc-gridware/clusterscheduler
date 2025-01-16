@@ -62,12 +62,11 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
-
-#include "comm/commlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "ocs_qevent.h"
 #include "sig_handlers.h"
@@ -503,8 +502,8 @@ int main(int argc, char *argv[])
    ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);
 
    /* setup event client */
-   gdi_setup = gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
-   if (gdi_setup != AE_OK) {
+   gdi_setup = ocs::gdi::ClientBase::setup_and_enroll(QEVENT, MAIN_THREAD, &alp);
+   if (gdi_setup != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);
       sge_exit(1);

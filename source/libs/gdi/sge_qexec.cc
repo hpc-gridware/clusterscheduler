@@ -47,30 +47,30 @@
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
-#include "gdi/ocs_gdi_execd_delivery.h"
 #include "gdi/sge_qexec.h"
-#include "gdi/sge_gdi.h"
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_pe_task.h"
 
 #include "msg_common.h"
 
+#include <ocs_gdi_ClientServerBase.h>
+
 static lList *remote_task_list = nullptr;
 static char lasterror[4096];
+
+static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag);
 
 /* option flags for rcv_from_execd() */
 #define OPT_SYNCHRON 1
 
 #define LOCATE_RTASK(tid) lGetElemStrRW(remote_task_list, RT_tid, tid)
 
-static int rcv_from_execd(int options, int tag);
-
 const char *qexec_last_err() {
    return lasterror;
 }
 
-/****** gdi/sge/sge_qexecve() ************************************************
+/****** gdi/sge/shutdown() ************************************************
 *  NAME
 *     sge_qexecve() -- start a task in a tightly integrated par. job
 *
@@ -103,7 +103,7 @@ const char *qexec_last_err() {
 ******************************************************************************/
 sge_tid_t
 sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
-            const lList *path_aliases) {
+            const lList *path_aliases, int feature_set_id) {
    char myname[256];
    const char *s;
    int ret;
@@ -183,10 +183,10 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       DRETURN(nullptr);
    }
 
-   pack_job_delivery(&pb, petrep);
+   pack_job_delivery(&pb, petrep, feature_set_id);
 
-   ret = gdi_send_message_pb(1, prognames[EXECD], 1, hostname,
-                              TAG_JOB_EXECUTION, &pb, &dummymid);
+   ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, prognames[EXECD], 1, hostname,
+                                                     ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
 
    clear_packbuffer(&pb);
 
@@ -202,7 +202,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    lSetHost(rt, RT_hostname, hostname);
    lSetUlong(rt, RT_state, RT_STATE_WAIT4ACK);
 
-   rcv_from_execd(OPT_SYNCHRON, TAG_JOB_EXECUTION);
+   rcv_from_execd(OPT_SYNCHRON, ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION);
 
    auto tid = (sge_tid_t) lGetString(rt, RT_tid);
 
@@ -244,7 +244,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
               !lGetElemUlong(remote_task_list, RT_state, RT_STATE_EXITED) && /* none exited */
               lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
-      if ((ret = rcv_from_execd(rcv_opt, TAG_TASK_EXIT))) {
+      if ((ret = rcv_from_execd(rcv_opt, ocs::gdi::ClientServerBase::TAG_TASK_EXIT))) {
          DRETURN((ret < 0) ? -1 : 0);
       }
    }
@@ -265,7 +265,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
        MT-NOTE: rcv_from_execd() is not MT safe
 
 */
-static int rcv_from_execd(int options, int tag) {
+static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag) {
    int ret;
    char *msg = nullptr;
    u_long32 msg_len = 0;
@@ -283,8 +283,8 @@ static int rcv_from_execd(int options, int tag) {
    from_id = 1;
    do {
       /* FIX_CONST */
-      ret = gdi_receive_message((char *) prognames[EXECD], &from_id, host, &tag, &msg, &msg_len,
-                                 (options & OPT_SYNCHRON) ? 1 : 0);
+      ret = ocs::gdi::ClientServerBase::gdi_receive_message((char *) prognames[EXECD], &from_id, host,
+                                                        &tag, &msg, &msg_len, (options & OPT_SYNCHRON) ? 1 : 0);
 
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          snprintf(lasterror, sizeof(lasterror), MSG_GDI_MESSAGERECEIVEFAILED_SI, cl_get_error_text(ret), ret);
@@ -303,11 +303,11 @@ static int rcv_from_execd(int options, int tag) {
    }
 
    switch (tag) {
-      case TAG_TASK_EXIT:
+      case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
          unpackstr(&pb, &tid);
          unpackint(&pb, &exit_status);
          break;
-      case TAG_JOB_EXECUTION:
+      case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
          unpackstr(&pb, &tid);
          break;
       default:
@@ -317,7 +317,7 @@ static int rcv_from_execd(int options, int tag) {
    clear_packbuffer(&pb);
 
    switch (tag) {
-      case TAG_TASK_EXIT:
+      case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
          /* change state in exited task */
          if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUND_S, tid);
@@ -329,7 +329,7 @@ static int rcv_from_execd(int options, int tag) {
          lSetUlong(rt_rcv, RT_state, RT_STATE_EXITED);
          break;
 
-      case TAG_JOB_EXECUTION:
+      case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
          /* search task without taskid */
          if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);

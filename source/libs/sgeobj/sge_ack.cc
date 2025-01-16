@@ -35,10 +35,11 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 
-#include "gdi/sge_gdi.h"
-
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ack.h"
+
+#include "gdi/ocs_gdi_ClientBase.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
 int pack_ack(sge_pack_buffer *pb, u_long32 type, u_long32 id, u_long32 id2, const char *str)
 {
@@ -64,7 +65,7 @@ int sge_send_ack_to_qmaster(u_long32 type, u_long32 ulong_val,
    int ret;
    sge_pack_buffer pb;
    const char* commproc = prognames[QMASTER];
-   const char* rhost = gdi_get_act_master_host(false);
+   const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    int         id   = 1;
    
    DENTER(TOP_LAYER);
@@ -76,7 +77,7 @@ int sge_send_ack_to_qmaster(u_long32 type, u_long32 ulong_val,
 
    pack_ack(&pb, type, ulong_val, ulong_val_2, str);
 
-   ret = sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, alpp);
+   ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, alpp);
    clear_packbuffer(&pb);
    answer_list_output (alpp);
 

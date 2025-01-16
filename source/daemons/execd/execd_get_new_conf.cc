@@ -45,14 +45,15 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
-#include "exec_job.h"
 
+#include "exec_job.h"
 #include "execd_get_new_conf.h"
 #include "sge_load_sensor.h"
 #include "admin_mail.h"
 #include "load_avg.h"
 #include "msg_common.h"
 
+#include <ocs_gdi_ClientExecd.h>
 #include <reaper_execd.h>
 
 #ifdef COMPILE_DC
@@ -65,7 +66,7 @@
 **   executed on startup. This function is triggered by the execd
 **   dispatcher table when the tag TAG_GET_NEW_CONF is received.
 */
-int do_get_new_conf(struct_msg_t *aMsg)
+int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    int ret;
    bool use_qidle = mconf_get_use_qidle();
@@ -79,7 +80,7 @@ int do_get_new_conf(struct_msg_t *aMsg)
    const char *old_spool = mconf_get_execd_spool_dir();
    keep_active_t old_keep_active = mconf_get_keep_active();
 
-   ret = gdi_get_merged_configuration(&Execd_Config_List);
+   ret = ocs::gdi::ClientExecd::gdi_get_merged_configuration(&Execd_Config_List);
   
    const char *spool_dir = mconf_get_execd_spool_dir();
    if (strcmp(old_spool, spool_dir)) {

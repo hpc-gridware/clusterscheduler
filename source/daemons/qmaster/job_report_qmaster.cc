@@ -152,7 +152,7 @@ status2str(u_long32 status) {
 *     not empty.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lListElem *report        - the job report
 *     lListElem *hep           - the host for which we got the job report
 *     char *rhost              - name of the remote host having sent the report

@@ -49,7 +49,6 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
-#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge.h"
@@ -58,9 +57,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
 
-#include "gdi/qm_name.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/commlib.h"
 
@@ -224,7 +221,7 @@ main(int argc, char **argv) {
 
    log_state_set_log_file(TMP_ERR_FILE_SHADOWD);
 
-   if (gdi_client_setup(SHADOWD, MAIN_THREAD, &alp, false) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup(SHADOWD, MAIN_THREAD, &alp, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -255,7 +252,7 @@ main(int argc, char **argv) {
          }
       }
 
-      gdi_client_prepare_enroll(&alp);
+      ocs::gdi::ClientBase::prepare_enroll(&alp);
 
       /* is there a running shadowd on this host (with aliased name) */
       snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
@@ -268,7 +265,7 @@ main(int argc, char **argv) {
          }
       }
    } else {
-      gdi_client_prepare_enroll(&alp);
+      ocs::gdi::ClientBase::prepare_enroll(&alp);
    }
 
    if (parse_cmdline_shadowd(argc, argv) == 1) {
@@ -467,7 +464,7 @@ compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
 
    DENTER(TOP_LAYER);
 
-   if (get_qm_name(newqmaster, act_qmaster_file, nullptr, 0)) {
+   if (ocs::gdi::ClientBase::get_qm_name(newqmaster, act_qmaster_file, nullptr, 0)) {
       WARNING(MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file);
       DRETURN(-1);
    }
@@ -498,7 +495,7 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    }
 
    /* we can't read act_qmaster file */
-   if (get_qm_name(oldqmaster, act_qmaster_file, nullptr, 0)) {
+   if (ocs::gdi::ClientBase::get_qm_name(oldqmaster, act_qmaster_file, nullptr, 0)) {
       WARNING(MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file);
       DRETURN(-1);
    }

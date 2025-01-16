@@ -61,8 +61,7 @@
 
 #include "sched/sge_schedd_text.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
 #include "ocs_client_job.h"
@@ -216,7 +215,7 @@ int main(int argc, char *argv[]) {
    sge_setup_sig_handlers(QSTAT);
    log_state_set_log_gui(true);
 
-   if (gdi_client_setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -2026,7 +2025,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
 
    if (!isXML) {
@@ -2091,7 +2090,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
             JB_grp_list, RN_Type);
    /* get job list */
-   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &jlp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
 
@@ -2250,7 +2249,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = sge_gdi(SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
       xml_qstat_show_job_info(&ilp, &alp, qstat_env);

@@ -50,7 +50,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/sge_security.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/cl_commlib.h"
 
@@ -63,24 +63,24 @@
 
 /****** qmaster/sge_qmaster_main/sge_gdi_kill_master() *************************
 *  NAME
-*     sge_gdi_kill_master() -- Shutdown qmaster via GDI
+*     ocs::gdi::Client::sge_gdi_kill_master() -- Shutdown qmaster via GDI
 *
 *  SYNOPSIS
-*     void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
+*     void ocs::gdi::Client::sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 *
 *  FUNCTION
 *     Shutdown qmaster by means of a GDI request. This operation is only
 *     permitted for a user of type 'manager'.
 *
 *  INPUTS
-*     sge_gdi_packet_class_t *packet - request packet
-*     sge_gdi_task_class_t *task     - request task
+*     ocs::gdi::Packet *packet - request packet
+*     ocs::gdi::Task *task     - request task
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_gdi_kill_master() is not MT safe.
+*     MT-NOTE: ocs::gdi::Client::sge_gdi_kill_master() is not MT safe.
 *     MT-NOTE:
 *     MT-NOTE: This is acceptable for now, because this function is currently
 *     MT-NOTE: only invoked from the message thread.
@@ -90,11 +90,11 @@
 *
 *******************************************************************************/
 void
-sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
+sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(GDI_LAYER);
 
-   if (!sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
-                                      &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
+   if (!packet->parse_auth_info(&(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
+                                &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
       ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
@@ -121,7 +121,7 @@ sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
    }
 
    DRETURN_VOID;
-} /* sge_gdi_kill_master() */
+} /* ocs::gdi::Client::sge_gdi_kill_master() */
 
 /****** qmaster/sge_qmaster_main/sge_daemonize_qmaster() ***************************
 *  NAME
@@ -279,7 +279,7 @@ sge_become_admin_user(const char *admin_user) {
 void
 sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
 
    DRETURN_VOID;
 }

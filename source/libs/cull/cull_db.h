@@ -40,8 +40,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name, const lCondition *cp)
 
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
-                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
-                 u_long32 *elements);
+                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb);
 
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
@@ -54,8 +53,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
                        bool isHash, sge_pack_buffer *pb);
 
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp, const lDescr *dp, const lEnumeration *enp,
-                    bool isHash,
-                    sge_pack_buffer *pb, u_long32 *elements);
+                    bool isHash, sge_pack_buffer *pb);
 
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what);
 

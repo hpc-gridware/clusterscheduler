@@ -50,11 +50,6 @@ cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp,
                          const lDescr *dp, int flags);
 
 int
-cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
-                       const lEnumeration *what, const char *name,
-                       size_t *offset, size_t *used);
-
-int
 cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
                        const lEnumeration *what, int flags);
 
@@ -75,19 +70,25 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
                            lEnumeration *what, int flags);
 
 /*
- *
  *   lEnumeration
- *
  */
 int cull_unpack_enum(sge_pack_buffer *pb, lEnumeration **epp);
 
 int cull_pack_enum(sge_pack_buffer *pb, const lEnumeration *ep);
 
 /*
- *
  *   lCondition
- *
  */
 int cull_unpack_cond(sge_pack_buffer *pb, lCondition **cpp);
 
 int cull_pack_cond(sge_pack_buffer *pb, const lCondition *cp);
+
+/*
+ *   lDescr
+ */
+int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp);
+
+int cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *dp);
+
+// execd
+int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep, int feature_set_id);

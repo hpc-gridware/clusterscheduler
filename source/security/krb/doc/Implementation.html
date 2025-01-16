@@ -67,7 +67,7 @@ client must have requested "forwardable" tickets in the initial kinit(1)
 request. This allows jobs submitted using Cluster Scheduler to automatically
 have Kerberos tickets and to run kerberized applications without the user
 having to login to each execution host and execute a kinit(1).
-<p>When a job is submitted from qmon, qsub, or qsh, the sge_gdi_multi()
+<p>When a job is submitted from qmon, qsub, or qsh, the ocs::gdi::Client::sge_gdi_multi()
 routine (sge_gdi_request.c) calls krb_set_client_flags() (krb_lib.c) to
 set the KRB_FORWARD_TGT flag, which informs the kerberos library to forward
 the TGT for any subsequent krb_send_message() messages.
@@ -75,11 +75,11 @@ the TGT for any subsequent krb_send_message() messages.
 qmaster, the TGT is acquired, encoded, and sent as part of the encoded
 message to the qmaster. The TGT is encrypted in the private session key
 of the client process and the qmaster.
-<p>After sending the message, the sge_gdi_multi() routine calls krb_set_client_flags()
+<p>After sending the message, the ocs::gdi::Client::sge_gdi_multi() routine calls krb_set_client_flags()
 to clear the KRB_FORWARD_TGT flag. When the message is received by the
 qmaster, the TGT is stored in the client connection entry maintained by
 the Cluster Scheduler kerberos library routines.
-<br>When the job is added to the job list in the sge_gdi_add_job() routine
+<br>When the job is added to the job list in the ocs::gdi::Client::sge_gdi_add_job() routine
 (sge_job.c), the TGT is retrieved from the connection entry using krb_get_tgt()
 (krb_lib.c), and is then encrypted in the qmaster's private key using krb_encrypt_tgt_creds()
 (krb_lib.c), and is converted to a string using krb_bin2str() (krb_lib.c),

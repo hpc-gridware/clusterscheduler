@@ -250,6 +250,7 @@ gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj) {
    ts.csp_path_obj = csp_path_obj;
 }
 
+// @todo still required?
 u_long32
 gdi_data_get_next_request_id() {
    GET_SPECIFIC(sge_gdi_tl_t, tl, gdi_data_tl_init, gdi_data_tl_key);

@@ -46,4 +46,4 @@ bool rqs_modify(lList **answer_list, const char *name);
 bool rqs_add_from_file(lList **answer_list, const char *filename);
 bool rqs_modify_from_file(lList **answer_list, const char *filename, const char *name);
 
-bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, u_long32 gdi_command);
+bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command::Cmd gdi_command, ocs::gdi::SubCommand::SubCmd gdi_sub_command);

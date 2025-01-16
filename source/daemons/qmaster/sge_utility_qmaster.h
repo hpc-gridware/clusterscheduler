@@ -55,7 +55,8 @@ int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm,
 
 int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name, int enable_infinity);
 
-bool cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem, int sub_command,
+bool cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem,
+                        ocs::gdi::Command::Cmd command, ocs::gdi::SubCommand::SubCmd sub_command,
                         int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                         const char *attribute_name_str, const char *object_name_str);
 
@@ -65,5 +66,5 @@ multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, co
 void normalize_sublist(lListElem *ep, int nm);
 
 bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
-                       const lListElem *delta_elem, int sub_command, const char *sub_list_name, const char *object_name,
-                       int no_info, bool *changed);
+                       const lListElem *delta_elem, ocs::gdi::Command::Cmd, ocs::gdi::SubCommand::SubCmd sub_command,
+                       const char *sub_list_name, const char *object_name, int no_info, bool *changed);

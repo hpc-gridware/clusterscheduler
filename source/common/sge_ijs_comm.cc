@@ -55,8 +55,6 @@
 #include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"
 
-#include "sgeobj/sge_utility.h"
-
 #include "comm/cl_data_types.h"
 #include "comm/cl_commlib.h"
 #include "comm/cl_endpoint_list.h"

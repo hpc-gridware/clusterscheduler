@@ -41,11 +41,11 @@
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/sge_job_schedd.h"
 
@@ -67,8 +67,9 @@ static char object_name[] = "parallel environment";
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, u_long64 gdi_session);
 
 int
-pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
-       int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+       int add, const char *ruser, const char *rhost, gdi_object_t *object,
+       ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
        monitoring_t *monitor) {
    int ret;
    const char *s, *pe_name;
@@ -119,7 +120,7 @@ pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp,
          goto ERROR;
       }
 
-      attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, sub_command,
+      attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, cmd, sub_command,
                         SGE_ATTR_USER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
@@ -131,7 +132,7 @@ pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp,
       if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
-      attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, sub_command,
+      attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, cmd, sub_command,
                         SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
@@ -207,7 +208,7 @@ pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp,
 }
 
 int
-pe_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -225,7 +226,7 @@ pe_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alp
    DRETURN(dbret ? 0 : 1);
 }
 
-int pe_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;
 
@@ -241,7 +242,7 @@ int pe_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList
 }
 
 int
-sge_del_pe(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;

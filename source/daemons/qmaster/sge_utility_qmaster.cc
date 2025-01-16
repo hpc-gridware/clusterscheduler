@@ -38,16 +38,17 @@
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_hostname.h"
 
 #include "cull/cull.h"
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_Command.h"
+#include "gdi/ocs_gdi_SubCommand.h"
 
 #include "comm/lists/cl_errors.h"
 #include "comm/cl_commlib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_object.h"
 
 #include "msg_common.h"
@@ -497,16 +498,16 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
 *******************************************************************************/
 bool
 attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
-                  const lListElem *delta_elem, int sub_command, const char *sub_list_name, const char *object_name,
-                  int no_info, bool *changed) {
+                  const lListElem *delta_elem, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_cmd,
+                  const char *sub_list_name, const char *object_name, int no_info, bool *changed) {
    bool ret = true;
    bool did_changes = false;
 
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(delta_elem, this_elem_name, SGE_NO_ABORT) >= 0) {
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) ||
-          SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
-          SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+      if (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE ||
+          sub_cmd & ocs::gdi::SubCommand::SGE_GDI_APPEND ||
+          sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
          lList *reduced_sublist;
          lList *full_sublist;
          lListElem *reduced_element, *next_reduced_element;
@@ -555,7 +556,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                   /* element already exists */
                   next_reduced_element = lNextRW(reduced_element);
-                  if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
+                  if (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE) {
                      if (object_has_differences(reduced_element, nullptr, full_element)) {
                         /* new object differs from old one - exchange them */
                         did_changes = true;
@@ -571,7 +572,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                      restart_loop = 1;
                      break;
-                  } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND)) {
+                  } else if (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_APPEND) {
                      if (!no_info) {
                         INFO(MSG_OBJECT_ALREADYEXIN_SSS, rstring, sub_list_name, object_name);
                         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -583,7 +584,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                      restart_loop = 1;
                      break;
-                  } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+                  } else if (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
                      did_changes = true;
                      new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
                      old_sub_elem = lDechainElem(full_sublist, full_element);
@@ -604,9 +605,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
          }
 
          /* now we process elements which have not been found in the first step above */
-         if (ret && (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) ||
-                     SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
-                     SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE))) {
+         if (ret && (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE || sub_cmd & ocs::gdi::SubCommand::SGE_GDI_APPEND || sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE)) {
             next_reduced_element = lFirstRW(reduced_sublist);
 
             while ((reduced_element = next_reduced_element)) {
@@ -632,12 +631,12 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                }
 
                if (ret) {
-                  if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+                  if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
                      INFO(SFQ " does not exist in " SFQ " of " SFQ "\n", rstring, sub_list_name, object_name);
                      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      if (!full_sublist) {
-                        if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
+                        if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE) {
                            INFO(SFQ " of " SFQ " is empty - Adding new element(s).\n", sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
@@ -647,7 +646,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                         did_changes = true;
                         break;
                      } else {
-                        if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
+                        if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE) {
                            INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.\n", rstring, sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
@@ -735,7 +734,8 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 *     MT-NOTE: cqueue_mod_sublist() is MT safe 
 *******************************************************************************/
 bool
-cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem, int sub_command,
+cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem,
+                   ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_cmd,
                    int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                    const char *attribute_name_str, const char *object_name_str) {
    bool ret = true;
@@ -753,7 +753,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
        * Delete all configuration lists except the default-configuration
        * if sub_command is SGE_GDI_SET_ALL
        */
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
+      if (sub_cmd & ocs::gdi::SubCommand::SGE_GDI_SET_ALL) {
          lListElem *elem, *next_elem;
 
          next_elem = lFirstRW(org_list);
@@ -809,7 +809,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
          /*
           * Create element if it does not exist
           */
-         if (org_elem == nullptr && !SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+         if (org_elem == nullptr && !(sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE)) {
             if (org_list == nullptr) {
                org_list = lCreateList("", lGetElemDescr(mod_elem));
                lSetList(this_elem, attribute_name, org_list);
@@ -824,7 +824,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
           */
          if (org_elem != nullptr) {
             if (subsub_key != NoName) {
-               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, sub_command,
+               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, cmd, sub_cmd,
                                  attribute_name_str, object_name_str, 0, nullptr);
             } else {
                object_replace_any_type(org_elem, sublist_value_name, mod_elem);

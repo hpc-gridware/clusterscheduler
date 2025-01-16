@@ -55,7 +55,7 @@
 
 #include "comm/cl_commlib.h"
 
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "evm/sge_event_master.h"
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
-      gdi_client_prepare_enroll(&alp);
+      ocs::gdi::ClientBase::prepare_enroll(&alp);
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */

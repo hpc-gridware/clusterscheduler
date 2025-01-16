@@ -33,7 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
-int do_get_new_conf(struct_msg_t *aMsg);
+int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);

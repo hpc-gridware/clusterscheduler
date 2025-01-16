@@ -43,6 +43,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_profiling.h"
 
 #include "cull/cull_db.h"
 #include "cull/cull_where.h"
@@ -554,7 +555,6 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
    if (enp != nullptr) {
       lDescr *dp;
       int n, index = 0;
-      u_long32 elements = 0;
 
       /* create new lList with partial descriptor */
       if ((n = lCountWhat(enp, slp->descr)) <= 0) {
@@ -572,7 +572,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
          DRETURN(nullptr);
       }
       /* create reduced element */
-      new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, &elements);
+      new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb);
       /* free the descriptor, it has been copied by lCreateList */
       cull_hash_free_descr(dp);
       sge_free(&dp);
@@ -613,8 +613,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 ******************************************************************************/
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
-                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
-                 u_long32 *elements) {
+                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
    lListElem *new_ep = nullptr;
    int index = 0;
 
@@ -636,9 +635,13 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
             lFreeElem(&new_ep);
          }
       } else {
-         if (elements != nullptr) {
-            (*elements)++;
+         // add a 1 to indicate that there is an element
+         PROF_START_MEASUREMENT(SGE_PROF_PACKING);
+         if (packint(pb, 1) != PACK_SUCCESS) {
+            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+            DRETURN(nullptr);
          }
+         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
 
          lCopyElemPartialPack(nullptr, &index, slp, enp, isHash, pb);
          new_ep = nullptr;
@@ -734,15 +737,12 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             sge_free(&dp);
             DRETURN(nullptr);
          }
-         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, nullptr);
+         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr);
 
          /* free the descriptor, it has been copied by lCreateList */
          cull_hash_free_descr(dp);
          sge_free(&dp);
       } else {
-         u_long32 number_of_packed_elements = 0;
-         size_t offset = 0;
-         size_t used = 0;
          const char *pack_name = "";
          int local_ret;
 
@@ -752,35 +752,37 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             pack_name = slp->listname;
          }
 
-         local_ret = cull_pack_list_summary(pb, slp, enp, pack_name, &offset, &used);
-         if (local_ret != PACK_SUCCESS) {
-            LERROR(LEMALLOC);
-            DRETURN(nullptr);
+         PROF_START_MEASUREMENT(SGE_PROF_PACKING);
+         if ((local_ret = packint(pb, slp != nullptr)) != PACK_SUCCESS) {
+            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+            DRETURN(ret);
          }
 
-         lSelectDPack(name, slp, cp, nullptr, enp, isHash, pb,
-                      &number_of_packed_elements);
-
-         /*
-          * change number of elements contained in the packbuffer 
-          */
-         if (slp != nullptr && pb != nullptr) {
-            char *old_cur_ptr = nullptr;
-            size_t old_used = 0;
-
-            old_cur_ptr = pb->cur_ptr;
-            old_used = pb->bytes_used;
-            pb->cur_ptr = pb->head_ptr + offset;
-            pb->bytes_used = used;
-
-            local_ret = repackint(pb, number_of_packed_elements);
-            if (local_ret != PACK_SUCCESS) {
-               LERROR(LEMALLOC);
-               DRETURN(nullptr);
+         if (slp != nullptr) {
+            // add the list name to the packbuffer
+            if ((local_ret = packstr(pb, pack_name)) != PACK_SUCCESS) {
+               PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+               DRETURN(ret);
             }
-            pb->cur_ptr = old_cur_ptr;
-            pb->bytes_used = old_used;
+
+            /* pack descriptor */
+            if (enp == nullptr) {
+               local_ret = cull_pack_descr(pb, slp->descr);
+               if (local_ret != PACK_SUCCESS) {
+                  PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+                  DRETURN(ret);
+               }
+            } else {
+               local_ret = cull_pack_enum_as_descr(pb, enp, slp->descr);
+               if (local_ret != PACK_SUCCESS) {
+                  PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+                  DRETURN(ret);
+               }
+            }
          }
+         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+
+         lSelectDPack(name, slp, cp, nullptr, enp, isHash, pb);
       }
    } else {
       if (pb == nullptr) {
@@ -822,8 +824,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 *     lList* - list containing the extracted elements
 *******************************************************************************/
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
-                    const lDescr *dp, const lEnumeration *enp, bool isHash,
-                    sge_pack_buffer *pb, u_long32 *elements) {
+                    const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
 
    lListElem *ep, *new_ep;
    lList *dlp = (lList *) nullptr;
@@ -848,7 +849,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
       depending on result of lCompare
     */
    for (ep = slp->first; ep; ep = ep->next) {
-      new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, elements);
+      new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb);
       if (new_ep != nullptr) {
          if (lAppendElem(dlp, new_ep) == -1) {
             LERROR(LEAPPENDELEM);
@@ -857,6 +858,16 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
             DRETURN(nullptr);
          }
       }
+   }
+
+   // write 0 to the end of the list to indicate that there are no more elements
+   if (pb != nullptr) {
+      PROF_START_MEASUREMENT(SGE_PROF_PACKING);
+      if (packint(pb, 0) != PACK_SUCCESS) {
+         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+         DRETURN(nullptr);
+      }
+      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
    }
 
    if (pb == nullptr && isHash) {

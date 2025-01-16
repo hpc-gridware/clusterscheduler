@@ -63,7 +63,6 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance_type.h"
-#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
@@ -75,16 +74,13 @@
 #include "sched/sge_select_queue.h"
 #include "sched/sge_complex_schedd.h"
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_client_cqueue.h"
 #include "ocs_qstat_filter.h"
 #include "ocs_client_print.h"
 #include "sge.h"
 
-#include "msg_clients_common.h"
 #include "msg_qstat.h"
 
 static int qstat_env_get_all_lists(qstat_env_t *qstat_env, bool need_job_list, lList** alpp);
@@ -420,7 +416,7 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
 
    DENTER(TOP_LAYER);
 
-   bool perm_return = sge_gdi_get_permission(alpp, &qstat_env->is_manager, nullptr, nullptr, nullptr);
+   bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(alpp, &qstat_env->is_manager, nullptr, nullptr, nullptr);
    if (!perm_return) {
       DRETURN(1);
    }
@@ -1011,11 +1007,10 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    lEnumeration *eh_all, *sc_what, *gc_what, *hgrp_what;
    const lListElem *ep = nullptr;
    lList *conf_l = nullptr;
-   lList *mal = nullptr;
    int q_id = 0, j_id = 0, pe_id = 0, ckpt_id = 0, acl_id = 0, z_id = 0, up_id = 0;
    int ce_id, eh_id, sc_id, gc_id, hgrp_id = 0;
    int show_zombies = (show & QSTAT_DISPLAY_ZOMBIES) ? 1 : 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   ocs::gdi::Request gdi_multi{};
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = component_get_component_id();
 
@@ -1024,10 +1019,10 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    if (queue_l) {
       DPRINTF("need queues\n");
       q_all = lWhat("%T(ALL)", CQ_Type);
-      
-      q_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET, nullptr, nullptr, q_all, &state, true);
+
+      q_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, q_all, true);
       lFreeWhat(&q_all);
-    
+
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
@@ -1035,14 +1030,14 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       DPRINTF("queues not needed\n");
    }
 
-   /* 
+   /*
    ** jobs
    */
    if (job_l) {
       lCondition *where = qstat_get_JB_Type_selection(user_list, show);
       lEnumeration *what = qstat_get_JB_Type_filter(qstat_env);
 
-      j_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET, nullptr, where, what, &state, true);
+      j_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
       lFreeWhere(&where);
 
       if (answer_list_has_error(alpp)) {
@@ -1050,7 +1045,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
    }
 
-   /* 
+   /*
    ** job zombies
    */
    if (zombie_l && show_zombies) {
@@ -1062,7 +1057,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
             zw = lOrWhere(zw, nw);
       }
 
-      z_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_ZOMBIE_LIST, SGE_GDI_GET, nullptr, zw, qstat_get_JB_Type_filter(qstat_env),  &state, true);
+      z_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_ZOMBIE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, zw, qstat_get_JB_Type_filter(qstat_env), true);
       lFreeWhere(&zw);
 
       if (answer_list_has_error(alpp)) {
@@ -1074,7 +1069,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    ** complexes
    */
    ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, nullptr, nullptr, ce_all, &state, true);
+   ce_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, ce_all, true);
    lFreeWhat(&ce_all);
 
    if (answer_list_has_error(alpp)) {
@@ -1086,7 +1081,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
    eh_all = lWhat("%T(ALL)", EH_Type);
-   eh_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET, nullptr, where, eh_all, &state, true);
+   eh_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, eh_all, true);
    lFreeWhat(&eh_all);
    lFreeWhere(&where);
 
@@ -1094,12 +1089,12 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       DRETURN(1);
    }
 
-   /* 
-   ** pe list 
-   */ 
-   if (pe_l) {   
+   /*
+   ** pe list
+   */
+   if (pe_l) {
       pe_all = lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
-      pe_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET, nullptr, nullptr, pe_all, &state, true);
+      pe_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_PE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, pe_all, true);
       lFreeWhat(&pe_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1107,12 +1102,12 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
    }
 
-  /* 
-   ** ckpt list 
-   */ 
+  /*
+   ** ckpt list
+   */
    if (ckpt_l) {
       ckpt_all = lWhat("%T(%I)", CK_Type, CK_name);
-      ckpt_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_CK_LIST, SGE_GDI_GET, nullptr, nullptr, ckpt_all, &state, true);
+      ckpt_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_CK_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, ckpt_all, true);
       lFreeWhat(&ckpt_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1120,12 +1115,12 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
    }
 
-   /* 
-   ** acl list 
-   */ 
+   /*
+   ** acl list
+   */
    if (acl_l) {
       acl_all = lWhat("%T(ALL)", US_Type);
-      acl_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET, nullptr, nullptr, acl_all, &state, true);
+      acl_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_US_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, acl_all, true);
       lFreeWhat(&acl_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1133,12 +1128,12 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
    }
 
-   /* 
-   ** project list 
-   */ 
+   /*
+   ** project list
+   */
    if (project_l) {
       up_all = lWhat("%T(ALL)", PR_Type);
-      up_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_PR_LIST, SGE_GDI_GET, nullptr, nullptr, up_all, &state, true);
+      up_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_PR_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, up_all, true);
       lFreeWhat(&up_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1151,10 +1146,10 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
 
    /* might be enough, but I am not sure */
-   /*sc_what = lWhat("%T(%I %I)", SC_Type, SC_user_sort, SC_job_load_adjustments);*/ 
+   /*sc_what = lWhat("%T(%I %I)", SC_Type, SC_user_sort, SC_job_load_adjustments);*/
    sc_what = lWhat("%T(ALL)", SC_Type);
 
-   sc_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_SC_LIST, SGE_GDI_GET, nullptr, nullptr, sc_what, &state, true);
+   sc_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_SC_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, sc_what, true);
    lFreeWhat(&sc_what);
 
    if (answer_list_has_error(alpp)) {
@@ -1162,10 +1157,10 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    }
 
    /*
-   ** hgroup 
+   ** hgroup
    */
    hgrp_what = lWhat("%T(ALL)", HGRP_Type);
-   hgrp_id = sge_gdi_multi(alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET, nullptr, nullptr, hgrp_what, &state, true);
+   hgrp_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_HGRP_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, hgrp_what, true);
    lFreeWhat(&hgrp_what);
 
    if (answer_list_has_error(alpp)) {
@@ -1177,13 +1172,12 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
    gc_what = lWhat("%T(ALL)", CONF_Type);
-   gc_id = sge_gdi_multi(alpp, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET, nullptr, gc_where, gc_what, &state, true);
-   sge_gdi_wait(&mal, &state);
+   gc_id = gdi_multi.request(alpp, ocs::Mode::SEND, ocs::gdi::Target::SGE_CONF_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, gc_where, gc_what, true);
+   gdi_multi.wait();
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
@@ -1192,18 +1186,16 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    if (queue_l) {
       /* --- queue */
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CQ_LIST, q_id,
-                                    mal, queue_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CQ_LIST, q_id, queue_l);
 
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
    /* --- job */
    if (job_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_JB_LIST, j_id, mal, job_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_JB_LIST, j_id, job_l);
 
 #if 0 /* EB: debug */
       {
@@ -1225,7 +1217,6 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
 #endif
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
 
@@ -1240,90 +1231,72 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
    /* --- job zombies */
    if (zombie_l && show_zombies) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_ZOMBIE_LIST, z_id, mal,
-         zombie_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_ZOMBIE_LIST, z_id, zombie_l);
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
    /* --- complex */
-   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CE_LIST, ce_id,
-                                mal, centry_l);
+   gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, ce_id, centry_l);
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
    /* --- exec host */
-   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_EH_LIST, eh_id,
-                                 mal, exechost_l);
+   gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_EH_LIST, eh_id, exechost_l);
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
    /* --- pe */
    if (pe_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_PE_LIST, pe_id,
-                                    mal, pe_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_PE_LIST, pe_id, pe_l);
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
    /* --- ckpt */
    if (ckpt_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CK_LIST, ckpt_id,
-                                    mal, ckpt_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CK_LIST, ckpt_id, ckpt_l);
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
    /* --- acl */
    if (acl_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_US_LIST, acl_id,
-                                    mal, acl_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_US_LIST, acl_id, acl_l);
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
    /* --- project */
    if (project_l) {
-      gdi_extract_answer(alpp, SGE_GDI_GET, SGE_PR_LIST, up_id,
-                                    mal, project_l);
+      gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_PR_LIST, up_id, project_l);
       if (answer_list_has_error(alpp)) {
-         lFreeList(&mal);
          DRETURN(1);
       }
    }
 
 
    /* --- scheduler configuration */
-   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_SC_LIST, sc_id, mal, sc_l);
+   gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_SC_LIST, sc_id, sc_l);
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
    /* --- hgrp */
-   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_HGRP_LIST, hgrp_id, mal,
-                                hgrp_l);
+   gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_HGRP_LIST, hgrp_id, hgrp_l);
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
    /* -- apply global configuration for sge_hostcmp() scheme */
-   gdi_extract_answer(alpp, SGE_GDI_GET, SGE_CONF_LIST, gc_id, mal, &conf_l);
+   gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CONF_LIST, gc_id, &conf_l);
    if (answer_list_has_error(alpp)) {
-      lFreeList(&mal);
       DRETURN(1);
    }
 
@@ -1332,7 +1305,6 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
    }
    lFreeList(&conf_l);
-   lFreeList(&mal);
 
    DRETURN(0);
 }

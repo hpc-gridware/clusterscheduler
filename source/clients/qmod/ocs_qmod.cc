@@ -47,8 +47,7 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sge_options.h"
 #include "sig_handlers.h"
@@ -81,7 +80,7 @@ char **argv
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(QMOD);
 
-   if (gdi_client_setup_and_enroll(QMOD, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QMOD, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -126,7 +125,8 @@ char **argv
    }
 
    if (ref_list) {
-      alp = sge_gdi(SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_TRIGGER,
+                    ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ref_list, nullptr, nullptr);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 

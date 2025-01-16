@@ -35,7 +35,6 @@
 
 #include "basis_types.h"
 
-#include "uti/sge_dstring.h"
 #include "uti/sge_csp_path.h"
 
 void

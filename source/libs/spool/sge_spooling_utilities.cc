@@ -44,8 +44,6 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "comm/commlib.h"
-
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_utility.h"
@@ -61,6 +59,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_userprj.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/debit.h"
 

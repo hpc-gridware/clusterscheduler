@@ -83,7 +83,7 @@ extern volatile int shut_me_down;
 
  counterpart in qmaster: c_qmod.c
  **************************************************************************/
-int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
+int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
    lListElem *jep;
    int found = 0;
@@ -102,7 +102,7 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
 
    DPRINTF("===>DELIVER_SIGNAL: %s >%s< Job(s) " sge_u32"." sge_u32" \n", sge_sig2str(signal), qname? qname: "<nullptr>", jobid, jataskid);
 
-   if (aMsg->tag == TAG_SIGJOB) { /* signal a job / task */
+   if (aMsg->tag == ocs::gdi::ClientServerBase::TAG_SIGJOB) { /* signal a job / task */
       pack_ack(apb, ACK_SIGJOB, jobid, jataskid, nullptr);
 
       found = (signal_job(jobid, jataskid, signal)==0);
@@ -180,7 +180,7 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
 
    /* If this is a queue signal 'found' now holds the number of a job
       running in this queue. */
-   if (!found && aMsg->tag == TAG_SIGJOB) {
+   if (!found && aMsg->tag == ocs::gdi::ClientServerBase::TAG_SIGJOB) {
       lListElem *jr;
       jr = get_job_report(jobid, jataskid, nullptr);
       remove_acked_job_exit(jobid, jataskid, nullptr, jr);

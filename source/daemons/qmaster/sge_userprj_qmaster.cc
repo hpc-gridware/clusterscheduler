@@ -49,17 +49,14 @@
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_attr.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_suser.h"
-#include "sgeobj/sge_resource_quota.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sge_utility_qmaster.h"
 #include "sge_userprj_qmaster.h"
@@ -75,13 +72,15 @@
 
 
 static int
-do_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *, lList **, monitoring_t *monitor);
+do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, monitoring_t *monitor);
 
 
 int
-userprj_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-            const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+            const char *rhost, gdi_object_t *object,
+            ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
+            monitoring_t *monitor) {
+   int user_flag = (object->target == ocs::gdi::Target::TargetValue::SGE_UU_LIST) ? 1 : 0;
    int pos;
    const char *userprj;
    u_long32 uval;
@@ -232,8 +231,8 @@ userprj_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **
 }
 
 int
-userprj_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+   int user_flag = (object->target == ocs::gdi::Target::TargetValue::SGE_UU_LIST) ? 1 : 0;
    const lListElem *rqs;
    int obj_key, obj_filter, obj_consider;
    ev_event obj_add_event, obj_mod_event;
@@ -267,9 +266,9 @@ userprj_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLis
 }
 
 int
-userprj_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
+userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;
-   int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
+   int user_flag = (object->target == ocs::gdi::Target::SGE_UU_LIST) ? 1 : 0;
 
    DENTER(TOP_LAYER);
 
@@ -291,7 +290,7 @@ userprj_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList 
    master code: delete a user or project
  ***********************************************************************/
 int
-sge_del_userprj(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *up_ep, lList **alpp, lList **upl,
+sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep, lList **alpp, lList **upl,
                 const char *ruser, const char *rhost, int user /* =1 user, =0 project */ ) {
    const char *name;
    lListElem *ep;
@@ -469,8 +468,8 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
                   lList *answer_list = nullptr;
-                  sge_gdi_packet_class_t packet;
-                  sge_gdi_task_class_t task;
+                  ocs::gdi::Packet packet;
+                  ocs::gdi::Task task;
 
                   packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
                   if (sge_del_userprj(&packet, &task, user, &answer_list, master_user_list, admin, (char *) qmaster_host, 1) !=
@@ -495,10 +494,10 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 
 /*-------------------------------------------------------------------------*/
 /* sge_add_auto_user - handles automatically adding GEEE user objects      */
-/*    called in sge_gdi_add_job                                            */
+/*    called in ocs::gdi::Client::sge_gdi_add_job                                            */
 /*-------------------------------------------------------------------------*/
 int
-sge_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *user, lList **alpp, monitoring_t *monitor) {
+sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
    int status = STATUS_OK;
    u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
@@ -566,7 +565,7 @@ sge_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, co
 *     MT-NOTE: do_add_auto_user() is not MT safe 
 *
 *******************************************************************************/
-static int do_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
+static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
    lList *tmpAnswer = nullptr;
@@ -576,14 +575,13 @@ static int do_add_auto_user(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t
 
    DENTER(TOP_LAYER);
 
-   userList = get_gdi_object(SGE_UU_LIST);
+   userList = get_gdi_object(ocs::gdi::Target::SGE_UU_LIST);
 
    /* 
     * Add anUser to the user list.
     * Owner of the operation is the admin user on the qmaster host.
     */
-   res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, 0, &ppList,
-                                 monitor);
+   res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname, ocs::gdi::Command::SGE_GDI_NONE, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ppList, monitor);
 
    lFreeList(&ppList);
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {

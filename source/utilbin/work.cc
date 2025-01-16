@@ -44,12 +44,10 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "uti/sge_os.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
 
 volatile int should_stop = 0;
 

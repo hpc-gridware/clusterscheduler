@@ -41,20 +41,14 @@
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance_state.h"
-
-#include "comm/commlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/msg_schedd.h"
 #include "sched/sgeee.h"

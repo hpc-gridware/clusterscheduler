@@ -39,10 +39,10 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 
@@ -102,8 +102,10 @@
 *     STATUS_EUNKNOWN - an error occurred
 ******************************************************************************/
 int
-ckpt_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
-         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
+         const char *rhost, gdi_object_t *object,
+         ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
+         monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -149,10 +151,9 @@ ckpt_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alp
       new_flags = sge_parse_checkpoint_attr(lGetString(new_ckpt, CK_when));
       flags = sge_parse_checkpoint_attr(lGetString(ckpt, CK_when));
 
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND)
-          || SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
+      if ((sub_command & ocs::gdi::SubCommand::SGE_GDI_APPEND) || (sub_command & ocs::gdi::SubCommand::SGE_GDI_CHANGE)) {
          new_flags |= flags;
-      } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+      } else if (sub_command & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
          new_flags &= (~flags);
       } else {
          new_flags = flags;
@@ -213,7 +214,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     0 - success
 *     STATUS_EEXIST - an error occurred
 ******************************************************************************/
-int ckpt_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
@@ -259,7 +260,7 @@ int ckpt_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList
 *     0 - success
 ******************************************************************************/
 int
-ckpt_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -298,7 +299,7 @@ ckpt_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListEl
 *     STATUS_EUNKNOWN - an error occurred
 ******************************************************************************/
 int
-sge_del_ckpt(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;
    int pos;
    const char *ckpt_name;

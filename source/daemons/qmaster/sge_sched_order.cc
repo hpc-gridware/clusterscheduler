@@ -37,9 +37,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
-
 #include "sgeobj/sge_answer.h"
 
 #include "sge_sched_order.h"
@@ -94,26 +91,23 @@ sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list,
 
 bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
-   bool ret = true;
-   state_gdi_multi *state = nullptr;
-
    DENTER(TOP_LAYER);
-   state = (state_gdi_multi *) sge_malloc(sizeof(state_gdi_multi));
-   if (state != nullptr) {
+   bool ret = true;
+   auto *gdi_multi = new ocs::gdi::Request();
+
+   if (gdi_multi != nullptr) {
       int order_id;
 
-      memset(state, 0, sizeof(state_gdi_multi));
       orders->numberSendOrders += lGetNumberOfElem(*order_list);
       orders->numberSendPackages++;
 
       /*
        * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
        */
-      order_id = sge_gdi_multi(answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
-                                order_list, nullptr, nullptr, state, false);
+      order_id = gdi_multi->request(answer_list, ocs::Mode::SEND, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, order_list, nullptr, nullptr, false);
 
       if (order_id != -1) {
-         sge_sl_insert(Master_Request_Queue.request_list, state, SGE_SL_BACKWARD);
+         sge_sl_insert(Master_Request_Queue.request_list, gdi_multi, SGE_SL_BACKWARD);
       } else {
          answer_list_log(answer_list, false, false);
          ret = false;
@@ -138,7 +132,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
     */
    sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
    while ((current_elem = next_elem) != nullptr) {
-      state_gdi_multi *current_state = (state_gdi_multi *) sge_sl_elem_data(current_elem);
+      auto *gdi_multi = static_cast<ocs::gdi::Request *>(sge_sl_elem_data(current_elem));
       lList *request_answer_list = nullptr;
       lList *multi_answer_list = nullptr;
       int order_id;
@@ -148,18 +142,17 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
       sge_sl_dechain(Master_Request_Queue.request_list, current_elem);
       sge_sl_elem_destroy(&current_elem, nullptr);
 
-      /* 
+      /*
        * wait for answer. this call might block if the request
        * has not been handled by any worker until now
        */
-      sge_gdi_wait(&multi_answer_list, current_state);
+      gdi_multi->wait();
 
       /*
-       * now we have an answer. is it positive? 
+       * now we have an answer. is it positive?
        */
       order_id = 1;
-      gdi_extract_answer(&request_answer_list, SGE_GDI_ADD, SGE_ORDER_LIST,
-                             order_id, multi_answer_list, nullptr);
+      gdi_multi->get_response(&request_answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::TargetValue::SGE_ORDER_LIST, order_id, nullptr);
       if (request_answer_list != nullptr) {
          answer_list_log(&request_answer_list, false, false);
          ret = false;
@@ -170,7 +163,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
        */
       lFreeList(&request_answer_list);
       lFreeList(&multi_answer_list);
-      sge_free(&current_state);
+      delete gdi_multi;
    }
    DRETURN(ret);
 }

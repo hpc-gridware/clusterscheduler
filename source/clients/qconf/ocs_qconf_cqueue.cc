@@ -46,7 +46,6 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
@@ -57,9 +56,8 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_eval_expression.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
+#include "gdi/ocs_gdi_Client.h"
+#include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_qconf_cqueue.h"
 #include "msg_qconf.h"
@@ -72,15 +70,13 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
                               bool ignore_unchanged_message);
 
 bool
-cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
-                           u_long32 gdi_command)
+cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command::Cmd gdi_command, ocs::gdi::SubCommand::SubCmd sub_cmd)
 {
    bool ret = true;
 
    DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
-      u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
-      bool do_verify = (operation == SGE_GDI_MOD) || (operation == SGE_GDI_ADD) ? true : false;
+      bool do_verify = (gdi_command == ocs::gdi::Command::SGE_GDI_MOD) || (gdi_command == ocs::gdi::Command::SGE_GDI_ADD) ? true : false;
 
       if (do_verify) {
          ret &= cqueue_verify_attributes(this_elem, answer_list,
@@ -92,7 +88,7 @@ cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
 
          cqueue_list = lCreateList("", CQ_Type);
          lAppendElem(cqueue_list, this_elem);
-         gdi_answer_list = sge_gdi(SGE_CQ_LIST, gdi_command, &cqueue_list, nullptr, nullptr);
+         gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CQ_LIST, gdi_command, sub_cmd, &cqueue_list, nullptr, nullptr);
          answer_list_replace(answer_list, &gdi_answer_list);
          lDechainElem(cqueue_list, this_elem);
          lFreeList(&cqueue_list);
@@ -115,7 +111,7 @@ cqueue_get_via_gdi(lList **answer_list, const char *name)
 
       what = lWhat("%T(ALL)", CQ_Type);
       where = lWhere("%T(%I==%s)", CQ_Type, CQ_name, name);
-      gdi_answer_list = sge_gdi(SGE_CQ_LIST, SGE_GDI_GET, &cqueue_list, where, what);
+      gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &cqueue_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -140,14 +136,13 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
    DENTER(TOP_LAYER);
 
    if (hgrp_list != nullptr && cq_list != nullptr) {
-      state_gdi_multi state = STATE_GDI_MULTI_INIT;
-      lList *multi_answer_list = nullptr;
+      ocs::gdi::Request gdi_multi{};
       lCondition *cqueue_where = nullptr;
       const lListElem *qref = nullptr;
       bool fetch_all_hgroup = false;
       bool fetch_all_qi = false;
       bool fetch_all_nqi = false;
-      int hgrp_id = 0; 
+      int hgrp_id = 0;
       int cq_id = 0;
 
       for_each_ep(qref, qref_list) {
@@ -157,7 +152,7 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
          bool has_hostname, has_domain;
          lCondition *add_cqueue_where = nullptr;
          const char* cqueue_name_str = nullptr;
-         
+
          if (!cqueue_name_split(name, &cqueue_name, &host_domain,
                            &has_hostname, &has_domain)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
@@ -169,46 +164,42 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
          fetch_all_nqi = (fetch_all_nqi || (!has_domain && !has_hostname)) ? true : false;
 
          cqueue_name_str = sge_dstring_get_string(&cqueue_name);
-         
+
          if (cqueue_name_str == nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
-                             ANSWER_QUALITY_ERROR, MSG_CQUEUE_NAMENOTCORRECT_SS, 
+                             ANSWER_QUALITY_ERROR, MSG_CQUEUE_NAMENOTCORRECT_SS,
                              name, name);
             ret = false;
             break;
          }
-         
-         add_cqueue_where = lWhere("%T(%I p= %s)", CQ_Type, CQ_name, 
+
+         add_cqueue_where = lWhere("%T(%I p= %s)", CQ_Type, CQ_name,
                                    sge_dstring_get_string(&cqueue_name));
          if (cqueue_where == nullptr) {
             cqueue_where = add_cqueue_where;
          } else {
-            cqueue_where = lOrWhere(cqueue_where, add_cqueue_where);   
+            cqueue_where = lOrWhere(cqueue_where, add_cqueue_where);
          }
          sge_dstring_free(&cqueue_name);
          sge_dstring_free(&host_domain);
       }
-      if (ret && fetch_all_hgroup) { 
+      if (ret && fetch_all_hgroup) {
          lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
-         hgrp_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_HGRP_LIST,
-                                 SGE_GDI_GET, nullptr, nullptr, what, &state, true);
+         hgrp_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_HGRP_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
          lFreeWhat(&what);
-      }  
+      }
       if (ret) {
          lEnumeration *what;
 
          what = enumeration_create_reduced_cq(fetch_all_qi, fetch_all_nqi);
-         cq_id = sge_gdi_multi(answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
-                               SGE_GDI_GET, nullptr, cqueue_where, what,
-                               &state, true);
-         sge_gdi_wait(&multi_answer_list, &state);
+         cq_id = gdi_multi.request(answer_list, ocs::Mode::SEND, ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, cqueue_where, what, true);
+         gdi_multi.wait();
          lFreeWhat(&what);
       }
       if (ret && fetch_all_hgroup) {
          lList *local_answer_list = nullptr;
          
-         gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
-                      SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
+         gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::TargetValue::SGE_HGRP_LIST, hgrp_id, hgrp_list);
          if (local_answer_list != nullptr) {
             lListElem *answer = lFirstRW(local_answer_list);
 
@@ -223,8 +214,7 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
       if (ret) {
          lList *local_answer_list = nullptr;
          
-         gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
-                      SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
+         gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::TargetValue::SGE_CQ_LIST, cq_id, cq_list);
          if (local_answer_list != nullptr) {
             lListElem *answer = lFirstRW(local_answer_list);
 
@@ -236,7 +226,6 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
          } 
          lFreeList(&local_answer_list);
       }
-      lFreeList(&multi_answer_list);
       lFreeWhere(&cqueue_where);
    }
    DRETURN(ret);
@@ -250,31 +239,26 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
 
    DENTER(TOP_LAYER);
    if (hgrp_list != nullptr && cq_list != nullptr) {
-      state_gdi_multi state = STATE_GDI_MULTI_INIT;
+      ocs::gdi::Request gdi_multi{};
       lEnumeration *hgrp_what = nullptr;
       lEnumeration *cqueue_what = nullptr;
-      int hgrp_id = 0; 
+      int hgrp_id = 0;
       int cq_id = 0;
       lList *local_answer_list = nullptr;
-      lList *multi_answer_list = nullptr;
 
       /* HGRP */
       hgrp_what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = sge_gdi_multi(answer_list, SGE_GDI_RECORD, SGE_HGRP_LIST,
-                               SGE_GDI_GET, nullptr, nullptr, hgrp_what, &state, true);
+      hgrp_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_HGRP_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, hgrp_what, true);
       lFreeWhat(&hgrp_what);
 
       /* CQ */
       cqueue_what = lWhat("%T(ALL)", CQ_Type);
-      cq_id = sge_gdi_multi(answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
-                            SGE_GDI_GET, nullptr, nullptr, cqueue_what,
-                            &state, true);
-      sge_gdi_wait(&multi_answer_list, &state);
+      cq_id = gdi_multi.request(answer_list, ocs::Mode::SEND, ocs::gdi::Target::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, cqueue_what, true);
+      gdi_multi.wait();
       lFreeWhat(&cqueue_what);
 
       /* HGRP */
-      gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
-                      SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
+      gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_HGRP_LIST, hgrp_id, hgrp_list);
       if (local_answer_list != nullptr) {
          lListElem *answer = lFirstRW(local_answer_list);
 
@@ -287,8 +271,7 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
       lFreeList(&local_answer_list);
       
       /* CQ */   
-      gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
-                   SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
+      gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CQ_LIST, cq_id, cq_list);
       if (local_answer_list != nullptr) {
          lListElem *answer = lFirstRW(local_answer_list);
 
@@ -299,7 +282,6 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
          }
       } 
       lFreeList(&local_answer_list);
-      lFreeList(&multi_answer_list);
    }
    DRETURN(ret);
 }
@@ -400,8 +382,7 @@ cqueue_add(lList **answer_list, const char *name)
          ret &= cqueue_provide_modify_context(&cqueue, answer_list, true);
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list,
-                                           SGE_GDI_ADD | SGE_GDI_SET_ALL); 
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SET_ALL);
       }
 
       lFreeElem(&cqueue);
@@ -443,8 +424,7 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
          ret = false;
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list,
-                                           SGE_GDI_ADD | SGE_GDI_SET_ALL); 
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SET_ALL);
       } 
 
       lFreeElem(&cqueue);
@@ -472,7 +452,7 @@ cqueue_modify(lList **answer_list, const char *name)
          ret &= cqueue_provide_modify_context(&cqueue, answer_list, false);
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, SGE_GDI_MOD | SGE_GDI_SET_ALL);
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SET_ALL);
       }
       lFreeElem(&cqueue);
    }
@@ -516,7 +496,7 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
          ret = false;
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, SGE_GDI_MOD | SGE_GDI_SET_ALL);
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SET_ALL);
       }
       if (cqueue != nullptr) {
          lFreeElem(&cqueue);
@@ -536,7 +516,7 @@ cqueue_delete(lList **answer_list, const char *name)
       lListElem *cqueue = cqueue_create(answer_list, name); 
    
       if (cqueue != nullptr) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, SGE_GDI_DEL);
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE);
       }
 
       lFreeElem(&cqueue);

@@ -39,19 +39,21 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-pe_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
-       const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
+       const char *rhost, gdi_object_t *object,
+       ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
+       monitoring_t *monitor);
 
 int
-pe_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-pe_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
            monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_pe(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *, lList **, char *, char *);
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, char *, char *);
 
 /* to do at qmasters startup */
 void

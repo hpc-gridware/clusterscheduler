@@ -38,7 +38,6 @@
 #include <pthread.h>
 
 #include "comm/cl_commlib.h"
-#include "comm/cl_ssl_framework.h"
 
 #include "cull/cull.h"
 
@@ -48,30 +47,21 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
-#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/qm_name.h"
-#include "gdi/sge_gdiP.h"
 #include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"
 
 #include "execution_states.h"
-#include "dispatcher.h"
 
 #include "msg_common.h"
-#include "msg_qmaster.h"
 
 #ifdef CRYPTO
 #include <openssl/evp.h>
@@ -95,9 +85,6 @@ static bool is_master(const char* progname);
 
 #endif
 
-static bool sge_encrypt(const char *intext, char *outbuf, int outsize);
-static bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
-static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
 
 
 static bool is_daemon(const char* progname) {
@@ -900,7 +887,7 @@ void delete_credentials(const char *sge_root, lListElem *jep)
  *  NOTES
  *     MT-NOTE: store_sec_cred() is MT safe (assumptions)
  */
-int store_sec_cred(const char* sge_root, sge_gdi_packet_class_t *packet, lListElem *jep, int do_authentication, lList** alpp)
+int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, lList** alpp)
 {
 
    DENTER(TOP_LAYER);
@@ -1216,189 +1203,7 @@ void tgtcclr(lListElem *jep, const char *rhost)
 #endif
 }
 
-/**
- * @brief Fill the auth_info field of the packet with user specific information.
- *
- * Will add the primaray user and group names and IDs as well as the supplementary group
- * information (also names and IDs) and pack it into the auth_info field of the GDI packet.
- *
- * @param packet_handle    Pointer to the GDI packet
- * @return                 True if successfull. False if encrypting the information failed.
- */
-bool
-sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle) {
-   DENTER(TOP_LAYER);
-   bool ret = true;
 
-   // fetch primary names and IDs for user and group
-   uid_t uid = component_get_uid();
-   gid_t gid = component_get_gid();
-   const char *username = component_get_username();
-   const char *groupname = component_get_groupname();
-
-   // fetch supplementary groups
-   component_get_supplementray_groups(&packet_handle->amount, &packet_handle->grp_array);
-
-   // show information in debug output
-   dstring dbg_msg = DSTRING_INIT;
-   ocs_id2dstring(&dbg_msg, uid, username, gid, groupname, packet_handle->amount, packet_handle->grp_array);
-   sge_dstring_free(&dbg_msg);
-
-   // create one compact string containing primary user and group information as
-   // well as supplementary groups (id and names)
-   constexpr char sep = static_cast<char>(0xff);
-   dstring buffer_unencrypted = DSTRING_INIT;
-   sge_dstring_sprintf(&buffer_unencrypted, uid_t_fmt "%c" gid_t_fmt "%c%s%c%s%c%d",
-                       uid, sep, gid, sep, username, sep, groupname, sep, packet_handle->amount);
-
-   for (int i = 0; i < packet_handle->amount; i++) {
-      sge_dstring_sprintf_append(&buffer_unencrypted, "%c" gid_t_fmt "%c%s",
-                                 sep, packet_handle->grp_array[i].id, sep, packet_handle->grp_array[i].name);
-   }
-
-   // supplementary group date is not required anymore (no need to free because this was borrowed from the component above)
-   packet_handle->amount = 0;
-   packet_handle->grp_array = nullptr;
-
-   // encrypt and store the information
-   size_t size = sge_dstring_strlen(&buffer_unencrypted) * 3;
-   char *obuffer = sge_malloc(size);
-   SGE_ASSERT(obuffer != nullptr);
-   if (sge_encrypt(sge_dstring_get_string(&buffer_unencrypted), obuffer, size)) {
-      packet_handle->auth_info = sge_strdup(nullptr, obuffer);
-   } else {
-      ret = false;
-   }
-
-   sge_free(&obuffer);
-   sge_dstring_free(&buffer_unencrypted);
-
-   DRETURN(ret);
-}
-
-bool
-sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_list,
-                               uid_t *uid, char *user, size_t user_len, 
-                               gid_t *gid, char *group, size_t group_len,
-                               int *amount, ocs_grp_elem_t **grp_array)
-{
-   DENTER(TOP_LAYER);
-   char auth_buffer[2 * SGE_SEC_BUFSIZE];
-   int dlen = 0;
-
-   // decrypt received auth_info
-   if (packet->auth_info == nullptr || !sge_decrypt(packet->auth_info, strlen(packet->auth_info), auth_buffer, &dlen)) {
-      ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   bool ret = true;
-   saved_vars_s *context = nullptr;
-   constexpr char separator[] = "\xff";
-   const char *token;
-   const char *next_token = sge_strtok_r(auth_buffer, separator, &context);
-   int pos = 0;
-   while ((token = next_token) != nullptr) {
-      switch (pos) {
-         case 0:
-            if (uid != nullptr && sscanf(token, uid_t_fmt, uid) != 1) {
-               ERROR(SFNMAX, "unable to extract uid form auth_info");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-         case 1:
-            if (gid != nullptr && sscanf(token, gid_t_fmt, gid) != 1) {
-               ERROR(SFNMAX, "unable to extract gid form auth_info");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-         case 2:
-            if (user != nullptr) {
-               sge_strlcpy(user, token, user_len);
-            }
-            break;
-         case 3:
-            if (group) {
-               sge_strlcpy(group, token, group_len);
-            }
-            break;
-         case 4:
-            if (amount != nullptr && grp_array != nullptr) {
-               if (sscanf(token, "%d", amount) == 1) {
-                  if (*amount > 0) {
-                     const size_t size = *amount * sizeof(ocs_grp_elem_t);
-                     *grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(size));
-                     if (*grp_array == nullptr) {
-                        ERROR(SFNMAX, "unable to extract number of supplementary groups from auth_info");
-                        answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-                        ret = false;
-                     }
-                  } else {
-                     // no error but there are no supplementary groups
-                     break;
-                  }
-               }
-            }
-            break;
-         default:
-            // beginning from token 5 we will find the supplementary gids and group names
-            int idx = (pos - 5) / 2;
-            if (idx < *amount) {
-               if (pos % 2 == 1) {
-                  gid_t supplementary_gid;
-
-                  if (sscanf(token, gid_t_fmt, &supplementary_gid) == 1) {
-                     (*grp_array)[idx].id= supplementary_gid;
-                  } else {
-                     ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (failed parsing gid)");
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-                     ret = false;
-                  }
-               } else {
-                  sge_strlcpy((*grp_array)[idx].name, token, sizeof((*grp_array)[idx].name));
-               }
-            } else {
-               ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (to many IDs)");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-      }
-
-      // early return if an error happens during parsing authinfo
-      if (!ret) {
-         break;
-      }
-      pos++;
-      next_token = sge_strtok_r(nullptr, separator, &context);
-   }
-
-   // beginning with v9.0.0 authinfo has to contain at least 5 token (uid, uname, git, gname, #grps)
-   if (pos < 4) {
-      ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (old client tried to connect)");
-            answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      ret = false;
-   } else if (pos < (4 + (*amount) * 2)) {
-      ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (unexpected amount of supplementary groups)");
-            answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      ret = false;
-   }
-
-   sge_free_saved_vars(context);
-   if (!ret) {
-      // cleanup in case of errors
-      sge_free(grp_array);
-   } else {
-      // show information in debug output
-      dstring dbg_msg = DSTRING_INIT;
-      ocs_id2dstring(&dbg_msg, *uid, user, *gid, group, *amount, *grp_array);
-      sge_dstring_free(&dbg_msg);
-   }
-   DRETURN(ret);
-}
 
 #ifndef CRYPTO
 /*
@@ -1406,7 +1211,7 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
 **
 ** MT-NOTE: sge_encrypt() is MT safe
 */
-static bool
+bool
 sge_encrypt(const char *intext, char *outbuf, int outsize) {
    int len;
 
@@ -1427,7 +1232,7 @@ sge_encrypt(const char *intext, char *outbuf, int outsize) {
 /*
 ** MT-NOTE: standard sge_decrypt() is MT safe
 */
-static bool sge_decrypt(char *intext, int inlen, char *out_buffer, int* outsize)
+bool sge_decrypt(char *intext, int inlen, char *out_buffer, int* outsize)
 {
    DENTER(TOP_LAYER);
 
@@ -1537,7 +1342,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
  *    MT-NOTE: change_encoding() is MT safe
  *
  */
-static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode)
+bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode)
 {
    static const char alphabet[17] = {"*b~de,gh&jklrn=p"};
 

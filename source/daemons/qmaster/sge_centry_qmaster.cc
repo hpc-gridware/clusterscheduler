@@ -41,15 +41,14 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sched/debit.h"
@@ -69,9 +68,9 @@
 /* ------------------------------------------------------------ */
 
 int
-centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
-           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor) {
+centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
+           const char *remote_user, const char *remote_host, gdi_object_t *object,
+           ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    bool ret = true;
    bool is_slots_attr = false;
    int pos;
@@ -243,7 +242,7 @@ centry_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
 /* ------------------------------------------------------------ */
 
 int
-centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -318,7 +317,7 @@ centry_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 *
 *******************************************************************************/
 int
-centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    bool rebuild_consumables = false;
 
@@ -355,7 +354,7 @@ centry_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList
 }
 
 int
-sge_del_centry(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
+sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

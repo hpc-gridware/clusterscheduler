@@ -40,7 +40,6 @@
 #include <signal.h>
 
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
@@ -50,13 +49,11 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_conf.h"
@@ -71,15 +68,12 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "sched/sge_select_queue.h"
 #include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
-#include "gdi/ocs_gdi_execd_delivery.h"
 #include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
 
 #include "spool/sge_spooling.h"
 
@@ -88,7 +82,6 @@
 #include "basis_types.h"
 #include "execution_states.h"
 #include "sge_subordinate_qmaster.h"
-#include "sge_ckpt_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_host_qmaster.h"
@@ -100,9 +93,10 @@
 #include "sge_qmaster_timed_event.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
-#include "sge_conf.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+
+#include <ocs_gdi_ClientServerBase.h>
 
 static void
 sge_clear_granted_resources(lListElem *jep, lListElem *ja_task, int incslots,
@@ -318,7 +312,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
-      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
+      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr);
 
       /* build minimum of job request and queue resource limit */
       reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
@@ -446,11 +440,11 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
 
          init_packbuffer(&send_pb, 0, 0);
 
-         pack_job_delivery(&send_pb, jep);
+         pack_job_delivery(&send_pb, jep, feature_get_active_featureset_id());
          if (simulate_execd) {
             failed = CL_RETVAL_OK;
          } else {
-            failed = gdi_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
+            failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, hostname, ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          }
          clear_packbuffer(&send_pb);
       }
@@ -560,7 +554,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
-      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
+      qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr);
 
       /* build minimum of job request and queue resource limit */
       reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
@@ -603,7 +597,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       DRETURN(-1);
    }
 
-   pack_job_delivery(&pb, tmpjep);
+   pack_job_delivery(&pb, tmpjep, feature_get_active_featureset_id());
    lFreeElem(&tmpjep);
 
    /*
@@ -615,8 +609,8 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       failed = CL_RETVAL_OK;
    } else {
       u_long32 dummymid = 0;
-      failed = gdi_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
-                                    &pb, &dummymid);
+      failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, rhost,
+                                                           master ? ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION : ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &pb, &dummymid);
    }
 
    /*

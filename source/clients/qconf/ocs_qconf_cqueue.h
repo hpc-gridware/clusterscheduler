@@ -44,8 +44,7 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
                               lList **hgrp_list, lList **cq_list);
 
 bool 
-cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
-                           u_long32 gdi_command);
+cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command::Cmd gdi_command, ocs::gdi::SubCommand::SubCmd sub_cmd);
 
 
 bool

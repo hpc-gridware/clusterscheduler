@@ -42,24 +42,18 @@
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_gdi_Packet.h"
 #include "gdi/sge_security.h"
-
-#include "spool/sge_spooling.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_object.h"
@@ -73,8 +67,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_binding.h"
 #include "sgeobj/sge_conf.h"
-
-#include "sched/valid_queue_user.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
@@ -82,7 +75,6 @@
 #include "symbols.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-#include "msg_daemons_common.h"
 
 #include <sge_str.h>
 
@@ -311,7 +303,7 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
 
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
-                      sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                      ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                       monitoring_t *monitor) {
    int ret = STATUS_OK;
 
@@ -889,7 +881,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    if (mconf_get_do_credentials()) {
       const char *sge_root = bootstrap_get_sge_root();
 
-      if (store_sec_cred(sge_root, packet, jep, mconf_get_do_authentication(), alpp) != 0) {
+      if (store_sec_cred(sge_root, jep, mconf_get_do_authentication(), alpp) != 0) {
          DRETURN(STATUS_EUNKNOWN);
       }
    }

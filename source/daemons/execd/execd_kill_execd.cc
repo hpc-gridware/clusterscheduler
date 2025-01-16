@@ -41,6 +41,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 
+#include "gdi/ocs_gdi_ClientServerBase.h"
+
 #include "comm/commlib.h"
 
 #include "dispatcher.h"
@@ -52,7 +54,7 @@
 
 extern int shut_me_down;
 
-int do_kill_execd(struct_msg_t *aMsg)
+int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    const lListElem *jep;
    lListElem *jatep;

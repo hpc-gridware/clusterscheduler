@@ -36,7 +36,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/msg_mirlib.h"

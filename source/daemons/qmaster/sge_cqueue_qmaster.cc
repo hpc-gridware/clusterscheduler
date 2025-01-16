@@ -47,18 +47,14 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/valid_queue_user.h"
 
@@ -82,21 +78,23 @@
 
 
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts);
+cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+                    ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
+                    lList **add_hosts, lList **rem_hosts);
 
 static bool
-cqueue_mod_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command);
+cqueue_mod_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+                      ocs::gdi::Command::Cmd command, ocs::gdi::SubCommand::SubCmd sub_command);
 
 static bool
 cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts, u_long64 gdi_session);
 
 static bool
-cqueue_add_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
+cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
                       monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static lListElem *
-qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
+qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
                  bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static void
@@ -106,7 +104,7 @@ static void
 qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list, u_long64 gdi_session);
 
 static lListElem *
-qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
+qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem *cqueue, lList **answer_list, const char *hostname,
                  bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list,
                  lList *master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -186,7 +184,7 @@ qinstance_create(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, con
 }
 
 static bool
-cqueue_add_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
+cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
                       monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list) {
    bool ret = true;
 
@@ -267,7 +265,7 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts,
 
 static bool
 cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
-                      lListElem *reduced_elem, int sub_command) {
+                      lListElem *reduced_elem, ocs::gdi::Command::Cmd command, ocs::gdi::SubCommand::SubCmd sub_command) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -281,7 +279,7 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 
          if (pos >= 0) {
             ret &= cqueue_mod_sublist(cqueue, answer_list, reduced_elem,
-                                      sub_command,
+                                      command, sub_command,
                                       cqueue_attribute_array[index].cqueue_attr,
                                       cqueue_attribute_array[index].href_attr,
                                       cqueue_attribute_array[index].value_attr,
@@ -296,8 +294,8 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 }
 
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, int sub_command, lList **add_hosts,
-                    lList **rem_hosts) {
+cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, ocs::gdi::Command::Cmd cmd,
+                    ocs::gdi::SubCommand::SubCmd sub_command, lList **add_hosts, lList **rem_hosts) {
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
@@ -315,10 +313,8 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
 
          ret &= href_list_resolve_hostnames(list, answer_list, true);
          if (ret) {
-            ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name,
-                                    reduced_elem, sub_command,
-                                    SGE_ATTR_HOST_LIST,
-                                    cqueue_name, 0, nullptr);
+            ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name, reduced_elem, cmd, sub_command,
+                                    SGE_ATTR_HOST_LIST, cqueue_name, 0, nullptr);
             href_list = lGetList(cqueue, CQ_hostlist);
          }
          if (ret) {
@@ -373,7 +369,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
 }
 
 bool
-cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list) {
    dstring buffer = DSTRING_INIT;
@@ -549,7 +545,7 @@ cqueue_mod_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
 }
 
 bool
-cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list) {
    bool ret = true;
@@ -570,9 +566,9 @@ cqueue_handle_qinstances(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
 }
 
 int
-cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
-           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor) {
+cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
+           const char *remote_user, const char *remote_host, gdi_object_t *object,
+           ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    bool ret = true;
    lList *add_hosts = nullptr;
    lList *rem_hosts = nullptr;
@@ -623,8 +619,7 @@ cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
     * Find differences of hostlist configuration
     */
    if (ret) {
-      ret &= cqueue_mod_hostlist(cqueue, answer_list, reduced_elem,
-                                 sub_command, &add_hosts, &rem_hosts);
+      ret &= cqueue_mod_hostlist(cqueue, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts);
    }
 
    /*
@@ -634,7 +629,7 @@ cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
     */
    if (ret) {
       ret &= cqueue_mod_attributes(cqueue, answer_list,
-                                   reduced_elem, sub_command);
+                                   reduced_elem, cmd, sub_command);
    }
    if (ret) {
       ret &= cqueue_verify_attributes(cqueue, answer_list,
@@ -677,7 +672,7 @@ cqueue_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **a
 }
 
 int
-cqueue_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const lList *qinstances;
    lListElem *qinstance;
    DENTER(TOP_LAYER);
@@ -812,7 +807,7 @@ cqueue_commit(lListElem *cqueue, u_long64 gdi_session) {
 }
 
 int
-cqueue_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
+cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
    int ret = 0;
    const char *name = lGetString(cqueue, CQ_name);
    lListElem *qinstance;
@@ -852,7 +847,7 @@ cqueue_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList *
 }
 
 int
-cqueue_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 

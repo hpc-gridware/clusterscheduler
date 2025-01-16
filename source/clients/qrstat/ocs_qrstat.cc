@@ -44,8 +44,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "basis_types.h"
 #include "ocs_client_parse.h"
@@ -149,7 +148,7 @@ int main(int argc, const char **argv) {
 
    log_state_set_log_gui(1);
 
-   if (gdi_client_setup_and_enroll(QRSTAT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QRSTAT, MAIN_THREAD, &answer_list) != ocs::gdi::AE_OK) {
       answer_list_output(&answer_list);
       goto error_exit;
    }
@@ -202,8 +201,9 @@ int main(int argc, const char **argv) {
     * stage 3: fetch data from master 
     */
    {
-      answer_list = sge_gdi(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
-                     qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
+      answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_GET,
+                            ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &qrstat_env.ar_list,
+                            qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
       if (answer_list_has_error(&answer_list)) {
          answer_list_output(&answer_list);
@@ -232,12 +232,12 @@ int main(int argc, const char **argv) {
       }
    }
 
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);

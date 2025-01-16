@@ -108,7 +108,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    lList *ref_list = nullptr, *alp;
    lListElem *ref_ep;
    char job_id_str[100];
-   sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
+   ocs::gdi::Client::sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
 
    DENTER(TOP_LAYER);
 
@@ -129,7 +129,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    lSetUlong(ref_ep, RN_step, 1);
 
    /* send delete request */
-   alp = sge_gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &ref_list, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ctx, SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_DEL, &ref_list, nullptr, nullptr);
 
    answer_list_on_error_print_or_exit(&alp, stderr);
 

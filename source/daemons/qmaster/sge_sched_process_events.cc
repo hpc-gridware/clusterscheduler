@@ -53,9 +53,8 @@
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_Client.h"
 
-#include "setup_qmaster.h"
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_job_category.h"
@@ -189,7 +188,7 @@ sge_before_dispatch(sge_evc_class_t *evc)
    if (st_get_flag_new_global_conf()) {
       lListElem *global = nullptr, *local = nullptr;
    
-      if (gdi_get_configuration(SGE_GLOBAL_NAME, &global, &local) == 0) {
+      if (ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &global, &local) == 0) {
          merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
       }  
       lFreeElem(&global);

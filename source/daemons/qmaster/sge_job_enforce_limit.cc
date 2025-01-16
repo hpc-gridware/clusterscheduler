@@ -40,15 +40,13 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
-#include "sgeobj/sge_daemonize.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_object.h"
@@ -327,7 +325,7 @@ sge_add_check_limit_trigger() {
 *     been added can be removed by sge_host_remove_enforce_limit_trigger().
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context object 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     te_event_t event         - timed event structure 
 *     monitoring_t *monitor    - monitoring object 
 *

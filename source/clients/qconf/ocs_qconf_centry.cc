@@ -44,10 +44,9 @@
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_unistd.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_Client.h"
+#include "gdi/ocs_gdi_Request.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -60,7 +59,7 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list);
 
-bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_long32 gdi_command) {
+bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command::Cmd gdi_command) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -70,7 +69,8 @@ bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, u_lon
 
       centry_list = lCreateList("", CE_Type);
       lAppendElem(centry_list, this_elem);
-      gdi_answer_list = sge_gdi(SGE_CE_LIST, gdi_command, &centry_list, nullptr, nullptr);
+      gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CE_LIST, gdi_command, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                &centry_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
    }
 
@@ -89,7 +89,7 @@ lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
 
       what = lWhat("%T(ALL)", CE_Type);
       where = lWhere("%T(%I==%s)", CE_Type, CE_name, name);
-      gdi_answer_list = sge_gdi(SGE_CE_LIST, SGE_GDI_GET, &centry_list, where, what);
+      gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &centry_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -182,7 +182,7 @@ bool centry_add(lList **answer_list, const char *name) {
          ret &= centry_provide_modify_context(&centry, answer_list);
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_ADD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_ADD);
       }
    }
 
@@ -219,7 +219,7 @@ bool centry_add_from_file(lList **answer_list, const char *filename) {
          ret = false;
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_ADD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_ADD);
       }
    }
 
@@ -241,7 +241,7 @@ bool centry_modify(lList **answer_list, const char *name) {
          ret &= centry_provide_modify_context(&centry, answer_list);
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_MOD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_MOD);
       }
       if (centry) {
          lFreeElem(&centry);
@@ -283,7 +283,7 @@ bool centry_modify_from_file(lList **answer_list, const char *filename) {
          ret = false;
       }
       if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_MOD);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_MOD);
       }
       if (centry) {
          lFreeElem(&centry);
@@ -301,7 +301,7 @@ bool centry_delete(lList **answer_list, const char *name) {
       lListElem *centry = centry_create(answer_list, name);
 
       if (centry != nullptr) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, SGE_GDI_DEL);
+         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_DEL);
       }
    }
 
@@ -363,7 +363,7 @@ lList *centry_list_get_via_gdi(lList **answer_list) {
 
    DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
-   gdi_answer_list = sge_gdi(SGE_CE_LIST, SGE_GDI_GET, &ret, nullptr, what);
+   gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ret, nullptr, what);
    lFreeWhat(&what);
 
    if (answer_list_has_error(&gdi_answer_list)) {
@@ -512,8 +512,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
 
       {
          lList *gdi_answer_list = nullptr;
-         lList *mal_answer_list = nullptr;
-         state_gdi_multi state = STATE_GDI_MULTI_INIT;
+         ocs::gdi::Request gdi_multi{};
          int del_id = -1;
          int mod_id = -1;
          int add_id = -1;
@@ -542,11 +541,10 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
           * Do the multi request
           */
          if (ret && do_del) {
-            int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            del_id = sge_gdi_multi(&gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_DEL, old_list, nullptr, nullptr, &state,
-                                    false);
-            if (mode == SGE_GDI_SEND) {
-               sge_gdi_wait(&mal_answer_list, &state);
+            ocs::Mode::ModeValue mode = (--number_req > 0) ? ocs::Mode::RECORD : ocs::Mode::SEND;
+            del_id = gdi_multi.request(&gdi_answer_list, mode, ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, old_list, nullptr, nullptr, false);
+            if (mode == ocs::Mode::SEND) {
+               gdi_multi.wait();
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -556,11 +554,10 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
             lFreeList(old_list);
          }
          if (ret && do_mod) {
-            int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            mod_id = sge_gdi_multi(&gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr,
-                                    &state, false);
-            if (mode == SGE_GDI_SEND) {
-               sge_gdi_wait(&mal_answer_list, &state);
+            ocs::Mode::ModeValue mode = (--number_req > 0) ? ocs::Mode::RECORD : ocs::Mode::SEND;
+            mod_id = gdi_multi.request(&gdi_answer_list, mode, ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &modify_list, nullptr, nullptr, false);
+            if (mode == ocs::Mode::SEND) {
+               gdi_multi.wait();
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -570,11 +567,10 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
             lFreeList(&modify_list);
          }
          if (ret && do_add) {
-            int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            add_id = sge_gdi_multi(&gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr,
-                                    &state, false);
-            if (mode == SGE_GDI_SEND) {
-               sge_gdi_wait(&mal_answer_list, &state);
+            ocs::Mode::ModeValue mode = (--number_req > 0) ? ocs::Mode::RECORD : ocs::Mode::SEND;
+            add_id = gdi_multi.request(&gdi_answer_list, mode, ocs::gdi::Target::TargetValue::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &add_list, nullptr, nullptr, false);
+            if (mode == ocs::Mode::SEND) {
+               gdi_multi.wait();
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -588,15 +584,15 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
           * Verify that the parts of the multi request are successful
           */
          if (do_del && ret) {
-            gdi_extract_answer(&gdi_answer_list, SGE_GDI_DEL, SGE_CE_LIST, del_id, mal_answer_list, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, del_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_mod && ret) {
-            gdi_extract_answer(&gdi_answer_list, SGE_GDI_MOD, SGE_CE_LIST, mod_id, mal_answer_list, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, mod_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_add && ret) {
-            gdi_extract_answer(&gdi_answer_list, SGE_GDI_ADD, SGE_CE_LIST, add_id, mal_answer_list, nullptr);
+            gdi_multi.get_response(&gdi_answer_list, ocs::gdi::Command::SGE_GDI_ADD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, add_id, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
 
@@ -608,7 +604,6 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
          }
 
          lFreeList(&gdi_answer_list);
-         lFreeList(&mal_answer_list);
       }
 
       lFreeList(&add_list);

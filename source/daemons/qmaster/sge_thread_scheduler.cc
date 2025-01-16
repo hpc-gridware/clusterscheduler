@@ -56,7 +56,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "sched/sge_serf.h"
 #include "sched/schedd_monitor.h"
@@ -239,7 +239,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 *     'Master_Scheduler' is accessed by this function.
 *     
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context object 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     lList **answer_list      - answer list
 *
 *  RESULT
@@ -401,7 +401,7 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
 *     'Master_Scheduler' is accessed by this function.
 *     
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context object 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     lList **answer_list      - answer list
 *
 *  RESULT
@@ -695,6 +695,7 @@ sge_scheduler_main(void *arg) {
           * - fetch and merge new cluster (global, local) configuration if it has changed
           * - reset counters in job categories
           */
+         // @todo CS-924: replace this - gets config via GDI!!!
          sge_before_dispatch(evc);
 
          // prepare data for the scheduler itself

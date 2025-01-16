@@ -33,6 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
-int do_ticket(struct_msg_t *aMsg);
+int do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);

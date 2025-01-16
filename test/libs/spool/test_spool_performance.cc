@@ -45,17 +45,13 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "mir/sge_mirror.h"
 
-#include "comm/commlib.h"
-
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
-
-#include "msg_clients_common.h"
 
 #ifndef TEST_READ_ONLY
 

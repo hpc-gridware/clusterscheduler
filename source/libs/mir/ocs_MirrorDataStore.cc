@@ -28,9 +28,8 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_report.h"
+#include "sgeobj/sge_conf.h"
 
-#include "evm/sge_event_master.h"
 #include "mir/sge_mirror.h"
 
 #include "ocs_ReportingFileWriter.h"

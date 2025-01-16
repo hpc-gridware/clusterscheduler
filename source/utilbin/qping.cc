@@ -44,28 +44,19 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_Version.h"
 
 #include "gdi/sge_security.h"
-#include "sgeobj/ocs_Version.h"
-#include "gdi/sge_gdi.h"
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
-#include "gdi/sge_gdi_packet_pb_cull.h"
-#include "gdi/sge_gdi_data.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"
 
 #include "basis_types.h"
 #include "msg_utilbin.h"
-
-
-
 #include "msg_clients_common.h"
 
 #define ARGUMENT_COUNT 15
@@ -522,20 +513,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
-                     sge_gdi_packet_class_t *packet = nullptr;
+                     ocs::gdi::Packet *packet = new ocs::gdi::Packet();
                
-                     if (sge_gdi_packet_unpack(&packet, nullptr, &buf)) {
-                        sge_gdi_task_class_t *task = nullptr;
-
+                     if (packet->unpack(nullptr, &buf)) {
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
-
                         printf("         packet:\n");
 
-                        if (packet->id) {
-                           printf("id   : " sge_U32CFormat "\n", sge_u32c(packet->id));
-                        } else {
-                           printf("id   : %s\n", "nullptr");
-                        } 
                         printf("host   : %s\n", packet->host);
                         printf("commproc   : %s\n", packet->commproc);
                         if (packet->version) {
@@ -548,8 +531,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         } else {
                            printf("auth_info   : %s\n", "nullptr");
                         }
-                        task = packet->first_task;
-                        while (task != nullptr) {
+                        for (auto *task : packet->tasks) {
                            printf("         task:\n");
 
                            if (task->command) {
@@ -585,17 +567,11 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            } else {
                               printf("enp   : %s\n", "nullptr");
                            }
-                           if (task->id) {
-                              printf("id     : " sge_U32CFormat "\n", sge_u32c(task->id));
-                           } else {
-                              printf("id    : %s\n", "nullptr");
-                           }
-   
-                           task = task->next;
                         }
+                     } else {
+                        delete packet;
                      }
 
-                     sge_gdi_packet_free(&packet);
                      clear_packbuffer(&buf);
                   }
                }
@@ -792,7 +768,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
          case TAG_SIGJOB
          case TAG_SIGQUEUE
          case TAG_KILL_EXECD
-         case TAG_NEW_FEATURES
          case TAG_GET_NEW_CONF
          case TAG_FULL_LOAD_REPORT
          ...

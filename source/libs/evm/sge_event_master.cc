@@ -57,27 +57,16 @@
 #include "comm/lists/cl_errors.h"
 #include "comm/cl_commlib.h"
 
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientExecd.h"
 
 #include "sgeobj/ocs_DataStore.h"
-#include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_report.h"
-#include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_range.h"
@@ -86,10 +75,8 @@
 #include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "configuration_qmaster.h"   /* TODO: bad dependency!! */
 #include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
-#include "uti/sge.h"
 
 #include "msg_common.h"
 #include "msg_evmlib.h"
@@ -450,7 +437,7 @@ static void sge_event_master_process_add_event_client(const lListElem *request, 
    /* to be implemented later on - handling the internal event clients could become a little bit tricky */
 }
 
-int sge_add_event_client(const sge_gdi_packet_class_t *packet, lListElem *clio, lList **alpp, lList **eclpp,
+int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList **alpp, lList **eclpp,
                          event_client_update_func_t update_func, void *update_func_arg)
 {
    lListElem *ep = nullptr;
@@ -1145,7 +1132,7 @@ sge_select_event_clients(const char *list_name, const lCondition *where, const l
 *
 *******************************************************************************/
 int
-sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_client_id, lList **alpp) {
+sge_shutdown_event_client(const ocs::gdi::Packet *packet, u_long32 event_client_id, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
@@ -1219,7 +1206,7 @@ sge_shutdown_event_client(const sge_gdi_packet_class_t *packet, u_long32 event_c
 *               global_lock and internal ones.
 *
 *******************************************************************************/
-int sge_shutdown_dynamic_event_clients(const sge_gdi_packet_class_t *packet, lList **alpp, monitoring_t *monitor)
+int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **alpp, monitoring_t *monitor)
 {
    const lListElem *client;
    int id = 0;
@@ -2262,7 +2249,7 @@ sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t
                update_func(ec_id, nullptr, report_list, update_func_arg);
                ret = CL_RETVAL_OK;
             } else {
-               ret = report_list_send(report_list, host, commproc, commid, 0);
+               ret = ocs::gdi::ClientExecd::report_list_send(report_list, host, commproc, commid, 0);
                MONITOR_MESSAGES_OUT(monitor);
             }
 
@@ -2723,8 +2710,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 
          if (!list_select(subscription, type, &clp, lp, selection, fields,
                           descr, internal_client)) {
-            clp = lSelectDPack("updating list", lp, selection, descr,
-                               fields, internal_client, nullptr, nullptr);
+            clp = lSelectDPack("updating list", lp, selection, descr, fields, internal_client, nullptr);
          }
 
          /* no elements in the event list, no need for an event */
@@ -3119,7 +3105,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
          /* for some reason, we did not get a descriptor for the target element */
          el = lSelectElemPack(element, selection, fields, false, nullptr);
       } else {
-         el = lSelectElemDPack(element, selection, dp, fields, false, nullptr, nullptr);
+         el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
       }
 
       /* if we have a new reduced main element */
@@ -3128,8 +3114,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
          for (counter = 0; counter < ids_size; counter ++) {
             if (sub_list[counter] && (lGetPosViaElem(el, ids[counter], SGE_NO_ABORT) != -1)) {
                lSetList(el, ids[counter],
-                        lSelectDPack("", sub_list[counter], sub_selection,
-                                     sub_descr, sub_fields, false, nullptr, nullptr));
+                        lSelectDPack("", sub_list[counter], sub_selection, sub_descr, sub_fields, false, nullptr));
             }
          }
       }
@@ -3142,7 +3127,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
       sge_free(&sub_list);
    } else {
       DPRINTF("no sub filter specified\n");
-      el = lSelectElemDPack(element, selection, dp, fields, false, nullptr, nullptr);
+      el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
    }
 
    DRETURN(el);

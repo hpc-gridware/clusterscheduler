@@ -41,14 +41,13 @@
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
 
-
 static int
-host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id);
+host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id);
 
 /****** qmaster/host/host_notify_about_X() *************************************
 *  NAME
@@ -69,7 +68,6 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id);
 *        x              tag                  progname_id
 *        -------------- -------------------- ------------
 *        0 or 1         TAG_KILL_EXECD       EXECD               
-*        featureset id  TAG_NEW_FEATURES     EXECD
 *        *              TAG_GET_NEW_CONF     EXECD
 *
 *  INPUTS
@@ -92,7 +90,7 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id);
 *     qmaster/host/host_notify_about_featureset()
 *******************************************************************************/
 static int
-host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
+host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id) {
    const char *hostname = nullptr;
    sge_pack_buffer pb;
    int ret = -1;
@@ -117,8 +115,8 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
       u_long32 dummy = 0;
 
       packint(&pb, x);
-      if (gdi_send_message_pb(0, prognames[progname_id], 1, hostname,
-                               tag, &pb, &dummy) == CL_RETVAL_OK) {
+      if (ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[progname_id], 1, hostname,
+                                                      tag, &pb, &dummy) == CL_RETVAL_OK) {
          ret = 0;
       }
       clear_packbuffer(&pb);
@@ -147,7 +145,7 @@ host_notify_about_X(lListElem *host, u_long32 x, int tag, int progname_id) {
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
 int host_notify_about_new_conf(lListElem *host) {
-   return host_notify_about_X(host, 0, TAG_GET_NEW_CONF, EXECD);
+   return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF, EXECD);
 }
 
 /****** qmaster/host/host_notify_about_kill() *********************************
@@ -171,10 +169,10 @@ int host_notify_about_new_conf(lListElem *host) {
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
 int host_notify_about_kill(lListElem *host, int kill_command) {
-   return host_notify_about_X(host, kill_command, TAG_KILL_EXECD, EXECD);
+   return host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);
 }
 
 int host_notify_about_full_load_report(lListElem *host) {
-   return host_notify_about_X(host, 0, TAG_FULL_LOAD_REPORT, EXECD);
+   return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT, EXECD);
 }
 

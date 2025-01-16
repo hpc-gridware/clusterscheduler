@@ -47,14 +47,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 
-#include "comm/commlib.h"
-
 #include "japi/japi.h"
 #include "japi/japiP.h"
 
 #include "gdi/sge_security.h"
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
@@ -65,6 +61,8 @@
 #include "msg_clients_common.h"
 #include "msg_qsub.h"
 #include "msg_qmaster.h"
+
+#include <ocs_gdi_ClientBase.h>
 
 extern char **environ;
 static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -136,7 +134,7 @@ main(int argc, const char **argv)
    username = component_get_username();
    qualified_hostname = component_get_qualified_hostname();
    unqualified_hostname = component_get_unqualified_hostname();
-   mastername = gdi_get_act_master_host(false);
+   mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
 
    /*
     * read switches from the various defaults files

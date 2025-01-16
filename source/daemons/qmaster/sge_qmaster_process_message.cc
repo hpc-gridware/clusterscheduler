@@ -41,23 +41,20 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ack.h"
-
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_security.h"
-#include "gdi/sge_gdi_packet_pb_cull.h"
-#include "gdi/sge_gdi_packet_internal.h"
 #include "sgeobj/ocs_Version.h"
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_manop.h"
+
+#include "gdi/ocs_gdi_ClientServerBase.h"
+#include "gdi/sge_security.h"
 
 #include "comm/commlib.h"
 
@@ -66,20 +63,18 @@
 #include "evm/sge_event_master.h"
 
 #include "sge_c_gdi.h"
-#include "sge_qmaster_main.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
-#include <sge_manop.h>
 
 static void
-do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor);
+do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
-do_report_request(struct_msg_t *, monitoring_t *monitor);
+do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *, monitoring_t *monitor);
 
 static void
-do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor);
+do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor);
 
 static void
 sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag, u_long32 ack_ulong,
@@ -101,9 +96,9 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag, u_long32
  * @param type The type of the packet
  */
 static void
-ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_request_type_t type) {
+ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, lList *data_list, gdi_packet_request_type_t type) {
    // create a GDI packet to transport the list to a thread that is able to handle it
-   sge_gdi_packet_class_t *packet = sge_gdi_packet_create_base(nullptr);
+   ocs::gdi::Packet *packet = new ocs::gdi::Packet();
    strcpy(packet->host, message->snd_host);
    strcpy(packet->commproc, message->snd_name);
    packet->commproc_id = message->snd_id;
@@ -113,7 +108,9 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
    packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
-   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &data_list, nullptr, nullptr, nullptr, false);
+   auto task = new ocs::gdi::Task(ocs::gdi::Target::NO_TARGET, ocs::gdi::Command::SGE_GDI_NONE, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                &data_list, nullptr, nullptr, nullptr, false);
+   packet->append_task(task);
 
    // Put the packet into the task queue so that workers can handle it
    sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
@@ -128,7 +125,7 @@ ocs_store_packet(const struct_msg_t *message, lList *data_list, gdi_packet_reque
  * @param monitor The monitoring object
  */
 static void
-do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
+do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    while (pb_unused(&(message->buf)) > 0) {
@@ -204,10 +201,9 @@ do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
 *******************************************************************************/
 void
 sge_qmaster_process_message(monitoring_t *monitor) {
-   int res;
-   struct_msg_t msg{};
-
    DENTER(TOP_LAYER);
+   int res;
+   ocs::gdi::ClientServerBase::struct_msg_t msg{};
 
    /*
     * INFO (CR)  
@@ -222,7 +218,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
 
    MONITOR_IDLE_TIME((
 
-                             res = sge_gdi_get_any_request(msg.snd_host, msg.snd_name,
+      res = ocs::gdi::ClientServerBase::sge_gdi_get_any_request(msg.snd_host, msg.snd_name,
                                                             &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
 
                      ), monitor, mconf_get_monitoring_options());
@@ -231,19 +227,19 @@ sge_qmaster_process_message(monitoring_t *monitor) {
 
    if (res == CL_RETVAL_OK) {
       switch (msg.tag) {
-         case TAG_GDI_REQUEST:
+         case ocs::gdi::ClientServerBase::TAG_GDI_REQUEST:
             MONITOR_INC_GDI(monitor);
             do_gdi_packet(&msg, monitor);
             break;
-         case TAG_ACK_REQUEST:
+         case ocs::gdi::ClientServerBase::TAG_ACK_REQUEST:
             MONITOR_INC_ACK(monitor);
             do_c_ack_request(&msg, monitor);
             break;
-         case TAG_EVENT_CLIENT_EXIT:
+         case ocs::gdi::ClientServerBase::TAG_EVENT_CLIENT_EXIT:
             MONITOR_INC_ECE(monitor);
             do_event_client_exit(&msg, monitor);
             break;
-         case TAG_REPORT_REQUEST:
+         case ocs::gdi::ClientServerBase::TAG_REPORT_REQUEST:
             MONITOR_INC_REP(monitor);
             do_report_request(&msg, monitor);
             break;
@@ -268,7 +264,7 @@ get_most_restrictive_datastore(ocs::DataStore::Id type1, ocs::DataStore::Id type
 }
 
 static ocs::DataStore::Id
-get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
+get_gdi_executor_ds(ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
    // Usually the request type defines which DS to be used but there are some exceptions where the global ds
@@ -296,26 +292,25 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
    // the assumption is correct. If READER or GLOBAL DS is required for at least one subtask, then
    // corresponding DS should be used for all sub-tasks.
    ocs::DataStore::Id type = ocs::DataStore::LISTENER;
-   sge_gdi_task_class_t *task = packet->first_task;
-   while (task) {
-      u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
+   for (auto *task : packet->tasks) {
+      u_long32 operation = task->command;
       u_long32 target = task->target;
 
-      if (operation == SGE_GDI_PERMCHECK) {
+      if (operation == ocs::gdi::Command::SGE_GDI_PERMCHECK) {
          // GDI permission requests to check client user and host permissions can be processed with Listener DS
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_TRIGGER && (target == SGE_MASTER_EVENT || target == SGE_SC_LIST || target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+      } else if (operation == ocs::gdi::Command::SGE_GDI_TRIGGER && (target == ocs::gdi::Target::TargetValue::SGE_MASTER_EVENT || target == ocs::gdi::Target::TargetValue::SGE_SC_LIST || target == ocs::gdi::Target::TargetValue::SGE_EV_LIST || target == ocs::gdi::Target::SGE_DUMMY_LIST)) {
          // Also following requests can be processed with Listener DS:
          //    - shutdown request of qmaster (SGE_MASTER_EVENT)
          //    - trigger scheduling (SGE_SC_LIST)
          //    - termination of event client (SGE_EV_LIST)
          //    - start stop of thread (SGE_DUMMY_LIST)
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET && (target == SGE_EV_LIST || target == SGE_DUMMY_LIST)) {
+      } else if (operation == ocs::gdi::Command::SGE_GDI_GET && (target == ocs::gdi::Target::SGE_EV_LIST || target == ocs::gdi::Target::SGE_DUMMY_LIST)) {
          // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
          // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == SGE_GDI_GET) {
+      } else if (operation == ocs::gdi::Command::SGE_GDI_GET) {
          bool is_qconf = (strcmp(packet->commproc, prognames[QCONF]) == 0);
          const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
          bool is_manager = manop_is_manager(packet, master_manager_list);
@@ -336,20 +331,19 @@ get_gdi_executor_ds(sge_gdi_packet_class_t *packet) {
       if (type == ocs::DataStore::GLOBAL) {
          DRETURN(type);
       }
-      task = task->next;
    }
 
    DRETURN(type);
 }
 
 static void
-do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
+do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    // unpack the incoming request
    sge_pack_buffer *pb_in = &(aMsg->buf);
-   sge_gdi_packet_class_t *packet = nullptr;
-   bool local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
+   ocs::gdi::Packet *packet = new ocs::gdi::Packet();
+
    strcpy(packet->host, aMsg->snd_host);
    strcpy(packet->commproc, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
@@ -357,17 +351,23 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    packet->is_intern_request = false;
    packet->request_type = PACKET_GDI_REQUEST;
 
+   bool local_ret = packet->unpack(nullptr, pb_in);
+   if (!local_ret) {
+      delete packet;
+      packet = nullptr;
+   }
+
    // check GDI version
    if (local_ret) {
-      local_ret = ocs::Version::do_versions_match(&packet->first_task->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
+      local_ret = ocs::Version::do_versions_match(&packet->tasks[0]->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
    }
 
    // check auth_info (user/group)
    if (local_ret) {
-      local_ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
-                                                 &(packet->uid), packet->user, sizeof(packet->user),
-                                                 &(packet->gid), packet->group, sizeof(packet->group),
-                                                 &packet->amount, &packet->grp_array);
+      local_ret = packet->parse_auth_info(&packet->tasks[0]->answer_list,
+                                          &(packet->uid), packet->user, sizeof(packet->user),
+                                          &(packet->gid), packet->group, sizeof(packet->group),
+                                          &packet->amount, &packet->grp_array);
 
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
@@ -376,7 +376,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    if (local_ret) {
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
-         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+         answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
 
@@ -390,34 +390,37 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    //    - manager/operator permissions
    //    - admin/submit/exec host
    if (local_ret) {
-      sge_gdi_task_class_t *task = packet->first_task;
-      while(task) {
+      for (auto *task : packet->tasks) {
          local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
          if (!local_ret) {
             break;
          }
-         task = task->next;
       }
    }
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      sge_gdi_task_class_t *task = packet->first_task;
-
       init_packbuffer(&packet->pb, 0, 0);
-      while(task) {
+
+      if (packet != nullptr) {
+         lList *tmp_anser_list = nullptr;
+         packet->pack_header(&tmp_anser_list, &packet->pb);
+      }
+      for (size_t i = 0; i < packet->tasks.size(); ++i) {
+         bool has_next = (i < packet->tasks.size() - 1);
+         ocs::gdi::Task *task = packet->tasks[i];
+
          // data might still be that what client sent initially. no need to re-transfer that
          lFreeList(&task->data_list);
 
          // for all tasks we pack the answer of the first task which contains general errors
          // like version mismatch, auth_info or security issues.
-         sge_gdi_packet_pack_task(packet, task, &packet->first_task->answer_list, &packet->pb);
-         task = task->next;
+         packet->pack_task(task, &packet->tasks[0]->answer_list, &packet->pb, has_next);
       }
-      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                               &packet->pb, TAG_GDI_REQUEST, packet->response_id, nullptr);
+      ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                                       &packet->pb, ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
       clear_packbuffer(&packet->pb);
-      sge_gdi_packet_free(&packet);
+      delete packet;
 
       DRETURN_VOID;
    }
@@ -430,23 +433,24 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       // prepare packbuffer for the clients answer
       init_packbuffer(&(packet->pb), 0, 0);
 
+      lList *tmp_answer_list = nullptr;
+      packet->pack_header(&tmp_answer_list, &packet->pb);
+
       // handle the requests
       SGE_LOCK(LOCK_LISTENER, LOCK_READ);
-      sge_gdi_task_class_t *task = packet->first_task;
-      while (task != nullptr) {
-         DTRACE;
-         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor);
-
-         task = task->next;
+      for (size_t i = 0; i < packet->tasks.size(); ++i) {
+         bool has_next = (i < packet->tasks.size() - 1);
+         ocs::gdi::Task *task = packet->tasks[i];
+         sge_c_gdi_process_in_listener(packet, task, &(task->answer_list), monitor, has_next);
       }
       SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
 
       // send the response
       MONITOR_MESSAGES_OUT(monitor);
-      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                               &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
+      ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                                       &(packet->pb), ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
       clear_packbuffer(&(packet->pb));
-      sge_gdi_packet_free(&packet);
+      delete packet;
    } else if (ds_enabled && ds_type == ocs::DataStore::READER) {
 
       // Default is the global request queue unless readers are enabled
@@ -498,7 +502,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 *
 *******************************************************************************/
 static void
-do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
+do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = component_get_component_name();
@@ -547,7 +551,7 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
 *
 *******************************************************************************/
 static void
-do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
+do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 client_id = 0;
 
    DENTER(TOP_LAYER);
@@ -597,7 +601,7 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
  * @param monitor Monitoring object
  */
 void
-sge_c_ack(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+sge_c_ack(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    // extract information from the task about the ACK

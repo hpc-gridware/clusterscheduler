@@ -84,14 +84,12 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/sge_ack.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "sched/sge_job_schedd.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
 #include "sched/sge_complex_schedd.h"
-#include "sched/valid_queue_user.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "cull/cull_list.h"
 
@@ -102,7 +100,6 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_job_verify.h"
-#include "sge_qmaster_main.h"
 #include "symbols.h"
 #include "mail.h"
 #include "sge_cqueue_qmaster.h"
@@ -111,6 +108,8 @@
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+
+#include <ocs_gdi_ClientServerBase.h>
 
 
 /****** qmaster/job/spooling ***************************************************
@@ -157,11 +156,11 @@ typedef struct {
 job_number_t job_number_control = {0, false, PTHREAD_MUTEX_INITIALIZER};
 
 static int
-mod_task_attributes(const sge_gdi_packet_class_t *packet, lListElem *job, lListElem *new_ja_task, lListElem *tep, lList **alpp,
+mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *new_ja_task, lListElem *tep, lList **alpp,
                     int *trigger, int is_array, int is_task_enrolled);
 
 static int
-mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger);
+mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger);
 
 void
 set_context(lList *jbctx, lListElem *job);
@@ -173,10 +172,10 @@ static bool
 contains_dependency_cycles(const lListElem *new_job, u_long32 job_number, lList **alpp);
 
 static int
-verify_job_list_filter(const sge_gdi_packet_class_t *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag);
+verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag);
 
 static void
-empty_job_list_filter(const sge_gdi_packet_class_t *packet, lList **alpp, int was_modify, int user_list_flag, lList *user_list, int jid_flag,
+empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modify, int user_list_flag, lList *user_list, int jid_flag,
                       const char *jobid, int all_users_flag, int all_jobs_flag, int is_array, u_long32 start, u_long32 end, u_long32 step);
 
 static void
@@ -189,7 +188,7 @@ static void
 job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter);
 
 static int
-sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lList **alpp,
+sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **alpp,
                             lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                             const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks, u_long64 start_time,
                             monitoring_t *monitor, int forced, bool *deletion_time_reached);
@@ -208,7 +207,7 @@ static const char JOB_NAME_DEL = ':';
 /*-------------------------------------------------------------------------*/
 int
 sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
-                sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                 monitoring_t *monitor) {
    int ret;
    bool lret;
@@ -346,7 +345,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
 
 
 /**
- * sge_gdi_delete_job
+ * ocs::gdi::Client::sge_gdi_delete_job
  *    - called in sge_c_gdi_del (possibly multiple times, e.g. qdel 1,2 will trigger 2 calls)
  * @param[in] idep ID_Type element, can contain job ids, job names (with patterns), a user list (with patterns)
  * @param[out] alpp to return messages (INFO, WARNING, ERROR) to the caller
@@ -356,7 +355,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
  * @param[in] monitor for monitoring qmaster threads
  */
 int
-sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,  lListElem *idep, lList **alpp, int sub_command, monitoring_t *monitor) {
+sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem *idep, lList **alpp,
+                ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    int all_jobs_flag;
    int all_users_flag;
    int jid_flag;
@@ -405,8 +405,8 @@ sge_gdi_del_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
    }
 
    /* sub-commands */
-   all_jobs_flag = ((sub_command & SGE_GDI_ALL_JOBS) != 0);
-   all_users_flag = ((sub_command & SGE_GDI_ALL_USERS) != 0);
+   all_jobs_flag = ((sub_command & ocs::gdi::SubCommand::SGE_GDI_ALL_JOBS) != 0);
+   all_users_flag = ((sub_command & ocs::gdi::SubCommand::SGE_GDI_ALL_USERS) != 0);
 
    /* Did we get a user list or something else ? */
    if (lGetPosViaElem(idep, ID_user_list, SGE_NO_ABORT) >= 0) {
@@ -667,7 +667,7 @@ tag_all_host_gdil(lListElem *jatep) {
 *     slave exec hosts.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     u_long32 job_id          - job id
 *     u_long32 ja_task_id      - job array task id
 *     const lListElem *ja_task - the job array task
@@ -700,14 +700,14 @@ ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
           * down, we don't want to see tons of error messages in the messages
           * file. The caller of this functions has to handle this situation.
           */
-         gdi_send_message_pb(0, prognames[EXECD], 1, host, TAG_ACK_REQUEST, &pb, &dummymid);
+         ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, host, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, &pb, &dummymid);
          clear_packbuffer(&pb);
       }
    }
 }
 
 static void
-empty_job_list_filter(const sge_gdi_packet_class_t *packet, lList **alpp, int was_modify, int user_list_flag, lList *user_list, int jid_flag,
+empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modify, int user_list_flag, lList *user_list, int jid_flag,
                       const char *jobid, int all_users_flag, int all_jobs_flag, int is_array,
                       u_long32 start, u_long32 end, u_long32 step) {
    DENTER(TOP_LAYER);
@@ -867,7 +867,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
 */
 
 static int
-verify_job_list_filter(const sge_gdi_packet_class_t *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag) {
+verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag) {
    DENTER(TOP_LAYER);
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
@@ -1090,7 +1090,7 @@ void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
 }
 
 /*-------------------------------------------------------------------------*/
-/* sge_gdi_modify_job                                                    */
+/* ocs::gdi::Client::sge_gdi_modify_job                                                    */
 /*    called in sge_c_gdi_mod                                              */
 /*-------------------------------------------------------------------------*/
 
@@ -1118,7 +1118,7 @@ enum {
 };
 
 int
-sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *jep, lList **alpp, int sub_command) {
+sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp, int sub_command) {
    lListElem *nxt, *jobep = nullptr;   /* pointer to old job */
    int job_id_pos;
    int user_list_pos;
@@ -1144,8 +1144,8 @@ sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
    }
 
    /* sub-commands */
-   all_jobs_flag = ((sub_command & SGE_GDI_ALL_JOBS) > 0);
-   all_users_flag = ((sub_command & SGE_GDI_ALL_USERS) > 0);
+   all_jobs_flag = ((sub_command & ocs::gdi::SubCommand::SGE_GDI_ALL_JOBS) > 0);
+   all_users_flag = ((sub_command & ocs::gdi::SubCommand::SGE_GDI_ALL_USERS) > 0);
 
    /* Did we get a user list? */
    if (((user_list_pos = lGetPosViaElem(jep, JB_user_list, SGE_NO_ABORT)) >= 0)
@@ -1561,7 +1561,7 @@ void job_suc_pre_ad(lListElem *jep) {
    tep  - reduced task element SRC
 */
 static int
-mod_task_attributes(const sge_gdi_packet_class_t *packet, lListElem *job, lListElem *new_ja_task,
+mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *new_ja_task,
                     lListElem *tep, lList **alpp, int *trigger, int is_array, int is_task_enrolled) {
    u_long32 jobid = lGetUlong(job, JB_job_number);
    u_long32 jataskid = lGetUlong(new_ja_task, JAT_task_number);
@@ -1820,7 +1820,7 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
 }
 
 static int
-mod_job_attributes(const sge_gdi_packet_class_t *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger) {
+mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger) {
    int pos;
    int is_running = 0, may_not_be_running = 0;
    u_long32 uval;
@@ -3382,7 +3382,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 }
 
 int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
-                     sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor) {
+                     ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    u_long32 seek_jid;
    int ret;
    const lListElem *old_jep;
@@ -3576,7 +3576,7 @@ bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
    DRETURN(ret);
 }
 
-static int sge_delete_all_tasks_of_job(const sge_gdi_packet_class_t *packet, lList **alpp,
+static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **alpp,
                                        lListElem *job, u_long32 *r_start, u_long32 *r_end, u_long32 *step,
                                        const lList *ja_structure, int *alltasks, u_long32 *deleted_tasks,
                                        u_long64 start_time, monitoring_t *monitor, int forced,

@@ -33,9 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientServerBase.h"
 
-int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb);
+int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb);
 
 int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal);
 

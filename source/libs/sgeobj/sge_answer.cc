@@ -731,7 +731,7 @@ int answer_list_print_err_warn(lList **answer_list,
 *
 *  FUNCTION
 *     Processes the answer list that results from a gdi request
-*     (sge_gdi or sge_gdi_multi).
+*     (sge_gdi or ocs::gdi::Client::sge_gdi_multi).
 *     Outputs and errors and warnings and returns the first error
 *     or warning status code.
 *     The answer list is freed.

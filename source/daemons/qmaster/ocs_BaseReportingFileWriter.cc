@@ -20,6 +20,8 @@
 
 #include "uti/sge_time.h"
 
+#include "sgeobj/sge_conf.h"
+
 #include "ocs_BaseReportingFileWriter.h"
 
 namespace ocs {

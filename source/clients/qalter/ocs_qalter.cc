@@ -48,14 +48,8 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_daemonize.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
-
-#include "comm/commlib.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
 #include "ocs_client_job.h"
@@ -90,7 +84,8 @@ int main(int argc, const char **argv) {
    const lListElem *aep;
    int all_jobs = 0;
    int all_users = 0;
-   u_long32 gdi_cmd = SGE_GDI_MOD; 
+   ocs::gdi::Command::Cmd gdi_cmd = ocs::gdi::Command::SGE_GDI_MOD;
+   ocs::gdi::SubCommand::SubCmd sub_cmd = ocs::gdi::SubCommand::SGE_GDI_SUB_NONE;
    int tmp_ret;
    int me_who;
 
@@ -116,7 +111,7 @@ int main(int argc, const char **argv) {
    log_state_set_log_gui(1);
    sge_setup_sig_handlers(me_who);
 
-   if (gdi_client_setup_and_enroll(me_who, MAIN_THREAD, &alp) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(me_who, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -181,21 +176,21 @@ int main(int argc, const char **argv) {
        (me_who == QRLS) 
       ) {
       DPRINTF("QALTER\n");
-      gdi_cmd = SGE_GDI_MOD;
+      gdi_cmd = ocs::gdi::Command::SGE_GDI_MOD;
    } else if (me_who == QRESUB){
       DPRINTF("QRESUB\n");
-      gdi_cmd = SGE_GDI_COPY;
+      gdi_cmd = ocs::gdi::Command::SGE_GDI_COPY;
    } else {
       printf("unknown binary name.\n");
       sge_exit(1);
    }
 
    if (all_jobs)
-      gdi_cmd |= SGE_GDI_ALL_JOBS;
+      sub_cmd = ocs::gdi::SubCommand::SGE_GDI_ALL_JOBS;
    if (all_users)
-      gdi_cmd |= SGE_GDI_ALL_USERS;
+      sub_cmd = ocs::gdi::SubCommand::SGE_GDI_ALL_USERS;
 
-   alp = sge_gdi(SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, gdi_cmd, sub_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {
@@ -225,7 +220,7 @@ int main(int argc, const char **argv) {
 **   qalter_parse_job_parameter
 ** PARAMETER
 **   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
-**   prequestlist       - pointer a list of job modify request for sge_gdi
+**   prequestlist       - pointer a list of job modify request for ocs::gdi::Client::sge_gdi
 **
 ** RETURN
 **   answer list, AN_Type or nullptr if everything ok, the following stati can occur:

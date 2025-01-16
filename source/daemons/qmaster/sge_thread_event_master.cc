@@ -46,7 +46,7 @@
 
 #include "comm/cl_commlib.h"
 
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "evm/sge_event_master.h"
 

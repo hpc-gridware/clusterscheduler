@@ -36,8 +36,8 @@
 
 #include "cull/cull.h"
 #include "uti/sge_monitor.h"
-#include "sgeobj/sge_daemonize.h"
 
-#include <sge_gdi_packet_type.h>
+#include "gdi/ocs_gdi_Packet.h"
 
-void sge_c_report(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);
+
+void sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);

@@ -35,9 +35,6 @@
 
 #include "cull/cull.h"
 
-#include "gdi/sge_gdi.h"
-
-#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_event.h"
 

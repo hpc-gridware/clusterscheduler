@@ -47,7 +47,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -73,9 +72,9 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "gdi/qm_name.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sched/debit.h"
 
@@ -198,7 +197,7 @@ sge_setup_qmaster(char *anArgv[]) {
 
    qmaster_unlock(QMASTER_LOCK_FILE);
 
-   if (write_qm_name(qualified_hostname, act_qmaster_file, err_str, sizeof(err_str))) {
+   if (ocs::gdi::ClientBase::write_qm_name(qualified_hostname, act_qmaster_file, err_str, sizeof(err_str))) {
       ERROR("%s\n", err_str);
       sge_exit(1);
    }
@@ -242,7 +241,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 
    lInit(nmv);
 
-   if (gdi_client_setup(prog_id, thread_id, &alp, true) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup(prog_id, thread_id, &alp, true) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -781,7 +780,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
          CRITICAL(SFNMAX, MSG_QMASTER_LOCKFILE_ALREADY_EXISTS);
       }
    }
-   gdi_client_shutdown();
+   ocs::gdi::ClientBase::shutdown();
 
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */
@@ -898,29 +897,29 @@ setup_qmaster() {
 
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
-      sge_gdi_packet_class_t packet;
-      sge_gdi_task_class_t task;
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-      if (sge_add_host_of_type(&packet, &task, SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
+      if (sge_add_host_of_type(&packet, &task, SGE_TEMPLATE_NAME, ocs::gdi::Target::TargetValue::SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST);
    }
 
    /* add host "global" to master exechost list as an exec host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
-      sge_gdi_packet_class_t packet;
-      sge_gdi_task_class_t task;
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-      if (sge_add_host_of_type(&packet, &task, SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
+      if (sge_add_host_of_type(&packet, &task, SGE_GLOBAL_NAME, ocs::gdi::Target::SGE_EH_LIST, &monitor))
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
 
    /* add qmaster host to master admin host list as an administrative host */
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
-      sge_gdi_packet_class_t packet;
-      sge_gdi_task_class_t task;
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-      if (sge_add_host_of_type(&packet, &task, qualified_hostname, SGE_AH_LIST, &monitor)) {
+      if (sge_add_host_of_type(&packet, &task, qualified_hostname, ocs::gdi::Target::SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
    }
@@ -1132,8 +1131,8 @@ setup_qmaster() {
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    for_each_rw(tmpqep, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      sge_gdi_packet_class_t packet;
-      sge_gdi_task_class_t task;
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
       cqueue_mod_qinstances(&packet, &task, tmpqep, nullptr, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
    }

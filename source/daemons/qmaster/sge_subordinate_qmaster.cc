@@ -116,7 +116,7 @@ get_slotwise_sos_threshold(const lListElem *qinstance) {
 *     Executes the (un)suspend of the specified task. 
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx                   - GDI context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx                   - GDI context
 *     lListElem *qinstance_where_task_is_running - QU_Type Element of the qinstance
 *                                                  in which the task to (un)suspend
 *                                                  is running/suspended.
@@ -989,7 +989,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
 *     qinstance.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context class
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context class
 *     lListElem *qinstance     - The root of the slotwise preemption sub tree.
 *     monitoring_t *monitor    - monitor
 *
@@ -1131,7 +1131,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
 *     subordination tree where the provided qinstance is member of.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context
 *     lListElem *qinstance     - start from this qinstance doing this check
 *     bool suspend             - calculate for suspend or for unsuspend?
 *     bool check_subtree_only  - check only the subtree of the provided

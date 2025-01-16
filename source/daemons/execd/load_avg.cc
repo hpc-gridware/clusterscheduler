@@ -67,7 +67,6 @@
 
 #include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdiP.h"
 
 #include "job_report_execd.h"
 #include "sge_load_sensor.h"

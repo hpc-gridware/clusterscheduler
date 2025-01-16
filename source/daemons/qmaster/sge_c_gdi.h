@@ -33,12 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __SGE_GDI_INTERN_H
-
-#   include "gdi/sge_gdiP.h"
-
-#endif
-
 #include "uti/sge_monitor.h"
 
 #include "cull/cull.h"
@@ -46,13 +40,13 @@
 #include "sgeobj/sge_object.h"
 
 #include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 typedef struct _gdi_object_t gdi_object_t;
 
 typedef int (*modifier_func_t)(
-        sge_gdi_packet_class_t *packet,
-        sge_gdi_task_class_t *task,
+        ocs::gdi::Packet *packet,
+        ocs::gdi::Task *task,
         lList **alpp,
         lListElem *new_cal,   /* destination */
         lListElem *cep,       /* reduced element */
@@ -60,13 +54,14 @@ typedef int (*modifier_func_t)(
         const char *ruser,
         const char *rhost,
         gdi_object_t *object, /* some kind of "this" */
-        int sub_command,
+        ocs::gdi::Command::Cmd cmd,
+        ocs::gdi::SubCommand::SubCmd sub_com,
         monitoring_t *monitor
 );
 
 typedef int (*writer_func_t)(
-        sge_gdi_packet_class_t *packet,
-        sge_gdi_task_class_t *task,
+        ocs::gdi::Packet *packet,
+        ocs::gdi::Task *task,
         lList **alpp,
         lListElem *ep,      /* new modified element */
         gdi_object_t *thiz   /* some kind of "this" */
@@ -76,8 +71,8 @@ typedef int (*writer_func_t)(
 typedef lList **(*getMasterList)();
 
 typedef int (*on_success_func_t)(
-        sge_gdi_packet_class_t *packet,
-        sge_gdi_task_class_t *task,
+        ocs::gdi::Packet *packet,
+        ocs::gdi::Task *task,
         lListElem *ep,       /* new modified and already spooled element */
         lListElem *old_ep,   /* old element is nullptr in add case */
         gdi_object_t *thiz,  /* some kind of "this" */
@@ -86,7 +81,7 @@ typedef int (*on_success_func_t)(
 );
 
 struct _gdi_object_t {
-   u_long32 target;          /* SGE_QUEUE_LIST */
+   ocs::gdi::Target::TargetValue target;          /* SGE_QUEUE_LIST */
    int key_nm;          /* QU_qname */
    lDescr *type;           /* QU_Type */
    const char *object_name;    /* "queue" */
@@ -99,20 +94,20 @@ struct _gdi_object_t {
 gdi_object_t *get_gdi_object(u_long32);
 
 bool
-sge_c_gdi_process_in_listener(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                              lList **answer_list, monitoring_t *monitor);
+sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                              lList **answer_list, monitoring_t *monitor, bool has_next);
 
 bool
-sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                      monitoring_t *monitor);
 
 void
-sge_c_gdi_process_in_worker(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
-                            monitoring_t *monitor);
+sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list,
+                            monitoring_t *monitor, bool has_next);
 
 int
-sge_gdi_add_mod_generic(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
-                        const char *ruser, const char *rhost, int sub_command, lList **ppList, monitoring_t *monitor);
+sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
+                        const char *ruser, const char *rhost, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, lList **ppList, monitoring_t *monitor);
 
 void sge_clean_lists();
 

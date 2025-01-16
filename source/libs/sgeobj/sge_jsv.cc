@@ -962,7 +962,7 @@ jsv_list_update(const char *name, const char *context,
 *     or accepted with modifications the returned value will be 'true'.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx - context object 
+*     ocs::gdi::Client::sge_gdi_ctx_class_t* ctx - context object
 *     const char *context      - JSV_CONTEXT_CLIENT or thread name
 *     lListElem **job          - pointer or a job (JB_Type) 
 *     lList **answer_list      - answer_list for messages 

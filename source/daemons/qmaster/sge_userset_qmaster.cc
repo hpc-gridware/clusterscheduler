@@ -35,21 +35,14 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_unistd.h"
 
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_resource_quota.h"
-#include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "spool/sge_spooling.h"
@@ -65,7 +58,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-static void sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *acl_name);
+static void sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name);
 
 static int verify_userset_deletion(lList **alpp, const char *userset_name);
 
@@ -79,7 +72,7 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
    deletes an userset list from the global userset_list
  ******************************************************************/
 int
-sge_del_userset(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
    lListElem *found;
    int pos, ret;
    const char *userset_name;
@@ -139,7 +132,7 @@ sge_del_userset(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLis
    of all queues containing this complex;
  **********************************************************************/
 static void
-sge_change_queue_version_acl(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, const char *acl_name) {
+sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name) {
    const lListElem *cqueue;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
@@ -582,7 +575,7 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *     added or modified.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lList **alpp             - answer list
 *     lListElem *new_userset   - if add it's an empty userset that needs to
 *                                be filled
@@ -602,9 +595,10 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 *  NOTES
 *     MT-NOTE: userset_mod() is not MT safe, needs global lock 
 *******************************************************************************/
-int userset_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *new_userset,
+int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset,
                 lListElem *userset, int add, const char *ruser,
-                const char *rhost, gdi_object_t *object, int sub_command,
+                const char *rhost, gdi_object_t *object,
+                ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
                 monitoring_t *monitor) {
    const char *userset_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -646,7 +640,7 @@ int userset_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lLis
    }
    /* ---- US_entries */
    attr_mod_sub_list(alpp, new_userset, US_entries,
-                     UE_name, userset, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
+                     UE_name, userset, cmd, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
    /* interpret user/group names */
    if (userset_validate_entries(new_userset, alpp) != STATUS_OK) {
       goto ERROR;
@@ -734,7 +728,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     modifing a userset.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lList **alpp             - answer list
 *     lListElem *userset       - userset object to spool
 *     gdi_object_t *object     - structure of the gdi framework
@@ -747,7 +741,7 @@ DRETURN(STATUS_EUNKNOWN);
 *  NOTES
 *     MT-NOTE: userset_spool() is not MT safe 
 *******************************************************************************/
-int userset_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
+int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
 
@@ -779,7 +773,7 @@ int userset_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lL
 *     spool.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lListElem *ep            - new added userset
 *     lListElem *old_ep        - for mod the old userset
 *     gdi_object_t *object     - structure of the gdi framework
@@ -792,7 +786,7 @@ int userset_spool(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lL
 *  NOTES
 *     MT-NOTE: userset_success() is not MT safe 
 *******************************************************************************/
-int userset_success(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                     monitoring_t *monitor) {
    const char *userset_name;
    dstring ds = DSTRING_INIT;

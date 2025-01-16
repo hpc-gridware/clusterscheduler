@@ -53,7 +53,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge.h"
 
 #include "japi/drmaa.h"
@@ -62,21 +61,15 @@
 #include "japi/japiP.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_usage.h"
 
 #include "cull/cull_list.h"
@@ -85,16 +78,10 @@
 
 #include "evc/sge_event_client.h"
 
-#include "sgeobj/sge_daemonize.h"
-
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdiP.h"
-#include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_ClientBase.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "evm/sge_event_master.h"
-#include "msg_common.h"
 
 /****** JAPI/--Job_API ********************************************************
 *  NAME
@@ -382,7 +369,7 @@ static void japi_dec_threads(const char *func)
 int japi_init_mt(dstring *diag)
 {
    lList *alp = nullptr;
-   int gdi_errno;
+   ocs::gdi::ErrorValue gdi_errno;
   
    DENTER(TOP_LAYER);
 
@@ -399,8 +386,8 @@ int japi_init_mt(dstring *diag)
    /*
    ** TODO: return error reason in diag
    */
-   gdi_errno = gdi_client_setup_and_enroll(prog_number, MAIN_THREAD, &alp);
-   if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
+   gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(prog_number, MAIN_THREAD, &alp);
+   if ((gdi_errno != ocs::gdi::AE_OK) && (gdi_errno != ocs::gdi::AE_ALREADY_SETUP)) {
       answer_to_dstring(lFirst(alp), diag);
       lFreeList(&alp);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
@@ -439,7 +426,7 @@ int japi_init_mt(dstring *diag)
 *                                  a former session using this session key.
 *     int my_prog_num            - the index into prognames to use when
 *                                  registering with the qmaster.  See
-*                                  gdi_client_setup_and_enroll().
+*                                  ocs::gdi::ClientBase::setup_and_enroll().
 *     bool enable_wait           - Whether to start up in mutli-threaded mode to
 *                                  allow japi_wait() and japi_synchronize() to
 *                                  function.
@@ -533,9 +520,9 @@ int japi_init(const char *contact, const char *session_key_in,
       if (handle == nullptr) {
 
          /* check if master is alive */
-         commlib_error = gdi_client_prepare_enroll(&answer_list);
+         commlib_error = ocs::gdi::ClientBase::prepare_enroll(&answer_list);
          if (commlib_error == CL_RETVAL_OK) {
-            commlib_error = gdi_is_alive(&answer_list);
+            commlib_error = ocs::gdi::ClientBase::gdi_is_alive(&answer_list);
          }
          handle = cl_com_get_handle(component_get_component_name(), 0);
       }
@@ -1264,7 +1251,8 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
                            amount, grp_array);
 
    /* use GDI to submit job for this session */
-   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_ADD,
+                 ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
 
    /* reinitialize 'job' with pointer to new version from qmaster */
    lFreeElem(sge_job_template);
@@ -1586,7 +1574,7 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
 *
 *  FUNCTION
 *     Adds a reduced job structure to the request list that causes the job/task
-*     be hold/released when it is used with sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
+*     be hold/released when it is used with ocs::gdi::Client::sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
 *
 *  INPUTS
 *     u_long32 gdi_action  - the GDI action to be performed
@@ -1786,8 +1774,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
                id_list_build_from_str_list(&id_list, &alp, ref_list,
                                            QI_DO_UNSUSPEND, 0);
             }
-            alp = sge_gdi(SGE_CQ_LIST, SGE_GDI_TRIGGER,
-                          &id_list, nullptr, nullptr);
+            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_TRIGGER,
+                          ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &id_list, nullptr, nullptr);
             lFreeList(&id_list);
             lFreeList(&ref_list);
 
@@ -1890,7 +1878,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
          }
 
          if (request_list) {
-            alp = sge_gdi(SGE_JB_LIST, SGE_GDI_MOD, &request_list, nullptr, nullptr);
+            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_MOD,
+                          ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &request_list, nullptr, nullptr);
             lFreeList(&request_list);
 
             for_each_rw (aep, alp) {
@@ -3243,11 +3232,10 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, u_long32
 *******************************************************************************/
 static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *diag)
 {
-   lList *mal = nullptr;
    lList *alp = nullptr;
    const lListElem *aep = nullptr;
    int jb_id = 0;
-   state_gdi_multi state = STATE_GDI_MULTI_INIT;
+   ocs::gdi::Request gdi_multi{};
    lCondition *job_selection = nullptr;
    lEnumeration *job_fields = nullptr;
    u_long32 quality = 0;
@@ -3256,33 +3244,32 @@ static int japi_get_job(u_long32 jobid, lList **retrieved_job_list, dstring *dia
 
    /* prepare GDI GET JOB selection */
    job_selection = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jobid);
-   job_fields = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I)", JB_Type, 
-         JB_job_number, 
-         JB_type, 
-         JB_ja_structure, 
-         JB_ja_n_h_ids, 
+   job_fields = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I)", JB_Type,
+         JB_job_number,
+         JB_type,
+         JB_ja_structure,
+         JB_ja_n_h_ids,
          JB_ja_u_h_ids,
          JB_ja_s_h_ids,
          JB_ja_o_h_ids,
          JB_ja_a_h_ids,
          JB_ja_tasks,
-         JB_jid_predecessor_list, 
+         JB_jid_predecessor_list,
          JB_execution_time);
-   
+
    if (!job_selection || !job_fields) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
-   
-   jb_id = sge_gdi_multi(&alp, SGE_GDI_SEND, SGE_JB_LIST, SGE_GDI_GET, nullptr,
-                          job_selection, job_fields, &state, true);
-   sge_gdi_wait(&mal, &state);
+
+   jb_id = gdi_multi.request(&alp, ocs::Mode::SEND, ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET,
+                             ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, job_selection, job_fields, true);
+   gdi_multi.wait();
    lFreeWhere(&job_selection);
    lFreeWhat(&job_fields);
 
-   gdi_extract_answer(&alp, SGE_GDI_GET, SGE_JB_LIST, jb_id, mal, retrieved_job_list);
-   lFreeList(&mal);
-
+   gdi_multi.get_response(&alp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                          ocs::gdi::Target::SGE_JB_LIST, jb_id, retrieved_job_list);
    aep = lFirst(alp);
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
@@ -4032,7 +4019,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    bool disconnected = false; /* Whether we are currently connected to the
                                  qmaster. */
    static sge_evc_class_t *evc = nullptr;
-   int gdi_errno = AE_OK;
+   ocs::gdi::ErrorValue gdi_errno = ocs::gdi::ErrorValue::AE_OK;
 
    DENTER(TOP_LAYER);
 
@@ -4049,10 +4036,10 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   gdi_errno = gdi_client_setup_and_enroll(prog_number, MAIN_THREAD, &alp);
-   if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
+   gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(prog_number, MAIN_THREAD, &alp);
+   if ((gdi_errno != ocs::gdi::ErrorValue::AE_OK) && (gdi_errno != ocs::gdi::ErrorValue::AE_ALREADY_SETUP)) {
       const lListElem *aep = lFirst(alp);
-      DPRINTF("error: gdi_client_setup_and_enroll() failed with gdi_error %d for event client thread\n", gdi_errno);
+      DPRINTF("error: ocs::gdi::ClientBase::setup_and_enroll() failed with gdi_error %d for event client thread\n", gdi_errno);
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
          answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), lGetString(aep, AN_text), 
@@ -4818,7 +4805,7 @@ static int japi_read_dynamic_attributes(dstring *diag)
 
    DENTER(TOP_LAYER);   
 
-   ret = gdi_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
+   ret = ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
 
    if (ret<0) {
       switch( ret ) {
@@ -4900,7 +4887,8 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all,
 
    DENTER(TOP_LAYER);
 
-   alp = sge_gdi(SGE_JB_LIST, SGE_GDI_DEL, id_list, nullptr, nullptr);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                 id_list, nullptr, nullptr);
    lFreeList(id_list);
 
    for_each_rw (aep, alp) {
@@ -4953,7 +4941,7 @@ static int japi_stop_event_client (const char *default_cell)
    DPRINTF (("Requesting that GDI kill our event client.\n"));
    snprintf(id_string, sizeof(id_string)-1, sge_u32, japi_ec_id);
    lAddElemStr(&id_list, ID_str, id_string, ID_Type);
-   alp = gdi_kill(id_list, EVENTCLIENT_KILL);
+   alp = ocs::gdi::Client::gdi_kill(id_list, EVENTCLIENT_KILL);
    lFreeList(&id_list);
    lFreeList(&alp);
    

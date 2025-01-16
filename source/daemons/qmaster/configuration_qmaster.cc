@@ -48,7 +48,6 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -61,18 +60,17 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_jsv.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "configuration_qmaster.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "evm/sge_event_master.h"
 #include "reschedule.h"
@@ -216,7 +214,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
  * necessary to introduce something like 'protected' configuration entries.
  */
 int
-sge_del_configuration(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
+sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;

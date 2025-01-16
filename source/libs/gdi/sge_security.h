@@ -33,12 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "cull/cull.h"
-
-#include "gdi/sge_gdiP.h"
-#include "sgeobj/sge_daemonize.h"
-#include "gdi/sge_gdi_packet.h"
-
 #include "sge_qmaster_timed_event.h"
 
 #ifdef KERBEROS
@@ -59,13 +53,16 @@ int sge_ssl_setup_security_path(const char *progname, const char *username);
 int kerb_job(lListElem *jelem, struct dispatch_entry *de);
 #endif
 
+bool sge_encrypt(const char *intext, char *outbuf, int outsize);
+bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
+bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
+
 void tgt2cc(lListElem *jep, const char *rhost);
 void tgtcclr(lListElem *jep, const char *rhost);
 int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp);
 void delete_credentials(const char *sge_root, lListElem *jep);
 bool cache_sec_cred(const char *sge_root, lListElem *jep, const char *rhost);
-int store_sec_cred(const char *sge_root, sge_gdi_packet_class_t *packe, lListElem *jep, 
-                   int do_authentication, lList **alpp);
+int store_sec_cred(const char *sge_root, lListElem *jep, int do_authentication, lList **alpp);
 int store_sec_cred2(const char* sge_root, 
                     const char* unqualified_hostname, 
                     lListElem *jelem, 
@@ -85,12 +82,3 @@ bool sge_security_verify_unique_identifier(bool check_admin_user,
                                            unsigned long commid);
 
 void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor);
-
-bool
-sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle);
-
-bool  
-sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_list,
-                               uid_t *uid, char *user, size_t user_len,
-                               gid_t *gid, char *group, size_t group_len,
-                               int *amount, ocs_grp_elem_t **grp_array);

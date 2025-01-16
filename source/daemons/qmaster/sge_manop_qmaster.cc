@@ -37,12 +37,10 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "comm/commlib.h"
-
 #include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_manop.h"
+#include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
 
@@ -63,7 +61,7 @@
    target may be SGE_UM_LIST or SGE_UO_LIST
 */
 int
-sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_add_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    const char *manop_name;
    const char *object_name;
    lList **lpp = nullptr;
@@ -82,14 +80,14 @@ sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
    }
 
    switch (target) {
-      case SGE_UM_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_UM_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
          key = UM_name;
          descr = UM_Type;
          eve = sgeE_MANAGER_ADD;
          break;
-      case SGE_UO_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_UO_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
          key = UO_name;
@@ -155,7 +153,7 @@ sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
 *     Deletes a manager or an operator from the corresponding master list.
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t *ctx - gdi context
+*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
 *     lListElem *ep            - the manager/operator to delete
 *     lList **alpp             - answer list to return messages
 *     char *ruser              - user having triggered the action
@@ -169,7 +167,7 @@ sge_add_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
 *     MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
 *******************************************************************************/
 int
-sge_del_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
+sge_del_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    lListElem *found;
    int pos;
    const char *manop_name;
@@ -187,13 +185,13 @@ sge_del_manop(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListE
    }
 
    switch (target) {
-      case SGE_UM_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_UM_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
          key = UM_name;
          eve = sgeE_MANAGER_DEL;
          break;
-      case SGE_UO_LIST:
+      case ocs::gdi::Target::TargetValue::SGE_UO_LIST:
          lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
          key = UO_name;

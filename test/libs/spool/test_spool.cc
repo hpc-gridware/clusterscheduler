@@ -48,13 +48,11 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/ocs_DataStore.h"
 
-#include "comm/commlib.h"
-
-#include "gdi/ocs_gdi_client.h"
+#include "gdi/ocs_gdi_Client.h"
 
 #include "mir/sge_mirror.h"
 
@@ -62,7 +60,6 @@
 #include "spool/loader/sge_spooling_loader.h"
 
 #include "sig_handlers.h"
-#include "msg_clients_common.h"
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
@@ -619,7 +616,7 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-   if (gdi_client_setup_and_enroll(QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
+   if (ocs::gdi::ClientBase::setup_and_enroll(QEVENT, MAIN_THREAD, &answer_list) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }

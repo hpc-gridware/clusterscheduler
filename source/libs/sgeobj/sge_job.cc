@@ -2283,7 +2283,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 *            0, if the user is the job owner
 *            1, if the user is not the job owner
 ******************************************************************************/
-int job_check_owner(const sge_gdi_packet_class_t *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list)
+int job_check_owner(const ocs::gdi::Packet *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list)
 {
    const lListElem *job;
 
@@ -3684,7 +3684,7 @@ job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
 ** (=, ): The following elements replace the job's current
 **        context values.
 ** Any combination of groups is possible.
-** To ensure portablity with common sge_gdi, (=, ) is the default
+** To ensure portablity with common ocs::gdi::Client::sge_gdi, (=, ) is the default
 ** when no group tag is given at the beginning of the incoming list
 */
 /* jbctx - VA_Type; job - JB_Type */
