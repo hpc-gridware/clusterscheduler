@@ -146,6 +146,7 @@ bool mconf_get_disable_secondary_ds();
 bool mconf_get_disable_secondary_ds_reader();
 bool mconf_get_disable_secondary_ds_execd();
 bool mconf_get_disable_automatic_session();
+bool mconf_get_disable_cluster_wide_sessions();
 int mconf_get_scheduler_timeout();
 int mconf_get_max_dynamic_event_clients();
 void mconf_set_max_dynamic_event_clients(int value);

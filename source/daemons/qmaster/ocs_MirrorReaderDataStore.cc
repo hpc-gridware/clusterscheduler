@@ -49,8 +49,9 @@ void ocs::MirrorReaderDataStore::update_sessions_and_move_requests(const u_long6
       const auto *packet = static_cast<sge_gdi_packet_class_t *>(task->data);
 
       // Check if the session is up-to-date
-      const u_long64 session_id = SessionManager::get_session_id(packet->user);
-      const bool is_uptodate = SessionManager::is_uptodate(session_id);
+      const u_long64 session_id = SessionManager::get_session_id(packet->user, packet->host);
+      const u_long64 write_event_id = packet->last_write_event_id;
+      const bool is_uptodate = SessionManager::is_uptodate_for_request(session_id, write_event_id);
 
       // Return the outcome so that the task is moved
       return is_uptodate ? 0 : -1;

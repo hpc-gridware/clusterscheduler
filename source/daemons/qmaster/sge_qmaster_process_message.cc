@@ -369,7 +369,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
                                                  &(packet->gid), packet->group, sizeof(packet->group),
                                                  &packet->amount, &packet->grp_array);
 
-      packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
+      packet->gdi_session = ocs::SessionManager::get_session_id(packet->user, packet->host);
    }
 
    // check CSP mode if enabled
@@ -452,14 +452,17 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
       // Default is the global request queue unless readers are enabled
       sge_tq_queue_t *queue = GlobalRequestQueue;
       if (!mconf_get_disable_secondary_ds_reader()) {
-         u_long64 session_id = ocs::SessionManager::get_session_id(packet->user);
+         u_long64 session_id = ocs::SessionManager::get_session_id(packet->user, packet->host);
 
          // Reader DS is enabled so as default we will use the ReaderRequestQueue unless the auto sessions are enabled
          queue = ReaderRequestQueue;
-         if (!mconf_get_disable_automatic_session()) {
 
-            // Sessions are enabled so we have to check if the session is up-to-date
-            if (!ocs::SessionManager::is_uptodate(session_id)) {
+         // Sessions are enabled so we have to check if the session is up-to-date
+         if (!mconf_get_disable_automatic_session()) {
+            packet->last_write_event_id = ocs::SessionManager::get_write_unique_id(session_id);
+
+            // If the session is not up-to-date we have to move the request to the waiting queue
+            if (!ocs::SessionManager::is_uptodate_for_request(session_id, packet->last_write_event_id)) {
                queue = ReaderWaitingRequestQueue;
             }
          }

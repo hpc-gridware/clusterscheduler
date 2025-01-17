@@ -45,11 +45,13 @@ namespace ocs {
 
    public:
       static constexpr u_long64 GDI_SESSION_NONE = 0LL;
-      static u_long64 get_session_id(const char *user);
+      static u_long64 get_session_id(const char *user, const char *hostname);
 
-      static void set_write_unique_id(const u_long64 session_id, const u_long64 write_event_id);
-      static void set_process_unique_id(const u_long64 process_event_id);
-      static bool is_uptodate(const u_long64 session_id);
+      static void set_write_unique_id(u_long64 session_id, u_long64 write_event_id);
+      static u_long64 get_write_unique_id(u_long64 session_id);
+      static void set_process_unique_id(u_long64 process_event_id);
+      static bool is_uptodate_for_anyone(u_long64 session_id);
+      static bool is_uptodate_for_request(u_long64 session_id, u_long64 write_event_id);
 
       static void session_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 

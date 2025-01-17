@@ -61,7 +61,7 @@ check_session_performance(u_long64 sessions) {
 
    // Create sessions
    for (auto &name: user_and_hostnames) {
-      u_long64 session_id = ocs::SessionManager::get_session_id(name.c_str());
+      u_long64 session_id = ocs::SessionManager::get_session_id(name.c_str(), "hostname");
       ocs::SessionManager::set_write_unique_id(session_id, 1);
    }
    std::cout << "Created " << sessions << " sessions" << std::endl;
@@ -74,8 +74,8 @@ check_session_performance(u_long64 sessions) {
 
    // Check sessions
    for (auto &name: user_and_hostnames) {
-      u_long64 session_id = ocs::SessionManager::get_session_id(name.c_str());
-      ocs::SessionManager::is_uptodate(session_id);
+      u_long64 session_id = ocs::SessionManager::get_session_id(name.c_str(), "hostname");
+      ocs::SessionManager::is_uptodate_for_anyone(session_id);
    }
    std::cout << "Checked " << sessions << " sessions" << std::endl;
 
@@ -98,18 +98,18 @@ check_session_functionality() {
    bool ret = true;
 
    // Create a session
-   u_long64 session_id = ocs::SessionManager::get_session_id(generate_random_string(1000).c_str());
+   u_long64 session_id = ocs::SessionManager::get_session_id(generate_random_string(1000).c_str(), "hostname");
    assert(session_id != ocs::SessionManager::GDI_SESSION_NONE);
 
    // Check if the session is up-to-date
-   ret &= ocs::SessionManager::is_uptodate(session_id);
+   ret &= ocs::SessionManager::is_uptodate_for_anyone(session_id);
 
    // Set the write unique ID
    ocs::SessionManager::set_write_unique_id(session_id, 1);
    ocs::SessionManager::set_process_unique_id(0);
 
    // Check if the session is up-to-date
-   if (ocs::SessionManager::is_uptodate(session_id) != false) {
+   if (ocs::SessionManager::is_uptodate_for_anyone(session_id) != false) {
       std::cout << "Session is up-to-date although this is not expected" << std::endl;
       ret = false;
    }
@@ -118,7 +118,7 @@ check_session_functionality() {
    ocs::SessionManager::set_process_unique_id(1);
 
    // Check if the session is up-to-date
-   if (ocs::SessionManager::is_uptodate(session_id) != true) {
+   if (ocs::SessionManager::is_uptodate_for_anyone(session_id) != true) {
       std::cout << "Session is not up-to-date although it should be" << std::endl;
       ret = false;
    }
@@ -127,7 +127,7 @@ check_session_functionality() {
    ocs::SessionManager::set_process_unique_id(5);
 
    // Check if the session is up-to-date
-   if (ocs::SessionManager::is_uptodate(session_id) != true) {
+   if (ocs::SessionManager::is_uptodate_for_anyone(session_id) != true) {
       std::cout << "Session is not up-to-date although it should be" << std::endl;
       ret = false;
    }

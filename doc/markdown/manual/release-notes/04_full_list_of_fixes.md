@@ -252,6 +252,8 @@
 
 [CS-922](https://hpc-gridware.atlassian.net/browse/CS-922) jobs are not shown in dr state after deleting them with qdel
 
+[CS-947](https://hpc-gridware.atlassian.net/browse/CS-947) Wait for events of 'own' session only and allow to disable cluster-wide sessions
+
 ## v9.0.1
 
 ### Improvement

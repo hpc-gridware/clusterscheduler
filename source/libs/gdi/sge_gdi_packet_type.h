@@ -133,6 +133,7 @@ struct _sge_gdi_packet_class_t {
    u_short commproc_id;
    u_long32 response_id;
    u_long64 gdi_session;
+   u_long64 last_write_event_id;
 
    /*
     * GDI version of this structure

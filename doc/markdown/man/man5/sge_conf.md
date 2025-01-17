@@ -629,6 +629,10 @@ Enabling this parameter in a running system will cause qmaster to complete the p
 using secondary data stores. Existing threads will also be allowed to finish their work using those secondary data 
 stores but for new requests, they will utilize the primary datastore only.
 
+***DISABLE_CLUSTER_WIDE_SESSIONS***
+
+The default is *false*, which means that sessions are per-user, host-independent. Setting this parameter to *true* means that sessions are no longer cluster-wide. This means that a user has a separate session on each host, which can have a positive effect on system response time, but has the disadvantage that multiple sessions for a user may need to be managed independently by the system. As a result, actions triggered on different hosts may not be synchronised immediately, and visibility for the same user on other hosts may be delayed.
+
 ***DISABLE_SECONDARY_DS_EXECD***
 
 Do not use this parameter. It is for internal use only. Default is *false*

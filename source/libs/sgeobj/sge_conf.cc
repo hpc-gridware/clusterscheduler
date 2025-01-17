@@ -160,6 +160,9 @@ static bool disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
 #define DEFAULT_DISABLE_AUTOMATIC_SESSIONS (false)
 static bool disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
 
+#define DEFAULT_DISABLE_CLUSTER_WIDE_SESSIONS (false)
+static bool disable_cluster_wide_sessions = DEFAULT_DISABLE_CLUSTER_WIDE_SESSIONS;
+
 static bool prof_listener_thrd = false;
 static bool prof_worker_thrd = false;
 static bool prof_signal_thrd = false;
@@ -689,6 +692,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
       disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
       disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
+      disable_cluster_wide_sessions = DEFAULT_DISABLE_CLUSTER_WIDE_SESSIONS;
       simulate_execds = false;
       simulate_jobs = false;
       prof_listener_thrd = false;
@@ -794,6 +798,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "DISABLE_AUTOMATIC_SESSIONS", &disable_automatic_sessions)) {
+            continue;
+         }
+         if (parse_bool_param(s, "DISABLE_CLUSTER_WIDE_SESSIONS", &disable_cluster_wide_sessions)) {
             continue;
          }
          if (parse_int_param(s, "MAX_DS_DEVIATION", &max_ds_deviation, TYPE_TIM)) {
@@ -2373,6 +2380,18 @@ bool mconf_get_disable_automatic_session() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_automatic_sessions;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_disable_cluster_wide_sessions() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = disable_cluster_wide_sessions;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

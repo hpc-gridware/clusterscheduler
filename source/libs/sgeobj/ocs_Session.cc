@@ -28,6 +28,8 @@
 #include "uti/sge_time.h"
 #include "uti/sge_rmon_macros.h"
 
+#include "sgeobj/sge_conf.h"
+
 #include "ocs_Session.h"
 
 pthread_mutex_t ocs::SessionManager::mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -45,10 +47,18 @@ u_long64 ocs::SessionManager::process_unique_id = 0;
  * @return session ID
  */
 u_long64
-ocs::SessionManager::get_session_id(const char *user) {
+ocs::SessionManager::get_session_id(const char *user, const char *hostname) {
    constexpr std::hash<std::string> hasher;
-   const std::string hash_input(user);
-   u_long64 session_id = hasher(hash_input);
+   u_long64 session_id = GDI_SESSION_NONE;
+   if (mconf_get_disable_cluster_wide_sessions()) {
+      // Include the hostname to generate the session ID. This means that a session
+      // is not cluster-wide but only for a specific host
+      session_id = hasher(std::string(user) + "@" + std::string(hostname));
+   } else {
+      // Generate a session ID that is unique for all requests of a user in the cluster
+      session_id = hasher(user);
+   }
+
 
    // avoid the use of session ID 0 (ocs::SessionManager::GDI_SESSION_NONE)
    // in has a hash is 0, we use 1 as session ID. This means
@@ -57,6 +67,27 @@ ocs::SessionManager::get_session_id(const char *user) {
       session_id = 1;
    }
    return session_id;
+}
+
+/**
+ * @brief Get the unique ID for the last write event processed for the session.
+ *
+ * @param session_id session ID
+ * @return unique ID for the last write event
+ */
+u_long64
+ocs::SessionManager::get_write_unique_id(const u_long64 session_id) {
+   if (session_id == GDI_SESSION_NONE) {
+      return 0;
+   }
+
+   pthread_mutex_lock(&mutex);
+   u_long64 write_unique_id = 0;
+   if (const auto it = session_map.find(session_id); it != session_map.end()) {
+      write_unique_id = it->second.write_unique_id;
+   }
+   pthread_mutex_unlock(&mutex);
+   return write_unique_id;
 }
 
 /**
@@ -120,14 +151,16 @@ ocs::SessionManager::set_process_unique_id(const u_long64 process_event_id) {
 }
 
 /**
- * @brief Check if a sessions allows access for a reader
+ * @brief Check if a sessions allows access for someone in general
+ *
+ * Returns true only if there are no pending write events for the session.
  *
  * @param session_id session ID
  * @return true if the session exists
  */
 bool
-ocs::SessionManager::is_uptodate(const u_long64 session_id) {
-   if (session_id == ocs::SessionManager::GDI_SESSION_NONE) {
+ocs::SessionManager::is_uptodate_for_anyone(const u_long64 session_id) {
+   if (session_id == GDI_SESSION_NONE) {
       return true;
    }
 
@@ -141,9 +174,31 @@ ocs::SessionManager::is_uptodate(const u_long64 session_id) {
    } else {
       // session does not exist, and we have to handle a RO-request
       // We can be sure that there is no previous write request because
-      // otherwise the session would exit => session is up-to-date
+      // otherwise the session would exist => session is up-to-date
       ret = true;
    }
+   pthread_mutex_unlock(&mutex);
+   return ret;
+}
+
+/**
+ * @brief Check if a sessions allows access for a certain reader request
+ *
+ * Returns true if the session is up-to-date for the component waiting for
+ * a certain event even if the session is not up-to-date in general.
+ *
+ * @param session_id session ID
+ * @param write_event_id unique ID for the last write event
+ * @return true if the session exists
+ */
+bool
+ocs::SessionManager::is_uptodate_for_request(const u_long64 session_id, const u_long64 write_event_id) {
+   if (session_id == GDI_SESSION_NONE || write_event_id == 0) {
+      return true;
+   }
+
+   pthread_mutex_lock(&mutex);
+   const bool ret = write_event_id <= process_unique_id;
    pthread_mutex_unlock(&mutex);
    return ret;
 }
