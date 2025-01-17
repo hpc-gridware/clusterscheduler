@@ -1,6 +1,6 @@
 # Major Enhancements
 
-## v9.0.2beta
+## v9.0.2
 
 ### Enhanced NVIDIA GPU Support with qgpu
 
