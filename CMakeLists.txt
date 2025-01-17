@@ -33,12 +33,12 @@ string(REGEX REPLACE "#define OCS_VERSION_PATCH ([0-9]*)" "\\1" VERSION_PATCH "$
 string(REGEX REPLACE "#define OCS_VERSION_SUFFIX \"([a-z0-0\-]*)\"" "\\1" VERSION_SUFFIX "${VERSION_SUFFIX}")
 
 # Set the version string and use it to set the version within inst_sge
-set(OCS_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX}")
-configure_file(
-        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge.in"
-        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge"
-        @ONLY
-)
+#set(OCS_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX}")
+#configure_file(
+#        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge.in"
+#        "${CMAKE_SOURCE_DIR}/source/dist/inst_sge"
+#        @ONLY
+#)
 
 # Set the version string and use it also for the cmake project
 project(
