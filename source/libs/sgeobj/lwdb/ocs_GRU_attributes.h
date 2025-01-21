@@ -46,11 +46,11 @@ constexpr const int GRU_Type[] = {
 };
 
 #define GRU_ATTRIBUTES \
-   {GRU_type, "GRU_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {GRU_name, "GRU_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {GRU_amount, "GRU_amount", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {GRU_resource_map_list, "GRU_resource_map_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {GRU_host, "GRU_host", AttributeStatic::HOST, AttributeStatic::NO_HASH} \
+   {GRU_type, "GRU_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {GRU_name, "GRU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {GRU_amount, "GRU_amount", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {GRU_resource_map_list, "GRU_resource_map_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {GRU_host, "GRU_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

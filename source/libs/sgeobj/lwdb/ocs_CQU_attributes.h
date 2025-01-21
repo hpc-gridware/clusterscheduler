@@ -40,8 +40,8 @@ constexpr const int CQU_Type[] = {
 };
 
 #define CQU_ATTRIBUTES \
-   {CQU_state, "CQU_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CQU_till, "CQU_till", AttributeStatic::UINT64, AttributeStatic::NO_HASH} \
+   {CQU_state, "CQU_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CQU_till, "CQU_till", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

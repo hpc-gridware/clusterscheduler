@@ -42,9 +42,9 @@ constexpr const int RQRF_Type[] = {
 };
 
 #define RQRF_ATTRIBUTES \
-   {RQRF_expand, "RQRF_expand", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {RQRF_scope, "RQRF_scope", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {RQRF_xscope, "RQRF_xscope", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {RQRF_expand, "RQRF_expand", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQRF_scope, "RQRF_scope", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQRF_xscope, "RQRF_xscope", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

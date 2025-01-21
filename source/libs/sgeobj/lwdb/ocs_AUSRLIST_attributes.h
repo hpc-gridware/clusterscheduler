@@ -40,8 +40,8 @@ constexpr const int AUSRLIST_Type[] = {
 };
 
 #define AUSRLIST_ATTRIBUTES \
-   {AUSRLIST_href, "AUSRLIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AUSRLIST_value, "AUSRLIST_value", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {AUSRLIST_href, "AUSRLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {AUSRLIST_value, "AUSRLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

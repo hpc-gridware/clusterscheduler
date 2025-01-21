@@ -50,13 +50,13 @@ constexpr const int JRS_Type[] = {
 };
 
 #define JRS_ATTRIBUTES \
-   {JRS_scope, "JRS_scope", AttributeStatic::UINT32, AttributeStatic::UNORDERED_NON_UNIQUE}, \
-   {JRS_hard_resource_list, "JRS_hard_resource_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JRS_soft_resource_list, "JRS_soft_resource_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JRS_hard_queue_list, "JRS_hard_queue_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JRS_soft_queue_list, "JRS_soft_queue_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JRS_allocation_rule, "JRS_allocation_rule", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JRS_ignore_slave_requests_on_master_host, "JRS_ignore_slave_requests_on_master_host", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {JRS_scope, "JRS_scope", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, true, true}, \
+   {JRS_hard_resource_list, "JRS_hard_resource_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JRS_soft_resource_list, "JRS_soft_resource_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JRS_hard_queue_list, "JRS_hard_queue_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JRS_soft_queue_list, "JRS_soft_queue_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JRS_allocation_rule, "JRS_allocation_rule", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JRS_ignore_slave_requests_on_master_host, "JRS_ignore_slave_requests_on_master_host", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

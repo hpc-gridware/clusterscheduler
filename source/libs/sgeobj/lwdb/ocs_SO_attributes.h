@@ -46,11 +46,11 @@ constexpr const int SO_Type[] = {
 };
 
 #define SO_ATTRIBUTES \
-   {SO_name, "SO_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SO_threshold, "SO_threshold", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {SO_slots_sum, "SO_slots_sum", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {SO_seq_no, "SO_seq_no", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {SO_action, "SO_action", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {SO_name, "SO_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {SO_threshold, "SO_threshold", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SO_slots_sum, "SO_slots_sum", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SO_seq_no, "SO_seq_no", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SO_action, "SO_action", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

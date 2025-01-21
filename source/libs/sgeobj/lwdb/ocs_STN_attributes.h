@@ -98,37 +98,37 @@ constexpr const int STN_Type[] = {
 };
 
 #define STN_ATTRIBUTES \
-   {STN_name, "STN_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {STN_type, "STN_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_id, "STN_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_shares, "STN_shares", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_children, "STN_children", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {STN_job_ref_count, "STN_job_ref_count", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_active_job_ref_count, "STN_active_job_ref_count", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_project, "STN_project", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_proportion, "STN_proportion", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_adjusted_proportion, "STN_adjusted_proportion", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_combined_usage, "STN_combined_usage", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_pass2_seqno, "STN_pass2_seqno", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_sum_priority, "STN_sum_priority", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_actual_proportion, "STN_actual_proportion", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_m_share, "STN_m_share", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_last_actual_proportion, "STN_last_actual_proportion", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_adjusted_current_proportion, "STN_adjusted_current_proportion", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_temp, "STN_temp", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_stt, "STN_stt", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_ostt, "STN_ostt", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_ltt, "STN_ltt", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_oltt, "STN_oltt", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_shr, "STN_shr", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_sort, "STN_sort", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_ref, "STN_ref", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_tickets, "STN_tickets", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {STN_jobid, "STN_jobid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_taskid, "STN_taskid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_usage_list, "STN_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {STN_version, "STN_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {STN_joker, "STN_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {STN_name, "STN_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {STN_type, "STN_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {STN_id, "STN_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_shares, "STN_shares", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {STN_children, "STN_children", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {STN_job_ref_count, "STN_job_ref_count", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_active_job_ref_count, "STN_active_job_ref_count", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_project, "STN_project", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_proportion, "STN_proportion", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_adjusted_proportion, "STN_adjusted_proportion", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_combined_usage, "STN_combined_usage", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_pass2_seqno, "STN_pass2_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_sum_priority, "STN_sum_priority", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_actual_proportion, "STN_actual_proportion", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_m_share, "STN_m_share", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_last_actual_proportion, "STN_last_actual_proportion", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_adjusted_current_proportion, "STN_adjusted_current_proportion", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_temp, "STN_temp", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_stt, "STN_stt", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_ostt, "STN_ostt", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_ltt, "STN_ltt", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_oltt, "STN_oltt", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_shr, "STN_shr", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_sort, "STN_sort", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_ref, "STN_ref", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_tickets, "STN_tickets", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_jobid, "STN_jobid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_taskid, "STN_taskid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_usage_list, "STN_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_version, "STN_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {STN_joker, "STN_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

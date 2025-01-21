@@ -46,11 +46,11 @@ constexpr const int ID_Type[] = {
 };
 
 #define ID_ATTRIBUTES \
-   {ID_str, "ID_str", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {ID_ja_structure, "ID_ja_structure", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {ID_action, "ID_action", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ID_force, "ID_force", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ID_user_list, "ID_user_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {ID_str, "ID_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ID_ja_structure, "ID_ja_structure", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ID_action, "ID_action", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ID_force, "ID_force", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ID_user_list, "ID_user_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int KTGT_Type[] = {
 };
 
 #define KTGT_ATTRIBUTES \
-   {KTGT_id, "KTGT_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {KTGT_tgt, "KTGT_tgt", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {KTGT_id, "KTGT_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KTGT_tgt, "KTGT_tgt", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

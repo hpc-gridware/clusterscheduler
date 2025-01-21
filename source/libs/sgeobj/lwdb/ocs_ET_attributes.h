@@ -54,15 +54,15 @@ constexpr const int ET_Type[] = {
 };
 
 #define ET_ATTRIBUTES \
-   {ET_unique_id, "ET_unique_id", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {ET_number, "ET_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ET_timestamp, "ET_timestamp", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {ET_type, "ET_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ET_intkey, "ET_intkey", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ET_intkey2, "ET_intkey2", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ET_strkey, "ET_strkey", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {ET_strkey2, "ET_strkey2", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {ET_new_version, "ET_new_version", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {ET_unique_id, "ET_unique_id", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {ET_number, "ET_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_timestamp, "ET_timestamp", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_type, "ET_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_intkey, "ET_intkey", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_intkey2, "ET_intkey2", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_strkey, "ET_strkey", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_strkey2, "ET_strkey2", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ET_new_version, "ET_new_version", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

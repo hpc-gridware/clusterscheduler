@@ -40,8 +40,8 @@ constexpr const int ST_Type[] = {
 };
 
 #define ST_ATTRIBUTES \
-   {ST_name, "ST_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ST_id, "ST_id", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE} \
+   {ST_name, "ST_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ST_id, "ST_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

@@ -38,7 +38,7 @@ constexpr const int CTI_Type[] = {
 };
 
 #define CTI_ATTRIBUTES \
-   {CTI_name, "CTI_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {CTI_name, "CTI_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

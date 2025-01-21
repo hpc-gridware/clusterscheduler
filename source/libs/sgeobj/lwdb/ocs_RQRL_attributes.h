@@ -48,12 +48,12 @@ constexpr const int RQRL_Type[] = {
 };
 
 #define RQRL_ATTRIBUTES \
-   {RQRL_name, "RQRL_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {RQRL_value, "RQRL_value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {RQRL_type, "RQRL_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RQRL_dvalue, "RQRL_dvalue", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {RQRL_usage, "RQRL_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {RQRL_dynamic, "RQRL_dynamic", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {RQRL_name, "RQRL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {RQRL_value, "RQRL_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQRL_type, "RQRL_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQRL_dvalue, "RQRL_dvalue", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQRL_usage, "RQRL_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RQRL_dynamic, "RQRL_dynamic", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

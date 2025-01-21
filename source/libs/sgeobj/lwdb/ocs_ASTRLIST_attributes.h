@@ -40,8 +40,8 @@ constexpr const int ASTRLIST_Type[] = {
 };
 
 #define ASTRLIST_ATTRIBUTES \
-   {ASTRLIST_href, "ASTRLIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ASTRLIST_value, "ASTRLIST_value", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {ASTRLIST_href, "ASTRLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ASTRLIST_value, "ASTRLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

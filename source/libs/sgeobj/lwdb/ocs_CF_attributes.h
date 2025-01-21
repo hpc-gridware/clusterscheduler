@@ -44,10 +44,10 @@ constexpr const int CF_Type[] = {
 };
 
 #define CF_ATTRIBUTES \
-   {CF_name, "CF_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CF_value, "CF_value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CF_sublist, "CF_sublist", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CF_local, "CF_local", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {CF_name, "CF_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {CF_value, "CF_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CF_sublist, "CF_sublist", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CF_local, "CF_local", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

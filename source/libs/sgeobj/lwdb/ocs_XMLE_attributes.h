@@ -44,10 +44,10 @@ constexpr const int XMLE_Type[] = {
 };
 
 #define XMLE_ATTRIBUTES \
-   {XMLE_Attribute, "XMLE_Attribute", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {XMLE_Print, "XMLE_Print", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {XMLE_Element, "XMLE_Element", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {XMLE_List, "XMLE_List", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {XMLE_Attribute, "XMLE_Attribute", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLE_Print, "XMLE_Print", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLE_Element, "XMLE_Element", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {XMLE_List, "XMLE_List", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

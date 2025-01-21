@@ -40,8 +40,8 @@ constexpr const int FES_Type[] = {
 };
 
 #define FES_ATTRIBUTES \
-   {FES_id, "FES_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {FES_active, "FES_active", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {FES_id, "FES_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FES_active, "FES_active", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

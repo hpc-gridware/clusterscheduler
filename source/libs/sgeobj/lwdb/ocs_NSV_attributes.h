@@ -40,8 +40,8 @@ constexpr const int NSV_Type[] = {
 };
 
 #define NSV_ATTRIBUTES \
-   {NSV_name, "NSV_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {NSV_strings, "NSV_strings", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {NSV_name, "NSV_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {NSV_strings, "NSV_strings", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

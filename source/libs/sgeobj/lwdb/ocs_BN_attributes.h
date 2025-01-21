@@ -52,14 +52,14 @@ constexpr const int BN_Type[] = {
 };
 
 #define BN_ATTRIBUTES \
-   {BN_strategy, "BN_strategy", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {BN_type, "BN_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {BN_parameter_n, "BN_parameter_n", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {BN_parameter_socket_offset, "BN_parameter_socket_offset", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {BN_parameter_core_offset, "BN_parameter_core_offset", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {BN_parameter_striding_step_size, "BN_parameter_striding_step_size", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {BN_parameter_explicit, "BN_parameter_explicit", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {BN_joker, "BN_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {BN_strategy, "BN_strategy", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {BN_type, "BN_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_parameter_n, "BN_parameter_n", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_parameter_socket_offset, "BN_parameter_socket_offset", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_parameter_core_offset, "BN_parameter_core_offset", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_parameter_striding_step_size, "BN_parameter_striding_step_size", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_parameter_explicit, "BN_parameter_explicit", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_joker, "BN_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

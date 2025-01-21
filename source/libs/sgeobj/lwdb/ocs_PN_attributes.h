@@ -44,10 +44,10 @@ constexpr const int PN_Type[] = {
 };
 
 #define PN_ATTRIBUTES \
-   {PN_path, "PN_path", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PN_host, "PN_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {PN_file_host, "PN_file_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {PN_file_staging, "PN_file_staging", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {PN_path, "PN_path", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {PN_host, "PN_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PN_file_host, "PN_file_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PN_file_staging, "PN_file_staging", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

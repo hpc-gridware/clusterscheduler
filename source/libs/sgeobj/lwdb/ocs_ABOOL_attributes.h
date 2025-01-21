@@ -40,8 +40,8 @@ constexpr const int ABOOL_Type[] = {
 };
 
 #define ABOOL_ATTRIBUTES \
-   {ABOOL_href, "ABOOL_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ABOOL_value, "ABOOL_value", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {ABOOL_href, "ABOOL_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ABOOL_value, "ABOOL_value", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

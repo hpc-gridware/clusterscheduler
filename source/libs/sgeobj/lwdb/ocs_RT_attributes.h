@@ -44,10 +44,10 @@ constexpr const int RT_Type[] = {
 };
 
 #define RT_ATTRIBUTES \
-   {RT_tid, "RT_tid", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {RT_hostname, "RT_hostname", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {RT_status, "RT_status", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RT_state, "RT_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RT_tid, "RT_tid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RT_hostname, "RT_hostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RT_status, "RT_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RT_state, "RT_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

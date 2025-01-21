@@ -46,11 +46,11 @@ constexpr const int RQS_Type[] = {
 };
 
 #define RQS_ATTRIBUTES \
-   {RQS_name, "RQS_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {RQS_description, "RQS_description", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {RQS_enabled, "RQS_enabled", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {RQS_rule, "RQS_rule", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {RQS_joker, "RQS_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {RQS_name, "RQS_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {RQS_description, "RQS_description", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQS_enabled, "RQS_enabled", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQS_rule, "RQS_rule", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQS_joker, "RQS_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

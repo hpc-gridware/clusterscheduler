@@ -40,8 +40,8 @@ constexpr const int ASTR_Type[] = {
 };
 
 #define ASTR_ATTRIBUTES \
-   {ASTR_href, "ASTR_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ASTR_value, "ASTR_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {ASTR_href, "ASTR_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ASTR_value, "ASTR_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

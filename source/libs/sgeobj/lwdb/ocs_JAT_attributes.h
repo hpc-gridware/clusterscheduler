@@ -110,43 +110,43 @@ constexpr const int JAT_Type[] = {
 };
 
 #define JAT_ATTRIBUTES \
-   {JAT_task_number, "JAT_task_number", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JAT_status, "JAT_status", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_start_time, "JAT_start_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JAT_end_time, "JAT_end_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JAT_hold, "JAT_hold", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_granted_pe, "JAT_granted_pe", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JAT_job_restarted, "JAT_job_restarted", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_granted_destin_identifier_list, "JAT_granted_destin_identifier_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_granted_resources_list, "JAT_granted_resources_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_master_queue, "JAT_master_queue", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JAT_state, "JAT_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_pvm_ckpt_pid, "JAT_pvm_ckpt_pid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_pending_signal, "JAT_pending_signal", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_pending_signal_delivery_time, "JAT_pending_signal_delivery_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JAT_pid, "JAT_pid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_osjobid, "JAT_osjobid", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JAT_usage_list, "JAT_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_scaled_usage_list, "JAT_scaled_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_reported_usage_list, "JAT_reported_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_fshare, "JAT_fshare", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_tix, "JAT_tix", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_oticket, "JAT_oticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_fticket, "JAT_fticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_sticket, "JAT_sticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_share, "JAT_share", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_suitable, "JAT_suitable", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_task_list, "JAT_task_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_finished_task_list, "JAT_finished_task_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_previous_usage_list, "JAT_previous_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_pe_object, "JAT_pe_object", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {JAT_next_pe_task_id, "JAT_next_pe_task_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JAT_stop_initiate_time, "JAT_stop_initiate_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JAT_prio, "JAT_prio", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_ntix, "JAT_ntix", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JAT_wallclock_limit, "JAT_wallclock_limit", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JAT_message_list, "JAT_message_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JAT_joker, "JAT_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {JAT_task_number, "JAT_task_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {JAT_status, "JAT_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_start_time, "JAT_start_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_end_time, "JAT_end_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_hold, "JAT_hold", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_granted_pe, "JAT_granted_pe", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_job_restarted, "JAT_job_restarted", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_granted_destin_identifier_list, "JAT_granted_destin_identifier_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_granted_resources_list, "JAT_granted_resources_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JAT_master_queue, "JAT_master_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_state, "JAT_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_pvm_ckpt_pid, "JAT_pvm_ckpt_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_pending_signal, "JAT_pending_signal", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_pending_signal_delivery_time, "JAT_pending_signal_delivery_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_pid, "JAT_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_osjobid, "JAT_osjobid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_usage_list, "JAT_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_scaled_usage_list, "JAT_scaled_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_reported_usage_list, "JAT_reported_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_fshare, "JAT_fshare", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_tix, "JAT_tix", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_oticket, "JAT_oticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_fticket, "JAT_fticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_sticket, "JAT_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_share, "JAT_share", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_suitable, "JAT_suitable", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_task_list, "JAT_task_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_finished_task_list, "JAT_finished_task_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_previous_usage_list, "JAT_previous_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_pe_object, "JAT_pe_object", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_next_pe_task_id, "JAT_next_pe_task_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_stop_initiate_time, "JAT_stop_initiate_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_prio, "JAT_prio", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_ntix, "JAT_ntix", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_wallclock_limit, "JAT_wallclock_limit", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JAT_message_list, "JAT_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JAT_joker, "JAT_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

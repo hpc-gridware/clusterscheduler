@@ -40,8 +40,8 @@ constexpr const int UPU_Type[] = {
 };
 
 #define UPU_ATTRIBUTES \
-   {UPU_job_number, "UPU_job_number", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UPU_old_usage_list, "UPU_old_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {UPU_job_number, "UPU_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {UPU_old_usage_list, "UPU_old_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

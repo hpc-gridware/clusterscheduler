@@ -80,28 +80,28 @@ constexpr const int EV_Type[] = {
 };
 
 #define EV_ATTRIBUTES \
-   {EV_id, "EV_id", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {EV_name, "EV_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {EV_host, "EV_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {EV_commproc, "EV_commproc", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {EV_commid, "EV_commid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_uid, "EV_uid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_d_time, "EV_d_time", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_flush_delay, "EV_flush_delay", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_subscribed, "EV_subscribed", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EV_changed, "EV_changed", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {EV_busy_handling, "EV_busy_handling", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_session, "EV_session", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {EV_last_heard_from, "EV_last_heard_from", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {EV_last_send_time, "EV_last_send_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {EV_next_send_time, "EV_next_send_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {EV_next_number, "EV_next_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_busy, "EV_busy", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_events, "EV_events", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EV_sub_array, "EV_sub_array", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {EV_state, "EV_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EV_update_function, "EV_update_function", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {EV_update_function_arg, "EV_update_function_arg", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {EV_id, "EV_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {EV_name, "EV_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_host, "EV_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_commproc, "EV_commproc", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_commid, "EV_commid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_uid, "EV_uid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_d_time, "EV_d_time", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_flush_delay, "EV_flush_delay", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_subscribed, "EV_subscribed", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_changed, "EV_changed", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_busy_handling, "EV_busy_handling", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_session, "EV_session", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_last_heard_from, "EV_last_heard_from", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_last_send_time, "EV_last_send_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_next_send_time, "EV_next_send_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_next_number, "EV_next_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_busy, "EV_busy", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_events, "EV_events", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_sub_array, "EV_sub_array", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_state, "EV_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_update_function, "EV_update_function", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EV_update_function_arg, "EV_update_function_arg", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

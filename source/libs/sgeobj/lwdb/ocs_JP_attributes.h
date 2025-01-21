@@ -40,8 +40,8 @@ constexpr const int JP_Type[] = {
 };
 
 #define JP_ATTRIBUTES \
-   {JP_pid, "JP_pid", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JP_background, "JP_background", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {JP_pid, "JP_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JP_background, "JP_background", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

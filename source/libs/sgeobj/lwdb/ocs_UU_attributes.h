@@ -68,22 +68,22 @@ constexpr const int UU_Type[] = {
 };
 
 #define UU_ATTRIBUTES \
-   {UU_name, "UU_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UU_oticket, "UU_oticket", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_fshare, "UU_fshare", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_delete_time, "UU_delete_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {UU_job_cnt, "UU_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_pending_job_cnt, "UU_pending_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_usage, "UU_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {UU_usage_time_stamp, "UU_usage_time_stamp", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {UU_usage_seqno, "UU_usage_seqno", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_long_term_usage, "UU_long_term_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {UU_project, "UU_project", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {UU_debited_job_usage, "UU_debited_job_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {UU_default_project, "UU_default_project", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {UU_version, "UU_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {UU_consider_with_categories, "UU_consider_with_categories", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {UU_joker, "UU_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {UU_name, "UU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {UU_oticket, "UU_oticket", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_fshare, "UU_fshare", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_delete_time, "UU_delete_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_job_cnt, "UU_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UU_pending_job_cnt, "UU_pending_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UU_usage, "UU_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_usage_time_stamp, "UU_usage_time_stamp", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_usage_seqno, "UU_usage_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UU_long_term_usage, "UU_long_term_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_project, "UU_project", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_debited_job_usage, "UU_debited_job_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_default_project, "UU_default_project", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {UU_version, "UU_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UU_consider_with_categories, "UU_consider_with_categories", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UU_joker, "UU_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

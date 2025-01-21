@@ -44,10 +44,10 @@ constexpr const int CA_Type[] = {
 };
 
 #define CA_ATTRIBUTES \
-   {CA_yday_range_list, "CA_yday_range_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CA_wday_range_list, "CA_wday_range_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CA_daytime_range_list, "CA_daytime_range_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CA_state, "CA_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {CA_yday_range_list, "CA_yday_range_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CA_wday_range_list, "CA_wday_range_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CA_daytime_range_list, "CA_daytime_range_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CA_state, "CA_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

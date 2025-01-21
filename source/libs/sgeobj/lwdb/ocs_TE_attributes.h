@@ -52,14 +52,14 @@ constexpr const int TE_Type[] = {
 };
 
 #define TE_ATTRIBUTES \
-   {TE_when, "TE_when", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {TE_type, "TE_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TE_mode, "TE_mode", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TE_interval, "TE_interval", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {TE_uval0, "TE_uval0", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TE_uval1, "TE_uval1", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TE_sval, "TE_sval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {TE_seqno, "TE_seqno", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {TE_when, "TE_when", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_type, "TE_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_mode, "TE_mode", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_interval, "TE_interval", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_uval0, "TE_uval0", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_uval1, "TE_uval1", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_sval, "TE_sval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TE_seqno, "TE_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

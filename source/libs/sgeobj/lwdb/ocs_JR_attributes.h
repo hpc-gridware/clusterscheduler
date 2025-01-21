@@ -68,22 +68,22 @@ constexpr const int JR_Type[] = {
 };
 
 #define JR_ATTRIBUTES \
-   {JR_job_number, "JR_job_number", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JR_ja_task_number, "JR_ja_task_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_queue_name, "JR_queue_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JR_state, "JR_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_failed, "JR_failed", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_general_failure, "JR_general_failure", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_err_str, "JR_err_str", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JR_usage, "JR_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JR_job_pid, "JR_job_pid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_ckpt_arena, "JR_ckpt_arena", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_pe_task_id_str, "JR_pe_task_id_str", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JR_osjobid, "JR_osjobid", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JR_wait_status, "JR_wait_status", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JR_flush, "JR_flush", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {JR_no_send, "JR_no_send", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {JR_delay_report, "JR_delay_report", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {JR_job_number, "JR_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JR_ja_task_number, "JR_ja_task_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_queue_name, "JR_queue_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_state, "JR_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_failed, "JR_failed", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_general_failure, "JR_general_failure", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_err_str, "JR_err_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_usage, "JR_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_job_pid, "JR_job_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_ckpt_arena, "JR_ckpt_arena", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_pe_task_id_str, "JR_pe_task_id_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_osjobid, "JR_osjobid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_wait_status, "JR_wait_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_flush, "JR_flush", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_no_send, "JR_no_send", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_delay_report, "JR_delay_report", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

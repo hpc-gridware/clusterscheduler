@@ -54,15 +54,15 @@ constexpr const int PRO_Type[] = {
 };
 
 #define PRO_ATTRIBUTES \
-   {PRO_pid, "PRO_pid", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {PRO_utime, "PRO_utime", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PRO_stime, "PRO_stime", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PRO_vsize, "PRO_vsize", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {PRO_rss, "PRO_rss", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {PRO_groups, "PRO_groups", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PRO_rel, "PRO_rel", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PRO_run, "PRO_run", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PRO_io, "PRO_io", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {PRO_pid, "PRO_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {PRO_utime, "PRO_utime", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_stime, "PRO_stime", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_vsize, "PRO_vsize", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_rss, "PRO_rss", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_groups, "PRO_groups", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_rel, "PRO_rel", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_run, "PRO_run", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_io, "PRO_io", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

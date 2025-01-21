@@ -44,10 +44,10 @@ constexpr const int HGRP_Type[] = {
 };
 
 #define HGRP_ATTRIBUTES \
-   {HGRP_name, "HGRP_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {HGRP_host_list, "HGRP_host_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {HGRP_cqueue_list, "HGRP_cqueue_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {HGRP_joker, "HGRP_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {HGRP_name, "HGRP_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {HGRP_host_list, "HGRP_host_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {HGRP_cqueue_list, "HGRP_cqueue_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {HGRP_joker, "HGRP_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

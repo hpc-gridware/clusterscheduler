@@ -40,8 +40,8 @@ constexpr const int HS_Type[] = {
 };
 
 #define HS_ATTRIBUTES \
-   {HS_name, "HS_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {HS_value, "HS_value", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH} \
+   {HS_name, "HS_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {HS_value, "HS_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

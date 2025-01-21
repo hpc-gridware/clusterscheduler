@@ -42,9 +42,9 @@ constexpr const int AN_Type[] = {
 };
 
 #define AN_ATTRIBUTES \
-   {AN_status, "AN_status", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {AN_text, "AN_text", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {AN_quality, "AN_quality", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {AN_status, "AN_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {AN_text, "AN_text", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {AN_quality, "AN_quality", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

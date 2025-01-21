@@ -42,9 +42,9 @@ constexpr const int QETI_Type[] = {
 };
 
 #define QETI_ATTRIBUTES \
-   {QETI_total, "QETI_total", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QETI_resource_instance, "QETI_resource_instance", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {QETI_queue_end_next, "QETI_queue_end_next", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {QETI_total, "QETI_total", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QETI_resource_instance, "QETI_resource_instance", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QETI_queue_end_next, "QETI_queue_end_next", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

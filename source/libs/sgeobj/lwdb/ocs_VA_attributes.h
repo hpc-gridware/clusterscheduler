@@ -40,8 +40,8 @@ constexpr const int VA_Type[] = {
 };
 
 #define VA_ATTRIBUTES \
-   {VA_variable, "VA_variable", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {VA_value, "VA_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {VA_variable, "VA_variable", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {VA_value, "VA_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

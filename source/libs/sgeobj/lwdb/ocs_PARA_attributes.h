@@ -40,8 +40,8 @@ constexpr const int PARA_Type[] = {
 };
 
 #define PARA_ATTRIBUTES \
-   {PARA_name, "PARA_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PARA_value, "PARA_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {PARA_name, "PARA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {PARA_value, "PARA_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

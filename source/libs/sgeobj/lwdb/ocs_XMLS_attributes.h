@@ -42,9 +42,9 @@ constexpr const int XMLS_Type[] = {
 };
 
 #define XMLS_ATTRIBUTES \
-   {XMLS_Name, "XMLS_Name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {XMLS_Value, "XMLS_Value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {XMLS_Version, "XMLS_Version", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {XMLS_Name, "XMLS_Name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLS_Value, "XMLS_Value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLS_Version, "XMLS_Version", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

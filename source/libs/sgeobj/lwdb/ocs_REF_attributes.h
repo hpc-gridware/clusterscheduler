@@ -38,7 +38,7 @@ constexpr const int REF_Type[] = {
 };
 
 #define REF_ATTRIBUTES \
-   {REF_ref, "REF_ref", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {REF_ref, "REF_ref", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

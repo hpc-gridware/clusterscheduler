@@ -40,8 +40,8 @@ constexpr const int ACELIST_Type[] = {
 };
 
 #define ACELIST_ATTRIBUTES \
-   {ACELIST_href, "ACELIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ACELIST_value, "ACELIST_value", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {ACELIST_href, "ACELIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ACELIST_value, "ACELIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

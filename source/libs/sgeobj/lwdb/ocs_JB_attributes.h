@@ -204,90 +204,90 @@ constexpr const int JB_Type[] = {
 };
 
 #define JB_ATTRIBUTES \
-   {JB_job_number, "JB_job_number", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JB_job_name, "JB_job_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_version, "JB_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_jid_request_list, "JB_jid_request_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_jid_predecessor_list, "JB_jid_predecessor_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_jid_successor_list, "JB_jid_successor_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_ad_request_list, "JB_ja_ad_request_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_ad_predecessor_list, "JB_ja_ad_predecessor_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_ad_successor_list, "JB_ja_ad_successor_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_session, "JB_session", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_project, "JB_project", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_department, "JB_department", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_directive_prefix, "JB_directive_prefix", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_exec_file, "JB_exec_file", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_script_file, "JB_script_file", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_script_size, "JB_script_size", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_script_ptr, "JB_script_ptr", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_submission_time, "JB_submission_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JB_execution_time, "JB_execution_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JB_deadline, "JB_deadline", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JB_owner, "JB_owner", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_uid, "JB_uid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_group, "JB_group", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_gid, "JB_gid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_account, "JB_account", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_cwd, "JB_cwd", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_notify, "JB_notify", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {JB_type, "JB_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_reserve, "JB_reserve", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {JB_priority, "JB_priority", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_jobshare, "JB_jobshare", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_shell_list, "JB_shell_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_verify, "JB_verify", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_env_list, "JB_env_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_context, "JB_context", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_job_args, "JB_job_args", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_checkpoint_attr, "JB_checkpoint_attr", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_checkpoint_name, "JB_checkpoint_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_checkpoint_object, "JB_checkpoint_object", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {JB_checkpoint_interval, "JB_checkpoint_interval", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_restart, "JB_restart", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_stdout_path_list, "JB_stdout_path_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_stderr_path_list, "JB_stderr_path_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_stdin_path_list, "JB_stdin_path_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_merge_stderr, "JB_merge_stderr", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {JB_request_set_list, "JB_request_set_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_mail_options, "JB_mail_options", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_mail_list, "JB_mail_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_pe, "JB_pe", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_pe_range, "JB_pe_range", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_tgt, "JB_tgt", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_cred, "JB_cred", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_ja_structure, "JB_ja_structure", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_n_h_ids, "JB_ja_n_h_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_u_h_ids, "JB_ja_u_h_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_s_h_ids, "JB_ja_s_h_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_o_h_ids, "JB_ja_o_h_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_a_h_ids, "JB_ja_a_h_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_z_ids, "JB_ja_z_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_template, "JB_ja_template", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_ja_tasks, "JB_ja_tasks", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_host, "JB_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {JB_category, "JB_category", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {JB_user_list, "JB_user_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_job_identifier_list, "JB_job_identifier_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_verify_suitable_queues, "JB_verify_suitable_queues", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_soft_wallclock_gmt, "JB_soft_wallclock_gmt", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JB_hard_wallclock_gmt, "JB_hard_wallclock_gmt", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {JB_override_tickets, "JB_override_tickets", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_qs_args, "JB_qs_args", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_path_aliases, "JB_path_aliases", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_urg, "JB_urg", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_nurg, "JB_nurg", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_nppri, "JB_nppri", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_rrcontr, "JB_rrcontr", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_dlcontr, "JB_dlcontr", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_wtcontr, "JB_wtcontr", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JB_ar, "JB_ar", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_pty, "JB_pty", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_ja_task_concurrency, "JB_ja_task_concurrency", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JB_binding, "JB_binding", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_submission_command_line, "JB_submission_command_line", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JB_joker, "JB_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {JB_job_number, "JB_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {JB_job_name, "JB_job_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_version, "JB_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_jid_request_list, "JB_jid_request_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_jid_predecessor_list, "JB_jid_predecessor_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_jid_successor_list, "JB_jid_successor_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_ja_ad_request_list, "JB_ja_ad_request_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_ad_predecessor_list, "JB_ja_ad_predecessor_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_ad_successor_list, "JB_ja_ad_successor_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_session, "JB_session", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_project, "JB_project", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_department, "JB_department", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_directive_prefix, "JB_directive_prefix", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_exec_file, "JB_exec_file", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_script_file, "JB_script_file", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_script_size, "JB_script_size", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_script_ptr, "JB_script_ptr", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_submission_time, "JB_submission_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_execution_time, "JB_execution_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_deadline, "JB_deadline", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_owner, "JB_owner", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_uid, "JB_uid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_group, "JB_group", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_gid, "JB_gid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_account, "JB_account", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_cwd, "JB_cwd", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_notify, "JB_notify", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_type, "JB_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_reserve, "JB_reserve", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_priority, "JB_priority", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_jobshare, "JB_jobshare", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_shell_list, "JB_shell_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_verify, "JB_verify", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_env_list, "JB_env_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_context, "JB_context", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_job_args, "JB_job_args", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_checkpoint_attr, "JB_checkpoint_attr", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_checkpoint_name, "JB_checkpoint_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_checkpoint_object, "JB_checkpoint_object", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {JB_checkpoint_interval, "JB_checkpoint_interval", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_restart, "JB_restart", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_stdout_path_list, "JB_stdout_path_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_stderr_path_list, "JB_stderr_path_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_stdin_path_list, "JB_stdin_path_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_merge_stderr, "JB_merge_stderr", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_request_set_list, "JB_request_set_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_mail_options, "JB_mail_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_mail_list, "JB_mail_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_pe, "JB_pe", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_pe_range, "JB_pe_range", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_tgt, "JB_tgt", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_cred, "JB_cred", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_ja_structure, "JB_ja_structure", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_n_h_ids, "JB_ja_n_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_u_h_ids, "JB_ja_u_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_s_h_ids, "JB_ja_s_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_o_h_ids, "JB_ja_o_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_a_h_ids, "JB_ja_a_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_z_ids, "JB_ja_z_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_template, "JB_ja_template", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_tasks, "JB_ja_tasks", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_host, "JB_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_category, "JB_category", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_user_list, "JB_user_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_job_identifier_list, "JB_job_identifier_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_verify_suitable_queues, "JB_verify_suitable_queues", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_soft_wallclock_gmt, "JB_soft_wallclock_gmt", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_hard_wallclock_gmt, "JB_hard_wallclock_gmt", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_override_tickets, "JB_override_tickets", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_qs_args, "JB_qs_args", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_path_aliases, "JB_path_aliases", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_urg, "JB_urg", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_nurg, "JB_nurg", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_nppri, "JB_nppri", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_rrcontr, "JB_rrcontr", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_dlcontr, "JB_dlcontr", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_wtcontr, "JB_wtcontr", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JB_ar, "JB_ar", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_pty, "JB_pty", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_ja_task_concurrency, "JB_ja_task_concurrency", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_binding, "JB_binding", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_submission_command_line, "JB_submission_command_line", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

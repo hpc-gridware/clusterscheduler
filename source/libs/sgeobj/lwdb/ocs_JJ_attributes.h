@@ -46,11 +46,11 @@ constexpr const int JJ_Type[] = {
 };
 
 #define JJ_ATTRIBUTES \
-   {JJ_jobid, "JJ_jobid", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JJ_type, "JJ_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JJ_finished_tasks, "JJ_finished_tasks", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JJ_not_yet_finished_ids, "JJ_not_yet_finished_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JJ_started_task_ids, "JJ_started_task_ids", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {JJ_jobid, "JJ_jobid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JJ_type, "JJ_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJ_finished_tasks, "JJ_finished_tasks", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJ_not_yet_finished_ids, "JJ_not_yet_finished_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJ_started_task_ids, "JJ_started_task_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -42,9 +42,9 @@ constexpr const int SPT_Type[] = {
 };
 
 #define SPT_ATTRIBUTES \
-   {SPT_type, "SPT_type", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SPT_name, "SPT_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SPT_rules, "SPT_rules", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {SPT_type, "SPT_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {SPT_name, "SPT_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPT_rules, "SPT_rules", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -42,9 +42,9 @@ constexpr const int CONF_Type[] = {
 };
 
 #define CONF_ATTRIBUTES \
-   {CONF_name, "CONF_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CONF_version, "CONF_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CONF_entries, "CONF_entries", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {CONF_name, "CONF_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {CONF_version, "CONF_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CONF_entries, "CONF_entries", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

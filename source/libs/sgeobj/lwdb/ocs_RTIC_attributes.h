@@ -40,8 +40,8 @@ constexpr const int RTIC_Type[] = {
 };
 
 #define RTIC_ATTRIBUTES \
-   {RTIC_host, "RTIC_host", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {RTIC_tickets, "RTIC_tickets", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {RTIC_host, "RTIC_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {RTIC_tickets, "RTIC_tickets", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

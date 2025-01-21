@@ -54,15 +54,15 @@ constexpr const int US_Type[] = {
 };
 
 #define US_ATTRIBUTES \
-   {US_name, "US_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {US_type, "US_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {US_fshare, "US_fshare", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {US_oticket, "US_oticket", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {US_job_cnt, "US_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {US_pending_job_cnt, "US_pending_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {US_entries, "US_entries", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {US_consider_with_categories, "US_consider_with_categories", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {US_joker, "US_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {US_name, "US_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {US_type, "US_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {US_fshare, "US_fshare", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {US_oticket, "US_oticket", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {US_job_cnt, "US_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {US_pending_job_cnt, "US_pending_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {US_entries, "US_entries", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {US_consider_with_categories, "US_consider_with_categories", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {US_joker, "US_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

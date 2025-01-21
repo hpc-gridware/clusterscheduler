@@ -42,9 +42,9 @@ constexpr const int UPP_Type[] = {
 };
 
 #define UPP_ATTRIBUTES \
-   {UPP_name, "UPP_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UPP_usage, "UPP_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {UPP_long_term_usage, "UPP_long_term_usage", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {UPP_name, "UPP_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {UPP_usage, "UPP_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UPP_long_term_usage, "UPP_long_term_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

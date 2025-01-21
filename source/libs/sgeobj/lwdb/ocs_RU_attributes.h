@@ -42,9 +42,9 @@ constexpr const int RU_Type[] = {
 };
 
 #define RU_ATTRIBUTES \
-   {RU_job_number, "RU_job_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RU_task_number, "RU_task_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RU_state, "RU_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RU_job_number, "RU_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RU_task_number, "RU_task_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RU_state, "RU_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -68,22 +68,22 @@ constexpr const int CE_Type[] = {
 };
 
 #define CE_ATTRIBUTES \
-   {CE_name, "CE_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CE_shortcut, "CE_shortcut", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CE_valtype, "CE_valtype", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_stringval, "CE_stringval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CE_doubleval, "CE_doubleval", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {CE_relop, "CE_relop", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_consumable, "CE_consumable", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_defaultval, "CE_defaultval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CE_dominant, "CE_dominant", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_pj_stringval, "CE_pj_stringval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CE_pj_doubleval, "CE_pj_doubleval", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {CE_pj_dominant, "CE_pj_dominant", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_requestable, "CE_requestable", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_tagged, "CE_tagged", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CE_urgency_weight, "CE_urgency_weight", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CE_resource_map_list, "CE_resource_map_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {CE_name, "CE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {CE_shortcut, "CE_shortcut", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true}, \
+   {CE_valtype, "CE_valtype", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_stringval, "CE_stringval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_doubleval, "CE_doubleval", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_relop, "CE_relop", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_consumable, "CE_consumable", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_defaultval, "CE_defaultval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_dominant, "CE_dominant", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_pj_stringval, "CE_pj_stringval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_pj_doubleval, "CE_pj_doubleval", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_pj_dominant, "CE_pj_dominant", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_requestable, "CE_requestable", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_tagged, "CE_tagged", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CE_urgency_weight, "CE_urgency_weight", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CE_resource_map_list, "CE_resource_map_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

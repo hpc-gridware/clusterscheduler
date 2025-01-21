@@ -40,8 +40,8 @@ constexpr const int MR_Type[] = {
 };
 
 #define MR_ATTRIBUTES \
-   {MR_user, "MR_user", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {MR_host, "MR_host", AttributeStatic::HOST, AttributeStatic::NO_HASH} \
+   {MR_user, "MR_user", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {MR_host, "MR_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

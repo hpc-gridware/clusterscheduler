@@ -106,41 +106,41 @@ constexpr const int EH_Type[] = {
 };
 
 #define EH_ATTRIBUTES \
-   {EH_name, "EH_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {EH_scaling_list, "EH_scaling_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_consumable_config_list, "EH_consumable_config_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_usage_scaling_list, "EH_usage_scaling_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_load_list, "EH_load_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_lt_heard_from, "EH_lt_heard_from", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {EH_processors, "EH_processors", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_acl, "EH_acl", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_xacl, "EH_xacl", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_prj, "EH_prj", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_xprj, "EH_xprj", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_sort_value, "EH_sort_value", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {EH_reuse_me, "EH_reuse_me", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_tagged, "EH_tagged", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_load_correction_factor, "EH_load_correction_factor", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_seq_no, "EH_seq_no", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_real_name, "EH_real_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {EH_sge_load, "EH_sge_load", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_sge_ticket_pct, "EH_sge_ticket_pct", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {EH_sge_load_pct, "EH_sge_load_pct", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {EH_featureset_id, "EH_featureset_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_scaled_usage_list, "EH_scaled_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_scaled_usage_pct_list, "EH_scaled_usage_pct_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_num_running_jobs, "EH_num_running_jobs", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_load_report_interval, "EH_load_report_interval", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_resource_utilization, "EH_resource_utilization", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_cached_complexes, "EH_cached_complexes", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_cache_version, "EH_cache_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_master_host, "EH_master_host", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_reschedule_unknown, "EH_reschedule_unknown", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_reschedule_unknown_list, "EH_reschedule_unknown_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_report_seqno, "EH_report_seqno", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EH_report_variables, "EH_report_variables", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_merged_report_variables, "EH_merged_report_variables", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {EH_joker, "EH_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {EH_name, "EH_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {EH_scaling_list, "EH_scaling_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_consumable_config_list, "EH_consumable_config_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_usage_scaling_list, "EH_usage_scaling_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_load_list, "EH_load_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_lt_heard_from, "EH_lt_heard_from", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_processors, "EH_processors", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_acl, "EH_acl", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_xacl, "EH_xacl", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_prj, "EH_prj", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_xprj, "EH_xprj", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_sort_value, "EH_sort_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_reuse_me, "EH_reuse_me", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_tagged, "EH_tagged", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_load_correction_factor, "EH_load_correction_factor", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_seq_no, "EH_seq_no", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_real_name, "EH_real_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_sge_load, "EH_sge_load", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_sge_ticket_pct, "EH_sge_ticket_pct", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_sge_load_pct, "EH_sge_load_pct", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_featureset_id, "EH_featureset_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_scaled_usage_list, "EH_scaled_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_scaled_usage_pct_list, "EH_scaled_usage_pct_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_num_running_jobs, "EH_num_running_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_load_report_interval, "EH_load_report_interval", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_resource_utilization, "EH_resource_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_cached_complexes, "EH_cached_complexes", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_cache_version, "EH_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_master_host, "EH_master_host", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_reschedule_unknown, "EH_reschedule_unknown", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_reschedule_unknown_list, "EH_reschedule_unknown_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_report_seqno, "EH_report_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_report_variables, "EH_report_variables", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_merged_report_variables, "EH_merged_report_variables", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EH_joker, "EH_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

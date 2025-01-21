@@ -48,12 +48,12 @@ constexpr const int KRB_Type[] = {
 };
 
 #define KRB_ATTRIBUTES \
-   {KRB_commproc, "KRB_commproc", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {KRB_id, "KRB_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {KRB_host, "KRB_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {KRB_timestamp, "KRB_timestamp", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {KRB_auth_context, "KRB_auth_context", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {KRB_tgt_list, "KRB_tgt_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {KRB_commproc, "KRB_commproc", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KRB_id, "KRB_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KRB_host, "KRB_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KRB_timestamp, "KRB_timestamp", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KRB_auth_context, "KRB_auth_context", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {KRB_tgt_list, "KRB_tgt_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

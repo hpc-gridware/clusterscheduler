@@ -62,19 +62,19 @@ constexpr const int JG_Type[] = {
 };
 
 #define JG_ATTRIBUTES \
-   {JG_qname, "JG_qname", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JG_qversion, "JG_qversion", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JG_qhostname, "JG_qhostname", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JG_slots, "JG_slots", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JG_queue, "JG_queue", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {JG_tag_slave_job, "JG_tag_slave_job", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JG_ticket, "JG_ticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_oticket, "JG_oticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_fticket, "JG_fticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_sticket, "JG_sticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_jcoticket, "JG_jcoticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_jcfticket, "JG_jcfticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {JG_processors, "JG_processors", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {JG_qname, "JG_qname", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {JG_qversion, "JG_qversion", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_qhostname, "JG_qhostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JG_slots, "JG_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_queue, "JG_queue", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {JG_tag_slave_job, "JG_tag_slave_job", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_ticket, "JG_ticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_oticket, "JG_oticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_fticket, "JG_fticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_sticket, "JG_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_jcoticket, "JG_jcoticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_jcfticket, "JG_jcfticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_processors, "JG_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

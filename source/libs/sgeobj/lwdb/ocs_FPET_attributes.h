@@ -38,7 +38,7 @@ constexpr const int FPET_Type[] = {
 };
 
 #define FPET_ATTRIBUTES \
-   {FPET_id, "FPET_id", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {FPET_id, "FPET_id", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 
 } // end namespace
 

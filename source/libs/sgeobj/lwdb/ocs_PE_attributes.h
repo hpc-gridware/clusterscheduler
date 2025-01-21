@@ -68,22 +68,22 @@ constexpr const int PE_Type[] = {
 };
 
 #define PE_ATTRIBUTES \
-   {PE_name, "PE_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {PE_slots, "PE_slots", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PE_user_list, "PE_user_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PE_xuser_list, "PE_xuser_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PE_start_proc_args, "PE_start_proc_args", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PE_stop_proc_args, "PE_stop_proc_args", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PE_allocation_rule, "PE_allocation_rule", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PE_control_slaves, "PE_control_slaves", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_job_is_first_task, "PE_job_is_first_task", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_resource_utilization, "PE_resource_utilization", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PE_urgency_slots, "PE_urgency_slots", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PE_accounting_summary, "PE_accounting_summary", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_master_forks_slaves, "PE_master_forks_slaves", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_daemon_forks_slaves, "PE_daemon_forks_slaves", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_ignore_slave_requests_on_master_host, "PE_ignore_slave_requests_on_master_host", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PE_joker, "PE_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {PE_name, "PE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {PE_slots, "PE_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_user_list, "PE_user_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_xuser_list, "PE_xuser_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_start_proc_args, "PE_start_proc_args", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_stop_proc_args, "PE_stop_proc_args", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_allocation_rule, "PE_allocation_rule", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_control_slaves, "PE_control_slaves", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_job_is_first_task, "PE_job_is_first_task", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_resource_utilization, "PE_resource_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PE_urgency_slots, "PE_urgency_slots", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_accounting_summary, "PE_accounting_summary", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_master_forks_slaves, "PE_master_forks_slaves", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_daemon_forks_slaves, "PE_daemon_forks_slaves", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_ignore_slave_requests_on_master_host, "PE_ignore_slave_requests_on_master_host", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PE_joker, "PE_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

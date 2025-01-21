@@ -40,8 +40,8 @@ constexpr const int QIM_Type[] = {
 };
 
 #define QIM_ATTRIBUTES \
-   {QIM_type, "QIM_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QIM_message, "QIM_message", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {QIM_type, "QIM_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QIM_message, "QIM_message", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

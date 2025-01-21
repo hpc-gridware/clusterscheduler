@@ -46,11 +46,11 @@ constexpr const int XMLH_Type[] = {
 };
 
 #define XMLH_ATTRIBUTES \
-   {XMLH_Version, "XMLH_Version", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {XMLH_Name, "XMLH_Name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {XMLH_Stylesheet, "XMLH_Stylesheet", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {XMLH_Attribute, "XMLH_Attribute", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {XMLH_Element, "XMLH_Element", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {XMLH_Version, "XMLH_Version", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLH_Name, "XMLH_Name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLH_Stylesheet, "XMLH_Stylesheet", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLH_Attribute, "XMLH_Attribute", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLH_Element, "XMLH_Element", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

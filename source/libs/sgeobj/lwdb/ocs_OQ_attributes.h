@@ -50,13 +50,13 @@ constexpr const int OQ_Type[] = {
 };
 
 #define OQ_ATTRIBUTES \
-   {OQ_slots, "OQ_slots", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OQ_dest_queue, "OQ_dest_queue", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {OQ_dest_version, "OQ_dest_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OQ_ticket, "OQ_ticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {OQ_oticket, "OQ_oticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {OQ_fticket, "OQ_fticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {OQ_sticket, "OQ_sticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH} \
+   {OQ_slots, "OQ_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_dest_queue, "OQ_dest_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_dest_version, "OQ_dest_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_ticket, "OQ_ticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_oticket, "OQ_oticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_fticket, "OQ_fticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_sticket, "OQ_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

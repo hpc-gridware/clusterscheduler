@@ -58,17 +58,17 @@ constexpr const int CK_Type[] = {
 };
 
 #define CK_ATTRIBUTES \
-   {CK_name, "CK_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CK_interface, "CK_interface", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_ckpt_command, "CK_ckpt_command", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_migr_command, "CK_migr_command", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_rest_command, "CK_rest_command", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_ckpt_dir, "CK_ckpt_dir", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_when, "CK_when", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_signal, "CK_signal", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_job_pid, "CK_job_pid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CK_clean_command, "CK_clean_command", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CK_joker, "CK_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {CK_name, "CK_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {CK_interface, "CK_interface", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_ckpt_command, "CK_ckpt_command", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_migr_command, "CK_migr_command", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_rest_command, "CK_rest_command", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_ckpt_dir, "CK_ckpt_dir", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_when, "CK_when", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_signal, "CK_signal", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_job_pid, "CK_job_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CK_clean_command, "CK_clean_command", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CK_joker, "CK_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

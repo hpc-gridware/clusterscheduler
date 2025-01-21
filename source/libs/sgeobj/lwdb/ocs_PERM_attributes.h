@@ -48,12 +48,12 @@ constexpr const int PERM_Type[] = {
 };
 
 #define PERM_ATTRIBUTES \
-   {PERM_is_manager, "PERM_is_manager", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PERM_is_operator, "PERM_is_operator", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PERM_is_admin_host, "PERM_is_admin_host", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PERM_is_submit_host, "PERM_is_submit_host", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {PERM_host, "PERM_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {PERM_username, "PERM_username", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {PERM_is_manager, "PERM_is_manager", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PERM_is_operator, "PERM_is_operator", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PERM_is_admin_host, "PERM_is_admin_host", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PERM_is_submit_host, "PERM_is_submit_host", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PERM_host, "PERM_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PERM_username, "PERM_username", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

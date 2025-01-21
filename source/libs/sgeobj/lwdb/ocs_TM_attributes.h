@@ -54,15 +54,15 @@ constexpr const int TM_Type[] = {
 };
 
 #define TM_ATTRIBUTES \
-   {TM_mday, "TM_mday", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_mon, "TM_mon", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_year, "TM_year", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_sec, "TM_sec", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_min, "TM_min", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_hour, "TM_hour", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_wday, "TM_wday", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_yday, "TM_yday", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {TM_isdst, "TM_isdst", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {TM_mday, "TM_mday", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_mon, "TM_mon", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_year, "TM_year", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_sec, "TM_sec", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_min, "TM_min", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_hour, "TM_hour", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_wday, "TM_wday", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_yday, "TM_yday", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TM_isdst, "TM_isdst", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int UM_Type[] = {
 };
 
 #define UM_ATTRIBUTES \
-   {UM_name, "UM_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UM_joker, "UM_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {UM_name, "UM_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {UM_joker, "UM_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

@@ -38,7 +38,7 @@ constexpr const int UE_Type[] = {
 };
 
 #define UE_ATTRIBUTES \
-   {UE_name, "UE_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {UE_name, "UE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 
 } // end namespace
 

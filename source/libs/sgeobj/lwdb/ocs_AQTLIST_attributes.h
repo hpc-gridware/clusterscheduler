@@ -40,8 +40,8 @@ constexpr const int AQTLIST_Type[] = {
 };
 
 #define AQTLIST_ATTRIBUTES \
-   {AQTLIST_href, "AQTLIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AQTLIST_value, "AQTLIST_value", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {AQTLIST_href, "AQTLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {AQTLIST_value, "AQTLIST_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

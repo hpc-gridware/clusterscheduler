@@ -42,9 +42,9 @@ constexpr const int SPTR_Type[] = {
 };
 
 #define SPTR_ATTRIBUTES \
-   {SPTR_is_default, "SPTR_is_default", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {SPTR_rule_name, "SPTR_rule_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_NON_UNIQUE}, \
-   {SPTR_rule, "SPTR_rule", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {SPTR_is_default, "SPTR_is_default", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPTR_rule_name, "SPTR_rule_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, false, false}, \
+   {SPTR_rule, "SPTR_rule", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

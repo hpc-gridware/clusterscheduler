@@ -52,14 +52,14 @@ constexpr const int SGEJ_Type[] = {
 };
 
 #define SGEJ_ATTRIBUTES \
-   {SGEJ_priority, "SGEJ_priority", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {SGEJ_job_number, "SGEJ_job_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {SGEJ_job_name, "SGEJ_job_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SGEJ_owner, "SGEJ_owner", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SGEJ_state, "SGEJ_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {SGEJ_master_queue, "SGEJ_master_queue", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SGEJ_job_reference, "SGEJ_job_reference", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SGEJ_submission_time, "SGEJ_submission_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH} \
+   {SGEJ_priority, "SGEJ_priority", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_job_number, "SGEJ_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_job_name, "SGEJ_job_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_owner, "SGEJ_owner", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_state, "SGEJ_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_master_queue, "SGEJ_master_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_job_reference, "SGEJ_job_reference", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SGEJ_submission_time, "SGEJ_submission_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

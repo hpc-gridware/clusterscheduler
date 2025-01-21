@@ -38,7 +38,7 @@ constexpr const int QRL_Type[] = {
 };
 
 #define QRL_ATTRIBUTES \
-   {QRL_queue, "QRL_queue", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {QRL_queue, "QRL_queue", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

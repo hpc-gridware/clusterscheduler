@@ -38,7 +38,7 @@ constexpr const int QR_Type[] = {
 };
 
 #define QR_ATTRIBUTES \
-   {QR_name, "QR_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {QR_name, "QR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 
 } // end namespace
 

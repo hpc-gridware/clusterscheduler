@@ -40,8 +40,8 @@ constexpr const int JRE_Type[] = {
 };
 
 #define JRE_ATTRIBUTES \
-   {JRE_job_number, "JRE_job_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JRE_job_name, "JRE_job_name", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {JRE_job_number, "JRE_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {JRE_job_name, "JRE_job_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

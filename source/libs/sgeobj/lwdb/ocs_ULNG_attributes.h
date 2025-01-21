@@ -38,7 +38,7 @@ constexpr const int ULNG_Type[] = {
 };
 
 #define ULNG_ATTRIBUTES \
-   {ULNG_value, "ULNG_value", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE} \
+   {ULNG_value, "ULNG_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

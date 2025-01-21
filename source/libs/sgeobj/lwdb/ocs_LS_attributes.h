@@ -58,17 +58,17 @@ constexpr const int LS_Type[] = {
 };
 
 #define LS_ATTRIBUTES \
-   {LS_name, "LS_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {LS_command, "LS_command", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {LS_pid, "LS_pid", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {LS_in, "LS_in", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {LS_out, "LS_out", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {LS_err, "LS_err", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {LS_has_to_restart, "LS_has_to_restart", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {LS_tag, "LS_tag", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {LS_incomplete, "LS_incomplete", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {LS_complete, "LS_complete", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {LS_last_mod, "LS_last_mod", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {LS_name, "LS_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_command, "LS_command", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_pid, "LS_pid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_in, "LS_in", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_out, "LS_out", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_err, "LS_err", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_has_to_restart, "LS_has_to_restart", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_tag, "LS_tag", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_incomplete, "LS_incomplete", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_complete, "LS_complete", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LS_last_mod, "LS_last_mod", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int AH_Type[] = {
 };
 
 #define AH_ATTRIBUTES \
-   {AH_name, "AH_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AH_joker, "AH_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {AH_name, "AH_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {AH_joker, "AH_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

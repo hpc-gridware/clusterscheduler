@@ -46,11 +46,11 @@ constexpr const int LDR_Type[] = {
 };
 
 #define LDR_ATTRIBUTES \
-   {LDR_queue_ref_list, "LDR_queue_ref_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {LDR_limit, "LDR_limit", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {LDR_global, "LDR_global", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {LDR_host, "LDR_host", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {LDR_queue, "LDR_queue", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {LDR_queue_ref_list, "LDR_queue_ref_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LDR_limit, "LDR_limit", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LDR_global, "LDR_global", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LDR_host, "LDR_host", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LDR_queue, "LDR_queue", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

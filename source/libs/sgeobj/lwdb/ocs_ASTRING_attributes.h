@@ -40,8 +40,8 @@ constexpr const int ASTRING_Type[] = {
 };
 
 #define ASTRING_ATTRIBUTES \
-   {ASTRING_href, "ASTRING_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ASTRING_value, "ASTRING_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {ASTRING_href, "ASTRING_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ASTRING_value, "ASTRING_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -48,12 +48,12 @@ constexpr const int CCT_Type[] = {
 };
 
 #define CCT_ATTRIBUTES \
-   {CCT_pe_name, "CCT_pe_name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {CCT_ignore_queues, "CCT_ignore_queues", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CCT_ignore_hosts, "CCT_ignore_hosts", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CCT_job_messages, "CCT_job_messages", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CCT_pe_job_slots, "CCT_pe_job_slots", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {CCT_pe_job_slot_count, "CCT_pe_job_slot_count", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {CCT_pe_name, "CCT_pe_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CCT_ignore_queues, "CCT_ignore_queues", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CCT_ignore_hosts, "CCT_ignore_hosts", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CCT_job_messages, "CCT_job_messages", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CCT_pe_job_slots, "CCT_pe_job_slots", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CCT_pe_job_slot_count, "CCT_pe_job_slot_count", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

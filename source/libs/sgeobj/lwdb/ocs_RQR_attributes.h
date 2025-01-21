@@ -52,14 +52,14 @@ constexpr const int RQR_Type[] = {
 };
 
 #define RQR_ATTRIBUTES \
-   {RQR_name, "RQR_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {RQR_filter_users, "RQR_filter_users", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {RQR_filter_projects, "RQR_filter_projects", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {RQR_filter_pes, "RQR_filter_pes", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {RQR_filter_queues, "RQR_filter_queues", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {RQR_filter_hosts, "RQR_filter_hosts", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {RQR_limit, "RQR_limit", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {RQR_level, "RQR_level", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RQR_name, "RQR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {RQR_filter_users, "RQR_filter_users", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_filter_projects, "RQR_filter_projects", AttributeStatic::OBJECT, nullptr, 1, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_filter_pes, "RQR_filter_pes", AttributeStatic::OBJECT, nullptr, 2, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_filter_queues, "RQR_filter_queues", AttributeStatic::OBJECT, nullptr, 3, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_filter_hosts, "RQR_filter_hosts", AttributeStatic::OBJECT, nullptr, 4, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_limit, "RQR_limit", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RQR_level, "RQR_level", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

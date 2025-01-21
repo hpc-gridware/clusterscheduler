@@ -42,9 +42,9 @@ constexpr const int MES_Type[] = {
 };
 
 #define MES_ATTRIBUTES \
-   {MES_job_number_list, "MES_job_number_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {MES_message_number, "MES_message_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {MES_message, "MES_message", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {MES_job_number_list, "MES_job_number_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {MES_message_number, "MES_message_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {MES_message, "MES_message", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

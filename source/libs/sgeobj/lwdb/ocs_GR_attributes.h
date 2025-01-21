@@ -38,7 +38,7 @@ constexpr const int GR_Type[] = {
 };
 
 #define GR_ATTRIBUTES \
-   {GR_group, "GR_group", AttributeStatic::UINT32, AttributeStatic::UNORDERED_UNIQUE} \
+   {GR_group, "GR_group", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

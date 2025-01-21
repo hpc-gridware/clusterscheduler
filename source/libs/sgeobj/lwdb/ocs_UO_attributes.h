@@ -40,8 +40,8 @@ constexpr const int UO_Type[] = {
 };
 
 #define UO_ATTRIBUTES \
-   {UO_name, "UO_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UO_joker, "UO_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {UO_name, "UO_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {UO_joker, "UO_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

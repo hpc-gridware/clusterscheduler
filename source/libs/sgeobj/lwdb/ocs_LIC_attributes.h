@@ -40,8 +40,8 @@ constexpr const int LIC_Type[] = {
 };
 
 #define LIC_ATTRIBUTES \
-   {LIC_processors, "LIC_processors", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {LIC_arch, "LIC_arch", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {LIC_processors, "LIC_processors", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LIC_arch, "LIC_arch", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -38,6 +38,8 @@
 					"name":	"SPOOL"
 				}, {
 					"name":	"UNIQUE"
+				}, {
+					"name":	"PRIMARY_KEY"
 				}]
 		},{
 			"name":	"uint64",
@@ -111,5 +113,35 @@
 			"flags":	[{
 				"name":	"SPOOL"
 			}]
+		}, {
+			"name":	"ref",
+			"summary":	"reference type attribute to store a pointer",
+			"description":	[{
+				"line":	"This filed hold a pointer"
+			}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix": "ANY",
+			"flags":	[]
+		}, {
+			"name":	"obj_jb",
+			"summary":	"object type attribute to store JB_Type an object",
+			"description":	[{
+				"line":	"This filed hold a object reference."
+			}],
+			"type":	"lObjectT",
+			"subClassName":	"ANY",
+			"subCullPrefix": "JB",
+			"flags":	[]
+		}, {
+			"name":	"obj_any",
+			"summary":	"object type attribute to store any other object",
+			"description":	[{
+				"line":	"This filed hold a object reference."
+			}],
+			"type":	"lObjectT",
+			"subClassName":	"ANY",
+			"subCullPrefix": "ANY",
+			"flags":	[]
 		}]
 }

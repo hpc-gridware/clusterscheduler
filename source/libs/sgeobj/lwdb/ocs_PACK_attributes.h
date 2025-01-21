@@ -40,8 +40,8 @@ constexpr const int PACK_Type[] = {
 };
 
 #define PACK_ATTRIBUTES \
-   {PACK_id, "PACK_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PACK_string, "PACK_string", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {PACK_id, "PACK_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PACK_string, "PACK_string", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

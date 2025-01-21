@@ -46,11 +46,11 @@ constexpr const int LR_Type[] = {
 };
 
 #define LR_ATTRIBUTES \
-   {LR_name, "LR_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {LR_value, "LR_value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {LR_global, "LR_global", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {LR_is_static, "LR_is_static", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {LR_host, "LR_host", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE} \
+   {LR_name, "LR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {LR_value, "LR_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LR_global, "LR_global", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LR_is_static, "LR_is_static", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {LR_host, "LR_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

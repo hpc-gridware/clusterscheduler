@@ -40,8 +40,8 @@ constexpr const int ASOLIST_Type[] = {
 };
 
 #define ASOLIST_ATTRIBUTES \
-   {ASOLIST_href, "ASOLIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ASOLIST_value, "ASOLIST_value", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {ASOLIST_href, "ASOLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {ASOLIST_value, "ASOLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

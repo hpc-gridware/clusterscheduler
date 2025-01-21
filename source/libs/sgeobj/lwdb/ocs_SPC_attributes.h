@@ -42,9 +42,9 @@ constexpr const int SPC_Type[] = {
 };
 
 #define SPC_ATTRIBUTES \
-   {SPC_name, "SPC_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SPC_rules, "SPC_rules", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {SPC_types, "SPC_types", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {SPC_name, "SPC_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {SPC_rules, "SPC_rules", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPC_types, "SPC_types", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

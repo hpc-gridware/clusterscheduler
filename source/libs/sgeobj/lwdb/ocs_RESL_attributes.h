@@ -40,8 +40,8 @@ constexpr const int RESL_Type[] = {
 };
 
 #define RESL_ATTRIBUTES \
-   {RESL_value, "RESL_value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {RESL_amount, "RESL_amount", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RESL_value, "RESL_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {RESL_amount, "RESL_amount", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

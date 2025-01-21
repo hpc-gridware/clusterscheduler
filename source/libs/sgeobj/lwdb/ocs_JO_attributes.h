@@ -50,13 +50,13 @@ constexpr const int JO_Type[] = {
 };
 
 #define JO_ATTRIBUTES \
-   {JO_OS_job_ID, "JO_OS_job_ID", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JO_OS_job_ID2, "JO_OS_job_ID2", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JO_ja_task_ID, "JO_ja_task_ID", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JO_task_id_str, "JO_task_id_str", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {JO_state, "JO_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JO_usage_list, "JO_usage_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JO_pid_list, "JO_pid_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {JO_OS_job_ID, "JO_OS_job_ID", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_OS_job_ID2, "JO_OS_job_ID2", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_ja_task_ID, "JO_ja_task_ID", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_task_id_str, "JO_task_id_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_state, "JO_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_usage_list, "JO_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_pid_list, "JO_pid_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

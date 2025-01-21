@@ -44,10 +44,10 @@ constexpr const int PA_Type[] = {
 };
 
 #define PA_ATTRIBUTES \
-   {PA_origin, "PA_origin", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PA_submit_host, "PA_submit_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {PA_exec_host, "PA_exec_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {PA_translation, "PA_translation", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {PA_origin, "PA_origin", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, true}, \
+   {PA_submit_host, "PA_submit_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PA_exec_host, "PA_exec_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {PA_translation, "PA_translation", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

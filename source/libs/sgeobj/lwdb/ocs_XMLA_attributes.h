@@ -40,8 +40,8 @@ constexpr const int XMLA_Type[] = {
 };
 
 #define XMLA_ATTRIBUTES \
-   {XMLA_Name, "XMLA_Name", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {XMLA_Value, "XMLA_Value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {XMLA_Name, "XMLA_Name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {XMLA_Value, "XMLA_Value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

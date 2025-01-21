@@ -52,14 +52,14 @@ constexpr const int PETR_Type[] = {
 };
 
 #define PETR_ATTRIBUTES \
-   {PETR_jobid, "PETR_jobid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PETR_jataskid, "PETR_jataskid", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {PETR_queuename, "PETR_queuename", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PETR_owner, "PETR_owner", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PETR_cwd, "PETR_cwd", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {PETR_path_aliases, "PETR_path_aliases", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PETR_environment, "PETR_environment", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {PETR_submission_time, "PETR_submission_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH} \
+   {PETR_jobid, "PETR_jobid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_jataskid, "PETR_jataskid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_queuename, "PETR_queuename", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_owner, "PETR_owner", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_cwd, "PETR_cwd", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_path_aliases, "PETR_path_aliases", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_environment, "PETR_environment", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_submission_time, "PETR_submission_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

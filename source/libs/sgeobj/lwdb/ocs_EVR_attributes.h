@@ -50,13 +50,13 @@ constexpr const int EVR_Type[] = {
 };
 
 #define EVR_ATTRIBUTES \
-   {EVR_operation, "EVR_operation", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EVR_timestamp, "EVR_timestamp", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {EVR_event_client_id, "EVR_event_client_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EVR_event_number, "EVR_event_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EVR_session, "EVR_session", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {EVR_event_client, "EVR_event_client", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {EVR_event_list, "EVR_event_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {EVR_operation, "EVR_operation", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_timestamp, "EVR_timestamp", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_event_client_id, "EVR_event_client_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_event_number, "EVR_event_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_session, "EVR_session", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_event_client, "EVR_event_client", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_event_list, "EVR_event_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int UA_Type[] = {
 };
 
 #define UA_ATTRIBUTES \
-   {UA_name, "UA_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {UA_value, "UA_value", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH} \
+   {UA_name, "UA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {UA_value, "UA_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -44,10 +44,10 @@ constexpr const int HL_Type[] = {
 };
 
 #define HL_ATTRIBUTES \
-   {HL_name, "HL_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {HL_value, "HL_value", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {HL_last_update, "HL_last_update", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {HL_is_static, "HL_is_static", AttributeStatic::BOOL, AttributeStatic::NO_HASH} \
+   {HL_name, "HL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {HL_value, "HL_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {HL_last_update, "HL_last_update", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {HL_is_static, "HL_is_static", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

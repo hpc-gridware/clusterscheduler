@@ -40,8 +40,8 @@ constexpr const int APRJLIST_Type[] = {
 };
 
 #define APRJLIST_ATTRIBUTES \
-   {APRJLIST_href, "APRJLIST_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {APRJLIST_value, "APRJLIST_value", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {APRJLIST_href, "APRJLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {APRJLIST_value, "APRJLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

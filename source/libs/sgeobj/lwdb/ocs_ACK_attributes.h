@@ -44,10 +44,10 @@ constexpr const int ACK_Type[] = {
 };
 
 #define ACK_ATTRIBUTES \
-   {ACK_type, "ACK_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ACK_id, "ACK_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ACK_id2, "ACK_id2", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {ACK_str, "ACK_str", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {ACK_type, "ACK_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ACK_id, "ACK_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ACK_id2, "ACK_id2", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {ACK_str, "ACK_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

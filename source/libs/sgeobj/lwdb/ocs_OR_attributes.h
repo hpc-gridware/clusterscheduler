@@ -58,17 +58,17 @@ constexpr const int OR_Type[] = {
 };
 
 #define OR_ATTRIBUTES \
-   {OR_type, "OR_type", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OR_job_number, "OR_job_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OR_ja_task_number, "OR_ja_task_number", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OR_job_version, "OR_job_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {OR_queuelist, "OR_queuelist", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {OR_granted_resources_list, "OR_granted_resources_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {OR_ticket, "OR_ticket", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {OR_joker, "OR_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {OR_pe, "OR_pe", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {OR_ntix, "OR_ntix", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {OR_prio, "OR_prio", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH} \
+   {OR_type, "OR_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_job_number, "OR_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_ja_task_number, "OR_ja_task_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_job_version, "OR_job_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_queuelist, "OR_queuelist", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_granted_resources_list, "OR_granted_resources_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_ticket, "OR_ticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_joker, "OR_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_pe, "OR_pe", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_ntix, "OR_ntix", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OR_prio, "OR_prio", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

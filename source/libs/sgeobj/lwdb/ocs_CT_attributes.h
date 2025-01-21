@@ -54,15 +54,15 @@ constexpr const int CT_Type[] = {
 };
 
 #define CT_ATTRIBUTES \
-   {CT_str, "CT_str", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {CT_refcount, "CT_refcount", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CT_count, "CT_count", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
-   {CT_rejected, "CT_rejected", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {CT_cache, "CT_cache", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {CT_messages_added, "CT_messages_added", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {CT_resource_contribution, "CT_resource_contribution", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {CT_rc_valid, "CT_rc_valid", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {CT_reservation_rejected, "CT_reservation_rejected", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {CT_str, "CT_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {CT_refcount, "CT_refcount", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_count, "CT_count", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_rejected, "CT_rejected", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_cache, "CT_cache", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_messages_added, "CT_messages_added", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_resource_contribution, "CT_resource_contribution", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_rc_valid, "CT_rc_valid", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {CT_reservation_rejected, "CT_reservation_rejected", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

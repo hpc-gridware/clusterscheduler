@@ -40,8 +40,8 @@ constexpr const int TMR_Type[] = {
 };
 
 #define TMR_ATTRIBUTES \
-   {TMR_begin, "TMR_begin", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {TMR_end, "TMR_end", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {TMR_begin, "TMR_begin", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TMR_end, "TMR_end", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

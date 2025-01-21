@@ -40,8 +40,8 @@ constexpr const int AINTER_Type[] = {
 };
 
 #define AINTER_ATTRIBUTES \
-   {AINTER_href, "AINTER_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AINTER_value, "AINTER_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {AINTER_href, "AINTER_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {AINTER_value, "AINTER_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

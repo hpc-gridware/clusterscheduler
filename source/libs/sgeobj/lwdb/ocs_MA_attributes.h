@@ -42,9 +42,9 @@ constexpr const int MA_Type[] = {
 };
 
 #define MA_ATTRIBUTES \
-   {MA_id, "MA_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {MA_objects, "MA_objects", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {MA_answers, "MA_answers", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {MA_id, "MA_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {MA_objects, "MA_objects", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {MA_answers, "MA_answers", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

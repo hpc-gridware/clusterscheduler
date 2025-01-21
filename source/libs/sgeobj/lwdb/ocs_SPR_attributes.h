@@ -68,22 +68,22 @@ constexpr const int SPR_Type[] = {
 };
 
 #define SPR_ATTRIBUTES \
-   {SPR_name, "SPR_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SPR_url, "SPR_url", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {SPR_option_func, "SPR_option_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_startup_func, "SPR_startup_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_shutdown_func, "SPR_shutdown_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_maintenance_func, "SPR_maintenance_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_trigger_func, "SPR_trigger_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_transaction_func, "SPR_transaction_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_list_func, "SPR_list_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_read_func, "SPR_read_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_read_keys_func, "SPR_read_keys_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_write_func, "SPR_write_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_delete_func, "SPR_delete_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_validate_func, "SPR_validate_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_validate_list_func, "SPR_validate_list_func", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {SPR_clientdata, "SPR_clientdata", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {SPR_name, "SPR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {SPR_url, "SPR_url", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_option_func, "SPR_option_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_startup_func, "SPR_startup_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_shutdown_func, "SPR_shutdown_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_maintenance_func, "SPR_maintenance_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_trigger_func, "SPR_trigger_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_transaction_func, "SPR_transaction_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_list_func, "SPR_list_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_read_func, "SPR_read_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_read_keys_func, "SPR_read_keys_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_write_func, "SPR_write_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_delete_func, "SPR_delete_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_validate_func, "SPR_validate_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_validate_list_func, "SPR_validate_list_func", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SPR_clientdata, "SPR_clientdata", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

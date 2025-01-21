@@ -40,8 +40,8 @@ constexpr const int SH_Type[] = {
 };
 
 #define SH_ATTRIBUTES \
-   {SH_name, "SH_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SH_joker, "SH_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {SH_name, "SH_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {SH_joker, "SH_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

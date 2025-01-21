@@ -40,8 +40,8 @@ constexpr const int JC_Type[] = {
 };
 
 #define JC_ATTRIBUTES \
-   {JC_name, "JC_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {JC_jobs, "JC_jobs", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {JC_name, "JC_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JC_jobs, "JC_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

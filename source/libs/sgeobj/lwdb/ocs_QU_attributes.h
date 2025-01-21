@@ -176,76 +176,76 @@ constexpr const int QU_Type[] = {
 };
 
 #define QU_ATTRIBUTES \
-   {QU_qhostname, "QU_qhostname", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {QU_qname, "QU_qname", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_full_name, "QU_full_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {QU_tag, "QU_tag", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_available_at, "QU_available_at", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {QU_seq_no, "QU_seq_no", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_nsuspend, "QU_nsuspend", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_qtype, "QU_qtype", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_job_slots, "QU_job_slots", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_tmpdir, "QU_tmpdir", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_shell, "QU_shell", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_calendar, "QU_calendar", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_priority, "QU_priority", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_processors, "QU_processors", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_prolog, "QU_prolog", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_epilog, "QU_epilog", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_shell_start_mode, "QU_shell_start_mode", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_starter_method, "QU_starter_method", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_suspend_method, "QU_suspend_method", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_resume_method, "QU_resume_method", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_terminate_method, "QU_terminate_method", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_initial_state, "QU_initial_state", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_rerun, "QU_rerun", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {QU_s_rt, "QU_s_rt", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_rt, "QU_h_rt", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_cpu, "QU_s_cpu", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_cpu, "QU_h_cpu", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_fsize, "QU_s_fsize", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_fsize, "QU_h_fsize", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_data, "QU_s_data", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_data, "QU_h_data", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_stack, "QU_s_stack", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_stack, "QU_h_stack", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_core, "QU_s_core", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_core, "QU_h_core", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_rss, "QU_s_rss", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_rss, "QU_h_rss", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_s_vmem, "QU_s_vmem", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_h_vmem, "QU_h_vmem", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_suspend_interval, "QU_suspend_interval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_min_cpu_interval, "QU_min_cpu_interval", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_notify, "QU_notify", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QU_ckpt_list, "QU_ckpt_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_pe_list, "QU_pe_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_owner_list, "QU_owner_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_acl, "QU_acl", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_xacl, "QU_xacl", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_projects, "QU_projects", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_xprojects, "QU_xprojects", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_consumable_config_list, "QU_consumable_config_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_load_thresholds, "QU_load_thresholds", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_suspend_thresholds, "QU_suspend_thresholds", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_subordinate_list, "QU_subordinate_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_state, "QU_state", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_tagged4schedule, "QU_tagged4schedule", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_cache_version, "QU_cache_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_pending_signal, "QU_pending_signal", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_pending_signal_delivery_time, "QU_pending_signal_delivery_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {QU_version, "QU_version", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_suspended_on_subordinate, "QU_suspended_on_subordinate", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_last_suspend_threshold_ckeck, "QU_last_suspend_threshold_ckeck", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {QU_job_cnt, "QU_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_pending_job_cnt, "QU_pending_job_cnt", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_soft_violation, "QU_soft_violation", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_host_seq_no, "QU_host_seq_no", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_resource_utilization, "QU_resource_utilization", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_message_list, "QU_message_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_gdi_do_later, "QU_gdi_do_later", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QU_state_changes, "QU_state_changes", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {QU_joker, "QU_joker", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {QU_qhostname, "QU_qhostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true}, \
+   {QU_qname, "QU_qname", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_full_name, "QU_full_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {QU_tag, "QU_tag", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_available_at, "QU_available_at", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_seq_no, "QU_seq_no", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_nsuspend, "QU_nsuspend", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_qtype, "QU_qtype", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_job_slots, "QU_job_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_tmpdir, "QU_tmpdir", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_shell, "QU_shell", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_calendar, "QU_calendar", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_priority, "QU_priority", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_processors, "QU_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_prolog, "QU_prolog", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_epilog, "QU_epilog", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_shell_start_mode, "QU_shell_start_mode", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_starter_method, "QU_starter_method", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_suspend_method, "QU_suspend_method", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_resume_method, "QU_resume_method", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_terminate_method, "QU_terminate_method", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_initial_state, "QU_initial_state", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_rerun, "QU_rerun", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_rt, "QU_s_rt", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_rt, "QU_h_rt", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_cpu, "QU_s_cpu", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_cpu, "QU_h_cpu", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_fsize, "QU_s_fsize", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_fsize, "QU_h_fsize", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_data, "QU_s_data", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_data, "QU_h_data", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_stack, "QU_s_stack", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_stack, "QU_h_stack", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_core, "QU_s_core", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_core, "QU_h_core", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_rss, "QU_s_rss", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_rss, "QU_h_rss", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_s_vmem, "QU_s_vmem", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_h_vmem, "QU_h_vmem", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_suspend_interval, "QU_suspend_interval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_min_cpu_interval, "QU_min_cpu_interval", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_notify, "QU_notify", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_ckpt_list, "QU_ckpt_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_pe_list, "QU_pe_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_owner_list, "QU_owner_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_acl, "QU_acl", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_xacl, "QU_xacl", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_projects, "QU_projects", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_xprojects, "QU_xprojects", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_consumable_config_list, "QU_consumable_config_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_load_thresholds, "QU_load_thresholds", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_suspend_thresholds, "QU_suspend_thresholds", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_subordinate_list, "QU_subordinate_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_state, "QU_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_tagged4schedule, "QU_tagged4schedule", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_cache_version, "QU_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_pending_signal, "QU_pending_signal", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_pending_signal_delivery_time, "QU_pending_signal_delivery_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_version, "QU_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_suspended_on_subordinate, "QU_suspended_on_subordinate", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_last_suspend_threshold_ckeck, "QU_last_suspend_threshold_ckeck", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_job_cnt, "QU_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_pending_job_cnt, "QU_pending_job_cnt", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_soft_violation, "QU_soft_violation", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_host_seq_no, "QU_host_seq_no", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_resource_utilization, "QU_resource_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_message_list, "QU_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {QU_gdi_do_later, "QU_gdi_do_later", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_state_changes, "QU_state_changes", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QU_joker, "QU_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

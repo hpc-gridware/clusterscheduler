@@ -42,9 +42,9 @@ constexpr const int SCT_Type[] = {
 };
 
 #define SCT_ATTRIBUTES \
-   {SCT_str, "SCT_str", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SCT_job_pending_ref, "SCT_job_pending_ref", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {SCT_job_ref, "SCT_job_ref", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {SCT_str, "SCT_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {SCT_job_pending_ref, "SCT_job_pending_ref", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SCT_job_ref, "SCT_job_ref", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

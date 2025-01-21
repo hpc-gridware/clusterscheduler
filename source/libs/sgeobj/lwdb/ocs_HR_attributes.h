@@ -38,7 +38,7 @@ constexpr const int HR_Type[] = {
 };
 
 #define HR_ATTRIBUTES \
-   {HR_name, "HR_name", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE} \
+   {HR_name, "HR_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 
 } // end namespace
 

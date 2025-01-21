@@ -54,15 +54,15 @@ constexpr const int FCAT_Type[] = {
 };
 
 #define FCAT_ATTRIBUTES \
-   {FCAT_job_share, "FCAT_job_share", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {FCAT_user_share, "FCAT_user_share", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {FCAT_user, "FCAT_user", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {FCAT_project_share, "FCAT_project_share", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {FCAT_project, "FCAT_project", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {FCAT_dept_share, "FCAT_dept_share", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {FCAT_dept, "FCAT_dept", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {FCAT_jobrelated_ticket_first, "FCAT_jobrelated_ticket_first", AttributeStatic::REF, AttributeStatic::NO_HASH}, \
-   {FCAT_jobrelated_ticket_last, "FCAT_jobrelated_ticket_last", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {FCAT_job_share, "FCAT_job_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_user_share, "FCAT_user_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_user, "FCAT_user", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_project_share, "FCAT_project_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_project, "FCAT_project", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_dept_share, "FCAT_dept_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_dept, "FCAT_dept", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_jobrelated_ticket_first, "FCAT_jobrelated_ticket_first", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {FCAT_jobrelated_ticket_last, "FCAT_jobrelated_ticket_last", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

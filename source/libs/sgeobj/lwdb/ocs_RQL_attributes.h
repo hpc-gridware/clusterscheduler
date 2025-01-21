@@ -48,12 +48,12 @@ constexpr const int RQL_Type[] = {
 };
 
 #define RQL_ATTRIBUTES \
-   {RQL_name, "RQL_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {RQL_result, "RQL_result", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
-   {RQL_time, "RQL_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {RQL_slots, "RQL_slots", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
-   {RQL_slots_qend, "RQL_slots_qend", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
-   {RQL_tagged4schedule, "RQL_tagged4schedule", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RQL_name, "RQL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {RQL_result, "RQL_result", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RQL_time, "RQL_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RQL_slots, "RQL_slots", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RQL_slots_qend, "RQL_slots_qend", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RQL_tagged4schedule, "RQL_tagged4schedule", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

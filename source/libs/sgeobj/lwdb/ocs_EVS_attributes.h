@@ -46,11 +46,11 @@ constexpr const int EVS_Type[] = {
 };
 
 #define EVS_ATTRIBUTES \
-   {EVS_id, "EVS_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EVS_flush, "EVS_flush", AttributeStatic::BOOL, AttributeStatic::NO_HASH}, \
-   {EVS_interval, "EVS_interval", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {EVS_what, "EVS_what", AttributeStatic::OBJECT, AttributeStatic::NO_HASH}, \
-   {EVS_where, "EVS_where", AttributeStatic::OBJECT, AttributeStatic::NO_HASH} \
+   {EVS_id, "EVS_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVS_flush, "EVS_flush", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVS_interval, "EVS_interval", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVS_what, "EVS_what", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
+   {EVS_where, "EVS_where", AttributeStatic::OBJECT, nullptr, 1, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int SU_Type[] = {
 };
 
 #define SU_ATTRIBUTES \
-   {SU_name, "SU_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {SU_jobs, "SU_jobs", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {SU_name, "SU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {SU_jobs, "SU_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

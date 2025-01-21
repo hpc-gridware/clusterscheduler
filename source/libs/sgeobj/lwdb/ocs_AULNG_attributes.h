@@ -40,8 +40,8 @@ constexpr const int AULNG_Type[] = {
 };
 
 #define AULNG_ATTRIBUTES \
-   {AULNG_href, "AULNG_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AULNG_value, "AULNG_value", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {AULNG_href, "AULNG_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {AULNG_value, "AULNG_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

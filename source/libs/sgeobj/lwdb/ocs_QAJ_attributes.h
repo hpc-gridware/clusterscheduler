@@ -74,25 +74,25 @@ constexpr const int QAJ_Type[] = {
 };
 
 #define QAJ_ATTRIBUTES \
-   {QAJ_host, "QAJ_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {QAJ_queue, "QAJ_queue", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_group, "QAJ_group", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_owner, "QAJ_owner", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_project, "QAJ_project", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_department, "QAJ_department", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_ru_wallclock, "QAJ_ru_wallclock", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_ru_utime, "QAJ_ru_utime", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_ru_stime, "QAJ_ru_stime", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_ru_maxrss, "QAJ_ru_maxrss", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_ru_inblock, "QAJ_ru_inblock", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_granted_pe, "QAJ_granted_pe", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {QAJ_slots, "QAJ_slots", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {QAJ_cpu, "QAJ_cpu", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_mem, "QAJ_mem", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_io, "QAJ_io", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_iow, "QAJ_iow", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_maxvmem, "QAJ_maxvmem", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {QAJ_arid, "QAJ_arid", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {QAJ_host, "QAJ_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_queue, "QAJ_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_group, "QAJ_group", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_owner, "QAJ_owner", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_project, "QAJ_project", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_department, "QAJ_department", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_ru_wallclock, "QAJ_ru_wallclock", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_ru_utime, "QAJ_ru_utime", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_ru_stime, "QAJ_ru_stime", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_ru_maxrss, "QAJ_ru_maxrss", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_ru_inblock, "QAJ_ru_inblock", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_granted_pe, "QAJ_granted_pe", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_slots, "QAJ_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_cpu, "QAJ_cpu", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_mem, "QAJ_mem", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_io, "QAJ_io", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_iow, "QAJ_iow", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_maxvmem, "QAJ_maxvmem", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {QAJ_arid, "QAJ_arid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

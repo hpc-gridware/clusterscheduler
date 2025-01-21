@@ -42,9 +42,9 @@ constexpr const int RN_Type[] = {
 };
 
 #define RN_ATTRIBUTES \
-   {RN_min, "RN_min", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RN_max, "RN_max", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {RN_step, "RN_step", AttributeStatic::UINT32, AttributeStatic::NO_HASH} \
+   {RN_min, "RN_min", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
+   {RN_max, "RN_max", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RN_step, "RN_step", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -40,8 +40,8 @@ constexpr const int ARA_Type[] = {
 };
 
 #define ARA_ATTRIBUTES \
-   {ARA_name, "ARA_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE}, \
-   {ARA_group, "ARA_group", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {ARA_name, "ARA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
+   {ARA_group, "ARA_group", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

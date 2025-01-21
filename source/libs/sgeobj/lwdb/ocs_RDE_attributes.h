@@ -42,9 +42,9 @@ constexpr const int RDE_Type[] = {
 };
 
 #define RDE_ATTRIBUTES \
-   {RDE_time, "RDE_time", AttributeStatic::UINT64, AttributeStatic::NO_HASH}, \
-   {RDE_amount, "RDE_amount", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {RDE_resource_map_list, "RDE_resource_map_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {RDE_time, "RDE_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RDE_amount, "RDE_amount", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RDE_resource_map_list, "RDE_resource_map_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

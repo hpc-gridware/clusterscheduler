@@ -38,7 +38,7 @@ constexpr const int STU_Type[] = {
 };
 
 #define STU_ATTRIBUTES \
-   {STU_name, "STU_name", AttributeStatic::STRING, AttributeStatic::UNORDERED_UNIQUE} \
+   {STU_name, "STU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 
 } // end namespace
 

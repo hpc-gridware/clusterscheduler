@@ -39,7 +39,9 @@ enum {
    TEST_double,
    TEST_host,
    TEST_string,
-   TEST_ref
+   TEST_ref,
+   TEST_obj_jb,
+   TEST_obj_any
 };
 
 constexpr const int TEST_Type[] = {
@@ -54,21 +56,25 @@ constexpr const int TEST_Type[] = {
    TEST_host,
    TEST_string,
    TEST_ref,
+   TEST_obj_jb,
+   TEST_obj_any,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
 #define TEST_ATTRIBUTES \
-   {TEST_bool, "TEST_bool", AttributeStatic::BOOL, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_char, "TEST_char", AttributeStatic::CHAR, AttributeStatic::NO_HASH}, \
-   {TEST_uint32, "TEST_uint32", AttributeStatic::UINT32, AttributeStatic::UNORDERED_NON_UNIQUE}, \
-   {TEST_uint64, "TEST_uint64", AttributeStatic::UINT64, AttributeStatic::UNORDERED_UNIQUE}, \
-   {TEST_int, "TEST_int", AttributeStatic::INT, AttributeStatic::NO_HASH}, \
-   {TEST_long, "TEST_long", AttributeStatic::LONG, AttributeStatic::NO_HASH}, \
-   {TEST_float, "TEST_float", AttributeStatic::FLOAT, AttributeStatic::NO_HASH}, \
-   {TEST_double, "TEST_double", AttributeStatic::DOUBLE, AttributeStatic::NO_HASH}, \
-   {TEST_host, "TEST_host", AttributeStatic::HOST, AttributeStatic::NO_HASH}, \
-   {TEST_string, "TEST_string", AttributeStatic::STRING, AttributeStatic::NO_HASH}, \
-   {TEST_ref, "TEST_ref", AttributeStatic::REF, AttributeStatic::NO_HASH} \
+   {TEST_bool, "TEST_bool", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true}, \
+   {TEST_char, "TEST_char", AttributeStatic::CHAR, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_uint32, "TEST_uint32", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, true, true}, \
+   {TEST_uint64, "TEST_uint64", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true}, \
+   {TEST_int, "TEST_int", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_long, "TEST_long", AttributeStatic::LONG, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_float, "TEST_float", AttributeStatic::FLOAT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_double, "TEST_double", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_host, "TEST_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_string, "TEST_string", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {TEST_ref, "TEST_ref", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TEST_obj_jb, "TEST_obj_jb", AttributeStatic::OBJECT, JB_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {TEST_obj_any, "TEST_obj_any", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

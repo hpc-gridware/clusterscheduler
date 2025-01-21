@@ -44,10 +44,10 @@ constexpr const int JJAT_Type[] = {
 };
 
 #define JJAT_ATTRIBUTES \
-   {JJAT_task_id, "JJAT_task_id", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JJAT_stat, "JJAT_stat", AttributeStatic::UINT32, AttributeStatic::NO_HASH}, \
-   {JJAT_rusage, "JJAT_rusage", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {JJAT_failed_text, "JJAT_failed_text", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {JJAT_task_id, "JJAT_task_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJAT_stat, "JJAT_stat", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJAT_rusage, "JJAT_rusage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JJAT_failed_text, "JJAT_failed_text", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

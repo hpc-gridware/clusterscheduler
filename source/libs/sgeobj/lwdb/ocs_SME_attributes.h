@@ -40,8 +40,8 @@ constexpr const int SME_Type[] = {
 };
 
 #define SME_ATTRIBUTES \
-   {SME_message_list, "SME_message_list", AttributeStatic::LIST, AttributeStatic::NO_HASH}, \
-   {SME_global_message_list, "SME_global_message_list", AttributeStatic::LIST, AttributeStatic::NO_HASH} \
+   {SME_message_list, "SME_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {SME_global_message_list, "SME_global_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

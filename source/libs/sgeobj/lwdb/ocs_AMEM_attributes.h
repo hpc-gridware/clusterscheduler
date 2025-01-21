@@ -40,8 +40,8 @@ constexpr const int AMEM_Type[] = {
 };
 
 #define AMEM_ATTRIBUTES \
-   {AMEM_href, "AMEM_href", AttributeStatic::HOST, AttributeStatic::UNORDERED_UNIQUE}, \
-   {AMEM_value, "AMEM_value", AttributeStatic::STRING, AttributeStatic::NO_HASH} \
+   {AMEM_href, "AMEM_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
+   {AMEM_value, "AMEM_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 
