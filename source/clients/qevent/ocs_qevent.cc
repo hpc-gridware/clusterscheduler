@@ -113,11 +113,7 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    fprintf(stdout, "%s\n", event_text(event, &buffer_wrapper));
    fflush(stdout);
-   /* create a callback error to test error handling */
-   if(type == SGE_TYPE_GLOBAL_CONFIG) {
-      DRETURN(SGE_EMA_FAILURE);
-   }
-   
+
    DRETURN(SGE_EMA_OK);
 }
 
@@ -204,11 +200,6 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
       }
 
    }
-   /* create a callback error to test error handling */
-   if (type == SGE_TYPE_GLOBAL_CONFIG) {
-      DRETURN(SGE_EMA_FAILURE);
-   }
-   
    DRETURN(SGE_EMA_OK);
 }
 #endif
@@ -254,11 +245,7 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 
 
    }
-   /* create a callback error to test error handling */
-   if(type == SGE_TYPE_GLOBAL_CONFIG) {
-      return SGE_EMA_FAILURE;
-   }
-   
+
    return SGE_EMA_OK;
 }
 

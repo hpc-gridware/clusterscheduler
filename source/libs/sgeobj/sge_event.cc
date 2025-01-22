@@ -141,11 +141,6 @@ const char *event_text(const lListElem *event, dstring *buffer)
       break;
 
    /* -------------------- */
-   case sgeE_GLOBAL_CONFIG:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "NEW GLOBAL CONFIG");
-      break;
-
-   /* -------------------- */
    case sgeE_JATASK_ADD:
       sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;

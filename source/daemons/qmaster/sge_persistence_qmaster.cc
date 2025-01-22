@@ -306,12 +306,6 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
          element = object;
          object_type = SGE_TYPE_EXECHOST;
          break;
-      case sgeE_GLOBAL_CONFIG:
-         key = strkey;
-         element = object;
-         /* nothing to spool for this event */
-         object_type = SGE_TYPE_ALL;
-         break;
       case sgeE_JATASK_ADD:
       case sgeE_JATASK_DEL:
       case sgeE_JATASK_MOD:

@@ -48,6 +48,7 @@ typedef struct {
    lCondition *where_dept;
    lCondition *where_acl;
    lCondition *where_jat;
+   lCondition *where_config;
 
    lEnumeration *what_queue;
    lEnumeration *what_queue2;
@@ -58,6 +59,7 @@ typedef struct {
    lEnumeration *what_jat;
    lEnumeration *what_pet;
    lEnumeration *what_pe;
+   lEnumeration *what_config;
 } sge_where_what_t;
 
 void 

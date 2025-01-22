@@ -44,8 +44,6 @@ bool st_get_flag_new_global_conf();
 
 int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
-int sge_before_dispatch(sge_evc_class_t *evc);
-
 void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list, void * arg);
 
 void set_job_flushing(sge_evc_class_t *evc);

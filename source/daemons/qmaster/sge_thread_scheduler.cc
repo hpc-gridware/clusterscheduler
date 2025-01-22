@@ -70,10 +70,10 @@
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"
 
+#include "sge.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-
-#include <ocs_gperf.h>
+#include "ocs_gperf.h"
 
 #define SCHEDULER_TIMEOUT_S 10
 #define SCHEDULER_TIMEOUT_N 0
@@ -632,6 +632,7 @@ sge_scheduler_main(void *arg) {
          const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
          const lList *master_hgrp_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
          const lList *master_sharetree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+         const lList *master_config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {
@@ -691,12 +692,28 @@ sge_scheduler_main(void *arg) {
          double prof_init = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
+         // if we received a new global configuration, we need to merge the global and local one
+         if (st_get_flag_new_global_conf()) {
+            const char *hostname = component_get_qualified_hostname();
+            const char *cell_root = bootstrap_get_cell_root();
+            u_long32 progid = component_get_component_id();
+
+            const lListElem *global = nullptr, *local = nullptr;
+            global = lGetElemHost(master_config_list, CONF_name, SGE_GLOBAL_NAME);
+            local = lGetElemHost(master_config_list, CONF_name, hostname);
+            merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
+
+            // reset the flag
+            st_set_flag_new_global_conf(false);
+         }
+
          /*
-          * - fetch and merge new cluster (global, local) configuration if it has changed
-          * - reset counters in job categories
+          * job categories are reset here, we need
+          *  - an update of the rejected field for every new run
+          *  - the resource request dependent urgency contribution is cached
+          *    per job category
           */
-         // @todo CS-924: replace this - gets config via GDI!!!
-         sge_before_dispatch(evc);
+         sge_reset_job_category();
 
          // prepare data for the scheduler itself
          copy.host_list = lCopyList(nullptr, master_exechost_list);

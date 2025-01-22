@@ -71,11 +71,6 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
 
    printf("%s\n", event_text(event, &buffer_wrapper));
 
-   /* create a callback error to test error handling */
-   if (type == SGE_TYPE_GLOBAL_CONFIG) {
-      DRETURN(SGE_EMA_FAILURE);
-   }
-   
    DRETURN(SGE_EMA_OK);
 }
 

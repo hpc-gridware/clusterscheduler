@@ -85,7 +85,6 @@
 *        SGE_TYPE_CALENDAR
 *        SGE_TYPE_CKPT
 *        SGE_TYPE_CONFIG
-*        SGE_TYPE_GLOBAL_CONFIG
 *        SGE_TYPE_EXECHOST
 *        SGE_TYPE_JATASK
 *        SGE_TYPE_PETASK
@@ -124,7 +123,7 @@ typedef enum {
    SGE_TYPE_CALENDAR,         /*1*/
    SGE_TYPE_CKPT,             /*2*/
    SGE_TYPE_CONFIG,           /*3*/
-   SGE_TYPE_GLOBAL_CONFIG,    /*4*/
+   SGE_TYPE_UNUSED,           /*4*/
    SGE_TYPE_EXECHOST,         /*5*/
    SGE_TYPE_JATASK,           /*6*/
    SGE_TYPE_PETASK,           /*7*/

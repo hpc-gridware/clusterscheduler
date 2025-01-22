@@ -612,7 +612,7 @@ getConfEntry(const char *name, tConfEntry conf[]) {
  * \note
  * MT-NOTE: merge_configuration() is MT safe.
  */
-int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_root, lListElem *global, lListElem *local, lList **lpp) {
+int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp) {
    const lList *cl;
    const lListElem *elem;
    lListElem *ep2;

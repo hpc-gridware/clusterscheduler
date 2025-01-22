@@ -153,7 +153,6 @@ spool_classic_create_context(lList **answer_list, const char *args)
             switch (i) {
                /* pseudo types without spooling action */
                // @see spool_classic_default_shutdown_func
-               case SGE_TYPE_GLOBAL_CONFIG:
                case SGE_TYPE_JOB_SCHEDD_INFO:
                case SGE_TYPE_SCHEDD_MONITOR:
                case SGE_TYPE_SHUTDOWN:

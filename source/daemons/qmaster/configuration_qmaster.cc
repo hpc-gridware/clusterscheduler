@@ -364,10 +364,6 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
-   if (strcmp(SGE_GLOBAL_NAME, unique_name) == 0) {
-      sge_add_event(0, sgeE_GLOBAL_CONFIG, 0, 0, nullptr, nullptr, nullptr, nullptr, gdi_session);
-   }
-
    /*
    ** is the configuration change relevant for the qmaster itsself?
    ** if so, initialise conf struct anew

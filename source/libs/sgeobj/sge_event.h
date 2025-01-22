@@ -183,7 +183,7 @@ typedef enum {
    sgeE_EXECHOST_DEL,               /*23 + event delete exec host */
    sgeE_EXECHOST_MOD,               /*24 + event modify exec host */
 
-   sgeE_GLOBAL_CONFIG,              /*25 + global config changed, replace by sgeE_CONFIG_MOD */
+   sgeE_UNUSED,                     /*25 */
 
    sgeE_JATASK_ADD,                 /*26 + event add array job task */
    sgeE_JATASK_DEL,                 /*27 + event delete array job task */

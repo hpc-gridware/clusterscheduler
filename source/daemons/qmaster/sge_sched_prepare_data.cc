@@ -301,6 +301,13 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
       where_what->where_dept = lWhere("%T(%I m= %u)", US_Type, US_type, US_DEPT);
    }
 
+   /* configuration */
+   if (where_what->where_config == nullptr) {
+      const char *hostname = component_get_qualified_hostname();
+      where_what->where_config = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name, hostname);
+      where_what->what_config = lWhat("%T(ALL)", CONF_Type);
+   }
+
    /* host */
    if (where_what->where_host == nullptr) {
       where_what->where_host = lWhere("%T(!(%Ic=%s))", EH_Type, EH_name, SGE_TEMPLATE_NAME);
@@ -411,6 +418,7 @@ free_what_and_where(sge_where_what_t *where_what) {
    lFreeWhere(&(where_what->where_dept));
    lFreeWhere(&(where_what->where_acl));
    lFreeWhere(&(where_what->where_jat));
+   lFreeWhere(&(where_what->where_config));
 
    lFreeWhat(&(where_what->what_queue));
    lFreeWhat(&(where_what->what_queue2));
@@ -421,6 +429,7 @@ free_what_and_where(sge_where_what_t *where_what) {
    lFreeWhat(&(where_what->what_jat));
    lFreeWhat(&(where_what->what_pet));
    lFreeWhat(&(where_what->what_pe));
+   lFreeWhat(&(where_what->what_config));
 }
 
 
@@ -546,6 +555,7 @@ sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(GDI_LAYER);
    DPRINTF("notification about new global configuration\n");
+
    st_set_flag_new_global_conf(true);
    DRETURN(SGE_EMA_OK);
 }

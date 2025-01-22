@@ -421,8 +421,6 @@
 *        sgeE_EXECHOST_DEL                event delete exec host
 *        sgeE_EXECHOST_MOD                event modify exec host
 *     
-*        sgeE_GLOBAL_CONFIG               global config changed, replace by sgeE_CONFIG_MOD
-*     
 *        sgeE_JATASK_ADD                  event add array job task
 *        sgeE_JATASK_DEL                  event delete array job task
 *        sgeE_JATASK_MOD                  event modify array job task

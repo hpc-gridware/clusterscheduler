@@ -140,7 +140,7 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
    sge_mirror_subscribe(evc, SGE_TYPE_CQUEUE,         nullptr, nullptr, nullptr, where_what->where_cqueue, where_what->what_cqueue);
    sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST,       nullptr, nullptr, nullptr, where_what->where_host, where_what->what_host);
    sge_mirror_subscribe(evc, SGE_TYPE_HGROUP,         nullptr, nullptr, nullptr, nullptr, nullptr);
-   sge_mirror_subscribe(evc, SGE_TYPE_GLOBAL_CONFIG,  nullptr, sge_process_global_config_event, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_CONFIG,         nullptr, sge_process_global_config_event, nullptr, where_what->where_config, where_what->what_config);
    sge_mirror_subscribe(evc, SGE_TYPE_JOB,            sge_process_job_event_before, sge_process_job_event_after, nullptr, where_what->where_job, where_what->what_job);
    sge_mirror_subscribe(evc, SGE_TYPE_JATASK,         nullptr, sge_process_ja_task_event_after, nullptr, where_what->where_jat, where_what->what_jat);
    sge_mirror_subscribe(evc, SGE_TYPE_PE,             nullptr, nullptr, nullptr, nullptr, where_what->what_pe);
@@ -168,42 +168,8 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
    /* configuration changes and trigger should have immediate effevc->ect */
    evc->ec_set_flush(evc, sgeE_SCHED_CONF, true, 0);
    evc->ec_set_flush(evc, sgeE_SCHEDDMONITOR, true, 0);
-   evc->ec_set_flush(evc, sgeE_GLOBAL_CONFIG, true, 0);
+   evc->ec_set_flush(evc, sgeE_CONFIG_MOD, true, 0);
 
    DRETURN(true);
-}
-
-/* do everything that needs to be done in common for all schedulers 
-   between processing events and dispatching */
-int
-sge_before_dispatch(sge_evc_class_t *evc)
-{     
-   const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = component_get_component_id();
-   
-   DENTER(TOP_LAYER);
-
-   /* hostname resolving scheme in global config could have changed
-      get it and use it if we got a notification about a new global config */
-   if (st_get_flag_new_global_conf()) {
-      lListElem *global = nullptr, *local = nullptr;
-   
-      if (ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &global, &local) == 0) {
-         merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
-      }  
-      lFreeElem(&global);
-      lFreeElem(&local); 
-      st_set_flag_new_global_conf(false);
-   }  
-
-   /*
-    * job categories are reset here, we need 
-    *  - an update of the rejected field for every new run
-    *  - the resource request dependent urgency contribution is cached 
-    *    per job category 
-    */
-   sge_reset_job_category();
-
-   DRETURN(0);
 }
 

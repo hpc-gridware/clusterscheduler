@@ -474,18 +474,6 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
             evc->ec_mod_subscription_where(evc, sgeE_CONFIG_MOD, what_el, where_el);
          }
          break;
-      case SGE_TYPE_GLOBAL_CONFIG:
-         evc->ec_subscribe(evc, sgeE_GLOBAL_CONFIG);
-                                         /* regard it as a sort of trigger
-                                          * in fact this event is not needed!
-                                          * it doesn't even contain the config data!
-                                          * it is sent before the CONFIG_MOD event, so
-                                          * the receiver cannot even properly react to it!
-                                          */
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_GLOBAL_CONFIG, what_el, where_el);
-         }
-         break;
       case SGE_TYPE_EXECHOST:
          evc->ec_subscribe(evc, sgeE_EXECHOST_LIST);
          evc->ec_subscribe(evc, sgeE_EXECHOST_ADD);
@@ -840,9 +828,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_CONFIG_DEL);
          evc->ec_unsubscribe(evc, sgeE_CONFIG_MOD);
          break;
-      case SGE_TYPE_GLOBAL_CONFIG:
-         evc->ec_unsubscribe(evc, sgeE_GLOBAL_CONFIG);
-         break;
       case SGE_TYPE_EXECHOST:
          evc->ec_unsubscribe(evc, sgeE_EXECHOST_LIST);
          evc->ec_unsubscribe(evc, sgeE_EXECHOST_ADD);
@@ -1194,10 +1179,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             break;
          case sgeE_EXECHOST_MOD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_EXECHOST, SGE_EMA_MOD, event);
-            break;
-
-         case sgeE_GLOBAL_CONFIG:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_GLOBAL_CONFIG, SGE_EMA_MOD, event);
             break;
 
          case sgeE_JATASK_ADD:
