@@ -85,6 +85,7 @@ option(WITH_QMAKE "Enable build of qmake" ON)
 option(WITH_JNI "Add JNI code for libraries like libdrmaa" ON)
 option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
 option(WITH_PYTHON "Enable Python external bindings" OFF)
+option(WITH_BOOST "Enable Boost framework" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -265,11 +266,16 @@ if (WITH_PYTHON)
 endif ()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")
-   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)
+   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m execinfo)
 else ()
    set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
 endif ()
 set(SGE_LIBS ${SGE_JEMALLOC_LIB} ${SGE_LIBS_SHARED})
+
+if (WITH_BOOST)
+   find_package(Boost 1.66 COMPONENTS program_options REQUIRED)
+   add_compile_definitions(WITH_BOOST)
+endif()
 
 if (INSTALL_SGE_DOC)
    include(cmake/BuildMarkdownMan.cmake)

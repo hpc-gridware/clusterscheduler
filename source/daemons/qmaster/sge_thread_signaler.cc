@@ -149,6 +149,7 @@ sge_signaler_main(void *arg) {
                     ocs::ReportingFileWriter::create_monitoring_records);
    sge_qmaster_thread_init(QMASTER, SIGNAL_THREAD, true);
 
+   // this thread is interested in signals SIGINT and SIGTERM
    sigemptyset(&sig_set);
    sigaddset(&sig_set, SIGINT);
    sigaddset(&sig_set, SIGTERM);

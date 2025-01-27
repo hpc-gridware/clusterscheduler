@@ -1478,6 +1478,8 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
       }
    }
 
+   // @todo CS-731 if DISPATCH_OK and for DOMINANT_LAYER_HOST place for additional binding specific checks
+
    if (*start_time == DISPATCH_TIME_QUEUE_END) {
       *start_time = latest_time;
    }
@@ -4180,6 +4182,9 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                         } else {
                            lAddUlong(gdil_ep, JG_slots, slots);
                         }
+
+                        // @todo CS-731 copy task specific binding decision into the JG-element
+
                         if (a->is_soft)
                            a->soft_violations += slots * lGetUlong(qep, QU_soft_violation);
                      }
@@ -5099,6 +5104,8 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
          if (a->start == DISPATCH_TIME_QUEUE_END) {
             a->start = job_start_time;
          }
+
+         // @todo CS-731 copy task specific binding decision into the JG-element
       }
    }
 
@@ -6699,6 +6706,9 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
       } // end for each request per scope
       // @todo if global requests have not matched, no need to check other scopes
    } // end for each scope
+
+
+   // @todo CS-731 if DISPATCH_OK: place for additional binding specific checks
 
    *slots = max_slots;
    *slots_qend = max_slots_qend;

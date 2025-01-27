@@ -291,10 +291,12 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
    DENTER_(BASIS_LAYER);
    char buf[128 * 4];
 
-   /* Make sure to have at least a one byte logging string */
-   if (!msg || msg[0] == '\0') {
-      snprintf(buf, sizeof(buf), MSG_LOG_CALLEDLOGGINGSTRING_S, msg ? MSG_LOG_ZEROLENGTH : MSG_POINTER_NULL);
+   if (msg == nullptr) {
+      snprintf(buf, sizeof(buf), MSG_LOG_CALLEDLOGGINGSTRING_S, MSG_POINTER_NULL);
       msg = buf;
+   } else if (msg[0] == '\0') {
+      // nothing to do if string is empty
+      return;
    }
 
    DPRINTF("%s %d %s\n", file, line, msg);

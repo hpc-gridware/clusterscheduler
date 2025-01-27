@@ -40,6 +40,7 @@
 
 #include <sys/resource.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
@@ -239,6 +240,15 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 
    DENTER(TOP_LAYER);
 
+   // install signal handler for synchronous signals that will only be delivered to the thread that caused it.
+   ocs::TerminationManager::install_signal_handler();
+
+   // install terminate handler once, that shows us uncaught exceptions
+   if (thread_id == SIGNAL_THREAD) {
+      ocs::TerminationManager::install_terminate_handler();
+   }
+
+   // initialize CULL per thread
    lInit(nmv);
 
    if (ocs::gdi::ClientBase::setup(prog_id, thread_id, &alp, true) != ocs::gdi::ErrorValue::AE_OK) {

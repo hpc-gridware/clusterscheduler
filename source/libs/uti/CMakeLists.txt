@@ -23,6 +23,7 @@ set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
       config_file.cc
       ocs_JsonUtil.cc
+      ocs_TerminationManager.cc
       sge_afsutil.cc
       sge_arch.cc
       sge_binding_hlp.cc
@@ -73,6 +74,8 @@ set(LIBRARY_SOURCES
       sge_uidgid.cc
       sge_unistd.cc)
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
+
+#set_source_files_properties(ocs_TerminationManager.cc PROPERTIES COMPILE_FLAGS -Wno-infinite-recursion)
 
 # CS-199 makes use of readdir_r/readdir64_r which is deprecated for Linux only
 set_source_files_properties(sge_unistd.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)

@@ -39,6 +39,7 @@
 #  include "pybind11/embed.h"
 #endif
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
@@ -73,12 +74,10 @@
 #include "sge_thread_event_master.h"
 #include "sge_thread_utility.h"
 #include "setup_qmaster.h"
-#include "sge_host_qmaster.h"
 #include "qmaster_heartbeat.h"
 #include "shutdown.h"
 #include "sge_qmaster_threads.h"
 #include "msg_qmaster.h"
-
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -202,7 +201,12 @@ int main(int argc, char *argv[]) {
    sge_init_language(nullptr,nullptr);
 #endif
 
-   /* 
+   // If possible we want to generate a core dump. Try to set OS specific core dump settings
+   if (!ocs::TerminationManager::allow_core_dumps()) {
+      sge_exit(1);
+   }
+
+   /*
     * qmaster doesn't support any commandline anymore,
     * but we should show version string and -help option 
     */
