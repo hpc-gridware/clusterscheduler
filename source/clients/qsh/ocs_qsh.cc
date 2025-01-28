@@ -49,7 +49,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 
-#include "uti/sge_afsutil.h"
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
@@ -1331,7 +1331,8 @@ void block_notification_signals()
 
 int main(int argc, const char **argv)
 {
-   u_long32 my_who = QSH; 
+   DENTER_MAIN(TOP_LAYER, "qsh");
+   u_long32 my_who = QSH;
    lList *opts_cmdline = nullptr;
    lList *opts_defaults = nullptr;
    lList *opts_scriptfile = nullptr;
@@ -1341,7 +1342,6 @@ int main(int argc, const char **argv)
    lList *lp_jobs = nullptr;
    lList *alp = nullptr;
    lList *answer = nullptr;
-
    const lListElem *aep = nullptr;
    u_long32 status = STATUS_OK;
    u_long32 quality;
@@ -1359,7 +1359,6 @@ int main(int argc, const char **argv)
    int noshell = 0;
    ternary_t pty_option = UNSET;
    ternary_t suspend_remote_option = UNSET;
-
    const char *host = nullptr;
    char name[MAX_JOB_NAME + 1];
    const char *client_name = nullptr;
@@ -1367,13 +1366,9 @@ int main(int argc, const char **argv)
    char *job_dir = nullptr;
    char *utilbin_dir = nullptr;
    bool csp_mode = false;
-
    int alp_error;
-
    lListElem *ep = nullptr;
-
    int sock = 0;
-
    const char* progname = nullptr;
    const char* unqualified_hostname = nullptr;
    const char* qualified_hostname = nullptr;
@@ -1383,8 +1378,6 @@ int main(int argc, const char **argv)
    const char* username = nullptr;
    const char* mastername = nullptr;
    COMM_HANDLE *comm_handle = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "qsh");
 
    /*
    ** get command name: qlogin, qrsh or qsh
@@ -1401,8 +1394,10 @@ int main(int argc, const char **argv)
       my_who = QSH;
    }
 
-   log_state_set_log_gui(1);
    sge_setup_sig_handlers(my_who);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(my_who, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

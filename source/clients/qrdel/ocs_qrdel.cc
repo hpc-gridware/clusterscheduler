@@ -36,6 +36,7 @@
 
 #include "basis_types.h"
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_profiling.h"
@@ -59,15 +60,15 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qrdel");
    lList *pcmdline = nullptr, *id_list = nullptr;
    lList *alp = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "qrdel");
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRDEL);
 
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QRDEL, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);

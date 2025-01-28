@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -81,6 +82,9 @@ int main()
    sge_evc_class_t *evc = nullptr;
 
    sge_setup_sig_handlers(QEVENT);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    // this thread will use the GLOBAL data store
    ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);

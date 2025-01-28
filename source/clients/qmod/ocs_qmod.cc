@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -65,20 +66,18 @@ static bool answer_list_has_exit_code_error(lList **answer_list);
 
 extern char **environ;
 
-int main(
-int argc,
-char **argv
-) {
+int main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qmod");
    u_long32 force = 0;
    lList *ref_list = nullptr;
    lList *alp = nullptr, *pcmdline = nullptr;
    const lListElem *aep;
    bool answ_list_has_err = false;
 
-   DENTER_MAIN(TOP_LAYER, "qmod");
-
-   log_state_set_log_gui(1);
    sge_setup_sig_handlers(QMOD);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QMOD, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);

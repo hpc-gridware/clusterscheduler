@@ -50,8 +50,6 @@ void log_state_set_log_file(const char *file);
 
 void log_state_set_log_verbose(int i);
 
-void log_state_set_log_gui(int i);
-
 void log_state_set_log_as_admin_user(int i);
 
 u_long32 log_state_get_log_level();
@@ -59,8 +57,6 @@ u_long32 log_state_get_log_level();
 const char *log_state_get_log_file();
 
 int log_state_get_log_verbose();
-
-int log_state_get_log_gui();
 
 void
 sge_log(u_long32 log_level, const char *msg, const char *file, int line);

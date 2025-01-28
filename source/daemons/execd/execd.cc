@@ -36,6 +36,7 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_os.h"
@@ -102,7 +103,6 @@ static void parse_cmdline_execd(char **argv);
 static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
 
-int main(int argc, char *argv[]);
 static u_long64 last_qmaster_registration_time = 0;
 
 
@@ -153,6 +153,8 @@ unsigned long sge_execd_application_status(char** info_message)
 /*-------------------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "execd");
+
    int ret;
    int my_pid;
    int ret_val;
@@ -163,8 +165,6 @@ int main(int argc, char **argv)
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
    lList *alp = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "execd");
 
    lInit(nmv);
 
@@ -198,12 +198,15 @@ int main(int argc, char **argv)
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(EXECD);
 
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_signal_handler();
+
    if (ocs::gdi::ClientBase::setup(EXECD, MAIN_THREAD, &alp, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);
    }
    component_set_exit_func(execd_exit_func);
-   
+
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
    if (sge_smf_used() == 1 && sge_smf_init_libs() != 0) {

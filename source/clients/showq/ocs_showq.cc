@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <math.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -62,6 +63,7 @@ static int showq_show_job_tacc(lList * jid, int full,
 /*-------------------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "showq");
    lList          *alp = nullptr;
    lList          *pcmdline = nullptr;
    lList          *user_list = nullptr;
@@ -72,12 +74,11 @@ int main(int argc, char **argv)
    bool            binding = false;
    int             ret = 0;
 
-   DENTER_MAIN(TOP_LAYER, "showq");
-
    /* Set up the program information name */
    sge_setup_sig_handlers(QSTAT);
 
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

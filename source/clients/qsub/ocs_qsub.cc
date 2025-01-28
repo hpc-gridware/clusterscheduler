@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
@@ -80,6 +81,7 @@ static void error_handler(const char *message);
 int 
 main(int argc, const char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "qsub");
    lList *opts_cmdline = nullptr;
    lList *opts_defaults = nullptr;
    lList *opts_scriptfile = nullptr;
@@ -111,10 +113,11 @@ main(int argc, const char **argv)
    const char *unqualified_hostname = nullptr;
    const char *mastername = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "qsub");
-
    /* Set up the program information name */
    sge_setup_sig_handlers(QSUB);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    DPRINTF("Initializing JAPI\n");
 

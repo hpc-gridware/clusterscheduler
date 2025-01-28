@@ -39,6 +39,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
@@ -229,6 +230,9 @@ main(int argc, char **argv) {
    /* AA: TODO: change this */
    component_set_exit_func(shadowd_exit_func);
    sge_setup_sig_handlers(SHADOWD);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_signal_handler();
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */

@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <strings.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -585,13 +586,16 @@ static void register_scheduler(sge_evc_class_t *evc)
 
 int main(int argc, char *argv[])
 {
+   DENTER_MAIN(TOP_LAYER, "simple_scheduler");
    ocs::gdi::Client::sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "simple_scheduler");
 
    /* setup signal handlers */
    sge_setup_sig_handlers(QSCHED);
+
+   ocs::TerminateManager::install_signal_handler();
+   ocs::TerminateManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(&ctx, SCHEDD, &alp) != AE_OK) {
       answer_list_output(&alp);

@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -372,12 +373,12 @@ static int spool_object_list(const char *directory,
 
 int main(int argc, char *argv[])
 {
+   DENTER_MAIN(TOP_LAYER, "spooldefaults");
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "spooldefaults");
-
-   log_state_set_log_gui(0);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       show_answer(answer_list);

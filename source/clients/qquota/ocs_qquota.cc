@@ -38,6 +38,7 @@
 
 #include "basis_types.h"
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -193,6 +194,7 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "qquota");
    lList *pcmdline = nullptr;
    lList *host_list = nullptr;
    lList *resource_match_list = nullptr;
@@ -204,10 +206,6 @@ int main(int argc, char **argv)
    report_handler_t *report_handler = nullptr;
    bool qquota_result = true;
 
-   DENTER_MAIN(TOP_LAYER, "qquota");
-
-   log_state_set_log_gui(true);
-
    if (ocs::gdi::ClientBase::setup_and_enroll(QQUOTA, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
@@ -215,7 +213,10 @@ int main(int argc, char **argv)
    }
 
    sge_setup_sig_handlers(QQUOTA);
-   
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
+
    /*
    ** stage 1 of commandline parsing
    */

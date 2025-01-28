@@ -42,6 +42,7 @@
 
 #include "rapidjson/document.h"
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
@@ -83,7 +84,6 @@
 #include "msg_common.h"
 #include "msg_history.h"
 #include "msg_qacct.h"
-
 
 typedef struct {
    size_t host;
@@ -164,8 +164,8 @@ static FILE *fp = nullptr;
 ** DESCRIPTION
 **   main routine for qacct SGE client
 */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qacct");
    int ret = 0;
    u_long32 days;
    sge_qacct_columns column_sizes;
@@ -197,9 +197,10 @@ int main(int argc, char **argv)
    char szLine[MAX_STRING_SIZE * 10];
    size_t szLine_size = sizeof(szLine);
 
-   DENTER_MAIN(TOP_LAYER, "qacct");
+   sge_setup_sig_handlers(QACCT);
 
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QACCT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
@@ -545,7 +546,6 @@ int main(int argc, char **argv)
 
    DPRINTF("acct_file: %s\n", (acct_file ? acct_file : "(nullptr)"));
 
-   sge_setup_sig_handlers(QACCT);
    is_path_setup = 1;
 
    /*
@@ -644,7 +644,6 @@ int main(int argc, char **argv)
                answer_list_output(&alp);
                goto QACCT_EXIT;
             }
-            sge_setup_sig_handlers(QACCT);
             is_path_setup = 1;
          }
          if (queueref_list && has_domain){ 

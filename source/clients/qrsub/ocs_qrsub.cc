@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
@@ -55,18 +56,17 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, const char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qrsub");
    lList *pcmdline = nullptr;
    lList *alp = nullptr;
    lList *ar_lp = nullptr;
-
    lListElem *ar = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "qrsub");
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRSUB);
 
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QRSUB, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);

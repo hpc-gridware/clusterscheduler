@@ -36,13 +36,12 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
@@ -101,12 +100,13 @@ static int init_framework(const char *method, const char *shlib,
 
 int main(int argc, char *argv[])
 {
+   DENTER_MAIN(TOP_LAYER, "spoolinit");
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "spoolinit");
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
-   log_state_set_log_gui(1);
    log_state_set_log_level(LOG_WARNING);
    lInit(nmv);
 

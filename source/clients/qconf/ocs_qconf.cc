@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -48,13 +49,14 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "qconf");
    lList *alp = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "qconf");
-
-   log_state_set_log_gui(1);
    sge_setup_sig_handlers(QCONF);
-   
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
+
    if (ocs::gdi::ClientBase::setup_and_enroll(QCONF, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       sge_exit(1);

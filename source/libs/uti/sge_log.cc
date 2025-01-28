@@ -55,10 +55,9 @@ typedef struct {
    u_long32 log_level;
    int log_as_admin_user;
    int verbose;
-   int gui_log;
 } log_state_t;
 
-static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1, 1};
+static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1} ;
 
 static void
 sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
@@ -165,30 +164,6 @@ int log_state_get_log_verbose() {
    return verbose;
 }
 
-/****** uti/log/log_state_get_log_gui() ******************************************
-*  NAME
-*     log_state_get_log_gui() -- Is GUI logging enabled?
-*
-*  SYNOPSIS
-*     int log_state_get_log_gui() 
-*
-*  FUNCTION
-*     Is GUI logging enabled? 
-*     With GUI logging enabled messages are printed to stderr/stdout.  
-*
-*  RESULT
-*     int - 0 or 1 
-*
-*  SEE ALSO
-*     uti/log/log_state_set_log_gui()
-******************************************************************************/
-int log_state_get_log_gui() {
-   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   int gui_log = Log_State.gui_log;
-   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   return gui_log;
-}
-
 /****** uti/log/log_state_set_log_level() *****************************************
 *  NAME
 *     log_state_set_log_level() -- Set log level to be used.
@@ -239,27 +214,6 @@ void log_state_set_log_verbose(int i) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-/****** uti/log/log_state_set_log_gui() ********************************************
-*  NAME
-*     log_state_set_log_gui() -- Enable/disable logging for GUIs 
-*
-*  SYNOPSIS
-*     void log_state_set_log_gui(int i) 
-*
-*  FUNCTION
-*     Enable/disable logging for GUIs 
-*     With GUI logging enabled messages are printed to stderr/stdout.  
-*
-*  INPUTS
-*     int i - 0 or 1 
-******************************************************************************/
-void log_state_set_log_gui(int i) {
-
-   sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   Log_State.gui_log = i;
-   sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-}
-
 /****** uti/log/log_state_set_log_as_admin_user() *****************************
 *  NAME
 *     log_state_set_log_as_admin_user() -- Enable/Disable logging as admin user 
@@ -303,10 +257,6 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line) {
 
    /* quick exit if nothing to log */
    if (log_level > MAX(log_state_get_log_level(), LOG_WARNING)) {
-      return;
-   }
-
-   if (!log_state_get_log_gui()) {
       return;
    }
 

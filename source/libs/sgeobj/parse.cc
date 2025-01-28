@@ -185,7 +185,6 @@ lList **alpp
 char **rp;
 stringT str;
 lListElem *ep; /* SPA_Type */
-
    DENTER(TOP_LAYER);
 
    rp = sp;

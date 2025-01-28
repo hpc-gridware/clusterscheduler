@@ -46,10 +46,10 @@
 
 #include "basis_types.h"
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_stdio.h"
@@ -87,7 +87,6 @@ static void qrsh_error(const char *fmt, ...)
    char *taskid = nullptr;
    int file;
    char fileName[SGE_PATH_MAX];
-
    va_list ap;
    char message[MAX_STRING_SIZE];
 
@@ -871,6 +870,9 @@ static int writeExitCode(int myExitCode, int programExitCode)
 */
 int main(int argc, char *argv[])
 {
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
+
    int   exitCode = 0;
    char *command  = nullptr;
    char *wrapper = nullptr;

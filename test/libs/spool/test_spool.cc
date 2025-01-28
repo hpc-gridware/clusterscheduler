@@ -37,6 +37,7 @@
 #include <cstring>
 #include <ctime>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -603,12 +604,12 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
 
 int main(int argc, char *argv[])
 {
+   DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
+
    lListElem *spooling_context;
    time_t next_prof_output = 0;
    lList *answer_list = nullptr;
    sge_evc_class_t *evc = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
 
    /* parse commandline parameters */
    if(argc != 4) {
@@ -622,6 +623,9 @@ int main(int argc, char *argv[])
    }
    
    sge_setup_sig_handlers(QEVENT);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    // this thread will use the GLOBAL data store
    ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);

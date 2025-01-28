@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -136,17 +137,17 @@ sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
 
 /************************************************************************/
 int main(int argc, const char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qrsub");
    int ret = 0;
    lList *pcmdline = nullptr;
    lList *answer_list = nullptr;
    qrstat_env_t qrstat_env;
 
-   DENTER_MAIN(TOP_LAYER, "qrsub");
-
    /* Set up the program information name */
    sge_setup_sig_handlers(QRSTAT);
 
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QRSTAT, MAIN_THREAD, &answer_list) != ocs::gdi::AE_OK) {
       answer_list_output(&answer_list);

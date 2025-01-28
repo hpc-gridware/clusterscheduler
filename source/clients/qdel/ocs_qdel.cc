@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cctype>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -65,6 +66,7 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qdel");
    /* lListElem *rep, *nxt_rep, *jep, *aep, *jrep, *idep; */
    int ret = 0;
    const lListElem *aep;
@@ -76,9 +78,8 @@ int main(int argc, char **argv) {
    bool have_master_privileges;
    cl_com_handle_t* handle = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "qdel");
-
-   log_state_set_log_gui(1);
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QDEL, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);

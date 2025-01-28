@@ -44,13 +44,12 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/sge_job.h"
 
 #include "sched/sge_schedd_text.h"
 
 #include "ocs_client_print.h"
 #include "ocs_qstat_filter.h"
-
-#include <sge_job.h>
 
 /* ----------------------- qselect xml handler ------------------------------ */
 
@@ -60,7 +59,7 @@ static int qselect_xml_destroy(qselect_handler_t *thiz, lList** alpp);
 static int qselect_xml_started(qselect_handler_t *thiz, lList** alpp);
 
 int qselect_xml_init(qselect_handler_t* handler, lList **alpp) {
-   
+
    memset(handler, 0, sizeof(qselect_handler_t));
    
    handler->ctx = sge_malloc(sizeof(dstring));
@@ -119,7 +118,7 @@ int cqueue_summary_xml_handler_init(cqueue_summary_handler_t *handler) {
 static int cqueue_summary_xml_report_finished(cqueue_summary_handler_t *handler, lList **alpp) {
    if (handler->ctx != nullptr) {
       lListElem *xml_elem = nullptr;
-    
+
       xml_elem = xml_getHead("job_info", (lList*)handler->ctx, nullptr);
       handler->ctx = nullptr;
       lWriteElemXMLTo(xml_elem, stdout, -1);  

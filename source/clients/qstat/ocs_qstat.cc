@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cctype>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -184,6 +185,7 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "qstat");
    lList *alp = nullptr;
    lList *pcmdline = nullptr;
    lList *pfile = nullptr;
@@ -199,8 +201,6 @@ int main(int argc, char *argv[]) {
    u_long32 isXML = 0;
    bool more = true;
 
-   DENTER_MAIN(TOP_LAYER, "qstat");
-
    /* initialize the qstat_env */
    memset(&qstat_env, 0, sizeof(qstat_env_t));
    qstat_env.full_listing = QSTAT_DISPLAY_ALL;
@@ -213,7 +213,9 @@ int main(int argc, char *argv[]) {
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);
-   log_state_set_log_gui(true);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

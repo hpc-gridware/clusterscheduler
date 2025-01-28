@@ -373,7 +373,6 @@ int japi_init_mt(dstring *diag)
   
    DENTER(TOP_LAYER);
 
-   log_state_set_log_gui(1);
    /* current major assumptions are
       - code is not compiled with -DCRYPTO
       - code is not compiled with -DKERBEROS
@@ -4049,8 +4048,6 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
       lFreeList(&alp);
       goto SetupFailed;
    }
-
-   log_state_set_log_gui(0);
 
    /* JAPI parameters passed through environment */
    if ((s=getenv("SGE_JAPI_EDTIME"))) {

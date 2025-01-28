@@ -36,6 +36,7 @@
 #include <cstring>
 #include <math.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -396,6 +397,7 @@ switch_list_qhost_parse_from_file(lList **switch_list, lList **answer_list, cons
 /************************************************************************/
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "qhost");
    lList *pcmdline = nullptr;
    lList *ul = nullptr;
    lList *host_list = nullptr;
@@ -407,11 +409,12 @@ int main(int argc, char **argv)
    int is_ok = 0;
    int qhost_result = 0;
 
-   DENTER_MAIN(TOP_LAYER, "qhost");
 
    sge_sig_handler_in_main_loop = 0;
-   log_state_set_log_gui(true);
    sge_setup_sig_handlers(QHOST);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QHOST, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

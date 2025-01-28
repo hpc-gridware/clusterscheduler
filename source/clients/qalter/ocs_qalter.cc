@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <cerrno>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -77,6 +78,7 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, const char **argv) {
+   DENTER_MAIN(TOP_LAYER, "qalter");
    int ret = STATUS_OK;
    lList *alp = nullptr;
    lList *request_list = nullptr;
@@ -88,8 +90,6 @@ int main(int argc, const char **argv) {
    ocs::gdi::SubCommand::SubCmd sub_cmd = ocs::gdi::SubCommand::SGE_GDI_SUB_NONE;
    int tmp_ret;
    int me_who;
-
-   DENTER_MAIN(TOP_LAYER, "qalter");
 
    /*
    ** get command name: qalter or qresub
@@ -108,8 +108,10 @@ int main(int argc, const char **argv) {
       me_who = QALTER;
    } 
 
-   log_state_set_log_gui(1);
    sge_setup_sig_handlers(me_who);
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup_and_enroll(me_who, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

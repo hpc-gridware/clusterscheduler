@@ -48,6 +48,7 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -448,13 +449,14 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
 
 int main(int argc, char *argv[])
 {
+   DENTER_MAIN(TOP_LAYER, "qevent");
    qevent_options enabled_options;
    dstring errors = DSTRING_INIT;
    int i, gdi_setup;
    lList *alp = nullptr;
    sge_evc_class_t *evc = nullptr;
 
-   DENTER_MAIN(TOP_LAYER, "qevent");
+   sge_setup_sig_handlers(QEVENT);
 
    /* dump pid to file */
    qevent_dump_pid_file();
@@ -464,7 +466,8 @@ int main(int argc, char *argv[])
    qevent_set_option_struct(&enabled_options);
    qevent_parse_command_line(argc, argv, &enabled_options);
 
-   
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
 
    /* check if help option is set */
    if (enabled_options.help_option) {
@@ -481,9 +484,6 @@ int main(int argc, char *argv[])
       sge_exit(1);
    }
 
-
-   log_state_set_log_gui(1);
-   sge_setup_sig_handlers(QEVENT);
 
    // select primary DS
    ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);

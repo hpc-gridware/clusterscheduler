@@ -344,7 +344,6 @@ ocs::TerminationManager::signal_handler(int sig, siginfo_t* info, void* context)
    // Print stacktrace
    ss << "Stacktrace:" << std::endl;
    ss << get_stacktrace(true) << std::endl;
-   std::cerr << ss.str();
 
    // Try to write into the log file
    std::string line;
@@ -442,10 +441,12 @@ ocs::TerminationManager::trigger_segfault() {
  * This method triggers a stack overflow by calling itself recursively.
  */
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Winfinite-recursion"
+#pragma GCC diagnostic ignored "-Wpedantic"
 void
-ocs::TerminationManager::trigger_stack_overflow() {
-   trigger_stack_overflow();
+ocs::TerminationManager::trigger_stack_overflow(const int iterations) {
+   if (iterations > 0) {
+      trigger_stack_overflow();
+   }
 }
 #pragma GCC diagnostic pop
 
