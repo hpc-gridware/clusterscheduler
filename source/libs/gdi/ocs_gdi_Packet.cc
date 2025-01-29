@@ -173,7 +173,7 @@ ocs::gdi::Packet::initialize_auth_info() {
                                  sep, grp_array[i].id, sep, grp_array[i].name);
    }
 
-   // supplementary group date is not required anymore (no need to free because this was borrowed from the component above)
+   // supplementary group data is not required anymore (no need to free because this was borrowed from the component above)
    amount = 0;
    grp_array = nullptr;
 
