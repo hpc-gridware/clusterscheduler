@@ -36,10 +36,22 @@ int main(int argc, const char *argv[]) {
    const int num_clocks = 3;
    int clock_ids[num_clocks] = {CLOCK_VIRTUAL, CLOCK_REALTIME, CLOCK_MONOTONIC};
    std::string clock_names[num_clocks] = {"CLOCK_VIRTUAL", "CLOCK_REALTIME", "CLOCK_MONOTONIC"};
+#elif defined(FREEBSD)
+   const int num_clocks = 4;
+   int clock_ids[num_clocks] = {CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_MONOTONIC_PRECISE, CLOCK_MONOTONIC_COARSE};
+   std::string clock_names[num_clocks] = {"CLOCK_REALTIME", "CLOCK_MONOTONIC", "CLOCK_MONOTONIC_PRECISE", "CLOCK_MONOTONIC_COARSE"};
 #else
+   // LINUX
+   // we don't have CLOCK_TAI on older Linuxes
+#if defined CLOCK_TAI
    const int num_clocks = 5;
    int clock_ids[num_clocks] = {CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC_COARSE, CLOCK_TAI};
    std::string clock_names[num_clocks] = {"CLOCK_REALTIME", "CLOCK_MONOTONIC", "CLOCK_MONOTONIC_RAW", "CLOCK_MONOTONIC_COARSE", "CLOCK_TAI"};
+#else
+   const int num_clocks = 4;
+   int clock_ids[num_clocks] = {CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC_COARSE};
+   std::string clock_names[num_clocks] = {"CLOCK_REALTIME", "CLOCK_MONOTONIC", "CLOCK_MONOTONIC_RAW", "CLOCK_MONOTONIC_COARSE"};
+#endif
 #endif
 
     for (int i = 0; i < num_clocks; i++) {
