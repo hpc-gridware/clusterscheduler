@@ -44,6 +44,7 @@
 
 #include "comm/commlib.h"
 
+#include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
@@ -380,7 +381,7 @@ sge_gdi_packet_create_base(lList **answer_list) {
    memset(ret, 0, sizeof(sge_gdi_packet_class_t));
 
    int local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
-   int local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
+   int local_ret2 = ocs::uti::condition_initialize(&(ret->cond));
    if (local_ret1 != 0 || local_ret2 != 0) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_free(&ret);

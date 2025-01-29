@@ -23,37 +23,37 @@
 # adminrun
 add_executable(adminrun adminrun.cc)
 target_include_directories(adminrun PRIVATE ${SGE_INCLUDES})
-target_link_libraries(adminrun PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(adminrun PRIVATE commlists uti ${SGE_LIBS})
 
 # checkprog
 add_executable(checkprog checkprog.cc)
 target_include_directories(checkprog PRIVATE ${SGE_INCLUDES})
-target_link_libraries(checkprog PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(checkprog PRIVATE commlists uti ${SGE_LIBS})
 
 # checkuser
 add_executable(checkuser checkuser.cc)
 target_include_directories(checkuser PRIVATE ${SGE_INCLUDES})
-target_link_libraries(checkuser PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(checkuser PRIVATE commlists uti ${SGE_LIBS})
 
 # echo_raw
 add_executable(echo_raw echo_raw.cc)
 target_include_directories(echo_raw PRIVATE ${SGE_INCLUDES})
-target_link_libraries(echo_raw PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(echo_raw PRIVATE commlists uti ${SGE_LIBS})
 
 # filestat
 add_executable(filestat filestat.cc)
 target_include_directories(filestat PRIVATE ${SGE_INCLUDES})
-target_link_libraries(filestat PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(filestat PRIVATE commlists uti ${SGE_LIBS})
 
 # fstype
 add_executable(fstype fstype.cc)
 target_include_directories(fstype PRIVATE ${SGE_INCLUDES})
-target_link_libraries(fstype PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(fstype PRIVATE commlists uti ${SGE_LIBS})
 
 # gethostbyaddr
 add_executable(gethostbyaddr gethostbyaddr.cc)
 target_include_directories(gethostbyaddr PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyaddr PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+target_link_libraries(gethostbyaddr PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 # gethostbyname
 add_executable(gethostbyname gethostbyname.cc)
@@ -68,12 +68,12 @@ target_link_libraries(gethostname PRIVATE sgeobj cull comm commlists uti ${SGE_L
 # getservbyname
 add_executable(getservbyname getservbyname.cc)
 target_include_directories(getservbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(getservbyname PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
+target_link_libraries(getservbyname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 # infotext
 add_executable(infotext infotext.cc)
 target_include_directories(infotext PRIVATE ${SGE_INCLUDES})
-target_link_libraries(infotext PRIVATE sgeobj cull uti commlists ${SGE_LIBS})
+target_link_libraries(infotext PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
 # loadcheck
 add_executable(loadcheck
@@ -81,7 +81,7 @@ add_executable(loadcheck
       ../../../${PROJECT_FEATURES}/source/daemons/qmaster/TestClass.cc
 )
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
-target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists
+target_link_libraries(loadcheck PRIVATE sgeobj cull commlists uti
       ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 # now
@@ -97,8 +97,8 @@ target_link_libraries(
       sgeobj
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 # read_raw
@@ -115,8 +115,8 @@ target_link_libraries(
       sgeobj
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 # spooldefaults
@@ -132,8 +132,8 @@ target_link_libraries(
       sgeobj
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 # spooledit
@@ -149,8 +149,8 @@ target_link_libraries(
       sgeobj
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 # spoolinit
@@ -166,14 +166,14 @@ target_link_libraries(
       gdi
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 # testsuidroot
 add_executable(testsuidroot testsuidroot.cc)
 target_include_directories(testsuidroot PRIVATE ${SGE_INCLUDES})
-target_link_libraries(testsuidroot PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(testsuidroot PRIVATE commlists uti ${SGE_LIBS})
 
 # required to disable warning for deprecated rresvport() function
 set_source_files_properties(testsuidroot.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
@@ -181,7 +181,7 @@ set_source_files_properties(testsuidroot.cc PROPERTIES COMPILE_FLAGS -Wno-deprec
 # uidgid
 add_executable(uidgid uidgid.cc)
 target_include_directories(uidgid PRIVATE ${SGE_INCLUDES})
-target_link_libraries(uidgid PRIVATE uti commlists ${SGE_LIBS})
+target_link_libraries(uidgid PRIVATE commlists uti ${SGE_LIBS})
 
 # work
 add_executable(work work.cc)
@@ -192,8 +192,8 @@ target_link_libraries(
       sgeobj
       cull
       comm
-      uti
       commlists
+      uti
       ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN)

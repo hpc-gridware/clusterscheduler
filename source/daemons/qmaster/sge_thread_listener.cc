@@ -87,28 +87,36 @@ sge_listener_terminate() {
    DENTER(TOP_LAYER);
 
    /*
-    * Currently the event master (EDE) does need a working gdi thread to 
+    * Currently the event master (EDE) does need a working gdi thread to
     * successfully deliver events. For this reason we need to add the
-    * 'sgeE_QMASTER_GOES_DOWN' event *before* the listener threads 
+    * 'sgeE_QMASTER_GOES_DOWN' event *before* the listener threads
     * are terminated.
     */
    sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, ocs::SessionManager::GDI_SESSION_NONE);
    DPRINTF("triggered shutdown event for event clients to be delivered by event master module\n");
 
    /*
-    * trigger pthread_cancel for each thread so that further 
+    * trigger pthread_cancel for each thread so that further
     * shutdown process will be faster
     */
-   {
-      cl_thread_list_elem_t *thr;
+#if 0
+   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+#endif
+   cl_thread_list_elem_t *thr;
+   cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.listener_thread_pool);
+   while ((thr = thr_nxt) != nullptr) {
+      thr_nxt = cl_thread_list_get_next_elem(thr);
 
-      cl_thread_list_elem_t *thr_nxt = cl_thread_list_get_first_elem(Main_Control.listener_thread_pool);
-      while ((thr = thr_nxt) != nullptr) {
-         thr_nxt = cl_thread_list_get_next_elem(thr);
-
-         cl_thread_shutdown(thr->thread_config);
-      }
+      cl_thread_shutdown(thr->thread_config);
    }
+
+#if 0
+         // signal (broadcast) the commlib handle app_condition variable
+         // this will make it leave waiting for new messages in sge_qmaster_process_message->sge_gdi_get_any_request()
+         // @todo that's the theory, but it doesn't work
+         // as it is now shutting down the listener threads takes some time (> 1 second)
+         cl_thread_trigger_thread_condition(handle->app_condition, 1);
+#endif
 
    /*
     * delete all threads and wait for termination
@@ -170,10 +178,8 @@ sge_listener_main(void *arg) {
          pthread_cleanup_push((void (*)(void *)) sge_listener_cleanup_monitor, (void *) &monitor);
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
-         if (sge_thread_has_shutdown_started()) {
-            DPRINTF("waiting for termination\n");
-            sge_usleep(50000);
-         }
+
+         sge_thread_usleep_during_shutdown();
       } while (sge_thread_has_shutdown_started());
    }
 

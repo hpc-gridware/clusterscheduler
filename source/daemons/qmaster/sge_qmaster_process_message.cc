@@ -86,7 +86,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag, u_long32
               u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor);
 
 /*
- * Prevent these functions made inline by compiler. This is 
+ * Prevent these functions made inline by compiler. This is
  * necessary for Solaris 10 dtrace pid provider to work.
  */
 #ifdef SOLARIS
@@ -185,13 +185,13 @@ do_c_ack_request(struct_msg_t *message, monitoring_t *monitor) {
 *     sge_qmaster_process_message() -- Entry point for qmaster message handling
 *
 *  SYNOPSIS
-*     void* sge_qmaster_process_message(void *anArg) 
+*     void* sge_qmaster_process_message(void *anArg)
 *
 *  FUNCTION
 *     Get a pending message. Handle message based on message tag.
 *
 *  INPUTS
-*     void *anArg - none 
+*     void *anArg - none
 *
 *  RESULT
 *     void* - none
@@ -210,13 +210,13 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    /*
-    * INFO (CR)  
+    * INFO (CR)
     *
-    * The not syncron sge_get_any_request() call will not raise cpu usage to 100%
+    * The not synchron sge_get_any_request() call will not raise cpu usage to 100%
     * because sge_get_any_request() is doing a cl_commlib_trigger() which will
     * return after the timeout specified at cl_com_create_handle() call in prepare_enroll()
-    * which is set to 1 second. A syncron receive would result in a unnecessary qmaster shutdown
-    * timeout (syncron receive timeout) when no messages are there to read.
+    * which is set to 1 second. A synchron receive would result in an unnecessary qmaster shutdown
+    * timeout (synchron receive timeout) when no messages are there to read.
     *
     */
 
@@ -483,10 +483,10 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
 /****** sge_qmaster_process_message/do_report_request() ************************
 *  NAME
-*     do_report_request() -- Process execd load report 
+*     do_report_request() -- Process execd load report
 *
 *  SYNOPSIS
-*     static void do_report_request(struct_msg_t *aMsg) 
+*     static void do_report_request(struct_msg_t *aMsg)
 *
 *  FUNCTION
 *     Process execd load reports (TAG_REPORT_REQUEST). Unpack a CULL list with
@@ -497,7 +497,7 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 *     struct_msg_t *aMsg - execd load report message
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *******************************************************************************/
 static void
@@ -527,26 +527,26 @@ do_report_request(struct_msg_t *aMsg, monitoring_t *monitor) {
 
 /****** qmaster/sge_qmaster_process_message/do_event_client_exit() *************
 *  NAME
-*     do_event_client_exit() -- handle event client exit message 
+*     do_event_client_exit() -- handle event client exit message
 *
 *  SYNOPSIS
-*     static void do_event_client_exit(const char *aHost, const char *aSender, 
-*     sge_pack_buffer *aBuffer) 
+*     static void do_event_client_exit(const char *aHost, const char *aSender,
+*     sge_pack_buffer *aBuffer)
 *
 *  FUNCTION
 *     Handle event client exit message. Extract event client id from pack
-*     buffer. Remove event client. 
+*     buffer. Remove event client.
 *
 *  INPUTS
-*     const char *aHost        - sender 
-*     const char *aSender      - communication endpoint 
-*     sge_pack_buffer *aBuffer - buffer 
+*     const char *aHost        - sender
+*     const char *aSender      - communication endpoint
+*     sge_pack_buffer *aBuffer - buffer
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
-*     MT-NOTE: do_event_client_exit() is NOT MT safe. 
+*     MT-NOTE: do_event_client_exit() is NOT MT safe.
 *
 *******************************************************************************/
 static void
@@ -563,9 +563,9 @@ do_event_client_exit(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
 
-   /* 
-   ** check for scheduler shutdown if the request comes from admin or root 
-   ** TODO: further enhancement could be matching the owner of the event client 
+   /*
+   ** check for scheduler shutdown if the request comes from admin or root
+   ** TODO: further enhancement could be matching the owner of the event client
    **       with the request owner
    */
    if (client_id == 1) {

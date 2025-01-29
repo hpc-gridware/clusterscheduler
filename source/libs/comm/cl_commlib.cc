@@ -41,6 +41,7 @@
 
 #include "uti/sge_string.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_log.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/cl_handle_list.h"
@@ -1670,8 +1671,8 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    return new_handle;
 }
 
+static bool debug_commlib_shutdown = getenv("SGE_DEBUG_COMMLIB_SHUTDOWN") != nullptr;
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
-   cl_connection_list_elem_t *elem = nullptr;
    cl_thread_settings_t *thread_settings = nullptr;
    struct timeval now;
    bool connection_list_empty = false;
@@ -1679,7 +1680,6 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
    cl_app_message_queue_elem_t *mq_elem = nullptr;
    int mq_return_value = CL_RETVAL_OK;
    int ret_val;
-
 
    cl_commlib_check_callback_functions();
 
@@ -1696,7 +1696,7 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
 
    CL_LOG(CL_LOG_INFO, "shutting down handle ...");
    if (handle->do_shutdown == 0) {
-      /* wait for connection close response message from heach connection */
+      /* wait for connection close response message from each connection */
       /* get current timeout time */
       gettimeofday(&now, nullptr);
       handle->shutdown_timeout = now.tv_sec + handle->acknowledge_timeout + handle->close_connection_timeout;
@@ -1735,8 +1735,8 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
       trigger_write = false;
 
       cl_raw_list_lock(handle->connection_list);
-      elem = cl_connection_list_get_first_elem(handle->connection_list);
-      while (elem) {
+      cl_connection_list_elem_t *elem = cl_connection_list_get_first_elem(handle->connection_list);
+      while (elem != nullptr) {
          connection_list_empty = false;
          if (elem->connection->data_flow_type == CL_CM_CT_MESSAGE) {
             have_message_connections = true;
@@ -1749,6 +1749,7 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
                trigger_write = true;
                elem->connection->connection_sub_state = CL_COM_SENDING_CCM;
             }
+
             CL_LOG_STR(CL_LOG_INFO, "wait for connection removal, current state is",
                        cl_com_get_connection_state(elem->connection));
             CL_LOG_STR(CL_LOG_INFO, "wait for connection removal, current sub state is",
@@ -1765,6 +1766,7 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
        */
       if (!connection_list_empty) {
          int return_value = CL_RETVAL_OK;
+
          /* still waiting for messages */
          switch (cl_com_create_threads) {
             case CL_NO_THREAD: {
@@ -1835,6 +1837,8 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
                }
 
                CL_LOG(CL_LOG_INFO, "APPLICATION WAITING for CCRM");
+               // @todo CS-980 Do we really want to wait for the CCRM?
+               // If there is a single client not responding, we will wait for the shutdown timeout (2 minutes)
                return_value = cl_thread_wait_for_thread_condition(handle->read_condition,
                                                                   handle->select_sec_timeout,
                                                                   handle->select_usec_timeout);
@@ -1888,12 +1892,12 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
       }
    }
 
-   /* ok now we shutdown the handle */
+   /* ok now we shut down the handle */
    CL_LOG(CL_LOG_INFO, "shutdown of handle");
 
    /* remove handle from list */
    cl_raw_list_lock(handle->connection_list);
-   elem = cl_connection_list_get_first_elem(handle->connection_list);
+   cl_connection_list_elem_t *elem = cl_connection_list_get_first_elem(handle->connection_list);
    if (elem != nullptr) {
       CL_LOG(CL_LOG_WARNING, "######### connection list is not empty ##########");
       CL_LOG(CL_LOG_WARNING, "This means some clients are not correctly shutdown");
@@ -2018,8 +2022,10 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
       cl_fd_list_cleanup(&(handle->file_descriptor_list));
 
       sge_free(&handle);
+
       return CL_RETVAL_OK;
    }
+
    return ret_val;
 }
 
@@ -4943,7 +4949,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                   message_match = 1;  /* always match the message */
 
                   /* try to find response for mid */
-                  /* TODO: Just return a matchin response_mid !!!  0 = match all else match response_id */
+                  /* TODO: Just return a matching response_mid !!!  0 = match all else match response_id */
                   if (response_mid != 0) {
                      if (message_elem->message->message_response_id != response_mid) {
                         /* if the response_mid parameter is set we can't return this message because
@@ -5052,7 +5058,6 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                                                 handle->select_sec_timeout,
                                                 handle->select_usec_timeout);
          }
-
       } else {
          pthread_mutex_unlock(handle->messages_ready_mutex);
 

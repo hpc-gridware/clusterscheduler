@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 
+#include "uti/ocs_cond.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
@@ -79,7 +80,7 @@ static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
 
 /************************************************************************/
-int 
+int
 main(int argc, const char **argv)
 {
    lList *opts_cmdline = nullptr;
@@ -117,6 +118,8 @@ main(int argc, const char **argv)
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QSUB);
+
+   ocs::uti::condition_initialize(&exit_cv);
 
    DPRINTF("Initializing JAPI\n");
 
@@ -182,7 +185,7 @@ main(int argc, const char **argv)
       DPRINTF("Skipping options from script due to -b option\n");
    } else {
       opt_list_append_opts_from_script(prog_number,
-                                       &opts_scriptfile, &alp, 
+                                       &opts_scriptfile, &alp,
                                        opts_cmdline, environ);
       tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S, MSG_WARNING);
       if (tmp_ret > 0) {
@@ -193,7 +196,7 @@ main(int argc, const char **argv)
    /*
     * Merge all commandline options and interpret them
     */
-   opt_list_merge_command_lines(&opts_all, &opts_defaults, 
+   opt_list_merge_command_lines(&opts_all, &opts_defaults,
                                 &opts_scriptfile, &opts_cmdline);
 
    opt_list_verify_scope(opts_all, &alp);
@@ -202,14 +205,14 @@ main(int argc, const char **argv)
       sge_exit(tmp_ret);
    }
 
-   /* If "-sync y" is set, wait for the job to end. */   
+   /* If "-sync y" is set, wait for the job to end. */
    /* Remove all -sync switches since cull_parse_job_parameter()
     * doesn't know what to do with them. */
    while ((ep = lGetElemStrRW(opts_all, SPA_switch_val, "-sync"))) {
       if (lGetInt(ep, SPA_argval_lIntT) == TRUE) {
          wait_for_job = 1;
       }
-      
+
       lRemoveElem(opts_all, &ep);
    }
 
@@ -217,7 +220,7 @@ main(int argc, const char **argv)
       DPRINTF("Wait for job end\n");
    }
 
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, 
+   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname,
                                   qualified_hostname, opts_all, &job);
    job_set_command_line(job, argc, argv);
 
@@ -248,19 +251,19 @@ main(int argc, const char **argv)
 
    if (is_immediate || wait_for_job) {
       pthread_t sigt;
-      
-      qsub_setup_sig_handlers(); 
+
+      qsub_setup_sig_handlers();
 
       if (pthread_create(&sigt, nullptr, sig_thread, (void *)nullptr) != 0) {
          fprintf(stderr, "\n");
          fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
                  " error preparing signal handling thread");
          fprintf(stderr, "\n");
-         
+
          exit_status = 1;
          goto Error;
       }
-      
+
       if (japi_enable_job_wait(username, unqualified_hostname, nullptr, &session_key_out, error_handler, &diag) ==
                                        DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE) {
          const char *msg = sge_dstring_get_string(&diag);
@@ -268,12 +271,12 @@ main(int argc, const char **argv)
          fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
                  msg?msg:" error starting event client thread");
          fprintf(stderr, "\n");
-         
+
          exit_status = 1;
          goto Error;
       }
    }
-   
+
    job_get_submit_task_ids(job, &start, &end, &step);
    num_tasks = (end - start) / step + 1;
 
@@ -288,7 +291,7 @@ main(int argc, const char **argv)
                     sge_dstring_get_string(&diag));
             fprintf(stderr, "\n");
          }
-         
+
          /* BUGFIX: Issuezilla #1013
           * To quickly fix this issue, I'm mapping the JAPI/DRMAA error code
           * back into a GDI error code.  This is the easy solution.  The
@@ -301,24 +304,24 @@ main(int argc, const char **argv)
          else {
             exit_status = 1;
          }
-         
+
          goto Error;
       }
 
       DPRINTF("job id is: %ld\n", jobids->it.ji.jobid);
-      
+
       jobid_string = get_bulk_jobid_string((long)jobids->it.ji.jobid, start, end, step);
    }
    else if (num_tasks == 1) {
       int error = japi_run_job(&jobid, &job, &diag);
-      
+
       if (error != DRMAA_ERRNO_SUCCESS) {
          if (error != DRMAA_ERRNO_NO_ACTIVE_SESSION) {
             fprintf(stderr, MSG_QSUB_COULDNOTRUNJOB_S,
                     sge_dstring_get_string(&diag));
             fprintf(stderr, "\n");
          }
-         
+
          /* BUGFIX: Issuezilla #1013
           * To quickly fix this issue, I'm mapping the JAPI/DRMAA error code
           * back into a GDI error code.  This is the easy solution.  The
@@ -331,7 +334,7 @@ main(int argc, const char **argv)
          else {
             exit_status = 1;
          }
-         
+
          goto Error;
       }
 
@@ -343,19 +346,19 @@ main(int argc, const char **argv)
    else {
       fprintf(stderr, MSG_QSUB_COULDNOTRUNJOB_S, "invalid task structure");
       fprintf(stderr, "\n");
-      
+
       exit_status = 1;
       goto Error;
    }
-  
+
    /* only success message is printed to stdout */
 
-   just_verify = (lGetUlong(job, JB_verify_suitable_queues)==JUST_VERIFY || 
+   just_verify = (lGetUlong(job, JB_verify_suitable_queues)==JUST_VERIFY ||
                   lGetUlong(job, JB_verify_suitable_queues)==POKE_VERIFY);
    DPRINTF("Just verifying job\n");
 
    if (!just_verify) {
-      const char *output = sge_dstring_get_string(&diag); 
+      const char *output = sge_dstring_get_string(&diag);
 
       /* print the tersed output */
       if (has_terse) {
@@ -392,7 +395,7 @@ main(int argc, const char **argv)
          else if ((tmp_ret == DRMAA_ERRNO_SUCCESS) &&
                   (event == JAPI_JOB_FINISH)) {
             fprintf(stderr, "\n%s\n", MSG_QSUB_YOURQSUBREQUESTCOULDNOTBESCHEDULEDDTRYLATER);
-            
+
             exit_status = 1;
             goto Error;
          }
@@ -412,7 +415,7 @@ main(int argc, const char **argv)
             goto Error;
          }
       }
-         
+
       if (wait_for_job) {
          /* Rather than using japi_synchronize on ALL for bulk jobs, we use
           * japi_wait on ANY num_tasks times because with synchronize, we would
@@ -430,11 +433,11 @@ main(int argc, const char **argv)
                   fprintf(stderr, MSG_QSUB_COULDNOTWAITFORJOB_S, sge_dstring_get_string(&diag));
                   fprintf(stderr, "\n");
                }
-               
+
                exit_status = 1;
                goto Error;
             }
-            
+
             /* report how job finished */
             /* If the job is an array job, use the first non-zero exit code as
              * the exit code for qsub. */
@@ -446,7 +449,7 @@ main(int argc, const char **argv)
              * info for the task. */
             else {
                report_exit_status(stat, sge_dstring_get_string(&jobid));
-            }               
+            }
          }
       }
    }
@@ -455,15 +458,13 @@ Error:
    sge_free(&jobid_string);
    lFreeList(&alp);
    lFreeList(&opts_all);
-   
+
    if ((tmp_ret = japi_exit(JAPI_EXIT_NO_FLAG, &diag)) != DRMAA_ERRNO_SUCCESS) {
       if (tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION) {
          fprintf(stderr, "\n");
          fprintf(stderr, MSG_QSUB_COULDNOTFINALIZEENV_S, sge_dstring_get_string(&diag));
          fprintf(stderr, "\n");
-      }
-      else {
-         struct timespec ts;
+      } else {
          /* We know that if we get a DRMAA_ERRNO_NO_ACTIVE_SESSION here, it's
           * because the signal handler thread called japi_exit().  We know this
           * because if the call to japi_init() fails, we just exit directly.
@@ -471,17 +472,16 @@ Error:
           * so coming here because of an error would not result in the
           * DRMAA_ERRNO_NO_ACTIVE_SESSION error. */
          DPRINTF("Sleeping for 15 seconds to wait for the exit to finish.\n");
-         
-         sge_relative_timespec(15, &ts);
+
          sge_mutex_lock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
-         
+
          while (!exited) {
-            if (pthread_cond_timedwait(&exit_cv, &exit_mutex, &ts) == ETIMEDOUT) {
+            if (ocs::uti::condition_timedwait(&exit_cv, &exit_mutex, 15) == ETIMEDOUT) {
                DPRINTF("Exit has not finished after 15 seconds.  Exiting.\n");
                break;
             }
          }
-         
+
          sge_mutex_unlock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
       }
    }
@@ -522,11 +522,11 @@ static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
    size_t jobid_str_size = sizeof(char) * 1024;
    char *jobid_str = sge_malloc(jobid_str_size);
    char *ret_str = nullptr;
-   
+
    snprintf(jobid_str, jobid_str_size, "%ld.%d-%d:%d", job_id, start, end, step);
    ret_str = strdup(jobid_str);
    sge_free(&jobid_str);
-   
+
    return ret_str;
 }
 
@@ -568,12 +568,12 @@ static void qsub_terminate()
 {
    dstring diag = DSTRING_INIT;
    int tmp_ret;
-   
+
    fprintf(stderr, "\n%s\n", MSG_QSUB_INTERRUPTED);
    fprintf(stderr, "%s\n", MSG_QSUB_TERMINATING);
 
    tmp_ret = japi_exit(JAPI_EXIT_KILL_PENDING, &diag);
-   
+
    /* No active session here means that the main thread beat us to exiting,
       in which case, we just quietly give up and go away. */
    if ((tmp_ret != DRMAA_ERRNO_SUCCESS) &&
@@ -628,9 +628,9 @@ static void *sig_thread(void *dummy)
    /* We don't care about sigwait's return(error) code because our response
     * to an error would be the same thing we're doing anyway: shutting down. */
    sigwait(&signal_set, &sig);
-   
+
    qsub_terminate();
-   
+
    return (void *)nullptr;
 }
 
@@ -658,7 +658,7 @@ static int report_exit_status(int stat, const char *jobid)
 {
    int aborted, exited, signaled;
    int exit_status = 0;
-   
+
    japi_wifaborted(&aborted, stat, nullptr);
 
    if (aborted) {
@@ -670,7 +670,7 @@ static int report_exit_status(int stat, const char *jobid)
          printf(MSG_QSUB_JOBEXITED_SI, jobid, exit_status);
       } else {
          japi_wifsignaled(&signaled, stat, nullptr);
-         
+
          if (signaled) {
             dstring termsig = DSTRING_INIT;
             japi_wtermsig(&termsig, stat, nullptr);
@@ -685,7 +685,7 @@ static int report_exit_status(int stat, const char *jobid)
       }
    }
    printf("\n");
-   
+
    return exit_status;
 }
 
