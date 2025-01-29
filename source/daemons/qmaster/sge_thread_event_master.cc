@@ -36,6 +36,7 @@
 #include <pthread.h>
 
 #include "uti/sge_bootstrap.h"
+#include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -76,13 +77,12 @@ sge_event_master_cleanup_report_list(void *arg) {
 
 void
 sge_event_master_initialize() {
-   cl_thread_settings_t *dummy_thread_p = nullptr;
-
    DENTER(TOP_LAYER);
 
    DPRINTF("event master functionality has been initialized\n");
 
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
                                 threadnames[EVENT_MASTER_THREAD], 0, sge_event_master_main, nullptr, nullptr,
                                 CL_TT_EVENT_MASTER);
@@ -175,6 +175,8 @@ sge_event_master_main(void *arg) {
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
       pthread_cleanup_pop(execute);
+
+      // event master shall be active also during shutdown until the thread is explicitly cancelled
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

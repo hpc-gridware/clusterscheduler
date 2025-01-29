@@ -62,7 +62,7 @@ typedef struct {
    pthread_mutex_t mutex;      /* used for mutual exclusion                         */
    pthread_cond_t cond_var;   /* used for waiting                                  */
    bool exit;       /* true -> exit event delivery                       */
-   bool triggered;  /* new events addded, a scheduling run is triggered  */
+   bool triggered;  /* new events added, a scheduling run is triggered  */
    lList *new_events; /* the storage for new events                       */
    bool rebuild_categories;
    bool new_global_conf;

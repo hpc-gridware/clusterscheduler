@@ -21,6 +21,8 @@
 #include <pthread.h>
 
 #include "basis_types.h"
+
+#include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -42,6 +44,7 @@
 #include "msg_common.h"
 
 #include <ocs_gdi_ClientServerBase.h>
+#include <uti/ocs_cond.h>
 
 #define CLIENT_WAIT_TIME_S 1
 #define GDI_PACKET_MUTEX "gdi_packet_mutex"
@@ -110,6 +113,7 @@ ocs::gdi::Packet::Packet()
    DENTER(TOP_LAYER);
    version = ocs::Version::get_version();
    memset(&pb, 0, sizeof(sge_pack_buffer));
+   ocs::uti::condition_initialize(&cond);
    DRETURN_VOID;
 }
 
@@ -386,11 +390,8 @@ ocs::gdi::Packet::wait_till_handled() {
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &mutex);
 
    while (!is_handled) {
-      struct timespec ts{};
-
       DPRINTF("waiting for packet to be handling by worker\n");
-      sge_relative_timespec(CLIENT_WAIT_TIME_S, &ts);
-      pthread_cond_timedwait(&cond, &mutex, &ts);
+      ocs::uti::condition_timedwait(&cond, &mutex, CLIENT_WAIT_TIME_S);
    }
 
    sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &mutex);

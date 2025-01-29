@@ -46,7 +46,10 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "sge_qmaster_timed_event.h"
-#include "setup_qmaster.h"
+
+#include "uti/sge_thread_ctrl.h"
+#include "uti/ocs_cond.h"
+
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
@@ -66,6 +69,8 @@ event_control_t Event_Control = {
         0
 };
 
+static int event_control_cond_init_ret = ocs::uti::condition_initialize(&Event_Control.cond_var);
+
 handler_tbl_t Handler_Tbl = {
         PTHREAD_MUTEX_INITIALIZER,
         0,
@@ -75,17 +80,17 @@ handler_tbl_t Handler_Tbl = {
 
 /****** qmaster/sge_qmaster_timed_event/te_delete_all_or_one_time_event() *************
 *  NAME
-*     te_delete_all_or_one_time_event() -- Delete one time events 
+*     te_delete_all_or_one_time_event() -- Delete one time events
 *
 *  SYNOPSIS
-*     int 
-*     te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, 
+*     int
+*     te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1,
 *                                     u_long32 aKey2, const char* aStrKey,
-*                                     bool ignore_keys) 
+*                                     bool ignore_keys)
 *
 *  FUNCTION
 *     Delete one or more one-time events. All one-time events which do EXACTLY
-*     match the given arguments will be deleted from the event list if 
+*     match the given arguments will be deleted from the event list if
 *     ignore_keys is false. Otherwise all one-time events of the given type
 *     will be removed.
 *
@@ -94,17 +99,17 @@ handler_tbl_t Handler_Tbl = {
 *     event delivery has been finished.
 *
 *  INPUTS
-*     te_type_t aType     - event type 
-*     u_long32 aKey1      - first numeric key 
-*     u_long32 aKey2      - second numeric key 
-*     const char* aStrKey - alphanumeric key 
+*     te_type_t aType     - event type
+*     u_long32 aKey1      - first numeric key
+*     u_long32 aKey2      - second numeric key
+*     const char* aStrKey - alphanumeric key
 *     bool ignore_keys    - boolean flag
 *
 *  RESULT
 *     int - number of events deleted
 *
 *  NOTES
-*     MT-NOTE: te_delete_all_or_one_time_event() is MT safe. 
+*     MT-NOTE: te_delete_all_or_one_time_event() is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
@@ -179,13 +184,13 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 *     te_wait_empty() -- waits, if the event list is empty
 *
 *  SYNOPSIS
-*     static void te_wait_empty() 
+*     static void te_wait_empty()
 *
 *  FUNCTION
 *     waits, if the event list is empty
 *
 *  NOTES
-*     MT-NOTE: te_wait_empty() is not MT safe 
+*     MT-NOTE: te_wait_empty() is not MT safe
 *
 *******************************************************************************/
 void te_wait_empty() {
@@ -206,7 +211,7 @@ void te_wait_empty() {
 *     te_wait_next() -- waits for the next event
 *
 *  SYNOPSIS
-*     static void te_wait_next(te_event_t te, time_t now) 
+*     static void te_wait_next(te_event_t te, time_t now)
 *
 *  FUNCTION
 *    waits for the next event
@@ -216,31 +221,56 @@ void te_wait_empty() {
 *     time_t now    - current time
 *
 *  NOTES
-*     MT-NOTE: te_wait_next() is not MT safe 
+*     MT-NOTE: te_wait_next() is not MT safe
 *
 *******************************************************************************/
 void te_wait_next(te_event_t te, u_long64 now) {
    DENTER(EVENT_LAYER);
 
-   struct timespec ts{};
-   sge_gmt64_to_timespec(te->when, ts);
+#if 0
+   INFO("==> te_wait_next()");
+   DSTRING_STATIC(dstr, 100);
+   INFO("   -> now:  %s", sge_ctime64(now, &dstr));
+   INFO("   -> next: %s", sge_ctime64(Event_Control.next, &dstr));
+   INFO("   -> when: %s", sge_ctime64(te->when, &dstr));
+   INFO("   -> diff: %f", sge_gmt64_to_gmt32_double(diff));
+#endif
 
-   while (Event_Control.next == te->when) {
-      int res = 0;
+   while (Event_Control.next == te->when && te->when > now) {
+      u_long64 diff = te->when - now;
+      int res = ocs::uti::condition_timedwait(&Event_Control.cond_var, &Event_Control.mutex, diff / 1000000, diff % 1000000);
+      if (res == ETIMEDOUT) {
+         // the events (te) execution time is due, return to the caller where the timed event will be executed
+         break;
+      } else {
+         // condition variable was signalled - there are two possible reasons:
+         // 1. the event list has been modified
+         //     - if a modification was done behind the current event, continue waiting (done by the while above)
+         //     - if a modification was done before the current event, e.g. a new event has been added which shall
+         //       be executed earlier than the current event, the while above will break the loop as then next < when
+         // 2. when shutting down sge_qmaster we signal the condition to wake up the thread
+         if (sge_thread_has_shutdown_started()) {
+            break;
+         }
 
-      res = pthread_cond_timedwait(&Event_Control.cond_var, &Event_Control.mutex, &ts);
-      if (ETIMEDOUT == res) { break; }
+         // update now, it is termination condition in the while above
+         now = sge_get_gmt64();
+      }
    }
+
+#if 0
+   INFO("==> te_wait_next() done");
+#endif
 
    DRETURN_VOID;
 }
 
 /****** qmaster/sge_qmaster_timed_event/te_register_event_handler() ************
 *  NAME
-*     te_register_event_handler() -- Register event handler 
+*     te_register_event_handler() -- Register event handler
 *
 *  SYNOPSIS
-*     void te_register_event_handler(te_handler_t aHandler, te_type_t aType) 
+*     void te_register_event_handler(te_handler_t aHandler, te_type_t aType)
 *
 *  FUNCTION
 *     Register an event handler. The registered handler will be invoked whenever
@@ -251,14 +281,14 @@ void te_wait_next(te_event_t te, u_long64 now) {
 *     however, to register the same event handler for multiple event types.
 *
 *  INPUTS
-*     te_handler_t aHandler - event handler 
+*     te_handler_t aHandler - event handler
 *     te_type_t aType       - event type
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: te_register_event_handler() is MT safe. 
+*     MT-NOTE: te_register_event_handler() is MT safe.
 *
 *******************************************************************************/
 void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
@@ -291,14 +321,14 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 
 /****** qmaster/sge_qmaster_timed_event/te_new_event() *************************
 *  NAME
-*     te_new_event() -- Allocate new timed event. 
+*     te_new_event() -- Allocate new timed event.
 *
 *  SYNOPSIS
 *     te_event_t te_new_event(u_long64 aTime, te_type_t aType, te_mode_t aMode,
-*     u_long32 aKey1, u_long32 aKey2, const char* aStrKey) 
+*     u_long32 aKey1, u_long32 aKey2, const char* aStrKey)
 *
 *  FUNCTION
-*     Allocate and initialize a new timed event. The new event will be 
+*     Allocate and initialize a new timed event. The new event will be
 *     initialized using the arguments given.
 *
 *     The caller of this function is responsible to free the timed event
@@ -313,17 +343,17 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *
 *  INPUTS
 *     u_long64 aTime      - event due time or interval
-*     te_type_t aType     - event type 
-*     te_mode_t aMode     - event mode 
-*     u_long32 aKey1      - first numeric key, '0' if not used 
-*     u_long32 aKey2      - second numeric key, '0' if not used 
+*     te_type_t aType     - event type
+*     te_mode_t aMode     - event mode
+*     u_long32 aKey1      - first numeric key, '0' if not used
+*     u_long32 aKey2      - second numeric key, '0' if not used
 *     const char* aStrKey - alphanumeric key, 'nullptr' if not used
 *
 *  RESULT
 *     te_event_t - new timed event
 *
 *  NOTES
-*     MT-NOTE: te_new_event() is MT safe. 
+*     MT-NOTE: te_new_event() is MT safe.
 *
 *******************************************************************************/
 te_event_t
@@ -352,10 +382,10 @@ te_new_event(u_long64 aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u
 
 /****** qmaster/sge_qmaster_timed_event/te_free_event() ************************
 *  NAME
-*     te_free_event() -- Free timed event 
+*     te_free_event() -- Free timed event
 *
 *  SYNOPSIS
-*     void te_free_event(te_event_t anEvent) 
+*     void te_free_event(te_event_t anEvent)
 *
 *  FUNCTION
 *     Free timed event 'anEvent'. Upon return, 'anEvent' will be 'nullptr'.
@@ -367,7 +397,7 @@ te_new_event(u_long64 aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u
 *     void - none, 'anEvent' will be 'nullptr'.
 *
 *  NOTES
-*     MT-NOTE: te_free_event() is MT safe. 
+*     MT-NOTE: te_free_event() is MT safe.
 *
 *******************************************************************************/
 void
@@ -385,10 +415,10 @@ te_free_event(te_event_t *anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_add_event() *************************
 *  NAME
-*     te_add_event() -- Add timed event 
+*     te_add_event() -- Add timed event
 *
 *  SYNOPSIS
-*     void te_add_event(te_event_t anEvent) 
+*     void te_add_event(te_event_t anEvent)
 *
 *  FUNCTION
 *     Add timed event. An event handler which does match the event type of
@@ -400,16 +430,16 @@ te_free_event(te_event_t *anEvent) {
 *     repeatedly until being removed explicitly, using 'te_delete_event()'.
 *
 *     The event 'anEvent' could be freed safely, using 'te_free_event()' after
-*     this function did return. 
+*     this function did return.
 *
 *  INPUTS
-*     te_event_t anEvent - timed event 
+*     te_event_t anEvent - timed event
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: te_add_event() is MT safe. 
+*     MT-NOTE: te_add_event() is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: If the event list is empty, the event delivery thread will wait
 *     MT-NOTE: for work. Hence, the event delivery thread is signaled if the
@@ -468,11 +498,11 @@ te_add_event(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_delete_one_time_event() *************
 *  NAME
-*     te_delete_one_time_event() -- Delete one time events 
+*     te_delete_one_time_event() -- Delete one time events
 *
 *  SYNOPSIS
-*     int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 
-*     aKey2, const char* aStrKey) 
+*     int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32
+*     aKey2, const char* aStrKey)
 *
 *  FUNCTION
 *     Delete one or more one-time events. All one-time events which do EXACTLY
@@ -483,16 +513,16 @@ te_add_event(te_event_t anEvent) {
 *     event delivery has been finished.
 *
 *  INPUTS
-*     te_type_t aType     - event type 
-*     u_long32 aKey1      - first numeric key 
-*     u_long32 aKey2      - second numeric key 
-*     const char* aStrKey - alphanumeric key 
+*     te_type_t aType     - event type
+*     u_long32 aKey1      - first numeric key
+*     u_long32 aKey2      - second numeric key
+*     const char* aStrKey - alphanumeric key
 *
 *  RESULT
 *     int - number of events deleted
 *
 *  NOTES
-*     MT-NOTE: te_delete_one_time_event() is MT safe. 
+*     MT-NOTE: te_delete_one_time_event() is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
@@ -510,26 +540,26 @@ int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, co
 
 /****** qmaster/sge_qmaster_timed_event/te_delete_all_one_time_event() *************
 *  NAME
-*     te_delete_all_one_time_event() -- Delete one time events 
+*     te_delete_all_one_time_event() -- Delete one time events
 *
 *  SYNOPSIS
 *     int te_delete_all_one_time_event(te_type_t aType);
 *
 *  FUNCTION
-*     Delete all one-time events of the given type. 
+*     Delete all one-time events of the given type.
 *
 *     If a timed event is scheduled for delivery, it will will NOT be deleted,
 *     even if it does match the arguments. Such an event will be deleted after
 *     event delivery has been finished.
 *
 *  INPUTS
-*     te_type_t aType     - event type 
+*     te_type_t aType     - event type
 *
 *  RESULT
 *     int - number of events deleted
 *
 *  NOTES
-*     MT-NOTE: te_delete_all_one_time_event() is MT safe. 
+*     MT-NOTE: te_delete_all_one_time_event() is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
@@ -548,22 +578,22 @@ int te_delete_all_one_time_events(te_type_t aType) {
 
 /****** qmaster/sge_qmaster_timed_event/te_get_when() **************************
 *  NAME
-*     te_get_when() -- Return timed event due date 
+*     te_get_when() -- Return timed event due date
 *
 *  SYNOPSIS
-*     time_t te_get_when(te_event_t anEvent) 
+*     time_t te_get_when(te_event_t anEvent)
 *
 *  FUNCTION
-*     Return timed event due date 
+*     Return timed event due date
 *
 *  INPUTS
-*     te_event_t anEvent - timed event 
+*     te_event_t anEvent - timed event
 *
 *  RESULT
 *     time_t - due date
 *
 *  NOTES
-*     MT-NOTE: 'te_get_when()' is MT safe. 
+*     MT-NOTE: 'te_get_when()' is MT safe.
 *
 *******************************************************************************/
 u_long64 te_get_when(te_event_t anEvent) {
@@ -578,22 +608,22 @@ u_long64 te_get_when(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_get_type() **************************
 *  NAME
-*     te_get_type() -- Return timed event type. 
+*     te_get_type() -- Return timed event type.
 *
 *  SYNOPSIS
-*     te_type_t te_get_type(te_event_t anEvent) 
+*     te_type_t te_get_type(te_event_t anEvent)
 *
 *  FUNCTION
-*     Return timed event type. 
+*     Return timed event type.
 *
 *  INPUTS
-*     te_event_t anEvent - timed event 
+*     te_event_t anEvent - timed event
 *
 *  RESULT
 *     te_type_t - timed event type
 *
 *  NOTES
-*     MT-NOTE: 'te_get_type()' is MT safe. 
+*     MT-NOTE: 'te_get_type()' is MT safe.
 *
 *******************************************************************************/
 te_type_t te_get_type(te_event_t anEvent) {
@@ -610,22 +640,22 @@ te_type_t te_get_type(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_get_first_numeric_key() *************
 *  NAME
-*     te_get_first_numeric_key() -- Return timed event first numeric key. 
+*     te_get_first_numeric_key() -- Return timed event first numeric key.
 *
 *  SYNOPSIS
-*     u_long32 te_get_first_numeric_key(te_event_t anEvent) 
+*     u_long32 te_get_first_numeric_key(te_event_t anEvent)
 *
 *  FUNCTION
-*     Return timed event first numeric key. 
+*     Return timed event first numeric key.
 *
 *  INPUTS
-*     te_event_t - timed event 
+*     te_event_t - timed event
 *
 *  RESULT
 *     u_long32 - first numeric key
 *
 *  NOTES
-*     MT-NOTE: 'te_get_first_numeric_key()' is MT safe. 
+*     MT-NOTE: 'te_get_first_numeric_key()' is MT safe.
 *
 *******************************************************************************/
 u_long32 te_get_first_numeric_key(te_event_t anEvent) {
@@ -642,22 +672,22 @@ u_long32 te_get_first_numeric_key(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_get_second_numeric_key() ************
 *  NAME
-*     te_get_second_numeric_key() -- Return timed event second numeric key. 
+*     te_get_second_numeric_key() -- Return timed event second numeric key.
 *
 *  SYNOPSIS
-*     u_long32 te_get_second_numeric_key(te_event_t anEvent) 
+*     u_long32 te_get_second_numeric_key(te_event_t anEvent)
 *
 *  FUNCTION
-*     Return timed event second numeric key. 
+*     Return timed event second numeric key.
 *
 *  INPUTS
-*     te_event_t anEvent - timed event 
+*     te_event_t anEvent - timed event
 *
 *  RESULT
 *     u_long32 - second numeric key
 *
 *  NOTES
-*     MT-NOTE: 'te_get_second_numeric_key()' is MT safe. 
+*     MT-NOTE: 'te_get_second_numeric_key()' is MT safe.
 *
 *******************************************************************************/
 u_long32 te_get_second_numeric_key(te_event_t anEvent) {
@@ -674,24 +704,24 @@ u_long32 te_get_second_numeric_key(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_get_alphanumeric_key() **************
 *  NAME
-*     te_get_alphanumeric_key() -- Return timed event alphanumeric key. 
+*     te_get_alphanumeric_key() -- Return timed event alphanumeric key.
 *
 *  SYNOPSIS
-*     char* te_get_alphanumeric_key(te_event_t anEvent) 
+*     char* te_get_alphanumeric_key(te_event_t anEvent)
 *
 *  FUNCTION
-*     Return timed event alphanumeric key. 
+*     Return timed event alphanumeric key.
 *
 *     The caller of this function MUST free the string returned.
 *
 *  INPUTS
-*     te_event_t anEvent - timed event 
+*     te_event_t anEvent - timed event
 *
 *  RESULT
 *     char* - alphanumeric key or MSG_SMALLNULL if no key is set.
 *
 *  NOTES
-*     MT-NOTE: 'te_get_alphanumeric_key()' is MT safe. 
+*     MT-NOTE: 'te_get_alphanumeric_key()' is MT safe.
 *
 *******************************************************************************/
 char *te_get_alphanumeric_key(te_event_t anEvent) {
@@ -708,20 +738,20 @@ char *te_get_alphanumeric_key(te_event_t anEvent) {
 
 /****** qmaster/sge_qmaster_timed_event/te_init() ****************
 *  NAME
-*     te_init() -- one-time initialization 
+*     te_init() -- one-time initialization
 *
 *  SYNOPSIS
-*     static void te_init() 
+*     static void te_init()
 *
 *  FUNCTION
-*     Create timed event list. Set list sort order to be ascending event due 
-*     time. Create event handler table of initial size. 
+*     Create timed event list. Set list sort order to be ascending event due
+*     time. Create event handler table of initial size.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
 *     MT-NOTE: te_init() is not MT safe
@@ -745,23 +775,23 @@ void te_init() {
 
 /****** qmaster/sge_qmaster_timed_event/te_shutdown() **************************
 *  NAME
-*     te_shutdown() -- Shutdown event delivery thread. 
+*     te_shutdown() -- Shutdown event delivery thread.
 *
 *  SYNOPSIS
-*     void te_shutdown() 
+*     void te_shutdown()
 *
 *  FUNCTION
 *     Shutdown event delivery thread. Set event control structure 'exit' flag.
 *     Wait until event delivery thread did terminate.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: 'te_shutdown()' is MT safe. 
+*     MT-NOTE: 'te_shutdown()' is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: 'pthread_once()' is called for symmetry reasons. This module
 *     MT-NOTE: will be initialized on demand, i.e. each function may be
@@ -781,19 +811,19 @@ void te_shutdown() {
 *     te_check_time() -- check time
 *
 *  SYNOPSIS
-*     void te_check_time(time_t aTime) 
+*     void te_check_time(time_t aTime)
 *
 *  FUNCTION
 *     Check if 'aTime' is a point in time BEFORE the last timed event has been
-*     delivered. If so, adjust all pending timed events and set the time of 
+*     delivered. If so, adjust all pending timed events and set the time of
 *     last event delivery to 'aTime'. In addition adjust due date of the next
 *     event.
 *
 *  INPUTS
-*     time_t aTime - time value to check 
+*     time_t aTime - time value to check
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
 *     MT-NOTE: te_check_time() is NOT MT safe!
@@ -827,23 +857,23 @@ void te_check_time(u_long64 aTime) {
 *     te_event_from_list_elem() -- Allocate new timed event.
 *
 *  SYNOPSIS
-*     te_event_t te_event_from_list_elem(lListElem* aListElem) 
+*     te_event_t te_event_from_list_elem(lListElem* aListElem)
 *
 *  FUNCTION
 *     Allocate and initialize a new timed event. The new event will be
-*     initialized using the given list element. 
+*     initialized using the given list element.
 *
 *     The caller of this function is responsible to free the timed event
 *     returned, using 'te_free_event()'.
 *
 *  INPUTS
-*     lListElem* aListElem - list element 
+*     lListElem* aListElem - list element
 *
 *  RESULT
-*     te_event_t - new timed event 
+*     te_event_t - new timed event
 *
 *  NOTES
-*     MT-NOTE: te_event_from_list_elem() is MT safe. 
+*     MT-NOTE: te_event_from_list_elem() is MT safe.
 *
 *******************************************************************************/
 te_event_t te_event_from_list_elem(const lListElem *aListElem) {
@@ -870,10 +900,10 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 
 /****** qmaster/sge_qmaster_timed_event/te_scan_table_and_deliver() ***************
 *  NAME
-*     te_scan_table_and_deliver() -- Scan event handler table and deliver event. 
+*     te_scan_table_and_deliver() -- Scan event handler table and deliver event.
 *
 *  SYNOPSIS
-*     static void te_scan_table_and_deliver(te_event_t anEvent) 
+*     static void te_scan_table_and_deliver(te_event_t anEvent)
 *
 *  FUNCTION
 *     Scan event handler table for an event handler which does match the event
@@ -881,13 +911,13 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 *     added to the event list again after delivery, with its due date adjusted.
 *
 *  INPUTS
-*     te_event_t anEvent - event to deliver 
+*     te_event_t anEvent - event to deliver
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: te_scan_table_and_deliver() is MT safe. 
+*     MT-NOTE: te_scan_table_and_deliver() is MT safe.
 *     MT-NOTE:
 *     MT-NOTE: Do NOT invoke this function with 'Event_Control.mutex' locked!
 *     MT-NOTE: Otherwise a deadlock may occur due to recursive mutex locking.

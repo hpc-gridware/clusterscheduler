@@ -39,6 +39,8 @@
 
 #include "comm/cl_commlib.h"
 
+#include "uti/ocs_cond.h"
+#include "uti/ocs_gperf.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
@@ -76,7 +78,6 @@
 #include "ocs_gperf.h"
 
 #define SCHEDULER_TIMEOUT_S 10
-#define SCHEDULER_TIMEOUT_N 0
 
 static char schedule_log_path[SGE_PATH_MAX + 1] = "";
 static const char *schedule_log_file = "schedule";
@@ -181,12 +182,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (!Scheduler_Control.triggered) {
-      struct timespec ts{};
-      time_t current_time = time(nullptr);
-      ts.tv_sec = current_time + SCHEDULER_TIMEOUT_S;
-      ts.tv_nsec = SCHEDULER_TIMEOUT_N;
-
-      wait_ret = pthread_cond_timedwait(&Scheduler_Control.cond_var, &Scheduler_Control.mutex, &ts);
+      wait_ret = ocs::uti::condition_timedwait(&Scheduler_Control.cond_var, &Scheduler_Control.mutex, SCHEDULER_TIMEOUT_S);
 
       /*
        * if pthread_cond_timedwait returns 0, we were triggered by event master
@@ -218,14 +214,14 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 
 /****** qmaster/threads/sge_scheduler_initialize() ***************************
 *  NAME
-*     sge_scheduler_initialize() -- setup and start the scheduler thread 
+*     sge_scheduler_initialize() -- setup and start the scheduler thread
 *
 *  SYNOPSIS
-*     void sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx) 
+*     void sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx)
 *
 *  FUNCTION
 *     A call to this function initializes the scheduler thread if it is
-*     not already running. 
+*     not already running.
 *
 *     The first call to this function (during qmaster start) starts
 *     the scheduler thread only if it is enabled in the bootstrap file.
@@ -237,7 +233,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 *     Main routine for the created thread is sge_scheduler_main().
 *
 *     'Master_Scheduler' is accessed by this function.
-*     
+*
 *  INPUTS
 *     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     lList **answer_list      - answer list
@@ -246,17 +242,20 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 *     void - None
 *
 *  NOTES
-*     MT-NOTE: sge_scheduler_initialize() is MT safe 
+*     MT-NOTE: sge_scheduler_initialize() is MT safe
 *
 *  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize() 
-*     qmaster/threads/sge_scheduler_cleanup_thread() 
-*     qmaster/threads/sge_scheduler_terminate() 
-*     qmaster/threads/sge_scheduler_main() 
+*     qmaster/threads/sge_scheduler_initialize()
+*     qmaster/threads/sge_scheduler_cleanup_thread()
+*     qmaster/threads/sge_scheduler_terminate()
+*     qmaster/threads/sge_scheduler_main()
 *******************************************************************************/
 void
 sge_scheduler_initialize(lList **answer_list) {
    DENTER(TOP_LAYER);
+
+   // initialize the condition variable used in waiting for events triggering a scheduling run
+   ocs::uti::condition_initialize(&Scheduler_Control.cond_var);
 
    /* initialize debugging instrumentation */
    {
@@ -271,7 +270,7 @@ sge_scheduler_initialize(lList **answer_list) {
    if (!Master_Scheduler.is_running) {
       bool start_thread = true;
 
-      /* 
+      /*
        * when this function is called the first time we will use the setting from
        * the bootstrap file to identify if the scheduler should be started or not
        * otherwise we have to start the thread due to a manual request through GDI.
@@ -298,7 +297,7 @@ sge_scheduler_initialize(lList **answer_list) {
                                       Master_Scheduler.thread_id, sge_scheduler_main, nullptr, nullptr, CL_TT_SCHEDULER);
 
          /*
-          * Increase the thread id so that the next instance of a scheduler will have a 
+          * Increase the thread id so that the next instance of a scheduler will have a
           * different name and flag that scheduler is running
           */
          Master_Scheduler.thread_id++;
@@ -320,34 +319,34 @@ sge_scheduler_initialize(lList **answer_list) {
 
 /****** qmaster/threads/sge_scheduler_cleanup_thread() ********************
 *  NAME
-*     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread 
+*     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread
 *
 *  SYNOPSIS
-*     void sge_scheduler_cleanup_thread() 
+*     void sge_scheduler_cleanup_thread()
 *
 *  FUNCTION
-*     Cleanup the scheduler thread. 
+*     Cleanup the scheduler thread.
 *
 *     This function has to be executed only by the scheduler thread.
 *     Ideally it should be the last function executed when the
 *     pthread cancellation point is passed.
 *
 *     'Master_Scheduler' is accessed by this function.
-*     
+*
 *  INPUTS
-*     void - None 
+*     void - None
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_scheduler_cleanup_thread() is MT safe 
+*     MT-NOTE: sge_scheduler_cleanup_thread() is MT safe
 *
 *  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize() 
-*     qmaster/threads/sge_scheduler_cleanup_thread() 
-*     qmaster/threads/sge_scheduler_terminate() 
-*     qmaster/threads/sge_scheduler_main() 
+*     qmaster/threads/sge_scheduler_initialize()
+*     qmaster/threads/sge_scheduler_cleanup_thread()
+*     qmaster/threads/sge_scheduler_terminate()
+*     qmaster/threads/sge_scheduler_main()
 *******************************************************************************/
 void
 sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
@@ -361,7 +360,7 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
        * at the cancellation point as part of the cleanup.
        * Therefore, it has to unset the thread config before the
        * cl_thread is deleted. Otherwise, we might run into a race condition when logging
-       * is used after the call of cl_thread_list_delete_thread_without_join() 
+       * is used after the call of cl_thread_list_delete_thread_without_join()
        */
       cl_thread_unset_thread_config();
 
@@ -371,8 +370,8 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
       cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
       cl_thread_list_delete_thread_without_join(Main_Control.scheduler_thread_pool, thread);
 
-      /* 
-       * Trash the thread pool 
+      /*
+       * Trash the thread pool
        */
       cl_thread_list_cleanup(&Main_Control.scheduler_thread_pool);
 
@@ -389,17 +388,17 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
 
 /****** qmaster/threads/sge_scheduler_terminate() ****************************
 *  NAME
-*     sge_scheduler_terminate() -- terminate the scheduler 
+*     sge_scheduler_terminate() -- terminate the scheduler
 *
 *  SYNOPSIS
-*     void sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx) 
+*     void sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx)
 *
 *  FUNCTION
 *     Terminates the scheduler if it was started previously. This
-*     function will return only when it is sure that the pthread canceled. 
+*     function will return only when it is sure that the pthread canceled.
 *
 *     'Master_Scheduler' is accessed by this function.
-*     
+*
 *  INPUTS
 *     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
 *     lList **answer_list      - answer list
@@ -408,13 +407,13 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
 *     void - None
 *
 *  NOTES
-*     MT-NOTE: sge_scheduler_terminate() is MT safe 
+*     MT-NOTE: sge_scheduler_terminate() is MT safe
 *
 *  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize() 
-*     qmaster/threads/sge_scheduler_cleanup_thread() 
-*     qmaster/threads/sge_scheduler_terminate() 
-*     qmaster/threads/sge_scheduler_main() 
+*     qmaster/threads/sge_scheduler_initialize()
+*     qmaster/threads/sge_scheduler_cleanup_thread()
+*     qmaster/threads/sge_scheduler_terminate()
+*     qmaster/threads/sge_scheduler_main()
 *******************************************************************************/
 void
 sge_scheduler_terminate(lList **answer_list) {
@@ -430,7 +429,7 @@ sge_scheduler_terminate(lList **answer_list) {
       pthread_cond_signal(&Scheduler_Control.cond_var);
 
       /*
-       * cl_thread deletion and cl_thread_pool deletion will be done at 
+       * cl_thread deletion and cl_thread_pool deletion will be done at
        * schedulers cancellation point in sge_scheduler_cleanup_thread() ...
        * ... therefore we have nothing more to do.
        */
@@ -454,31 +453,31 @@ sge_scheduler_terminate(lList **answer_list) {
 
 /****** qmaster/threads/sge_scheduler_main() **********************************
 *  NAME
-*     sge_scheduler_main() -- main function of the scheduler thread 
+*     sge_scheduler_main() -- main function of the scheduler thread
 *
 *  SYNOPSIS
-*     void * sge_scheduler_main(void *arg) 
+*     void * sge_scheduler_main(void *arg)
 *
 *  FUNCTION
-*     Main function of the scheduler thread, 
+*     Main function of the scheduler thread,
 *
 *  INPUTS
-*     void *arg - pointer to the thread function (type cl_thread_settings_t*) 
+*     void *arg - pointer to the thread function (type cl_thread_settings_t*)
 *
 *  RESULT
 *     void * - always nullptr
 *
 *  NOTES
-*     MT-NOTE: sge_scheduler_main() is MT safe 
+*     MT-NOTE: sge_scheduler_main() is MT safe
 *
 *     MT-NOTE: this is a thread function. Do NOT use this function
 *     MT-NOTE: in any other way!
 *
 *  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize() 
-*     qmaster/threads/sge_scheduler_cleanup_thread() 
-*     qmaster/threads/sge_scheduler_terminate() 
-*     qmaster/threads/sge_scheduler_main() 
+*     qmaster/threads/sge_scheduler_initialize()
+*     qmaster/threads/sge_scheduler_cleanup_thread()
+*     qmaster/threads/sge_scheduler_terminate()
+*     qmaster/threads/sge_scheduler_main()
 *******************************************************************************/
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
@@ -563,10 +562,11 @@ sge_scheduler_main(void *arg) {
    subscribe_scheduler(evc, &where_what);
    DPRINTF("subscribed necessary data from event master\n");
 
-   /* 
+   /*
     * schedulers main loop
     */
    while (true) {
+      bool do_shutdown = false;
       bool handled_events = false;
       lList *event_list = nullptr;
       int execute = 0;
@@ -603,7 +603,7 @@ sge_scheduler_main(void *arg) {
 
       if (event_list != nullptr) {
          /* check for shutdown */
-         bool do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+         do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
 
          /* update mirror and free data */
          if (!do_shutdown && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
@@ -935,21 +935,29 @@ sge_scheduler_main(void *arg) {
       /* stop logging into schedd_runlog (enabled via -tsm) */
       evc->monitor_next_run = false;
 
-      /*
-       * pthread cancellation point
-       *
-       * sge_scheduler_cleanup_thread() is the last function which should be called, so it is pushed first
-       */
-      pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
-      pthread_cleanup_push(sge_scheduler_cleanup_monitor, static_cast<void *>(&monitor));
-      pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(evc));
-      pthread_cleanup_push(sge_scheduler_cleanup_where_what, static_cast<void *>(&where_what));
-      cl_thread_func_testcancel(thread_config);
-      pthread_cleanup_pop(execute);
-      pthread_cleanup_pop(execute);
-      pthread_cleanup_pop(execute);
-      pthread_cleanup_pop(execute);
-      DPRINTF("passed cancellation point\n");
+      // pthread cancellation point (functions are pushed in reverse order of execution)
+      // As soon as we know that qmaster will shut down we will not reiterate the main loop
+      // We just wait here for the final termination signal to do the cleanup.
+      // sge_scheduler_cleanup_thread() is the last function which should be called, so it is pushed first
+      do {
+         pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
+         pthread_cleanup_push(sge_scheduler_cleanup_monitor, static_cast<void *>(&monitor));
+         pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(evc));
+         pthread_cleanup_push(sge_scheduler_cleanup_where_what, static_cast<void *>(&where_what));
+         cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_pop(execute);
+         pthread_cleanup_pop(execute);
+         pthread_cleanup_pop(execute);
+         pthread_cleanup_pop(execute);
+         DPRINTF("passed cancellation point\n");
+
+         if (do_shutdown) {
+            sge_usleep(50000);
+         }
+         // we shut down scheduler thread via SHUTDOWN event
+         // will need to change to the usual do {} while (sge_thread_has_shutdown_started()) loop
+         // when we separate mirroring and scheduling into different threads
+      } while (do_shutdown);
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

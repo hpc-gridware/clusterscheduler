@@ -1,26 +1,27 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
- *  
+ *
  *  Copyright 2024 HPC-Gridware GmbH
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *  
+ *
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
 #include <functional>
 #include <iostream>
 
+#include "uti/ocs_cond.h"
 #include "uti/sge_component.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
@@ -51,7 +52,7 @@ ocs::MirrorDataStore::MirrorDataStore(const DataStore::Id data_store_id, const s
         mutex(PTHREAD_MUTEX_INITIALIZER),
         mutex_name("event_mirror_control_mutex"),
         data_store_id(data_store_id) {
-   ;
+   ocs::uti::condition_initialize(&cond_var);
 }
 
 ocs::MirrorDataStore::~MirrorDataStore() {
@@ -446,6 +447,8 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
          pthread_cleanup_pop(execute); // data store that was filled by this mirror
          pthread_cleanup_pop(execute); // monitor
 
+         // we shut down the mirror threads via SHUTDOWN event
+         // no need to change to the usual do {} while (sge_thread_has_shutdown_started()) loop
          if (do_qmaster_shutdown) {
             sge_usleep(50000);
          }

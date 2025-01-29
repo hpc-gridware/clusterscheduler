@@ -87,7 +87,7 @@ sge_timer_cleanup_monitor(monitoring_t *monitor) {
 *     sge_timer_register_event_handler() -- register event handlers
 *
 *  SYNOPSIS
-*     void sge_timer_register_event_handler() 
+*     void sge_timer_register_event_handler()
 *
 *  FUNCTION
 *    registers event handlers
@@ -99,8 +99,8 @@ void
 sge_timer_register_event_handler() {
    DENTER(TOP_LAYER);
 
-   /* 
-    * recurring events 
+   /*
+    * recurring events
     */
 
    te_register_event_handler(sge_store_job_number, TYPE_JOB_NUMBER_EVENT);
@@ -117,7 +117,7 @@ sge_timer_register_event_handler() {
 
    te_register_event_handler(ocs::SessionManager::session_cleanup_handler, TYPE_SESSION_CLEANUP_EVENT);
 
-   /* 
+   /*
     * one time events
     */
 
@@ -139,20 +139,20 @@ sge_timer_register_event_handler() {
 
 /****** qmaster/sge_thread_timer/sge_timer_start_periodic_tasks() ************************
 *  NAME
-*     sge_timer_start_periodic_tasks() -- Start periodic qmaster tasks. 
+*     sge_timer_start_periodic_tasks() -- Start periodic qmaster tasks.
 *
 *  SYNOPSIS
-*     static void sge_timer_start_periodic_tasks() 
+*     static void sge_timer_start_periodic_tasks()
 *
 *  FUNCTION
 *     Start periodic qmaster tasks. Periodic tasks are implemented as recurring
-*     events. 
+*     events.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
 *******************************************************************************/
@@ -234,6 +234,19 @@ void
 sge_timer_terminate() {
    DENTER(TOP_LAYER);
 
+   cl_thread_list_elem_t *thread_elem;
+   cl_thread_list_elem_t *next_thread_elem = cl_thread_list_get_first_elem(Main_Control.timer_thread_pool);
+   while ((thread_elem = next_thread_elem) != nullptr) {
+      next_thread_elem = cl_thread_list_get_next_elem(thread_elem);
+
+      cl_thread_shutdown(thread_elem->thread_config);
+   }
+
+   // wake up the timer thread(s)
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
+   pthread_cond_broadcast(&Event_Control.cond_var);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
+
    cl_thread_settings_t *thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    while (thread != nullptr) {
       DPRINTF("getting canceled\n");
@@ -255,7 +268,7 @@ sge_timer_terminate() {
 *     timed_event_thread() -- Deliver timed events due
 *
 *  SYNOPSIS
-*     static void* timed_event_thread(void* anArg) 
+*     static void* timed_event_thread(void* anArg)
 *
 *  FUNCTION
 *     Check whether system clock has been put back. If so, adjust event due
@@ -270,10 +283,10 @@ sge_timer_terminate() {
 *     The event list MUST be sorted in ascending event due time order.
 *
 *  INPUTS
-*     void* anArg - not used 
+*     void* anArg - not used
 *
 *  RESULT
-*     void* - none 
+*     void* - none
 *
 *  NOTES
 *     MT-NOTE: 'timed_event_thread()' is a thread function. Do NOT use this
@@ -281,7 +294,7 @@ sge_timer_terminate() {
 *     MT-NOTE:
 *     MT-NOTE: If the event list is empty, 'timed_event_thread()' will wait until
 *     MT-NOTE: an event has been added.
-*     MT-NOTE: 
+*     MT-NOTE:
 *     MT-NOTE: If no event is due, i.e. the due date of the next event does lie
 *     MT-NOTE: ahead, 'timed_event_thread()' does wait until the next event does
 *     MT-NOTE: become due, or an event which is due earlier has been added. If
@@ -353,13 +366,15 @@ sge_timer_main(void *arg) {
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitoring_options());
 
          if ((Event_Control.next < te->when) || Event_Control.deleted) {
-            DPRINTF("%s: event list changed - next:" sge_u64" --> start over\n", __func__, Event_Control.next);
+            DPRINTF("%s: event list changed - next:" sge_u64 " --> start over\n", __func__, Event_Control.next);
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-            te_free_event(&te);
-            sge_monitor_output(p_monitor);
-            continue;
+            if (!sge_thread_has_shutdown_started()) {
+               te_free_event(&te);
+               sge_monitor_output(p_monitor);
+               continue;
+            }
          }
       }
 
@@ -370,23 +385,21 @@ sge_timer_main(void *arg) {
 
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-      te_scan_table_and_deliver(te, p_monitor);
+      if (!sge_thread_has_shutdown_started()) {
+         te_scan_table_and_deliver(te, p_monitor);
+      }
       te_free_event(&te);
 
       sge_monitor_output(p_monitor);
-      thread_output_profiling("timed event thread profiling summary:\n",
-                              &next_prof_output);
+      thread_output_profiling("timed event thread profiling summary:\n", &next_prof_output);
 
       /* pthread cancellation point */
       do {
-         pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor,
-                              (void *) p_monitor);
-            cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor, (void *) p_monitor);
+         cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
-         if (sge_thread_has_shutdown_started()) {
-            DPRINTF("waiting for termination\n");
-            sleep(1);
-         }
+
+         sge_thread_usleep_during_shutdown();
       } while (sge_thread_has_shutdown_started());
    }
 

@@ -336,7 +336,6 @@ sge_reader_main(void *arg) {
       }
 
       // pass the cancellation point at least once or stay here if shutdown was triggered
-      bool shutdown_started = false;
       do {
          // pthread cancellation point
          int execute = 0;
@@ -344,14 +343,8 @@ sge_reader_main(void *arg) {
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute); // cleanup monitor
 
-         // shutdown in process?
-         shutdown_started = sge_thread_has_shutdown_started();
-
-         // if we will wait here than do not eat up all cpu time
-         if (shutdown_started) {
-            sge_usleep(25000);
-         }
-      } while (shutdown_started);
+         sge_thread_usleep_during_shutdown();
+      } while (sge_thread_has_shutdown_started());
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

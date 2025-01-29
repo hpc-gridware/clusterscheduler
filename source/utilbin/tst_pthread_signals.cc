@@ -39,6 +39,7 @@
 #include <unistd.h>
 
 #include "basis_types.h"
+#include "uti/ocs_cond.h"
 
 #undef FALSE
 #undef TRUE
@@ -91,6 +92,7 @@ int main(int argc, char* argv[])
    pthread_t id[NUM_THRDS];
    int i;
 
+   ocs::uti::condition_initialize(&cb.cndvar);
 
    sigfillset(&sig_set);
    pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);

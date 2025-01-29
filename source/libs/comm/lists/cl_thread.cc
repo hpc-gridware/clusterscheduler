@@ -39,6 +39,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 
+#include "uti/ocs_cond.h"
 #include "uti/sge_stdlib.h"
 
 #include "comm/lists/cl_lists.h"
@@ -114,7 +115,7 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
       return CL_RETVAL_MUTEX_ERROR;
    }
 
-   if (pthread_cond_init(new_condition->thread_cond_var, nullptr) != 0) {
+   if (ocs::uti::condition_initialize(new_condition->thread_cond_var) != 0) {
       ret_val = pthread_mutex_destroy(new_condition->thread_mutex_lock);
       if (ret_val == EBUSY) {
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
@@ -222,34 +223,7 @@ int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long s
             pthread_mutex_unlock(condition->trigger_count_mutex);
          }
       } else {
-         int retcode;
-         struct timeval now;
-         struct timespec timeout;
-         long sec_now;
-         long micro_sec_now;
-
-         /* get current time */
-         gettimeofday(&now, nullptr);
-
-         /* normalize timeout parameter */
-         sec = sec + (micro_sec / 1000000);
-         micro_sec = micro_sec % 1000000;
-
-         /* append timeout time to current time */
-         micro_sec_now = now.tv_usec + micro_sec;
-         sec_now = now.tv_sec + sec;
-
-         /* handle overrun */
-         if (micro_sec_now >= 1000000) {
-            micro_sec_now = micro_sec_now - 1000000;
-            sec_now++;
-         }
-
-         /* set timeout time */
-         timeout.tv_sec = sec_now;
-         timeout.tv_nsec = (micro_sec_now * 1000);
-
-         retcode = pthread_cond_timedwait(condition->thread_cond_var, condition->thread_mutex_lock, &timeout);
+         int retcode = ocs::uti::condition_timedwait(condition->thread_cond_var, condition->thread_mutex_lock, sec, micro_sec);
 
          if (retcode == ETIMEDOUT) {
             ret_val = CL_RETVAL_CONDITION_WAIT_TIMEOUT;   /* timeout */

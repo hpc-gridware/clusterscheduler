@@ -24,7 +24,7 @@ add_executable(test_qmaster_timed_event
       test_qmaster_timed_event.cc
       ../../../source/daemons/qmaster/sge_qmaster_timed_event.cc)
 target_include_directories(test_qmaster_timed_event PRIVATE "./")
-target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 
 add_executable(test_qmaster_calendar
@@ -87,7 +87,7 @@ add_executable(test_qmaster_calendar
 target_include_directories(test_qmaster_calendar PRIVATE "./")
 target_link_libraries(
         test_qmaster_calendar
-        PRIVATE daemonscommon ${SPOOLING_LIBS} sched mir evc evm sgeobj gdi cull comm uti commlists
+        PRIVATE daemonscommon ${SPOOLING_LIBS} sched mir evc evm sgeobj gdi cull comm commlists uti
         ${SGE_LIBS} ${GPERFTOOLS_PROFILER})
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 

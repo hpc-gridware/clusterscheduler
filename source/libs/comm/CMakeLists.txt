@@ -45,88 +45,88 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
 
 add_executable(test_cl_com_parameter_list test_cl_com_parameter_list.cc)
 target_include_directories(test_cl_com_parameter_list PRIVATE "./")
-target_link_libraries(test_cl_com_parameter_list PRIVATE comm uti commlists)
+target_link_libraries(test_cl_com_parameter_list PRIVATE comm commlists uti)
 
 add_executable(test_cl_commlib test_cl_commlib.cc)
 target_include_directories(test_cl_commlib PRIVATE "./")
-target_link_libraries(test_cl_commlib PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_commlib PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_commlib_client test_cl_commlib_client.cc)
 target_include_directories(test_cl_commlib_client PRIVATE "./")
-target_link_libraries(test_cl_commlib_client PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_commlib_client PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_endpoint_list test_cl_endpoint_list.cc)
 target_include_directories(test_cl_endpoint_list PRIVATE "./")
-target_link_libraries(test_cl_endpoint_list PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_endpoint_list PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_hostalias_list test_cl_hostalias_list.cc)
 target_include_directories(test_cl_hostalias_list PRIVATE "./")
-target_link_libraries(test_cl_hostalias_list PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_hostalias_list PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_hostname_list test_cl_hostname_list.cc)
 target_include_directories(test_cl_hostname_list PRIVATE "./")
-target_link_libraries(test_cl_hostname_list PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_hostname_list PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_issue_2747_client test_cl_issue_2747_client.cc)
 target_include_directories(test_cl_issue_2747_client PRIVATE "./")
-target_link_libraries(test_cl_issue_2747_client PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_issue_2747_client PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_cl_issue_2747_server test_cl_issue_2747_server.cc)
 target_include_directories(test_cl_issue_2747_server PRIVATE "./")
-target_link_libraries(test_cl_issue_2747_server PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_cl_issue_2747_server PRIVATE comm commlists uti ${SGE_LIBS})
 
 #@todo: outdated, too few arguments to cl_thread_list_create_thread()
 #add_executable(test_cl_tcp_framework test_cl_tcp_framework.c)
 #target_include_directories(test_cl_tcp_framework PRIVATE "./")
-#target_link_libraries(test_cl_tcp_framework PRIVATE comm uti commlists)
+#target_link_libraries(test_cl_tcp_framework PRIVATE comm commlists uti)
 
 add_executable(test_commlib_issue test_commlib_issue.cc)
 target_include_directories(test_commlib_issue PRIVATE "./")
-target_link_libraries(test_commlib_issue PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_commlib_issue PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_debug_client test_debug_client.cc)
 target_include_directories(test_debug_client PRIVATE "./")
-target_link_libraries(test_debug_client PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_debug_client PRIVATE comm commlists uti ${SGE_LIBS})
 
 #add_executable(test_dummy test_dummy.c)
 #target_include_directories(test_dummy PRIVATE "./")
-#target_link_libraries(test_dummy PRIVATE comm uti commlists)
+#target_link_libraries(test_dummy PRIVATE comm commlists uti)
 
 add_executable(test_general test_general.cc)
 target_include_directories(test_general PRIVATE "./")
-target_link_libraries(test_general PRIVATE comm uti commlists)
+target_link_libraries(test_general PRIVATE comm commlists uti)
 
 add_executable(test_issues test_issues.cc)
 target_include_directories(test_issues PRIVATE "./")
-target_link_libraries(test_issues PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_issues PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_multithread_io test_multithread_io.cc)
 target_include_directories(test_multithread_io PRIVATE "./")
-target_link_libraries(test_multithread_io PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_multithread_io PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_server_connection test_server_connection.cc)
 target_include_directories(test_server_connection PRIVATE "./")
-target_link_libraries(test_server_connection PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_server_connection PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_status_info test_status_info.cc)
 target_include_directories(test_status_info PRIVATE "./")
-target_link_libraries(test_status_info PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_status_info PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_thread_throughput test_thread_throughput.cc)
 target_include_directories(test_thread_throughput PRIVATE "./")
-target_link_libraries(test_thread_throughput PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_thread_throughput PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_virtual_event_client test_virtual_event_client.cc)
 target_include_directories(test_virtual_event_client PRIVATE "./")
-target_link_libraries(test_virtual_event_client PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_virtual_event_client PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_virtual_gdi_client test_virtual_gdi_client.cc)
 target_include_directories(test_virtual_gdi_client PRIVATE "./")
-target_link_libraries(test_virtual_gdi_client PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_virtual_gdi_client PRIVATE comm commlists uti ${SGE_LIBS})
 
 add_executable(test_virtual_qmaster test_virtual_qmaster.cc)
 target_include_directories(test_virtual_qmaster PRIVATE "./")
-target_link_libraries(test_virtual_qmaster PRIVATE comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_virtual_qmaster PRIVATE comm commlists uti ${SGE_LIBS})
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_cl_com_parameter_list DESTINATION testbin/${SGE_ARCH})
