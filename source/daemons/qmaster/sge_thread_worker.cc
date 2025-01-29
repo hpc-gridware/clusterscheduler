@@ -356,6 +356,8 @@ sge_worker_main(void *arg) {
       pthread_cleanup_push(sge_worker_cleanup_monitor, static_cast<void *>(p_monitor));
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute); // cleanup monitor
+
+      // we still process requests also during shutdown until the thread is explicitly cancelled
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

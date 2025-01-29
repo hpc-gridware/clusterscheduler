@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "uti/ocs_cond.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_log.h"
@@ -66,8 +67,8 @@
 *     Evenclient -- The Cluster Scheduler Event Client Interface
 *
 *  FUNCTION
-*     The Cluster Scheduler Event Client Interface provides a means to connect 
-*     to the Cluster Scheduler qmaster and receive information about objects 
+*     The Cluster Scheduler Event Client Interface provides a means to connect
+*     to the Cluster Scheduler qmaster and receive information about objects
 *     (actual object properties and changes).
 *
 *     It provides a subscribe/unsubscribe mechanism allowing fine grained
@@ -81,7 +82,7 @@
 *     time for processing the events (e.g. depending on other components
 *     like databases), should in any case make use of the busy handling.
 *
-*     The event client interface should have much less impact on qmaster 
+*     The event client interface should have much less impact on qmaster
 *     performance than polling the same data in regular intervals.
 *
 *  SEE ALSO
@@ -105,18 +106,18 @@
 *     The request for registering at qmaster contains either a concrete
 *     id the client wants to occupy, or it asks the qmaster to assign
 *     an id.
-*     The client sets the id to use at registration with the 
+*     The client sets the id to use at registration with the
 *     ec_prepare_registration function call.
-*     
+*
 *     The following id's can be used:
 *        EV_ID_ANY    - qmaster will assign a unique id
 *        EV_ID_SCHEDD - register at qmaster as scheduler
 *
 *  NOTES
-*     As long as an event client does not expect any special handling 
+*     As long as an event client does not expect any special handling
 *     within qmaster, it should let qmaster assign an id.
 *
-*     If a client expects special handling, a new id in the range 
+*     If a client expects special handling, a new id in the range
 *     [2;10] has to be created and the special handling has to be
 *     implemented in qmaster (probably in sge_event_master.c).
 *
@@ -131,13 +132,13 @@
 *     Subscription -- Subscription interface for event clients
 *
 *  FUNCTION
-*     An event client is notified, if certain event conditions are 
+*     An event client is notified, if certain event conditions are
 *     raised in qmaster.
 *
 *     Which events an event client is interested in can be set through
 *     the subscription interface.
 *
-*     Events have a unique event identification that classifies them, 
+*     Events have a unique event identification that classifies them,
 *     e.g. "a job has been submitted" or "a queue has been disabled".
 *
 *     Delivery of events can be switched on/off for each event id
@@ -169,16 +170,16 @@
 *     These intervals can be configured using the ec_set_edtime()
 *     function call.
 *
-*     In certain cases, an event client will want to be immediately 
+*     In certain cases, an event client will want to be immediately
 *     notified, if certain events occur. A scheduler for example
 *     could be notified immediately, if resources in a cluster become
 *     available to allow instant refilling of the cluster.
 *
-*     The event client interface allows to configure flushing 
+*     The event client interface allows to configure flushing
 *     for each individual event id.
 *
 *     Flushing can either be switched off (default) for an event, or
-*     a delivery time can be configured. 
+*     a delivery time can be configured.
 *     If a delivery time is configured, events for the event client
 *     will be delivered by qmaster at latest after this delivery time.
 *     A delivery time of 0 means instant delivery.
@@ -199,7 +200,7 @@
 /****** Eventclient/-List filtering***************************************
 *
 *  NAME
-*     List filtering -- Configuration of the list filtering 
+*     List filtering -- Configuration of the list filtering
 *
 *  FUNCTION
 *    The data sent with an event can be filtered on the master side.
@@ -208,7 +209,7 @@
 *    be send.
 *
 *    The method expects a lListElem representation of the lCondition
-*    and lEnumeration. The two methods: "lWhatToElem" and 
+*    and lEnumeration. The two methods: "lWhatToElem" and
 *    "lWhereToElem" will convert the structures.
 *
 *  NOTES
@@ -245,28 +246,28 @@
 *  FUNCTION
 *     An event client may have time periods where it is busy doing some
 *     processing and can not accept new events.
-*     
+*
 *     In this case, qmaster should not send out new events but buffer them,
 *     as otherwise timeouts would occur waiting for acknowledges.
 *
 *     Therefore an event client can set a policy that defines how busy
 *     states are set and unset.
 *
-*     Which policy to use is set with the ev_set_busy_handling() function 
+*     Which policy to use is set with the ev_set_busy_handling() function
 *     call. The policy can be changed dynamically at runtime.
 *
 *     The following policies are implemented at present:
 *        EV_BUSY_NO_HANDLING    - busy state is not handled automatically
 *                                 by the event client interface
 *        EV_BUSY_UNTIL_ACK      - when delivering events qmaster will set
-*                                 the eventclient to busy and will unset 
+*                                 the eventclient to busy and will unset
 *                                 the busy state when the event client
 *                                 acknowledges receipt of the events.
 *        EV_BUSY_UNTIL_RELEASED - when delivering events qmaster will set
 *                                 the eventclient to busy.
 *                                 It will stay in the busy state until it
-*                                 is explicitly released by the client 
-*                                 (calling ec_set_busy(0)) 
+*                                 is explicitly released by the client
+*                                 (calling ec_set_busy(0))
 *
 *  NOTES
 *
@@ -283,16 +284,16 @@
 *  FUNCTION
 *     For JAPI event clients event subscription is not sufficient to
 *     track only those events that are related to a JAPI session.
-*     
-*     When session filtering is used the following rules are applied 
+*
+*     When session filtering is used the following rules are applied
 *     to decide whether subscribed events are sent or not:
 *
 *     - Events that are associated with a specific session are not
-*       sent when session filtering is used but the session does not 
-*       match. 
-*     - Events that are not associated with a specific session are 
+*       sent when session filtering is used but the session does not
+*       match.
+*     - Events that are not associated with a specific session are
 *       not sent. The only exception are total update events. If subscribed
-*       these events are always sent and a more fine grained filtering is 
+*       these events are always sent and a more fine grained filtering is
 *       applied.
 *
 *  NOTES
@@ -313,7 +314,7 @@
 *
 *     SGE_STRING(EV_name)
 *        event client name (any string characterizing the client)
-*     
+*
 *     SGE_HOST(EV_host)
 *        host on which the event client resides
 *
@@ -325,7 +326,7 @@
 *
 *     SGE_ULONG(EV_uid)
 *        user id under which the event client is running
-*     
+*
 *     SGE_ULONG(EV_d_time)
 *        event delivery time (interval used by qmaster to deliver events)
 *
@@ -336,7 +337,7 @@
 *     SGE_ULONG(EV_busy_handling)
 *        information about handling of busy states
 *        (see Eventclient/-Busy-state)
-*     
+*
 *     SGE_ULONG64(EV_last_heard_from)
 *        time when qmaster heard from the event client for the last time
 *
@@ -354,9 +355,9 @@
 *        no events will be delivered to a busy client
 *
 *     SGE_LIST(EV_events)
-*        list of events - they will be spooled until the event client 
+*        list of events - they will be spooled until the event client
 *        acknowledges receipt
-*  
+*
 *  FUNCTION
 *     An event client creates and initializes such an object and passes
 *     it to qmaster for registration.
@@ -365,8 +366,8 @@
 *     Whenever the event client wants to change some configuration
 *     parameters, it changes the object and sends it to qmaster
 *     with a modification request.
-*  
-*     Qmaster uses the object internally to track sequential numbers, 
+*
+*     Qmaster uses the object internally to track sequential numbers,
 *     delivery times, timeouts etc.
 *
 *  SEE ALSO
@@ -386,44 +387,44 @@
 *     The following events can be raised in qmaster and be subscribed
 *     by an event client:
 *
-*        sgeE_ALL_EVENTS                  
-*     
+*        sgeE_ALL_EVENTS
+*
 *        sgeE_ADMINHOST_LIST              send admin host list at registration
 *        sgeE_ADMINHOST_ADD               event add admin host
 *        sgeE_ADMINHOST_DEL               event delete admin host
 *        sgeE_ADMINHOST_MOD               event modify admin host
-*     
+*
 *        sgeE_CALENDAR_LIST               send calendar list at registration
 *        sgeE_CALENDAR_ADD                event add calendar
 *        sgeE_CALENDAR_DEL                event delete calendar
 *        sgeE_CALENDAR_MOD                event modify calendar
-*     
+*
 *        sgeE_CKPT_LIST                   send ckpt list at registration
 *        sgeE_CKPT_ADD                    event add ckpt
 *        sgeE_CKPT_DEL                    event delete ckpt
 *        sgeE_CKPT_MOD                    event modify ckpt
-*     
+*
 *        sgeE_CENTRY_LIST                 send complex entry list at reg.
 *        sgeE_CENTRY_ADD                  event add complex entry
 *        sgeE_CENTRY_DEL                  event delete complex entry
 *        sgeE_CENTRY_MOD                  event modify complex entry
-*     
+*
 *        sgeE_CONFIG_LIST                 send config list at registration
 *        sgeE_CONFIG_ADD                  event add config
 *        sgeE_CONFIG_DEL                  event delete config
 *        sgeE_CONFIG_MOD                  event modify config
-*     
+*
 *        sgeE_EXECHOST_LIST               send exec host list at registration
 *        sgeE_EXECHOST_ADD                event add exec host
 *        sgeE_EXECHOST_DEL                event delete exec host
 *        sgeE_EXECHOST_MOD                event modify exec host
-*     
+*
 *        sgeE_GLOBAL_CONFIG               global config changed, replace by sgeE_CONFIG_MOD
-*     
+*
 *        sgeE_JATASK_ADD                  event add array job task
 *        sgeE_JATASK_DEL                  event delete array job task
 *        sgeE_JATASK_MOD                  event modify array job task
-*     
+*
 *        sgeE_PETASK_ADD,                 event add a new pe task
 *        sgeE_PETASK_DEL,                 event delete a pe task
 *
@@ -434,65 +435,65 @@
 *        sgeE_JOB_MOD_SCHED_PRIORITY      event job modify priority
 *        sgeE_JOB_USAGE                   event job online usage
 *        sgeE_JOB_FINAL_USAGE             event job final usage report after job end
-*        sgeE_JOB_FINISH                  job finally finished or aborted (user view) 
+*        sgeE_JOB_FINISH                  job finally finished or aborted (user view)
 *        sgeE_JOB_SCHEDD_INFO_LIST        send job schedd info list at registration
 *        sgeE_JOB_SCHEDD_INFO_ADD         event jobs schedd info added
 *        sgeE_JOB_SCHEDD_INFO_DEL         event jobs schedd info deleted
 *        sgeE_JOB_SCHEDD_INFO_MOD         event jobs schedd info modified
-*     
+*
 *        sgeE_MANAGER_LIST                send manager list at registration
 *        sgeE_MANAGER_ADD                 event add manager
 *        sgeE_MANAGER_DEL                 event delete manager
 *        sgeE_MANAGER_MOD                 event modify manager
-*     
+*
 *        sgeE_OPERATOR_LIST               send operator list at registration
 *        sgeE_OPERATOR_ADD                event add operator
 *        sgeE_OPERATOR_DEL                event delete operator
 *        sgeE_OPERATOR_MOD                event modify operator
-*     
+*
 *        sgeE_NEW_SHARETREE               replace possibly existing share tree
-*     
+*
 *        sgeE_PE_LIST                     send pe list at registration
 *        sgeE_PE_ADD                      event pe add
 *        sgeE_PE_DEL                      event pe delete
 *        sgeE_PE_MOD                      event pe modify
-*     
+*
 *        sgeE_PROJECT_LIST                send project list at registration
 *        sgeE_PROJECT_ADD                 event project add
 *        sgeE_PROJECT_DEL                 event project delete
 *        sgeE_PROJECT_MOD                 event project modify
-*     
+*
 *        sgeE_QMASTER_GOES_DOWN           qmaster notifies all event clients, before
 *                                         it exits
-*     
+*
 *        sgeE_QUEUE_LIST                  send queue list at registration
 *        sgeE_QUEUE_ADD                   event queue add
 *        sgeE_QUEUE_DEL                   event queue delete
 *        sgeE_QUEUE_MOD                   event queue modify
 *        sgeE_QUEUE_SUSPEND_ON_SUB        queue is suspended by subordinate mechanism
 *        sgeE_QUEUE_UNSUSPEND_ON_SUB      queue is unsuspended by subordinate mechanism
-*     
+*
 *        sgeE_SCHED_CONF                  replace existing (sge) scheduler configuration
-*     
+*
 *        sgeE_SCHEDDMONITOR               trigger scheduling run
-*     
+*
 *        sgeE_SHUTDOWN                    request shutdown of an event client
-*     
+*
 *        sgeE_SUBMITHOST_LIST             send submit host list at registration
 *        sgeE_SUBMITHOST_ADD              event add submit host
 *        sgeE_SUBMITHOST_DEL              event delete submit hostsource/libs/evc/sge_event_client.c
 *        sgeE_SUBMITHOST_MOD              event modify submit host
-*     
+*
 *        sgeE_USER_LIST                   send user list at registration
 *        sgeE_USER_ADD                    event user add
 *        sgeE_USER_DEL                    event user delete
 *        sgeE_USER_MOD                    event user modify
-*     
+*
 *        sgeE_USERSET_LIST                send userset list at registration
 *        sgeE_USERSET_ADD                 event userset add
 *        sgeE_USERSET_DEL                 event userset delete
 *        sgeE_USERSET_MOD                 event userset modify
-*  
+*
 *     If user mapping is enabled (compile time option), the following
 *     additional events can be subscribed:
 *
@@ -500,7 +501,7 @@
 *        sgeE_CUSER_ENTRY_ADD             a new user mapping was added
 *        sgeE_CUSER_ENTRY_DEL             a user mapping was deleted
 *        sgeE_CUSER_ENTRY_MOD             a user mapping entry was changed
-*     
+*
 *        sgeE_HGROUP_LIST                 send list of host groups
 *        sgeE_HGROUP_ADD                  a host group was added
 *        sgeE_HGROUP_DEL                  a host group was deleted
@@ -509,7 +510,7 @@
 *  NOTES
 *     This list of events will increase as further event situations
 *     are identified and interfaced.
-*     
+*
 *     IF YOU ADD EVENTS HERE, ALSO UPDATE sge_mirror!
 *
 *  SEE ALSO
@@ -519,13 +520,13 @@
 
 /****** Eventclient/Client/--Event_Client **********************************
 *  NAME
-*     Event Client Interface -- Client Functionality 
+*     Event Client Interface -- Client Functionality
 *
 *  FUNCTION
 *     The client side of the event client interface provides functions
 *     to register and deregister (before registering, you have to call
 *     ec_prepare_registration to set an id and client name).
-*  
+*
 *     The subscribe / unsubscribe mechanism allows to select the data
 *     (object types and events) an event client shall be sent.
 *
@@ -534,8 +535,8 @@
 *
 *  EXAMPLE
 *     clients/qevent/qevent.c can serve as a simple example.
-*     The scheduler (daemons/qmaster/sge_thread_scheduler.c) 
-*     is also implemented as (local) event client and uses all 
+*     The scheduler (daemons/qmaster/sge_thread_scheduler.c)
+*     is also implemented as (local) event client and uses all
 *     mechanisms of the event client interface.
 *
 *  SEE ALSO
@@ -563,7 +564,7 @@
 
 /****** Eventclient/Client/-Event_Client_Global_Variables *********************
 *  NAME
-*     Global_Variables -- global variables in the client 
+*     Global_Variables -- global variables in the client
 *
 *  SYNOPSIS
 *     static bool config_changed = false;
@@ -573,7 +574,7 @@
 *     static u_long32 next_event = 1;
 *
 *  FUNCTION
-*     config_changed - the configuration changed (subscription or event 
+*     config_changed - the configuration changed (subscription or event
 *                      interval)
 *     need_register  - the client is not registered at the server
 *     ec             - event client object holding configuration data
@@ -588,7 +589,6 @@
 *******************************************************************************/
 
 #define EC_TIMEOUT_S 10
-#define EC_TIMEOUT_N 0
 
 typedef struct {
    pthread_mutex_t mutex;      /* used for mutual exclusion                         */
@@ -610,14 +610,14 @@ typedef struct {
 
 
 static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number);
-static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval); 
-static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event); 
+static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval);
+static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event);
 static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall);
 static void ec2_config_changed(sge_evc_class_t *thiz);
 static bool sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name);
 static void sge_evc_destroy(sge_evc_t **sge_evc);
-static bool ec2_is_initialized(sge_evc_class_t *thiz); 
-static lListElem* ec2_get_event_client(sge_evc_class_t *thiz); 
+static bool ec2_is_initialized(sge_evc_class_t *thiz);
+static lListElem* ec2_get_event_client(sge_evc_class_t *thiz);
 static void ec2_mark4registration(sge_evc_class_t *thiz);
 static bool ec2_need_new_registration(sge_evc_class_t *thiz);
 static bool ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval);
@@ -644,7 +644,7 @@ static bool ec2_get_busy(sge_evc_class_t *thiz);
 static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
 static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);
-static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp); 
+static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp);
 static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
@@ -674,7 +674,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    ** get type of connection internal/external
    */
    bool is_qmaster_internal = component_is_qmaster_internal();
-   
+
    DPRINTF("creating %s event client context\n", is_qmaster_internal ? "internal" : "external");
 
    if (is_qmaster_internal) {
@@ -743,7 +743,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    }
 
    DRETURN(ret);
-}   
+}
 
 void sge_evc_class_destroy(sge_evc_class_t **pst)
 {
@@ -751,8 +751,8 @@ void sge_evc_class_destroy(sge_evc_class_t **pst)
 
    if (pst == nullptr || *pst == nullptr) {
       DRETURN_VOID;
-   }   
-      
+   }
+
    sge_evc_destroy((sge_evc_t **)&((*pst)->sge_evc_handle));
    sge_free(pst);
    DRETURN_VOID;
@@ -761,10 +761,10 @@ void sge_evc_class_destroy(sge_evc_class_t **pst)
 static void sge_evc_destroy(sge_evc_t **sge_evc)
 {
    DENTER(EVC_LAYER);
-   
+
    if (sge_evc == nullptr || *sge_evc == nullptr) {
       DRETURN_VOID;
-   }   
+   }
 
    /*
    ** signal all threads waiting on condition before destroy
@@ -772,14 +772,14 @@ static void sge_evc_destroy(sge_evc_t **sge_evc)
    pthread_mutex_lock(&((*sge_evc)->event_control.mutex));
    pthread_cond_broadcast(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_unlock(&((*sge_evc)->event_control.mutex));
-                                                                                                  
+
    pthread_cond_destroy(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_destroy(&((*sge_evc)->event_control.mutex));
    lFreeList(&((*sge_evc)->event_control.new_events));
 
    lFreeElem(&((*sge_evc)->ec));
    sge_free(sge_evc);
-   
+
    DRETURN_VOID;
 }
 
@@ -790,8 +790,8 @@ static void sge_evc_destroy(sge_evc_t **sge_evc)
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_prepare_registration(ev_registration_id id, const char *name) 
+*     bool
+*     ec_prepare_registration(ev_registration_id id, const char *name)
 *
 *  FUNCTION
 *     Initializes necessary data structures and sets the data needed for
@@ -809,7 +809,7 @@ static void sge_evc_destroy(sge_evc_t **sge_evc)
 *     const char *name       - name of the event client
 *
 *  RESULT
-*     bool - true, if the function succeeded, else false 
+*     bool - true, if the function succeeded, else false
 *
 *  SEE ALSO
 *     Eventclient/--EV_Type
@@ -830,7 +830,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    ** event_control setup for internal event clients
    */
    pthread_mutex_init(&(sge_evc->event_control.mutex), nullptr);
-   pthread_cond_init(&(sge_evc->event_control.cond_var), nullptr);
+   ocs::uti::condition_initialize(&(sge_evc->event_control.cond_var));
    sge_evc->event_control.exit = false;
    sge_evc->event_control.triggered = false;
    sge_evc->event_control.new_events = nullptr;
@@ -858,7 +858,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          /* initialize event client object */
          lSetString(sge_evc->ec, EV_name, name);
          if (gethostname(tmp_string, CL_MAXHOSTNAMELEN) == 0) {
-            lSetHost(sge_evc->ec, EV_host, tmp_string); 
+            lSetHost(sge_evc->ec, EV_host, tmp_string);
          }
          /*
          ** for internal clients we reuse the data of the gdi context
@@ -889,8 +889,8 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
 *     ec_is_initialized() -- has the client been initialized
 *
 *  SYNOPSIS
-*     int 
-*     ec_is_initialized() 
+*     int
+*     ec_is_initialized()
 *
 *  FUNCTION
 *     Checks if the event client mechanism has been initialized
@@ -903,10 +903,10 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
 *  SEE ALSO
 *     Eventclient/Client/ec_prepare_registration()
 *******************************************************************************/
-static bool ec2_is_initialized(sge_evc_class_t *thiz) 
+static bool ec2_is_initialized(sge_evc_class_t *thiz)
 {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+
    if (sge_evc == nullptr || sge_evc->ec == nullptr) {
       return false;
    } else {
@@ -919,8 +919,8 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz)
 *     ec_get_event_client() -- return lList *event_client cull list
 *
 *  SYNOPSIS
-*     lList * 
-*     ec_get_event_client(sge_evc_class_t *thiz) 
+*     lList *
+*     ec_get_event_client(sge_evc_class_t *thiz)
 *
 *  FUNCTION
 *     return lList *event_client cull list
@@ -931,10 +931,10 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz)
 *  SEE ALSO
 *     Eventclient/Client/ec_prepare_registration()
 *******************************************************************************/
-static lListElem* ec2_get_event_client(sge_evc_class_t *thiz) 
+static lListElem* ec2_get_event_client(sge_evc_class_t *thiz)
 {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   
+
    return sge_evc->ec;
 }
 
@@ -945,8 +945,8 @@ static lListElem* ec2_get_event_client(sge_evc_class_t *thiz)
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     void 
-*     ec_mark4registration() 
+*     void
+*     ec_mark4registration()
 *
 *  FUNCTION
 *     Tells the event client mechanism, that the connection to the server
@@ -983,13 +983,13 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool ec_need_new_registration() 
+*     bool ec_need_new_registration()
 *
 *  FUNCTION
 *     Function to check, if a new registration at the server is neccessary.
 *
 *  RESULT
-*     bool - true, if the client has to (re)register, else false 
+*     bool - true, if the client has to (re)register, else false
 *
 *******************************************************************************/
 static bool
@@ -1006,14 +1006,14 @@ ec2_need_new_registration(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_set_edtime(int interval) 
+*     int
+*     ec_set_edtime(int interval)
 *
 *  FUNCTION
 *     Set the interval qmaster will use to send events to the client.
-*     Any number > 0 is a valid interval in seconds. However the interval 
-*     my not be larger than the commd commproc timeout. Otherwise the event 
-*     client encounters receive timeouts and this is returned as an error 
+*     Any number > 0 is a valid interval in seconds. However the interval
+*     my not be larger than the commd commproc timeout. Otherwise the event
+*     client encounters receive timeouts and this is returned as an error
 *     by ec_get().
 *
 *  INPUTS
@@ -1024,8 +1024,8 @@ ec2_need_new_registration(sge_evc_class_t *thiz) {
 *
 *  NOTES
 *     The maximum interval is limited to the commd commproc timeout.
-*     The maximum interval should be limited also by the application. 
-*     A too big interval makes qmaster spool lots of events and consume 
+*     The maximum interval should be limited also by the application.
+*     A too big interval makes qmaster spool lots of events and consume
 *     a lot of memory.
 *
 *  SEE ALSO
@@ -1057,8 +1057,8 @@ ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_get_edtime() 
+*     int
+*     ec_get_edtime()
 *
 *  FUNCTION
 *     Get the interval qmaster will use to send events to the client.
@@ -1091,8 +1091,8 @@ ec2_get_edtime(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_set_flush_delay(u_long32 flush_delay) 
+*     bool
+*     ec_set_flush_delay(u_long32 flush_delay)
 *
 *  FUNCTION
 *
@@ -1137,8 +1137,8 @@ ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_get_flush_delay() 
+*     int
+*     ec_get_flush_delay()
 *
 *  FUNCTION
 *     Returns the policy currently configured.
@@ -1173,12 +1173,12 @@ ec2_get_flush_delay(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_set_busy_handling(ev_busy_handling handling) 
+*     bool
+*     ec_set_busy_handling(ev_busy_handling handling)
 *
 *  FUNCTION
 *     The event client interface has a mechanism to handle situations in which
-*     an event client is busy and will not accept any new events. 
+*     an event client is busy and will not accept any new events.
 *     The policy to use can be configured using this function.
 *     For valid policies see ...
 *     This parameter can be changed during runtime and will take effect
@@ -1227,8 +1227,8 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     ev_busy_handling 
-*     ec_get_busy_handling() 
+*     ev_busy_handling
+*     ec_get_busy_handling()
 *
 *  FUNCTION
 *     Returns the policy currently configured.
@@ -1282,13 +1282,13 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
       }
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
-      
+
       evco->exit = true;
 
       DPRINTF("----> evco->exit = true\n");
 
       pthread_cond_signal(&(evco->cond_var));
-#ifdef EVC_DEBUG      
+#ifdef EVC_DEBUG
       {
       DSTRING_STATIC(dsbuf, 64);
       printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &dsbuf));
@@ -1304,7 +1304,7 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
       lFreeElem(&(sge_evc->ec));
       sge_evc->need_register = true;
       sge_evc->ec_reg_id = 0;
-      sge_evc->next_event = 1; 
+      sge_evc->next_event = 1;
 
       ret = true;
    }
@@ -1405,11 +1405,11 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_register() 
+*     bool
+*     ec_register()
 *
 *  FUNCTION
-*     Registers the event client at the event server (usually the qmaster). 
+*     Registers the event client at the event server (usually the qmaster).
 *     This function can be called explicitly in the event client at startup
 *     or when the connection to qmaster is down.
 *
@@ -1438,8 +1438,8 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
       const lListElem *aep;
       /*
        *   EV_host, EV_commproc and EV_commid get filled
-       *  at qmaster side with more secure commd    
-       *  informations 
+       *  at qmaster side with more secure commd
+       *  informations
        *
        *  EV_uid gets filled with gdi_request
        *  informations
@@ -1484,19 +1484,19 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
             ERROR("error opening new connection to qmaster: " SFQ "\n", cl_get_error_text(ngc_error));
          }
       }
-#endif      
+#endif
 
       /*
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
       alp = sge_gdi(SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
-    
+
       aep = lFirst(alp);
-    
+
       ret = (lGetUlong(aep, AN_status) == STATUS_OK) ? true : false;
 
-      if (ret) { 
+      if (ret) {
          const lListElem *new_ec;
          u_long32 new_id = 0;
 
@@ -1510,15 +1510,15 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
             DPRINTF("REGISTERED with id " sge_U32CFormat "\n", new_id);
             lSetBool(sge_evc->ec, EV_changed, false);
             sge_evc->need_register = false;
-            
+
          }
       } else {
          if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR) {
             ERROR("%s", lGetString(aep, AN_text));
-            answer_list_add(alpp, lGetString(aep, AN_text), 
-                  lGetUlong(aep, AN_status), 
+            answer_list_add(alpp, lGetString(aep, AN_text),
+                  lGetUlong(aep, AN_status),
                   (answer_quality_t)lGetUlong(aep, AN_quality));
-            lFreeList(&lp); 
+            lFreeList(&lp);
             lFreeList(&alp);
             /* TODO: remove exit_on_qmaster_down and move to calling code by delivering
                      better return values */
@@ -1540,10 +1540,10 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
                }
                DRETURN(false);
             }
-         }   
+         }
       }
 
-      lFreeList(&lp); 
+      lFreeList(&lp);
       lFreeList(&alp);
    }
 
@@ -1559,12 +1559,12 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_deregister() 
+*     int
+*     ec_deregister()
 *
 *  FUNCTION
 *     Deregister from the event server (usually the qmaster).
-*     This function should be called when an event client exits. 
+*     This function should be called when an event client exits.
 *
 *     If an event client does not deregister, qmaster will spool events for this
 *     client until it times out (it did not acknowledge events sent by qmaster).
@@ -1590,7 +1590,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
 
       if (init_packbuffer(&pb, sizeof(u_long32), 0) == PACK_SUCCESS) {
          /* error message is output from init_packbuffer */
-         int send_ret; 
+         int send_ret;
          lList *alp = nullptr;
          /* TODO: to master only !!!!! */
          const char* commproc = prognames[QMASTER];
@@ -1601,7 +1601,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
          packint(&pb, lGetUlong(sge_evc->ec, EV_id));
 
          send_ret = sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
-         
+
          clear_packbuffer(&pb);
          answer_list_output (&alp);
 
@@ -1630,8 +1630,8 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_subscribe(ev_event event) 
+*     bool
+*     ec_subscribe(ev_event event)
 *
 *  FUNCTION
 *     Subscribe a certain event.
@@ -1675,7 +1675,7 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
       } else {
          ec2_add_subscriptionElement(thiz, event, EV_NOT_FLUSHED, -1);
       }
-      
+
       if (lGetBool(sge_evc->ec, EV_changed)) {
          ret = true;
       }
@@ -1705,11 +1705,11 @@ ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, i
          } else {
             sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
          }
-         
+
          if (!sub_el) {
             sub_el =  lCreateElem(EVS_Type);
             lAppendElem(subscribed, sub_el);
-            
+
             lSetUlong(sub_el, EVS_id, event);
             lSetBool(sub_el, EVS_flush, flush);
             lSetUlong(sub_el, EVS_interval, interval);
@@ -1755,23 +1755,23 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
 
 /****** sge_event_client/ec_mod_subscription_where() ***************************
 *  NAME
-*     ec_mod_subscription_where() -- adds an element filter to the event 
+*     ec_mod_subscription_where() -- adds an element filter to the event
 *
 *  SYNOPSIS
-*     bool ec_mod_subscription_where(ev_event event, const lListElem *what, 
-*     const lListElem *where) 
+*     bool ec_mod_subscription_where(ev_event event, const lListElem *what,
+*     const lListElem *where)
 *
 *  FUNCTION
 *     Allows to filter the event date on the master side to reduce the
 *     date, which is send to the clients.
 *
 *  INPUTS
-*     ev_event event         - event type 
-*     const lListElem *what  - what condition 
-*     const lListElem *where - where condition 
+*     ev_event event         - event type
+*     const lListElem *what  - what condition
+*     const lListElem *where - where condition
 *
 *  RESULT
-*     bool - true, if everything went fine 
+*     bool - true, if everything went fine
 *
 *  SEE ALSO
 *     cull/cull_what/lWhatToElem()
@@ -1837,8 +1837,8 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_subscribe_all() 
+*     bool
+*     ec_subscribe_all()
 *
 *  FUNCTION
 *     Subscribe all possible event.
@@ -1848,7 +1848,7 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
 *     bool - true on success, else false
 *
 *  NOTES
-*     Subscribing all events can cause a lot of traffic and may 
+*     Subscribing all events can cause a lot of traffic and may
 *     decrease performance of qmaster.
 *     Only subscribe all events, if you really need them.
 *
@@ -1871,14 +1871,14 @@ static bool ec2_subscribe_all(sge_evc_class_t *thiz)
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_unsubscribe(ev_event event) 
+*     bool
+*     ec_unsubscribe(ev_event event)
 *
 *  FUNCTION
 *     Unsubscribe a certain event.
 *     See ... for a list of all events.
 *     The change will be in effect after calling ec_commit or ec_get.
-*     It is possible / sensible to unsubscribe all events 
+*     It is possible / sensible to unsubscribe all events
 *     no longer needed and then call ec_commit.
 *
 *  INPUTS
@@ -1948,8 +1948,8 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_unsubscribe_all() 
+*     bool
+*     ec_unsubscribe_all()
 *
 *  FUNCTION
 *     Unsubscribe all possible event.
@@ -1959,7 +1959,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
 *     bool - true on success, else false
 *
 *  NOTES
-*     The events sgeE_QMASTER_GOES_DOWN and sgeE_SHUTDOWN will not be 
+*     The events sgeE_QMASTER_GOES_DOWN and sgeE_SHUTDOWN will not be
 *     unsubscribed.
 *
 *  SEE ALSO
@@ -1981,17 +1981,17 @@ static bool ec2_unsubscribe_all(sge_evc_class_t *thiz)
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_get_flush(ev_event event) 
+*     int
+*     ec_get_flush(ev_event event)
 *
 *  FUNCTION
-*     An event client can request flushing of events from qmaster 
+*     An event client can request flushing of events from qmaster
 *     for any number of the events subscribed.
-*     This function returns the flushing information for an 
+*     This function returns the flushing information for an
 *     individual event.
 *
 *  INPUTS
-*     ev_event event - the event id to query 
+*     ev_event event - the event id to query
 *
 *  RESULT
 *     int - EV_NO_FLUSH or the number of seconds used for flushing
@@ -2036,20 +2036,20 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_set_flush(ev_event event, int flush) 
+*     bool
+*     ec_set_flush(ev_event event, int flush)
 *
 *  FUNCTION
-*     An event client can request flushing of events from qmaster 
+*     An event client can request flushing of events from qmaster
 *     for any number of the events subscribed.
-*     This function sets the flushing information for an individual 
+*     This function sets the flushing information for an individual
 *     event.
 *
 *  INPUTS
 *     ev_event event - id of the event to configure
 *     bool flush     - true for flushing
 *     int interval   - flush interval in sec.
-*                      
+*
 *
 *  RESULT
 *     bool - true on success, else false
@@ -2108,8 +2108,8 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_unset_flush(ev_event event) 
+*     bool
+*     ec_unset_flush(ev_event event)
 *
 *  FUNCTION
 *     Switch of flushing of an individual event.
@@ -2166,15 +2166,15 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_subscribe_flush(ev_event event, int flush) 
+*     bool
+*     ec_subscribe_flush(ev_event event, int flush)
 *
 *  FUNCTION
 *     Subscribes and event and configures flushing for this event.
 *
 *  INPUTS
 *     ev_event event - id of the event to subscribe and flush
-*     int flush      - number of seconds between event creation 
+*     int flush      - number of seconds between event creation
 *                      and flushing of events
 *
 *  RESULT
@@ -2188,10 +2188,10 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
 *     Eventclient/Client/ec_subscribe()
 *     Eventclient/Client/ec_set_flush()
 ******************************************************************************/
-static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush) 
+static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush)
 {
-   bool ret; 
-   
+   bool ret;
+
    ret = ec2_subscribe(thiz, event);
    if (ret) {
       if (flush >= 0)
@@ -2208,17 +2208,17 @@ static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush
 *     ec_set_busy() -- set the busy state
 *
 *  SYNOPSIS
-*     bool 
-*     ec_set_busy(bool busy) 
+*     bool
+*     ec_set_busy(bool busy)
 *
 *  FUNCTION
-*     Sets the busy state of the client. This has to be done if 
+*     Sets the busy state of the client. This has to be done if
 *     the busy policy has been set to EV_BUSY_UNTIL_RELEASED.
 *     An event client can set or unset the busy state at any time.
-*     While it is marked busy at the qmaster, qmaster will not 
+*     While it is marked busy at the qmaster, qmaster will not
 *     deliver events to this client.
-*     The changed busy state will be communicated to qmaster with 
-*     the next call to ec_commit (implicitly called by the next 
+*     The changed busy state will be communicated to qmaster with
+*     the next call to ec_commit (implicitly called by the next
 *     ec_get).
 *
 *  INPUTS
@@ -2255,19 +2255,19 @@ ec2_set_busy(sge_evc_class_t *thiz, int busy) {
 *     ec_get_busy() -- get the busy state
 *
 *  SYNOPSIS
-*     bool 
-*     ec_get_busy() 
+*     bool
+*     ec_get_busy()
 *
 *  FUNCTION
 *     Reads the busy state of the event client.
 *
 *  RESULT
-*     bool - true: the client is busy, false: the client is idle 
+*     bool - true: the client is busy, false: the client is idle
 *
 *  NOTES
-*     The function only returns the local busy state in the event 
-*     client itself. If this state changes, it will be reported to 
-*     qmaster with the next communication, but not back from 
+*     The function only returns the local busy state in the event
+*     client itself. If this state changes, it will be reported to
+*     qmaster with the next communication, but not back from
 *     qmaster to the client.
 *
 *  SEE ALSO
@@ -2295,7 +2295,7 @@ static bool ec2_get_busy(sge_evc_class_t *thiz) {
 *     ec_set_session() -- Specify session key for event filtering.
 *
 *  SYNOPSIS
-*     bool ec_set_session(const char *session) 
+*     bool ec_set_session(const char *session)
 *
 *  FUNCTION
 *     Specifies a session that is used in event master for event
@@ -2334,7 +2334,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session) {
 *     ec_get_session() -- Get session key used for event filtering.
 *
 *  SYNOPSIS
-*     const char* ec_get_session() 
+*     const char* ec_get_session()
 *
 *  FUNCTION
 *     Returns session key that is used in event master for event
@@ -2366,7 +2366,7 @@ static const char *ec2_get_session(sge_evc_class_t *thiz) {
 *     ec_get_id() -- Return event client id.
 *
 *  SYNOPSIS
-*     ev_registration_id ec_get_id() 
+*     ev_registration_id ec_get_id()
 *
 *  FUNCTION
 *     Return event client id.
@@ -2383,7 +2383,7 @@ ec2_get_id(sge_evc_class_t *thiz) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
       DRETURN(EV_ID_INVALID);
    }
-   
+
    DRETURN((ev_registration_id)lGetUlong(sge_evc->ec, EV_id));
 }
 
@@ -2394,8 +2394,8 @@ ec2_get_id(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     static void 
-*     ec_config_changed() 
+*     static void
+*     ec_config_changed()
 *
 *  FUNCTION
 *     Checkes whether the configuration has changes.
@@ -2415,7 +2415,7 @@ ec2_config_changed(sge_evc_class_t *thiz) {
 
    if (sge_evc != nullptr && sge_evc->ec != nullptr) {
       lSetBool(sge_evc->ec, EV_changed, true);
-   }   
+   }
 }
 
 static bool
@@ -2470,7 +2470,7 @@ ec2_ack(sge_evc_class_t *thiz) {
       local_t *evc_local = &(thiz->ec_local);
       if (evc_local && evc_local->ack_func) {
          ret = evc_local->ack_func(sge_evc->ec_reg_id, (ev_event) (sge_evc->next_event-1));
-      }   
+      }
    }
    DRETURN(ret);
 }
@@ -2482,16 +2482,16 @@ ec2_ack(sge_evc_class_t *thiz) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_commit() 
+*     bool
+*     ec_commit()
 *
 *  FUNCTION
-*     Configuration changes (subscription and/or event delivery 
+*     Configuration changes (subscription and/or event delivery
 *     time) will be sent to the event server.
-*     The function should be called after (multiple) configuration 
+*     The function should be called after (multiple) configuration
 *     changes have been made.
-*     If it is not explicitly called by the event client program, 
-*     the next call of ec_get will commit configuration changes 
+*     If it is not explicitly called by the event client program,
+*     the next call of ec_get will commit configuration changes
 *     before looking for new events.
 *
 *  RESULT
@@ -2532,7 +2532,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
        *  - if this event client is already enrolled at qmaster
        */
       alp = sge_gdi(SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
-      lFreeList(&lp); 
+      lFreeList(&lp);
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
          lFreeList(&alp);
@@ -2545,7 +2545,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
          }
          ret = false;
       }
-      
+
       if (ret) {
          lSetBool(sge_evc->ec, EV_changed, false);
       }
@@ -2562,15 +2562,15 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     int 
-*     ec_commit_multi(lList **malpp) 
+*     int
+*     ec_commit_multi(lList **malpp)
 *
 *  FUNCTION
 *     Similar to ec_commit configuration changes will be sent to qmaster.
-*     But unless ec_commit which uses sge_gdi to send the change request, 
+*     But unless ec_commit which uses sge_gdi to send the change request,
 *     ec_commit_multi uses a sge_gdi_multi call to send the configuration
 *     change along with other gdi requests.
-*     The ec_commit_multi call has to be the last request of the multi 
+*     The ec_commit_multi call has to be the last request of the multi
 *     request and will trigger the communication of the requests.
 *
 *  INPUTS
@@ -2603,7 +2603,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
       lList *lp, *alp = nullptr;
 
       /* do not check, if anything has changed.
-       * we have to send the request in any case to finish the 
+       * we have to send the request in any case to finish the
        * gdi multi request
        */
       lp = lCreateList("change configuration", EV_Type);
@@ -2651,23 +2651,23 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_multi *state) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     bool 
-*     ec_get(lList **event_list) 
+*     bool
+*     ec_get(lList **event_list)
 *
 *  FUNCTION
-*     ec_get looks for new events. 
-*     If new events have arrived, they are passed back to the 
+*     ec_get looks for new events.
+*     If new events have arrived, they are passed back to the
 *     caller in the parameter event_list.
-*     
-*     If the event client is not yet registered at the event server, 
+*
+*     If the event client is not yet registered at the event server,
 *     the registration will be done before looking for events.
 *
-*     If the configuration changed since the last call of ec_get 
-*     and has not been committed, ec_commit will be called before 
+*     If the configuration changed since the last call of ec_get
+*     and has not been committed, ec_commit will be called before
 *     looking for events.
 *
 *  INPUTS
-*     lList **event_list - pointer to an event list to hold arriving 
+*     lList **event_list - pointer to an event list to hold arriving
 *                          events
 *
 *  RESULT
@@ -2700,14 +2700,14 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
       sge_evc->next_event = 1;
       ret = thiz->ec_register(thiz, exit_on_qmaster_down, nullptr);
    }
-  
+
    if (ret) {
       if (lGetBool(sge_evc->ec, EV_changed)) {
          ret = thiz->ec_commit(thiz, nullptr);
       }
    }
 
-   /* receive event message(s) 
+   /* receive event message(s)
     * The following problems exists here:
     * - there might be multiple event reports at commd - so fetching only one
     *   is not sufficient
@@ -2792,7 +2792,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          } else {
             /* get_event_list failed - we are through */
             done = true;
-            continue; 
+            continue;
          }
 
          sync = 0;
@@ -2809,7 +2809,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 
          DPRINTF("first syncronous get_event_list failed\n");
 
-         /* we return false when we have reached a timeout or 
+         /* we return false when we have reached a timeout or
             on communication error, otherwise we return true */
          ret = true;
 
@@ -2823,7 +2823,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          }
 
          /* check for communication error */
-         if (commlib_error != CL_RETVAL_OK) { 
+         if (commlib_error != CL_RETVAL_OK) {
             switch (commlib_error) {
                case CL_RETVAL_NO_MESSAGE:
                case CL_RETVAL_SYNC_RECEIVE_TIMEOUT:
@@ -2854,7 +2854,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
       DPRINTF("ec2_get - received %d events\n", lGetNumberOfElem(*event_list));
    }
 
-   /* check if we got a QMASTER_GOES_DOWN or sgeE_ACK_TIMEOUT event. 
+   /* check if we got a QMASTER_GOES_DOWN or sgeE_ACK_TIMEOUT event.
     * if yes, reregister with next event fetch
     */
    if (lGetNumberOfElem(*event_list) > 0) {
@@ -2863,7 +2863,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 
       for_each_ep(event, *event_list) {
          tmp_type = lGetUlong(event, ET_type);
-         if (tmp_type == sgeE_QMASTER_GOES_DOWN || 
+         if (tmp_type == sgeE_QMASTER_GOES_DOWN ||
              tmp_type == sgeE_ACK_TIMEOUT) {
             ec2_mark4registration(thiz);
             break;
@@ -2884,18 +2884,18 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 *  SYNOPSIS
 *     #include "evc/sge_event_client.h"
 *
-*     static bool 
-*     ck_event_number(lList *lp, u_long32 *waiting_for, 
-*                     u_long32 *wrong_number) 
+*     static bool
+*     ck_event_number(lList *lp, u_long32 *waiting_for,
+*                     u_long32 *wrong_number)
 *
 *  FUNCTION
 *     Tests list of events if it contains right numbered events.
 *
 *     Events with numbers lower than expected get trashed.
 *
-*     In cases the master has added no new events to the event list 
-*     and the acknowledge we sent was lost also a list with events lower 
-*     than "waiting_for" is correct. 
+*     In cases the master has added no new events to the event list
+*     and the acknowledge we sent was lost also a list with events lower
+*     than "waiting_for" is correct.
 *     But the number of the last event must be at least "waiting_for"-1.
 *
 *     On success *waiting_for will contain the next number we wait for.
@@ -2930,8 +2930,8 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
       DPRINTF("received empty event list\n");
    } else {
       DPRINTF("Checking %d events (" sge_u32"-" sge_u32 ") while waiting for #" sge_u32"\n", lGetNumberOfElem(lp), lGetUlong(lFirst(lp), ET_number), lGetUlong(lLast(lp), ET_number), i);
-    
-      /* ensure number of last event is "waiting_for"-1 or higher */ 
+
+      /* ensure number of last event is "waiting_for"-1 or higher */
       if ((j=lGetUlong(lLast(lp), ET_number)) < i-1) {
          /* error in event numbers */
          /* could happen if the order of two event messages was exchanged */
@@ -2946,13 +2946,13 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
          /* error in event numbers */
          if (wrong_number) {
             *wrong_number = j;
-         }   
+         }
          ERROR(MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU, sge_u32c(j), sge_u32c(i));
          ret = false;
       } else {
 
          /* skip leading events till event number is "waiting_for"
-            or there are no more events */ 
+            or there are no more events */
          skipped = 0;
          ep = lFirstRW(lp);
          while (ep && lGetUlong(ep, ET_number) < i) {
@@ -2969,19 +2969,19 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
          /* ensure number of events increase */
          for_each_rw(ep, lp) {
             if ((j=lGetUlong(ep, ET_number)) != i++) {
-               /* 
-                  do not change waiting_for because 
-                  we still wait for this number 
+               /*
+                  do not change waiting_for because
+                  we still wait for this number
                */
                ERROR(SFNMAX, MSG_EVENT_EVENTSWITHNOINCREASINGNUMBERS);
                if (wrong_number) {
                   *wrong_number = j;
-               }   
+               }
                ret = false;
                break;
             }
          }
-         
+
          if (ret) {
             /* that's the new number we wait for */
             *waiting_for = i;
@@ -3000,8 +3000,8 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
 *     get_event_list() -- get event list via gdi call
 *
 *  SYNOPSIS
-*     static bool 
-*     get_event_list(int sync, lList **report_list, int *commlib_error) 
+*     static bool
+*     get_event_list(int sync, lList **report_list, int *commlib_error)
 *
 *  FUNCTION
 *     Tries to retrieve the event list.
@@ -3031,7 +3031,7 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
    /* TODO: check if all the functionality of get_event_list has been mapped */
-   
+
    int tag = TAG_REPORT_REQUEST;
    u_short id = 1;
 
@@ -3060,7 +3060,7 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
    DRETURN(ret);
 }
 
-bool 
+bool
 sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name) {
    DENTER(EVC_LAYER);
 
@@ -3075,7 +3075,7 @@ sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList *
    }
 
    *evc_ref = evc;
-   
+
    DRETURN(true);
 }
 
@@ -3092,7 +3092,6 @@ static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
 
 static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down) {
    DENTER(EVC_LAYER);
-   struct timespec ts{};
    DSTRING_STATIC(ds_buffer, 64);
 
    if (thiz == nullptr) {
@@ -3115,14 +3114,11 @@ static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qma
    u_long64 timeout = sge_gmt32_to_gmt64(EC_TIMEOUT_S);
    while (!evco->triggered && !evco->exit &&
           ((sge_get_gmt64() - current_time) < timeout)){
-      ts.tv_sec = sge_gmt64_to_time_t(current_time + timeout);
-      ts.tv_nsec = EC_TIMEOUT_N;
-#ifdef EVC_DEBUG      
+#ifdef EVC_DEBUG
 printf("EVENT_CLIENT %d beginning to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
 #endif
-      pthread_cond_timedwait(&(evco->cond_var),
-                             &(evco->mutex), &ts);
-#ifdef EVC_DEBUG      
+      ocs::uti::condition_timedwait(&(evco->cond_var), &(evco->mutex), EC_TIMEOUT_S);
+#ifdef EVC_DEBUG
 printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
 #endif
    }
@@ -3168,7 +3164,7 @@ ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
 
    if (thiz == nullptr) {
       DPRINTF("EVENT UPDATE FUNCTION thiz IS nullptr\n");
-      DRETURN(-1); 
+      DRETURN(-1);
    }
    ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
@@ -3186,13 +3182,13 @@ ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
          events = nullptr;
       } else {
          lXchgList(lFirstRW(event_list), REP_list, &(evco->new_events));
-      }   
-      
+      }
+
       evco->triggered = true;
       DPRINTF("EVENT UPDATE FUNCTION jgdi_event_update_func() HAS BEEN TRIGGERED\n");
 
       pthread_cond_broadcast(&(evco->cond_var));
-#ifdef EVC_DEBUG      
+#ifdef EVC_DEBUG
 {
 DSTRING_STATIC(dsbuf, 64);
 printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &dsbuf));
@@ -3219,7 +3215,7 @@ static bool
 ec2_evco_triggered(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    if (thiz == nullptr) {
-      DRETURN(false); 
+      DRETURN(false);
    }
    ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
@@ -3236,7 +3232,7 @@ static bool
 ec2_evco_exit(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    if (thiz == nullptr) {
-      DRETURN(false); 
+      DRETURN(false);
    }
    ec_control_t *evco = ec2_get_event_control(thiz);
    if (evco == nullptr) {
@@ -3254,7 +3250,7 @@ ec2_evco_exit(sge_evc_class_t *thiz) {
 *     event_text() -- deliver event description
 *
 *  SYNOPSIS
-*     const char* event_text(const lListElem *event) 
+*     const char* event_text(const lListElem *event)
 *
 *  FUNCTION
 *     Deliveres a short description of an event object.

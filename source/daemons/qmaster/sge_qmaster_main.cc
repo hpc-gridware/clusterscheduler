@@ -88,10 +88,10 @@ static void init_sig_action_and_mask();
 
 /****** qmaster/sge_qmaster_main/sge_qmaster_application_status() ************
 *  NAME
-*     sge_qmaster_application_status() -- commlib status callback function  
+*     sge_qmaster_application_status() -- commlib status callback function
 *
 *  SYNOPSIS
-*      unsigned long sge_qmaster_application_status(char** info_message) 
+*      unsigned long sge_qmaster_application_status(char** info_message)
 *
 *  FUNCTION
 *      This is the implementation of the commlib application status callback
@@ -114,13 +114,13 @@ static void init_sig_action_and_mask();
 *  INPUTS
 *     char** info_message - pointer to an char* inside commlib.
 *                           info message must be malloced, commlib will
-*                           free this memory. 
+*                           free this memory.
 *  RESULT
 *     unsigned long status - status of application
 *
 *  NOTES
 *     This function is MT save
-* 
+*
 *******************************************************************************/
 unsigned long
 sge_qmaster_application_status(char **info_message) {
@@ -129,10 +129,10 @@ sge_qmaster_application_status(char **info_message) {
 
 /****** qmaster/sge_qmaster_main/main() ****************************************
 *  NAME
-*     main() -- qmaster entry point 
+*     main() -- qmaster entry point
 *
 *  SYNOPSIS
-*     int main(int argc, char* argv[]) 
+*     int main(int argc, char* argv[])
 *
 *  FUNCTION
 *     Qmaster entry point.
@@ -141,11 +141,11 @@ sge_qmaster_application_status(char **info_message) {
 *     is created. Failure to do so will ruin signal handling!
 *
 *  INPUTS
-*     int argc     - number of commandline arguments 
-*     char* argv[] - commandline arguments 
+*     int argc     - number of commandline arguments
+*     char* argv[] - commandline arguments
 *
 *  RESULT
-*     0 - success 
+*     0 - success
 *
 *  NOTES
 *     We check whether 'SGE_ROOT' is set before we daemonize. Once qmaster is
@@ -202,9 +202,9 @@ int main(int argc, char *argv[]) {
    sge_init_language(nullptr,nullptr);
 #endif
 
-   /* 
+   /*
     * qmaster doesn't support any commandline anymore,
-    * but we should show version string and -help option 
+    * but we should show version string and -help option
     */
    if (argc != 1) {
       sigset_t sig_set;
@@ -217,15 +217,15 @@ int main(int argc, char *argv[]) {
 
    /*
     * daemonize qmaster
-    * set filedescripto limits
-    * and initialize librarrays to be used in multi threaded environment
+    * set filedescriptor limits
+    * and initialize libraries to be used in multithreaded environment
     * also take care that finished child processed of this process become
     * zombie jobs
     */
    bool has_daemonized = sge_daemonize_qmaster();
    init_sig_action_and_mask();
 
-   /* init qmaster threads without becomming admin user */
+   /* init qmaster threads without becoming admin user */
    sge_qmaster_thread_init(QMASTER, MAIN_THREAD, false);
 
    component_set_daemonized(has_daemonized);
@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
    }
 
    /*
-    * now the commlib up and running. Set qmaster application status function 
-    * (commlib callback function for qping status information response 
+    * now the commlib up and running. Set qmaster application status function
+    * (commlib callback function for qping status information response
     *  messages (SIRM))
     */
    ret_val = cl_com_set_status_func(sge_qmaster_application_status);
@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
       ERROR(SFNMAX, cl_get_error_text(ret_val));
    }
 
-   /* 
+   /*
     * now we become admin user change into the correct root directory set the
     * the target for logging messages
     */
@@ -280,8 +280,8 @@ int main(int argc, char *argv[]) {
 #endif
 
    /*
-    * We do increment the heartbeat manually here. This is the 'startup heartbeat'. 
-    * The first time the hearbeat will be incremented through the heartbeat event 
+    * We do increment the heartbeat manually here. This is the 'startup heartbeat'.
+    * The first time the hearbeat will be incremented through the heartbeat event
     * handler is after about HEARTBEAT_INTERVAL seconds. The hardbeat event handler
     * is setup during the initialisazion of the timer thread.
     */
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
    sge_setup_qmaster(argv);
 
    /*
-    * Setup all threads and initialize corresponding modules. 
+    * Setup all threads and initialize corresponding modules.
     * Order is important!
     */
    sge_signaler_initialize();
@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
     */
    sge_thread_wait_for_signal();
 
-   /* 
+   /*
     * Shutdown all threads and shutdown corresponding modules.
     * Order is important!
     */
@@ -355,7 +355,7 @@ int main(int argc, char *argv[]) {
 
 /****** qmaster/sge_qmaster_main/init_sig_action_and_mask() *******************
 *  NAME
-*     init_sig_action_and_mask() -- initialize signal action and mask 
+*     init_sig_action_and_mask() -- initialize signal action and mask
 *
 *  SYNOPSIS
 *     static void init_sig_action_and_mask()
@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
 *     a zombie process.
 *
 *  INPUTS
-*     none 
+*     none
 *
 *  RESULT
 *     none

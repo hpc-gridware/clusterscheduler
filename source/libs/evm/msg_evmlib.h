@@ -50,7 +50,7 @@
 
 #define MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I _MESSAGE(66010, _("event number %d is not handled by sge_total_update_event"))
 
-#define MSG_COM_ACKTIMEOUT4EV_ISIS        _MESSAGE(66011, _("acknowledge timeout after %d seconds for event client (" SFN ":%d) on host " SFQ))
+#define MSG_COM_ACKTIMEOUT4EV_ISUSIS      _MESSAGE(66011, _("acknowledge timeout after %d seconds for event client " SFN " with id " sge_uu32 " (" SFN ":%d) on host " SFQ))
 #define MSG_COM_NOSHUTDOWNPERMS           _MESSAGE(66012, _("shutdown requires manager privileges"))
 #define MSG_COM_SHUTDOWNNOTIFICATION_SUS  _MESSAGE(66013, _("sent shutdown notification to event client " SFN " with id " sge_U32CFormat " on host " SFN))
 #define MSG_EVE_QMASTERISGOINGDOWN        _MESSAGE(66014, _("do not accept new event clients. Qmaster is going down"))
@@ -59,6 +59,6 @@
 #define MSG_TO_MANY_DYNAMIC_EC_U          _MESSAGE(66017, _("cannot register event client. Only " sge_U32CFormat " event clients are allowed in the system"))
 #define MSG_SET_MAXDYNEVENTCLIENT_U       _MESSAGE(66018, _("max dynamic event clients is set to " sge_U32CFormat))
 #define MSG_EVE_INCOMPLETEEVENTCLIENT     _MESSAGE(66020, _("wrong event client version"))
-#define MSG_COM_ACKTIMEOUT4EV_SIS         _MESSAGE(66021, _("removing event client (" SFN ":%d) on host " SFQ " after acknowledge timeout from event client list"))
+#define MSG_COM_ACKTIMEOUT4EV_SUSIS         _MESSAGE(66021, _("removing event client " SFN " with id " sge_uu32 " (" SFN ":%d) on host " SFQ " after acknowledge timeout from event client list"))
 
 // clang-format on

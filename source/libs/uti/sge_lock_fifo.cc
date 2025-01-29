@@ -35,6 +35,8 @@
 #include <pthread.h>
 
 #include "uti/sge_lock_fifo.h"
+
+#include "ocs_cond.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
@@ -64,14 +66,14 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
          for (i = 0; i < FIFO_LOCK_QUEUE_LENGTH; i++) {
             lock->array[i].is_reader = false;
             lock->array[i].is_signaled = false;
-            lret = pthread_cond_init(&(lock->array[i].cond), nullptr);
+            lret = ocs::uti::condition_initialize(&(lock->array[i].cond));
             if (lret != 0) {
                ret = false;
                break;
             }
          }
          if (lret == 0) {
-            lret = pthread_cond_init(&(lock->cond), nullptr);
+            lret = ocs::uti::condition_initialize(&(lock->cond));
             if (lret == 0) {
                lock->head = 0;
                lock->tail = 0;

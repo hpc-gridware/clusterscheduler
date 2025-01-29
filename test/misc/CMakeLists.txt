@@ -22,7 +22,9 @@
 
 #add_executable(test_valgrind test_valgrind.cc)
 #add_compile_options(test_valgrind PRIVATE "-no-pedantic -Wno-error")
+add_executable(test_cond_timedwait test_cond_timedwait.cc)
 
-#if (INSTALL_SGE_TEST)
+if (INSTALL_SGE_TEST)
 #   install(TARGETS test_valgrind DESTINATION testbin/${SGE_ARCH})
-#endif ()
+    install(TARGETS test_cond_timedwait DESTINATION testbin/${SGE_ARCH})
+endif ()

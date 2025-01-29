@@ -173,7 +173,7 @@ function(architecture_specific_settings)
          # as the OS packages (CentOS-6) are too old
          # link statically to make sure that the correct libstdc++ is used
          add_compile_options(-static-libstdc++ -static-libgcc)
-         add_link_options(-static-libstdc++ -static-libgcc)
+         add_link_options(-static-libstdc++ -static-libgcc -lrt)
       endif()
 
       set(JNI_ARCH "linux" PARENT_SCOPE)
@@ -188,6 +188,7 @@ function(architecture_specific_settings)
       set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
+      add_link_options(-lpthread)
 
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
