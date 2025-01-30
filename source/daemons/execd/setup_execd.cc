@@ -138,7 +138,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    sge_mkdir(JOB_DIR, 0775, true, false);
    sge_mkdir(ACTIVE_DIR,  0775, true, false);
 
-#if defined(OCS_HWLOC) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
    /* initialize processor topology */
    if (initialize_topology() != true) {
       DPRINTF("Couldn't initialize topology-----------------------\n");

@@ -1349,7 +1349,7 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
 *
 *  FUNCTION
 *     Frees global resources (cores, sockets, or threads) which are marked as 
-*     beeing used (lower case letter, like 'c' 's' 't') in the given 
+*     being used (lower case letter, like 'c' 's' 't') in the given
 *     topology string. 
 *
 *  INPUTS

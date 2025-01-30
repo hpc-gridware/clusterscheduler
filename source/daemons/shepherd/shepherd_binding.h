@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 namespace ocs {
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 
    int do_core_binding();
 

@@ -35,9 +35,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-// @todo can we replace this by hwloc?
+// has been moved to ArchitectureSpecificSettings.cmake
+#if 0
 #if defined(SOLARIS86) || defined(SOLARISAMD64) || defined(SOLARIS64)
 #   define BINDING_SOLARIS
+#endif
 #endif
 
 #include "uti/sge_dstring.h"

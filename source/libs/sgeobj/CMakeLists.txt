@@ -67,6 +67,7 @@ set(LIBRARY_SOURCES
       config.cc
       cull_parse_util.cc
       ocs_binding_io.cc
+      ocs_BindingFinder.cc
       ocs_DataStore.cc
       ocs_HostTopology.cc
       ocs_Session.cc

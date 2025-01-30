@@ -189,7 +189,7 @@ static int (*shared_contract_func__ct_pr_tmpl_set_param)(int ctfd, uint_t flag);
 *     init_scf_lib()
 *     init_contract_lib()
 *******************************************************************************/
-static int sge_init_lib(void *lib_ptr, char *lib_name,
+static int sge_init_lib(void *lib_ptr, const char *lib_name,
                      const char *func_name[], const void *func_ptr[])
 {
  int ret;
