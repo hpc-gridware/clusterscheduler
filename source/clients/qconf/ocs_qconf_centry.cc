@@ -71,6 +71,8 @@ bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::
       lAppendElem(centry_list, this_elem);
       gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_CE_LIST, gdi_command, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
                                 &centry_list, nullptr, nullptr);
+      lDechainElem(centry_list, this_elem);
+      lFreeList(&centry_list);
       answer_list_replace(answer_list, &gdi_answer_list);
    }
 
@@ -78,9 +80,10 @@ bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::
 }
 
 lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lList *gdi_answer_list = nullptr;
       lEnumeration *what = nullptr;
@@ -94,10 +97,13 @@ lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
       lFreeWhere(&where);
 
       if (!answer_list_has_error(&gdi_answer_list)) {
-         ret = lFirstRW(centry_list);
+         ret = lDechainElem(centry_list, lFirstRW(centry_list));
+         lFreeList(&gdi_answer_list);
       } else {
          answer_list_replace(answer_list, &gdi_answer_list);
       }
+
+      lFreeList(&centry_list);
    }
 
    DRETURN(ret);
@@ -169,9 +175,11 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 }
 
 bool centry_add(lList **answer_list, const char *name) {
-   bool ret = true;
 
    DENTER(TOP_LAYER);
+
+   bool ret = true;
+
    if (name != nullptr) {
       lListElem *centry = centry_create(answer_list, name);
 
@@ -184,6 +192,7 @@ bool centry_add(lList **answer_list, const char *name) {
       if (ret) {
          ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_ADD);
       }
+      lFreeElem(&centry);
    }
 
    DRETURN(ret);
@@ -221,15 +230,18 @@ bool centry_add_from_file(lList **answer_list, const char *filename) {
       if (ret) {
          ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_ADD);
       }
+
+      lFreeElem(&centry);
    }
 
    DRETURN(ret);
 }
 
 bool centry_modify(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *centry = centry_get_via_gdi(answer_list, name);
 
@@ -243,7 +255,7 @@ bool centry_modify(lList **answer_list, const char *name) {
       if (ret) {
          ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_MOD);
       }
-      if (centry) {
+      if (centry != nullptr) {
          lFreeElem(&centry);
       }
    }
@@ -303,15 +315,18 @@ bool centry_delete(lList **answer_list, const char *name) {
       if (centry != nullptr) {
          ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::SGE_GDI_DEL);
       }
+
+      lFreeElem(&centry);
    }
 
    DRETURN(ret);
 }
 
 bool centry_show(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *centry = centry_get_via_gdi(answer_list, name);
 
@@ -329,6 +344,7 @@ bool centry_show(lList **answer_list, const char *name) {
          ret = false;
       }
    }
+
    DRETURN(ret);
 }
 

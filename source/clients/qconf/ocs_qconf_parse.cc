@@ -2228,7 +2228,6 @@ int sge_parse_qconf(char *argv[])
          spp = sge_parser_get_next(spp); 
 
          /* read file */
-         lp = lCreateList("exechosts to change", EH_Type);
          fields_out[0] = NoName;
          ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
                                          fields, fields_out, true, &qconf_sfi,
@@ -2255,8 +2254,6 @@ int sge_parse_qconf(char *argv[])
             DRETURN(1);
          }
 
-         lAppendElem(lp, ep);
-
          /* test host name */
          if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
             fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
@@ -2266,6 +2263,8 @@ int sge_parse_qconf(char *argv[])
             DRETURN(1);
          }
 
+         lp = lCreateList("exechosts to change", EH_Type);
+         lAppendElem(lp, ep);
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_MOD, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, nullptr, nullptr);
 
          sge_parse_return |= show_answer(alp);
@@ -4726,7 +4725,6 @@ int sge_parse_qconf(char *argv[])
          qconf_is_manager(username);
 
          spp = sge_parser_get_next(spp);
-         qconf_is_manager(username);
          centry_add(&answer_list, *spp);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
