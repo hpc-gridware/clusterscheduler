@@ -43,6 +43,9 @@
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_rmon_macros.h"
+
+#include <sge_time.h>
+
 #include "uti/sge_rmon_monitoring_level.h"
 
 #define DEBUG RMON_LOCAL
@@ -390,20 +393,18 @@ static void rmon_mprintf_va(const char *fmt, va_list args) {
 *
 *******************************************************************************/
 static void mwrite(char *message, const char *thread_name, int thread_id) {
-    static u_long traceid = 0;
-
     flockfile(rmon_fp);
+    DSTRING_STATIC(dstr, 32);
     if (thread_name != nullptr) {
-        fprintf(rmon_fp, "%7ld %16.16s %02d ", traceid, thread_name, thread_id);
+        fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), thread_name, thread_id);
     } else {
         std::ostringstream oss_thread_id;
         oss_thread_id << std::this_thread::get_id();
-        fprintf(rmon_fp, "%7ld %16.16s %02d ", traceid, oss_thread_id.str().c_str(), thread_id);
+        fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), oss_thread_id.str().c_str(), thread_id);
     }
     fprintf(rmon_fp, "%s", message);
     fflush(rmon_fp);
 
-    traceid++;
     funlockfile(rmon_fp);
 }
 
