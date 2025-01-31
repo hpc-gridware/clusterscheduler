@@ -109,7 +109,7 @@ int main(int argc, const char **argv) {
       goto error_exit;
    }
    
-   if (!pcmdline) {
+   if (pcmdline == nullptr) {
       /* no command line option is present: print help to stderr */
       sge_usage(QRSUB, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
@@ -127,6 +127,8 @@ int main(int argc, const char **argv) {
       goto error_exit;
    }
 
+   lFreeList(&pcmdline);
+
    ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
@@ -137,12 +139,15 @@ int main(int argc, const char **argv) {
       gdi_client_shutdown();
       sge_prof_cleanup();
       if (answer_list_has_status(&alp, STATUS_NOTOK_DOAGAIN)) {
+         lFreeList(&alp);
          DRETURN(25);
       } else {
+         lFreeList(&alp);
          DRETURN(1);
       }
    }
 
+   lFreeList(&alp);
    gdi_client_shutdown();
    sge_prof_cleanup();
    DRETURN(0);

@@ -97,6 +97,8 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
+   lFreeList(&pcmdline);
+
    if (!id_list) {
       sge_usage(QRDEL, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
@@ -111,11 +113,13 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
+   lFreeList(&alp);
    gdi_client_shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
+   lFreeList(&alp);
    gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(1);
