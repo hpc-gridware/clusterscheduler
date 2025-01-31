@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
    /*
    ** stage 1 of commandline parsing
-   */ 
+   */
    if (!sge_parse_cmdline_qrdel(++argv, environ, &pcmdline, &alp)) {
       /*
       ** high level parsing error! show answer list
@@ -96,6 +96,8 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
+   lFreeList(&pcmdline);
+
    if (!id_list) {
       sge_usage(QRDEL, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
@@ -111,11 +113,13 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
+   lFreeList(&alp);
    ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
+   lFreeList(&alp);
    ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    sge_exit(1);
@@ -133,7 +137,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
       /* -help */
       if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
-      
+
       /* -f option */
       if ((rp = parse_noopt(sp, "-f", "--force", ppcmdline, alpp)) != sp)
          continue;
@@ -181,19 +185,19 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
 
    while (lGetNumberOfElem(*ppcmdline)) {
       const lListElem *ep = nullptr;
-      
+
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
          sge_exit(0);
          break;
       }
-      if (parse_flag(ppcmdline, "-f", alpp, &pforce)) 
+      if (parse_flag(ppcmdline, "-f", alpp, &pforce))
          continue;
 
       if (parse_multi_stringlist(ppcmdline, "-u", alpp, &user_list, ST_Type, ST_name)) {
          continue;
       }
-     
+
       if (parse_multi_stringlist(ppcmdline, "ars", alpp, &plist, ST_Type, ST_name)) {
          for_each_ep(ep, plist) {
             const char *id = lGetString(ep, ST_name);
@@ -202,11 +206,11 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
          lFreeList(&plist);
          continue;
       }
-    
+
       for_each_ep(ep, *ppcmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                                 lGetString(ep,SPA_switch_val)); 
+                                 lGetString(ep,SPA_switch_val));
 
       }
       break;

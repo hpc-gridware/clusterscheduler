@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -83,16 +83,16 @@ int main(int argc, const char **argv) {
 
       /* arguments from SGE_ROOT/common/sge_ar_request file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_AR_REQ_FILE);
-      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ, 
+      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ,
          FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == nullptr) {
          /* arguments from $HOME/.sge_ar_request file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_AR_REQ_FILE, user, &alp)) {
             lFreeList(&alp);
-            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ, 
+            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ,
             FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE);
          }
       }
-      sge_dstring_free(&file); 
+      sge_dstring_free(&file);
 
       if (alp) {
          answer_list_output(&alp);
@@ -100,15 +100,15 @@ int main(int argc, const char **argv) {
          goto error_exit;
       }
    }
-   
+
    alp = cull_parse_cmdline(QRSUB, argv+1, environ, &pcmdline, FLG_USE_PSEUDOS);
 
    if (answer_list_print_err_warn(&alp, nullptr, "qrsub: ", MSG_WARNING) > 0) {
       lFreeList(&pcmdline);
       goto error_exit;
    }
-   
-   if (!pcmdline) {
+
+   if (pcmdline == nullptr) {
       /* no command line option is present: print help to stderr */
       sge_usage(QRSUB, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
@@ -126,6 +126,8 @@ int main(int argc, const char **argv) {
       goto error_exit;
    }
 
+   lFreeList(&pcmdline);
+
    ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
@@ -137,12 +139,15 @@ int main(int argc, const char **argv) {
       ocs::gdi::ClientBase::shutdown();
       sge_prof_cleanup();
       if (answer_list_has_status(&alp, STATUS_NOTOK_DOAGAIN)) {
+         lFreeList(&alp);
          DRETURN(25);
       } else {
+         lFreeList(&alp);
          DRETURN(1);
       }
    }
 
+   lFreeList(&alp);
    ocs::gdi::ClientBase::shutdown();
    sge_prof_cleanup();
    DRETURN(0);
