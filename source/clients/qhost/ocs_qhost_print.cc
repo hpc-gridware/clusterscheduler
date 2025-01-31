@@ -512,7 +512,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
          DRETURN(ret);
       }
    } else {
-      dstring output = DSTRING_INIT;
+      DSTRING_STATIC(output, 256);
 
       if (show_binding) {
          if (hide_data) {

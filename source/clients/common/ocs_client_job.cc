@@ -657,12 +657,12 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          }
 
          {
-            dstring wallclock_string = DSTRING_INIT;
-            dstring cpu_string = DSTRING_INIT;
-            dstring vmem_string = DSTRING_INIT;
-            dstring maxvmem_string = DSTRING_INIT;
-            dstring rss_string = DSTRING_INIT;
-            dstring maxrss_string = DSTRING_INIT;
+            DSTRING_STATIC(wallclock_string, 32);
+            DSTRING_STATIC(cpu_string, 32);
+            DSTRING_STATIC(vmem_string, 32);
+            DSTRING_STATIC(maxvmem_string, 32);
+            DSTRING_STATIC(rss_string, 32);
+            DSTRING_STATIC(maxrss_string, 32);
 
             double_print_time_to_dstring(wallclock, &wallclock_string, true);
             double_print_time_to_dstring(cpu, &cpu_string, true);
@@ -677,12 +677,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                    (maxvmem == 0.0) ? "N/A" : sge_dstring_get_string(&maxvmem_string),
                    (rss == 0.0) ? "N/A" : sge_dstring_get_string(&rss_string),
                    (maxrss == 0.0) ? "N/A" : sge_dstring_get_string(&maxrss_string));
-
-            sge_dstring_free(&cpu_string);
-            sge_dstring_free(&vmem_string);
-            sge_dstring_free(&maxvmem_string);
-            sge_dstring_free(&rss_string);
-            sge_dstring_free(&maxrss_string);
          }
       }
    }

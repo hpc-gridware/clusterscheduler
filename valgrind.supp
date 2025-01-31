@@ -203,3 +203,18 @@
    fun:_Z11sge_jobnamePKc
    fun:main
 }
+
+{
+   @todo CS-988 qsub sets up a signal thread but does never delete it again
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.34
+   fun:main
+}
+
+
