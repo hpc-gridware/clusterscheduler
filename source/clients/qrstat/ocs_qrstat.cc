@@ -204,10 +204,9 @@ int main(int argc, const char **argv) {
    /*
     * stage 3: fetch data from master
     */
-   {
-      answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_GET,
-                            ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &qrstat_env.ar_list,
-                            qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
+   answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_GET,
+                         ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &qrstat_env.ar_list,
+                         qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
    if (answer_list_has_error(&answer_list)) {
       answer_list_output(&answer_list);
