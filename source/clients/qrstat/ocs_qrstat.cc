@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -63,17 +63,17 @@ extern char **environ;
 static bool
 sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp);
 
-static bool 
+static bool
 sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
 {
    bool ret = true;
-   
+
    DENTER(TOP_LAYER);
 
    qrstat_env->is_summary = true;
    while (lGetNumberOfElem(*cmdline)) {
       u_long32 value;
-   
+
       /* -help */
       if (opt_list_has_X(*cmdline, "-help")) {
          sge_usage(QRSTAT, stdout);
@@ -81,7 +81,7 @@ sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
       }
 
       /* -u */
-      while (parse_multi_stringlist(cmdline, "-u", answer_list, 
+      while (parse_multi_stringlist(cmdline, "-u", answer_list,
                                     &(qrstat_env->user_list), ST_Type, ST_name)) {
          continue;
       }
@@ -103,22 +103,22 @@ sge_parse_qrstat(lList **answer_list, qrstat_env_t *qrstat_env, lList **cmdline)
       }
 
       /* -ar */
-      while (parse_u_longlist(cmdline, "-ar", answer_list, &(qrstat_env->ar_id_list))) {         
+      while (parse_u_longlist(cmdline, "-ar", answer_list, &(qrstat_env->ar_id_list))) {
          qrstat_filter_add_core_attributes(qrstat_env);
          qrstat_filter_add_ar_attributes(qrstat_env);
          qrstat_filter_add_ar_where(qrstat_env);
          qrstat_env->is_summary = false;
-         continue;      
+         continue;
       }
 
       if (lGetNumberOfElem(*cmdline)) {
          sge_usage(QRSTAT, stdout);
-         answer_list_add(answer_list, MSG_PARSE_TOOMANYOPTIONS, 
+         answer_list_add(answer_list, MSG_PARSE_TOOMANYOPTIONS,
                          STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = false;
          break;
       }
-   } 
+   }
 
    if (qrstat_env->is_summary) {
       char user[128] = "";
@@ -141,7 +141,6 @@ int main(int argc, const char **argv) {
    int ret = 0;
    lList *pcmdline = nullptr;
    lList *answer_list = nullptr;
-   qrstat_env_t qrstat_env;
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRSTAT);
@@ -153,8 +152,6 @@ int main(int argc, const char **argv) {
       answer_list_output(&answer_list);
       goto error_exit;
    }
-
-   qrstat_filter_init(&qrstat_env);
 
    /*
     * stage 1: commandline parsing
@@ -172,7 +169,7 @@ int main(int argc, const char **argv) {
             sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, &answer_list);
          }
       }
-      sge_dstring_free(&file); 
+      sge_dstring_free(&file);
 
       if (answer_list) {
          answer_list_output(&answer_list);
@@ -188,29 +185,35 @@ int main(int argc, const char **argv) {
       lFreeList(&pcmdline);
       goto error_exit;
    }
-  
-   /* 
+
+   /*
     * stage 2: evalutate switches and modify qrstat_env
     */
+   qrstat_env_t qrstat_env;
+   qrstat_filter_init(&qrstat_env);
+
    if (!sge_parse_qrstat(&answer_list, &qrstat_env, &pcmdline)) {
       answer_list_output(&answer_list);
       lFreeList(&pcmdline);
       goto error_exit;
    }
 
-   /* 
-    * stage 3: fetch data from master 
+   // no longer needed
+   lFreeList(&pcmdline);
+
+   /*
+    * stage 3: fetch data from master
     */
    {
       answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_AR_LIST, ocs::gdi::Command::SGE_GDI_GET,
                             ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &qrstat_env.ar_list,
                             qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
-      if (answer_list_has_error(&answer_list)) {
-         answer_list_output(&answer_list);
-         goto error_exit;
-      }
+   if (answer_list_has_error(&answer_list)) {
+      answer_list_output(&answer_list);
+      goto error_exit;
    }
+   lFreeList(&answer_list);
 
    /*
     * stage 4: create output in correct format
@@ -227,18 +230,20 @@ int main(int argc, const char **argv) {
          ret = 1;
       }
       if (qrstat_env.is_xml) {
-         qrstat_destroy_report_handler_xml(&handler, &answer_list); 
+         qrstat_destroy_report_handler_xml(&handler, &answer_list);
       } else {
-         qrstat_destroy_report_handler_stdout(&handler, &answer_list); 
+         qrstat_destroy_report_handler_stdout(&handler, &answer_list);
       }
    }
 
    ocs::gdi::ClientBase::shutdown();
+   qrstat_filter_free(&qrstat_env);
    sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
    ocs::gdi::ClientBase::shutdown();
+   qrstat_filter_free(&qrstat_env);
    sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);
@@ -265,7 +270,7 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
 
          file_as_string = sge_file2string(file, &file_as_string_length);
          if (file_as_string == nullptr) {
-            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
+            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
@@ -276,6 +281,6 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
             *alpp = cull_parse_cmdline(QRSTAT, token, environ, ppcmdline, FLG_USE_PSEUDOS);
          }
       }
-   }  
-   DRETURN(ret); 
+   }
+   DRETURN(ret);
 }

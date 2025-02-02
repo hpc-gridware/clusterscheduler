@@ -1404,6 +1404,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DRETURN(-1);
          }
          // @todo CS-911 don't we have to send an event here?
+         // sge_add_event(0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, lFirstRW(master_stree_list), gdi_session);
       }
          break;
 
