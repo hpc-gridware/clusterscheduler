@@ -59,6 +59,15 @@ qrstat_filter_init(qrstat_env_t *qrstat_env)
 }
 
 void
+qrstat_filter_free(qrstat_env_t *qrstat_env) {
+   lFreeList(&qrstat_env->user_list);
+   lFreeList(&qrstat_env->ar_id_list);
+   lFreeList(&qrstat_env->ar_list);
+   lFreeWhat(&qrstat_env->what_AR_Type);
+   lFreeWhere(&qrstat_env->where_AR_Type);
+}
+
+void
 qrstat_filter_add_core_attributes(qrstat_env_t *qrstat_env)
 {
    lEnumeration *what = nullptr;

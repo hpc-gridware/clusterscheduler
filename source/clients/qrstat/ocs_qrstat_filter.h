@@ -58,6 +58,9 @@ void
 qrstat_filter_init(qrstat_env_t *qrstat_env);
 
 void
+qrstat_filter_free(qrstat_env_t *qrstat_env);
+
+void
 qrstat_filter_add_core_attributes(qrstat_env_t *qrstat_env);
 
 

@@ -300,31 +300,31 @@ main(int argc, char **argv)
 	    }
 	    break;
          case 'f':
-            format.field_names = strdup(optarg);
+            format.field_names = optarg;
             break;
 	 case 'o':
-	    ofile = strdup(optarg);
+	    ofile = optarg;
 	    break;
 	 case 'd':
-	    format.delim = strdup(optarg);
+	    format.delim = optarg;
 	    break;
          case 'h':
             header = 1;
             break;
 	 case 'm':
-	    output_mode = strdup(optarg);
+	    output_mode = optarg;
 	    break;
 	 case 'n':
 	    format.name_format = true;
 	    break;
 	 case 'l':
-	    format.line_delim = strdup(optarg);
+	    format.line_delim = optarg;
 	    break;
 	 case 'r':
-	    format.rec_delim = strdup(optarg);
+	    format.rec_delim = optarg;
 	    break;
 	 case 's':
-	    format.str_format = strdup(optarg);
+	    format.str_format = optarg;
 	    break;
 	 case 't':
 	    format.format_times = true;
@@ -359,7 +359,7 @@ main(int argc, char **argv)
       print_hdr(&output_dstring, &format);
    }
 
-   while(count == -1 || count-- > 0) {
+   while (count == -1 || count-- > 0) {
       setup_lists(&sharetree, &users, &projects, &usersets, &config);
 
       sconf_set_config(&config, nullptr);

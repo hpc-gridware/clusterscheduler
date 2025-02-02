@@ -140,7 +140,6 @@ int main(int argc, const char **argv) {
    int ret = 0;
    lList *pcmdline = nullptr;
    lList *answer_list = nullptr;
-   qrstat_env_t qrstat_env;
 
    DENTER_MAIN(TOP_LAYER, "qrsub");
 
@@ -153,8 +152,6 @@ int main(int argc, const char **argv) {
       answer_list_output(&answer_list);
       goto error_exit;
    }
-
-   qrstat_filter_init(&qrstat_env);
 
    /*
     * stage 1: commandline parsing
@@ -172,7 +169,7 @@ int main(int argc, const char **argv) {
             sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, &answer_list);
          }
       }
-      sge_dstring_free(&file); 
+      sge_dstring_free(&file);
 
       if (answer_list) {
          answer_list_output(&answer_list);
@@ -192,24 +189,29 @@ int main(int argc, const char **argv) {
    /* 
     * stage 2: evalutate switches and modify qrstat_env
     */
+   qrstat_env_t qrstat_env;
+   qrstat_filter_init(&qrstat_env);
+
    if (!sge_parse_qrstat(&answer_list, &qrstat_env, &pcmdline)) {
       answer_list_output(&answer_list);
       lFreeList(&pcmdline);
       goto error_exit;
    }
 
-   /* 
+   // no longer needed
+   lFreeList(&pcmdline);
+
+   /*
     * stage 3: fetch data from master 
     */
-   {
-      answer_list = sge_gdi(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
-                     qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
+   answer_list = sge_gdi(SGE_AR_LIST, SGE_GDI_GET, &qrstat_env.ar_list,
+                  qrstat_env.where_AR_Type, qrstat_env.what_AR_Type);
 
-      if (answer_list_has_error(&answer_list)) {
-         answer_list_output(&answer_list);
-         goto error_exit;
-      }
+   if (answer_list_has_error(&answer_list)) {
+      answer_list_output(&answer_list);
+      goto error_exit;
    }
+   lFreeList(&answer_list);
 
    /*
     * stage 4: create output in correct format
@@ -226,17 +228,19 @@ int main(int argc, const char **argv) {
          ret = 1;
       }
       if (qrstat_env.is_xml) {
-         qrstat_destroy_report_handler_xml(&handler, &answer_list); 
+         qrstat_destroy_report_handler_xml(&handler, &answer_list);
       } else {
-         qrstat_destroy_report_handler_stdout(&handler, &answer_list); 
+         qrstat_destroy_report_handler_stdout(&handler, &answer_list);
       }
    }
 
+   qrstat_filter_free(&qrstat_env);
    gdi_client_shutdown();
    sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
+   qrstat_filter_free(&qrstat_env);
    gdi_client_shutdown();
    sge_prof_cleanup();
    sge_exit(1);

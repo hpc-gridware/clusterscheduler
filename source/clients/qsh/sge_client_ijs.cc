@@ -333,53 +333,47 @@ static void client_check_window_change(COMM_HANDLE *handle)
 *******************************************************************************/
 void* tty_to_commlib(void *t_conf)
 {
-   char                 *pbuf;
-   fd_set               read_fds;
-   struct timeval       timeout;
-   dstring              err_msg = DSTRING_INIT;
-   dstring              dbuf = DSTRING_INIT;
-   int                  do_exit = 0;
-   int                  ret, nread = 0;
-
    DENTER(TOP_LAYER);
+
+   char pbuf[BUFSIZE];
+   // @todo err_msg is passed into / filled into in several functions, but it is never output anywhere
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
+
    thread_func_startup(t_conf);
    
    /* 
     * allocate working buffer
     */
-   pbuf = sge_malloc(BUFSIZE);
-   if (pbuf == nullptr) {
-      DPRINTF("tty_to_commlib can't allocate working buffer: %s (%d)\n", strerror(errno), errno);
-      do_exit = 1;
-   }
-
-   while (do_exit == 0) {
+   bool do_exit = false;
+   while (!do_exit) {
+      fd_set read_fds;
       FD_ZERO(&read_fds);
       if (g_nostdin == 0) {
          /* wait for input on tty */
          FD_SET(STDIN_FILENO, &read_fds);
-      } 
+      }
+      struct timeval       timeout;
       timeout.tv_sec  = 1;
       timeout.tv_usec = 0;
 
       if (received_signal == SIGCONT) {
 				received_signal = 0;
         if (continue_handler (g_comm_handle, g_hostname) == 1) {
-          do_exit = 1;
+          do_exit = true;
           continue;
         }
         if (g_raw_mode_state == 1) {
           /* restore raw-mode after SIGCONT */
           if (terminal_enter_raw_mode () != 0) {
 						 DPRINTF("tty_to_commlib: couldn't enter raw mode for pty\n");
-             do_exit = 1;
+             do_exit = true;
              continue;
             }
         }
 			}
       
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
-      ret = select(STDIN_FILENO+1, &read_fds, nullptr, nullptr, &timeout);
+      int ret = select(STDIN_FILENO+1, &read_fds, nullptr, nullptr, &timeout);
 
       thread_testcancel(t_conf);
       client_check_window_change(g_comm_handle);
@@ -389,17 +383,19 @@ void* tty_to_commlib(void *t_conf)
           received_signal == SIGQUIT ||
           received_signal == SIGTERM) {
          /* If we receive one of these signals, we must terminate */
-         do_exit = 1;
+         do_exit = true;
          continue;
       }
 
       if (ret > 0) {
+         dstring dbuf = DSTRING_INIT;
+
          if (g_nostdin == 1) {
             /* We should never get here if STDIN is closed */
             DPRINTF("tty_to_commlib: STDIN ready to read while it should be closed!!!\n");
          }
          DPRINTF("tty_to_commlib: trying to read() from stdin\n");
-         nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
+         int nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
          pbuf[nread] = '\0';
          sge_dstring_append (&dbuf, pbuf);
          DPRINTF("tty_to_commlib: nread = %d\n", nread);
@@ -408,7 +404,7 @@ void* tty_to_commlib(void *t_conf)
             DPRINTF("tty_to_commlib: EINTR or EAGAIN\n");
             /* do nothing */
          } else if (nread <= 0) {
-            do_exit = 1;
+            do_exit = true;
          } else {
             DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
             if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
@@ -422,6 +418,7 @@ void* tty_to_commlib(void *t_conf)
             }
             comm_flush_write_messages(g_comm_handle, &err_msg);
          }
+         sge_dstring_free(&dbuf);
       } else {
          /*
           * We got either a select timeout or a select error. In both cases,
@@ -430,12 +427,12 @@ void* tty_to_commlib(void *t_conf)
          DPRINTF("tty_to_commlib: Checking if client is still alive\n");
          if (comm_get_connection_count(g_comm_handle, &err_msg) == 0) {
             DPRINTF("tty_to_commlib: Client is not alive! -> exiting.\n");
-            do_exit = 1;
+            do_exit = true;
          } else {
             DPRINTF("tty_to_commlib: Client is still alive\n");
          }
       }
-   } /* while (do_exit == 0) */
+   } /* while (!do_exit) */
 
    /* Send STDIN_CLOSE_MSG to the shepherd. That causes the shepherd to close its filedescriptor, also. */
    if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)" ",
@@ -444,12 +441,10 @@ void* tty_to_commlib(void *t_conf)
    } else {
       DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
    }
+
    /* clean up */
-   sge_dstring_free(&dbuf);
-   sge_free(&pbuf);
    thread_func_cleanup(t_conf);
    
-   sge_dstring_free(&err_msg);
    DPRINTF("tty_to_commlib: exiting tty_to_commlib thread!\n");
    DRETURN(nullptr);
 }

@@ -184,16 +184,6 @@
    fun:_Z14run_ijs_serverP13cl_com_handlePKcjiiii9ternary_tS3_PiP7dstring
    fun:main
 }
-{
-   @todo CS-590 (2) interactive jobs: ijs threads are not properly terminated
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z14tty_to_commlibPv
-   fun:start_thread
-   fun:clone
-}
 
 {
    @todo CS-347 overlapping buffers in sge_strok call
