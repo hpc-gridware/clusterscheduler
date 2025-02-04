@@ -84,7 +84,7 @@ Use it for testing purposes but not in a productive environment.
 - [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
-
+- [Improving Scalability: First Architectural Changes to the Gridware Cluster Scheduler](https://www.hpc-gridware.com/first-architectural-changes/)
 - [Announcing Gridware Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-gridware-cluster-scheduler-9-0-0-release/)
 - [Announcing Open Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-open-cluster-scheduler-9-0-0-release/)
 - [Running Nextflow Pipelines on Gridware Cluster Scheduler: An RNA Sequencing Example using Apptainer](https://www.hpc-gridware.com/running-nextflow-pipelines-on-gridware-cluster-scheduler-an-rna-sequencing-example-using-apptainer/)
