@@ -35,6 +35,8 @@
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge.h"
+#include "uti/sge_time.h"
 
 #include "cull/cull.h"
 
@@ -48,7 +50,6 @@
 #include "sge_qeti.h"
 #include "sge_resource_utilization.h"
 #include "sge_select_queue.h"
-#include "uti/sge.h"
 
 /* At that point in time we only keep references to in the iterator that
  * allow for efficiently iterating through relevant queue end times in
@@ -339,12 +340,13 @@ static void sge_qeti_init_refs(lList *cref_lp)
    is available now - thus we can skip it when determining the maximum */
 static void sge_qeti_max_end_time(u_long64 *max_time, const lList *cref_lp)
 {
+   DENTER(TOP_LAYER);
    const lListElem *cr_ep;
    lListElem *ref;
    u_long64 tmp_time = *max_time;
    lListElem *rue_ep;
-
-   DENTER(TOP_LAYER);
+   DSTRING_STATIC(time_str1, 64);
+   DSTRING_STATIC(time_str2, 64);
 
    for_each_ep(cr_ep, cref_lp) {
       rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
@@ -352,8 +354,10 @@ static void sge_qeti_max_end_time(u_long64 *max_time, const lList *cref_lp)
          DPRINTF("   QETI END: %s\n", lGetString(rue_ep, RUE_name));
          continue;
       }
-      DPRINTF("   QETI END: %s " sge_u64 " (" sge_u64 ")\n",
-              lGetString(rue_ep, RUE_name), lGetUlong64(ref, RDE_time), tmp_time);
+      DPRINTF("   QETI END: %s %s (%s)\n",
+              lGetString(rue_ep, RUE_name),
+              sge_ctime64(lGetUlong64(ref, RDE_time), &time_str1),
+              sge_ctime64(tmp_time, &time_str2));
       tmp_time = MAX(tmp_time, lGetUlong64(ref, RDE_time));
    }
    *max_time = tmp_time;
@@ -365,13 +369,12 @@ static void sge_qeti_max_end_time(u_long64 *max_time, const lList *cref_lp)
    whose time is larger or equal the specified time */
 static void sge_qeti_switch_to_next(u_long64 time, lList *cref_lp)
 {
+   DENTER(TOP_LAYER);
    lListElem *cr_ep, *ref;
    lListElem *rue_ep;
-   
-   DENTER(TOP_LAYER);
-   
-   time--;
+   DSTRING_STATIC(time_str, 64);
 
+   time--;
    for_each_rw (cr_ep, cref_lp) {
       rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
@@ -383,8 +386,8 @@ static void sge_qeti_switch_to_next(u_long64 time, lList *cref_lp)
          ref = lPrevRW(ref);
       }
 
-      DPRINTF("   QETI NEXT: %s set to " sge_u64 " (%p)\n",
-              lGetString(rue_ep, RUE_name), ref != nullptr ? lGetUlong64(ref, RDE_time) : 0, ref);
+      DPRINTF("   QETI NEXT: %s set to %s (%p)\n", lGetString(rue_ep, RUE_name),
+              sge_ctime64(ref != nullptr ? lGetUlong64(ref, RDE_time) : 0, &time_str), ref);
       lSetRef(cr_ep, QETI_queue_end_next, ref);
    }
 
@@ -444,9 +447,9 @@ void sge_qeti_next_before(sge_qeti_t *qeti, u_long64 start)
 *******************************************************************************/
 u_long64 sge_qeti_first(sge_qeti_t *qeti)
 {
-   u_long64 all_resources_queue_end_time = 0;
-
    DENTER(TOP_LAYER);
+   u_long64 all_resources_queue_end_time = 0;
+   DSTRING_STATIC(time_str, 64);
 
    /* (re)init all queue end next references */
    sge_qeti_init_refs(qeti->cr_refs_pe);
@@ -460,7 +463,7 @@ u_long64 sge_qeti_first(sge_qeti_t *qeti)
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_host);
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_queue);
 
-   DPRINTF("sge_qeti_first() determines " sge_u64"\n", all_resources_queue_end_time);
+   DPRINTF("sge_qeti_first() determines %s\n", sge_ctime64(all_resources_queue_end_time, &time_str));
 
    /* switch to the next entry with all queue end next references whose 
       time is larger (?) or equal to all resources queue end time */
@@ -495,9 +498,9 @@ u_long64 sge_qeti_first(sge_qeti_t *qeti)
 *******************************************************************************/
 u_long64 sge_qeti_next(sge_qeti_t *qeti)
 {
-   u_long64 all_resources_queue_end_time = DISPATCH_TIME_NOW;
-
    DENTER(TOP_LAYER);
+   u_long64 all_resources_queue_end_time = DISPATCH_TIME_NOW;
+   DSTRING_STATIC(time_str, 64);
 
    /* determine all resources queue end time */
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_pe);
@@ -505,7 +508,7 @@ u_long64 sge_qeti_next(sge_qeti_t *qeti)
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_host);
    sge_qeti_max_end_time(&all_resources_queue_end_time, qeti->cr_refs_queue);
 
-   DPRINTF("sge_qeti_next() determines " sge_u64"\n", all_resources_queue_end_time);
+   DPRINTF("sge_qeti_next() determines %s\n", sge_ctime64(all_resources_queue_end_time, &time_str));
 
    /* switch to the next entry with all queue end next references whose 
       time is larger (?) or equal to all resources queue end time */

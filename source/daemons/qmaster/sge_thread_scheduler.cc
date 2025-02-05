@@ -725,6 +725,7 @@ sge_scheduler_main(void *arg) {
                   lFreeList(&t);
                }
 
+               // ensure_valid_what_and_where()
                t = lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2);
                if (t) {
                   if (copy.queue_list == nullptr) {
@@ -734,6 +735,7 @@ sge_scheduler_main(void *arg) {
                   lFreeList(&t);
                }
 
+               // ensure_valid_what_and_where()
                t = lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2);
                if (t) {
                   if (copy.dis_queue_list == nullptr) {
@@ -764,11 +766,12 @@ sge_scheduler_main(void *arg) {
          copy.ar_list = lCopyList(nullptr, master_ar_list);
 
          /* report number of reduced and raw (in brackets) lists */
-         DPRINTF("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
+         DPRINTF("Q:" sge_uu32 ", AQ:" sge_uu32 ", DQ:" sge_uu32 ", J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
                   ", A:" sge_uu32 ", D:" sge_uu32 ", P:" sge_uu32 ", CKPT:" sge_uu32 ", US:" sge_uu32 ", PR:" sge_uu32
                   ", RQS:" sge_uu32 ", AR:" sge_uu32 ", S:nd:%d/lf:%d\n",
                  lGetNumberOfElem(copy.queue_list),
                  lGetNumberOfElem(copy.all_queue_list),
+                 lGetNumberOfElem(copy.dis_queue_list),
                  lGetNumberOfElem(copy.job_list),
                  lGetNumberOfElem(master_job_list),
                  lGetNumberOfElem(copy.host_list),
@@ -786,12 +789,17 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfLeafs(nullptr, copy.share_tree, STN_children)
                  );
 
-         if (getenv("SGE_ND")) {
-            printf("Q:" sge_uu32 ", AQ:" sge_uu32 " J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
+         if (getenv("SGE_ND") == nullptr) {
+            schedd_log("-------------START-SCHEDULER-RUN-------------", nullptr, evc->monitor_next_run);
+         }
+#if 0
+         else {
+            printf("Q:" sge_uu32 ", AQ:" sge_uu32 ", DQ:" sge_uu32  ", J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
                    ", A:" sge_uu32 ", D:" sge_uu32 ", P:" sge_uu32 ", CKPT:" sge_uu32 ", US:" sge_uu32 ", PR:" sge_uu32
                    ", RQS:" sge_uu32 ", AR:" sge_uu32 ", S:nd:%d/lf:%d\n",
                    lGetNumberOfElem(copy.queue_list),
                    lGetNumberOfElem(copy.all_queue_list),
+                   lGetNumberOfElem(copy.dis_queue_list),
                    lGetNumberOfElem(copy.job_list),
                    lGetNumberOfElem(master_job_list),
                    lGetNumberOfElem(copy.host_list),
@@ -808,9 +816,8 @@ sge_scheduler_main(void *arg) {
                    lGetNumberOfNodes(nullptr, copy.share_tree, STN_children),
                    lGetNumberOfLeafs(nullptr, copy.share_tree, STN_children)
             );
-         } else {
-            schedd_log("-------------START-SCHEDULER-RUN-------------", nullptr, evc->monitor_next_run);
          }
+#endif
 
          PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
          double prof_copy = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);

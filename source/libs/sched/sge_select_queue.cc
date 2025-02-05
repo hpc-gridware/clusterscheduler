@@ -442,14 +442,14 @@ is_acceptable_result(sge_assignment_t *a) {
 dispatch_t
 sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 {
+   DENTER(TOP_LAYER);
    int matched_pe_count = 0;
    lListElem *pe;
    lListElem *queue;
    const char *pe_request, *pe_name;
    dispatch_t result, best_result = DISPATCH_NEVER_CAT;
    int old_logging = 0;
-
-   DENTER(TOP_LAYER);
+   DSTRING_STATIC(time_str, 64);
 
    pe_request = lGetString(best->job, JB_pe);
 
@@ -493,8 +493,8 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
                best_result = find_best_result(best_result, result);
                continue;
             }
-            DPRINTF("### first ### reservation in PE \"%s\" at " sge_u32" with %d soft violations\n",
-                    pe_name, best->start, best->soft_violations);
+            DPRINTF("### first ### reservation in PE \"%s\" at %s with %d soft violations\n",
+                    pe_name, sge_ctime64(best->start, &time_str), best->soft_violations);
          } else { /* test with all other pes */
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
@@ -741,6 +741,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    bool is_first = true;
    int old_logging = 0;
    category_use_t use_category;
+   DSTRING_STATIC(time_str, 64);
 
    DENTER(TOP_LAYER);
 
@@ -772,8 +773,8 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    old_logging = schedd_mes_get_logging(); /* store logging mode */
    for (pe_time = first_time ; pe_time; pe_time = sge_qeti_next(qeti)) {
-      DPRINTF("SELECT PE TIME(%s, " sge_u32") tries at " sge_u64"\n",
-               best->pe_name, best->job_id, pe_time);
+      DPRINTF("SELECT PE TIME(%s, " sge_u32") tries at %s\n",
+               best->pe_name, best->job_id, sge_ctime64(pe_time, &time_str));
       tmp_assignment.start = pe_time;
 
       /* this is an additional run, we have already at least one possible match,
@@ -792,12 +793,12 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
       if (result == DISPATCH_OK) {
          if (tmp_assignment.gdil) {
-            DPRINTF("SELECT PE TIME: earlier assignment at " sge_u64"\n", pe_time);
+            DPRINTF("SELECT PE TIME: earlier assignment at %s\n", sge_ctime64(pe_time, &time_str));
          }
          assignment_copy(best, &tmp_assignment, true);
          assignment_release(&tmp_assignment);
       } else {
-         DPRINTF("SELECT PE TIME: no earlier assignment at " sge_u64"\n", pe_time);
+         DPRINTF("SELECT PE TIME: no earlier assignment at %s\n", sge_ctime64(pe_time, &time_str));
          break;
       }
    }
@@ -813,7 +814,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    switch (result) {
    case DISPATCH_OK:
-      DPRINTF("SELECT PE TIME(%s, %d) returns " sge_u32"\n", best->pe_name, best->slots, best->start);
+      DPRINTF("SELECT PE TIME(%s, %d) returns %s\n", best->pe_name, best->slots, sge_ctime64(best->start, &time_str));
       break;
    case DISPATCH_NEVER_CAT:
       DPRINTF("SELECT PE TIME(%s, %d) returns <category_never>\n", best->pe_name, best->slots);
@@ -6225,12 +6226,13 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
          DPRINTF("QS_STATE is empty, skipping extensive checks!\n");
          used = 0;
       } else if (schedule_based || utilized != 0) {
+         DSTRING_STATIC(time_str, 64);
          if (!a->is_reservation) {
             start = a->now;
          }
          used = utilization_max(uep, start, a->duration, false);
-         DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(" sge_u64", " sge_u64") returns %f\n",
-               object_name, start, a->duration, used);
+         DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(%s, " sge_u64") returns %f\n",
+               object_name, sge_ctime64(start, &time_str), a->duration, used);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
          if (additional_usage != nullptr) {
             const lListElem *add_usage_ep = lGetElemStr(additional_usage, CE_name, name);
@@ -6299,8 +6301,9 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
          }
       }
 
-      DPRINTF("\t\t%s: ri_slots_by_time: %s=%f has %d (%d) slots at time " sge_u64 "%s (avail: %f total: %f)\n",
-              object_name, name, request_val, *slots, *slots_qend, start,
+      DSTRING_STATIC(time_str, 64);
+      DPRINTF("\t\t%s: ri_slots_by_time: %s=%f has %d (%d) slots at time %s %s (avail: %f total: %f)\n",
+              object_name, name, request_val, *slots, *slots_qend, sge_ctime64(start, &time_str),
               !a->is_reservation?" (= now)":"", total - used, total);
    }
 
