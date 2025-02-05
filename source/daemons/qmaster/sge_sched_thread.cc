@@ -171,6 +171,8 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_r
                      QU_state, QI_AMBIGUOUS,
                      QU_state, QI_UNKNOWN);         /* only known queues              */
 
+                     // @todo: here are also states missing that make queues unavailable
+
       if (what == nullptr || where == nullptr) {
          DPRINTF("failed creating where or what describing non available queues\n");
       } else {
@@ -485,6 +487,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
       // queues could have been disabled in the meantime, we still need to book into them
       // @todo what about suspended queues etc. - are they also in the dis_queue_list?
+      // @todo see ensure_valid_what_and_where()
       if (dis_queue_elem != nullptr) {
          lAppendList(lists->queue_list, lists->dis_queue_list);
       }

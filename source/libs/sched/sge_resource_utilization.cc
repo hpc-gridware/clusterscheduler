@@ -1069,7 +1069,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
 }
 
 static int
-add_job_list_to_schedule(const lList *job_list, bool suspended, lList *host_list, lList *queue_list, lList *rqs_list,
+add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list,
                          const lList *centry_list, const lList *acl_list, const lList *hgroup_list, lList *ar_list,
                          bool for_job_scheduling, u_long64 now)
 {
@@ -1117,13 +1117,10 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *host_list
 
          a.gdil = lGetListRW(ja_task, JAT_granted_destin_identifier_list);
          a.slots = nslots_granted(a.gdil, nullptr);
-         a.pe = lGetObject(ja_task, JAT_pe_object);
          const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+         a.pe = pe_list_locate(pe_list, pe_name);
          if (pe_name != nullptr && a.pe == nullptr) {
             CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
-         }
-         if (pe_name != nullptr && a.pe != nullptr && sge_strnullcmp(pe_name, lGetString(a.pe, PE_name)) != 0) {
-            CRITICAL("===> granted_pe is %s but pe_object is %s", pe_name, lGetString(a.pe, PE_name));
          }
          /* no need (so far) for passing ckpt information to debit_scheduled_job() */
 
@@ -1192,10 +1189,10 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
 {
    DENTER(TOP_LAYER);
 
-   add_job_list_to_schedule(running_jobs, false, host_list, queue_list,
+   add_job_list_to_schedule(running_jobs, false, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
                             ar_list, for_job_scheduling, now);
-   add_job_list_to_schedule(suspended_jobs, true, host_list, queue_list,
+   add_job_list_to_schedule(suspended_jobs, true, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
                             ar_list, for_job_scheduling, now);
    add_calendar_to_schedule(queue_list, now);
