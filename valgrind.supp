@@ -186,6 +186,19 @@
 }
 
 {
+   @todo CS-590 (2) interactive jobs: ijs threads are not properly terminated
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_ZL25cl_thread_list_add_threadP16cl_raw_list_typeP23cl_thread_settings_type
+   fun:_Z28cl_thread_list_create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_EPFvS2_ES6_18cl_thread_type_def
+   fun:_Z13create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_E
+   fun:_Z14run_ijs_serverP13cl_com_handlePKcjiiii9ternary_tS3_PiP7dstring
+   fun:main
+}
+
+{
    @todo CS-347 overlapping buffers in sge_strok call
    Memcheck:Overlap
    fun:strcpy

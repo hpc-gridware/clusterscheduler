@@ -231,7 +231,7 @@ namespace ocs {
     *
     * @param[in] socket_number logical socket number (0..n)
     * @param[in] core_number  logical core number (0..n)
-    * @param[out] proc_ids integer array with processor ids
+    * @param[out] proc_ids integer array with processor ids (allocated with new, caller has to free with delete[])
     * @param[out] amount  number of entries in proc_ids
     * @return true if the processor ids could be retrieved, else false
     */
