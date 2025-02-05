@@ -338,7 +338,7 @@ void test_hwloc()
                   printf(" %5d", proc_ids[i]);
                }
                printf("\n");
-               sge_free(&proc_ids);
+               delete[] proc_ids;
             } else {
                printf("Couldn't get processor ids for socket %5d core %5d\n", s, c);
             }
