@@ -210,6 +210,8 @@ static void set_username(sge_component_tl0_t *tl, const char *username) {
 static void component_tl0_destroy(void *tl) {
    auto _tl = (sge_component_tl0_t *) tl;
 
+   sge_free(&_tl->grp_array);
+
    // wrapping structure
    sge_free(&_tl);
 }
