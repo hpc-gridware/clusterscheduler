@@ -49,6 +49,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_tq.h"
 #include "uti/sge_bootstrap_env.h"
+#include "uti/sge_string.h"
 
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_data.h"
@@ -744,10 +745,12 @@ sge_gdi_packet_execute_internal(lList **answer_list, sge_gdi_packet_class_t *pac
    strncpy(packet->host, gdi_get_act_master_host(false), sizeof(packet->host)-1);
    packet->is_intern_request = true;
 
-   bool ret = sge_gdi_packet_parse_auth_info(packet, &packet->first_task->answer_list,
-                                             &packet->uid, packet->user, sizeof(packet->user),
-                                             &packet->gid, packet->group, sizeof(packet->group),
-                                             &packet->amount, &packet->grp_array);
+   bool ret = true;
+   packet->uid = component_get_uid();
+   packet->gid = component_get_gid();
+   sge_strlcpy(packet->user, component_get_username(), sizeof(packet->user));
+   sge_strlcpy(packet->group, component_get_groupname(), sizeof(packet->group));
+   component_get_supplementray_groups(&packet->amount, &packet->grp_array);
 
    /*
     * append the packet to the packet list of the worker threads

@@ -1240,9 +1240,11 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_packet_class_t *packet_handle) {
    component_get_supplementray_groups(&packet_handle->amount, &packet_handle->grp_array);
 
    // show information in debug output
-   dstring dbg_msg = DSTRING_INIT;
-   ocs_id2dstring(&dbg_msg, uid, username, gid, groupname, packet_handle->amount, packet_handle->grp_array);
-   sge_dstring_free(&dbg_msg);
+   if (DPRINTF_IS_ACTIVE) {
+      dstring dbg_msg = DSTRING_INIT;
+      ocs_id2dstring(&dbg_msg, uid, username, gid, groupname, packet_handle->amount, packet_handle->grp_array);
+      sge_dstring_free(&dbg_msg);
+   }
 
    // create one compact string containing primary user and group information as
    // well as supplementary groups (id and names)
@@ -1393,9 +1395,11 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
       sge_free(grp_array);
    } else {
       // show information in debug output
-      dstring dbg_msg = DSTRING_INIT;
-      ocs_id2dstring(&dbg_msg, *uid, user, *gid, group, *amount, *grp_array);
-      sge_dstring_free(&dbg_msg);
+      if (DPRINTF_IS_ACTIVE) {
+         dstring dbg_msg = DSTRING_INIT;
+         ocs_id2dstring(&dbg_msg, *uid, user, *gid, group, *amount, *grp_array);
+         sge_dstring_free(&dbg_msg);
+      }
    }
    DRETURN(ret);
 }

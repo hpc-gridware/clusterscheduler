@@ -426,7 +426,10 @@ sge_gdi_packet_create(lList **answer_list) {
    DENTER(TOP_LAYER);
    sge_gdi_packet_class_t *ret = sge_gdi_packet_create_base(answer_list);
    if (ret != nullptr) {
-      sge_gdi_packet_initialize_auth_info(ret);
+      if (!component_is_qmaster_internal()) {
+         // auth info is only required for external gdi
+         sge_gdi_packet_initialize_auth_info(ret);
+      }
    }
    DRETURN(ret);
 }
@@ -647,8 +650,11 @@ sge_gdi_packet_free(sge_gdi_packet_class_t **packet) {
       if (local_ret1 != 0 || local_ret2 != 0) {
          ret = false;
       }
-      sge_free(&(*packet)->auth_info);
-      sge_free(&(*packet)->grp_array);
+      // internal packages do not have auth_info and grp_array is just borrowed from component - do not try to free them
+      if (!(*packet)->is_intern_request) {
+         sge_free(&(*packet)->auth_info);
+         sge_free(&(*packet)->grp_array);
+      }
       sge_free(packet);
    }
    DRETURN(ret);
