@@ -39,7 +39,7 @@
 *    Number of jobs referencing this category.
 *
 *    SGE_INT(CT_count) - Count
-*    Number of jobs of this category used in this schuling run
+*    Number of jobs of this category used in this scheduling run
 *    If -1, then CT_refcount is used
 *
 *    SGE_ULONG(CT_rejected) - Rejected

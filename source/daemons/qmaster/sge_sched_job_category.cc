@@ -284,18 +284,30 @@ sge_reset_job_category() {
 
    lListElem *cat;
    for_each_rw (cat, CATEGORY_LIST) {
+      // deallocate memory stored in the cache itself
       lListElem *cache;
       for_each_rw(cache, lGetList(cat, CT_cache)) {
-         int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
+         auto *range = static_cast<int *>(lGetRef(cache, CCT_pe_job_slots));
          sge_free(&range);
          lSetRef(cache, CCT_pe_job_slots, nullptr);
       }
 
+      // now assignment (@todo make it boolean in master branch)
       lSetUlong(cat, CT_rejected, 0);
+
+      // reservation assignment (@todo make it boolean in master branch)
+      lSetUlong(cat, CT_reservation_rejected, 0);
+
+      // @todo remove in master branch. This field is unused
       lSetInt(cat, CT_count, -1);
+
+      // reset the cache and the messages added flag
       lSetList(cat, CT_cache, nullptr);
       lSetBool(cat, CT_messages_added, false);
+
+      // reset cached resource contribution
       lSetBool(cat, CT_rc_valid, false);
+      lSetDouble(cat, CT_resource_contribution, 0.0);
    }
 
    DRETURN(0);
