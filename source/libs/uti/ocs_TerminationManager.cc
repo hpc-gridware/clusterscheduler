@@ -40,6 +40,8 @@
 
 #include "ocs_TerminationManager.h"
 
+#include <rapidjson/stream.h>
+
 /** @brief Get a stacktrace of the current thread.
  *
  * This method might fail if no additional heap memory can be allocated. In this case,
@@ -177,6 +179,19 @@ ocs::TerminationManager::get_stacktrace(bool demangle_names) {
 #endif
 
    return ss.str();
+}
+
+
+void
+ocs::TerminationManager::show_stacktrace(u_int32_t level) {
+   std::stringstream ss;
+
+   ss << get_stacktrace(true);
+
+   std::string line;
+   while (std::getline(ss, line)) {
+      sge_log(level, line.c_str(), __FILE__, __LINE__); \
+   }
 }
 
 /** @brief Allow core dumps to be generated.

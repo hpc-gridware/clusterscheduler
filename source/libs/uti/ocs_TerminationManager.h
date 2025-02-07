@@ -48,6 +48,9 @@ namespace ocs {
       get_stacktrace(bool demangle_names);
 
       static void
+      show_stacktrace(u_int32_t level);
+
+      static void
       trigger_segfault();
 
       static void
