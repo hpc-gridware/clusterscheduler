@@ -39,11 +39,9 @@
 			"name":	"rejected",
 			"summary":	"Rejected",
 			"description":	[{
-					"line":	"Has this category been rejected as it can not be dispached now?"
-               }, {
-					"line":	"@todo make it a boolean"
+					"line":	"Has this category been rejected as it can not be dispatched now?"
 				}],
-			"type":	"lUlongT",
+			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"cache",
@@ -86,10 +84,8 @@
 			"summary":	"Reservation Rejected",
 			"description":	[{
 					"line":	"Has this category been rejected as it can not be reserved?"
-               }, {
-					"line":	"@todo make it a boolean"
 				}],
-			"type":	"lUlongT",
+			"type":	"lBoolT",
 			"flags":	[]
 		}]
 }
