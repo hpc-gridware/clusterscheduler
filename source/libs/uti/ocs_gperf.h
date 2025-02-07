@@ -19,6 +19,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <string>
+
 #ifdef WITH_GPERF
 #  include <gperftools/profiler.h>
 

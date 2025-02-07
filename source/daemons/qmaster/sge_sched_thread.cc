@@ -904,7 +904,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                   sge_reject_category(cat, false);
                }
                /* here no reservation was made for a job that couldn't be started now
-                  or the job is not dispatchable at all */
+                  or the job is not dispatch-able at all */
                schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
 
                /* Remove pending job if there are no pending tasks anymore (including the current) */
