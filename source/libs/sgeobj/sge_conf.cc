@@ -270,8 +270,10 @@ static bool inherit_env = true;
 static bool enable_submit_lib_path = false;
 static bool enable_submit_ld_preload = false;
 
-std::string gperf_name = "gperf";
-std::string gperf_threads = "*";
+#define GPERF_NAME_DEFAULT "gperf"
+#define GPERF_THREADS_DEFAULT "none"
+std::string gperf_name = GPERF_NAME_DEFAULT;
+std::string gperf_threads = GPERF_THREADS_DEFAULT;
 
 /*
  * notify_kill_default and notify_susp_default
@@ -709,6 +711,8 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       jsv_timeout= 10;
       enable_submit_lib_path = false;
       enable_submit_ld_preload = false;
+      gperf_name = GPERF_NAME_DEFAULT;
+      gperf_threads = GPERF_THREADS_DEFAULT;
 
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {

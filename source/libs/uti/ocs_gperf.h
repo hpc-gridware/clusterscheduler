@@ -38,9 +38,6 @@ bool
 sge_gperf_start_profiling(sge_gperf_per_thread_t &per_thread_data, const std::string &thread_name, const std::string &thread_pattern, const std::string &gperf_name);
 
 bool
-sge_gperf_stop_profiling(sge_gperf_per_thread_t &per_thread_data, const std::string &thread_name);
-
-bool
-sge_gperf_do_profiling(sge_gperf_per_thread_t &per_thread_data, const std::string &thread_name, const std::string &threads, const std::string &gperf_name);
+sge_gperf_stop_profiling(sge_gperf_per_thread_t &per_thread_data);
 
 #endif
