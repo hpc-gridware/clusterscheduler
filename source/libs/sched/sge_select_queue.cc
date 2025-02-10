@@ -1824,53 +1824,49 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 static bool
 job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance)
 {
-   bool ret = false;
-   const lListElem *centry;
-
    DENTER(TOP_LAYER);
-   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
-      /* Optimization: Have a forced_centry_list in the assignment structure
-       * and only iterate over this list.
-       */
-      for_each_ep(centry, a->centry_list) {
-         const char *name = lGetString(centry, CE_name);
-         bool is_forced = lGetUlong(centry, CE_requestable) == REQU_FORCED ? true : false;
-         if (!is_forced) {
-            // no forced attribute - nothing to do
-            continue;
-         }
+   bool ret = false;
 
-         bool might_be_missing = true;
+   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
+      const void *iterator = nullptr;
+      const lListElem *centry;
+      const lListElem *next_centry = lGetElemUlongFirst(a->centry_list, CE_requestable, REQU_FORCED, &iterator);
+      while ((centry = next_centry) != nullptr) {
+         next_centry = lGetElemUlongNext(a->centry_list, CE_requestable, REQU_FORCED, &iterator);
+
+         // check if the forced centry was requested; if so, we can continue with the next centry
+         const char *name = lGetString(centry, CE_name);
+         bool skip_further_checks = false;
          const lListElem *jrs;
          for_each_ep (jrs, lGetList(a->job, JB_request_set_list)) {
             const lList *res_list = lGetList(jrs, JRS_hard_resource_list);
             if (is_requested(res_list, name)) {
                // if requested we are fine
-               might_be_missing = false;
+               skip_further_checks = true;
                break;
             }
          }
+         if (skip_further_checks) {
+            continue;
+         }
 
-         if (might_be_missing) {
-            // the forced centry was not requested, we need to check if it is defined
-            // in the complex values of the given queue or host object
-            if (is_qinstance) {
-               if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
-                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                                 SCHEDD_INFO_NOTREQFORCEDRES_SS,
-                                 name, lGetString(queue_or_host, QU_full_name));
-                  ret = true;
-                  break;
-               }
-            } else {
-               if (host_is_centry_a_complex_value(queue_or_host, centry)) {
-                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                                 SCHEDD_INFO_NOFORCEDRES_SS,
-                                 name, lGetHost(queue_or_host, EH_name));
-                  ret = true;
-                  break;
+         // if the centry was not requested then we need to complain about it if it is defined in the current object (queue or host)
+         if (is_qinstance) {
+            if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
+               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                              SCHEDD_INFO_NOTREQFORCEDRES_SS,
+                              name, lGetString(queue_or_host, QU_full_name));
+               ret = true;
+               break;
+            }
+         } else {
+            if (host_is_centry_a_complex_value(queue_or_host, centry)) {
+               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                              SCHEDD_INFO_NOFORCEDRES_SS,
+                              name, lGetHost(queue_or_host, EH_name));
+               ret = true;
+               break;
 
-               }
             }
          }
       } // end loop over all complex definitions
@@ -4034,16 +4030,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
          // loop over the sorted host list
          for_each_rw (hep, a->host_list) {
-            int hslots = 0, hslots_qend = 0;
-            const char *eh_name = lGetHost(hep, EH_name);
-
             // we already handled global resources
-            // @todo (CS-456) they will have EH_seq_no U_LONG32_MAX, be at the end - do we really want to do all the strcmp()?
-            if (strcasecmp(eh_name, SGE_GLOBAL_NAME) == 0 || strcasecmp(eh_name, SGE_TEMPLATE_NAME) == 0) {
+            if (hep == a->gep) {
                continue;
             }
 
             /* this host does not work for this category, skip it */
+            const char *eh_name = lGetHost(hep, EH_name);
             if (skip_host_list && lGetElemStr(skip_host_list, CTI_name, eh_name)) {
                continue;
             }
@@ -4062,6 +4055,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             // @todo when we are in an additional round of the do ... while loop, couldn't we skip parallel_tag_hosts_queues()?
             //       the number of available slots should already be in QU_tag / QU_tag_qend?
             //       hslots = sum(QU_tag), and hslots_qend = sum(QU_tag_qend)?
+            int hslots = 0, hslots_qend = 0;
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
                bool need_master = !have_master_host;
                bool is_master_host = (hep == master_host);

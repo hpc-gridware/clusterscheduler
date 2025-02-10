@@ -20,8 +20,8 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "cull_list.h"
+#include "sge_select_queue.h"
 
 bool
-add_granted_resource_list(lListElem *ja_task, const lListElem *job, const lListElem *pe, const lList *granted,
-                          const lList *host_list);
+add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list);
 

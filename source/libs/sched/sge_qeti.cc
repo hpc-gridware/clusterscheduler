@@ -196,17 +196,16 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
-   int ar_id = lGetUlong(a->job, JB_ar);
+   DENTER(TOP_LAYER);
    sge_qeti_t *iter = nullptr;
    lListElem *next_queue, *qep;
    const lListElem *hep;
-
-   DENTER(TOP_LAYER);
 
    if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
       DRETURN(nullptr);
    }
 
+   int ar_id = lGetUlong(a->job, JB_ar);
    if (ar_id == 0) {
       /* add "slot" resource utilization entry of parallel environment */
       if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS, 
@@ -215,13 +214,10 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          DRETURN(nullptr);
       }
 
-      /* add references to global resource utilization entries 
-         that might affect jobs queue end time */
-      // @todo CS-599 we have a->gep
-      if ((hep = host_list_locate(a->host_list, SGE_GLOBAL_NAME))) {
-         if (sge_add_qeti_resource_container(&iter->cr_refs_global, 
-                  lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
-                  a->centry_list, a->job)!=0) {
+      // add references to global resource utilization entries that might affect jobs queue end time
+      if (a->gep != nullptr) {
+         if (sge_add_qeti_resource_container(&iter->cr_refs_global, lGetList(a->gep, EH_resource_utilization),
+                                      lGetList(a->gep, EH_consumable_config_list), a->centry_list, a->job) != 0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
          }
@@ -231,14 +227,12 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    /* add references to per host resource utilization entries 
       that might affect jobs queue end time */
    for_each_ep(hep, a->host_list) {
-      const char *eh_name;
       int is_relevant;
       const void *queue_iterator = nullptr;
 
-      // @todo CS-599 compare against a->gep
-      if (!strcmp((eh_name=lGetHost(hep, EH_name)), SGE_GLOBAL_NAME)) {
+      if (hep == a->gep) {
          continue;
-      }   
+      }
 
       if (sge_host_match_static(a, hep) == DISPATCH_NEVER_CAT) {
          continue;
@@ -248,6 +242,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          environment that resides at this host. And secondly we only 
          consider those hosts that match this job (statically) */
       is_relevant = false;
+      const char *eh_name = lGetHost(hep, EH_name);
       for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator); 
           (qep = next_queue);
            next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
