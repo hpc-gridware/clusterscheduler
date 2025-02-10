@@ -187,6 +187,8 @@
 			"flags":	[{
 					"name":	"JGDI_CONF"
 				}, {
+					"name":	"HASH"
+				}, {
 					"name":	"SPOOL"
 				}]
 		}, {
