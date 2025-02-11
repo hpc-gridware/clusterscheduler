@@ -32,6 +32,7 @@ string(REGEX REPLACE "#define OCS_VERSION_MINOR ([0-9]*)" "\\1" VERSION_MINOR "$
 string(REGEX REPLACE "#define OCS_VERSION_PATCH ([0-9]*)" "\\1" VERSION_PATCH "${VERSION_PATCH}")
 string(REGEX REPLACE "#define OCS_VERSION_SUFFIX \"([a-z0-0\-]*)\"" "\\1" VERSION_SUFFIX "${VERSION_SUFFIX}")
 
+# @todo Following step should only be done once even if cmake runs in parallel on multiple hosts
 # Set the version string and use it to set the version within inst_sge
 #set(OCS_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX}")
 #configure_file(
